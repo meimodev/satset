@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
+import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/server/audit_log.dart';
 import 'package:satset/server/auth.dart';
@@ -144,7 +145,8 @@ Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         db,
         hub: hub,
         type: value ? AuditType.menuKilled : AuditType.menuRestored,
-        title: value ? 'Stop jual ${before.name}' : 'Jual lagi ${before.name}',
+        kind: value ? AuditKind.menuKilled : AuditKind.menuRestored,
+        params: {'name': before.name},
         actorUserId: (await _actor(req, db, auth))?.id,
         reason: (reason != null && reason.isNotEmpty) ? reason : null,
       );

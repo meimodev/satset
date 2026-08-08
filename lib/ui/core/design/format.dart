@@ -1,6 +1,20 @@
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import 'package:satset/l10n/app_localizations.dart';
+
+// ── Money: pinned to id_ID in every locale. ADR-0084. ────────────────────────
+//
+// This file is deliberately *half*-pinned, and that asymmetry is the thing to
+// not tidy away. Amounts never localise: the cashier is counting physical
+// rupiah against the screen, and every other artefact in the room — the printed
+// receipt, the bank slip, the notes in the drawer — groups thousands with `.`.
+// Rendering `Rp 14,500` next to a stack of cash invites a decimal misread on a
+// live till, and `Rp` is not a translation of anything.
+//
+// Dates below it *do* localise: `Sabtu 27 Jul` inside an English shell just
+// reads as an unfinished job, and no money is at risk.
+
 final _idr = NumberFormat.currency(
   locale: 'id_ID',
   symbol: 'Rp. ',
@@ -9,48 +23,58 @@ final _idr = NumberFormat.currency(
 
 String formatIDR(num value) => _idr.format(value);
 
-/// Weekday + day + short month for a service-day header: "Sabtu 27 Jul".
+/// Weekday + day + short month for a service-day header: "Sabtu 27 Jul",
+/// "Saturday 27 Jul".
 ///
 /// The booking book leads on this because a drawer that just says "12 booking"
 /// is ambiguous the moment service runs past midnight.
-final _bookingDay = DateFormat('EEEE d MMM', 'id_ID');
+///
+/// Built per call rather than held in a top-level `final`: a cached
+/// [DateFormat] freezes whichever locale happened to be active when the field
+/// was first touched, which for a lazily-initialised top-level is "whenever
+/// some unrelated screen ran first". The construction is cheap; a date stuck in
+/// the previous language is not.
+String formatBookingDayId(DateTime d) => DateFormat('EEEE d MMM').format(d);
 
-String formatBookingDayId(DateTime d) => _bookingDay.format(d);
-
-/// The wall clock in the tablet top bar: "18:14 · Sab".
+/// The wall clock in the tablet top bar: "18:14 · Sab", "18:14 · Sat".
 ///
 /// Minute precision on purpose — the seconds a waiter needs are the shift
 /// elapsed sitting next to it, and a second-ticking wall clock next to a
 /// second-ticking timer reads as two things racing.
-/// Hand-rolled rather than `DateFormat('HH:mm · EEE', 'id_ID')`: the bar builds
-/// on first frame, and locale data is only loaded once `main` has run. A widget
-/// test mounting the bar directly would throw `LocaleDataException`, and seven
-/// strings are not worth an init dependency.
-const _idShortDays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+///
+/// This used to index a hand-rolled `_idShortDays` array to dodge
+/// `LocaleDataException`, because the bar builds on the first frame and a
+/// widget test mounting it directly never runs `main()`. Localising dates
+/// killed that shortcut — a second English array would have been the same bug
+/// twice, and the Indonesian one printed `Sab` inside an English shell. The
+/// symbols are now loaded for tests in `test/flutter_test_config.dart`.
+String formatBarClockId(DateTime d) => DateFormat('HH:mm · EEE').format(d);
 
-String formatBarClockId(DateTime d) {
-  final hh = d.hour.toString().padLeft(2, '0');
-  final mm = d.minute.toString().padLeft(2, '0');
-  return '$hh:$mm · ${_idShortDays[d.weekday - 1]}';
+/// A calendar date with no time: "12 Agu 2026", "12 Aug 2026". For dates that
+/// are a *fact* rather than a moment in service — a billing period's end, a
+/// paid-until.
+String formatShortDateId(DateTime d) => DateFormat('d MMM yyyy').format(d);
+
+/// Money at a glance, for a report tile or a dense table: "Rp 15,1jt",
+/// "Rp 15.1M".
+///
+/// The one part of a rupiah amount that is *not* exempt from translation
+/// (ADR-0084): `jt` and `rb` abbreviate juta and ribu, which are Indonesian
+/// words an English reader cannot expand. The digits and the `Rp` stay put.
+String formatCompactIDR(AppL10n l10n, int v) {
+  if (v >= 1000000) {
+    return l10n.moneyCompactJt((v / 1000000).toStringAsFixed(1));
+  }
+  if (v >= 1000) return l10n.moneyCompactRb('${(v / 1000).round()}');
+  return l10n.moneyCompactPlain('$v');
 }
 
-/// A calendar date with no time: "12 Agu 2026". For dates that are a *fact*
-/// rather than a moment in service — a billing period's end, a paid-until.
-final _shortDate = DateFormat('d MMM yyyy', 'id_ID');
-
-String formatShortDateId(DateTime d) => _shortDate.format(d);
-
-const _idShortMonths = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
-];
-
-/// [formatShortDateId] without the locale-data dependency, for widgets that can
-/// mount before `main` has loaded it — the same reason [formatBarClockId] is
-/// hand-rolled. The shell banners build on first frame, and a widget test that
-/// mounts one directly would otherwise throw `LocaleDataException`.
-String formatShortDateIdSafe(DateTime d) =>
-    '${d.day} ${_idShortMonths[d.month - 1]} ${d.year}';
+/// A bare ISO weekday (1 = Monday) as a short name: "Sen", "Mon". The report
+/// trend chart labels its bars with this — the server sends the number.
+///
+/// 1 Jan 2024 was a Monday, so the day-of-month doubles as the weekday.
+String formatWeekdayShort(int dow) =>
+    DateFormat.E().format(DateTime(2024, 1, dow));
 
 final _grouping = NumberFormat.decimalPattern('id_ID');
 
@@ -109,17 +133,21 @@ String formatStationTimer(Duration d) {
   return '$m:$ss';
 }
 
-/// Indonesian relative label for a count-up duration (table seated, shift, etc).
+/// Relative label for a count-up duration (table seated, shift, etc).
 /// <1m: "20d" · <1h: "12m 20d" · <1d: "1j 12m 20d" · 24-48h: "kemarin" · 2d+: "N hari lalu".
-String formatElapsedId(Duration d) {
+///
+/// Was `formatElapsedId` and Indonesian-only; the unit letters are copy, and
+/// they collide across languages (Indonesian `d` is *detik*, English `d` is
+/// *day*), so a shared string would have been wrong in one of them.
+String formatElapsed(AppL10n l10n, Duration d) {
   if (d.isNegative) d = Duration.zero;
   final days = d.inDays;
-  if (days == 1) return 'kemarin';
-  if (days >= 2) return '$days hari lalu';
+  if (days == 1) return l10n.elapsedYesterday;
+  if (days >= 2) return l10n.elapsedDaysAgo(days);
   final h = d.inHours;
   final m = d.inMinutes.remainder(60);
   final s = d.inSeconds.remainder(60);
-  if (h > 0) return '${h}j ${m}m ${s}d';
-  if (m > 0) return '${m}m ${s}d';
-  return '${s}d';
+  if (h > 0) return l10n.durHms(h, m, s);
+  if (m > 0) return l10n.durMs(m, s);
+  return l10n.durSecs(s);
 }

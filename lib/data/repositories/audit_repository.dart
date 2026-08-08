@@ -104,6 +104,13 @@ AuditEntry auditEntryFromJson(Map<String, dynamic> j) => AuditEntry(
   amountCents: (j['amountCents'] as num?)?.toInt(),
   actorName: j['actorName'] as String?,
   actorRoleName: j['actorRoleName'] as String?,
+  kind: j['kind'] as String?,
+  params: switch (j['params']) {
+    final Map<String, dynamic> m => {
+      for (final e in m.entries) e.key: '${e.value}',
+    },
+    _ => const {},
+  },
 );
 
 final auditProvider = StateNotifierProvider<AuditRepository, List<AuditEntry>>(

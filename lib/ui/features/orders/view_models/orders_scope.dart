@@ -78,7 +78,8 @@ class OrdersScopeNotifier extends StateNotifier<bool> {
 }
 
 /// True when the board is showing the whole venue instead of just your rows.
-final ordersShowAllProvider =
-    StateNotifierProvider<OrdersScopeNotifier, bool>((ref) {
-      return OrdersScopeNotifier(ref);
-    });
+final ordersShowAllProvider = StateNotifierProvider<OrdersScopeNotifier, bool>((
+  ref,
+) {
+  return OrdersScopeNotifier(ref);
+});

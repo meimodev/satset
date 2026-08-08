@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/localization/app_strings.dart';
 import '../design/colors.dart';
 import '../design/format.dart';
 import '../design/skin.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
 import 'sat_icon_button.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// What a field accepts. Private — the named constructors are the API.
 enum _Kind { text, number, money, decimal, search, pin, inline, password }
@@ -430,8 +430,7 @@ class SatField extends StatelessWidget {
       enabled: enabled,
       readOnly: readOnly,
       autofocus: autofocus,
-      obscureText:
-          _kind == _Kind.pin || (_kind == _Kind.password && !visible),
+      obscureText: _kind == _Kind.pin || (_kind == _Kind.password && !visible),
       maxLines: maxLines,
       minLines: minLines,
       maxLength: maxLength,
@@ -472,8 +471,8 @@ class SatField extends StatelessWidget {
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                       tooltip: visible
-                          ? AppStrings.a11yHidePassword
-                          : AppStrings.a11yShowPassword,
+                          ? context.l10n.a11yHidePassword
+                          : context.l10n.a11yShowPassword,
                       onTap: onToggle,
                     )
                   : suffix,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -10,6 +9,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_stepper.dart';
 import 'package:satset/ui/features/menu/modifier_sheet.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// The control row under a cart line: quantity, re-configure, remove.
 ///
@@ -21,11 +21,7 @@ class CartLineActions extends ConsumerWidget {
   final String tableId;
   final CartItem line;
 
-  const CartLineActions({
-    super.key,
-    required this.tableId,
-    required this.line,
-  });
+  const CartLineActions({super.key, required this.tableId, required this.line});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,14 +43,14 @@ class CartLineActions extends ConsumerWidget {
           min: 1,
           max: kCartLineMaxQty,
           size: SatStepperSize.sm,
-          semanticLabel: AppStrings.quantity,
+          semanticLabel: context.l10n.quantity,
           onChanged: (v) => cart.setQty(line.id, v),
         ),
         const Spacer(),
         if (item != null) ...[
           _LineAction(
             icon: Icons.tune,
-            label: AppStrings.edit,
+            label: context.l10n.edit,
             color: sc.textMd,
             onTap: () => showModifierSheet(
               context: context,
@@ -67,7 +63,7 @@ class CartLineActions extends ConsumerWidget {
         ],
         _LineAction(
           icon: Icons.delete_outline,
-          label: AppStrings.delete,
+          label: context.l10n.delete,
           color: sc.urgent,
           onTap: () => cart.remove(line.id),
         ),

@@ -7,6 +7,7 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:satset/core/log/sat_log.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/printing/bill_struk_builder.dart';
 import 'package:satset/core/printing/bill_struk_renderer.dart';
 import 'package:satset/core/printing/struk_socket.dart';
@@ -14,6 +15,7 @@ import 'package:satset/data/models/bill_dto.dart'
     show historyPageCeiling, historyPageSize;
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
+import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/server/audit_log.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
@@ -95,9 +97,11 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     await _audit(
       db,
       AuditType.billClosed,
-      loss > 0
-          ? 'Tagihan tak tertagih ${_rupiah(loss)} ${visit.tableLabel ?? ''}'
-          : 'Tutup tagihan ${visit.tableLabel ?? ''}',
+      loss > 0 ? AuditKind.billWrittenOff : AuditKind.billClosed,
+      params: {
+        'table': visit.tableLabel ?? '',
+        if (loss > 0) 'amount': auditRupiah(loss),
+      },
       tableId: visit.tableId,
       actor: actorId,
       reason: reason,
@@ -397,7 +401,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     }
     final shares = distributeEvenRounded(remainder, n);
     // Number the new shares after any that already exist, so a second split
-    // does not mint a second "Bagian 1".
+    // does not mint a second part 1. Stored as the bare spec (ADR-0085).
     final from = existing.where((r) => r.mode == 'even').length;
     await db.transaction(() async {
       for (var i = 0; i < n; i++) {
@@ -409,7 +413,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
                 tableId: visit.tableId,
                 visitId: Value(visitId),
                 mode: const Value('even'),
-                label: Value('Bagian ${from + i + 1}/${from + n}'),
+                label: Value('${from + i + 1}/${from + n}'),
                 total: Value(shares[i]),
                 createdAt: SatClock.now().toUtc(),
               ),
@@ -585,7 +589,10 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     await _audit(
       db,
       AuditType.discountApplied,
-      'Diskon ${preset.name}${ticketId == null ? '' : ' (item)'}',
+      ticketId == null
+          ? AuditKind.discountApplied
+          : AuditKind.discountAppliedLine,
+      params: {'name': preset.name},
       tableId: rec.tableId,
       actor: actor?.id,
       amountCents: applied?.amount,
@@ -641,7 +648,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     await _audit(
       db,
       AuditType.discountRemoved,
-      'Hapus diskon ${row.name}',
+      AuditKind.discountRemoved,
+      params: {'name': row.name},
       tableId: rec.tableId,
       actor: actor?.id,
       amountCents: row.amount,
@@ -734,7 +742,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     await _audit(
       db,
       AuditType.discountApplied,
-      'Diskon tagihan ${preset.name}',
+      AuditKind.discountBillApplied,
+      params: {'name': preset.name},
       tableId: visit.tableId,
       actor: actor?.id,
     );
@@ -793,7 +802,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     await _audit(
       db,
       AuditType.discountRemoved,
-      'Hapus diskon tagihan ${row.name}',
+      AuditKind.discountBillRemoved,
+      params: {'name': row.name},
       tableId: visit.tableId,
       actor: actor?.id,
     );
@@ -851,7 +861,12 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       await _audit(
         db,
         AuditType.paymentRecorded,
-        'Pembayaran ${_rupiah(amount)} ($method) ${rec.label}',
+        AuditKind.paymentRecorded,
+        params: {
+          'amount': auditRupiah(amount),
+          'method': method,
+          'label': rec.label,
+        },
         tableId: rec.tableId,
         actor: user?.id,
         amountCents: amount,
@@ -926,7 +941,12 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       await _audit(
         db,
         AuditType.refund,
-        'Refund ${_rupiah(amount)} ($method) ${rec.label}',
+        AuditKind.refund,
+        params: {
+          'amount': auditRupiah(amount),
+          'method': method,
+          'label': rec.label,
+        },
         tableId: rec.tableId,
         actor: user?.id,
         reason: (body['note'] as String?)?.trim(),
@@ -956,6 +976,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       db.venueSettings,
     )..where((x) => x.id.equals('default'))).getSingleOrNull();
     final data = BillStrukBuilder.fromServerMap(
+      l: satL10n,
       bill: bill,
       receiptId: receiptId,
       venueName: v?.displayName ?? 'SatSet',
@@ -971,7 +992,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       qrCaption: v?.receiptQrCaption ?? '',
     );
     try {
-      final bytes = await BillStrukRenderer.render(data);
+      final bytes = await BillStrukRenderer.render(satL10n, data);
       await StrukSocket.send(printer.host, printer.port, bytes);
     } catch (e) {
       SatLog.srv(
@@ -1049,7 +1070,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       await _audit(
         db,
         AuditType.billReopened,
-        'Buka ulang ${rec.label}',
+        AuditKind.billReopenedReceipt,
+        params: {'label': rec.label},
         tableId: rec.tableId,
         actor: user?.id,
       );
@@ -1148,7 +1170,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     await _audit(
       db,
       AuditType.billReopened,
-      'Buka ulang tagihan ${visit.tableLabel ?? ''}',
+      AuditKind.billReopened,
+      params: {'table': visit.tableLabel ?? ''},
       tableId: visit.tableId,
       actor: user?.id,
     );
@@ -1528,7 +1551,8 @@ Future<bool> _fullyAssigned(AppDatabase db, Iterable<Ticket> tickets) async {
 Future<void> _audit(
   AppDatabase db,
   AuditType type,
-  String title, {
+  AuditKind kind, {
+  Map<String, String> params = const {},
   required String tableId,
   String? actor,
   String? reason,
@@ -1536,7 +1560,8 @@ Future<void> _audit(
 }) => writeAudit(
   db,
   type: type,
-  title: title,
+  kind: kind,
+  params: params,
   tableId: tableId,
   actorUserId: actor,
   reason: reason,
@@ -1731,9 +1756,8 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
 /// The one bill-scope [[Diskon (discount)]] on a visit, or null. At most one by
 /// the `idx_discounts_bill_uniq` partial index. ADR-0070.
 Future<Discount?> _billDiscount(AppDatabase db, String visitId) =>
-    (db.select(db.discounts)..where(
-          (x) => x.visitId.equals(visitId) & x.receiptId.isNull(),
-        ))
+    (db.select(db.discounts)
+          ..where((x) => x.visitId.equals(visitId) & x.receiptId.isNull()))
         .getSingleOrNull();
 
 /// Reconstruct a bill-shaped map for a CLOSED session (past bill), from the
@@ -1876,8 +1900,6 @@ Map<String, dynamic> _summarize(Map<String, dynamic> bill) => {
   'mode': bill['mode'],
   'fullySettled': bill['fullySettled'],
 };
-
-String _rupiah(int n) => 'Rp${n.toString()}';
 
 Response _ok(Object body) => Response.ok(
   jsonEncode(body),

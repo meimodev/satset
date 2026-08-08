@@ -43,13 +43,10 @@ void main() {
     }
   }
 
-  Future<void> upgrade() =>
-      db.migration.onUpgrade(db.createMigrator(), 41, 42);
+  Future<void> upgrade() => db.migration.onUpgrade(db.createMigrator(), 41, 42);
 
   Future<Set<String>> columnsOf(String table) async {
-    final rows = await db
-        .customSelect('PRAGMA table_info($table)')
-        .get();
+    final rows = await db.customSelect('PRAGMA table_info($table)').get();
     return {for (final r in rows) r.data['name'] as String};
   }
 
@@ -84,22 +81,25 @@ void main() {
     expect(rows.single.data['visit_id'], isNull);
   });
 
-  test('receipt_id is nullable afterwards, so a bill discount can land', () async {
-    await rewindToV41();
-    await upgrade();
-    // The whole point of the rebuild: a bill-scope discount belongs to the
-    // visit and has no receipt (ADR-0070). Under the v41 NOT NULL this throws.
-    await db.customStatement(
-      "INSERT INTO discounts (id, receipt_id, visit_id, name, kind, value, "
-      "amount, at) VALUES ('d2', NULL, 'v1', 'Diskon Meja', 'percent', 2000, "
-      "20000, 0)",
-    );
-    final rows = await db
-        .customSelect("SELECT * FROM discounts WHERE id = 'd2'")
-        .get();
-    expect(rows.single.data['visit_id'], 'v1');
-    expect(rows.single.data['receipt_id'], isNull);
-  });
+  test(
+    'receipt_id is nullable afterwards, so a bill discount can land',
+    () async {
+      await rewindToV41();
+      await upgrade();
+      // The whole point of the rebuild: a bill-scope discount belongs to the
+      // visit and has no receipt (ADR-0070). Under the v41 NOT NULL this throws.
+      await db.customStatement(
+        "INSERT INTO discounts (id, receipt_id, visit_id, name, kind, value, "
+        "amount, at) VALUES ('d2', NULL, 'v1', 'Diskon Meja', 'percent', 2000, "
+        "20000, 0)",
+      );
+      final rows = await db
+          .customSelect("SELECT * FROM discounts WHERE id = 'd2'")
+          .get();
+      expect(rows.single.data['visit_id'], 'v1');
+      expect(rows.single.data['receipt_id'], isNull);
+    },
+  );
 
   test('at most one bill discount per visit', () async {
     await rewindToV41();

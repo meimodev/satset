@@ -5,17 +5,17 @@ part 'course.freezed.dart';
 /// Domain model for menu courses. Visual mapping lives in
 /// `lib/ui/core/design/course_visuals.dart` so this layer carries no
 /// Flutter imports.
+///
+/// A course has no `name` here: its display name is copy, and lives in the
+/// ARB under `courseDrinksNow`… — read it with `courseLabel(l10n, serialId)`
+/// from `core/localization/labels.dart`.
 enum CourseId { drinksNow, starters, mains, sides, desserts, fireNow }
 
 @freezed
 class Course with _$Course {
   const Course._();
 
-  const factory Course({
-    required CourseId id,
-    required String name,
-    required String short,
-  }) = _Course;
+  const factory Course({required CourseId id}) = _Course;
 
   String get serialId => switch (id) {
     CourseId.drinksNow => 'drinks-now',
@@ -29,32 +29,12 @@ class Course with _$Course {
 
 class Courses {
   Courses._();
-  static const drinksNow = Course(
-    id: CourseId.drinksNow,
-    name: 'Minum dulu',
-    short: 'Min',
-  );
-  static const starters = Course(
-    id: CourseId.starters,
-    name: 'Pembuka',
-    short: 'Pem',
-  );
-  static const mains = Course(id: CourseId.mains, name: 'Utama', short: 'Ut');
-  static const sides = Course(
-    id: CourseId.sides,
-    name: 'Bersama Utama',
-    short: 'B/Ut',
-  );
-  static const desserts = Course(
-    id: CourseId.desserts,
-    name: 'Penutup',
-    short: 'Pnp',
-  );
-  static const fireNow = Course(
-    id: CourseId.fireNow,
-    name: 'Langsung',
-    short: 'Lgs',
-  );
+  static const drinksNow = Course(id: CourseId.drinksNow);
+  static const starters = Course(id: CourseId.starters);
+  static const mains = Course(id: CourseId.mains);
+  static const sides = Course(id: CourseId.sides);
+  static const desserts = Course(id: CourseId.desserts);
+  static const fireNow = Course(id: CourseId.fireNow);
 
   static const all = [drinksNow, starters, mains, sides, desserts, fireNow];
   static const stationOrder = [drinksNow, starters, mains, sides, desserts];

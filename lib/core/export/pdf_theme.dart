@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import 'package:satset/l10n/app_localizations.dart';
+
 /// Shared PDF look for exports (ADR-0030) — the Heritage Hospitality palette
 /// rendered with base-14 fonts (Times for display, Helvetica for body) so the
 /// document is fully self-contained and renders offline, with no Google Fonts
@@ -61,11 +63,11 @@ pw.Widget pdfRunningHeader(String text) => pw.Container(
   child: pw.Text(text, style: pw.TextStyle(fontSize: 7.5, color: kPdfInkLo)),
 );
 
-pw.Widget pdfFooter(pw.Context ctx) => pw.Container(
+pw.Widget pdfFooter(AppL10n l, pw.Context ctx) => pw.Container(
   alignment: pw.Alignment.centerRight,
   margin: const pw.EdgeInsets.only(top: 8),
   child: pw.Text(
-    'SatSet · Halaman ${ctx.pageNumber}/${ctx.pagesCount}',
+    l.expPageOf(ctx.pageNumber, ctx.pagesCount),
     style: pw.TextStyle(fontSize: 7.5, color: kPdfInkLo),
   ),
 );
@@ -196,14 +198,15 @@ pw.Widget pdfSectionTitle(String text) => pw.Container(
 );
 
 /// Compact zebra table. Columns from [numericFrom] onward are right-aligned.
-pw.Widget pdfTable({
+pw.Widget pdfTable(
+  AppL10n l, {
   required List<String> headers,
   required List<List<String>> rows,
   int numericFrom = 9999,
 }) {
   if (rows.isEmpty) {
     return pw.Text(
-      'Tidak ada data.',
+      l.expNoData,
       style: pw.TextStyle(
         fontSize: 8.5,
         color: kPdfInkLo,

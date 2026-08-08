@@ -3,7 +3,6 @@ import 'package:satset/ui/core/widgets/sat_tabs.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,6 +21,7 @@ import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/ui/features/admin/menu_admin_view_model.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Two-tier menu admin screen.
 /// - Tablet: master-detail (item list left, editor right).
@@ -58,9 +58,12 @@ class _TabletLayout extends ConsumerWidget {
     return Column(
       children: [
         AdminEmbeddedStrip(
-          title: 'Menu',
-          sub:
-              '${counts.total} item · ${counts.categories} kategori · ${counts.soldOut} tidak tersedia',
+          title: context.l10n.mnaTitle,
+          sub: context.l10n.mnaHeaderSub(
+            counts.total,
+            counts.categories,
+            counts.soldOut,
+          ),
           // Add sits leftmost so the tabs and badge hold position when it
           // disappears on the Kategori / Tag tabs (ADR-0046 UI pass).
           trailing: Row(
@@ -69,7 +72,7 @@ class _TabletLayout extends ConsumerWidget {
               if (admin && !onCats && !onTags) ...[
                 SatButton.primary(
                   size: SatButtonSize.sm,
-                  label: '+ Tambah item',
+                  label: context.l10n.mnaAddItem,
                   onTap: () =>
                       ref.read(menuAdminSelectedItemIdProvider.notifier).state =
                           null,
@@ -228,17 +231,13 @@ class _EmptyDetail extends StatelessWidget {
           Icon(Icons.restaurant_menu, size: 48, color: sc.textLo),
           const SizedBox(height: Sp.s3),
           Text(
-            staff
-                ? 'Pilih item untuk lihat detail'
-                : 'Pilih item atau tambah baru',
+            staff ? context.l10n.mnaPickStaff : context.l10n.mnaPickAdmin,
             style: SatType.bodyM(color: sc.textMd),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: Sp.s1h),
           Text(
-            staff
-                ? 'Mode staf: hanya tandai habis. Edit penuh hanya admin.'
-                : 'Kelola harga, modifier, stok, dan ketersediaan.',
+            staff ? context.l10n.mnaPickStaffSub : context.l10n.mnaPickAdminSub,
             style: SatType.bodyS(color: sc.textLo),
             textAlign: TextAlign.center,
           ),
@@ -276,10 +275,13 @@ class _PhoneLayout extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Menu', style: SatType.h2(color: sc.textHi)),
+                      Text(
+                        context.l10n.mnaTitle,
+                        style: SatType.h2(color: sc.textHi),
+                      ),
                       const SizedBox(height: Sp.sHair),
                       Text(
-                        '${counts.total} item · ${counts.soldOut} tidak tersedia',
+                        context.l10n.mnaPhoneSub(counts.total, counts.soldOut),
                         style: SatType.monoS(color: sc.textLo),
                       ),
                     ],
@@ -354,7 +356,7 @@ class _ToolbarState extends ConsumerState<_Toolbar> {
           Expanded(
             child: SatField.search(
               controller: _ctrl,
-              hint: 'Cari item, deskripsi…',
+              hint: context.l10n.mnaSearchHint,
               onChanged: (t) =>
                   ref.read(menuAdminSearchProvider.notifier).state = t,
             ),
@@ -363,7 +365,7 @@ class _ToolbarState extends ConsumerState<_Toolbar> {
             const SizedBox(width: Sp.s2),
             SatButton.primary(
               size: SatButtonSize.sm,
-              label: '+ Item',
+              label: context.l10n.mnaAddItemShort,
               onTap: () => context.push('/menuadm/new'),
             ),
           ],
@@ -400,7 +402,7 @@ class _CategoryRail extends ConsumerWidget {
             context,
             ref,
             'all',
-            'Semua',
+            context.l10n.mnaAll,
             count('all'),
             selected == 'all',
           ),
@@ -484,7 +486,7 @@ class _ItemList extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(Sp.s7),
               child: Text(
-                'Tidak ada item cocok.',
+                context.l10n.mnaNoMatch,
                 style: SatType.bodyM(color: sc.textLo),
               ),
             ),
@@ -596,7 +598,7 @@ class _MenuItemRow extends ConsumerWidget {
                                 style: SatType.monoS(color: sc.textDim),
                               ),
                               Text(
-                                'Bahan habis',
+                                context.l10n.mnaIngredientsOut,
                                 style: SatType.monoS(color: sc.urgent),
                               ),
                             ] else if (item.soldOutVariantIds.isNotEmpty) ...[
@@ -605,7 +607,9 @@ class _MenuItemRow extends ConsumerWidget {
                                 style: SatType.monoS(color: sc.textDim),
                               ),
                               Text(
-                                '${item.soldOutVariantIds.length} varian habis',
+                                context.l10n.mnaVariantsOut(
+                                  item.soldOutVariantIds.length,
+                                ),
                                 style: SatType.monoS(color: sc.warn),
                               ),
                             ],
@@ -696,7 +700,9 @@ class _StatusToggle extends ConsumerWidget {
     final canToggle = !auto;
     final out = item.isSoldOut;
     final fg = out ? sc.urgent : sc.success;
-    final label = auto ? 'AUTO HABIS' : (item.unavailable ? 'HABIS' : 'AKTIF');
+    final label = auto
+        ? context.l10n.mnaAutoOut
+        : (item.unavailable ? context.l10n.mnaOut : context.l10n.mnaOn);
     return PressScale(
       pressedScale: canToggle ? 0.94 : 1.0,
       child: GestureDetector(
@@ -760,10 +766,10 @@ class _TabSwitcher extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tab = ref.watch(menuAdminTabProvider);
     return SatTabs(
-      tabs: const [
-        SatTab(label: 'Item'),
-        SatTab(label: 'Kategori'),
-        SatTab(label: 'Tag'),
+      tabs: [
+        SatTab(label: context.l10n.mnaTabItems),
+        SatTab(label: context.l10n.mnaTabCategories),
+        SatTab(label: context.l10n.mnaTabTags),
       ],
       selected: _order.indexOf(tab),
       onSelected: (i) =>
@@ -828,9 +834,12 @@ class _CategoriesPanel extends ConsumerWidget {
                             style: SatType.labelM(color: sc.textHi),
                           ),
                         ),
-                        Text('$n item', style: SatType.monoS(color: sc.textLo)),
+                        Text(
+                          context.l10n.mnaItemCount(n),
+                          style: SatType.monoS(color: sc.textLo),
+                        ),
                         IconButton(
-                          tooltip: AppStrings.a11yRename,
+                          tooltip: context.l10n.a11yRename,
                           icon: Icon(
                             Icons.edit_outlined,
                             size: 18,
@@ -839,7 +848,7 @@ class _CategoriesPanel extends ConsumerWidget {
                           onPressed: () => _rename(context, ref, c.id, c.name),
                         ),
                         IconButton(
-                          tooltip: AppStrings.delete,
+                          tooltip: context.l10n.delete,
                           icon: Icon(
                             Icons.delete_outline,
                             size: 18,
@@ -862,7 +871,7 @@ class _CategoriesPanel extends ConsumerWidget {
             alignment: Alignment.centerLeft,
             child: SatButton.primary(
               size: SatButtonSize.sm,
-              label: '+ Tambah kategori',
+              label: context.l10n.mnaAddCategory,
               onTap: () => _add(context, ref),
             ),
           ),
@@ -874,7 +883,7 @@ class _CategoriesPanel extends ConsumerWidget {
   Future<void> _add(BuildContext context, WidgetRef ref) async {
     final name = await _nameDialog(
       context,
-      title: 'Kategori baru',
+      title: context.l10n.mnaNewCategory,
       initial: '',
     );
     if (name == null || name.trim().isEmpty) return;
@@ -889,7 +898,7 @@ class _CategoriesPanel extends ConsumerWidget {
   ) async {
     final name = await _nameDialog(
       context,
-      title: 'Ubah nama kategori',
+      title: context.l10n.mnaRenameCategory,
       initial: current,
     );
     if (name == null || name.trim().isEmpty || name.trim() == current) return;
@@ -906,22 +915,17 @@ class _CategoriesPanel extends ConsumerWidget {
     int count,
   ) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     if (count > 0) {
       messenger.showSnackBar(
-        SnackBar(
-          content: Text('Pindahkan $count item dulu sebelum hapus "$name"'),
-        ),
+        SnackBar(content: Text(l10n.mnaMoveItemsFirst(count, name))),
       );
       return;
     }
     try {
       await ref.read(menuRepositoryProvider.notifier).deleteCategory(id);
     } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Gagal hapus kategori — masih dipakai item'),
-        ),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.mnaCategoryInUse)));
     }
   }
 
@@ -939,17 +943,17 @@ class _CategoriesPanel extends ConsumerWidget {
         title: Text(title, style: SatType.bodyL(color: sc.textHi)),
         content: SatField.text(
           controller: ctrl,
-          hint: 'Nama kategori',
+          hint: context.l10n.mnaCategoryNameHint,
           autofocus: true,
           onSubmitted: (t) => Navigator.pop(ctx, t),
         ),
         actions: [
           SatButton.ghost(
-            label: AppStrings.cancel,
+            label: context.l10n.cancel,
             onTap: () => Navigator.pop(ctx),
           ),
           SatButton.primary(
-            label: AppStrings.save,
+            label: context.l10n.save,
             onTap: () => Navigator.pop(ctx, ctrl.text),
           ),
         ],
@@ -969,9 +973,15 @@ class _TagsPanel extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        _group(context, ref, 'Alergen', MenuTagKind.allergen, allergens),
+        _group(
+          context,
+          ref,
+          context.l10n.mieAllergens,
+          MenuTagKind.allergen,
+          allergens,
+        ),
         const SizedBox(height: Sp.s5),
-        _group(context, ref, 'Diet', MenuTagKind.diet, diets),
+        _group(context, ref, context.l10n.mieDiet, MenuTagKind.diet, diets),
       ],
     );
   }
@@ -1027,7 +1037,7 @@ class _TagsPanel extends ConsumerWidget {
                       ),
                     ),
                     IconButton(
-                      tooltip: AppStrings.a11yEdit,
+                      tooltip: context.l10n.a11yEdit,
                       icon: Icon(
                         Icons.edit_outlined,
                         size: 18,
@@ -1036,7 +1046,7 @@ class _TagsPanel extends ConsumerWidget {
                       onPressed: () => _edit(context, ref, t),
                     ),
                     IconButton(
-                      tooltip: AppStrings.delete,
+                      tooltip: context.l10n.delete,
                       icon: Icon(
                         Icons.delete_outline,
                         size: 18,
@@ -1053,7 +1063,7 @@ class _TagsPanel extends ConsumerWidget {
           alignment: Alignment.centerLeft,
           child: SatButton.primary(
             size: SatButtonSize.sm,
-            label: '+ Tambah ${title.toLowerCase()}',
+            label: context.l10n.mnaAddThing(title.toLowerCase()),
             onTap: () => _edit(context, ref, null, kind: kind),
           ),
         ),
@@ -1079,25 +1089,26 @@ class _TagsPanel extends ConsumerWidget {
 
   Future<void> _delete(BuildContext context, WidgetRef ref, MenuTag tag) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     final ok = await showSatDialog<bool>(
       context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.sat.bg1,
         title: Text(
-          'Hapus "${tag.name}"?',
+          context.l10n.mnaDeleteTagTitle(tag.name),
           style: SatType.bodyL(color: context.sat.textHi),
         ),
         content: Text(
-          'Tag ini akan dilepas dari semua item yang memakainya.',
+          context.l10n.mnaDeleteTagBody,
           style: SatType.bodyM(color: context.sat.textMd),
         ),
         actions: [
           SatButton.ghost(
-            label: AppStrings.cancel,
+            label: context.l10n.cancel,
             onTap: () => Navigator.pop(ctx, false),
           ),
           SatButton.primary(
-            label: AppStrings.delete,
+            label: context.l10n.delete,
             onTap: () => Navigator.pop(ctx, true),
           ),
         ],
@@ -1105,7 +1116,9 @@ class _TagsPanel extends ConsumerWidget {
     );
     if (ok != true) return;
     await ref.read(menuRepositoryProvider.notifier).deleteTag(tag.id);
-    messenger.showSnackBar(SnackBar(content: Text('"${tag.name}" dihapus')));
+    messenger.showSnackBar(
+      SnackBar(content: Text(l10n.mnaTagDeleted(tag.name))),
+    );
   }
 
   /// Returns (name, code) or null if cancelled.
@@ -1118,7 +1131,7 @@ class _TagsPanel extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: sc.bg1,
         title: Text(
-          tag == null ? 'Tag baru' : 'Ubah tag',
+          tag == null ? context.l10n.mnaNewTag : context.l10n.mnaEditTag,
           style: SatType.bodyL(color: sc.textHi),
         ),
         content: SingleChildScrollView(
@@ -1127,14 +1140,14 @@ class _TagsPanel extends ConsumerWidget {
             children: [
               SatField.text(
                 controller: nameCtrl,
-                label: 'Nama',
+                label: context.l10n.mnaTagName,
                 hint: '',
                 autofocus: true,
               ),
               const SizedBox(height: Sp.s2),
               SatField.text(
                 controller: codeCtrl,
-                label: 'Kode badge',
+                label: context.l10n.mnaTagCode,
                 hint: 'GL',
                 maxLength: 3,
                 capitalization: TextCapitalization.characters,
@@ -1144,11 +1157,11 @@ class _TagsPanel extends ConsumerWidget {
         ),
         actions: [
           SatButton.ghost(
-            label: AppStrings.cancel,
+            label: context.l10n.cancel,
             onTap: () => Navigator.pop(ctx),
           ),
           SatButton.primary(
-            label: AppStrings.save,
+            label: context.l10n.save,
             onTap: () {
               final n = nameCtrl.text.trim();
               if (n.isEmpty) return;
@@ -1171,7 +1184,7 @@ class _MenuRoleChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isAdmin = perm == MenuPermission.admin;
     return SatChip.tag(
-      label: isAdmin ? 'ADMIN' : 'STAF · TANDAI HABIS',
+      label: isAdmin ? context.l10n.mnaRoleAdmin : context.l10n.mnaRoleStaff,
       hue: isAdmin ? SatChipHue.accent : SatChipHue.neutral,
       size: SatChipSize.sm,
     );

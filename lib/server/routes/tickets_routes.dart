@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:drift/drift.dart';
-import 'package:intl/intl.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:uuid/uuid.dart';
@@ -19,14 +18,7 @@ import 'package:satset/domain/models/ticket.dart'
     show TicketStatus, ticketStatusFromKey;
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
-
-/// Rupiah formatter for audit titles. Mirrors the client's `formatIDR`
-/// (`lib/ui/core/design/format.dart`) so void amounts read "Rp. 50.000".
-final _auditRupiah = NumberFormat.currency(
-  locale: 'id_ID',
-  symbol: 'Rp. ',
-  decimalDigits: 0,
-);
+import 'package:satset/domain/models/audit_kind.dart';
 
 const _allowedTransitions = <TicketStatus, Set<TicketStatus>>{
   TicketStatus.draft: {TicketStatus.sent, TicketStatus.voided},
@@ -180,14 +172,13 @@ Future<void> _emitVoidAudit(
       : (_voidReasonLabels[reasonCode] ?? reasonCode);
   final isComp = reasonCode == 'comp';
   final value = ticket.price * ticket.qty;
-  final amount = _auditRupiah.format(value);
+  final amount = auditRupiah(value);
   await writeAudit(
     db,
     hub: hub,
     type: isComp ? AuditType.comp : AuditType.voidItem,
-    title: isComp
-        ? 'Digratiskan ×${ticket.qty} ${ticket.name} · $amount'
-        : 'Dibatalkan ×${ticket.qty} ${ticket.name} · $amount',
+    kind: isComp ? AuditKind.comp : AuditKind.voidItem,
+    params: {'qty': '${ticket.qty}', 'name': ticket.name, 'amount': amount},
     tableId: ticket.tableId,
     reason: reason,
     actorUserId: actorUserId,
@@ -247,6 +238,7 @@ Future<SubmitOrderResult> submitOrder(
   required List<Map<String, dynamic>> lines,
   bool takeaway = false,
   String? guestName,
+
   /// How a takeaway reached the venue, and whether an aggregator already
   /// settled it. Ignored for dine-in. ADR-0066.
   String takeawayChannel = 'bungkus',
@@ -673,14 +665,19 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       db,
       hub: hub,
       type: AuditType.modify,
-      title: current.qty == newQty
-          ? 'Ubah ${current.name}'
-          : 'Ubah ×${current.qty} → ×$newQty ${current.name}',
+      kind: current.qty == newQty ? AuditKind.modify : AuditKind.modifyQty,
+      params: {
+        'name': current.name,
+        if (current.qty != newQty) ...{
+          'oldQty': '${current.qty}',
+          'newQty': '$newQty',
+        },
+      },
       tableId: current.tableId,
       actorUserId: actor?.id,
       reason: before == after
           ? null
-          : '${_auditRupiah.format(before)} → ${_auditRupiah.format(after)}',
+          : '${auditRupiah(before)} → ${auditRupiah(after)}',
       // The magnitude of the change, not the new total — the tile answers
       // "how much did edits move", which a full line value would drown.
       amountCents: (after - before).abs(),

@@ -6,7 +6,9 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -20,33 +22,50 @@ import 'package:satset/ui/features/cashier/widgets/cash_pad.dart';
 /// bill (ADR-0067) — a table where two friends go halves and a third pays for
 /// his own steak switches between these without anything being reset.
 enum SettleMode {
-  penuh('Penuh', Icons.receipt_long_rounded, 'Satu pembayaran untuk sisa'),
-  perItem('Per item', Icons.checklist_rounded, 'Tamu bayar item yang dia pesan'),
-  bagiRata('Bagi rata', Icons.groups_rounded, 'Sisa dibagi rata beberapa orang');
+  penuh(Icons.receipt_long_rounded),
+  perItem(Icons.checklist_rounded),
+  bagiRata(Icons.groups_rounded);
 
-  final String label;
   final IconData icon;
-  final String hint;
-  const SettleMode(this.label, this.icon, this.hint);
+  const SettleMode(this.icon);
+
+  String label(AppL10n l10n) => switch (this) {
+    SettleMode.penuh => l10n.stlModePenuh,
+    SettleMode.perItem => l10n.stlModePerItem,
+    SettleMode.bagiRata => l10n.stlModeBagiRata,
+  };
 }
 
-/// Payment methods, and what the cashier has to produce for each. The hint is
-/// the source's, and it earns its line: it says *why* the proof block below is
-/// blocking the confirm.
+/// Payment methods, and what the cashier has to produce for each.
 enum PayMethod {
-  tunai('tunai', 'Tunai', SatChipHue.success, 'Hitung uang tamu di papan pecahan'),
-  qris('qris', 'QRIS', SatChipHue.accent, 'Screenshot konfirmasi QRIS wajib dilampirkan'),
-  kartu('kartu', 'Kartu', SatChipHue.info, 'Foto slip EDC — approval code terlihat'),
-  transfer('transfer', 'Transfer', SatChipHue.violet, 'Foto bukti transfer + nama pengirim'),
-  lainnya('lainnya', 'Lainnya', SatChipHue.neutral, 'Foto bukti pembayaran');
+  tunai('tunai'),
+  qris('qris'),
+  kartu('kartu'),
+  transfer('transfer'),
+  lainnya('lainnya');
 
   final String id;
-  final String label;
-  final SatChipHue hue;
-  final String proofHint;
-  const PayMethod(this.id, this.label, this.hue, this.proofHint);
+  const PayMethod(this.id);
 
   bool get needsProof => this != PayMethod.tunai;
+
+  String label(AppL10n l10n) => switch (this) {
+    PayMethod.tunai => l10n.stlPayTunai,
+    PayMethod.qris => l10n.stlPayQris,
+    PayMethod.kartu => l10n.stlPayKartu,
+    PayMethod.transfer => l10n.stlPayTransfer,
+    PayMethod.lainnya => l10n.stlPayLainnya,
+  };
+
+  /// What the cashier has to produce for this method. It earns its line: it
+  /// says *why* the proof block below is blocking the confirm.
+  String proofHint(AppL10n l10n) => switch (this) {
+    PayMethod.tunai => l10n.stlProofTunai,
+    PayMethod.qris => l10n.stlProofQris,
+    PayMethod.kartu => l10n.stlProofKartu,
+    PayMethod.transfer => l10n.stlProofTransfer,
+    PayMethod.lainnya => l10n.stlProofLainnya,
+  };
 }
 
 /// The right-hand pane of the bill (ADR-0066): pick how much, pick how it was
@@ -184,22 +203,24 @@ class _SettlePaneState extends State<SettlePane> {
   }
 
   String? get _blocker {
-    if (_bill.lines.isEmpty) return 'Tagihan belum punya item';
-    if (_bill.outstanding == 0) return 'Tidak ada sisa untuk ditagih';
+    final l10n = context.l10n;
+    if (_bill.lines.isEmpty) return l10n.stlBlkNoLines;
+    if (_bill.outstanding == 0) return l10n.stlBlkNothingLeft;
     if (widget.mode == SettleMode.perItem && widget.selection.isEmpty) {
-      return 'Pilih item dari daftar';
+      return l10n.stlBlkPickItems;
     }
-    if (_amount <= 0) return 'Tidak ada yang bisa ditagih';
+    if (_amount <= 0) return l10n.stlBlkNothingToCharge;
     if (_pay == PayMethod.tunai && _tender < _amount) {
-      return 'Ketuk pecahan uang yang diterima';
+      return l10n.stlBlkTapCash;
     }
     if (_pay.needsProof && _proof == null) {
-      return 'Lampirkan foto bukti bayar dulu';
+      return l10n.stlBlkAttachProof;
     }
     return null;
   }
 
   Future<void> _shootProof() async {
+    final l10n = context.l10n;
     try {
       final x = await ImagePicker().pickImage(
         source: ImageSource.camera,
@@ -214,7 +235,7 @@ class _SettlePaneState extends State<SettlePane> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Gagal mengambil foto: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.stlPhotoFailed('$e'))));
       }
     }
   }
@@ -313,12 +334,12 @@ class _SettlePaneState extends State<SettlePane> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Penyelesaian', style: SatType.labelS(color: sc.textLo)),
+        Text(context.l10n.stlTitle, style: SatType.labelS(color: sc.textLo)),
         const SizedBox(height: Sp.s1),
         Text(formatIDR(_bill.outstanding), style: SatType.h2(color: sc.textHi)),
         const SizedBox(height: Sp.sHair),
         Text(
-          'sisa yang harus ditagih',
+          context.l10n.stlOutstandingHint,
           style: SatType.bodyS(color: sc.textLo),
         ),
       ],
@@ -334,7 +355,7 @@ class _SettlePaneState extends State<SettlePane> {
     children: [
       for (final m in SettleMode.values)
         SatChip.select(
-          label: m.label,
+          label: m.label(context.l10n),
           icon: m.icon,
           selected: widget.mode == m,
           onTap: () => widget.onMode(m),
@@ -343,6 +364,7 @@ class _SettlePaneState extends State<SettlePane> {
   );
 
   Widget _modeBlock(SatColors sc) {
+    final l10n = context.l10n;
     Widget row(String l, String v, {bool strong = false}) => Padding(
       padding: const EdgeInsets.only(bottom: Sp.s1),
       child: Row(
@@ -367,46 +389,49 @@ class _SettlePaneState extends State<SettlePane> {
 
     final children = switch (widget.mode) {
       SettleMode.penuh => [
-        row('Total tagihan', formatIDR(_bill.total)),
+        row(l10n.stlRowTotal, formatIDR(_bill.total)),
         if (_bill.paidAmount > 0)
-          row('Sudah diterima', '− ${formatIDR(_bill.paidAmount)}'),
-        row('Diterima sekarang', formatIDR(_amount), strong: true),
+          row(l10n.stlRowAlreadyPaid, '− ${formatIDR(_bill.paidAmount)}'),
+        row(l10n.stlRowReceivingNow, formatIDR(_amount), strong: true),
       ],
-      SettleMode.perItem => widget.selection.isEmpty
-          ? [
-              Text(
-                'Ketuk item yang dibayar tamu ini. Item yang sudah lunas '
-                'terkunci.',
-                style: SatType.bodyS(color: sc.textLo),
-              ),
-            ]
-          : [
-              row('${widget.selection.length} item', formatIDR(_selectionSubtotal)),
-              row(
-                'Layanan + pajak',
-                formatIDR(_amount - _selectionSubtotal),
-              ),
-              row('Dibayar sekarang', formatIDR(_amount), strong: true),
-              row(
-                'Sisa setelah ini',
-                formatIDR(
-                  (_bill.outstanding - _amount).clamp(0, _bill.outstanding),
+      SettleMode.perItem =>
+        widget.selection.isEmpty
+            ? [
+                Text(
+                  l10n.stlPerItemEmpty,
+                  style: SatType.bodyS(color: sc.textLo),
                 ),
-              ),
-            ],
+              ]
+            : [
+                row(
+                  l10n.stlRowNItems(widget.selection.length),
+                  formatIDR(_selectionSubtotal),
+                ),
+                row(
+                  l10n.stlRowServiceTax,
+                  formatIDR(_amount - _selectionSubtotal),
+                ),
+                row(l10n.stlRowPayingNow, formatIDR(_amount), strong: true),
+                row(
+                  l10n.stlRowRemainderAfter,
+                  formatIDR(
+                    (_bill.outstanding - _amount).clamp(0, _bill.outstanding),
+                  ),
+                ),
+              ],
       SettleMode.bagiRata => [
         if (_openShares.isEmpty) ...[
           _splitStepper(sc),
           const SizedBox(height: Sp.s2h),
-          row('Per orang (bulat 100)', formatIDR(_perHead)),
+          row(l10n.stlRowPerHead, formatIDR(_perHead)),
         ] else
           row(
-            '${_openShares.length} bagian belum bayar',
+            l10n.stlRowOpenShares(_openShares.length),
             _openShares.first.label,
           ),
-        row('Tagih sekarang', formatIDR(_amount), strong: true),
+        row(l10n.stlRowChargeNow, formatIDR(_amount), strong: true),
         row(
-          'Sisa setelah ini',
+          l10n.stlRowRemainderAfter,
           formatIDR((_bill.outstanding - _amount).clamp(0, _bill.outstanding)),
         ),
       ],
@@ -415,14 +440,20 @@ class _SettlePaneState extends State<SettlePane> {
     return Container(
       padding: const EdgeInsets.all(Sp.s3),
       decoration: SatBox.d(color: sc.bg2, borderRadius: SatR.a(12)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      ),
     );
   }
 
   Widget _splitStepper(SatColors sc) => Row(
     children: [
       Expanded(
-        child: Text('Bagi untuk', style: SatType.bodyS(color: sc.textLo)),
+        child: Text(
+          context.l10n.stlSplitFor,
+          style: SatType.bodyS(color: sc.textLo),
+        ),
       ),
       SatButton.outline(
         label: '−',
@@ -450,7 +481,7 @@ class _SettlePaneState extends State<SettlePane> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Metode', style: SatType.labelS(color: sc.textLo)),
+        Text(context.l10n.stlMethod, style: SatType.labelS(color: sc.textLo)),
         const SizedBox(height: Sp.s2),
         Wrap(
           spacing: Sp.s2,
@@ -458,7 +489,7 @@ class _SettlePaneState extends State<SettlePane> {
           children: [
             for (final m in locked == null ? PayMethod.values : [locked])
               SatChip.select(
-                label: m.label,
+                label: m.label(context.l10n),
                 selected: _pay == m,
                 onTap: locked != null
                     ? null
@@ -473,7 +504,7 @@ class _SettlePaneState extends State<SettlePane> {
         if (locked != null) ...[
           const SizedBox(height: Sp.s2),
           Text(
-            'Terkunci — pembayaran sebelumnya ${locked.label}',
+            context.l10n.stlLockedTo(locked.label(context.l10n)),
             style: SatType.bodyS(color: sc.textLo),
           ),
         ],
@@ -487,7 +518,10 @@ class _SettlePaneState extends State<SettlePane> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(_method.proofHint, style: SatType.bodyS(color: sc.textLo)),
+        Text(
+          _method.proofHint(context.l10n),
+          style: SatType.bodyS(color: sc.textLo),
+        ),
         const SizedBox(height: Sp.s2h),
         if (_proof != null) ...[
           Row(
@@ -504,7 +538,7 @@ class _SettlePaneState extends State<SettlePane> {
               const SizedBox(width: Sp.s3),
               Expanded(
                 child: Text(
-                  'Bukti terlampir',
+                  context.l10n.stlProofAttached,
                   style: SatType.labelM(color: sc.textHi),
                 ),
               ),
@@ -512,13 +546,13 @@ class _SettlePaneState extends State<SettlePane> {
           ),
           const SizedBox(height: Sp.s2h),
           SatButton.outline(
-            label: 'Ambil ulang',
+            label: context.l10n.stlRetakePhoto,
             icon: Icons.photo_camera_rounded,
             onTap: _shootProof,
           ),
         ] else
           SatButton.outline(
-            label: 'Ambil foto bukti bayar',
+            label: context.l10n.stlTakePhoto,
             icon: Icons.photo_camera_rounded,
             onTap: _shootProof,
           ),
@@ -542,10 +576,16 @@ class _SettlePaneState extends State<SettlePane> {
         children: [
           SatButton.primary(
             label: switch (widget.mode) {
-              SettleMode.perItem =>
-                'Terima ${widget.selection.length} item · ${formatIDR(_amount)}',
-              SettleMode.bagiRata => 'Terima bagian · ${formatIDR(_amount)}',
-              SettleMode.penuh => 'Terima ${formatIDR(_amount)}',
+              SettleMode.perItem => context.l10n.stlConfirmItems(
+                widget.selection.length,
+                formatIDR(_amount),
+              ),
+              SettleMode.bagiRata => context.l10n.stlConfirmShare(
+                formatIDR(_amount),
+              ),
+              SettleMode.penuh => context.l10n.stlConfirmFull(
+                formatIDR(_amount),
+              ),
             },
             icon: Icons.check_rounded,
             busy: _busy,
@@ -553,10 +593,8 @@ class _SettlePaneState extends State<SettlePane> {
           ),
           const SizedBox(height: Sp.s1h),
           Text(
-            blocker ?? 'Struk tercetak otomatis setelah dikonfirmasi',
-            style: SatType.labelS(
-              color: blocker == null ? sc.textLo : sc.warn,
-            ),
+            blocker ?? context.l10n.stlAutoPrintHint,
+            style: SatType.labelS(color: blocker == null ? sc.textLo : sc.warn),
             textAlign: TextAlign.center,
           ),
         ],

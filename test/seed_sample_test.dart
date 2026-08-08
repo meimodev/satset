@@ -186,9 +186,7 @@ void main() {
       // Admin half — the rows ADR-0072 gates behind manageStaff. A gate with
       // nothing behind it cannot be seen to work.
       expect(
-        types.any(
-          (t) => isAdminAuditType(AuditType.values.byName(t)),
-        ),
+        types.any((t) => isAdminAuditType(AuditType.values.byName(t))),
         isTrue,
         reason: 'the manageStaff-gated half of the log must be non-empty',
       );

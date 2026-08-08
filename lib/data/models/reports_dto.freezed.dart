@@ -868,7 +868,19 @@ KpiTileDto _$KpiTileDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$KpiTileDto {
+  /// Stable id for the tile, rendered by `kpiLabel`/`kpiSub` at read time
+  /// (ADR-0085). [label] and [sub] survive only as the fallback for a code
+  /// this build does not know.
+  String get key => throw _privateConstructorUsedError;
+
+  /// The caption's counts, in the order its message declares them.
+  List<int> get args => throw _privateConstructorUsedError;
   String get label => throw _privateConstructorUsedError;
+
+  /// Money tiles ship the amount, not its rendering — `jt` and `rb` are
+  /// Indonesian words and the reader picks its own (`kpiValue`). Tiles that
+  /// are not money (a duration, a ratio) keep using [value].
+  int? get rupiah => throw _privateConstructorUsedError;
   String get value => throw _privateConstructorUsedError;
   String get sub => throw _privateConstructorUsedError;
 
@@ -889,7 +901,14 @@ abstract class $KpiTileDtoCopyWith<$Res> {
     $Res Function(KpiTileDto) then,
   ) = _$KpiTileDtoCopyWithImpl<$Res, KpiTileDto>;
   @useResult
-  $Res call({String label, String value, String sub});
+  $Res call({
+    String key,
+    List<int> args,
+    String label,
+    int? rupiah,
+    String value,
+    String sub,
+  });
 }
 
 /// @nodoc
@@ -906,13 +925,32 @@ class _$KpiTileDtoCopyWithImpl<$Res, $Val extends KpiTileDto>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? label = null, Object? value = null, Object? sub = null}) {
+  $Res call({
+    Object? key = null,
+    Object? args = null,
+    Object? label = null,
+    Object? rupiah = freezed,
+    Object? value = null,
+    Object? sub = null,
+  }) {
     return _then(
       _value.copyWith(
+            key: null == key
+                ? _value.key
+                : key // ignore: cast_nullable_to_non_nullable
+                      as String,
+            args: null == args
+                ? _value.args
+                : args // ignore: cast_nullable_to_non_nullable
+                      as List<int>,
             label: null == label
                 ? _value.label
                 : label // ignore: cast_nullable_to_non_nullable
                       as String,
+            rupiah: freezed == rupiah
+                ? _value.rupiah
+                : rupiah // ignore: cast_nullable_to_non_nullable
+                      as int?,
             value: null == value
                 ? _value.value
                 : value // ignore: cast_nullable_to_non_nullable
@@ -936,7 +974,14 @@ abstract class _$$KpiTileDtoImplCopyWith<$Res>
   ) = __$$KpiTileDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String label, String value, String sub});
+  $Res call({
+    String key,
+    List<int> args,
+    String label,
+    int? rupiah,
+    String value,
+    String sub,
+  });
 }
 
 /// @nodoc
@@ -952,13 +997,32 @@ class __$$KpiTileDtoImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? label = null, Object? value = null, Object? sub = null}) {
+  $Res call({
+    Object? key = null,
+    Object? args = null,
+    Object? label = null,
+    Object? rupiah = freezed,
+    Object? value = null,
+    Object? sub = null,
+  }) {
     return _then(
       _$KpiTileDtoImpl(
+        key: null == key
+            ? _value.key
+            : key // ignore: cast_nullable_to_non_nullable
+                  as String,
+        args: null == args
+            ? _value._args
+            : args // ignore: cast_nullable_to_non_nullable
+                  as List<int>,
         label: null == label
             ? _value.label
             : label // ignore: cast_nullable_to_non_nullable
                   as String,
+        rupiah: freezed == rupiah
+            ? _value.rupiah
+            : rupiah // ignore: cast_nullable_to_non_nullable
+                  as int?,
         value: null == value
             ? _value.value
             : value // ignore: cast_nullable_to_non_nullable
@@ -976,24 +1040,55 @@ class __$$KpiTileDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$KpiTileDtoImpl implements _KpiTileDto {
   const _$KpiTileDtoImpl({
-    required this.label,
-    required this.value,
-    required this.sub,
-  });
+    this.key = '',
+    final List<int> args = const <int>[],
+    this.label = '',
+    this.rupiah,
+    this.value = '',
+    this.sub = '',
+  }) : _args = args;
 
   factory _$KpiTileDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$KpiTileDtoImplFromJson(json);
 
+  /// Stable id for the tile, rendered by `kpiLabel`/`kpiSub` at read time
+  /// (ADR-0085). [label] and [sub] survive only as the fallback for a code
+  /// this build does not know.
   @override
+  @JsonKey()
+  final String key;
+
+  /// The caption's counts, in the order its message declares them.
+  final List<int> _args;
+
+  /// The caption's counts, in the order its message declares them.
+  @override
+  @JsonKey()
+  List<int> get args {
+    if (_args is EqualUnmodifiableListView) return _args;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_args);
+  }
+
+  @override
+  @JsonKey()
   final String label;
+
+  /// Money tiles ship the amount, not its rendering — `jt` and `rb` are
+  /// Indonesian words and the reader picks its own (`kpiValue`). Tiles that
+  /// are not money (a duration, a ratio) keep using [value].
   @override
+  final int? rupiah;
+  @override
+  @JsonKey()
   final String value;
   @override
+  @JsonKey()
   final String sub;
 
   @override
   String toString() {
-    return 'KpiTileDto(label: $label, value: $value, sub: $sub)';
+    return 'KpiTileDto(key: $key, args: $args, label: $label, rupiah: $rupiah, value: $value, sub: $sub)';
   }
 
   @override
@@ -1001,14 +1096,25 @@ class _$KpiTileDtoImpl implements _KpiTileDto {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$KpiTileDtoImpl &&
+            (identical(other.key, key) || other.key == key) &&
+            const DeepCollectionEquality().equals(other._args, _args) &&
             (identical(other.label, label) || other.label == label) &&
+            (identical(other.rupiah, rupiah) || other.rupiah == rupiah) &&
             (identical(other.value, value) || other.value == value) &&
             (identical(other.sub, sub) || other.sub == sub));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, label, value, sub);
+  int get hashCode => Object.hash(
+    runtimeType,
+    key,
+    const DeepCollectionEquality().hash(_args),
+    label,
+    rupiah,
+    value,
+    sub,
+  );
 
   /// Create a copy of KpiTileDto
   /// with the given fields replaced by the non-null parameter values.
@@ -1026,16 +1132,34 @@ class _$KpiTileDtoImpl implements _KpiTileDto {
 
 abstract class _KpiTileDto implements KpiTileDto {
   const factory _KpiTileDto({
-    required final String label,
-    required final String value,
-    required final String sub,
+    final String key,
+    final List<int> args,
+    final String label,
+    final int? rupiah,
+    final String value,
+    final String sub,
   }) = _$KpiTileDtoImpl;
 
   factory _KpiTileDto.fromJson(Map<String, dynamic> json) =
       _$KpiTileDtoImpl.fromJson;
 
+  /// Stable id for the tile, rendered by `kpiLabel`/`kpiSub` at read time
+  /// (ADR-0085). [label] and [sub] survive only as the fallback for a code
+  /// this build does not know.
+  @override
+  String get key;
+
+  /// The caption's counts, in the order its message declares them.
+  @override
+  List<int> get args;
   @override
   String get label;
+
+  /// Money tiles ship the amount, not its rendering — `jt` and `rb` are
+  /// Indonesian words and the reader picks its own (`kpiValue`). Tiles that
+  /// are not money (a duration, a ratio) keep using [value].
+  @override
+  int? get rupiah;
   @override
   String get value;
   @override
@@ -1556,7 +1680,8 @@ CoverDayDto _$CoverDayDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$CoverDayDto {
-  String get day => throw _privateConstructorUsedError;
+  /// ISO weekday, 1 = Monday. Spelled by [formatWeekdayShort] at read time.
+  int get dow => throw _privateConstructorUsedError;
   int get thisWeek => throw _privateConstructorUsedError;
   int get lastWeek => throw _privateConstructorUsedError;
 
@@ -1577,7 +1702,7 @@ abstract class $CoverDayDtoCopyWith<$Res> {
     $Res Function(CoverDayDto) then,
   ) = _$CoverDayDtoCopyWithImpl<$Res, CoverDayDto>;
   @useResult
-  $Res call({String day, int thisWeek, int lastWeek});
+  $Res call({int dow, int thisWeek, int lastWeek});
 }
 
 /// @nodoc
@@ -1595,16 +1720,16 @@ class _$CoverDayDtoCopyWithImpl<$Res, $Val extends CoverDayDto>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? day = null,
+    Object? dow = null,
     Object? thisWeek = null,
     Object? lastWeek = null,
   }) {
     return _then(
       _value.copyWith(
-            day: null == day
-                ? _value.day
-                : day // ignore: cast_nullable_to_non_nullable
-                      as String,
+            dow: null == dow
+                ? _value.dow
+                : dow // ignore: cast_nullable_to_non_nullable
+                      as int,
             thisWeek: null == thisWeek
                 ? _value.thisWeek
                 : thisWeek // ignore: cast_nullable_to_non_nullable
@@ -1628,7 +1753,7 @@ abstract class _$$CoverDayDtoImplCopyWith<$Res>
   ) = __$$CoverDayDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String day, int thisWeek, int lastWeek});
+  $Res call({int dow, int thisWeek, int lastWeek});
 }
 
 /// @nodoc
@@ -1645,16 +1770,16 @@ class __$$CoverDayDtoImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? day = null,
+    Object? dow = null,
     Object? thisWeek = null,
     Object? lastWeek = null,
   }) {
     return _then(
       _$CoverDayDtoImpl(
-        day: null == day
-            ? _value.day
-            : day // ignore: cast_nullable_to_non_nullable
-                  as String,
+        dow: null == dow
+            ? _value.dow
+            : dow // ignore: cast_nullable_to_non_nullable
+                  as int,
         thisWeek: null == thisWeek
             ? _value.thisWeek
             : thisWeek // ignore: cast_nullable_to_non_nullable
@@ -1672,7 +1797,7 @@ class __$$CoverDayDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$CoverDayDtoImpl implements _CoverDayDto {
   const _$CoverDayDtoImpl({
-    required this.day,
+    this.dow = 1,
     required this.thisWeek,
     required this.lastWeek,
   });
@@ -1680,8 +1805,10 @@ class _$CoverDayDtoImpl implements _CoverDayDto {
   factory _$CoverDayDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$CoverDayDtoImplFromJson(json);
 
+  /// ISO weekday, 1 = Monday. Spelled by [formatWeekdayShort] at read time.
   @override
-  final String day;
+  @JsonKey()
+  final int dow;
   @override
   final int thisWeek;
   @override
@@ -1689,7 +1816,7 @@ class _$CoverDayDtoImpl implements _CoverDayDto {
 
   @override
   String toString() {
-    return 'CoverDayDto(day: $day, thisWeek: $thisWeek, lastWeek: $lastWeek)';
+    return 'CoverDayDto(dow: $dow, thisWeek: $thisWeek, lastWeek: $lastWeek)';
   }
 
   @override
@@ -1697,7 +1824,7 @@ class _$CoverDayDtoImpl implements _CoverDayDto {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$CoverDayDtoImpl &&
-            (identical(other.day, day) || other.day == day) &&
+            (identical(other.dow, dow) || other.dow == dow) &&
             (identical(other.thisWeek, thisWeek) ||
                 other.thisWeek == thisWeek) &&
             (identical(other.lastWeek, lastWeek) ||
@@ -1706,7 +1833,7 @@ class _$CoverDayDtoImpl implements _CoverDayDto {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, day, thisWeek, lastWeek);
+  int get hashCode => Object.hash(runtimeType, dow, thisWeek, lastWeek);
 
   /// Create a copy of CoverDayDto
   /// with the given fields replaced by the non-null parameter values.
@@ -1724,7 +1851,7 @@ class _$CoverDayDtoImpl implements _CoverDayDto {
 
 abstract class _CoverDayDto implements CoverDayDto {
   const factory _CoverDayDto({
-    required final String day,
+    final int dow,
     required final int thisWeek,
     required final int lastWeek,
   }) = _$CoverDayDtoImpl;
@@ -1732,8 +1859,9 @@ abstract class _CoverDayDto implements CoverDayDto {
   factory _CoverDayDto.fromJson(Map<String, dynamic> json) =
       _$CoverDayDtoImpl.fromJson;
 
+  /// ISO weekday, 1 = Monday. Spelled by [formatWeekdayShort] at read time.
   @override
-  String get day;
+  int get dow;
   @override
   int get thisWeek;
   @override
@@ -4971,8 +5099,10 @@ StationRowDto _$StationRowDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$StationRowDto {
+  // The station code only — its words come from `stationLabel` at read time
+  // (ADR-0085). The server stopped sending a `label` and this stayed
+  // required, which failed the whole snapshot's parse.
   String get station => throw _privateConstructorUsedError;
-  String get label => throw _privateConstructorUsedError;
   int get qty => throw _privateConstructorUsedError;
   double get utilization => throw _privateConstructorUsedError;
 
@@ -4993,7 +5123,7 @@ abstract class $StationRowDtoCopyWith<$Res> {
     $Res Function(StationRowDto) then,
   ) = _$StationRowDtoCopyWithImpl<$Res, StationRowDto>;
   @useResult
-  $Res call({String station, String label, int qty, double utilization});
+  $Res call({String station, int qty, double utilization});
 }
 
 /// @nodoc
@@ -5012,7 +5142,6 @@ class _$StationRowDtoCopyWithImpl<$Res, $Val extends StationRowDto>
   @override
   $Res call({
     Object? station = null,
-    Object? label = null,
     Object? qty = null,
     Object? utilization = null,
   }) {
@@ -5021,10 +5150,6 @@ class _$StationRowDtoCopyWithImpl<$Res, $Val extends StationRowDto>
             station: null == station
                 ? _value.station
                 : station // ignore: cast_nullable_to_non_nullable
-                      as String,
-            label: null == label
-                ? _value.label
-                : label // ignore: cast_nullable_to_non_nullable
                       as String,
             qty: null == qty
                 ? _value.qty
@@ -5049,7 +5174,7 @@ abstract class _$$StationRowDtoImplCopyWith<$Res>
   ) = __$$StationRowDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String station, String label, int qty, double utilization});
+  $Res call({String station, int qty, double utilization});
 }
 
 /// @nodoc
@@ -5067,7 +5192,6 @@ class __$$StationRowDtoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? station = null,
-    Object? label = null,
     Object? qty = null,
     Object? utilization = null,
   }) {
@@ -5076,10 +5200,6 @@ class __$$StationRowDtoImplCopyWithImpl<$Res>
         station: null == station
             ? _value.station
             : station // ignore: cast_nullable_to_non_nullable
-                  as String,
-        label: null == label
-            ? _value.label
-            : label // ignore: cast_nullable_to_non_nullable
                   as String,
         qty: null == qty
             ? _value.qty
@@ -5099,7 +5219,6 @@ class __$$StationRowDtoImplCopyWithImpl<$Res>
 class _$StationRowDtoImpl implements _StationRowDto {
   const _$StationRowDtoImpl({
     required this.station,
-    required this.label,
     this.qty = 0,
     this.utilization = 0.0,
   });
@@ -5107,10 +5226,11 @@ class _$StationRowDtoImpl implements _StationRowDto {
   factory _$StationRowDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$StationRowDtoImplFromJson(json);
 
+  // The station code only — its words come from `stationLabel` at read time
+  // (ADR-0085). The server stopped sending a `label` and this stayed
+  // required, which failed the whole snapshot's parse.
   @override
   final String station;
-  @override
-  final String label;
   @override
   @JsonKey()
   final int qty;
@@ -5120,7 +5240,7 @@ class _$StationRowDtoImpl implements _StationRowDto {
 
   @override
   String toString() {
-    return 'StationRowDto(station: $station, label: $label, qty: $qty, utilization: $utilization)';
+    return 'StationRowDto(station: $station, qty: $qty, utilization: $utilization)';
   }
 
   @override
@@ -5129,7 +5249,6 @@ class _$StationRowDtoImpl implements _StationRowDto {
         (other.runtimeType == runtimeType &&
             other is _$StationRowDtoImpl &&
             (identical(other.station, station) || other.station == station) &&
-            (identical(other.label, label) || other.label == label) &&
             (identical(other.qty, qty) || other.qty == qty) &&
             (identical(other.utilization, utilization) ||
                 other.utilization == utilization));
@@ -5137,8 +5256,7 @@ class _$StationRowDtoImpl implements _StationRowDto {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, station, label, qty, utilization);
+  int get hashCode => Object.hash(runtimeType, station, qty, utilization);
 
   /// Create a copy of StationRowDto
   /// with the given fields replaced by the non-null parameter values.
@@ -5157,7 +5275,6 @@ class _$StationRowDtoImpl implements _StationRowDto {
 abstract class _StationRowDto implements StationRowDto {
   const factory _StationRowDto({
     required final String station,
-    required final String label,
     final int qty,
     final double utilization,
   }) = _$StationRowDtoImpl;
@@ -5165,10 +5282,11 @@ abstract class _StationRowDto implements StationRowDto {
   factory _StationRowDto.fromJson(Map<String, dynamic> json) =
       _$StationRowDtoImpl.fromJson;
 
+  // The station code only — its words come from `stationLabel` at read time
+  // (ADR-0085). The server stopped sending a `label` and this stayed
+  // required, which failed the whole snapshot's parse.
   @override
   String get station;
-  @override
-  String get label;
   @override
   int get qty;
   @override
@@ -5538,7 +5656,7 @@ class __$$VoidReasonDtoImplCopyWithImpl<$Res>
 class _$VoidReasonDtoImpl implements _VoidReasonDto {
   const _$VoidReasonDtoImpl({
     required this.code,
-    required this.label,
+    this.label = '',
     this.count = 0,
     this.lostRupiah = 0,
   });
@@ -5549,6 +5667,7 @@ class _$VoidReasonDtoImpl implements _VoidReasonDto {
   @override
   final String code;
   @override
+  @JsonKey()
   final String label;
   @override
   @JsonKey()
@@ -5595,7 +5714,7 @@ class _$VoidReasonDtoImpl implements _VoidReasonDto {
 abstract class _VoidReasonDto implements VoidReasonDto {
   const factory _VoidReasonDto({
     required final String code,
-    required final String label,
+    final String label,
     final int count,
     final int lostRupiah,
   }) = _$VoidReasonDtoImpl;
@@ -6372,7 +6491,6 @@ mixin _$StaffVoidDto {
   int get count => throw _privateConstructorUsedError;
   int get lostRupiah => throw _privateConstructorUsedError;
   String get topReasonCode => throw _privateConstructorUsedError;
-  String get topReasonLabel => throw _privateConstructorUsedError;
 
   /// Serializes this StaffVoidDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -6397,7 +6515,6 @@ abstract class $StaffVoidDtoCopyWith<$Res> {
     int count,
     int lostRupiah,
     String topReasonCode,
-    String topReasonLabel,
   });
 }
 
@@ -6421,7 +6538,6 @@ class _$StaffVoidDtoCopyWithImpl<$Res, $Val extends StaffVoidDto>
     Object? count = null,
     Object? lostRupiah = null,
     Object? topReasonCode = null,
-    Object? topReasonLabel = null,
   }) {
     return _then(
       _value.copyWith(
@@ -6445,10 +6561,6 @@ class _$StaffVoidDtoCopyWithImpl<$Res, $Val extends StaffVoidDto>
                 ? _value.topReasonCode
                 : topReasonCode // ignore: cast_nullable_to_non_nullable
                       as String,
-            topReasonLabel: null == topReasonLabel
-                ? _value.topReasonLabel
-                : topReasonLabel // ignore: cast_nullable_to_non_nullable
-                      as String,
           )
           as $Val,
     );
@@ -6470,7 +6582,6 @@ abstract class _$$StaffVoidDtoImplCopyWith<$Res>
     int count,
     int lostRupiah,
     String topReasonCode,
-    String topReasonLabel,
   });
 }
 
@@ -6493,7 +6604,6 @@ class __$$StaffVoidDtoImplCopyWithImpl<$Res>
     Object? count = null,
     Object? lostRupiah = null,
     Object? topReasonCode = null,
-    Object? topReasonLabel = null,
   }) {
     return _then(
       _$StaffVoidDtoImpl(
@@ -6517,10 +6627,6 @@ class __$$StaffVoidDtoImplCopyWithImpl<$Res>
             ? _value.topReasonCode
             : topReasonCode // ignore: cast_nullable_to_non_nullable
                   as String,
-        topReasonLabel: null == topReasonLabel
-            ? _value.topReasonLabel
-            : topReasonLabel // ignore: cast_nullable_to_non_nullable
-                  as String,
       ),
     );
   }
@@ -6535,7 +6641,6 @@ class _$StaffVoidDtoImpl implements _StaffVoidDto {
     this.count = 0,
     this.lostRupiah = 0,
     this.topReasonCode = 'other',
-    this.topReasonLabel = 'Lainnya',
   });
 
   factory _$StaffVoidDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -6554,13 +6659,10 @@ class _$StaffVoidDtoImpl implements _StaffVoidDto {
   @override
   @JsonKey()
   final String topReasonCode;
-  @override
-  @JsonKey()
-  final String topReasonLabel;
 
   @override
   String toString() {
-    return 'StaffVoidDto(id: $id, name: $name, count: $count, lostRupiah: $lostRupiah, topReasonCode: $topReasonCode, topReasonLabel: $topReasonLabel)';
+    return 'StaffVoidDto(id: $id, name: $name, count: $count, lostRupiah: $lostRupiah, topReasonCode: $topReasonCode)';
   }
 
   @override
@@ -6574,22 +6676,13 @@ class _$StaffVoidDtoImpl implements _StaffVoidDto {
             (identical(other.lostRupiah, lostRupiah) ||
                 other.lostRupiah == lostRupiah) &&
             (identical(other.topReasonCode, topReasonCode) ||
-                other.topReasonCode == topReasonCode) &&
-            (identical(other.topReasonLabel, topReasonLabel) ||
-                other.topReasonLabel == topReasonLabel));
+                other.topReasonCode == topReasonCode));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    id,
-    name,
-    count,
-    lostRupiah,
-    topReasonCode,
-    topReasonLabel,
-  );
+  int get hashCode =>
+      Object.hash(runtimeType, id, name, count, lostRupiah, topReasonCode);
 
   /// Create a copy of StaffVoidDto
   /// with the given fields replaced by the non-null parameter values.
@@ -6612,7 +6705,6 @@ abstract class _StaffVoidDto implements StaffVoidDto {
     final int count,
     final int lostRupiah,
     final String topReasonCode,
-    final String topReasonLabel,
   }) = _$StaffVoidDtoImpl;
 
   factory _StaffVoidDto.fromJson(Map<String, dynamic> json) =
@@ -6628,8 +6720,6 @@ abstract class _StaffVoidDto implements StaffVoidDto {
   int get lostRupiah;
   @override
   String get topReasonCode;
-  @override
-  String get topReasonLabel;
 
   /// Create a copy of StaffVoidDto
   /// with the given fields replaced by the non-null parameter values.

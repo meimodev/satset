@@ -21,7 +21,6 @@ class DummyData {
   static const roleKasirId = 'role-kasir';
   static const roleAdminId = 'role-admin';
 
-
   static List<Role> initialRoles() => <Role>[
     Role(
       id: roleAdminId,
@@ -76,7 +75,6 @@ class DummyData {
       capabilities: const {Capability.viewKds, Capability.markSoldOut},
     ),
   ];
-
 
   static const categories = <MenuCategory>[
     MenuCategory(id: 'all', name: 'Semua'),

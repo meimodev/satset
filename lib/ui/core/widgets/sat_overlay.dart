@@ -20,9 +20,9 @@ library;
 
 import 'package:flutter/material.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/motion.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Modal bottom sheet. Returns the value the body pops with, `null` on dismiss.
 ///
@@ -85,7 +85,7 @@ Future<T?> showSatDrawer<T>(
     context: context,
     useRootNavigator: true,
     barrierDismissible: dismissible,
-    barrierLabel: barrierLabel ?? AppStrings.close,
+    barrierLabel: barrierLabel ?? context.l10n.close,
     barrierColor: satBarrier,
     transitionDuration: satMotion(context, 220),
     pageBuilder: (ctx, _, _) =>

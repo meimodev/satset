@@ -1,3 +1,4 @@
+import 'package:satset/core/localization/labels.dart';
 import 'package:flutter/material.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
@@ -6,7 +7,6 @@ import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/reservations_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
@@ -21,6 +21,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// The booking book (ADR-0048). One content widget, two containers: a right-side
 /// drawer on tablet — the source design's idiom for a surface you read *against*
@@ -153,13 +154,16 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      SatShape.caps(AppStrings.floorReservationsBook),
+                      SatShape.caps(context.l10n.floorReservationsBook),
                       style: SatType.h2(color: sc.textHi),
                     ),
                     const SizedBox(height: Sp.s1),
                     Text(
-                      '${formatBookingDayId(now)} · ${today.length} booking · '
-                      '$covers tamu',
+                      context.l10n.resDaySummary(
+                        formatBookingDayId(now),
+                        today.length,
+                        covers,
+                      ),
                       style: SatType.monoS(color: sc.textLo),
                     ),
                   ],
@@ -169,7 +173,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
               // acts on, rather than at the foot below a scrolling list where
               // it is off screen exactly when the book is busy.
               SatButton.primary(
-                label: 'Reservasi baru',
+                label: context.l10n.resNewBooking,
                 icon: Icons.add,
                 size: SatButtonSize.sm,
                 onTap: () => openCreateReservationSheet(context, ref),
@@ -178,7 +182,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
               IconButton(
                 onPressed: () => Navigator.of(context).maybePop(),
                 icon: const Icon(Icons.close),
-                tooltip: AppStrings.close,
+                tooltip: context.l10n.close,
               ),
             ],
           ),
@@ -192,11 +196,11 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
               for (final f in _RvFilter.values) ...[
                 SatChip.select(
                   label: switch (f) {
-                    _RvFilter.waiting => AppStrings.reservationFilterWaiting,
-                    _RvFilter.late => AppStrings.reservationFilterLate,
-                    _RvFilter.seated => AppStrings.reservationFilterSeated,
-                    _RvFilter.noShow => AppStrings.reservationFilterNoShow,
-                    _RvFilter.all => AppStrings.reservationFilterAll,
+                    _RvFilter.waiting => context.l10n.reservationFilterWaiting,
+                    _RvFilter.late => context.l10n.reservationFilterLate,
+                    _RvFilter.seated => context.l10n.reservationFilterSeated,
+                    _RvFilter.noShow => context.l10n.reservationFilterNoShow,
+                    _RvFilter.all => context.l10n.reservationFilterAll,
                   },
                   count: pick(f).length,
                   selected: _filter == f,
@@ -215,7 +219,7 @@ class _ReservationsBookState extends ConsumerState<ReservationsBook> {
               // match a border was the worse trade.
               ? SatEmpty(
                   icon: Icons.event_busy_outlined,
-                  title: AppStrings.reservationEmptyFilter,
+                  title: context.l10n.reservationEmptyFilter,
                 )
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
@@ -263,17 +267,17 @@ class _ReservationRow extends ConsumerWidget {
     // accent pill. "Menunggu" is the one status on this row that is a thing to
     // go and do, so it takes the colour the app spends on actions.
     final (statusLabel, statusTone) = late
-        ? (AppStrings.reservationLate, sc.urgent)
+        ? (context.l10n.reservationLate, sc.urgent)
         : switch (r.status) {
             ReservationStatus.pending => (
-              reservationStatusLabel(r.status),
+              reservationStatusLabel(context.l10n, r.status),
               sc.accent,
             ),
             ReservationStatus.seated => (
-              reservationStatusLabel(r.status),
+              reservationStatusLabel(context.l10n, r.status),
               sc.success,
             ),
-            _ => (reservationStatusLabel(r.status), sc.textLo),
+            _ => (reservationStatusLabel(context.l10n, r.status), sc.textLo),
           };
 
     // Landing inside the next 20 minutes — the window where the host should be
@@ -352,9 +356,9 @@ class _ReservationRow extends ConsumerWidget {
                         // that is what the host seats against.
                         ?zoneLabel,
                         if (tableLabel != null)
-                          'Meja $tableLabel'
+                          context.l10n.tableNamed(tableLabel)
                         else
-                          AppStrings.tableNoReservationTable,
+                          context.l10n.tableNoReservationTable,
                         if (r.phone != null && r.phone!.trim().isNotEmpty)
                           r.phone!.trim(),
                       ].join(' · '),
@@ -387,7 +391,7 @@ class _ReservationRow extends ConsumerWidget {
                   // that writes a guest off, and it sits beside a plain cancel
                   // — the two should not look interchangeable.
                   child: SatButton.danger(
-                    label: AppStrings.reservationActionNoShow,
+                    label: context.l10n.reservationActionNoShow,
                     onTap: () async {
                       await n.updateStatus(r.id, ReservationStatus.noShow);
                     },
@@ -396,7 +400,7 @@ class _ReservationRow extends ConsumerWidget {
                 const SizedBox(width: Sp.s2),
                 Expanded(
                   child: SatButton.outline(
-                    label: AppStrings.cancel,
+                    label: context.l10n.cancel,
                     onTap: () async {
                       await n.updateStatus(r.id, ReservationStatus.cancelled);
                     },
@@ -407,7 +411,7 @@ class _ReservationRow extends ConsumerWidget {
           ] else if (r.status != ReservationStatus.seated) ...[
             const SizedBox(height: Sp.s2h),
             SatButton.outline(
-              label: AppStrings.reservationActionRestore,
+              label: context.l10n.reservationActionRestore,
               onTap: () async {
                 await n.updateStatus(r.id, ReservationStatus.pending);
               },
@@ -501,7 +505,9 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          SatShape.caps('${AppStrings.reservationActionSeat} ke meja:'),
+          SatShape.caps(
+            context.l10n.resvSeatToTable(context.l10n.reservationActionSeat),
+          ),
           style: SatType.caption(color: sc.textLo),
         ),
         const SizedBox(height: Sp.s2),
@@ -543,7 +549,7 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
         const SizedBox(height: Sp.s2),
         if (available.isEmpty)
           Text(
-            'Tidak ada meja kapasitas ≥ ${r.partySize} di zona ini.',
+            context.l10n.resNoTableForParty(r.partySize),
             style: SatType.bodyS(color: sc.textMd),
           )
         else
@@ -614,15 +620,15 @@ class _SeatPickerState extends ConsumerState<SeatPicker> {
     } on ApiException catch (e) {
       if (ctx.mounted) {
         final msg = e.code == 'already_seated'
-            ? 'Meja sudah diisi tamu lain'
-            : 'Gagal duduk: ${e.code ?? e.statusCode}';
+            ? ctx.l10n.resAlreadySeated
+            : ctx.l10n.resSeatFailed('${e.code ?? e.statusCode}');
         ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(msg)));
       }
     } catch (e) {
       if (ctx.mounted) {
         ScaffoldMessenger.of(
           ctx,
-        ).showSnackBar(SnackBar(content: Text('Gagal duduk: $e')));
+        ).showSnackBar(SnackBar(content: Text(ctx.l10n.resSeatFailed('$e'))));
       }
     }
   }
@@ -673,31 +679,31 @@ Future<void> openCreateReservationSheet(
                   ),
                   const SizedBox(height: Sp.s3h),
                   Text(
-                    SatShape.caps('Reservasi baru'),
+                    SatShape.caps(ctx.l10n.resNewBooking),
                     style: SatType.h3(color: sc.textHi),
                   ),
                   const SizedBox(height: Sp.s4),
                   SatField.text(
                     controller: nameCtl,
-                    label: 'Nama tamu',
+                    label: ctx.l10n.resGuestName,
                     hint: '',
                   ),
                   const SizedBox(height: Sp.s2h),
                   SatField.number(
                     controller: phoneCtl,
-                    label: 'No. HP',
-                    hint: 'opsional',
+                    label: ctx.l10n.resPhone,
+                    hint: ctx.l10n.resOptional,
                   ),
                   const SizedBox(height: Sp.s2h),
                   Row(
                     children: [
                       Text(
-                        'Jumlah tamu',
+                        ctx.l10n.resPartySize,
                         style: SatType.bodyM(color: sc.textHi),
                       ),
                       const Spacer(),
                       IconButton(
-                        tooltip: AppStrings.a11yGuestDecrease,
+                        tooltip: context.l10n.a11yGuestDecrease,
                         onPressed: party > 1
                             ? () => setLocal(() => party--)
                             : null,
@@ -713,7 +719,7 @@ Future<void> openCreateReservationSheet(
                         ),
                       ),
                       IconButton(
-                        tooltip: AppStrings.a11yGuestIncrease,
+                        tooltip: context.l10n.a11yGuestIncrease,
                         onPressed: () => setLocal(() => party++),
                         icon: const Icon(Icons.add_circle_outline),
                       ),
@@ -793,13 +799,13 @@ Future<void> openCreateReservationSheet(
                   const SizedBox(height: Sp.s2h),
                   SatField.text(
                     controller: notesCtl,
-                    label: 'Catatan',
-                    hint: 'opsional',
+                    label: context.l10n.expNote,
+                    hint: context.l10n.resOptional,
                     maxLines: 2,
                   ),
                   const SizedBox(height: Sp.s4h),
                   SatButton.primary(
-                    label: 'Simpan reservasi',
+                    label: context.l10n.resSaveBooking,
                     onTap: () async {
                       final name = nameCtl.text.trim();
                       if (name.isEmpty) return;
@@ -823,7 +829,9 @@ Future<void> openCreateReservationSheet(
                       } catch (e) {
                         if (ctx.mounted) {
                           ScaffoldMessenger.of(ctx).showSnackBar(
-                            SnackBar(content: Text('Gagal simpan: $e')),
+                            SnackBar(
+                              content: Text(ctx.l10n.resSaveFailed('$e')),
+                            ),
                           );
                         }
                       }
@@ -900,7 +908,7 @@ class _TablePicker extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          SatShape.caps('Zona & meja (opsional)'),
+          SatShape.caps(context.l10n.resvZoneTableOptional),
           style: SatType.caption(color: sc.textLo),
         ),
         const SizedBox(height: Sp.s2),
@@ -928,7 +936,7 @@ class _TablePicker extends StatelessWidget {
             itemBuilder: (_, i) {
               if (i == 0) {
                 return chip(
-                  AppStrings.tableNoReservationTable,
+                  context.l10n.tableNoReservationTable,
                   tableId == null,
                   () => onPick(activeZone, null),
                 );

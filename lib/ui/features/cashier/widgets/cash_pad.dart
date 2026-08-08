@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
@@ -91,9 +92,7 @@ class _CashPadState extends State<CashPad> {
 
   void _add(int note) {
     setState(() => _counts[note] = (_counts[note] ?? 0) + 1);
-    widget.onTender(
-      _notes.fold<int>(0, (a, n) => a + n * (_counts[n] ?? 0)),
-    );
+    widget.onTender(_notes.fold<int>(0, (a, n) => a + n * (_counts[n] ?? 0)));
   }
 
   void _setExact(int value) {
@@ -117,10 +116,7 @@ class _CashPadState extends State<CashPad> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Uang tamu · ketuk pecahan',
-          style: SatType.labelS(color: sc.textLo),
-        ),
+        Text(context.l10n.cpdTitle, style: SatType.labelS(color: sc.textLo)),
         const SizedBox(height: Sp.s2),
         Wrap(
           spacing: Sp.s2,
@@ -143,14 +139,14 @@ class _CashPadState extends State<CashPad> {
             for (final v in quickTenders(widget.amount))
               SatChip.select(
                 label: v == widget.amount
-                    ? 'Pas'
+                    ? context.l10n.cpdExact
                     : formatIDR(v).replaceFirst('Rp ', ''),
                 selected: widget.tender == v,
                 onTap: () => _setExact(v),
               ),
             if (widget.tender > 0)
               SatButton.ghost(
-                label: 'Kosongkan',
+                label: context.l10n.cpdClear,
                 size: SatButtonSize.sm,
                 icon: Icons.close_rounded,
                 onTap: _clear,
@@ -158,11 +154,7 @@ class _CashPadState extends State<CashPad> {
           ],
         ),
         const SizedBox(height: Sp.s3),
-        _Summary(
-          tender: widget.tender,
-          amount: widget.amount,
-          change: change,
-        ),
+        _Summary(tender: widget.tender, amount: widget.amount, change: change),
       ],
     );
   }
@@ -184,7 +176,7 @@ class _NoteButton extends StatelessWidget {
     final on = count > 0;
     return Semantics(
       button: true,
-      label: on ? '$label, $count lembar' : label,
+      label: on ? context.l10n.cpdNoteSemantics(label, count) : label,
       child: Material(
         color: on ? sc.accentSoft : sc.bg2,
         borderRadius: SatR.a(10),
@@ -202,15 +194,10 @@ class _NoteButton extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: SatType.monoM(
-                    color: on ? sc.accentText : sc.textHi,
-                  ),
+                  style: SatType.monoM(color: on ? sc.accentText : sc.textHi),
                 ),
                 if (on)
-                  Text(
-                    '×$count',
-                    style: SatType.labelS(color: sc.accentText),
-                  ),
+                  Text('×$count', style: SatType.labelS(color: sc.accentText)),
               ],
             ),
           ),
@@ -239,7 +226,9 @@ class _Summary extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: Sp.s1),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: SatType.bodyS(color: sc.textLo))),
+          Expanded(
+            child: Text(label, style: SatType.bodyS(color: sc.textLo)),
+          ),
           Text(value, style: SatType.monoM(color: tone)),
         ],
       ),
@@ -252,14 +241,14 @@ class _Summary extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           row(
-            'Diterima',
+            context.l10n.cpdReceived,
             tender == 0 ? '—' : formatIDR(tender),
             tender == 0 ? sc.textLo : sc.textHi,
           ),
           if (tender > 0 && change < 0)
-            row('Masih kurang', formatIDR(-change), sc.warn),
+            row(context.l10n.cpdShort, formatIDR(-change), sc.warn),
           if (change >= 0 && tender > 0) ...[
-            row('Kembalian', formatIDR(change), sc.success),
+            row(context.l10n.cpdChange, formatIDR(change), sc.success),
             if (change > 0)
               Wrap(
                 spacing: Sp.s1,

@@ -61,7 +61,9 @@ void main() {
   });
 
   test('a date already gone alarms', () {
-    final v = venue(paidUntil: DateTime.now().subtract(const Duration(days: 2)));
+    final v = venue(
+      paidUntil: DateTime.now().subtract(const Duration(days: 2)),
+    );
     expect(noticeFor(v)!.tier, VenueBillingTier.lapsed);
   });
 
@@ -82,7 +84,9 @@ void main() {
   test('lapsed outranks ending — never both at once', () {
     // One banner per subscription, and it is the louder one. Two notices about
     // one subscription is the drift the shared predicates exist to prevent.
-    final v = venue(paidUntil: DateTime.now().subtract(const Duration(days: 1)));
+    final v = venue(
+      paidUntil: DateTime.now().subtract(const Duration(days: 1)),
+    );
     expect(noticeFor(v)!.tier, VenueBillingTier.lapsed);
     expect(noticeFor(v)!.remaining, isNull);
   });

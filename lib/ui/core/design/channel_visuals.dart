@@ -20,8 +20,6 @@ enum SatChannel {
 
   /// Unknown or empty falls back to Bungkus — every takeaway minted before the
   /// channel existed was a walk-in wanting it wrapped.
-  static SatChannel from(String? id) => values.firstWhere(
-    (c) => c.id == id,
-    orElse: () => SatChannel.bungkus,
-  );
+  static SatChannel from(String? id) =>
+      values.firstWhere((c) => c.id == id, orElse: () => SatChannel.bungkus);
 }

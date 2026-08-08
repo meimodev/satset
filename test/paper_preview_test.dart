@@ -6,6 +6,7 @@ import 'package:satset/core/printing/bill_struk_renderer.dart';
 import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/features/cashier/widgets/paper_preview.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// The print preview (ADR-0066) is a **second renderer** over the same
 /// [BillStrukData] the ESC/POS one consumes. Two renderers drift, and the way
@@ -63,10 +64,13 @@ void main() {
   Future<void> pump(WidgetTester t, BillStrukData d) async {
     await t.pumpWidget(
       MaterialApp(
+        // Pinned, exactly as the app pins it (ADR-0083). Without this the
+        // test resolves against the host's locale and reads English.
+        locale: const Locale('id'),
+        localizationsDelegates: AppL10n.localizationsDelegates,
+        supportedLocales: AppL10n.supportedLocales,
         theme: satTheme(SatTheme.amberGelap),
-        home: Scaffold(
-          body: SingleChildScrollView(child: PaperPreview(d)),
-        ),
+        home: Scaffold(body: SingleChildScrollView(child: PaperPreview(d))),
       ),
     );
   }
@@ -111,9 +115,7 @@ void main() {
     await pump(
       t,
       fixture(
-        payments: const [
-          BillStrukPayment(methodLabel: 'Tunai', amount: 97555),
-        ],
+        payments: const [BillStrukPayment(methodLabel: 'Tunai', amount: 97555)],
       ),
     );
     expect(find.textContaining('STRUK PEMBAYARAN'), findsOneWidget);
@@ -149,15 +151,14 @@ void main() {
     // renderer accepts. A field the preview reads but the renderer rejects
     // would be caught here rather than at the printer.
     final bytes = await BillStrukRenderer.render(
+      lookupAppL10n(const Locale('id')),
       BillStrukData(
         venueName: 'Warung Sebelah',
         tableLabel: 'M7',
         pax: 4,
         at: DateTime(2026, 7, 30, 18, 14),
         kind: BillDocKind.wholeBill,
-        lines: const [
-          BillStrukLine(qty: 1, name: 'Es Teh', lineTotal: 12000),
-        ],
+        lines: const [BillStrukLine(qty: 1, name: 'Es Teh', lineTotal: 12000)],
         subtotal: 12000,
         serviceAmount: 600,
         taxAmount: 1386,

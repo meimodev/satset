@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/reservations_repository.dart';
 import 'package:satset/data/repositories/staff_repository.dart';
@@ -11,6 +10,7 @@ import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/domain/models/reservation.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/venue_table.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/motion.dart';
@@ -19,6 +19,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/tables/view_models/floor_signals.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/state/tickers.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 const Duration _kPressIn = Duration(milliseconds: 90);
 
@@ -49,7 +50,7 @@ class _SeatedElapsed extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(secondTickerProvider);
     return Text(
-      formatElapsedId(SatClock.now().difference(since)),
+      formatElapsed(context.l10n, SatClock.now().difference(since)),
       style: SatType.monoS(color: context.sat.textLo),
     );
   }
@@ -81,14 +82,15 @@ class TableCard extends ConsumerStatefulWidget {
 class _TableCardState extends ConsumerState<TableCard> {
   bool _pressed = false;
 
-  String _statusLabel(VenueTable table, Reservation? hold) {
-    if (hold != null) return 'Dipesan';
+  String _statusLabel(AppL10n l10n, VenueTable table, Reservation? hold) {
+    if (hold != null) return l10n.tcStatusReserved;
     return switch (table.status) {
-      TableStatus.available => 'Kosong',
-      TableStatus.occupied => 'Terisi',
-      TableStatus.pending => 'Pesanan masuk',
-      TableStatus.ready =>
-        'Siap ×${table.readyCount > 0 ? table.readyCount : 1}',
+      TableStatus.available => l10n.tcStatusAvailable,
+      TableStatus.occupied => l10n.tcStatusOccupied,
+      TableStatus.pending => l10n.tcStatusPending,
+      TableStatus.ready => l10n.tcStatusReady(
+        table.readyCount > 0 ? table.readyCount : 1,
+      ),
     };
   }
 
@@ -132,6 +134,7 @@ class _TableCardState extends ConsumerState<TableCard> {
       service: service,
       s: settings,
       now: now,
+      l10n: context.l10n,
     );
 
     final isReady = table.status == TableStatus.ready;
@@ -325,7 +328,7 @@ class _TableCardState extends ConsumerState<TableCard> {
                   curve: satEaseOut,
                   style: SatType.labelS(color: statusColor),
                   child: Text(
-                    SatShape.caps(_statusLabel(table, hold)),
+                    SatShape.caps(_statusLabel(context.l10n, table, hold)),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -459,16 +462,16 @@ class _TableCardState extends ConsumerState<TableCard> {
     return [
       if (service == ServiceState.ungreeted)
         _StatePill(
-          label: AppStrings.tableStateUngreeted,
+          label: context.l10n.tableStateUngreeted,
           tone: sc.urgent,
           sc: sc,
         ),
       if (service == ServiceState.idle)
-        _StatePill(label: AppStrings.tableStateIdle, tone: sc.warn, sc: sc),
+        _StatePill(label: context.l10n.tableStateIdle, tone: sc.warn, sc: sc),
       if (t.billClosed || t.moneyState == 'paid')
-        _StatePill(label: AppStrings.tablePaidFull, tone: sc.success, sc: sc)
+        _StatePill(label: context.l10n.tablePaidFull, tone: sc.success, sc: sc)
       else if (t.moneyState == 'partial')
-        _StatePill(label: AppStrings.tablePaidPartial, tone: sc.info, sc: sc),
+        _StatePill(label: context.l10n.tablePaidPartial, tone: sc.info, sc: sc),
     ];
   }
 }
@@ -507,7 +510,7 @@ class _OwnerChip extends StatelessWidget {
           boxShadow: brutal ? SatShape.hardShadow(2) : null,
         ),
         child: Text(
-          SatShape.caps(AppStrings.tableOwnerMine),
+          SatShape.caps(context.l10n.tableOwnerMine),
           style: SatType.labelS(
             color: brutal || glow ? sc.accentInk : sc.accentText,
           ),

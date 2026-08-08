@@ -1,0 +1,5483 @@
+{
+  "@@locale": "id",
+  "cancel": "Batal",
+  "save": "Simpan",
+  "saved": "Tersimpan",
+  "delete": "Hapus",
+  "add": "Tambah",
+  "edit": "Ubah",
+  "back": "Kembali",
+  "close": "Tutup",
+  "loading": "Memuat…",
+  "error": "Gagal",
+  "active": "Aktif",
+  "inactive": "Nonaktif",
+  "warning": "Peringatan",
+  "confirm": "Konfirmasi",
+  "ok": "OK",
+  "discardCartTitle": "Batalkan pesanan ini?",
+  "discardCartBody": "{items, plural, =1{1 item belum terkirim akan dihapus.} other{{items} item belum terkirim akan dihapus.}}",
+  "@discardCartBody": {
+    "description": "Leaving the menu with an unsent cart. ADR-0061.",
+    "placeholders": {
+      "items": {
+        "type": "int"
+      }
+    }
+  },
+  "discardCartConfirm": "Ya, batalkan",
+  "stepperIncrease": "Tambah satu",
+  "stepperDecrease": "Kurangi satu",
+  "venueHubTitle": "Venue",
+  "venueHubSubtitle": "Konfigurasi · zona · menu · sistem · staf",
+  "venueHubSectionZona": "Zona",
+  "venueHubSectionZonaSub": "Atur zona, meja, dan kapasitas ruangan",
+  "venueHubSectionMenu": "Menu",
+  "venueHubSectionMenuSub": "Kategori, item, modifier, dan harga",
+  "venueHubSectionVenue": "Pengaturan Venue",
+  "venueHubSectionVenueSub": "Profil, lokal, pajak, dan branding struk",
+  "venueHubSectionSystem": "Sistem",
+  "venueHubSectionSystemSub": "Server, jaringan, printer, perangkat",
+  "venueHubSectionStaff": "Staf",
+  "venueHubSectionStaffSub": "Akun, peran, dan PIN tim",
+  "venueHubSectionStock": "Stok",
+  "venueHubSectionStockSub": "Bahan, terima barang, opname, dan produksi",
+  "venueHubSectionReports": "Laporan",
+  "venueHubSectionReportsSub": "Ringkasan shift, penjualan, dan ekspor",
+  "venueHubSectionAlerts": "Peringatan",
+  "venueHubSectionAlertsSub": "Ambang waktu, suara, dan senyap perangkat",
+  "venueHubSectionAudit": "Audit",
+  "venueHubSectionAuditSub": "Batal, gratis, diskon, dan ubah pesanan",
+  "auditTitle": "Catatan audit",
+  "auditSubtitle": "Semua kejadian · jejak lengkap",
+  "auditTabletOnly": "Butuh layar tablet",
+  "auditTabletOnlyBody": "Catatan audit menampilkan enam kolom sekaligus supaya bisa dibaca sekilas. Buka dari tablet.",
+  "auditTabletOnlyBadge": "Tablet saja",
+  "auditEmpty": "Belum ada kejadian",
+  "auditEmptyBody": "Pembatalan, gratisan, diskon, refund, dan perubahan pesanan akan tampil di sini.",
+  "auditExport": "Ekspor",
+  "auditColTime": "Waktu",
+  "auditColType": "Jenis",
+  "auditColUser": "Pengguna",
+  "auditColEvent": "Kejadian",
+  "auditColAmount": "Jumlah",
+  "auditColReason": "Alasan",
+  "auditSystemActor": "Sistem",
+  "auditWindowToday": "Hari ini",
+  "auditWindowYesterday": "Kemarin",
+  "auditWindowWeek": "7 hari",
+  "auditWindowAll": "Semua waktu",
+  "auditTypeAll": "Semua jenis",
+  "auditTileVoid": "Pembatalan",
+  "auditTileComp": "Gratisan",
+  "auditTileDiscount": "Diskon",
+  "auditTileRefund": "Refund",
+  "auditTileKilled": "Stop jual",
+  "auditTileModify": "Ubah pesanan",
+  "auditEventCount": "{n, plural, =1{1 kejadian} other{{n} kejadian}}",
+  "@auditEventCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "auditNewRows": "{n, plural, =1{1 baru} other{{n} baru}}",
+  "@auditNewRows": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "@_AUDIT_TYPE_PILLS": {
+    "description": "Short pill labels for the venue audit log's Jenis/Type column. ADR-0085."
+  },
+  "auditTypeFire": "Kirim",
+  "auditTypeModify": "Ubah",
+  "auditTypeVoidItem": "Batal",
+  "auditTypeComp": "Gratis",
+  "auditTypeTableMoved": "Pindah",
+  "auditTypePaymentRecorded": "Bayar",
+  "auditTypeRefund": "Refund",
+  "auditTypeDiscountApplied": "Diskon",
+  "auditTypeDiscountRemoved": "Diskon−",
+  "auditTypeBillReopened": "Buka",
+  "auditTypeBillClosed": "Tutup",
+  "auditTypeMenuKilled": "Stop jual",
+  "auditTypeMenuRestored": "Jual lagi",
+  "auditTypeStaffCreated": "Staf +",
+  "auditTypeStaffDeleted": "Staf −",
+  "auditTypeStaffDisabled": "Nonaktif",
+  "auditTypeStaffEnabled": "Aktif",
+  "auditTypeStaffRoleChanged": "Peran",
+  "auditTypeStaffPinSet": "PIN",
+  "auditTypeStaffPinReset": "PIN reset",
+  "auditTypeRoleCreated": "Peran +",
+  "auditTypeRoleRenamed": "Peran ubah",
+  "auditTypeRoleDeleted": "Peran −",
+  "auditTypeRoleColorChanged": "Peran warna",
+  "auditTypeRoleCapabilityChanged": "Hak akses",
+  "killReasonTitle": "Stop jual",
+  "killReasonHint": "Alasan lain (opsional)",
+  "killReasonSkip": "Lewati",
+  "killReasonConfirm": "Stop jual",
+  "killReasonBody": "{item} tidak bisa dipesan sampai diaktifkan lagi. Alasannya masuk catatan audit.",
+  "@killReasonBody": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "venueHubSeedTitle": "Mulai cepat",
+  "venueHubSeedBody": "Muat contoh data restoran umum: 4 zona dengan 20 meja, menu lengkap, 4 staf (2 pelayan & 2 dapur), dan sebulan riwayat penjualan supaya laporan dan catatan audit langsung terbaca. Semua bisa diubah atau dihapus kapan saja.",
+  "venueHubSeedBodyRunning": "Menyusun sebulan riwayat lewat jalur pesanan sungguhan. Biarkan aplikasi terbuka sampai selesai.",
+  "venueHubSeedBodyDone": "Contoh data siap. Laporan, catatan audit dan riwayat stok sudah terisi.",
+  "venueHubSeedBodyIncomplete": "Pemuatan contoh data terhenti sebelum selesai. Data yang ada tidak utuh — hapus dulu sebelum memuat ulang.",
+  "venueHubSeedBodyFailed": "Pemuatan contoh data gagal. Data yang sempat masuk tidak utuh — hapus dulu sebelum mencoba lagi.",
+  "venueHubSeedBodyLoaded": "Venue ini memakai contoh data. Hapus untuk membuang riwayat penjualan buatan; zona, meja, menu dan staf tetap ada.",
+  "venueHubSeedBtnLoad": "Muat contoh data",
+  "venueHubSeedBtnSkip": "Lewati",
+  "venueHubSeedBtnClear": "Hapus contoh data",
+  "venueHubSeedBtnClearRetry": "Hapus & muat ulang",
+  "venueHubSeedBtnDone": "Selesai",
+  "venueHubSeedError": "Gagal memuat contoh data",
+  "venueHubSeedProgress": "Menyusun contoh data",
+  "venueHubSeedDays": "hari {done}/{total}",
+  "@venueHubSeedDays": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsSeedTitle": "Contoh data",
+  "venueSettingsTitle": "Pengaturan Venue",
+  "venueSettingsSubtitle": "Profil, lokal, pajak, struk",
+  "venueSettingsSectionIdentity": "Profil & alamat",
+  "venueSettingsSectionIdentityTag": "WAJIB",
+  "venueSettingsDisplayName": "Nama tampilan",
+  "venueSettingsLegalName": "Nama legal",
+  "venueSettingsAddress": "Alamat",
+  "venueSettingsPhone": "Telepon",
+  "venueSettingsManagedBySuperAdmin": "Dikelola pengelola",
+  "venueSettingsSectionReceipt": "Branding struk",
+  "venueSettingsSectionReceiptTag": "CETAK",
+  "venueSettingsLogo": "Logo",
+  "venueSettingsLogoAdd": "Tambah",
+  "venueSettingsLogoChange": "Ganti",
+  "venueSettingsLogoDelete": "Hapus",
+  "venueSettingsTagline": "Tagline",
+  "venueSettingsHeader": "Header",
+  "venueSettingsSocial": "Sosial",
+  "venueSettingsFooter": "Footer",
+  "venueSettingsThankYou": "Ucapan terima kasih",
+  "venueSettingsQrUrl": "QR (URL)",
+  "venueSettingsQrCaption": "QR (keterangan)",
+  "venueSettingsSectionTax": "Pajak & layanan",
+  "venueSettingsSectionReports": "Laporan & shift",
+  "venueSettingsSectionSound": "Suara",
+  "venueSettingsSoundNewOrder": "Pesanan baru",
+  "venueSettingsSoundReady": "Pesanan siap",
+  "venueSettingsSoundVoid": "Void",
+  "venueSettingsSoundOverdue": "Lewat waktu",
+  "venueSettingsSoundUngreeted": "Belum dilayani",
+  "venueSettingsSoundPickup": "Menunggu diantar",
+  "venueSettingsSoundPreview": "Dengar",
+  "venueSettingsTimingPrepTarget": "Target siap (default semua menu)",
+  "venueSettingsTimingPrepTargetHint": "Menu tanpa \"Waktu siap\" sendiri ikut angka ini.",
+  "venueSettingsTimingPickup": "Menunggu diantar",
+  "venueSettingsTimingPickupHint": "Makanan siap tapi belum diantar selama ini. Saklar mematikan bunyinya saja — tanda di kartu meja tetap jalan.",
+  "venueSettingsTimingUngreeted": "Belum dilayani",
+  "venueSettingsTimingUngreetedHint": "Meja terisi tapi belum ada pesanan terkirim. Saklar mematikan bunyinya saja — tanda di kartu meja tetap jalan.",
+  "venueSettingsTimingUngreetedEscalate": "Naik ke semua waiter setelah",
+  "venueSettingsTimingUngreetedEscalateHint": "Awalnya hanya waiter yang mendudukkan tamu.",
+  "venueSettingsTimingLongStay": "Meja lama",
+  "venueSettingsTimingLongStayHint": "Tanda visual di lantai. Tanpa suara.",
+  "venueSettingsTimingIdle": "Meja selesai makan",
+  "venueSettingsTimingIdleHint": "Semua terhidang dan tidak ada aktivitas. Tanpa suara.",
+  "venueSettingsTimingReservationGrace": "Toleransi reservasi",
+  "venueSettingsTimingReservationGraceHint": "Lewat ini chip reservasi ditandai terlambat. Status tidak berubah.",
+  "venueSettingsTimingMuteTitle": "Senyapkan di alat ini",
+  "venueSettingsTimingMuteHint": "Hanya untuk alat ini. Pilihan nada tetap milik venue.",
+  "alertsTitle": "Peringatan",
+  "alertsSectionThresholds": "Ambang waktu",
+  "alertsScopeVenue": "Semua perangkat",
+  "alertsScopeDevice": "Hanya perangkat ini",
+  "tableStateUngreeted": "Belum dilayani",
+  "tableStateIdle": "Selesai makan",
+  "reservationLate": "Terlambat",
+  "staleReadyUncollected": "Siap {mins} mnt — belum diambil",
+  "@staleReadyUncollected": {
+    "placeholders": {
+      "mins": {
+        "type": "int"
+      }
+    }
+  },
+  "staleReservationLate": "Tamu telat {mins} mnt — lepas meja?",
+  "@staleReservationLate": {
+    "placeholders": {
+      "mins": {
+        "type": "int"
+      }
+    }
+  },
+  "staleUngreeted": "Belum disapa {mins} mnt",
+  "@staleUngreeted": {
+    "placeholders": {
+      "mins": {
+        "type": "int"
+      }
+    }
+  },
+  "staleIdle": "Selesai makan {mins} mnt — tawarkan lagi",
+  "@staleIdle": {
+    "placeholders": {
+      "mins": {
+        "type": "int"
+      }
+    }
+  },
+  "staleLongStay": "Duduk {elapsed} — cek penutupan",
+  "@staleLongStay": {
+    "placeholders": {
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "tableOwnerMine": "Punya saya",
+  "tablePaidFull": "Lunas",
+  "tablePaidPartial": "Sebagian",
+  "tableNoReservationTable": "Belum ada meja",
+  "floorReservations": "Reservasi",
+  "floorTakeaway": "Bawa pulang",
+  "floorReservationsBook": "Buku reservasi",
+  "floorReservationsLateCount": "telat",
+  "reservationFilterWaiting": "Menunggu",
+  "reservationFilterLate": "Terlambat",
+  "reservationFilterSeated": "Duduk",
+  "reservationFilterNoShow": "No-show",
+  "reservationFilterAll": "Semua",
+  "reservationEmptyFilter": "Tidak ada reservasi di filter ini.",
+  "reservationActionSeat": "Dudukkan",
+  "reservationActionLate": "Telat",
+  "reservationActionNoShow": "No-show",
+  "reservationActionRestore": "Pulihkan",
+  "takeawayEmpty": "Belum ada pesanan bawa pulang.",
+  "zoneAdminTitle": "Atur Zona",
+  "tablesEmptyZoneAddTableHint": "Tambahkan meja lewat Manajer › Zona",
+  "zoneAdminZonePill": "Zona",
+  "zoneAdminAddTable": "Tambah meja",
+  "zoneAdminAddZone": "Tambah zona",
+  "zoneAdminEmptyZone": "Belum ada meja di",
+  "zoneAdminNoZones": "Belum ada zona",
+  "zoneAdminNoZonesCreate": "Buat zona dulu untuk menata meja.",
+  "zoneAdminNoZonesCreateRequest": "Minta admin untuk membuat zona.",
+  "zoneAdminEditTable": "Atur",
+  "zoneAdminNewTable": "Meja baru",
+  "zoneAdminTableName": "Nama meja",
+  "zoneAdminMaxCapacity": "Kapasitas tamu maks",
+  "zoneAdminTableActive": "Meja aktif",
+  "zoneAdminTableActiveSub": "Matikan untuk perbaikan tanpa menghapus.",
+  "zoneAdminDeleteTableConfirmTitle": "Hapus meja?",
+  "zoneAdminDeleteTableConfirmSub": "akan dihapus permanen dari zona.",
+  "tabMeja": "Meja",
+  "tabPesanan": "Pesanan",
+  "tabAntrian": "Antrian",
+  "tabKasir": "Kasir",
+  "tabVenue": "Venue",
+  "tabSaya": "Saya",
+  "shiftLabel": "SHIFT",
+  "kasirRiwayatBatas": "Menampilkan tagihan terbaru. Tagihan lebih lama ada di Laporan.",
+  "kitchenQueueTitle": "Antrian Persiapan",
+  "hapusPencarian": "Hapus pencarian",
+  "takAdaItemCocok": "Tak ada item cocok",
+  "crumbTambahItem": "Tambah item",
+  "crumbTinjau": "Tinjau",
+  "crumbBawaPulang": "Bawa pulang",
+  "crumbPesananBaru": "Pesanan baru",
+  "crumbDiskon": "Diskon",
+  "crumbMenuAdmin": "Menu admin",
+  "crumbStafAkun": "Staf & akun",
+  "crumbLaporanShift": "Laporan shift",
+  "crumbKonfigurasi": "Konfigurasi",
+  "themeSheetTitle": "Tema",
+  "themeSheetSubtitle": "Berlaku untuk perangkat ini saja",
+  "localeSheetTitle": "Bahasa",
+  "@localeSheetTitle": {
+    "description": "ADR-0083. Sits beside the theme sheet on /me; same device-local scope."
+  },
+  "localeSheetSubtitle": "Berlaku untuk perangkat ini saja",
+  "localeIndonesian": "Bahasa Indonesia",
+  "localeEnglish": "English",
+  "a11yPickLocale": "Pilih bahasa",
+  "a11yGuestDecrease": "Kurangi jumlah tamu",
+  "a11yGuestIncrease": "Tambah jumlah tamu",
+  "a11yEdit": "Ubah",
+  "zoneAdminIcon": "Ikon zona",
+  "tableGuests": "Tamu",
+  "quantity": "Jumlah",
+  "a11yRename": "Ganti nama",
+  "a11yClear": "Bersihkan",
+  "a11yRefresh": "Muat ulang",
+  "a11yShowPassword": "Tampilkan kata sandi",
+  "a11yHidePassword": "Sembunyikan kata sandi",
+  "a11ySoundPreview": "Dengar nada",
+  "a11ySoundSilent": "Tanpa nada",
+  "a11yPickTheme": "Pilih tema",
+  "a11yViewPhoto": "Lihat foto bukti bayar",
+  "a11yPickColor": "Pilih warna",
+  "a11yAddItem": "Tambah item",
+  "a11yTableLocked": "Meja terkunci",
+  "resetRequestMessage": "Halo, saya lupa password admin SatSet.\nEmail: {email}\nMohon dibantu reset.",
+  "@resetRequestMessage": {
+    "description": "Prefilled WhatsApp body. ADR-0059.",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "resetRequestFailed": "Gagal membuka WhatsApp.",
+  "billingRequestMessage": "Halo, saya mau perpanjang langganan SatSet.\nVenue: {venueName}\nID: {venueId}\nMohon dibantu.",
+  "@billingRequestMessage": {
+    "placeholders": {
+      "venueName": {
+        "type": "String"
+      },
+      "venueId": {
+        "type": "String"
+      }
+    }
+  },
+  "billingEndsIn": "{days, plural, =0{Langganan berakhir hari ini.} =1{Langganan berakhir 1 hari lagi.} other{Langganan berakhir {days} hari lagi.}}",
+  "@billingEndsIn": {
+    "description": "Today is never '0 hari lagi' — zero reads as already past.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "billingLapsed": "Masa langganan sudah lewat.",
+  "billingStopsOn": "Venue berhenti melayani {date}.",
+  "@billingStopsOn": {
+    "description": "date is pre-formatted by formatShortDateId — a date, so it localises (ADR-0084).",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "billingCta": "Ketuk untuk perpanjang lewat WhatsApp.",
+  "bootBlockStale": "Perlu koneksi internet untuk verifikasi admin. Sambungkan internet lalu masuk lagi.",
+  "bootBlockIneligible": "Akses admin dicabut. Hubungi pengelola.",
+  "tempPasswordTitle": "Ganti sandi",
+  "logout": "Keluar",
+  "tempPasswordReason": "Anda masuk dengan sandi sementara. Buat sandi baru untuk melanjutkan.",
+  "tempPasswordNew": "Sandi baru",
+  "tempPasswordConfirm": "Ulangi sandi baru",
+  "tempPasswordTooShort": "{min, plural, =1{Minimal 1 karakter.} other{Minimal {min} karakter.}}",
+  "@tempPasswordTooShort": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "tempPasswordMismatch": "Sandi tidak sama.",
+  "tempPasswordReused": "Sandi baru tidak boleh sama dengan sandi sementara.",
+  "tempPasswordExpired": "Sandi sementara sudah kadaluarsa. Minta yang baru ke pengelola.",
+  "tempPasswordPending": "Sandi akun ini baru direset. Masuk dengan sandi sementara untuk menggantinya.",
+  "tempPasswordIssuedTitle": "Sandi sementara",
+  "tempPasswordIssuedHint": "Berlaku 24 jam. Sebutkan ke admin venue — mereka wajib mengganti sandi saat masuk.",
+  "tempPasswordIssuedOnce": "Kode ini hanya muncul sekali.",
+  "tempPasswordShareMessage": "Sandi sementara SatSet Anda: {code}\nBerlaku 24 jam. Anda akan diminta membuat sandi baru saat masuk.",
+  "@tempPasswordShareMessage": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "staffTitle": "Staf & akun",
+  "staffTabPeople": "Orang",
+  "staffTabRoles": "Peran",
+  "staffTabPermissions": "Izin",
+  "staffSearchHint": "Cari nama",
+  "staffFilterAll": "Semua",
+  "staffAdd": "Tambah staf",
+  "staffAddPill": "+ Tambah staf",
+  "staffEmpty": "Tidak ada staf yang cocok dengan filter ini",
+  "staffNewRolePill": "+ Peran baru",
+  "staffRoleBadgeAdmin": "ADMIN",
+  "staffRoleManagedByOperator": "Dikelola pengelola",
+  "staffRoleColor": "Warna peran",
+  "staffColor": "Warna",
+  "staffAvatarColor": "Warna avatar",
+  "staffMatrixTitle": "Matriks peran × izin",
+  "staffMatrixHint": "Ketuk sel untuk mengubah. Baris peran admin dikunci — dikelola pengelola, bukan dari layar ini.",
+  "staffRole": "Peran",
+  "staffNoRole": "Tanpa peran",
+  "staffName": "Nama",
+  "staffFullName": "Nama lengkap",
+  "staffPinField": "PIN (6 digit, unik)",
+  "staffPinReset": "Atur ulang",
+  "staffPinUpdated": "PIN diperbarui",
+  "staffSaveChanges": "Simpan perubahan",
+  "staffNewRoleName": "Nama peran baru",
+  "staffRenameRole": "Ganti nama peran",
+  "staffDisable": "Nonaktifkan",
+  "staffErrNameEmpty": "Nama tidak boleh kosong",
+  "staffErrAdminBySuperOnly": "Peran admin hanya bisa dibuat oleh super admin",
+  "staffErrAdminPromoteBlocked": "Menaikkan ke peran admin tidak bisa dari sini",
+  "staffErrNeedNonAdminRole": "Buat peran non-admin dulu",
+  "staffErrColorTaken": "Warna avatar sudah dipakai akun lain",
+  "staffErrColorTakenShort": "Warna juga dipakai akun lain",
+  "staffChangeRoleTitle": "Ganti peran?",
+  "staffDisableBody": "Pengguna tidak bisa masuk lagi. Bisa diaktifkan kembali nanti.",
+  "staffDeleteBody": "Akun dihapus permanen. Catatan audit lama tetap ada.",
+  "staffDeleteRoleBody": "Izin yang melekat pada peran ini akan hilang.",
+  "staffSubtitle": "{members, plural, other{{members} anggota}} · {admins, plural, other{{admins} admin}}",
+  "@staffSubtitle": {
+    "placeholders": {
+      "members": {
+        "type": "int"
+      },
+      "admins": {
+        "type": "int"
+      }
+    }
+  },
+  "staffRolesCount": "{n, plural, other{{n} peran khusus}}",
+  "@staffRolesCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "staffCapsCount": "{held}/{total, plural, other{{total} izin}}",
+  "@staffCapsCount": {
+    "placeholders": {
+      "held": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "staffMembersCount": "{n, plural, other{{n} anggota}}",
+  "@staffMembersCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "staffCreated": "{name} dibuat. PIN: {pin}",
+  "@staffCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "pin": {
+        "type": "String"
+      }
+    }
+  },
+  "staffNewPin": "PIN baru: {pin}",
+  "@staffNewPin": {
+    "placeholders": {
+      "pin": {
+        "type": "String"
+      }
+    }
+  },
+  "staffRoleAdminSuffix": "{name} (admin)",
+  "@staffRoleAdminSuffix": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "staffDeleteRoleTitle": "Hapus peran “{name}”?",
+  "@staffDeleteRoleTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "staffChangeRoleBody": "Pindahkan {name} ke peran lain. Izin berubah seketika.",
+  "@staffChangeRoleBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "staffDisableTitle": "Nonaktifkan {name}?",
+  "@staffDisableTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "staffDeleteTitle": "Hapus {name}?",
+  "@staffDeleteTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "payMethodCash": "Tunai",
+  "payMethodCard": "Kartu",
+  "payMethodQris": "QRIS",
+  "payMethodTransfer": "Transfer",
+  "payMethodOther": "Lainnya",
+  "rangeToday": "Hari ini",
+  "rangeYesterday": "Kemarin",
+  "rangeD7": "7 hari",
+  "rangeD30": "30 hari",
+  "rangeMonth": "Bulan ini",
+  "rangeCustom": "Khusus",
+  "expPeriod": "Periode",
+  "expRange": "Rentang",
+  "expGenerated": "Dibuat",
+  "expNote": "Catatan",
+  "expMetaRange": "Rentang: {value}",
+  "@expMetaRange": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "expMetaGenerated": "Dibuat: {value}",
+  "@expMetaGenerated": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "expNoData": "Tidak ada data.",
+  "@expNoData": {
+    "description": "Empty state inside a PDF export table."
+  },
+  "expPageOf": "SatSet · Halaman {page}/{total}",
+  "@expPageOf": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "expAccountingCsvTitle": "Laporan Akuntansi SatSet",
+  "expAccountingTitle": "Laporan Akuntansi",
+  "expAccountingHeader": "Laporan Akuntansi · {range}",
+  "@expAccountingHeader": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "expAccountingNote": "Pajak & service = nilai riil dari sesi terselesaikan (bukan estimasi 18% di layar). Rentang mengikuti aturan yang sama dengan laporan di layar (ADR-0032).",
+  "@expAccountingNote": {
+    "description": "Footnote under the accounting revenue summary. ADR-0032."
+  },
+  "expSessionCount": "Jumlah sesi",
+  "expMetaSessionCount": "Jumlah sesi: {n}",
+  "@expMetaSessionCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "expRevenueSummary": "Ringkasan Pendapatan",
+  "expColEntry": "Pos",
+  "@expColEntry": {
+    "description": "Left column of a two-column key/value table."
+  },
+  "expColValue": "Nilai",
+  "expGrossSubtotal": "Bruto (subtotal)",
+  "expVoidCorrection": "Void / koreksi",
+  "expDiscount": "Diskon",
+  "expNet": "Net",
+  "expService": "Service",
+  "expTax": "Pajak",
+  "expCollectedBilled": "Terkumpul (tagihan)",
+  "expRefund": "Refund",
+  "expMethodBreakdown": "Rincian Metode Bayar",
+  "expColMethod": "Metode",
+  "expColAmount": "Jumlah",
+  "expColTransactions": "Transaksi",
+  "expColRefundCount": "Refund (n)",
+  "expWriteOffs": "Void & Refund (write-off)",
+  "expColReason": "Alasan",
+  "expColItem": "Item",
+  "expColLost": "Rugi",
+  "expDiscountByPreset": "Diskon per Preset",
+  "expColScope": "Cakupan",
+  "expColUsed": "Dipakai",
+  "expScopeLine": "Per item",
+  "@expScopeLine": {
+    "description": "Discount scope: applies to one bill line. CONTEXT: Diskon (discount)."
+  },
+  "expScopeOrder": "Per pesanan",
+  "@expScopeOrder": {
+    "description": "Discount scope: applies to one receipt. CONTEXT: Diskon (discount)."
+  },
+  "expDailyBreakdown": "Rincian Harian",
+  "expColDate": "Tanggal",
+  "expColGross": "Bruto",
+  "expColVoid": "Void",
+  "expColCollected": "Terkumpul",
+  "expReportCsvTitle": "Laporan SatSet",
+  "expReportHeader": "Laporan SatSet · {range}",
+  "@expReportHeader": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "expSummary": "Ringkasan",
+  "expColMetric": "Metrik",
+  "expColCaption": "Keterangan",
+  "expStaffPerformance": "Kinerja Staf",
+  "expColName": "Nama",
+  "expColCover": "Cover",
+  "@expColCover": {
+    "description": "A single seated guest. Stays \"Cover\" in both languages — CONTEXT: Cover."
+  },
+  "expColAvgBill": "Rata tagihan",
+  "expColVoidPct": "Void %",
+  "expColSessions": "Sesi",
+  "expTopMenu": "Menu Terlaris",
+  "expSlowMenu": "Menu Lambat",
+  "expColQty": "Qty",
+  "expColRevenue": "Pendapatan",
+  "expColMarginPct": "Margin %",
+  "expColMargin": "Margin",
+  "expCategoryMix": "Komposisi Kategori",
+  "expColCategory": "Kategori",
+  "expColShareThisWeek": "Porsi minggu ini",
+  "expColShareLastWeek": "Porsi minggu lalu",
+  "expColThisWeek": "Minggu ini",
+  "expColLastWeek": "Minggu lalu",
+  "expHourlySales": "Penjualan per Jam",
+  "expColHour": "Jam",
+  "expDineInVsTakeaway": "Dine-in vs Bawa Pulang",
+  "expDineIn": "Makan di tempat",
+  "expTakeaway": "Bawa pulang",
+  "@expTakeaway": {
+    "description": "CONTEXT: Bawa pulang (Takeaway) — never \"Takeout\" or \"To go\"."
+  },
+  "expStaffCsvTitle": "Laporan Staf SatSet",
+  "expStaffTitle": "Laporan Staf",
+  "expStaffHeader": "Laporan Staf · {range}",
+  "@expStaffHeader": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "expColUpsellPct": "Upsell %",
+  "expColVoidCount": "Void",
+  "expColLostVoid": "Lost (void)",
+  "expColTopReason": "Alasan teratas",
+  "expTotalRow": "TOTAL",
+  "expStaffSortNote": "Diurutkan menurut Net (tertinggi dahulu).",
+  "expOrdersCsvTitle": "Riwayat Pesanan SatSet",
+  "expOrdersTitle": "Riwayat Pesanan",
+  "expOrdersHeader": "Riwayat Pesanan · {range}",
+  "@expOrdersHeader": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "expVisitCount": "Total kunjungan",
+  "expLineCount": "Total baris",
+  "expVisitSection": "KUNJUNGAN",
+  "expColPax": "Pax",
+  "@expColPax": {
+    "description": "CONTEXT: Party / partySize — \"Pax\" in both languages."
+  },
+  "expColWaiter": "Pelayan",
+  "expColClosed": "Tutup",
+  "expColTime": "Jam",
+  "expColVariant": "Varian",
+  "expColModifier": "Modifier",
+  "expColCourse": "Course",
+  "expColPrice": "Harga",
+  "expColTotal": "Total",
+  "expColSubtotal": "Subtotal",
+  "expColStatus": "Status",
+  "expColVoidReason": "Alasan void",
+  "expBillSection": "TAGIHAN",
+  "@expBillSection": {
+    "description": "CONTEXT: Tagihan / Struk pembayaran — pre-payment document."
+  },
+  "expColCashier": "Kasir",
+  "expColProofPhoto": "Bukti foto",
+  "expYes": "Ya",
+  "expPresent": "Ada",
+  "expTakeawayVisit": "{label} · Bawa pulang",
+  "@expTakeawayVisit": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "expTableVisit": "Meja {label}",
+  "@expTableVisit": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "expStatusVoided": "Dibatalkan",
+  "@expStatusVoided": {
+    "description": "CONTEXT: Void (item) — English must say Void, never Cancel."
+  },
+  "expStatusServed": "Disajikan",
+  "expStatusReady": "Siap",
+  "expStatusCooked": "Dimasak",
+  "expStatusSent": "Dikirim",
+  "expStatusHeld": "Ditahan",
+  "expVoidedWithReason": "Batal · {reason}",
+  "@expVoidedWithReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "expNoVisits": "Tidak ada kunjungan pada rentang ini.",
+  "expNoPayments": "Belum ada pembayaran tercatat.",
+  "expBillHeading": "Tagihan",
+  "expMetaVisitLines": "Kunjungan: {visits}  ·  Baris: {lines}  ·  Net: {net}",
+  "@expMetaVisitLines": {
+    "placeholders": {
+      "visits": {
+        "type": "int"
+      },
+      "lines": {
+        "type": "int"
+      },
+      "net": {
+        "type": "String"
+      }
+    }
+  },
+  "expVisitMeta": "Pax {pax}  ·  {waiter}  ·  {closed}",
+  "@expVisitMeta": {
+    "placeholders": {
+      "pax": {
+        "type": "int"
+      },
+      "waiter": {
+        "type": "String"
+      },
+      "closed": {
+        "type": "String"
+      }
+    }
+  },
+  "expReceiptTotals": "Subtotal {subtotal}{discount}  ·  Service {service}  ·  Pajak {tax}  ·  Total {total}",
+  "@expReceiptTotals": {
+    "description": "The {discount} slot is either empty or the pre-rendered expReceiptDiscountPart.",
+    "placeholders": {
+      "subtotal": {
+        "type": "String"
+      },
+      "discount": {
+        "type": "String"
+      },
+      "service": {
+        "type": "String"
+      },
+      "tax": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "expReceiptDiscountPart": "  ·  Diskon {amount}",
+  "@expReceiptDiscountPart": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "expPaymentActor": "{method}  ·  {cashier}{refund}",
+  "@expPaymentActor": {
+    "description": "The {refund} slot is either empty or expPaymentRefundPart.",
+    "placeholders": {
+      "method": {
+        "type": "String"
+      },
+      "cashier": {
+        "type": "String"
+      },
+      "refund": {
+        "type": "String"
+      }
+    }
+  },
+  "expPaymentRefundPart": "  ·  Refund",
+  "expProofCaption": "Bukti · {method}  ·  {amount}",
+  "@expProofCaption": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "expProofMissing": "Bukti tidak termuat",
+  "expAuditSubject": "Catatan audit",
+  "@expAuditSubject": {
+    "description": "Share-sheet subject for the venue audit CSV. ADR-0072."
+  },
+  "expAuditCsvHeader": "Waktu,Jenis,Pengguna,Peran,Kejadian,Meja,Jumlah,Alasan,Disetujui",
+  "@expAuditCsvHeader": {
+    "description": "One CSV header row, comma-separated. Rendered server-side (ADR-0072)."
+  },
+  "strukTableLine": "Meja {label}  ·  {pax} org  ·  {time}",
+  "@strukTableLine": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "pax": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "strukGuest": "Tamu: {name}",
+  "@strukGuest": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "strukNote": "Catatan: {note}",
+  "@strukNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "strukVerify": "Verifikasi pesanan Anda",
+  "@strukVerify": {
+    "description": "CONTEXT: Struk (cetak struk meja)."
+  },
+  "strukThanks": "Terima kasih",
+  "@strukThanks": {
+    "description": "Fallback sign-off when the venue has not set its own thank-you line."
+  },
+  "strukTestTitle": "TES PRINTER",
+  "strukTestOk": "Terhubung OK",
+  "strukBillTitle": "TAGIHAN",
+  "strukReceiptTitle": "STRUK PEMBAYARAN",
+  "strukEvenHeading": "Patungan meja:",
+  "strukBillTotal": "Total tagihan",
+  "strukPart": "Bagian",
+  "@strukPart": {
+    "description": "CONTEXT: Amount receipt."
+  },
+  "strukSubtotal": "Subtotal",
+  "strukDiscount": "Diskon",
+  "@strukDiscount": {
+    "description": "Fallback row label when the applied discount snapshot carries no name."
+  },
+  "strukService": "Layanan",
+  "strukTax": "Pajak",
+  "strukTotal": "TOTAL",
+  "strukPaid": "Bayar {method}",
+  "@strukPaid": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "strukRefunded": "Refund {method}",
+  "@strukRefunded": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "strukCashReceived": "Tunai diterima",
+  "strukChange": "Kembali",
+  "strukOutstanding": "SISA",
+  "strukSettled": "LUNAS",
+  "exportKindReport": "Umum",
+  "exportKindOrders": "Pesanan",
+  "exportKindStaff": "Staf",
+  "exportKindAccounting": "Akuntansi",
+  "exportTitleReport": "Ekspor laporan",
+  "exportTitleOrders": "Ekspor pesanan",
+  "exportTitleStaff": "Ekspor staf",
+  "exportTitleAccounting": "Ekspor akuntansi",
+  "exportFailed": "Gagal mengekspor. Coba lagi.",
+  "exportKindField": "Jenis",
+  "exportFormatField": "Format",
+  "exportNoSnapshot": "Laporan belum siap — buka laporan dulu agar bisa diekspor.",
+  "exportPreparing": "Menyiapkan…",
+  "exportAction": "Ekspor {format}",
+  "@exportAction": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      }
+    }
+  },
+  "printJobOrderSlip": "Cetak struk meja {label}",
+  "@printJobOrderSlip": {
+    "description": "CONTEXT: Struk (cetak struk meja) — an order slip, never a receipt.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "printJobReceiptDoc": "Cetak struk · {who}",
+  "@printJobReceiptDoc": {
+    "description": "Post-payment money document. CONTEXT: Tagihan / Struk pembayaran.",
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "printJobBillDoc": "Cetak tagihan · {who}",
+  "@printJobBillDoc": {
+    "description": "Pre-payment money document. CONTEXT: Tagihan / Struk pembayaran.",
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "printWhoReceipt": "struk",
+  "@printWhoReceipt": {
+    "description": "Fallback for \"who\" when a split receipt carries no letter."
+  },
+  "courseDrinksNow": "Minum dulu",
+  "@courseDrinksNow": {
+    "description": "Course name. Mirrors Courses.drinksNow."
+  },
+  "courseStarters": "Pembuka",
+  "courseMains": "Utama",
+  "courseSides": "Bersama Utama",
+  "@courseSides": {
+    "description": "Sides plate WITH the mains — never \"Sides\", which reads as a separate course and is exactly what ADR-0043 says it is not."
+  },
+  "courseDesserts": "Penutup",
+  "courseFireNow": "Langsung",
+  "auditFire": "Course {course} dibakar untuk Meja {table}",
+  "@auditFire": {
+    "description": "Audit row: a held course was fired. ADR-0085.",
+    "placeholders": {
+      "course": {
+        "type": "String"
+      },
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "auditModify": "Ubah {name}",
+  "@auditModify": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditModifyQty": "Ubah ×{oldQty} → ×{newQty} {name}",
+  "@auditModifyQty": {
+    "placeholders": {
+      "oldQty": {
+        "type": "String"
+      },
+      "newQty": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditModifyAtTable": "{name} diubah di Meja {table}",
+  "@auditModifyAtTable": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "auditVoidItem": "Dibatalkan ×{qty} {name} · {amount}",
+  "@auditVoidItem": {
+    "description": "Void, never \"Cancel\" — CONTEXT reserves cancel for reservations. {amount} is pre-formatted rupiah (ADR-0084).",
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "auditVoidItemAtTable": "{name} dibatalkan di Meja {table}",
+  "@auditVoidItemAtTable": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "auditComp": "Digratiskan ×{qty} {name} · {amount}",
+  "@auditComp": {
+    "description": "Comp — a write-off with an approver, never \"Free\".",
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "auditTableMoved": "Pindah meja {src} → {tgt}",
+  "@auditTableMoved": {
+    "placeholders": {
+      "src": {
+        "type": "String"
+      },
+      "tgt": {
+        "type": "String"
+      }
+    }
+  },
+  "auditPaymentRecorded": "Pembayaran {amount} ({method}) {label}",
+  "@auditPaymentRecorded": {
+    "description": "{method} arrives already rendered through paymentMethodLabel.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "method": {
+        "type": "String"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "auditPaymentAtTable": "Pembayaran {method} Meja {table}",
+  "@auditPaymentAtTable": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      },
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "auditRefund": "Refund {amount} ({method}) {label}",
+  "@auditRefund": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "method": {
+        "type": "String"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "auditDiscountApplied": "Diskon {name}",
+  "@auditDiscountApplied": {
+    "description": "{name} is the preset's own name — venue content, never translated.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditDiscountAppliedLine": "Diskon {name} (item)",
+  "@auditDiscountAppliedLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditDiscountRemoved": "Hapus diskon {name}",
+  "@auditDiscountRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditDiscountBillApplied": "Diskon tagihan {name}",
+  "@auditDiscountBillApplied": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditDiscountBillRemoved": "Hapus diskon tagihan {name}",
+  "@auditDiscountBillRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditDiscountAtTable": "Diskon {percent}% di Meja {table}",
+  "@auditDiscountAtTable": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      },
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "auditBillReopenedReceipt": "Buka ulang {label}",
+  "@auditBillReopenedReceipt": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "auditBillReopened": "Buka ulang tagihan {table}",
+  "@auditBillReopened": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "auditBillClosed": "Tutup tagihan {table}",
+  "@auditBillClosed": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "auditBillWrittenOff": "Tagihan tak tertagih {amount} {table}",
+  "@auditBillWrittenOff": {
+    "description": "Tak tertagih · Written off. Never \"Cancelled\" — the books record a loss.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "auditMenuKilled": "Stop jual {name}",
+  "@auditMenuKilled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditMenuRestored": "Jual lagi {name}",
+  "@auditMenuRestored": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditStaffCreated": "{name} dibuat",
+  "@auditStaffCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditStaffDisabled": "{name} dinonaktifkan",
+  "@auditStaffDisabled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditStaffEnabled": "{name} diaktifkan",
+  "@auditStaffEnabled": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditStaffPinSet": "PIN {name} diubah",
+  "@auditStaffPinSet": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditStaffPinReset": "PIN {name} direset",
+  "@auditStaffPinReset": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditStaffRoleChanged": "{name}: {from} → {to}",
+  "@auditStaffRoleChanged": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "auditRoleCreated": "Peran {name} dibuat",
+  "@auditRoleCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditRoleDeleted": "Peran {name} dihapus",
+  "@auditRoleDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditRoleColorChanged": "Warna {name} diubah",
+  "@auditRoleColorChanged": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditRoleRenamed": "Peran: {from} → {to}",
+  "@auditRoleRenamed": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "auditRoleCapabilityChanged": "{name}: {changes}",
+  "@auditRoleCapabilityChanged": {
+    "description": "{changes} is a +cap,-cap diff of capability identifiers — code, not copy, in both languages.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "changes": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptDefault": "Struk",
+  "@receiptDefault": {
+    "description": "A receipt with no label of its own."
+  },
+  "receiptGuest": "Tamu {letter}",
+  "@receiptGuest": {
+    "placeholders": {
+      "letter": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptPart": "Bagian {index}/{count}",
+  "@receiptPart": {
+    "description": "An even share (ADR-0068). Composed at read time from the stored \"i/n\" — never a stored sentence (ADR-0085).",
+    "placeholders": {
+      "index": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "auditStaffDeleted": "{name} dihapus",
+  "@auditStaffDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditSampleDataLoaded": "Memuat contoh data restoran",
+  "@auditSampleDataLoaded": {
+    "description": "Audit row for the ADR-0073 seed. No parameters — the act names itself."
+  },
+  "cshCrumbCashier": "Kasir",
+  "cshCrumbBill": "Tagihan",
+  "cshBillTableCrumb": "Tagihan · Meja {table}",
+  "@cshBillTableCrumb": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "cshReceiptTableCrumb": "Struk · Meja {table}",
+  "@cshReceiptTableCrumb": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "cshLoadFailed": "Gagal memuat tagihan.",
+  "cshReceiptLoadFailed": "Gagal memuat struk.",
+  "cshCloseBill": "Tutup tagihan",
+  "cshCloseBillBody": "Kunci tagihan Meja {table} sebagai lunas? Tindakan ini mengakhiri tagihan.",
+  "@cshCloseBillBody": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "cshWriteOffTitle": "Tutup tagihan — tak tertagih",
+  "@cshWriteOffTitle": {
+    "description": "Written off (tak tertagih) — the guest never paid. Not a void and not a discount; see CONTEXT.md."
+  },
+  "cshWriteOffBody": "Sisa {amount} akan dicatat sebagai kerugian (tak tertagih). Perlu persetujuan manajer.",
+  "@cshWriteOffBody": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshWriteOffReason": "Alasan (wajib)",
+  "cshWriteOffReasonHint": "mis. tamu pergi tanpa bayar",
+  "cshWriteOffConfirm": "Catat kerugian",
+  "cshErrOverAssign": "Unit melebihi yang tersedia.",
+  "cshErrReceiptPaid": "Buka ulang struk sebelum mengubahnya.",
+  "cshErrNotSettled": "Tagihan belum lunas.",
+  "cshErrBillLocked": "Tagihan sudah ditutup — buka ulang dulu.",
+  "cshErrForbidden": "Perlu persetujuan manajer (tak tertagih).",
+  "cshErrReasonRequired": "Alasan tak tertagih wajib diisi.",
+  "cshErrNoLines": "Meja tidak punya pesanan.",
+  "cshErrGeneric": "Operasi gagal ({code}).",
+  "@cshErrGeneric": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "cshReceipts": "Struk",
+  "@cshReceipts": {
+    "description": "Section header over the list of receipts on a bill."
+  },
+  "cshUnassignedCount": "{n, plural, other{{n} item belum diatur ke struk}}",
+  "@cshUnassignedCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cshSubtotal": "Subtotal",
+  "cshDiscount": "Diskon",
+  "cshService": "Layanan",
+  "cshTax": "Pajak",
+  "cshTotal": "Total",
+  "cshPaidAmount": "Terbayar",
+  "cshOutstanding": "Sisa",
+  "cshBatch": "PESANAN {batch} · {time}",
+  "@cshBatch": {
+    "placeholders": {
+      "batch": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cshOrderItems": "Item pesanan",
+  "cshNotAllAssigned": "Belum semua diatur",
+  "cshNote": "Catatan: {note}",
+  "@cshNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "cshUnitDec": "Kurangi unit",
+  "cshUnitInc": "Tambah unit",
+  "cshPickedOf": "{picked} dari {free}",
+  "@cshPickedOf": {
+    "placeholders": {
+      "picked": {
+        "type": "int"
+      },
+      "free": {
+        "type": "int"
+      }
+    }
+  },
+  "cshAssign": "Atur",
+  "cshAssignTitle": "Atur \"{name}\"",
+  "@cshAssignTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cshAssignSub": "{qty, plural, other{{qty} unit}} total · {unassigned} belum diatur",
+  "@cshAssignSub": {
+    "placeholders": {
+      "qty": {
+        "type": "int"
+      },
+      "unassigned": {
+        "type": "int"
+      }
+    }
+  },
+  "cshSettled": "Lunas",
+  "cshUnpaid": "Belum bayar",
+  "cshStatusSettled": "lunas",
+  "@cshStatusSettled": {
+    "description": "Lower-case, used inside a screen-reader sentence."
+  },
+  "cshStatusUnpaid": "belum bayar",
+  "@cshStatusUnpaid": {
+    "description": "Lower-case, used inside a screen-reader sentence."
+  },
+  "cshPay": "Bayar",
+  "cshRefund": "Refund",
+  "cshReopen": "Buka ulang",
+  "cshReopenTitle": "Buka ulang struk",
+  "cshReopenBody": "Batalkan status lunas \"{receipt}\" agar bisa diubah? Pembayaran tercatat tetap ada.",
+  "@cshReopenBody": {
+    "placeholders": {
+      "receipt": {
+        "type": "String"
+      }
+    }
+  },
+  "cshReopenConfirm": "Ya, buka ulang",
+  "cshRemoveDiscount": "Hapus diskon",
+  "cshRemoveDiscountBody": "Hapus \"{label}\" ({amount}) dari struk ini?",
+  "@cshRemoveDiscountBody": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshConfirmDelete": "Ya, hapus",
+  "cshPrintBill": "Cetak tagihan",
+  "cshPrintReceipt": "Cetak struk",
+  "cshDeleteReceiptTitle": "Hapus struk",
+  "cshDeleteReceiptBody": "Hapus \"{receipt}\"? Item yang sudah diatur ke struk ini akan kembali belum diatur.",
+  "@cshDeleteReceiptBody": {
+    "placeholders": {
+      "receipt": {
+        "type": "String"
+      }
+    }
+  },
+  "cshPhotoFailed": "Gagal mengambil foto: {error}",
+  "@cshPhotoFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cshRefundTitle": "Refund {receipt}",
+  "@cshRefundTitle": {
+    "placeholders": {
+      "receipt": {
+        "type": "String"
+      }
+    }
+  },
+  "cshPayTitle": "Bayar {receipt}",
+  "@cshPayTitle": {
+    "placeholders": {
+      "receipt": {
+        "type": "String"
+      }
+    }
+  },
+  "cshTendered": "Uang diterima",
+  "cshChangeDue": "Kembalian {amount}",
+  "@cshChangeDue": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshShortBy": "Kurang {amount}",
+  "@cshShortBy": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshProofPhoto": "Foto bukti (wajib)",
+  "cshTakePhoto": "Ambil foto",
+  "cshRetakePhoto": "Ambil ulang",
+  "cshRecordRefund": "Catat refund",
+  "cshRecordPayment": "Catat pembayaran",
+  "cshEvenSplit": "Split rata · {count, plural, other{{count} bagian}}",
+  "@cshEvenSplit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cshPerHead": "{amount} / orang",
+  "@cshPerHead": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshPaidCount": "{paid} dari {total} lunas",
+  "@cshPaidCount": {
+    "placeholders": {
+      "paid": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cshPayPart": "Bayar bagian {index}",
+  "@cshPayPart": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "cshShareSemantic": "{receipt}, {status}",
+  "@cshShareSemantic": {
+    "placeholders": {
+      "receipt": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "cshPartSemantic": "Bagian {index}, {status}",
+  "@cshPartSemantic": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "cshItemCount": "{n, plural, other{{n} item}}",
+  "@cshItemCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cshItemFallback": "Item",
+  "cshRemoveLineDiscountTitle": "Hapus diskon item",
+  "cshRemoveLineDiscountBody": "Hapus \"{label}\" ({amount}) dari {name}?",
+  "@cshRemoveLineDiscountBody": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cshAddReceipt": "Tambah struk",
+  "cshBillWrittenOff": "Tagihan tak tertagih",
+  "cshBillSettled": "Tagihan lunas",
+  "cshWrittenOffBody": "{amount} dicatat sebagai kerugian.",
+  "@cshWrittenOffBody": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshSettledFull": "{amount} diterima penuh.",
+  "@cshSettledFull": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshSettledParts": "{amount} diterima penuh dalam {parts, plural, other{{parts} bagian.}}",
+  "@cshSettledParts": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "parts": {
+        "type": "int"
+      }
+    }
+  },
+  "cshPrintSettledReceipt": "Cetak struk lunas",
+  "cshPrintTableReceipt": "Cetak struk meja",
+  "cshPrintTableBill": "Cetak tagihan meja",
+  "cshWholeBill": "Seluruh tagihan",
+  "cshRemoveBillDiscountTitle": "Hapus diskon tagihan",
+  "cshRemoveBillDiscountBody": "Hapus \"{label}\" ({amount}) dari seluruh tagihan?",
+  "@cshRemoveBillDiscountBody": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshTableClosedUnpaid": "Meja sudah ditutup waiter — tagihan belum lunas",
+  "cshAmount": "Jumlah",
+  "@cshAmount": {
+    "description": "A money amount on the payment sheet — not a count."
+  },
+  "rptSecSales": "Penjualan",
+  "rptSecStaff": "Staf",
+  "rptSecMenu": "Menu",
+  "rptSecBahan": "Bahan",
+  "@rptSecBahan": {
+    "description": "CONTEXT.md: bahan · Ingredient."
+  },
+  "rptSecOps": "Operasi",
+  "rptSecPayments": "Pembayaran",
+  "rptUpdating": "Memperbarui…",
+  "rptStockTitle": "Bahan & stok",
+  "rptStockSub": "Pemakaian, terbuang, nilai stok, dan selisih opname",
+  "@rptStockSub": {
+    "description": "CONTEXT.md: opname · Stocktake."
+  },
+  "rptNonCash": "Pembayaran non-tunai",
+  "rptNonCashSub": "bukti foto wajib",
+  "rptNonCashEmpty": "Tidak ada pembayaran non-tunai pada rentang ini.",
+  "rptTotalOf": "total {amount}",
+  "@rptTotalOf": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "rptProofOnVenue": "Bukti foto tersedia di perangkat venue.",
+  "rptMethodCount": "{method} · {count}× · {amount}",
+  "@rptMethodCount": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "rptMethodTable": "{method} · Meja {table}",
+  "@rptMethodTable": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      },
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "rptDineVsTakeaway": "Dine-in vs Bawa pulang",
+  "rptDineIn": "Dine-in",
+  "rptTakeaway": "Bawa pulang",
+  "rptTxCount": "{n, plural, other{{n} transaksi}}",
+  "@rptTxCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "rptKpiNet": "Net",
+  "rptKpiGross": "Gross",
+  "rptKpiTaxService": "Pajak + Service",
+  "rptKpiVoid": "Void",
+  "rptNoData": "Belum ada data",
+  "rptNoDataDot": "Belum ada data.",
+  "rptNoDataLower": "belum ada data",
+  "@rptNoDataLower": {
+    "description": "Lower-case, sits under a KPI value."
+  },
+  "rptGuestTrend": "Tren tamu vs minggu lalu",
+  "rptGuestTrendSub": "{count, plural, other{{count} tamu}} · {delta}% WoW",
+  "@rptGuestTrendSub": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "delta": {
+        "type": "String"
+      }
+    }
+  },
+  "rptThisWeek": "Minggu ini",
+  "rptLastWeek": "Minggu lalu",
+  "rptRevenuePerHour": "Pendapatan per jam",
+  "rptPeakHour": "Puncak {from}:00 — {to}:00",
+  "@rptPeakHour": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "rptWaiterPerf": "Performa pelayan",
+  "rptWaiterPerfSub": "{n} staf · sortir aktif",
+  "@rptWaiterPerfSub": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "rptNoClosedSessions": "Belum ada sesi tutup di rentang ini.",
+  "rptSort": "Sortir",
+  "rptSortCovers": "Meja",
+  "rptSortVoidPct": "Void %",
+  "rptSortAvg": "Avg",
+  "rptSortNetDesc": "Net tertinggi",
+  "rptSortMostTables": "Paling banyak meja",
+  "rptSortMostVoids": "Void terbanyak",
+  "rptSortAvgTicket": "Avg ticket",
+  "rptColWaiter": "PELAYAN",
+  "rptColTables": "MEJA",
+  "rptColItems": "ITEM",
+  "rptColAvgTicket": "AVG TICKET",
+  "rptColVoidPct": "VOID%",
+  "rptColNet": "NET",
+  "rptUpsell": "Indeks upsell pelayan",
+  "rptUpsellSub": "% sesi dgn starter & main · avg {avg}%",
+  "@rptUpsellSub": {
+    "placeholders": {
+      "avg": {
+        "type": "int"
+      }
+    }
+  },
+  "rptTopSellers": "Top sellers",
+  "rptSlowMovers": "Slow movers",
+  "rptMenuHighMargin": "{n, plural, other{{n} item}} · margin tinggi",
+  "@rptMenuHighMargin": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "rptMenuSlowStock": "{n, plural, other{{n} item}} · stok mengendap",
+  "@rptMenuSlowStock": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "rptQtyMargin": "×{qty} · margin {margin}%",
+  "@rptQtyMargin": {
+    "placeholders": {
+      "qty": {
+        "type": "int"
+      },
+      "margin": {
+        "type": "int"
+      }
+    }
+  },
+  "rptAttachRate": "Attach rate modifier",
+  "rptAttachRateSub": "% order pakai modifier",
+  "rptBucketStar": "LAKU & UNTUNG",
+  "rptBucketStarAction": "jaga & sorot",
+  "rptBucketPlow": "LAKU TAPI TIPIS",
+  "rptBucketPlowAction": "reprice / kurangi porsi",
+  "rptBucketPuzzle": "UNTUNG TAPI SEPI",
+  "rptBucketPuzzleAction": "promosikan",
+  "rptBucketDog": "SEPI & TIPIS",
+  "rptBucketDogAction": "kandidat dipangkas",
+  "rptMenuClass": "Klasifikasi menu",
+  "rptMenuClassSub": "Populer × margin",
+  "rptBucketAction": "· {action}",
+  "@rptBucketAction": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "rptNoItems": "tidak ada item",
+  "rptPopMargin": "pop {pop} · margin {margin}%",
+  "@rptPopMargin": {
+    "placeholders": {
+      "pop": {
+        "type": "int"
+      },
+      "margin": {
+        "type": "int"
+      }
+    }
+  },
+  "rptMoreItems": "+{n} lainnya",
+  "@rptMoreItems": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "rptCategoryMix": "Bauran kategori (WoW)",
+  "rptCategoryMixSub": "Bagian pendapatan vs minggu lalu",
+  "rptColThisWeek": "MINGGU INI",
+  "rptColLastWeek": "MINGGU LALU",
+  "rptBasketPairs": "Pasangan keranjang",
+  "rptBasketPairsSub": "Item paling sering dipesan bersama",
+  "rptPairCount": "{n}× di rentang ini",
+  "@rptPairCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "rptKpiTurnTime": "Avg turn time",
+  "rptKpiPrep": "Prep dapur",
+  "rptKpiPickup": "Tunggu antar",
+  "rptKpiReservations": "Reservasi",
+  "rptServiceSpeed": "Kecepatan layanan",
+  "rptServiceSpeedEmpty": "Belum ada item siap/disajikan",
+  "rptServiceSpeedSub": "Median prep {prep}m · antar {pickup}m · {n, plural, other{{n} item}}",
+  "@rptServiceSpeedSub": {
+    "placeholders": {
+      "prep": {
+        "type": "int"
+      },
+      "pickup": {
+        "type": "int"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "rptSlaCourses": "kursus siap di bawah target masing-masing",
+  "rptPickupSla": "Diantar < {mins}m",
+  "@rptPickupSla": {
+    "placeholders": {
+      "mins": {
+        "type": "int"
+      }
+    }
+  },
+  "rptMedianMins": "median {mins}m",
+  "@rptMedianMins": {
+    "placeholders": {
+      "mins": {
+        "type": "int"
+      }
+    }
+  },
+  "rptGreetBreach": "Telat dilayani > {mins}m",
+  "@rptGreetBreach": {
+    "placeholders": {
+      "mins": {
+        "type": "int"
+      }
+    }
+  },
+  "rptGreetSub": "median {median}m · {n, plural, other{{n} kunjungan}}",
+  "@rptGreetSub": {
+    "placeholders": {
+      "median": {
+        "type": "int"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "rptSlowestMenu": "Menu paling lambat (rata-rata prep)",
+  "rptHeatmap": "Peak-hour heatmap",
+  "rptHeatmapSub": "7 hari · jam 11—22",
+  "rptHeatQuiet": "SEPI",
+  "rptHeatBusy": "PADAT",
+  "rptReservationConv": "Konversi reservasi",
+  "rptReservationNoModule": "Belum ada modul reservasi",
+  "rptReservationNoModuleBody": "Aktifkan modul reservasi (P3) untuk melihat konversi.",
+  "rptReservationSub": "{booked} dipesan · {seated} duduk · {noShow} no-show",
+  "@rptReservationSub": {
+    "placeholders": {
+      "booked": {
+        "type": "int"
+      },
+      "seated": {
+        "type": "int"
+      },
+      "noShow": {
+        "type": "int"
+      }
+    }
+  },
+  "rptSeated": "Duduk",
+  "rptNoShow": "No-show",
+  "rptCancelled": "Batal",
+  "rptVoidReasons": "Alasan void & comp",
+  "rptNoVoids": "Belum ada void",
+  "rptVoidSub": "{count, plural, other{{count} kejadian}} · {amount} hilang",
+  "@rptVoidSub": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "rptVoidPerWaiter": "Void per pelayan",
+  "rptTopReason": "alasan: {reason}",
+  "@rptTopReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "rptNoSection": "Tidak ada bagian aktif",
+  "rptNoSectionBody": "Aktifkan minimal satu tab di atas",
+  "stkDimMass": "Berat",
+  "stkDimVolume": "Volume",
+  "stkDimCount": "Jumlah",
+  "stkTitle": "Stok",
+  "stkSubOpname": "Stok opname physical audit",
+  "stkSub": "Bahan, penerimaan & mutasi",
+  "stkAddIngredient": "Tambah bahan",
+  "stkOpname": "Opname",
+  "@stkOpname": {
+    "description": "CONTEXT.md: opname · Stocktake."
+  },
+  "stkSaveCount": "Simpan ({n})",
+  "@stkSaveCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "stkLoadFailed": "Gagal memuat stok: {error}",
+  "@stkLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "stkEmptyTitle": "Belum Ada Bahan",
+  "stkEmptyBody": "Tambahkan bahan pertama Anda, lalu susun resepnya di editor menu agar stok berkurang otomatis saat pesanan dikirim.",
+  "stkNoMatch": "Tidak ada bahan yang cocok dengan pencarian / filter.",
+  "stkKpiLow": "MENIPIS",
+  "stkCountIngredients": "{n, plural, other{{n} Bahan}}",
+  "@stkCountIngredients": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "stkNeedReorder": "Perlu reorder",
+  "stkStockOk": "Stok aman",
+  "stkKpiNegative": "STOK MINUS",
+  "stkNeedOpname": "Perlu opname segera",
+  "stkKpiProduced": "PRODUKSI MANDIRI",
+  "stkOfRegistered": "dari {n, plural, other{{n} bahan terdaftar}}",
+  "@stkOfRegistered": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "stkOpnameMode": "MODE STOK OPNAME",
+  "stkOpnameHint": "Ketik jumlah fisik di gudang saat ini. Selisih akan otomatis dihitung sebagai penyesuaian mutasi.",
+  "stkFilled": "{n} diisi",
+  "@stkFilled": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "stkSearchHint": "Cari nama bahan...",
+  "stkFilterAll": "Semua ({n})",
+  "@stkFilterAll": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "stkFilterLow": "Menipis ({n})",
+  "@stkFilterLow": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "stkFilterNegative": "Minus ({n})",
+  "@stkFilterNegative": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "stkFilterProduced": "Produksi ({n})",
+  "@stkFilterProduced": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "stkBadgeProduced": "PRODUKSI",
+  "stkBadgeLow": "MENIPIS",
+  "stkBadgeNegative": "MINUS",
+  "stkColOnHand": "STOK SAAT INI",
+  "stkColPricePer": "HARGA / {unit}",
+  "@stkColPricePer": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "stkColLastReceived": "TERAKHIR TERIMA",
+  "stkReceive": "Terima",
+  "stkMenuReceive": "Terima barang",
+  "stkMenuProduce": "Produksi batch",
+  "stkMenuLedger": "Riwayat mutasi",
+  "stkMenuEdit": "Ubah bahan",
+  "stkMenuArchive": "Arsipkan",
+  "stkMinThreshold": "Batas min: {qty}",
+  "@stkMinThreshold": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "stkVarianceExact": "Pas",
+  "stkOpnameDoneNoVariance": "Opname selesai — tidak ada selisih",
+  "stkOpnameDone": "Opname selesai — {n, plural, other{{n} bahan}} disesuaikan",
+  "@stkOpnameDone": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "stkSaveFailed": "Gagal menyimpan: {error}",
+  "@stkSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "stkFailed": "Gagal: {error}",
+  "@stkFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "stkReceiveTitle": "Terima {name}",
+  "@stkReceiveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stkReceiveSub": "Catat penambahan stok dan harga beli terbaru.",
+  "stkPricePer": "Harga per {unit} (opsional)",
+  "@stkPricePer": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "stkPriceHelper": "Kosongkan jika tidak mengubah harga rata-rata",
+  "stkSupplier": "Pemasok (opsional)",
+  "stkReceiveOk": "Stok berhasil ditambahkan",
+  "stkProduceTitle": "Produksi {name}",
+  "@stkProduceTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stkProduceSub": "1 batch = {qty}. Bahan baku penyusun akan berkurang otomatis.",
+  "@stkProduceSub": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "stkBatchCount": "Jumlah batch",
+  "stkProduceOk": "Produksi berhasil dicatat",
+  "stkArchived": "{name} diarsipkan",
+  "@stkArchived": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stkNewIngredient": "Bahan Baru",
+  "stkEditIngredient": "Ubah {name}",
+  "@stkEditIngredient": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stkEditorSub": "Atur nama, satuan unit, dan batas reorder.",
+  "stkName": "Nama bahan",
+  "stkUnit": "Satuan",
+  "stkUnitOption": "{unit} · {dimension}",
+  "@stkUnitOption": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      },
+      "dimension": {
+        "type": "String"
+      }
+    }
+  },
+  "stkOpening": "Stok awal ({unit})",
+  "@stkOpening": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "stkOpeningHelper": "Dicatat sebagai mutasi awal",
+  "stkLowAt": "Batas menipis ({unit}, opsional)",
+  "@stkLowAt": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "stkLowAtHelper": "Munculkan peringatan saat stok di bawah angka ini",
+  "stkBatchYield": "Hasil 1 batch ({unit}, opsional)",
+  "@stkBatchYield": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "stkBatchYieldHelper": "Isi bila bahan ini hasil racikan internal, lalu susun resepnya",
+  "@stkBatchYieldHelper": {
+    "description": "CONTEXT.md: resep · Recipe."
+  },
+  "stkSaveOk": "Bahan berhasil disimpan",
+  "stkLedgerTitle": "Riwayat Mutasi",
+  "stkLedgerLoadFailed": "Gagal memuat: {error}",
+  "@stkLedgerLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "stkLedgerEmpty": "Belum ada riwayat mutasi untuk bahan ini.",
+  "stkAddFirst": "Tambah Bahan Pertama",
+  "stkUnused": "belum dipakai",
+  "durYears": "{n}thn",
+  "@durYears": {
+    "description": "Compact duration units. Indonesian: thn=tahun, bl=bulan, h=hari, j=jam, m=menit, d=detik. Note h and d do NOT mean hour and day here.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "durMonths": "{n}bl",
+  "@durMonths": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "durDays": "{n}h",
+  "@durDays": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "durHours": "{n}j",
+  "@durHours": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "durMins": "{n}m",
+  "@durMins": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "durSecs": "{n}d",
+  "@durSecs": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "durDh": "{d}h {h}j",
+  "@durDh": {
+    "placeholders": {
+      "d": {
+        "type": "int"
+      },
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "durHm": "{h}j {m}m",
+  "@durHm": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "durMs": "{m}m {s}d",
+  "@durMs": {
+    "placeholders": {
+      "m": {
+        "type": "int"
+      },
+      "s": {
+        "type": "int"
+      }
+    }
+  },
+  "durHms": "{h}j {m}m {s}d",
+  "@durHms": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      },
+      "s": {
+        "type": "int"
+      }
+    }
+  },
+  "relAgo": "{value} lalu",
+  "@relAgo": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "relIn": "{value} lagi",
+  "@relIn": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "elapsedYesterday": "kemarin",
+  "elapsedDaysAgo": "{n, plural, other{{n} hari}} lalu",
+  "@elapsedDaysAgo": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "sysTitle": "Sistem",
+  "sysVenueFallback": "Venue",
+  "sysHeaderSub": "{venue} · v2.0",
+  "@sysHeaderSub": {
+    "placeholders": {
+      "venue": {
+        "type": "String"
+      }
+    }
+  },
+  "sysDegraded": "Mode degraded",
+  "sysLanOnline": "LAN online",
+  "sysKdsOnline": "KDS Online",
+  "sysNoStations": "Belum ada stasiun",
+  "sysStationsActive": "Stasiun aktif",
+  "sysTabletPair": "Tablet Pair",
+  "sysNoDevices": "Belum ada perangkat",
+  "sysDevicesActive": "Perangkat aktif",
+  "sysQueue": "Antrian",
+  "sysNoPendingJobs": "Tidak ada job tertunda",
+  "sysTicketsWaiting": "Tiket menunggu",
+  "sysServerLan": "Server LAN",
+  "sysTagBooting": "BOOTING",
+  "sysTagPrimary": "PRIMARY",
+  "sysAddress": "Alamat",
+  "sysUptime": "Uptime",
+  "sysCertificate": "Sertifikat",
+  "sysPingLan": "Ping LAN",
+  "sysPingValue": "p50 {p50} ms · last {last} ms",
+  "@sysPingValue": {
+    "placeholders": {
+      "p50": {
+        "type": "int"
+      },
+      "last": {
+        "type": "int"
+      }
+    }
+  },
+  "sysP95": "p95 latensi",
+  "sysP95Value": "{ms} ms · {count} req",
+  "@sysP95Value": {
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sysFingerprint": "Fingerprint",
+  "sysCopy": "Salin",
+  "sysFingerprintCopied": "Fingerprint disalin",
+  "sysNoneYet": "Belum ada",
+  "sysAddPrinterOrStation": "Tambahkan printer atau stasiun",
+  "sysPrintersKds": "Printer & KDS",
+  "sysTagStations": "{n} STASIUN",
+  "@sysTagStations": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "sysDiscover": "Cari",
+  "sysAddPrinterBtn": "+ Printer",
+  "sysPrinterTest": "Test",
+  "sysTestPrinted": "Tes tercetak",
+  "sysOnline": "Online",
+  "sysOffline": "Offline",
+  "sysStationLoad": "{staff} staf · {tickets, plural, other{{tickets} tiket}}",
+  "@sysStationLoad": {
+    "placeholders": {
+      "staff": {
+        "type": "int"
+      },
+      "tickets": {
+        "type": "int"
+      }
+    }
+  },
+  "sysStationQuiet": "Sepi",
+  "sysStationBusy": "Aktif",
+  "sysDevicesTitle": "Perangkat aktif",
+  "sysTagPair": "{n} PAIR",
+  "@sysTagPair": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "sysNoDevicesPaired": "Belum ada perangkat dipasangkan",
+  "sysNeverSignedIn": "belum sign-in",
+  "sysLastSession": "sesi {when}",
+  "@sysLastSession": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "sysRevoked": "Revoked",
+  "sysDeviceActive": "Aktif",
+  "sysDeviceIdle": "Idle",
+  "sysRevoke": "Revoke",
+  "sysOperational": "Operasional",
+  "sysTagRuntime": "RUNTIME",
+  "sysActions": "Tindakan",
+  "sysRestartServer": "Mulai ulang server",
+  "sysWaitingProbe": "tunggu probe…",
+  "sysOfflineLower": "offline",
+  "sysPingWs": "{ms} ms · {state}",
+  "@sysPingWs": {
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "sysPhoneSub": "Server, jaringan, printer, perangkat",
+  "sysPrinterStationCount": "{printers, plural, other{{printers} printer}} · {stations, plural, other{{stations} stasiun}}",
+  "@sysPrinterStationCount": {
+    "placeholders": {
+      "printers": {
+        "type": "int"
+      },
+      "stations": {
+        "type": "int"
+      }
+    }
+  },
+  "sysDevices": "Perangkat",
+  "sysPairActiveCount": "{paired} pair · {active} aktif",
+  "@sysPairActiveCount": {
+    "placeholders": {
+      "paired": {
+        "type": "int"
+      },
+      "active": {
+        "type": "int"
+      }
+    }
+  },
+  "sysNoManageStaff": "Tidak punya izin manageStaff",
+  "sysRestarting": "Server restart… menyambung ulang",
+  "sysRestartFailed": "Restart gagal: {code}",
+  "@sysRestartFailed": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "sysRevokeTitle": "Revoke perangkat?",
+  "sysRevokeBody": "{label} akan kehilangan sesi.",
+  "@sysRevokeBody": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sysSearchingPrinters": "Mencari printer…",
+  "sysNoPrintersFound": "Tidak ada printer ditemukan",
+  "sysPrintersFound": "Printer ditemukan",
+  "sysHostPort": "{host}:{port}",
+  "@sysHostPort": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "sysPrinterAdded": "Printer \"{name}\" ditambahkan",
+  "@sysPrinterAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sysAddPrinterTitle": "Tambah printer",
+  "sysPrinterLabel": "Label",
+  "sysPrinterHost": "Host (IP)",
+  "sysPrinterPort": "Port",
+  "sysPrinterKind": "Jenis",
+  "sysHeroWarnDesc": "WS {ws} · reach={reach} · {fails} gagal",
+  "@sysHeroWarnDesc": {
+    "placeholders": {
+      "ws": {
+        "type": "String"
+      },
+      "reach": {
+        "type": "String"
+      },
+      "fails": {
+        "type": "int"
+      }
+    }
+  },
+  "sysHeroOkDesc": "{sessions, plural, other{{sessions} sesi aktif}} · {devices, plural, other{{devices} perangkat}} · WS {ws}",
+  "@sysHeroOkDesc": {
+    "placeholders": {
+      "sessions": {
+        "type": "int"
+      },
+      "devices": {
+        "type": "int"
+      },
+      "ws": {
+        "type": "String"
+      }
+    }
+  },
+  "sysReachOk": "ok",
+  "sysReachOff": "off",
+  "sysServerLanOk": "Server LAN OK",
+  "sysRestartTitle": "Mulai ulang server?",
+  "sysRestartBody": "WS clients akan disconnect ~1-3 detik. Masukkan PIN untuk konfirmasi.",
+  "sysPin": "PIN",
+  "sysConfirm": "Konfirmasi",
+  "sysWrongPin": "PIN salah",
+  "retry": "Coba lagi",
+  "tblOtherUser": "pengguna lain",
+  "tblTakenBy": "Meja diambil oleh {holder}",
+  "@tblTakenBy": {
+    "placeholders": {
+      "holder": {
+        "type": "String"
+      }
+    }
+  },
+  "tblAlreadySeated": "Meja sudah diisi oleh {holder}",
+  "@tblAlreadySeated": {
+    "placeholders": {
+      "holder": {
+        "type": "String"
+      }
+    }
+  },
+  "tblSeatFailed": "Gagal mulai layani: {error}",
+  "@tblSeatFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "tblReleaseTable": "Lepaskan Meja",
+  "tblFinishService": "Selesaikan Layanan",
+  "tblLoadingMenu": "Memuat menu…",
+  "tblMenuLoadFailed": "Gagal memuat menu meja",
+  "tblReleaseTableQ": "Lepaskan Meja?",
+  "tblFinishServiceQ": "Selesaikan Layanan?",
+  "tblReleaseBody": "Belum ada pesanan. Kosongkan meja {table}?",
+  "@tblReleaseBody": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "tblFinishBody": "Semua tiket telah selesai. Kosongkan meja {table} untuk tamu berikutnya? Tagihan tetap di kasir sampai dibayar.",
+  "@tblFinishBody": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "tblCloseFailed": "Gagal menutup meja: {error}",
+  "@tblCloseFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "tblEmptyPhone": "Belum ada item — ketuk \"Tambah ke pesanan\" untuk mulai.",
+  "tblContextTitle": "Konteks meja",
+  "tblSeatedFor": "DUDUK {elapsed} · {pax} TAMU",
+  "@tblSeatedFor": {
+    "placeholders": {
+      "elapsed": {
+        "type": "String"
+      },
+      "pax": {
+        "type": "int"
+      }
+    }
+  },
+  "tblItemCount": "{n, plural, other{{n} item}}",
+  "@tblItemCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tblItemCountHeld": "{n, plural, other{{n} item}} · ditahan",
+  "@tblItemCountHeld": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tblFireCourse": "Bakar {course}",
+  "@tblFireCourse": {
+    "placeholders": {
+      "course": {
+        "type": "String"
+      }
+    }
+  },
+  "tblKosong": "Meja {table} kosong",
+  "@tblKosong": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "tblKosongHint": "Tap untuk mulai melayani tamu",
+  "tblStartService": "Mulai layani meja",
+  "tblLockedBy": "Terkunci oleh {holder}{since} · hanya lihat",
+  "@tblLockedBy": {
+    "placeholders": {
+      "holder": {
+        "type": "String"
+      },
+      "since": {
+        "type": "String"
+      }
+    }
+  },
+  "tblLockedSince": " · sejak {time}",
+  "@tblLockedSince": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "tblReadyToCollect": "{n} siap diambil",
+  "@tblReadyToCollect": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tblViewOnly": "Hanya lihat",
+  "tblCreateOrder": "Buat pesanan",
+  "tblAddOrder": "Tambah pesanan",
+  "tblStatTotal": "Total item",
+  "tblStatInProgress": "Dalam proses",
+  "tblStatServed": "Disajikan",
+  "tblGuestNotes": "CATATAN TAMU",
+  "tblNoGuestNotes": "Belum ada catatan khusus.",
+  "tblSpecialInstruction": "Instruksi khusus",
+  "tblAllergensInOrder": "ALERGEN DI PESANAN",
+  "tblNoAllergens": "Tidak ada.",
+  "tblQuickActions": "AKSI CEPAT",
+  "tblPrintTableReceipt": "Cetak struk meja",
+  "tblMoveTable": "Pindahkan meja",
+  "mieBlankNames": "Lengkapi nama yang masih kosong",
+  "mieSaveFailed": "Gagal menyimpan: {error}",
+  "@mieSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mieItemAdded": "Item ditambahkan",
+  "mieChangesSaved": "Perubahan tersimpan",
+  "mieDeleteTitle": "Hapus item?",
+  "mieDeleteBody": "Item \"{name}\" akan dihapus dari menu.",
+  "@mieDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mieNewItem": "Item baru",
+  "mieReadOnlySub": "Hanya admin yang bisa edit",
+  "mieIdentity": "Identitas",
+  "mieItemName": "Nama item",
+  "mieShortDesc": "Deskripsi singkat",
+  "mieCategory": "Kategori",
+  "miePhotoChange": "UBAH",
+  "miePhotoAdd": "FOTO",
+  "miePickGallery": "Pilih dari galeri",
+  "mieTakePhoto": "Ambil foto",
+  "mieDeletePhoto": "Hapus foto",
+  "miePhotoLoadFailed": "Gagal memuat foto: {error}",
+  "@miePhotoLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "miePhotoSaveFailed": "Gagal menyimpan foto",
+  "miePricing": "Harga",
+  "mieBasePrice": "Harga dasar",
+  "mieFollowVenue": "Ikut venue ({mins}m)",
+  "@mieFollowVenue": {
+    "placeholders": {
+      "mins": {
+        "type": "int"
+      }
+    }
+  },
+  "miePrepTime": "Waktu siap (menit)",
+  "mieCost": "HPP",
+  "@mieCost": {
+    "description": "CONTEXT.md: HPP · COGS — the per-item cost of goods sold."
+  },
+  "mieVariants": "Varian ukuran",
+  "mieAddVariant": "+ Varian",
+  "mieNoVariants": "Belum ada varian. Hanya pakai harga dasar.",
+  "mieVariantNameHint": "Nama (mis. Besar)",
+  "miePrice": "Harga",
+  "mieModifierGroups": "Grup modifier",
+  "mieAddGroup": "+ Grup",
+  "mieNoModifiers": "Belum ada grup modifier (mis. tingkat pedas, pilih protein).",
+  "mieGroupName": "Nama grup",
+  "mieRequired": "Wajib",
+  "mieMulti": "Pilih banyak",
+  "mieAddOption": "+ Opsi",
+  "mieOptionName": "Nama opsi",
+  "mieRecipe": "Resep",
+  "@mieRecipe": {
+    "description": "CONTEXT.md: resep · Recipe."
+  },
+  "mieIngredientsLoadFailed": "Gagal memuat bahan: {error}",
+  "@mieIngredientsLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mieNoIngredients": "Belum ada bahan. Tambahkan di menu Stok sebelum menyusun resep.",
+  "mieScopeBase": "Dasar",
+  "mieScopeOption": "{group}: {option}",
+  "@mieScopeOption": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "option": {
+        "type": "String"
+      }
+    }
+  },
+  "mieScopeFilled": "{label} ·",
+  "@mieScopeFilled": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "mieRecipeVariantHint": "Resep varian menggantikan resep dasar sepenuhnya. Kosong = ikut resep dasar.",
+  "mieRecipeOptionHint": "Resep modifier ditambahkan di atas resep yang berlaku.",
+  "mieRecipeBaseHint": "Dipakai saat item tidak punya varian, atau varian belum punya resep sendiri.",
+  "mieRecipeEmpty": "Belum ada bahan pada resep ini.",
+  "mieAddIngredient": "Tambah bahan",
+  "mieIngredient": "Bahan",
+  "@mieIngredient": {
+    "description": "CONTEXT.md: bahan · Ingredient."
+  },
+  "mieIngredientOption": "{name} ({unit})",
+  "@mieIngredientOption": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "mieQty": "Jumlah",
+  "mieTags": "Tag",
+  "mieAllergens": "Alergen",
+  "mieDiet": "Diet",
+  "mieAvailability": "Ketersediaan",
+  "mieAutoSoldOut": "Tidak tersedia (stok 0)",
+  "mieManualSoldOut": "Tidak tersedia (manual)",
+  "mieActiveForSale": "Aktif untuk dijual",
+  "mieActivate": "Aktifkan",
+  "mieMarkUnavailable": "Tandai tidak tersedia",
+  "mieUnavailable": "Tidak tersedia",
+  "mieActive": "Aktif",
+  "mieDerivedCost": "≈ {amount} dari resep dasar",
+  "@mieDerivedCost": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "mieRequiredField": "Wajib diisi",
+  "mieMargin": "MARGIN",
+  "mieMarginNoPrice": "Isi harga dasar dulu",
+  "mieMarginHealthy": "Margin sehat",
+  "mieMarginThin": "Margin tipis",
+  "mieMarginCritical": "Margin kritis",
+  "mieMarginValue": "Rp {amount} · {hint}",
+  "@mieMarginValue": {
+    "description": "Rupiah never localises (ADR-0084) — only the hint half swaps language.",
+    "placeholders": {
+      "amount": {
+        "type": "int"
+      },
+      "hint": {
+        "type": "String"
+      }
+    }
+  },
+  "mnaTitle": "Menu",
+  "mnaHeaderSub": "{total, plural, other{{total} item}} · {cats, plural, other{{cats} kategori}} · {out} tidak tersedia",
+  "@mnaHeaderSub": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "cats": {
+        "type": "int"
+      },
+      "out": {
+        "type": "int"
+      }
+    }
+  },
+  "mnaPhoneSub": "{total, plural, other{{total} item}} · {out} tidak tersedia",
+  "@mnaPhoneSub": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "out": {
+        "type": "int"
+      }
+    }
+  },
+  "mnaAddItem": "+ Tambah item",
+  "mnaPickStaff": "Pilih item untuk lihat detail",
+  "mnaPickAdmin": "Pilih item atau tambah baru",
+  "mnaPickStaffSub": "Mode staf: hanya tandai habis. Edit penuh hanya admin.",
+  "mnaPickAdminSub": "Kelola harga, modifier, stok, dan ketersediaan.",
+  "mnaSearchHint": "Cari item, deskripsi…",
+  "mnaAll": "Semua",
+  "mnaNoMatch": "Tidak ada item cocok.",
+  "mnaIngredientsOut": "Bahan habis",
+  "mnaVariantsOut": "{n, plural, other{{n} varian}} habis",
+  "@mnaVariantsOut": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mnaAutoOut": "AUTO HABIS",
+  "mnaOut": "HABIS",
+  "mnaOn": "AKTIF",
+  "mnaTabItems": "Item",
+  "mnaTabCategories": "Kategori",
+  "mnaTabTags": "Tag",
+  "mnaNewCategory": "Kategori baru",
+  "mnaRenameCategory": "Ubah nama kategori",
+  "mnaMoveItemsFirst": "Pindahkan {count, plural, other{{count} item}} dulu sebelum hapus \"{name}\"",
+  "@mnaMoveItemsFirst": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mnaCategoryInUse": "Gagal hapus kategori — masih dipakai item",
+  "mnaCategoryNameHint": "Nama kategori",
+  "mnaDeleteTagTitle": "Hapus \"{name}\"?",
+  "@mnaDeleteTagTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mnaDeleteTagBody": "Tag ini akan dilepas dari semua item yang memakainya.",
+  "mnaTagDeleted": "\"{name}\" dihapus",
+  "@mnaTagDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mnaNewTag": "Tag baru",
+  "mnaEditTag": "Ubah tag",
+  "mnaTagName": "Nama",
+  "mnaTagCode": "Kode badge",
+  "mnaRoleAdmin": "ADMIN",
+  "mnaRoleStaff": "STAF · TANDAI HABIS",
+  "mnuLoadFailed": "Gagal memuat menu",
+  "mnuAddToTakeaway": "Tambah ke Bawa pulang",
+  "mnuNewOrder": "Pesanan baru",
+  "mnuAddToTable": "Tambah ke Meja {table}",
+  "@mnuAddToTable": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "mnuTakeawayNoTable": "BAWA PULANG · TANPA MEJA",
+  "mnuNoTablePickLater": "TANPA MEJA · PILIH MEJA SAAT KIRIM",
+  "mnuZonePax": "{zone} · {pax} TAMU",
+  "@mnuZonePax": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      },
+      "pax": {
+        "type": "int"
+      }
+    }
+  },
+  "mnuAddItem": "Tambah item",
+  "mnuAddItemHint": "KETUK UNTUK ATUR · TEKAN LAMA UNTUK TAMBAH DEFAULT",
+  "mnuPending": "{n, plural, other{{n} item}} pending",
+  "@mnuPending": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mnuServicePct": "Layanan · {pct}",
+  "@mnuServicePct": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "mnuTaxPct": "Pajak · {pct}",
+  "@mnuTaxPct": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "mnuHeadTakeaway": "BAWA PULANG · TANPA MEJA",
+  "mnuHeadTableless": "PESANAN BARU · TANPA MEJA",
+  "mnuHeadTable": "PESANAN BARU · MEJA {table}",
+  "@mnuHeadTable": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "mnuCartEmpty": "Keranjang kosong",
+  "mnuCartReady": "{n, plural, other{{n} item}} siap kirim",
+  "@mnuCartReady": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mnuKitchenCount": "Dapur × {n}",
+  "@mnuKitchenCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mnuBarCount": "Bar × {n}",
+  "@mnuBarCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mnuCartEmptyHint": "Belum ada item di keranjang. Pilih dari menu di kiri.",
+  "mnuEstimate": "Estimasi",
+  "mnuReviewSendTo": "Tinjau & kirim ke {target}",
+  "@mnuReviewSendTo": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "mnuTargetKitchenBar": "dapur + bar",
+  "mnuTargetKitchen": "dapur",
+  "mnuTargetBar": "bar",
+  "dscNewPreset": "Preset baru",
+  "dscEditPreset": "Ubah preset",
+  "dscEmptyTitle": "Belum ada preset diskon",
+  "dscEmptyBody": "Buat preset agar kasir bisa memberi diskon tanpa mengetik angka sendiri.",
+  "dscIntro": "Kasir memilih dari daftar ini — mereka tidak bisa mengetik angka diskon sendiri.",
+  "dscScopeOrder": "Seluruh pesanan",
+  "dscScopeLine": "Per item",
+  "dscInactive": "nonaktif",
+  "dscDeleteTitle": "Hapus preset",
+  "dscDeleteBody": "Hapus \"{name}\"? Diskon yang sudah dipakai di tagihan lama tidak berubah — nilainya sudah tersimpan di sana.",
+  "@dscDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dscNameLabel": "Nama (tampil di struk)",
+  "dscNameHint": "Diskon Member",
+  "dscKindPercent": "Persen",
+  "dscKindFixed": "Nominal",
+  "dscValuePercent": "Persen (%)",
+  "dscValueFixed": "Nominal (Rp)",
+  "dscActive": "Aktif",
+  "dscActiveHint": "Nonaktif menyembunyikan preset dari kasir",
+  "dscErrName": "Nama wajib diisi",
+  "dscErrValue": "Nilai harus lebih dari 0",
+  "dscErrMax": "Maksimal 100%",
+  "revSendFailed": "Gagal kirim: {error}",
+  "@revSendFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "revTitle": "Tinjau pesanan",
+  "revHeadTakeaway": "BAWA PULANG · {n} ITEM",
+  "@revHeadTakeaway": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "revHeadTableless": "TANPA MEJA · {n} ITEM · PILIH MEJA SAAT KIRIM",
+  "@revHeadTableless": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "revHeadTable": "MEJA {table} · {pax} TAMU · {n} ITEM",
+  "@revHeadTable": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      },
+      "pax": {
+        "type": "int"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "revEstimatedTotal": "Total perkiraan",
+  "revPaymentNote": "PEMBAYARAN DITANGANI DI LUAR SATSET · BILL DICETAK DARI POS SAAT DISAJIKAN",
+  "revSending": "Mengirim…",
+  "revAddToOrder": "Tambah ke pesanan",
+  "revSendOrder": "Kirim pesanan",
+  "revSendTo": "Kirim ke {target}",
+  "@revSendTo": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "revTableTaken": "Meja keburu terisi. Pilih meja lain.",
+  "revSeatFailed": "Gagal menempati meja: {error}",
+  "@revSeatFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "revCommitTitle": "Kirim pesanan ke",
+  "revCommitDineIn": "Meja (dine-in)",
+  "revCommitDineInSub": "Tetapkan ke meja kosong",
+  "revCommitTakeaway": "Bawa pulang",
+  "revCommitTakeawaySub": "Takeaway tanpa meja",
+  "revChannel": "Kanal",
+  "revGuestOrCourier": "Nama tamu / kurir",
+  "revGuestHint": "mis. Budi · atau Rizal (kurir)",
+  "revPrepaid": "Sudah dibayar aplikasi",
+  "revContinue": "Lanjut",
+  "revAutoFire": "auto-bakar",
+  "revHeldUntilFired": "ditahan sampai dibakar",
+  "pinErrEmailEmpty": "Email belum diisi.",
+  "pinErrEmailInvalid": "Email tidak valid.",
+  "pinErrPasswordEmpty": "Password belum diisi.",
+  "pinErrPasswordShort": "Minimal 6 karakter.",
+  "pinEnterPin": "Masukkan PIN",
+  "pinConnectedTo": "Tersambung ke {server}",
+  "@pinConnectedTo": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "pinWidgetBook": "Widget book",
+  "pinEmail": "Email",
+  "pinEmailHint": "admin@warung.id",
+  "pinPassword": "PASSWORD",
+  "pinForgotPassword": "Lupa password?",
+  "pinModeAdmin": "Admin",
+  "pinModeStaff": "Staff",
+  "pinSearchingServers": "Mencari server di jaringan… pastikan tablet server menyala dan berada di Wi-Fi yang sama.",
+  "pinHostTakenTitle": "Venue ini sudah punya perangkat utama",
+  "pinHostTakenBody": "Satu venue berjalan di satu perangkat. Tutup aplikasi di perangkat itu, lalu coba lagi di sini.",
+  "pinHostTakenNote": "Kalau perangkat itu memang yang dipakai, akun ini bukan admin utama venue — hubungi operator.",
+  "pinSignOut": "Keluar",
+  "pinCheckingSession": "Memeriksa sesi…",
+  "pinReachConnected": "Tersambung",
+  "pinReachConnectedMs": "Tersambung · {ms}ms",
+  "@pinReachConnectedMs": {
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "pinReachUnreachable": "Server tidak terjangkau",
+  "pinReachChecking": "Memeriksa sambungan…",
+  "pinServerConnected": "SERVER TERSAMBUNG",
+  "pinChangeServer": "Ubah server",
+  "stlModePenuh": "Penuh",
+  "stlModePerItem": "Per item",
+  "stlModeBagiRata": "Bagi rata",
+  "stlPayTunai": "Tunai",
+  "stlPayQris": "QRIS",
+  "stlPayKartu": "Kartu",
+  "stlPayTransfer": "Transfer",
+  "stlPayLainnya": "Lainnya",
+  "stlProofTunai": "Hitung uang tamu di papan pecahan",
+  "stlProofQris": "Screenshot konfirmasi QRIS wajib dilampirkan",
+  "stlProofKartu": "Foto slip EDC — approval code terlihat",
+  "stlProofTransfer": "Foto bukti transfer + nama pengirim",
+  "stlProofLainnya": "Foto bukti pembayaran",
+  "stlBlkNoLines": "Tagihan belum punya item",
+  "stlBlkNothingLeft": "Tidak ada sisa untuk ditagih",
+  "stlBlkPickItems": "Pilih item dari daftar",
+  "stlBlkNothingToCharge": "Tidak ada yang bisa ditagih",
+  "stlBlkTapCash": "Ketuk pecahan uang yang diterima",
+  "stlBlkAttachProof": "Lampirkan foto bukti bayar dulu",
+  "stlPhotoFailed": "Gagal mengambil foto: {error}",
+  "@stlPhotoFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "stlTitle": "Penyelesaian",
+  "stlOutstandingHint": "sisa yang harus ditagih",
+  "stlRowTotal": "Total tagihan",
+  "stlRowAlreadyPaid": "Sudah diterima",
+  "stlRowReceivingNow": "Diterima sekarang",
+  "stlPerItemEmpty": "Ketuk item yang dibayar tamu ini. Item yang sudah lunas terkunci.",
+  "stlRowNItems": "{count, plural, other{{count} item}}",
+  "@stlRowNItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stlRowServiceTax": "Layanan + pajak",
+  "stlRowPayingNow": "Dibayar sekarang",
+  "stlRowRemainderAfter": "Sisa setelah ini",
+  "stlRowPerHead": "Per orang (bulat 100)",
+  "stlRowOpenShares": "{count, plural, other{{count} bagian belum bayar}}",
+  "@stlRowOpenShares": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stlRowChargeNow": "Tagih sekarang",
+  "stlSplitFor": "Bagi untuk",
+  "stlMethod": "Metode",
+  "stlLockedTo": "Terkunci — pembayaran sebelumnya {method}",
+  "@stlLockedTo": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "stlProofAttached": "Bukti terlampir",
+  "stlRetakePhoto": "Ambil ulang",
+  "stlTakePhoto": "Ambil foto bukti bayar",
+  "stlConfirmItems": "{count, plural, other{Terima {count} item · {amount}}}",
+  "@stlConfirmItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "stlConfirmShare": "Terima bagian · {amount}",
+  "@stlConfirmShare": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "stlConfirmFull": "Terima {amount}",
+  "@stlConfirmFull": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "stlAutoPrintHint": "Struk tercetak otomatis setelah dikonfirmasi",
+  "zoneAdminTableNameHint": "mis. T7, Booth A",
+  "zoneAdminManageZones": "Kelola Zona",
+  "zoneAdminSummary": "{zones, plural, other{{zones} zona}} · {tables, plural, other{{tables} meja}} · {seats, plural, other{{seats} kursi}}",
+  "@zoneAdminSummary": {
+    "placeholders": {
+      "zones": {
+        "type": "int"
+      },
+      "tables": {
+        "type": "int"
+      },
+      "seats": {
+        "type": "int"
+      }
+    }
+  },
+  "zoneAdminEmpty": "Belum ada zona. Tambah zona pertama.",
+  "zoneAdminMoveTablesFirst": "{count, plural, other{Pindahkan {count} meja dulu sebelum hapus zona.}}",
+  "@zoneAdminMoveTablesFirst": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "zoneAdminDeleteZoneTitle": "Hapus zona?",
+  "zoneAdminDeleteZoneBody": "Zona \"{name}\" akan dihapus.",
+  "@zoneAdminDeleteZoneBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "zoneAdminNewZone": "Zona baru",
+  "zoneAdminEditZone": "Atur {name}",
+  "@zoneAdminEditZone": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "zoneAdminZoneName": "Nama zona",
+  "zoneAdminZoneNameHint": "mis. Teras, Bar",
+  "zoneAdminColor": "Warna",
+  "zoneAdminPreview": "PRATINJAU",
+  "zoneAdminNoTablesHere": "Belum ada meja di zona ini.",
+  "zoneAdminTablesHere": "{count, plural, other{{count} meja saat ini ada di zona ini.}}",
+  "@zoneAdminTablesHere": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vstIdentityHead": "IDENTITAS RESTORAN",
+  "vstNoLegalName": "Belum ada nama legal",
+  "vstNoAddress": "Belum ada alamat",
+  "vstLegalNameHint": "PT …",
+  "vstPhoneHint": "+62 …",
+  "vstTaglineHint": "mis. Kopi & Dapur",
+  "vstHeaderHint": "Tampil di atas struk",
+  "vstSocialHint": "@instagram · wa.me/…",
+  "vstFooterHint": "Tampil di bawah struk",
+  "vstThankYouHint": "Terima kasih",
+  "vstQrUrlHint": "https://… (hanya struk uang)",
+  "vstQrCaptionHint": "mis. Ulas kami di Google",
+  "vstNotSet": "Belum diisi",
+  "vstReportsStartAt": "Mulai {hour}:00",
+  "@vstReportsStartAt": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      }
+    }
+  },
+  "vstTaxOn": "{pct} PPN",
+  "@vstTaxOn": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "vstTaxOff": "PPN off",
+  "vstServiceOff": "Layanan off",
+  "vstServiceValue": "Layanan {value}",
+  "@vstServiceValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "vstFeesTag": "BIAYA",
+  "vstEnableTax": "Aktifkan PPN",
+  "vstTaxRate": "Tarif PPN",
+  "vstEnableService": "Aktifkan layanan",
+  "vstServiceRate": "Tarif layanan",
+  "vstServiceAmount": "Jumlah layanan",
+  "vstTaxAfterDiscount": "Pajak dihitung setelah diskon",
+  "vstTaxAfterDiscountOn": "Diskon mengurangi dasar pengenaan — pajak & layanan dihitung dari jumlah setelah diskon.",
+  "vstTaxAfterDiscountOff": "Pajak & layanan dihitung dari subtotal kotor, diskon dipotong dari total akhir.",
+  "vstItemDiscountNote": "Diskon per item selalu dihitung sebelum pajak.",
+  "vstDiscountPresets": "Preset diskon",
+  "vstFeeType": "Tipe biaya",
+  "vstFeePercent": "Persen",
+  "vstFeeFixed": "Tetap",
+  "vstReportsTag": "LAPORAN",
+  "vstBusinessDayStart": "Jam mulai hari kerja",
+  "vstBusinessDayStartHint": "Pengelompokan laporan \"Hari ini\"",
+  "tkwFallbackLabel": "Bawa pulang",
+  "tkwItemCount": "{count, plural, other{{count} ITEM}}",
+  "@tkwItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tkwHandedOverTag": "SUDAH DISERAHKAN",
+  "tkwEmpty": "Belum ada item.",
+  "tkwServeFailed": "Gagal sajikan: {error}",
+  "@tkwServeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "tkwBillLoadFailed": "Gagal memuat tagihan: {error}",
+  "@tkwBillLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "tkwErrNotTerminal": "Masih ada item yang dimasak — tunggu siap dulu.",
+  "tkwErrNoTickets": "Belum ada item untuk diserahkan.",
+  "tkwHandoverFailed": "Gagal menyerahkan: {error}",
+  "@tkwHandoverFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "tkwHandover": "Serahkan",
+  "tkwHandoverBlocked": "Bisa diserahkan setelah semua item siap/disajikan.",
+  "tkwHandedOver": "Sudah diserahkan ke tamu.",
+  "mvtTitle": "Pindahkan meja {table}",
+  "@mvtTitle": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "mvtSubtitle": "{count, plural, other{Pilih meja kosong tujuan · {count} tamu}}",
+  "@mvtSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mvtNoTargets": "Tidak ada meja kosong untuk dituju.",
+  "tblCapacityOf": "kapasitas {count}",
+  "@tblCapacityOf": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mvtConfirmTitle": "Pindahkan meja {table}?",
+  "@mvtConfirmTitle": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "mvtConfirmOver": "Tujuan: meja {table} (kapasitas {capacity}). {pax, plural, other{{pax} tamu}} melebihi kapasitas — lanjutkan?",
+  "@mvtConfirmOver": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      },
+      "capacity": {
+        "type": "int"
+      },
+      "pax": {
+        "type": "int"
+      }
+    }
+  },
+  "mvtConfirmBody": "Seluruh pesanan dan tamu pindah ke meja {table}.",
+  "@mvtConfirmBody": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "mvtConfirmAction": "Pindahkan",
+  "mvtFailed": "Gagal memindahkan meja: {error}",
+  "@mvtFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "asgTitle": "Tetapkan ke meja",
+  "asgSubtitle": "Atur tamu lalu pilih meja kosong",
+  "asgGuestNameHint": "Nama tamu (opsional)",
+  "asgNoTargets": "Tidak ada meja kosong.",
+  "gstTableLabel": "Meja {table}",
+  "@gstTableLabel": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "gstTitle": "Atur jumlah tamu",
+  "gstWaiterOnly": "Hanya pelayan yang bisa mengubah jumlah tamu.",
+  "kitQueueSub": "{orders} ORDER · {items} ITEM DI ANTRIAN PERSIAPAN",
+  "@kitQueueSub": {
+    "placeholders": {
+      "orders": {
+        "type": "int"
+      },
+      "items": {
+        "type": "int"
+      }
+    }
+  },
+  "kitShowDone": "Tampilkan order selesai",
+  "kitSentAt": "masuk {time}",
+  "@kitSentAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "kitAllReady": "Semua siap",
+  "kitReadyOf": "{done}/{total} siap",
+  "@kitReadyOf": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "kitHoldToFinish": "Tahan untuk tandai selesai",
+  "kitEmptyTitle": "Antrian masak kosong",
+  "kitEmptyBody": "Semua pesanan dapur sudah selesai dimasak.",
+  "liaTableAt": "MEJA {table} · {time}",
+  "@liaTableAt": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liaTapOutside": "Tap luar sheet untuk batal.",
+  "liaVoidWarning": "Pembatalan dicatat dengan sign-in kamu dan alasannya — terlihat di laporan dan catatan audit.",
+  "liaVoided": "Item dibatalkan",
+  "liaVoidedNote": "Tercatat: ×{qty} {name} · atas nama kamu · terlihat di laporan",
+  "@liaVoidedNote": {
+    "placeholders": {
+      "qty": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "resDaySummary": "{day} · {bookings, plural, other{{bookings} booking}} · {covers, plural, other{{covers} tamu}}",
+  "@resDaySummary": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "bookings": {
+        "type": "int"
+      },
+      "covers": {
+        "type": "int"
+      }
+    }
+  },
+  "resNoTableForParty": "Tidak ada meja kapasitas ≥ {size} di zona ini.",
+  "@resNoTableForParty": {
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "resAlreadySeated": "Meja sudah diisi tamu lain",
+  "resSeatFailed": "Gagal duduk: {error}",
+  "@resSeatFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "resNewBooking": "Reservasi baru",
+  "resGuestName": "Nama tamu",
+  "resPhone": "No. HP",
+  "resOptional": "opsional",
+  "resPartySize": "Jumlah tamu",
+  "resSaveFailed": "Gagal simpan: {error}",
+  "@resSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "prnPick": "Pilih printer",
+  "prnNoneOnline": "Tidak ada printer online. Tambah manual, atau pair printer Bluetooth di Pengaturan dulu.",
+  "prnAddWifi": "Tambah printer Wi-Fi",
+  "prnLabel": "Label",
+  "prnHost": "Host (IP)",
+  "prnPort": "Port",
+  "prnScopeVenue": "Venue",
+  "prnScopeDevice": "Alat ini",
+  "dscNoPresetsTitle": "Belum ada preset diskon",
+  "dscNoPresetsLine": "Belum ada preset diskon per item. Tambahkan di Pengaturan venue › Diskon.",
+  "dscNoPresetsBill": "Belum ada preset diskon tagihan. Tambahkan di Pengaturan venue › Diskon.",
+  "dscNoPresetsReceipt": "Belum ada preset diskon per pesanan. Tambahkan di Pengaturan venue › Diskon.",
+  "dscSheetTitle": "Diskon · {target}",
+  "@dscSheetTitle": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "dscApproverTitle": "Persetujuan manajer",
+  "dscApproverBody": "Diskon perlu disetujui manajer. Minta manajer memasukkan PIN.",
+  "dscAppliesLine": "Berlaku untuk item ini",
+  "dscAppliesBill": "Berlaku seluruh tagihan · semua struk",
+  "dscAppliesReceipt": "Berlaku seluruh struk",
+  "ordServeFailed": "Gagal sajikan: {error}",
+  "@ordServeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "ordSummary": "{active} berjalan · {ready} siap diambil",
+  "@ordSummary": {
+    "placeholders": {
+      "active": {
+        "type": "int"
+      },
+      "ready": {
+        "type": "int"
+      }
+    }
+  },
+  "ordUnderMin": "<1m",
+  "ordSince": "sejak {time}",
+  "@ordSince": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cshTitle": "Kasir",
+  "cshSummary": "{running, plural, other{{running} tagihan}} berjalan · {takeaway} tanpa meja · {settled} lunas",
+  "@cshSummary": {
+    "placeholders": {
+      "running": {
+        "type": "int"
+      },
+      "takeaway": {
+        "type": "int"
+      },
+      "settled": {
+        "type": "int"
+      }
+    }
+  },
+  "cshUnbilled": "Belum tertagih",
+  "rtoReadyAtPass": "Siap di pass · {what}",
+  "@rtoReadyAtPass": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "rtoPickUp": "Ambil",
+  "crsTitle": "RENTANG KHUSUS",
+  "crsFrom": "Mulai",
+  "crsTo": "Selesai",
+  "crsApply": "Terapkan",
+  "exitAgainToQuit": "Tekan kembali lagi untuk keluar",
+  "olcVoidedBy": "Dibatalkan · {reason} · disetujui oleh {approver}",
+  "@olcVoidedBy": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      },
+      "approver": {
+        "type": "String"
+      }
+    }
+  },
+  "rdyBannerText": "Item siap diambil di pass — tandai disajikan di bawah",
+  "ppfTitle": "Bukti pembayaran",
+  "cpdTitle": "Uang tamu · ketuk pecahan",
+  "blcPaidPct": "{amount} masuk · {pct}%",
+  "@blcPaidPct": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "tblDetailEmptyLines": "Belum ada item — ketuk Tambah pesanan di kanan untuk mulai.",
+  "tblNoTablesInZone": "Belum ada meja di {zone}",
+  "@tblNoTablesInZone": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "ownReportTitle": "Laporan Venue",
+  "altMinutes": "{value} min",
+  "@altMinutes": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "vhbSettings": "Pengaturan",
+  "mnaItemCount": "{count, plural, other{{count} item}}",
+  "@mnaItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cmnStationsLive": "STATIONS · LIVE",
+  "modSpecialCounter": "{used} / 80 · tampil ke dapur",
+  "@modSpecialCounter": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      }
+    }
+  },
+  "zonSeatsCount": "{count, plural, other{{count} kursi}}",
+  "@zonSeatsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "zonTablesCount": "{count, plural, other{{count} meja}}",
+  "@zonTablesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stfPinIs": "PIN {pin}",
+  "@stfPinIs": {
+    "placeholders": {
+      "pin": {
+        "type": "String"
+      }
+    }
+  },
+  "onbPickMode": "Pilih mode",
+  "onbPickModeSub": "Tablet ini akan jadi server atau klien?",
+  "fbdNoAccess": "Akses tidak diizinkan",
+  "rptLoadFailed": "Gagal memuat laporan",
+  "rptStockFailed": "Gagal memuat laporan bahan: {error}",
+  "@rptStockFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "rptStockEmpty": "Belum ada aktivitas bahan pada rentang ini.",
+  "fltLoadFailed": "Gagal memuat fleet",
+  "fltNewVenue": "Venue baru",
+  "fltOfflineNote": "Tidak terhubung — data tersimpan, bisa sudah berubah. Perubahan dinonaktifkan sampai tersambung.",
+  "sntTitle": "Terkirim",
+  "sntBody": "Pesanan Meja {table} sudah live di display dapur dan bar.",
+  "@sntBody": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "sntLatency": "LAN P50 {ms}MS · CLOUD QUEUED",
+  "@sntLatency": {
+    "placeholders": {
+      "ms": {
+        "type": "String"
+      }
+    }
+  },
+  "meShiftLine": "MULAI {start} · {elapsed} BERJALAN",
+  "@meShiftLine": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "meAuditEmpty": "Belum ada entri audit. Pembatalan, comp, dan perubahan pasca-kirim muncul di sini.",
+  "meAuditCount": "{count, plural, other{{count} entri}}",
+  "@meAuditCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "meRecentActivity": "Aktivitas terkini",
+  "pinDebugSeeded": "DEBUG · SEEDED PINS",
+  "pinCopied": "Disalin: {label}",
+  "@pinCopied": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "fveLapsedNote": "Langganan sudah lewat batas. Perpanjang dulu di bawah sebelum venue bisa diaktifkan.",
+  "fveManyAdmins": "Venue ini punya {count, plural, other{{count} admin aktif}}. Satu venue kini hanya boleh punya satu admin aktif — tangguhkan yang lain, sisakan akun di perangkat yang memegang data venue. Admin yang tersisa aktif tidak akan bisa masuk.",
+  "@fveManyAdmins": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "fveLoadFailed": "Gagal memuat: {error}",
+  "@fveLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "fveAtCapNote": "Satu venue, satu admin aktif. Untuk mengganti admin: tangguhkan yang lama dulu, lalu tambah yang baru.",
+  "fveDangerZone": "ZONA BAHAYA",
+  "fveDeleteBlocked": "Hapus semua akun venue ini dulu sebelum menghapus venue. Untuk sekadar memutus akses, pakai Tangguhkan di atas.",
+  "fveDeleteWarning": "Menghapus venue tidak dapat dibatalkan. Untuk sekadar memutus akses, pakai Tangguhkan di atas.",
+  "fveAnnual": "Bayar tahunan",
+  "fveAnnualNoPrice": "Hemat 2 bulan — isi harga bulanan dulu.",
+  "fveAnnualPrice": "{amount} per tahun — hemat 2 bulan.",
+  "@fveAnnualPrice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "fveNoCutoff": "Tanpa tanggal, langganan tidak pernah habis dan venue tidak ditangguhkan otomatis.",
+  "fveAddPrincipal": "Tambah {role} · {venue}",
+  "@fveAddPrincipal": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "venue": {
+        "type": "String"
+      }
+    }
+  },
+  "rtoNow": "SEKARANG",
+  "rtoTableNow": "MEJA {table} · {zone} · SEKARANG",
+  "@rtoTableNow": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      },
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "olcMarkServed": "Tandai disajikan",
+  "dscManagerPin": "PIN manajer",
+  "dscApprove": "Setujui",
+  "cpdExact": "Pas",
+  "cpdClear": "Kosongkan",
+  "cpdNoteSemantics": "{label}, {count, plural, other{{count} lembar}}",
+  "@cpdNoteSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cpdReceived": "Diterima",
+  "cpdShort": "Masih kurang",
+  "cpdChange": "Kembalian",
+  "blcNoName": "Tanpa nama",
+  "blcPaxCount": "{count, plural, other{{count} tamu}}",
+  "@blcPaxCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "blcCaptionPaid": "total dibayar",
+  "blcCaptionOutstanding": "sisa tagihan",
+  "blcCaptionWriteOff": "tak tertagih",
+  "blcVerbIn": "masuk",
+  "blcVerbSeated": "duduk",
+  "blcVerbClosed": "tutup",
+  "blcSeeReceipt": "Lihat struk",
+  "blcCharge": "Tagih",
+  "blcPillSettled": "Lunas",
+  "blcPillPartial": "Sebagian",
+  "blcPillWriteOff": "Tak tertagih",
+  "blcPillUnpaid": "belum bayar",
+  "blcSemantics": "{label}, {state}, {amount}",
+  "@blcSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "blcSinceChip": "{verb} {elapsed}",
+  "@blcSinceChip": {
+    "placeholders": {
+      "verb": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "blcTableClosed": "Meja ditutup",
+  "blcEvenSplit": "Bagi {shares} · {paid} bayar",
+  "@blcEvenSplit": {
+    "placeholders": {
+      "shares": {
+        "type": "int"
+      },
+      "paid": {
+        "type": "int"
+      }
+    }
+  },
+  "blcPrepaid": "Prabayar aplikasi",
+  "cshLoadFailedTitle": "Gagal memuat tagihan",
+  "cshPullToRetry": "Tarik untuk coba lagi.",
+  "cshEmptyDetached": "Tidak ada meja tertutup yang belum lunas",
+  "cshEmptyOpen": "Tidak ada tagihan terbuka",
+  "cshEmptySettledToday": "Belum ada tagihan lunas hari ini",
+  "cshEmptySettled7d": "Belum ada tagihan lunas 7 hari terakhir",
+  "cshEmptyAll": "Belum ada tagihan",
+  "cshStatUnpaid": "Belum bayar",
+  "cshStatPartial": "Sebagian",
+  "cshStatReceived": "Sudah diterima",
+  "cshStatClosed": "Meja ditutup",
+  "cshSegNeedCharge": "Perlu ditagih",
+  "cshSegSettled": "Lunas",
+  "cshSegAll": "Semua",
+  "cshRangeToday": "Hari ini",
+  "cshRange7d": "7 hari",
+  "fltActive": "AKTIF",
+  "fltSuspended": "TANGGUH",
+  "fltConsoleTitle": "Fleet",
+  "fltSearchHint": "Cari nama atau alamat",
+  "fltEmptyNoVenue": "Belum ada venue",
+  "fltEmptyNoMatch": "Tidak ada yang cocok",
+  "fltVenueActions": "Tindakan venue",
+  "fltVenueName": "Nama venue",
+  "fltVenueAdmin": "Admin venue",
+  "fltOwner": "Pemilik",
+  "fltVenueAccess": "Akses venue",
+  "fltSuspend": "Tangguhkan",
+  "fltSubscription": "Langganan",
+  "fltStartTrial": "Mulai coba",
+  "fltPricePerMonth": "Harga per bulan",
+  "fltAccountActions": "Tindakan akun",
+  "fltSendWa": "Kirim WA",
+  "fltDeleteVenue": "Hapus venue",
+  "fltClearDate": "Hapus tanggal",
+  "fltPickDate": "Pilih",
+  "fltInitialPassword": "Password awal",
+  "ordReadyForPickup": "Siap diambil",
+  "ordPreparing": "Disiapkan",
+  "ordDone": "Selesai",
+  "ordTabMine": "Milik saya",
+  "ordServe": "Sajikan",
+  "meKpiOpenTickets": "Tiket terbuka",
+  "meKpiCovers": "Cover dilayani",
+  "meEndShiftAndLogout": "Akhiri shift & keluar",
+  "liaFireNow": "Bakar sekarang",
+  "liaEditItem": "Ubah item",
+  "liaUnserve": "Batalkan sajian",
+  "liaVoidItem": "Batalkan item",
+  "liaVoidReasonHint": "Wajib — jelaskan alasan pembatalan",
+  "fltEmptyNoVenueBody": "Buat venue pertama dengan \"Venue baru\", lalu tambahkan admin-nya dari dalam venue itu.",
+  "fltEmptyLensBody": "Tidak ada venue di lensa \"{lens}\".",
+  "@fltEmptyLensBody": {
+    "placeholders": {
+      "lens": {
+        "type": "String"
+      }
+    }
+  },
+  "fltEmptyQueryBody": "Tidak ada venue cocok \"{query}\".",
+  "@fltEmptyQueryBody": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "fltEmptyQueryLensBody": "Tidak ada venue cocok \"{query}\" di lensa \"{lens}\".",
+  "@fltEmptyQueryLensBody": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      },
+      "lens": {
+        "type": "String"
+      }
+    }
+  },
+  "fltLensTrouble": "Perlu tindakan",
+  "fltLensBilling": "Tagihan",
+  "fltLensOff": "Nonaktif",
+  "fltKicker": "FLEET",
+  "fltOnlineOf": "{live} DARI {total} ONLINE",
+  "@fltOnlineOf": {
+    "placeholders": {
+      "live": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "resSaveBooking": "Simpan reservasi",
+  "stfRoleActive": "aktif",
+  "stfRoleLockedSemantics": "{role}, {cap}, {state}, terkunci",
+  "@stfRoleLockedSemantics": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "stfRoleSemantics": "{role}, {cap}",
+  "@stfRoleSemantics": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "mnaAddItemShort": "+ Item",
+  "mnaAddCategory": "+ Tambah kategori",
+  "mnaAddThing": "+ Tambah {thing}",
+  "@mnaAddThing": {
+    "placeholders": {
+      "thing": {
+        "type": "String"
+      }
+    }
+  },
+  "zonAdminSub": "{tables, plural, other{{tables} meja}} · {zones, plural, other{{zones} zona}} · {seats, plural, other{{seats} kursi}}",
+  "@zonAdminSub": {
+    "placeholders": {
+      "tables": {
+        "type": "int"
+      },
+      "zones": {
+        "type": "int"
+      },
+      "seats": {
+        "type": "int"
+      }
+    }
+  },
+  "venueHubTablesZones": "{tables, plural, other{{tables} meja}} ({zones, plural, other{{zones} zona)}}",
+  "@venueHubTablesZones": {
+    "placeholders": {
+      "tables": {
+        "type": "int"
+      },
+      "zones": {
+        "type": "int"
+      }
+    }
+  },
+  "venueHubMenuItems": "{count, plural, other{{count} item menu}}",
+  "@venueHubMenuItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "venueHubStaffCount": "{count} staf",
+  "@venueHubStaffCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "onbModeServer": "Server",
+  "onbModeServerSub": "Tablet ini host venue. Database lokal di sini.",
+  "onbModeClient": "Klien",
+  "onbModeClientSub": "Tablet ini ambil order, terhubung ke server lewat LAN.",
+  "modSize": "Ukuran",
+  "modNoteHint": "mis. alergi belum tertera, catatan plating…",
+  "venueHubStock": "{count, plural, other{{count} bahan}}",
+  "@venueHubStock": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "venueHubStockLow": "{count, plural, other{{count} bahan}} ({low} low)",
+  "@venueHubStockLow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "low": {
+        "type": "int"
+      }
+    }
+  },
+  "alertsSoundHint": "Pilih nada untuk tiap kejadian. Pilihan ini berlaku untuk semua perangkat di venue.",
+  "kitchenQueueSub": "{orders, plural, other{{orders} order aktif}} · {items, plural, other{{items} item}} · tahan untuk tandai selesai",
+  "@kitchenQueueSub": {
+    "placeholders": {
+      "orders": {
+        "type": "int"
+      },
+      "items": {
+        "type": "int"
+      }
+    }
+  },
+  "modDietaryLine": "Cocok untuk {tags}",
+  "@modDietaryLine": {
+    "placeholders": {
+      "tags": {
+        "type": "String"
+      }
+    }
+  },
+  "modAllergenLine": "Mengandung {tags} — konfirmasi ke tamu",
+  "@modAllergenLine": {
+    "placeholders": {
+      "tags": {
+        "type": "String"
+      }
+    }
+  },
+  "rptSubNet": "{sessions, plural, other{{sessions} sesi}} · {covers, plural, other{{covers} tamu}}",
+  "@rptSubNet": {
+    "placeholders": {
+      "sessions": {
+        "type": "int"
+      },
+      "covers": {
+        "type": "int"
+      }
+    }
+  },
+  "rptSubGross": "{count, plural, other{{count} transaksi}}",
+  "@rptSubGross": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rptSubTaxService": "PB1 11% · Svc 7% (est)",
+  "rptSubVoid": "{count, plural, other{{count} item void}}",
+  "@rptSubVoid": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rptSubTurnTime": "Lama tamu duduk",
+  "rptSubPrep": "Median kirim → siap",
+  "rptSubPickup": "Median siap → disajikan",
+  "rptSubReservations": "{noShow} no-show · {cancelled} batal",
+  "@rptSubReservations": {
+    "placeholders": {
+      "noShow": {
+        "type": "int"
+      },
+      "cancelled": {
+        "type": "int"
+      }
+    }
+  },
+  "rptStationKitchen": "Dapur Utama",
+  "rptUnknownStaff": "Tidak diketahui",
+  "vrsWrongOrder": "Terkirim salah",
+  "vrsWrongOrderDesc": "Salah meja, tap ganda, salah ring",
+  "vrsCustomerChange": "Tamu berubah pikiran",
+  "vrsCustomerChangeDesc": "Tamu batalkan permintaan",
+  "vrsOutOfStock": "Stok habis",
+  "vrsOutOfStockDesc": "Item habis di stasiun",
+  "vrsKitchenError": "Komplain / kualitas dapur",
+  "vrsKitchenErrorDesc": "Masalah kualitas — item ditarik dari tagihan",
+  "vrsComp": "Kompensasi manajer",
+  "vrsOther": "Lainnya",
+  "vrsOtherDesc": "Alasan bebas wajib diisi",
+  "modGroupSpice": "Tingkat pedas",
+  "modGroupExtras": "Tambahan",
+  "modGroupSauce": "Saus",
+  "modGroupProtein": "Pilih protein",
+  "vrsCompDesc": "Digratiskan untuk tamu · tercatat terpisah dari pembatalan",
+  "authServerTrouble": "Server lagi bermasalah. Coba lagi sebentar.",
+  "authWrongPin": "PIN salah. Coba lagi.",
+  "authWrongCredentials": "Email atau password salah.",
+  "authNoConnection": "Gagal terhubung ke server. Cek Wi-Fi lalu coba lagi.",
+  "authInvalidEmail": "Email tidak valid.",
+  "authAccountDisabled": "Akun admin dinonaktifkan.",
+  "authTooManyAttempts": "Terlalu banyak percobaan. Coba lagi nanti.",
+  "authFirstLoginNeedsInternet": "Gagal terhubung. Login admin pertama butuh internet.",
+  "authAdminLoginFailed": "Login admin gagal. Coba lagi.",
+  "prnErrNoLines": "Tidak ada pesanan untuk dicetak",
+  "prnErrNotConnected": "Printer tak terhubung",
+  "prnErrNoPrinter": "Printer tidak ditemukan",
+  "prnErrFailed": "Gagal mencetak",
+  "prnErrFailedCode": "Gagal mencetak ({code}).",
+  "@prnErrFailedCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "authServerNotReadyWait": "Server belum siap. Tunggu sebentar lalu coba lagi.",
+  "authServerNotReady": "Server belum siap. Coba lagi.",
+  "authAdminNotRegistered": "Akun admin belum terdaftar. Hubungi pengelola.",
+  "authAdminSuspended": "Akun admin ditangguhkan. Hubungi pengelola.",
+  "authAdminInactive": "Akun admin tidak aktif.",
+  "authNoVenueAssigned": "Akun belum ditugaskan ke venue. Hubungi pengelola.",
+  "authVenueNotFound": "Venue tidak ditemukan. Hubungi pengelola.",
+  "authVenueSuspended": "Venue ditangguhkan. Hubungi pengelola.",
+  "authVenueInactive": "Venue tidak aktif.",
+  "tktOutOfStock": "bahan habis",
+  "tktOutOfStockNamed": "bahan habis: {names}",
+  "@tktOutOfStockNamed": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "tktNotSent": "{what} tidak dikirim — {why}",
+  "@tktNotSent": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      },
+      "why": {
+        "type": "String"
+      }
+    }
+  },
+  "auditLoadFailed": "Gagal memuat audit",
+  "capTakeOrder": "Ambil pesanan",
+  "capModifyOrder": "Ubah pesanan",
+  "capVoidItem": "Batalkan item",
+  "capCompItem": "Gratiskan item",
+  "capViewKds": "Lihat KDS",
+  "capOpenDrawer": "Buka laci",
+  "capApplyDiscount": "Beri diskon",
+  "capSettleBill": "Tutup tagihan",
+  "capRefund": "Refund",
+  "capCloseShift": "Tutup shift",
+  "capEditMenu": "Ubah menu",
+  "capMarkSoldOut": "Tandai habis",
+  "capAdjustStock": "Sesuaikan stok",
+  "capManageIngredients": "Kelola bahan",
+  "capOverrideStock": "Jual saat stok habis",
+  "capManageStaff": "Kelola staf",
+  "capManageRoles": "Kelola peran",
+  "capViewReports": "Lihat laporan",
+  "capEditSettings": "Ubah pengaturan",
+  "agbLockedOnRestart": "Server akan terkunci saat aplikasi dimulai ulang — sambungkan internet sekarang untuk verifikasi admin.",
+  "agbLockedInHours": "Tanpa internet, server terkunci dalam {hours, plural, other{{hours} jam.}} Segera sambungkan.",
+  "@agbLockedInHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "agbLockedInDays": "Tanpa internet, server terkunci dalam {days, plural, other{{days} hari.}} Sambungkan untuk verifikasi admin.",
+  "@agbLockedInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "crsStartBeforeEnd": "Tanggal mulai harus sebelum tanggal selesai.",
+  "crsMaxSpan": "Rentang maksimal {days, plural, other{{days} hari.}}",
+  "@crsMaxSpan": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "pinPickServerFirst": "Pilih server dulu.",
+  "pinDeviceNotPaired": "HP belum tersambung. Scan QR lagi untuk pasangkan.",
+  "pinSetupFailed": "Gagal menyiapkan aplikasi. Coba lagi.",
+  "pinServerBootFailed": "Gagal menjalankan server di HP ini. Coba lagi.",
+  "pinAutoClaimFailed": "Sambung otomatis gagal: {error}",
+  "@pinAutoClaimFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "prnNothingToPrint": "Tidak ada pesanan untuk dicetak",
+  "prnThisDevice": "Alat ini",
+  "prnEnableBluetooth": "Nyalakan Bluetooth di Pengaturan lalu coba lagi",
+  "prnReceiptPrinted": "Struk tercetak",
+  "rptStockValue": "Nilai stok",
+  "rptStockValueNow": "Nilai stok saat ini",
+  "rptNoStocktake": "Belum ada opname pada rentang ini.",
+  "rptAllWaiters": "Semua pelayan",
+  "rptAllZones": "Semua zona",
+  "rptAllCategories": "Semua kategori",
+  "alertsThresholdLine": "Siap {prep}m · belum dilayani {ungreeted}m",
+  "@alertsThresholdLine": {
+    "placeholders": {
+      "prep": {
+        "type": "int"
+      },
+      "ungreeted": {
+        "type": "int"
+      }
+    }
+  },
+  "venueHubShiftReport": "Laporan shift",
+  "auditExportFailed": "Gagal mengekspor audit",
+  "killReasonOutOfStock": "Bahan habis",
+  "killReasonQuality": "Kualitas tidak layak",
+  "rcpVenueNamePlaceholder": "NAMA VENUE",
+  "rcpSplitReceipt": "STRUK BAGIAN",
+  "ordEmptyPass": "Belum ada yang siap di pass.",
+  "ordEmptyPreparingAll": "Tidak ada item yang sedang disiapkan.",
+  "ordEmptyPreparingMine": "Tidak ada item Anda yang sedang disiapkan.\nPilih Semua untuk melihat seluruh venue.",
+  "ordEmptyDoneAll": "Belum ada item yang selesai pada sesi ini.",
+  "ordEmptyDoneMine": "Belum ada item Anda yang selesai pada sesi ini.\nPilih Semua untuk melihat seluruh venue.",
+  "rptStockWaste": "Terbuang",
+  "rptStockVariance": "Selisih opname",
+  "rptStockUsage": "Pemakaian",
+  "prnEnableBluetoothTitle": "Nyalakan Bluetooth",
+  "killReasonBrokenEquipment": "Alat rusak",
+  "@killReasonBrokenEquipment": {
+    "description": "Kill-switch reason: the equipment needed for this item is broken."
+  },
+  "killReasonTooSlow": "Terlalu lama",
+  "@killReasonTooSlow": {
+    "description": "Kill-switch reason: the item takes too long to prepare right now."
+  },
+  "tblOccupiedOf": "{occupied} dari {total} terisi",
+  "@tblOccupiedOf": {
+    "description": "Zone header: how many tables of the zone are occupied.",
+    "placeholders": {
+      "occupied": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "tblOpenTab": "tab {amount}",
+  "@tblOpenTab": {
+    "description": "Zone header: total money open across the zone. Amount is preformatted rupiah.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tcStatusReserved": "Dipesan",
+  "@tcStatusReserved": {
+    "description": "Table card status: the table is held by a reservation."
+  },
+  "tcStatusAvailable": "Kosong",
+  "@tcStatusAvailable": {
+    "description": "Table card status: nobody seated."
+  },
+  "tcStatusOccupied": "Terisi",
+  "@tcStatusOccupied": {
+    "description": "Table card status: guests seated, order sent."
+  },
+  "tcStatusPending": "Pesanan masuk",
+  "@tcStatusPending": {
+    "description": "Table card status: an order has been taken but not yet fired."
+  },
+  "tcStatusReady": "Siap ×{n}",
+  "@tcStatusReady": {
+    "description": "Table card status: n items waiting at the pass for this table.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mvtTargetOccupied": "Meja tujuan sudah terisi.",
+  "@mvtTargetOccupied": {
+    "description": "Move-table error: the destination table already has guests."
+  },
+  "mvtTableLocked": "Meja sedang dipakai pengguna lain.",
+  "@mvtTableLocked": {
+    "description": "Move-table error: another device holds the table lock."
+  },
+  "mvtSourceEmpty": "Meja asal sudah kosong.",
+  "@mvtSourceEmpty": {
+    "description": "Move-table error: the source table was released meanwhile."
+  },
+  "modTagRequired": "WAJIB",
+  "@modTagRequired": {
+    "description": "Modifier group tag: a choice must be made."
+  },
+  "modTagFree": "BEBAS PILIH",
+  "@modTagFree": {
+    "description": "Modifier group tag: any number of options may be picked."
+  },
+  "modTagOptional": "OPSIONAL",
+  "@modTagOptional": {
+    "description": "Modifier group tag: the group may be skipped."
+  },
+  "modPickRequired": "Pilih wajib",
+  "@modPickRequired": {
+    "description": "Add button label while a required modifier group is unanswered."
+  },
+  "liaFireDesc": "Kirim course ke line langsung",
+  "@liaFireDesc": {
+    "description": "Action sheet subtitle for firing a course."
+  },
+  "liaEditDesc": "Jumlah, catatan, dan pilihan · sebelum masuk dapur",
+  "@liaEditDesc": {
+    "description": "Action sheet subtitle for editing a line before it is fired."
+  },
+  "liaServeDesc": "Konfirmasi diambil & diantar ke meja",
+  "@liaServeDesc": {
+    "description": "Action sheet subtitle for marking an item served."
+  },
+  "liaUnserveDesc": "Kembalikan status jika ditandai terlalu cepat",
+  "@liaUnserveDesc": {
+    "description": "Action sheet subtitle for undoing a served mark."
+  },
+  "liaVoidDesc": "Hapus dari pesanan · tercatat atas nama kamu",
+  "@liaVoidDesc": {
+    "description": "Action sheet subtitle for voiding a line."
+  },
+  "meEndAdminTitle": "Akhiri sesi admin?",
+  "@meEndAdminTitle": {
+    "description": "Dialog title when the admin on the server device signs out."
+  },
+  "meEndShiftTitle": "Akhiri shift?",
+  "@meEndShiftTitle": {
+    "description": "Dialog title when a waiter ends their shift."
+  },
+  "meEndServerBodyLive": "{n, plural, other{{n} meja}} masih aktif. Keluar akan mematikan server — semua staff terputus dan tidak bisa menyambung sampai admin masuk lagi.",
+  "@meEndServerBodyLive": {
+    "description": "Sign-out warning on the server device while tables are still live.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "meEndServerBody": "Keluar akan mematikan server. Staff tidak bisa menyambung sampai admin masuk lagi.",
+  "@meEndServerBody": {
+    "description": "Sign-out warning on the server device with no live tables."
+  },
+  "meEndShiftBody": "Shift ditutup dan hitungannya berhenti. Masuk lagi akan memulai shift baru. Untuk menyerahkan perangkat tanpa menutup shift, pakai \"Keluar\".",
+  "@meEndShiftBody": {
+    "description": "Explains that ending a shift stops the counters, unlike a plain log out."
+  },
+  "meEndAndShutdown": "Keluar & matikan",
+  "@meEndAndShutdown": {
+    "description": "Confirm button: sign out and stop the embedded server."
+  },
+  "meEndShiftConfirm": "Akhiri shift",
+  "@meEndShiftConfirm": {
+    "description": "Confirm button: close the shift."
+  },
+  "meNoOpenTickets": "Tidak ada tiket terbuka",
+  "@meNoOpenTickets": {
+    "description": "Shift summary when nothing is in flight."
+  },
+  "rcpItemizedReceipt": "STRUK",
+  "@rcpItemizedReceipt": {
+    "description": "Printed heading for a per-item receipt."
+  },
+  "rcpRefundLine": "{method} (refund)",
+  "@rcpRefundLine": {
+    "description": "Payment line on a receipt when the payment was refunded.",
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "tableNamed": "Meja {label}",
+  "@tableNamed": {
+    "description": "Receipt line naming the table when the guest is anonymous.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "rcpPaxCount": "{n, plural, other{{n} tamu}}",
+  "@rcpPaxCount": {
+    "description": "Receipt line with the cover count.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "roleWaiter": "Pelayan",
+  "@roleWaiter": {
+    "description": "Staff role name: waiter."
+  },
+  "roleKitchen": "Dapur",
+  "@roleKitchen": {
+    "description": "Staff role name: kitchen."
+  },
+  "roleAdmin": "Admin",
+  "@roleAdmin": {
+    "description": "Staff role name: admin."
+  },
+  "tstatDraft": "Draf",
+  "@tstatDraft": {
+    "description": "Ticket status: not sent yet."
+  },
+  "tstatAcknowledged": "Diterima",
+  "@tstatAcknowledged": {
+    "description": "Ticket status: the kitchen has seen it."
+  },
+  "tstatSent": "Terkirim",
+  "@tstatSent": {
+    "description": "Ticket status: sent to the kitchen."
+  },
+  "tstatPrep": "Disiapkan",
+  "@tstatPrep": {
+    "description": "Ticket status: being prepared."
+  },
+  "tstatCooked": "Selesai dimasak",
+  "@tstatCooked": {
+    "description": "Ticket status: cooking finished."
+  },
+  "tstatReady": "Siap diambil",
+  "@tstatReady": {
+    "description": "Ticket status: waiting at the pass."
+  },
+  "tstatServed": "Disajikan",
+  "@tstatServed": {
+    "description": "Ticket status: delivered to the table."
+  },
+  "tstatHeld": "Ditahan",
+  "@tstatHeld": {
+    "description": "Ticket status: held back on purpose."
+  },
+  "tstatVoided": "Dibatalkan",
+  "@tstatVoided": {
+    "description": "Ticket status: voided."
+  },
+  "resStatPending": "Menunggu",
+  "@resStatPending": {
+    "description": "Reservation status: booked, not arrived."
+  },
+  "resStatSeated": "Duduk",
+  "@resStatSeated": {
+    "description": "Reservation status: the party is seated."
+  },
+  "resStatNoShow": "No-show",
+  "@resStatNoShow": {
+    "description": "Reservation status: the party never arrived."
+  },
+  "resStatCancelled": "Batal",
+  "@resStatCancelled": {
+    "description": "Reservation status: cancelled."
+  },
+  "stkReasonSale": "Terjual",
+  "@stkReasonSale": {
+    "description": "Stock movement reason: consumed by a sale."
+  },
+  "stkReasonVoidReturn": "Batal — kembali",
+  "@stkReasonVoidReturn": {
+    "description": "Stock movement reason: returned to stock after a void."
+  },
+  "stkReasonWaste": "Terbuang",
+  "@stkReasonWaste": {
+    "description": "Stock movement reason: wasted."
+  },
+  "stkReasonReceive": "Terima barang",
+  "@stkReasonReceive": {
+    "description": "Stock movement reason: goods received."
+  },
+  "stkReasonAdjust": "Penyesuaian",
+  "@stkReasonAdjust": {
+    "description": "Stock movement reason: manual adjustment or stocktake."
+  },
+  "stkReasonProduce": "Produksi",
+  "@stkReasonProduce": {
+    "description": "Stock movement reason: produced from a recipe."
+  },
+  "noteLabel": "Catatan",
+  "@noteLabel": {
+    "description": "Default heading above a guest or kitchen note."
+  },
+  "tblZoneReadyCount": "{n} siap",
+  "@tblZoneReadyCount": {
+    "description": "Zone chip counter: items ready at the pass in this zone.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tkwStatusHandedOver": "Diserahkan",
+  "@tkwStatusHandedOver": {
+    "description": "Takeaway status: handed to the guest."
+  },
+  "tkwStatusReady": "Siap",
+  "@tkwStatusReady": {
+    "description": "Takeaway status: ready for pickup."
+  },
+  "tkwStatusInProgress": "Diproses",
+  "@tkwStatusInProgress": {
+    "description": "Takeaway status: being prepared."
+  },
+  "tkwStatusDone": "Selesai",
+  "@tkwStatusDone": {
+    "description": "Takeaway status: finished."
+  },
+  "pinSignInAsAdmin": "Masuk sebagai admin",
+  "@pinSignInAsAdmin": {
+    "description": "Button on the PIN screen that opens the admin email sign-in."
+  },
+  "prnAddManual": "Tambah manual",
+  "@prnAddManual": {
+    "description": "Button: type a printer address by hand instead of discovering it."
+  },
+  "rptLoading": "Memuat laporan…",
+  "@rptLoading": {
+    "description": "Subtitle while the report is still being fetched."
+  },
+  "rptFreshLive": "Live",
+  "@rptFreshLive": {
+    "description": "Report freshness: figures update as the shift runs."
+  },
+  "rptFreshSnapshot": "Snapshot",
+  "@rptFreshSnapshot": {
+    "description": "Report freshness: figures are a closed period."
+  },
+  "modOptionSoldOut": "{name} · habis",
+  "@modOptionSoldOut": {
+    "description": "Modifier option that is out of stock.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "venueHubBadgeFloor": "{tables, plural, other{{tables} meja}} · {zones, plural, other{{zones} zona}}",
+  "@venueHubBadgeFloor": {
+    "description": "Venue hub badge under the floor plan tile.",
+    "placeholders": {
+      "tables": {
+        "type": "int"
+      },
+      "zones": {
+        "type": "int"
+      }
+    }
+  },
+  "venueHubBadgeStaff": "{n} staf",
+  "@venueHubBadgeStaff": {
+    "description": "Venue hub badge under the staff tile.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "venueHubOperationalMode": "Mode Operasional",
+  "@venueHubOperationalMode": {
+    "description": "Shown in place of the address when the venue has a legal name but no address on file."
+  },
+  "ordTitleVenue": "Pesanan {venue}",
+  "@ordTitleVenue": {
+    "description": "Orders screen heading with the venue name.",
+    "placeholders": {
+      "venue": {
+        "type": "String"
+      }
+    }
+  },
+  "ordTabReady": "Siap",
+  "@ordTabReady": {
+    "description": "Orders tab: items ready at the pass."
+  },
+  "rcpSampleTable": "Meja 4 · Contoh",
+  "@rcpSampleTable": {
+    "description": "Fake table line in the receipt layout preview. Not real data."
+  },
+  "meAuditTable": "Meja {table}",
+  "@meAuditTable": {
+    "description": "Table name on an audit row in the shift log.",
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "resvSeatToTable": "{action} ke meja:",
+  "@resvSeatToTable": {
+    "description": "Header above the table picker in the seat-a-reservation sheet. {action} is the seat action label.",
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "resvZoneTableOptional": "Zona & meja (opsional)",
+  "@resvZoneTableOptional": {
+    "description": "Header above the optional zone/table picker when creating a reservation."
+  },
+  "elapsedJustNow": "baru saja",
+  "@elapsedJustNow": {
+    "description": "Relative time: less than a minute ago."
+  },
+  "elapsedMinutesAgo": "{n} menit lalu",
+  "@elapsedMinutesAgo": {
+    "description": "Relative time in minutes.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "elapsedHoursAgo": "{n} jam lalu",
+  "@elapsedHoursAgo": {
+    "description": "Relative time in hours.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ownRptLoadFailed": "Gagal memuat laporan.",
+  "@ownRptLoadFailed": {
+    "description": "Owner report: the cloud fetch failed."
+  },
+  "ownRptNoneYet": "Belum ada laporan dari venue ini.",
+  "@ownRptNoneYet": {
+    "description": "Owner report: the venue has never uploaded a snapshot."
+  },
+  "ownRptUnknownFormat": "Format laporan tidak dikenal.",
+  "@ownRptUnknownFormat": {
+    "description": "Owner report: the stored snapshot does not parse — usually an older or newer venue build."
+  },
+  "ownRptRequesting": "Meminta laporan…",
+  "@ownRptRequesting": {
+    "description": "Owner report freshness line while a refresh is in flight and nothing has ever arrived."
+  },
+  "ownRptNoData": "Belum ada data",
+  "@ownRptNoData": {
+    "description": "Owner report freshness line when no snapshot exists."
+  },
+  "ownRptUpdatedPending": "Diperbarui {ago} · menunggu venue (mungkin offline)",
+  "@ownRptUpdatedPending": {
+    "description": "Owner report freshness line while waiting for a fresher snapshot.",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "ownRptUpdated": "Diperbarui {ago}",
+  "@ownRptUpdated": {
+    "description": "Owner report freshness line.",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "fltNotConnected": "Tidak terhubung — perubahan tidak dikirim.",
+  "@fltNotConnected": {
+    "description": "Toast when a fleet edit is attempted with no cloud connection."
+  },
+  "fltSignOutTitle": "Keluar dari Fleet?",
+  "@fltSignOutTitle": {
+    "description": "Confirm dialog title for signing out of the fleet console."
+  },
+  "fltSignOutBody": "Perlu email & password lagi untuk masuk.",
+  "@fltSignOutBody": {
+    "description": "Confirm dialog body: signing back in needs the credentials."
+  },
+  "fltSignOut": "Keluar",
+  "@fltSignOut": {
+    "description": "Confirm button: sign out of the fleet console."
+  },
+  "fltBandTrouble": "PERLU TINDAKAN",
+  "@fltBandTrouble": {
+    "description": "Fleet list band heading: venues needing action."
+  },
+  "fltBandEnding": "LANGGANAN AKAN BERAKHIR",
+  "@fltBandEnding": {
+    "description": "Fleet list band heading: subscriptions about to lapse."
+  },
+  "fltBandIdle": "TIDAK BERJALAN",
+  "@fltBandIdle": {
+    "description": "Fleet list band heading: venues whose server is not running."
+  },
+  "fltBandRunning": "BERJALAN",
+  "@fltBandRunning": {
+    "description": "Fleet list band heading: healthy venues."
+  },
+  "fltUnnamed": "(tanpa nama)",
+  "@fltUnnamed": {
+    "description": "Placeholder for a venue or account with no name set."
+  },
+  "fltEndsIn": "Berakhir {when}",
+  "@fltEndsIn": {
+    "description": "Pill: the subscription ends at this point. {when} is a already-rendered relative phrase.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "fltActivate": "Aktifkan",
+  "@fltActivate": {
+    "description": "Menu action: bring a suspended venue back up."
+  },
+  "fltSuspendKill": "Tangguhkan (kill)",
+  "@fltSuspendKill": {
+    "description": "Menu action: suspend a venue, killing its server immediately."
+  },
+  "fltPaidUntil": "s/d {date}",
+  "@fltPaidUntil": {
+    "description": "Meta line: paid through this date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "fltBillingOverdue": "Tagihan lewat",
+  "@fltBillingOverdue": {
+    "description": "Pill: the term has lapsed and no cutoff date is known."
+  },
+  "fltSuspendedOn": "Ditangguhkan {date}",
+  "@fltSuspendedOn": {
+    "description": "Pill: the venue was suspended on this date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "fltOverdueDiesOn": "Lewat — mati {date}",
+  "@fltOverdueDiesOn": {
+    "description": "Pill: overdue, and the sweep suspends it on this date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "fltDaysLeft": "{n, plural, other{{n} hari}} lagi",
+  "@fltDaysLeft": {
+    "description": "Relative phrase: n days from now.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "fltToday": "hari ini",
+  "@fltToday": {
+    "description": "Relative phrase: it happens today."
+  },
+  "fltVenueActivated": "{name} diaktifkan",
+  "@fltVenueActivated": {
+    "description": "Toast after activating a venue.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fltSuspendTitle": "Tangguhkan {name}?",
+  "@fltSuspendTitle": {
+    "description": "Confirm dialog title for suspending a venue.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fltSuspendBody": "Server venue mati sekarang juga dan semua staf terputus — termasuk di tengah jam ramai.",
+  "@fltSuspendBody": {
+    "description": "Confirm dialog body for suspending a venue."
+  },
+  "fltVenueSuspended": "{name} ditangguhkan",
+  "@fltVenueSuspended": {
+    "description": "Toast after suspending a venue.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fltVenueCreated": "Venue dibuat",
+  "@fltVenueCreated": {
+    "description": "Toast after creating a venue."
+  },
+  "fltLockoutPast": "Lewat batas offline — akan terkunci saat restart",
+  "@fltLockoutPast": {
+    "description": "Pill: the venue has exceeded its offline grace and will block on restart."
+  },
+  "fltLockoutNear": "Mendekati batas offline {hours}j",
+  "@fltLockoutNear": {
+    "description": "Pill: hours of offline grace left.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "fltNeverOnline": "Belum online",
+  "@fltNeverOnline": {
+    "description": "Meta: the venue has never checked in."
+  },
+  "fltOnline": "Online",
+  "@fltOnline": {
+    "description": "Meta: the venue checked in within the last 90 seconds."
+  },
+  "fltOfflineMinutes": "Offline {n}m",
+  "@fltOfflineMinutes": {
+    "description": "Meta: minutes since the venue last checked in.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "fltOfflineHours": "Offline {n}j",
+  "@fltOfflineHours": {
+    "description": "Meta: hours since the venue last checked in.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "fltOfflineDays": "Offline {n}h",
+  "@fltOfflineDays": {
+    "description": "Meta: days since the venue last checked in.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "fltTagAccount": "AKUN",
+  "@fltTagAccount": {
+    "description": "Card tag over the venue-admin accounts block."
+  },
+  "fltTagReports": "LAPORAN",
+  "@fltTagReports": {
+    "description": "Card tag over the owner (report-only) accounts block."
+  },
+  "fltTagData": "DATA",
+  "@fltTagData": {
+    "description": "Card tag over the venue identity fields."
+  },
+  "fltTagControl": "KENDALI",
+  "@fltTagControl": {
+    "description": "Card tag over the venue access / kill-switch block."
+  },
+  "fltTagBilling": "TAGIHAN",
+  "@fltTagBilling": {
+    "description": "Card tag over the subscription block."
+  },
+  "fltAddAdmin": "Tambah admin",
+  "@fltAddAdmin": {
+    "description": "Button: add a venue admin account."
+  },
+  "fltAddOwner": "Tambah pemilik",
+  "@fltAddOwner": {
+    "description": "Button: add an owner (report-only) account."
+  },
+  "fltNoAdmins": "Belum ada admin untuk venue ini.",
+  "@fltNoAdmins": {
+    "description": "Empty state for the venue-admin list."
+  },
+  "fltNoOwners": "Belum ada akun pemilik — akses baca laporan dari luar venue, bukan peran staf.",
+  "@fltNoOwners": {
+    "description": "Empty state for the owner list, spelling out what an owner is."
+  },
+  "fltNameRequired": "Nama wajib diisi",
+  "@fltNameRequired": {
+    "description": "Validation: the venue name cannot be blank."
+  },
+  "fltAccessActive": "Server venue berjalan dan staf bisa masuk seperti biasa.",
+  "@fltAccessActive": {
+    "description": "What an active venue status means in practice."
+  },
+  "fltAccessSuspended": "Server venue mati. Staf tidak bisa masuk sampai diaktifkan lagi.",
+  "@fltAccessSuspended": {
+    "description": "What a suspended venue status means in practice."
+  },
+  "fltAccessUnknown": "Status tidak dikenali di cloud. Venue tetap tidak bisa melayani. Setel ulang dengan tombol di bawah.",
+  "@fltAccessUnknown": {
+    "description": "What an unrecognised venue status means in practice."
+  },
+  "fltNotSetLower": "belum diatur",
+  "@fltNotSetLower": {
+    "description": "Placeholder inside a date row when no date is set."
+  },
+  "fltNotSet": "Belum diatur",
+  "@fltNotSet": {
+    "description": "Placeholder for an unset paid-through date."
+  },
+  "fltResetPassword": "Reset password",
+  "@fltResetPassword": {
+    "description": "Menu action: mint a temporary password for an account."
+  },
+  "fltAdminActivated": "{name} diaktifkan",
+  "@fltAdminActivated": {
+    "description": "Toast after activating an account.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fltAdminSuspended": "{name} ditangguhkan",
+  "@fltAdminSuspended": {
+    "description": "Toast after suspending an account.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fltAdminDeleted": "{name} dihapus",
+  "@fltAdminDeleted": {
+    "description": "Toast after deleting an account or venue.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fltDeleteAdminTitle": "Hapus {name}?",
+  "@fltDeleteAdminTitle": {
+    "description": "Confirm dialog title for deleting an account.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fltDeleteAdminBody": "Akun login & datanya dihapus permanen. {who} tidak bisa masuk lagi.",
+  "@fltDeleteAdminBody": {
+    "description": "Confirm dialog body for deleting an account. {who} is the email or uid.",
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "fltCodeCopied": "Kode disalin",
+  "@fltCodeCopied": {
+    "description": "Toast after copying the temporary password."
+  },
+  "fltDeleteVenueTitle": "Hapus {name}?",
+  "@fltDeleteVenueTitle": {
+    "description": "Confirm dialog title for deleting a venue.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fltDeleteVenueBody": "Venue dihapus permanen dari fleet. Tidak bisa dibatalkan.",
+  "@fltDeleteVenueBody": {
+    "description": "Confirm dialog body for deleting a venue."
+  },
+  "fltAlreadyPassed": "Sudah lewat",
+  "@fltAlreadyPassed": {
+    "description": "Note beside a paid-through date already in the past."
+  },
+  "fltTrialEnds": "Selesai coba",
+  "@fltTrialEnds": {
+    "description": "Date row label on a trial plan."
+  },
+  "fltValidUntil": "Berlaku sampai",
+  "@fltValidUntil": {
+    "description": "Date row label on a paid plan."
+  },
+  "fltCutoffTrial": "Venue ditangguhkan otomatis {date}, tepat saat masa coba habis.",
+  "@fltCutoffTrial": {
+    "description": "Explains the automatic suspend date on a trial.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "fltCutoffPaid": "Venue ditangguhkan otomatis {date} — 7 hari tenggang setelah jatuh tempo.",
+  "@fltCutoffPaid": {
+    "description": "Explains the automatic suspend date on a paid plan.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "fltEmailInvalid": "Format email tidak valid",
+  "@fltEmailInvalid": {
+    "description": "Validation: the email does not parse."
+  },
+  "fltPasswordMin": "Minimal 6 karakter",
+  "@fltPasswordMin": {
+    "description": "Validation: the initial password is too short."
+  },
+  "staffErrPinPoolExhausted": "Semua PIN 6 digit sudah terpakai.",
+  "@staffErrPinPoolExhausted": {
+    "description": "Staff error: no free PIN could be minted."
+  },
+  "staffErrPinLength": "PIN harus 6 digit.",
+  "@staffErrPinLength": {
+    "description": "Staff error: the PIN is not six digits."
+  },
+  "staffErrPinInUse": "PIN sudah dipakai staf lain.",
+  "@staffErrPinInUse": {
+    "description": "Staff error: another user already has this PIN."
+  },
+  "staffErrPinUpdateFailed": "Gagal mengubah PIN ({status}).",
+  "@staffErrPinUpdateFailed": {
+    "description": "Staff error: the server rejected the PIN change. {status} is the HTTP status.",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "staffErrLastAdmin": "Harus ada minimal satu pengguna aktif dengan kapabilitas “Kelola staf”.",
+  "@staffErrLastAdmin": {
+    "description": "Staff error: the change would leave the venue with nobody who can manage staff."
+  },
+  "sndSilent": "Senyap",
+  "@sndSilent": {
+    "description": "Alert sound preset: no sound."
+  },
+  "sndBell": "Bel",
+  "@sndBell": {
+    "description": "Alert sound preset: a bell."
+  },
+  "sndClick": "Klik",
+  "@sndClick": {
+    "description": "Alert sound preset: a click."
+  },
+  "sndCriticalAlarm": "Alarm Kritis",
+  "@sndCriticalAlarm": {
+    "description": "Alert sound preset: an urgent alarm."
+  },
+  "sndDoorbell": "Bel Pintu",
+  "@sndDoorbell": {
+    "description": "Alert sound preset: a doorbell."
+  },
+  "sndFacilityAlarm": "Alarm Fasilitas",
+  "@sndFacilityAlarm": {
+    "description": "Alert sound preset: a facility alarm."
+  },
+  "sndGameAlarm": "Alarm Game",
+  "@sndGameAlarm": {
+    "description": "Alert sound preset: an arcade-style alarm."
+  },
+  "sndHappyBell": "Lonceng Ceria",
+  "@sndHappyBell": {
+    "description": "Alert sound preset: a cheerful bell."
+  },
+  "sndHarp": "Harpa",
+  "@sndHarp": {
+    "description": "Alert sound preset: a harp."
+  },
+  "sndRemove": "Hapus",
+  "@sndRemove": {
+    "description": "Alert sound preset: a delete/undo blip."
+  },
+  "sndShortAlarm": "Alarm Pendek",
+  "@sndShortAlarm": {
+    "description": "Alert sound preset: a short alarm."
+  },
+  "sndStart": "Mulai",
+  "@sndStart": {
+    "description": "Alert sound preset: a start cue."
+  },
+  "meShiftHeld": "ditahan",
+  "@meShiftHeld": {
+    "description": "Shift summary word, joined as \"3 ditahan\". Lower case on purpose — it sits mid-sentence."
+  },
+  "meShiftSent": "terkirim",
+  "@meShiftSent": {
+    "description": "Shift summary word, joined as \"3 terkirim\"."
+  },
+  "meShiftPrep": "disiapkan",
+  "@meShiftPrep": {
+    "description": "Shift summary word, joined as \"3 disiapkan\"."
+  },
+  "meShiftCooked": "matang",
+  "@meShiftCooked": {
+    "description": "Shift summary word, joined as \"3 matang\"."
+  },
+  "meShiftReady": "siap",
+  "@meShiftReady": {
+    "description": "Shift summary word, joined as \"3 siap\"."
+  },
+  "venueHubBadgeMenu": "{items, plural, other{{items} item}} · {cats, plural, other{{cats} kategori}}",
+  "@venueHubBadgeMenu": {
+    "description": "Menu card badge on the venue hub",
+    "placeholders": {
+      "items": {
+        "type": "int"
+      },
+      "cats": {
+        "type": "int"
+      }
+    }
+  },
+  "venueHubBadgeStockLow": "{n} perhatian",
+  "@venueHubBadgeStockLow": {
+    "description": "Stock card badge when ingredients are low",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "venueHubBadgeStockOk": "{n, plural, other{{n} bahan}}",
+  "@venueHubBadgeStockOk": {
+    "description": "Stock card badge when nothing is low",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "venueHubBadgeVenue": "Pajak {tax}% · Service {svc}%",
+  "@venueHubBadgeVenue": {
+    "description": "Venue settings card badge: tax and service rates",
+    "placeholders": {
+      "tax": {
+        "type": "String"
+      },
+      "svc": {
+        "type": "String"
+      }
+    }
+  },
+  "venueHubLanActive": "LAN AKTIF",
+  "@venueHubLanActive": {
+    "description": "Venue header chip when the LAN server is reachable"
+  },
+  "venueHubLanLocal": "LOKAL",
+  "@venueHubLanLocal": {
+    "description": "Venue header chip when running without a LAN server"
+  },
+  "moneyCompactJt": "Rp {v}jt",
+  "@moneyCompactJt": {
+    "description": "Compact rupiah in the millions on a report tile. Only the magnitude word translates; the digits and Rp stay id_ID (ADR-0084).",
+    "placeholders": {
+      "v": {
+        "type": "String"
+      }
+    }
+  },
+  "moneyCompactRb": "Rp {v}rb",
+  "@moneyCompactRb": {
+    "description": "Compact rupiah in the thousands on a report tile.",
+    "placeholders": {
+      "v": {
+        "type": "String"
+      }
+    }
+  },
+  "moneyCompactPlain": "Rp {v}",
+  "@moneyCompactPlain": {
+    "description": "Compact rupiah under a thousand — nothing to abbreviate.",
+    "placeholders": {
+      "v": {
+        "type": "String"
+      }
+    }
+  }
+}

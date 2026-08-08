@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/localization/app_strings.dart';
 import '../design/spacing.dart';
 import 'sat_icon_button.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// The top of a bottom sheet (ADR-0055).
 ///
@@ -37,7 +37,7 @@ class SatSheetHeader extends StatelessWidget {
           const SizedBox(width: Sp.s2),
           SatIconButton.plain(
             icon: Icons.close,
-            tooltip: AppStrings.close,
+            tooltip: context.l10n.close,
             size: 36,
             onTap: onClose,
           ),

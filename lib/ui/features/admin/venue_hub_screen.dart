@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/features/admin/widgets/seed_data_dialog.dart';
 import 'package:satset/data/repositories/generic_seed.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
@@ -20,6 +19,8 @@ import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/features/admin/alerts_screen.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 class _HubSection {
   final String label;
@@ -47,41 +48,47 @@ class _HubSection {
   });
 }
 
-final _sections = <_HubSection>[
+/// Built per-call rather than held in a top-level `final`: every label and
+/// subtitle is a localised string now, so the list cannot outlive a locale
+/// change. ADR-0083.
+List<_HubSection> _sectionsFor(AppL10n l10n) => <_HubSection>[
   _HubSection(
-    label: AppStrings.venueHubSectionZona,
-    sub: AppStrings.venueHubSectionZonaSub,
+    label: l10n.venueHubSectionZona,
+    sub: l10n.venueHubSectionZonaSub,
     icon: Icons.place_outlined,
     route: '/zone-admin',
     tint: (sc) => sc.accentText,
     badgeBuilder: (ref) {
       final z = ref.watch(zonesProvider);
       final t = ref.watch(tablesProvider);
-      return '${t.length} meja · ${z.length} zona';
+      return ref.read(l10nProvider).venueHubBadgeFloor(t.length, z.length);
     },
   ),
   _HubSection(
-    label: AppStrings.venueHubSectionMenu,
-    sub: AppStrings.venueHubSectionMenuSub,
+    label: l10n.venueHubSectionMenu,
+    sub: l10n.venueHubSectionMenuSub,
     icon: Icons.restaurant_menu_rounded,
     route: '/menuadm',
     tint: (sc) => sc.warn,
     badgeBuilder: (ref) {
       final m = ref.watch(menuItemsProvider);
       final c = ref.watch(menuCategoriesProvider);
-      return '${m.length} item · ${c.length} kategori';
+      return ref.read(l10nProvider).venueHubBadgeMenu(m.length, c.length);
     },
   ),
   _HubSection(
-    label: AppStrings.venueHubSectionStock,
-    sub: AppStrings.venueHubSectionStockSub,
+    label: l10n.venueHubSectionStock,
+    sub: l10n.venueHubSectionStockSub,
     icon: Icons.inventory_2_outlined,
     route: '/stock',
     tint: (sc) => sc.success,
     badgeBuilder: (ref) {
       final s = ref.watch(ingredientsProvider).valueOrNull ?? const [];
       final low = s.where((i) => i.isLow).length;
-      return low > 0 ? '$low perhatian' : '${s.length} bahan';
+      final l = ref.read(l10nProvider);
+      return low > 0
+          ? l.venueHubBadgeStockLow(low)
+          : l.venueHubBadgeStockOk(s.length);
     },
     hasAlert: (ref) {
       final s = ref.watch(ingredientsProvider).valueOrNull ?? const [];
@@ -89,8 +96,8 @@ final _sections = <_HubSection>[
     },
   ),
   _HubSection(
-    label: AppStrings.venueHubSectionVenue,
-    sub: AppStrings.venueHubSectionVenueSub,
+    label: l10n.venueHubSectionVenue,
+    sub: l10n.venueHubSectionVenueSub,
     icon: Icons.storefront_outlined,
     route: '/venue-settings',
     tint: (sc) => sc.violet,
@@ -98,20 +105,21 @@ final _sections = <_HubSection>[
       final v = ref.watch(venueSettingsProvider);
       final tax = (v.taxRateBps / 100.0).toStringAsFixed(0);
       final svc = (v.serviceRateBps / 100.0).toStringAsFixed(0);
-      return 'Pajak $tax% · Service $svc%';
+      return ref.read(l10nProvider).venueHubBadgeVenue(tax, svc);
     },
   ),
   _HubSection(
-    label: AppStrings.venueHubSectionAlerts,
-    sub: AppStrings.venueHubSectionAlertsSub,
+    label: l10n.venueHubSectionAlerts,
+    sub: l10n.venueHubSectionAlertsSub,
     icon: Icons.notifications_active_outlined,
     route: '/alerts',
     tint: (sc) => sc.urgent,
-    badgeBuilder: (ref) => alertsSummary(ref.watch(venueSettingsProvider)),
+    badgeBuilder: (ref) =>
+        alertsSummary(ref.read(l10nProvider), ref.watch(venueSettingsProvider)),
   ),
   _HubSection(
-    label: AppStrings.venueHubSectionSystem,
-    sub: AppStrings.venueHubSectionSystemSub,
+    label: l10n.venueHubSectionSystem,
+    sub: l10n.venueHubSectionSystemSub,
     icon: Icons.wifi_rounded,
     route: '/system',
     tint: (sc) => sc.info,
@@ -122,27 +130,27 @@ final _sections = <_HubSection>[
     },
   ),
   _HubSection(
-    label: AppStrings.venueHubSectionStaff,
-    sub: AppStrings.venueHubSectionStaffSub,
+    label: l10n.venueHubSectionStaff,
+    sub: l10n.venueHubSectionStaffSub,
     icon: Icons.person_outline_rounded,
     route: '/staff',
     tint: (sc) => sc.success,
     badgeBuilder: (ref) {
       final st = ref.watch(staffRepositoryProvider);
-      return '${st.length} staf';
+      return ref.read(l10nProvider).venueHubBadgeStaff(st.length);
     },
   ),
   _HubSection(
-    label: AppStrings.venueHubSectionReports,
-    sub: AppStrings.venueHubSectionReportsSub,
+    label: l10n.venueHubSectionReports,
+    sub: l10n.venueHubSectionReportsSub,
     icon: Icons.auto_awesome_outlined,
     route: '/reports',
     tint: (sc) => sc.urgent,
-    badgeBuilder: (ref) => 'Laporan shift',
+    badgeBuilder: (ref) => ref.read(l10nProvider).venueHubShiftReport,
   ),
   _HubSection(
-    label: AppStrings.venueHubSectionAudit,
-    sub: AppStrings.venueHubSectionAuditSub,
+    label: l10n.venueHubSectionAudit,
+    sub: l10n.venueHubSectionAuditSub,
     icon: Icons.history,
     route: '/audit',
     tint: (sc) => sc.info,
@@ -152,13 +160,13 @@ final _sections = <_HubSection>[
           .summary
           .values
           .fold<int>(0, (a, t) => a + t.count);
-      return AppStrings.auditEventCount(n);
+      return l10n.auditEventCount(n);
     },
     // The log is a tablet screen (six columns at a glance), so the phone card
     // says so before the tap rather than after it. The card still navigates —
     // a manager on a handset should learn the feature exists and where to find
     // it, not meet a dead control.
-    phoneBadge: AppStrings.auditTabletOnlyBadge,
+    phoneBadge: l10n.auditTabletOnlyBadge,
   ),
 ];
 
@@ -198,17 +206,21 @@ class _VenueHubScreenState extends ConsumerState<VenueHubScreen> {
 
     if (l.useTabletShell) {
       return AdminPage(
-        title: AppStrings.venueHubTitle,
-        sub: AppStrings.venueHubSubtitle,
+        title: context.l10n.venueHubTitle,
+        sub: context.l10n.venueHubSubtitle,
         children: [
           const Reveal(index: 0, child: _VenueHeroStrip()),
           const SizedBox(height: Sp.s4),
-          _HubGrid(sections: _sections, seedOffset: 1, big: true),
+          _HubGrid(
+            sections: _sectionsFor(context.l10n),
+            seedOffset: 1,
+            big: true,
+          ),
         ],
       );
     }
 
-    return _PhoneHub(sections: _sections);
+    return _PhoneHub(sections: _sectionsFor(context.l10n));
   }
 }
 
@@ -266,7 +278,7 @@ class _VenueHeroStrip extends ConsumerWidget {
                           child: Text(
                             venue.displayName.isNotEmpty
                                 ? venue.displayName
-                                : AppStrings.venueHubTitle,
+                                : context.l10n.venueHubTitle,
                             style: SatType.h3(color: sc.textHi),
                           ),
                         ),
@@ -296,7 +308,9 @@ class _VenueHeroStrip extends ConsumerWidget {
                               ),
                               const SizedBox(width: Sp.s1),
                               Text(
-                                apiConfig != null ? 'LAN AKTIF' : 'LOKAL',
+                                apiConfig != null
+                                    ? context.l10n.venueHubLanActive
+                                    : context.l10n.venueHubLanLocal,
                                 style: SatType.caption(color: sc.success),
                               ),
                             ],
@@ -307,8 +321,8 @@ class _VenueHeroStrip extends ConsumerWidget {
                     const SizedBox(height: Sp.sHair),
                     Text(
                       venue.legalName.isNotEmpty
-                          ? '${venue.legalName} · ${venue.address.isNotEmpty ? venue.address : 'Mode Operasional'}'
-                          : AppStrings.venueHubSubtitle,
+                          ? '${venue.legalName} · ${venue.address.isNotEmpty ? venue.address : context.l10n.venueHubOperationalMode}'
+                          : context.l10n.venueHubSubtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: SatType.bodyS(color: sc.textLo),
@@ -335,7 +349,7 @@ class _VenueHeroStrip extends ConsumerWidget {
                       Icon(Icons.tune_rounded, size: 14, color: sc.textHi),
                       const SizedBox(width: Sp.s1h),
                       Text(
-                        'Pengaturan',
+                        context.l10n.vhbSettings,
                         style: SatType.labelS(color: sc.textHi),
                       ),
                     ],
@@ -351,24 +365,27 @@ class _VenueHeroStrip extends ConsumerWidget {
             children: [
               _StatBadge(
                 icon: Icons.place_outlined,
-                text: '${tables.length} meja (${zones.length} zona)',
+                text: context.l10n.venueHubTablesZones(
+                  tables.length,
+                  zones.length,
+                ),
                 color: sc.accentText,
               ),
               _StatBadge(
                 icon: Icons.restaurant_menu_rounded,
-                text: '${menuItems.length} item menu',
+                text: context.l10n.venueHubMenuItems(menuItems.length),
                 color: sc.warn,
               ),
               _StatBadge(
                 icon: Icons.inventory_2_outlined,
                 text: lowStock > 0
-                    ? '${stockItems.length} bahan ($lowStock low)'
-                    : '${stockItems.length} bahan',
+                    ? context.l10n.venueHubStockLow(stockItems.length, lowStock)
+                    : context.l10n.venueHubStock(stockItems.length),
                 color: lowStock > 0 ? sc.warn : sc.success,
               ),
               _StatBadge(
                 icon: Icons.badge_outlined,
-                text: '${staffList.length} staf',
+                text: context.l10n.venueHubStaffCount(staffList.length),
                 color: sc.info,
               ),
             ],
@@ -465,7 +482,7 @@ class _PhoneHub extends StatelessWidget {
                 Icon(Icons.storefront_outlined, size: 14, color: sc.textHi),
                 const SizedBox(width: Sp.s1h),
                 Text(
-                  AppStrings.venueHubTitle,
+                  context.l10n.venueHubTitle,
                   style: SatType.bodyM(color: sc.textHi),
                 ),
               ],
@@ -478,7 +495,7 @@ class _PhoneHub extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
             child: Text(
-              AppStrings.crumbKonfigurasi,
+              context.l10n.crumbKonfigurasi,
               style: SatType.h2(color: sc.textHi),
             ),
           ),

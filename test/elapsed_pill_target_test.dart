@@ -7,6 +7,7 @@ import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/core/widgets/elapsed_pill.dart';
 
 import '_tickers.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// ADR-0043 reaches the waiter's board too: a line escalates at *its own*
 /// resolved target, not at one number shared by every dish. The pill takes both
@@ -24,6 +25,11 @@ void main() {
       ProviderScope(
         overrides: tickerOverrides,
         child: MaterialApp(
+          // Pinned, exactly as the app pins it (ADR-0083). Without this the
+          // test resolves against the host's locale and reads English.
+          locale: const Locale('id'),
+          localizationsDelegates: AppL10n.localizationsDelegates,
+          supportedLocales: AppL10n.supportedLocales,
           theme: satTheme(SatTheme.neonTerang),
           home: Scaffold(
             body: ElapsedPill(

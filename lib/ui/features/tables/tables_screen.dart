@@ -3,7 +3,6 @@ import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/reservations_repository.dart';
 import 'package:satset/data/repositories/takeaway_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
@@ -30,6 +29,7 @@ import 'package:satset/ui/features/tables/widgets/table_card.dart';
 import 'package:satset/ui/features/tables/widgets/takeaway_surface.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/state/tickers.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 // Animation tuning. Lively but professional. easeOutQuart per design tokens.
 const Duration _kChipMorph = Duration(milliseconds: 240);
@@ -75,9 +75,9 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     final ready = zoneTables.where((t) => t.status == TableStatus.ready).length;
     final openTotal = zoneTables.fold<int>(0, (s, t) => s + t.openAmount);
     final subParts = <String>[
-      '$occupied dari ${zoneTables.length} terisi',
-      if (ready > 0) '$ready siap diambil',
-      if (openTotal > 0) 'tab ${formatIDR(openTotal)}',
+      context.l10n.tblOccupiedOf(occupied, zoneTables.length),
+      if (ready > 0) context.l10n.tblReadyToCollect(ready),
+      if (openTotal > 0) context.l10n.tblOpenTab(formatIDR(openTotal)),
     ];
     final subLine = subParts.join(' · ');
 
@@ -196,10 +196,10 @@ class _FloorHead extends ConsumerWidget {
       children: [
         _FloorAction(
           icon: Icons.event_outlined,
-          label: AppStrings.floorReservations,
+          label: context.l10n.floorReservations,
           count: waiting,
           alert: late > 0
-              ? '$late ${AppStrings.floorReservationsLateCount}'
+              ? '$late ${context.l10n.floorReservationsLateCount}'
               : null,
           compact: !tablet,
           prominent: true,
@@ -207,7 +207,7 @@ class _FloorHead extends ConsumerWidget {
         ),
         _FloorAction(
           icon: Icons.shopping_bag_outlined,
-          label: AppStrings.floorTakeaway,
+          label: context.l10n.floorTakeaway,
           count: takeaway,
           compact: !tablet,
           onTap: () => openTakeawaySurface(context),
@@ -291,9 +291,7 @@ class _FloorAction extends StatelessWidget {
     final loud = prominent && !SatShape.lembut;
     final isLate = alert != null;
 
-    final Color fill = loud
-        ? (isLate ? sc.urgent : sc.accent)
-        : sc.bg2;
+    final Color fill = loud ? (isLate ? sc.urgent : sc.accent) : sc.bg2;
     final Color ink = loud
         ? (isLate ? sc.inkOn(sc.urgent) : sc.accentInk)
         : sc.textHi;
@@ -342,10 +340,7 @@ class _FloorAction extends StatelessWidget {
                 height: 22,
                 alignment: Alignment.center,
                 padding: const EdgeInsets.symmetric(horizontal: Sp.s1h),
-                decoration: SatBox.d(
-                  color: badgeFill,
-                  borderRadius: SatR.pill,
-                ),
+                decoration: SatBox.d(color: badgeFill, borderRadius: SatR.pill),
                 child: Text('$count', style: SatType.caption(color: badgeInk)),
               )
             else
@@ -357,9 +352,7 @@ class _FloorAction extends StatelessWidget {
                 // reduced opacity instead of stacking a second red block.
                 Text(
                   SatShape.caps(alert!),
-                  style: SatType.labelS(
-                    color: ink.withValues(alpha: 0.85),
-                  ),
+                  style: SatType.labelS(color: ink.withValues(alpha: 0.85)),
                 )
               else
                 Container(
@@ -460,7 +453,7 @@ class _NewOrderButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return SatButton.primary(
-      label: 'Pesanan baru',
+      label: context.l10n.mnuNewOrder,
       icon: Icons.add_rounded,
       size: tablet ? SatButtonSize.lg : SatButtonSize.md,
       onTap: () {
@@ -528,6 +521,7 @@ class _TablesZoneRow extends ConsumerWidget {
           service: serviceStateFor(t, lines, settings, now),
           s: settings,
           now: now,
+          l10n: context.l10n,
         );
         if (stale == null) continue;
         if (stale.severity == StaleSeverity.crit) {
@@ -557,7 +551,7 @@ class _TablesZoneRow extends ConsumerWidget {
                 .where((t) => t.status == TableStatus.ready)
                 .length;
             final countLabel = ready > 0
-                ? '$ready siap'
+                ? context.l10n.tblZoneReadyCount(ready)
                 : '${zoneTables.length}';
             final alarm = alarmFor(z.id);
             final dur = motionEnabled(context) ? _kChipMorph : Duration.zero;
@@ -804,7 +798,7 @@ class _EmptyZoneState extends State<_EmptyZone>
               ),
             SizedBox(height: tablet ? 18 : 14),
             Text(
-              'Belum ada meja di ${widget.zoneName}',
+              context.l10n.tblNoTablesInZone(widget.zoneName),
               textAlign: TextAlign.center,
               style: (tablet
                   ? SatType.h3(color: sc.textHi)
@@ -812,7 +806,7 @@ class _EmptyZoneState extends State<_EmptyZone>
             ),
             const SizedBox(height: Sp.s1h),
             Text(
-              AppStrings.tablesEmptyZoneAddTableHint,
+              context.l10n.tablesEmptyZoneAddTableHint,
               textAlign: TextAlign.center,
               style: SatType.monoS(color: sc.textLo),
             ),

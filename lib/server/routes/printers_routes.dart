@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/core/printing/struk_renderer.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/printing/struk_socket.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/capability.dart';
@@ -181,6 +182,7 @@ Router printersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     SatLog.srv('printer test id=$id host=${row.host}:${row.port}');
     try {
       final bytes = await StrukRenderer.renderTest(
+        satL10n,
         row.label,
         row.host,
         row.port,

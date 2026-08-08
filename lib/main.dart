@@ -26,142 +26,150 @@ import 'package:satset/server/server.dart';
 FirebaseCrashlytics? _crashlytics;
 
 Future<void> main() async {
-  runZonedGuarded<Future<void>>(() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    // id_ID date symbols for exports (DateFormat with explicit locale).
-    await initializeDateFormatting('id_ID');
-    SatLog.init();
-    FlutterError.onError = (details) {
-      SatLog.err('flutter', details.exception, details.stack);
-      FlutterError.presentError(details);
-    };
-    PlatformDispatcher.instance.onError = (e, st) {
-      SatLog.err('platform', e, st);
-      return false;
-    };
+  runZonedGuarded<Future<void>>(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      // Symbols for both shipped locales, before the first frame. `format.dart`
+      // builds its DateFormats per call against `Intl.defaultLocale`, which the
+      // locale provider keeps in step with the picker (ADR-0083/0084). Loading
+      // both here is what lets a language switch take effect without a restart.
+      await initializeDateFormatting('id_ID');
+      await initializeDateFormatting('en_US');
+      SatLog.init();
+      FlutterError.onError = (details) {
+        SatLog.err('flutter', details.exception, details.stack);
+        FlutterError.presentError(details);
+      };
+      PlatformDispatcher.instance.onError = (e, st) {
+        SatLog.err('platform', e, st);
+        return false;
+      };
 
-    await Firebase.initializeApp();
+      await Firebase.initializeApp();
 
-    // Crash reporting layers on top of the handlers above rather than replacing
-    // them: SatLog stays the on-device record an operator can read on the spot,
-    // Crashlytics is the copy that survives the device. Collection is off in
-    // debug so a developer's own crashes never reach the console. Reports queue
-    // on disk and upload whenever the venue next has a WAN — which, for an app
-    // that is expected to run without one, is the only workable shape.
-    final crashlytics = FirebaseCrashlytics.instance;
-    await crashlytics.setCrashlyticsCollectionEnabled(kReleaseMode);
-    _crashlytics = crashlytics;
-    FlutterError.onError = (details) {
-      SatLog.err('flutter', details.exception, details.stack);
-      crashlytics.recordFlutterFatalError(details);
-      FlutterError.presentError(details);
-    };
-    PlatformDispatcher.instance.onError = (e, st) {
-      SatLog.err('platform', e, st);
-      crashlytics.recordError(e, st, fatal: true);
-      return false;
-    };
+      // Crash reporting layers on top of the handlers above rather than replacing
+      // them: SatLog stays the on-device record an operator can read on the spot,
+      // Crashlytics is the copy that survives the device. Collection is off in
+      // debug so a developer's own crashes never reach the console. Reports queue
+      // on disk and upload whenever the venue next has a WAN — which, for an app
+      // that is expected to run without one, is the only workable shape.
+      final crashlytics = FirebaseCrashlytics.instance;
+      await crashlytics.setCrashlyticsCollectionEnabled(kReleaseMode);
+      _crashlytics = crashlytics;
+      FlutterError.onError = (details) {
+        SatLog.err('flutter', details.exception, details.stack);
+        crashlytics.recordFlutterFatalError(details);
+        FlutterError.presentError(details);
+      };
+      PlatformDispatcher.instance.onError = (e, st) {
+        SatLog.err('platform', e, st);
+        crashlytics.recordError(e, st, fatal: true);
+        return false;
+      };
 
-    final sp = await SharedPreferences.getInstance();
-    final prefs = PrefsService(sp);
-    final storage = SecureStorageService();
-    final mode = prefs.appMode();
+      final sp = await SharedPreferences.getInstance();
+      final prefs = PrefsService(sp);
+      final storage = SecureStorageService();
+      final mode = prefs.appMode();
 
-    if ((await storage.readDeviceId())?.isEmpty ?? true) {
-      await storage.writeDeviceId(const Uuid().v4());
-    }
+      if ((await storage.readDeviceId())?.isEmpty ?? true) {
+        await storage.writeDeviceId(const Uuid().v4());
+      }
 
-    ServerRuntime? server;
-    ApiConfig? apiConfig;
-    // Set when a cached admin session was blocked at boot ('stale' |
-    // 'ineligible') so the PIN screen can explain why. See ADR-0015.
-    String? adminBootBlock;
+      ServerRuntime? server;
+      ApiConfig? apiConfig;
+      // Set when a cached admin session was blocked at boot ('stale' |
+      // 'ineligible') so the PIN screen can explain why. See ADR-0015.
+      String? adminBootBlock;
 
-    if (mode == AppMode.server && Platform.isAndroid) {
-      // The embedded server is bound to a valid admin session: gate its start
-      // on the Firebase eligibility snapshot (with a 7-day offline staleness
-      // guard). No cached/eligible admin ⇒ stay on the sign-in screen.
-      final fbAdmin = FirebaseAdminService();
-      final decision = await fbAdmin.evaluateForBoot(storage);
-      switch (decision.gate) {
-        case AdminBootGate.ok:
-          server = await ServerRuntime.boot();
+      if (mode == AppMode.server && Platform.isAndroid) {
+        // The embedded server is bound to a valid admin session: gate its start
+        // on the Firebase eligibility snapshot (with a 7-day offline staleness
+        // guard). No cached/eligible admin ⇒ stay on the sign-in screen.
+        final fbAdmin = FirebaseAdminService();
+        final decision = await fbAdmin.evaluateForBoot(storage);
+        switch (decision.gate) {
+          case AdminBootGate.ok:
+            server = await ServerRuntime.boot();
+            apiConfig = ApiConfig(
+              baseUri: Uri.parse('https://127.0.0.1:${server.port}'),
+              trustedFingerprint: server.tls.fingerprint,
+            );
+          case AdminBootGate.ineligible:
+            await fbAdmin.signOut();
+            adminBootBlock = 'ineligible';
+          case AdminBootGate.mustChangePassword:
+            // Sign the cached session out so the PIN screen asks for the
+            // temporary password, which routes into the change screen. No server
+            // boots on a credential the operator has just replaced. See ADR-0075.
+            await fbAdmin.signOut();
+            adminBootBlock = 'resetpending';
+          case AdminBootGate.staleOffline:
+            adminBootBlock = 'stale';
+          case AdminBootGate.superAdmin:
+            // A fleet operator has no local server; sign out the cached session
+            // so the PIN screen shows the admin form and the super re-signs in to
+            // reach the Fleet console. See ADR-0016.
+            await fbAdmin.signOut();
+          case AdminBootGate.owner:
+            // A report owner has no local server; sign out so the PIN screen
+            // shows the admin form and the owner re-signs in to reach /owner.
+            // See ADR-0036.
+            await fbAdmin.signOut();
+          case AdminBootGate.noUser:
+            break;
+        }
+      } else if (mode == AppMode.client) {
+        final host = prefs.pairedHost();
+        final port = prefs.pairedPort();
+        final fp = await storage.readServerFingerprint();
+        if (host != null && port != null && fp != null) {
           apiConfig = ApiConfig(
-            baseUri: Uri.parse('https://127.0.0.1:${server.port}'),
-            trustedFingerprint: server.tls.fingerprint,
+            baseUri: Uri.parse('https://$host:$port'),
+            trustedFingerprint: fp,
           );
-        case AdminBootGate.ineligible:
-          await fbAdmin.signOut();
-          adminBootBlock = 'ineligible';
-        case AdminBootGate.mustChangePassword:
-          // Sign the cached session out so the PIN screen asks for the
-          // temporary password, which routes into the change screen. No server
-          // boots on a credential the operator has just replaced. See ADR-0075.
-          await fbAdmin.signOut();
-          adminBootBlock = 'resetpending';
-        case AdminBootGate.staleOffline:
-          adminBootBlock = 'stale';
-        case AdminBootGate.superAdmin:
-          // A fleet operator has no local server; sign out the cached session
-          // so the PIN screen shows the admin form and the super re-signs in to
-          // reach the Fleet console. See ADR-0016.
-          await fbAdmin.signOut();
-        case AdminBootGate.owner:
-          // A report owner has no local server; sign out so the PIN screen
-          // shows the admin form and the owner re-signs in to reach /owner.
-          // See ADR-0036.
-          await fbAdmin.signOut();
-        case AdminBootGate.noUser:
-          break;
+        }
       }
-    } else if (mode == AppMode.client) {
-      final host = prefs.pairedHost();
-      final port = prefs.pairedPort();
-      final fp = await storage.readServerFingerprint();
-      if (host != null && port != null && fp != null) {
-        apiConfig = ApiConfig(
-          baseUri: Uri.parse('https://$host:$port'),
-          trustedFingerprint: fp,
-        );
+
+      final deviceId = (await storage.readDeviceId()) ?? '';
+      // A crash from a venue fleet is unattributable without these: which tablet,
+      // and whether it was the one running the server.
+      unawaited(crashlytics.setUserIdentifier(deviceId));
+      unawaited(crashlytics.setCustomKey('mode', mode.name));
+      SatLog.boot(
+        'mode=${mode.name} device=${deviceId.isEmpty ? "?" : deviceId.substring(0, deviceId.length.clamp(0, 8))} '
+        'api=${apiConfig?.baseUri ?? "none"}',
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          prefsServiceProvider.overrideWith((_) async => prefs),
+          secureStorageServiceProvider.overrideWithValue(storage),
+          if (apiConfig != null)
+            apiConfigProvider.overrideWith((_) => apiConfig),
+          if (server != null) serverRuntimeProvider.overrideWith((_) => server),
+          if (adminBootBlock != null)
+            adminBootBlockProvider.overrideWith((_) => adminBootBlock),
+        ],
+      );
+
+      if (apiConfig != null) {
+        // ignore: unawaited_futures
+        container.read(authStateProvider.notifier).restoreFromStoredToken();
       }
-    }
 
-    final deviceId = (await storage.readDeviceId()) ?? '';
-    // A crash from a venue fleet is unattributable without these: which tablet,
-    // and whether it was the one running the server.
-    unawaited(crashlytics.setUserIdentifier(deviceId));
-    unawaited(crashlytics.setCustomKey('mode', mode.name));
-    SatLog.boot(
-      'mode=${mode.name} device=${deviceId.isEmpty ? "?" : deviceId.substring(0, deviceId.length.clamp(0, 8))} '
-      'api=${apiConfig?.baseUri ?? "none"}',
-    );
-
-    final container = ProviderContainer(
-      overrides: [
-        prefsServiceProvider.overrideWith((_) async => prefs),
-        secureStorageServiceProvider.overrideWithValue(storage),
-        if (apiConfig != null) apiConfigProvider.overrideWith((_) => apiConfig),
-        if (server != null) serverRuntimeProvider.overrideWith((_) => server),
-        if (adminBootBlock != null)
-          adminBootBlockProvider.overrideWith((_) => adminBootBlock),
-      ],
-    );
-
-    if (apiConfig != null) {
-      // ignore: unawaited_futures
-      container.read(authStateProvider.notifier).restoreFromStoredToken();
-    }
-
-    runApp(
-      UncontrolledProviderScope(
-        container: container,
-        child: _ServerLifecycle(server: server, child: const SatSetApp()),
-      ),
-    );
-  }, (e, st) {
-    SatLog.err('zoned', e, st);
-    _crashlytics?.recordError(e, st, fatal: true);
-  });
+      runApp(
+        UncontrolledProviderScope(
+          container: container,
+          child: _ServerLifecycle(server: server, child: const SatSetApp()),
+        ),
+      );
+    },
+    (e, st) {
+      SatLog.err('zoned', e, st);
+      _crashlytics?.recordError(e, st, fatal: true);
+    },
+  );
 }
 
 class _ServerLifecycle extends StatefulWidget {

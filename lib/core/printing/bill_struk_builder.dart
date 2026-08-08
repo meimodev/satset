@@ -1,9 +1,10 @@
 import 'dart:convert';
 
+import 'package:satset/core/localization/labels.dart';
 import 'package:satset/core/printing/bill_struk_data.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
-import 'package:satset/domain/models/receipt_label.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// Assembles a [BillStrukData] for the MONEY document from either source — the
 /// typed [Bill] on a client, or the raw settlement bill map on the server —
@@ -14,19 +15,10 @@ import 'package:satset/domain/models/receipt_label.dart';
 /// split receipt. The Tagihan-vs-Struk-pembayaran state is decided downstream
 /// purely by whether the assembled doc carries payments.
 class BillStrukBuilder {
-  static const _methodLabels = {
-    'tunai': 'Tunai',
-    'kartu': 'Kartu',
-    'qris': 'QRIS',
-    'transfer': 'Transfer',
-    'lainnya': 'Lainnya',
-  };
-
-  static String _label(String method) => _methodLabels[method] ?? method;
-
   // ── client: from the typed Bill ──
 
   static BillStrukData fromBill({
+    required AppL10n l,
     required Bill bill,
     BillReceipt? receipt,
     required VenueSettingsDto venue,
@@ -74,7 +66,7 @@ class BillStrukBuilder {
         taxAmount: bill.taxAmount,
         total: bill.total,
         billTotal: bill.total,
-        payments: _payments(pays),
+        payments: _payments(l, pays),
         paidNet: bill.paidAmount,
         tenderedTotal: _tendered(pays),
         outstanding: bill.outstanding,
@@ -112,8 +104,9 @@ class BillStrukBuilder {
       at: DateTime.now(),
       kind: even ? BillDocKind.evenReceipt : BillDocKind.itemizedReceipt,
       // "Tamu A", not a bare "A" — the guest reads this line to know the slip
-      // in their hand is theirs. Non-letter labels (Bagian 1/3) pass through.
-      docLabel: receiptTitle(receipt.label),
+      // in their hand is theirs. A part spec reads as "Bagian 1/3"; anything
+      // else passes through.
+      docLabel: receiptTitle(l, receipt.label),
       lines: lines,
       subtotal: receipt.subtotal,
       discountLabel: receipt.orderDiscount?.label ?? '',
@@ -123,7 +116,7 @@ class BillStrukBuilder {
       taxAmount: receipt.taxAmount,
       total: receipt.total,
       billTotal: bill.total,
-      payments: _payments(receipt.payments),
+      payments: _payments(l, receipt.payments),
       paidNet: receipt.paidNet,
       tenderedTotal: _tendered(receipt.payments),
       outstanding: receipt.outstanding,
@@ -164,15 +157,16 @@ class BillStrukBuilder {
     return named.length == 1 ? named.first.label : '';
   }
 
-  static List<BillStrukPayment> _payments(List<BillPayment> pays) => [
-    for (final p in pays)
-      BillStrukPayment(
-        methodLabel: _label(p.method),
-        amount: p.amount,
-        tendered: p.tendered,
-        isRefund: p.isRefund,
-      ),
-  ];
+  static List<BillStrukPayment> _payments(AppL10n l, List<BillPayment> pays) =>
+      [
+        for (final p in pays)
+          BillStrukPayment(
+            methodLabel: paymentMethodLabel(l, p.method),
+            amount: p.amount,
+            tendered: p.tendered,
+            isRefund: p.isRefund,
+          ),
+      ];
 
   static int? _tendered(List<BillPayment> pays) {
     var sum = 0;
@@ -203,6 +197,7 @@ class BillStrukBuilder {
   // ── server: from the raw settlement bill map (see _buildBill) ──
 
   static BillStrukData fromServerMap({
+    required AppL10n l,
     required Map<String, dynamic> bill,
     String? receiptId,
     required String venueName,
@@ -229,7 +224,10 @@ class BillStrukBuilder {
     List<BillStrukPayment> mapPays(List pays) => [
       for (final p in pays.cast<Map>())
         BillStrukPayment(
-          methodLabel: _label((p['method'] as String?) ?? 'tunai'),
+          methodLabel: paymentMethodLabel(
+            l,
+            (p['method'] as String?) ?? 'tunai',
+          ),
           amount: n(p['amount']),
           tendered: (p['tendered'] as num?)?.toInt(),
           isRefund: p['isRefund'] as bool? ?? false,
@@ -250,7 +248,7 @@ class BillStrukBuilder {
     List<Map> discountsOf(Map r) =>
         (r['discounts'] as List? ?? const []).cast<Map>();
     String discountLabel(Map d) {
-      final name = (d['name'] as String?) ?? 'Diskon';
+      final name = (d['name'] as String?) ?? l.strukDiscount;
       if ((d['kind'] as String?) != 'percent') return name;
       return '$name ${(n(d['value']) / 100).toStringAsFixed(0)}%';
     }
@@ -386,7 +384,7 @@ class BillStrukBuilder {
       guestName: guestName,
       at: DateTime.now(),
       kind: even ? BillDocKind.evenReceipt : BillDocKind.itemizedReceipt,
-      docLabel: receiptTitle((rec['label'] as String?) ?? ''),
+      docLabel: receiptTitle(l, (rec['label'] as String?) ?? ''),
       lines: lines,
       subtotal: n(rec['subtotal']),
       discountLabel: orderDiscountOf(rec) == null

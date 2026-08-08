@@ -13,7 +13,6 @@ import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -25,6 +24,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 class DiscountPresetsScreen extends ConsumerWidget {
   const DiscountPresetsScreen({super.key});
@@ -42,40 +42,35 @@ class DiscountPresetsScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _edit(context, null, repo: repo),
         icon: const Icon(Icons.add),
-        label: const Text('Preset baru'),
+        label: Text(context.l10n.dscNewPreset),
       ),
       body: Column(
         children: [
           // Pushed from Venue Settings, so the hub stays in the trail.
-          const SatAppBar(
-            crumbs: [AppStrings.tabVenue, AppStrings.crumbDiskon],
-          ),
+          SatAppBar(crumbs: [context.l10n.tabVenue, context.l10n.crumbDiskon]),
           Expanded(
             child: presets.isEmpty
-                ? const SatEmpty(
+                ? SatEmpty(
                     icon: Icons.sell_outlined,
-                    title: 'Belum ada preset diskon',
-                    body:
-                        'Buat preset agar kasir bisa memberi diskon tanpa '
-                        'mengetik angka sendiri.',
+                    title: context.l10n.dscEmptyTitle,
+                    body: context.l10n.dscEmptyBody,
                   )
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
                     children: [
                       Text(
-                        'Kasir memilih dari daftar ini — mereka tidak bisa mengetik '
-                        'angka diskon sendiri.',
+                        context.l10n.dscIntro,
                         style: SatType.bodyS(color: sc.textLo),
                       ),
                       const SizedBox(height: Sp.s4),
                       if (order.isNotEmpty) ...[
-                        const SatSectionLabel('Seluruh pesanan'),
+                        SatSectionLabel(context.l10n.dscScopeOrder),
                         for (final p in order)
                           _PresetTile(preset: p, repo: repo, sc: sc),
                         const SizedBox(height: Sp.s5),
                       ],
                       if (line.isNotEmpty) ...[
-                        const SatSectionLabel('Per item'),
+                        SatSectionLabel(context.l10n.dscScopeLine),
                         for (final p in line)
                           _PresetTile(preset: p, repo: repo, sc: sc),
                       ],
@@ -119,7 +114,10 @@ class _PresetTile extends StatelessWidget {
             ),
             if (!p.active) ...[
               const SizedBox(width: Sp.s2),
-              Text('nonaktif', style: SatType.bodyS(color: sc.textLo)),
+              Text(
+                context.l10n.dscInactive,
+                style: SatType.bodyS(color: sc.textLo),
+              ),
             ],
           ],
         ),
@@ -130,24 +128,21 @@ class _PresetTile extends StatelessWidget {
           style: SatType.bodyS(color: sc.textLo),
         ),
         trailing: IconButton(
-          tooltip: AppStrings.delete,
+          tooltip: context.l10n.delete,
           icon: Icon(Icons.delete_outline, color: sc.urgent),
           onPressed: () async {
             final ok = await showSatDialog<bool>(
               context,
               builder: (c) => AlertDialog(
-                title: const Text('Hapus preset'),
-                content: Text(
-                  'Hapus "${p.name}"? Diskon yang sudah dipakai di tagihan '
-                  'lama tidak berubah — nilainya sudah tersimpan di sana.',
-                ),
+                title: Text(context.l10n.dscDeleteTitle),
+                content: Text(context.l10n.dscDeleteBody(p.name)),
                 actions: [
                   SatButton.ghost(
-                    label: AppStrings.cancel,
+                    label: context.l10n.cancel,
                     onTap: () => Navigator.pop(c, false),
                   ),
                   SatButton.danger(
-                    label: AppStrings.delete,
+                    label: context.l10n.delete,
                     onTap: () => Navigator.pop(c, true),
                   ),
                 ],
@@ -199,31 +194,43 @@ Future<void> _edit(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                existing == null ? 'Preset baru' : 'Ubah preset',
+                existing == null ? c.l10n.dscNewPreset : c.l10n.dscEditPreset,
                 style: SatType.labelL(color: sc.textHi),
               ),
               const SizedBox(height: Sp.s3),
               SatField.text(
                 controller: nameCtrl,
-                label: 'Nama (tampil di struk)',
-                hint: 'Diskon Member',
+                label: c.l10n.dscNameLabel,
+                hint: c.l10n.dscNameHint,
               ),
               const SizedBox(height: Sp.s3),
               // Scope is what stops a fixed whole-bill amount landing on one
               // cheap line — the cashier's picker filters on it.
               SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'order', label: Text('Seluruh pesanan')),
-                  ButtonSegment(value: 'line', label: Text('Per item')),
+                segments: [
+                  ButtonSegment(
+                    value: 'order',
+                    label: Text(c.l10n.dscScopeOrder),
+                  ),
+                  ButtonSegment(
+                    value: 'line',
+                    label: Text(c.l10n.dscScopeLine),
+                  ),
                 ],
                 selected: {scope},
                 onSelectionChanged: (v) => setState(() => scope = v.first),
               ),
               const SizedBox(height: Sp.s2h),
               SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'percent', label: Text('Persen')),
-                  ButtonSegment(value: 'fixed', label: Text('Nominal')),
+                segments: [
+                  ButtonSegment(
+                    value: 'percent',
+                    label: Text(c.l10n.dscKindPercent),
+                  ),
+                  ButtonSegment(
+                    value: 'fixed',
+                    label: Text(c.l10n.dscKindFixed),
+                  ),
                 ],
                 selected: {kind},
                 onSelectionChanged: (v) => setState(() => kind = v.first),
@@ -231,7 +238,9 @@ Future<void> _edit(
               const SizedBox(height: Sp.s3),
               SatField.number(
                 controller: valueCtrl,
-                label: kind == 'percent' ? 'Persen (%)' : 'Nominal (Rp)',
+                label: kind == 'percent'
+                    ? c.l10n.dscValuePercent
+                    : c.l10n.dscValueFixed,
                 hint: '',
                 errorText: error,
               ),
@@ -242,9 +251,12 @@ Future<void> _edit(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Aktif', style: SatType.bodyM(color: sc.textHi)),
                         Text(
-                          'Nonaktif menyembunyikan preset dari kasir',
+                          c.l10n.dscActive,
+                          style: SatType.bodyM(color: sc.textHi),
+                        ),
+                        Text(
+                          c.l10n.dscActiveHint,
                           style: SatType.bodyS(color: sc.textLo),
                         ),
                       ],
@@ -252,7 +264,7 @@ Future<void> _edit(
                   ),
                   SatToggle(
                     value: active,
-                    semanticLabel: 'Aktif',
+                    semanticLabel: c.l10n.dscActive,
                     onChanged: (v) => setState(() => active = v),
                   ),
                 ],
@@ -261,22 +273,22 @@ Future<void> _edit(
               SizedBox(
                 width: double.infinity,
                 child: SatButton.primary(
-                  label: AppStrings.save,
+                  label: c.l10n.save,
                   onTap: () async {
                     final name = nameCtrl.text.trim();
                     final raw = int.tryParse(valueCtrl.text.trim()) ?? 0;
                     // Percent is authored in whole %, stored in bps.
                     final value = kind == 'percent' ? raw * 100 : raw;
                     if (name.isEmpty) {
-                      setState(() => error = 'Nama wajib diisi');
+                      setState(() => error = c.l10n.dscErrName);
                       return;
                     }
                     if (value <= 0) {
-                      setState(() => error = 'Nilai harus lebih dari 0');
+                      setState(() => error = c.l10n.dscErrValue);
                       return;
                     }
                     if (kind == 'percent' && value > 10000) {
-                      setState(() => error = 'Maksimal 100%');
+                      setState(() => error = c.l10n.dscErrMax);
                       return;
                     }
                     if (existing == null) {

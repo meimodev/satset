@@ -1,13 +1,42 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:satset/core/localization/audit_text.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
+// Prefixed: Drift generates its own `AuditEntry` for the row, and the two are
+// different things — one is the table, one is what a reader sees.
+import 'package:satset/domain/models/audit_entry.dart'
+    as domain
+    show AuditEntry;
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
+import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/ws_hub.dart';
 
 const _uuid = Uuid();
+
+/// Money inside an audit parameter, pre-formatted.
+///
+/// Rupiah never localises (ADR-0084), so the value is rendered once at write
+/// time and stored as text — the reader's language changes the sentence around
+/// it, never the number. Mirrors the client's `formatIDR`
+/// (`lib/ui/core/design/format.dart`).
+///
+/// One formatter, because there were two: the settlement routes wrote a bare
+/// `Rp13986` while the ticket routes wrote `Rp. 13.986`, and the venue log
+/// showed both in the same column.
+final _rupiah = NumberFormat.currency(
+  locale: 'id_ID',
+  symbol: 'Rp. ',
+  decimalDigits: 0,
+);
+
+String auditRupiah(int cents) => _rupiah.format(cents);
 
 /// The one place an audit row is written.
 ///
@@ -21,7 +50,8 @@ const _uuid = Uuid();
 Future<AuditEntry?> writeAudit(
   AppDatabase db, {
   required AuditType type,
-  required String title,
+  required AuditKind kind,
+  Map<String, String> params = const {},
   String? tableId,
   String? actorUserId,
   String? reason,
@@ -41,13 +71,27 @@ Future<AuditEntry?> writeAudit(
 }) async {
   final id = '${idPrefix ?? ''}${_uuid.v4()}';
   final actor = await resolveActor(db, actorUserId);
+  final entry = domain.AuditEntry(
+    id: id,
+    type: type,
+    title: '',
+    tableId: tableId ?? '',
+    when: '',
+    kind: kind.name,
+    params: params,
+  );
   await db
       .into(db.auditEntries)
       .insertOnConflictUpdate(
         AuditEntriesCompanion.insert(
           id: id,
           type: type.name,
-          title: title,
+          // A frozen rendering in this device's language, for the fallback path
+          // and for anyone reading the table with a SQL client. Never the thing
+          // a screen displays — see the column doc.
+          title: auditText(satL10n, entry),
+          kind: Value(kind.name),
+          params: Value(jsonEncode(params)),
           tableId: Value(tableId),
           at: at ?? SatClock.now(),
           reason: Value(reason),
@@ -106,4 +150,11 @@ Map<String, dynamic> auditJson(
   'amountCents': e.amountCents,
   'actorName': e.actorName ?? fallbackName,
   'actorRoleName': e.actorRoleName ?? fallbackRoleName,
+  'kind': e.kind,
+  // Sent decoded, not as a JSON string: the client would only have to parse it
+  // again, and a nested-encoded blob is the kind of thing that survives one
+  // release and breaks on the next.
+  'params': e.params == null
+      ? const <String, String>{}
+      : (jsonDecode(e.params!) as Map).cast<String, dynamic>(),
 };

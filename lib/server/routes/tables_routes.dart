@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/core/printing/struk_data.dart';
 import 'package:satset/core/printing/struk_renderer.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/printing/struk_socket.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
@@ -16,6 +17,7 @@ import 'package:satset/server/ws_hub.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
+import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/server/audit_log.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 
@@ -1152,7 +1154,8 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       auditRow = await writeAudit(
         db,
         type: AuditType.tableMoved,
-        title: 'Pindah meja $srcLabel → $tgtLabel',
+        kind: AuditKind.tableMoved,
+        params: {'src': srcLabel, 'tgt': tgtLabel},
         tableId: targetId,
         actorUserId: moverId,
       );
@@ -1294,7 +1297,7 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     );
 
     try {
-      final bytes = await StrukRenderer.render(data);
+      final bytes = await StrukRenderer.render(satL10n, data);
       await StrukSocket.send(printer.host, printer.port, bytes);
     } catch (e) {
       SatLog.srv(

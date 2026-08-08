@@ -4,7 +4,9 @@ import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/domain/models/receipt_label.dart';
 import 'package:satset/domain/models/zone.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -97,6 +99,7 @@ class BillCard extends StatelessWidget {
   /// Build straight off the live payable payload.
   factory BillCard.fromSummary(
     BillSummary b, {
+    required AppL10n l10n,
     required Zone? zone,
     required VoidCallback onTap,
   }) {
@@ -104,7 +107,7 @@ class BillCard extends StatelessWidget {
     final partial = !settled && b.paidAmount > 0;
     return BillCard(
       label: b.isTakeaway
-          ? (b.tableLabel ?? 'Bawa pulang')
+          ? (b.tableLabel ?? l10n.tkwFallbackLabel)
           : (b.tableLabel ?? '—'),
       state: settled
           ? BillCardState.settled
@@ -116,15 +119,15 @@ class BillCard extends StatelessWidget {
       who: b.isTakeaway
           ? (b.guestName?.trim().isNotEmpty == true
                 ? b.guestName!.trim()
-                : 'Tanpa nama')
-          : '${b.pax} tamu',
+                : l10n.blcNoName)
+          : l10n.blcPaxCount(b.pax),
       amount: settled ? b.total : b.outstanding,
-      amountCaption: settled ? 'total dibayar' : 'sisa tagihan',
+      amountCaption: settled ? l10n.blcCaptionPaid : l10n.blcCaptionOutstanding,
       paid: b.paidAmount,
       total: b.total,
       lineCount: b.lineCount,
       since: b.openedAt,
-      sinceVerb: b.isTakeaway ? 'masuk' : 'duduk',
+      sinceVerb: b.isTakeaway ? l10n.blcVerbIn : l10n.blcVerbSeated,
       discountLabel: b.billDiscountLabel,
       detached: b.detached,
       evenShares: b.evenShareCount,
@@ -134,7 +137,7 @@ class BillCard extends StatelessWidget {
         for (final r in b.receipts)
           if (isReceiptLetter(r.label.trim())) r,
       ],
-      footNote: settled ? 'Lihat struk' : 'Tagih',
+      footNote: settled ? l10n.blcSeeReceipt : l10n.blcCharge,
       onTap: onTap,
     );
   }
@@ -142,36 +145,38 @@ class BillCard extends StatelessWidget {
   /// Build off a closed snapshot, so the Lunas segment reads the same.
   factory BillCard.fromPastBill(
     PastBillSummary p, {
+    required AppL10n l10n,
     required VoidCallback onTap,
   }) => BillCard(
-    label: p.tableLabel ?? (p.isTakeaway ? 'Bawa pulang' : '—'),
+    label: p.tableLabel ?? (p.isTakeaway ? l10n.tkwFallbackLabel : '—'),
     state: p.isWriteOff ? BillCardState.writeOff : BillCardState.settled,
     zone: null,
     channel: p.isTakeaway ? SatChannel.from(p.channel) : null,
-    who: p.isTakeaway ? 'Bawa pulang' : '${p.pax} tamu',
+    who: p.isTakeaway ? l10n.tkwFallbackLabel : l10n.blcPaxCount(p.pax),
     amount: p.isWriteOff ? p.lossAmount : p.netTotal,
-    amountCaption: p.isWriteOff ? 'tak tertagih' : 'total dibayar',
+    amountCaption: p.isWriteOff ? l10n.blcCaptionWriteOff : l10n.blcCaptionPaid,
     paid: p.isWriteOff ? 0 : p.netTotal,
     total: p.netTotal,
     lineCount: p.ticketCount,
     since: p.closedAt,
-    sinceVerb: 'tutup',
+    sinceVerb: l10n.blcVerbClosed,
     discountLabel: null,
     detached: false,
     evenShares: 0,
     evenSharesPaid: 0,
     prepaid: p.prepaid,
     letters: const [],
-    footNote: 'Lihat struk',
+    footNote: l10n.blcSeeReceipt,
     onTap: onTap,
   );
 
-  (Color, String)? _statePill(SatColors sc) => switch (state) {
-    BillCardState.settled => (sc.success, 'Lunas'),
-    BillCardState.partial => (sc.info, 'Sebagian'),
-    BillCardState.writeOff => (sc.urgent, 'Tak tertagih'),
-    BillCardState.open => null,
-  };
+  (Color, String)? _statePill(BuildContext context, SatColors sc) =>
+      switch (state) {
+        BillCardState.settled => (sc.success, context.l10n.blcPillSettled),
+        BillCardState.partial => (sc.info, context.l10n.blcPillPartial),
+        BillCardState.writeOff => (sc.urgent, context.l10n.blcPillWriteOff),
+        BillCardState.open => null,
+      };
 
   /// The zone (dine-in) or channel (takeaway) this bill belongs to, or null
   /// when neither is known — every past dine-in bill, which carries no zone.
@@ -194,19 +199,25 @@ class BillCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final pill = _statePill(sc);
+    final pill = _statePill(context, sc);
     final tag = _tag();
     // The bar only earns its row while money is partly in. On an untouched or
     // a finished bill it would be a flat rule saying nothing.
     final showBar =
-        paid > 0 && total > 0 && state != BillCardState.settled &&
+        paid > 0 &&
+        total > 0 &&
+        state != BillCardState.settled &&
         state != BillCardState.writeOff;
     final pct = total == 0 ? 0 : ((paid / total) * 100).round();
 
     return MergeSemantics(
       child: Semantics(
         button: true,
-        label: '$label, ${pill?.$2 ?? 'belum bayar'}, ${formatIDR(amount)}',
+        label: context.l10n.blcSemantics(
+          label,
+          pill?.$2 ?? context.l10n.blcPillUnpaid,
+          formatIDR(amount),
+        ),
         child: PressScale(
           child: Material(
             color: sc.bg1,
@@ -225,18 +236,15 @@ class BillCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _identity(sc, pill),
-                    if (tag != null) ...[
-                      const SizedBox(height: Sp.s2),
-                      tag,
-                    ],
+                    if (tag != null) ...[const SizedBox(height: Sp.s2), tag],
                     const SizedBox(height: Sp.s3),
                     _amount(sc),
                     if (showBar) ...[
                       const SizedBox(height: Sp.s2h),
-                      _progress(sc, pct),
+                      _progress(context, sc, pct),
                     ],
                     const SizedBox(height: Sp.s2h),
-                    _pills(sc),
+                    _pills(context, sc),
                     const SizedBox(height: Sp.s3),
                     _foot(sc),
                   ],
@@ -299,7 +307,7 @@ class BillCard extends StatelessWidget {
     ],
   );
 
-  Widget _progress(SatColors sc, int pct) => Column(
+  Widget _progress(BuildContext context, SatColors sc, int pct) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       ClipRRect(
@@ -313,25 +321,28 @@ class BillCard extends StatelessWidget {
       ),
       const SizedBox(height: Sp.s1),
       Text(
-        '${formatIDR(paid)} masuk · $pct%',
+        context.l10n.blcPaidPct(formatIDR(paid), '$pct'),
         style: SatType.labelS(color: sc.textLo),
       ),
     ],
   );
 
-  Widget _pills(SatColors sc) {
+  Widget _pills(BuildContext context, SatColors sc) {
     final elapsed = since == null
         ? null
-        : formatElapsedId(SatClock.now().difference(since!));
+        : formatElapsed(context.l10n, SatClock.now().difference(since!));
     return Wrap(
       spacing: Sp.s1,
       runSpacing: Sp.s1,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        SatChip.tag(label: '$lineCount item', size: SatChipSize.sm),
+        SatChip.tag(
+          label: context.l10n.mnaItemCount(lineCount),
+          size: SatChipSize.sm,
+        ),
         if (elapsed != null)
           SatChip.tag(
-            label: '$sinceVerb $elapsed',
+            label: context.l10n.blcSinceChip(sinceVerb, elapsed),
             icon: Icons.schedule_rounded,
             size: SatChipSize.sm,
           ),
@@ -339,7 +350,7 @@ class BillCard extends StatelessWidget {
         // on this screen that means "go find someone". ADR-0066.
         if (detached)
           SatChip.tag(
-            label: 'Meja ditutup',
+            label: context.l10n.blcTableClosed,
             hue: SatChipHue.warn,
             size: SatChipSize.sm,
           ),
@@ -353,13 +364,13 @@ class BillCard extends StatelessWidget {
         // rather than lettered (ADR-0063).
         if (evenShares > 0)
           SatChip.tag(
-            label: 'Bagi $evenShares · $evenSharesPaid bayar',
+            label: context.l10n.blcEvenSplit(evenShares, evenSharesPaid),
             hue: SatChipHue.info,
             size: SatChipSize.sm,
           ),
         if (prepaid)
           SatChip.tag(
-            label: 'Prabayar aplikasi',
+            label: context.l10n.blcPrepaid,
             hue: SatChipHue.success,
             size: SatChipSize.sm,
           ),

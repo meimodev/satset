@@ -46,9 +46,21 @@ class NamedIdDto with _$NamedIdDto {
 @freezed
 class KpiTileDto with _$KpiTileDto {
   const factory KpiTileDto({
-    required String label,
-    required String value,
-    required String sub,
+    /// Stable id for the tile, rendered by `kpiLabel`/`kpiSub` at read time
+    /// (ADR-0085). [label] and [sub] survive only as the fallback for a code
+    /// this build does not know.
+    @Default('') String key,
+
+    /// The caption's counts, in the order its message declares them.
+    @Default(<int>[]) List<int> args,
+    @Default('') String label,
+
+    /// Money tiles ship the amount, not its rendering — `jt` and `rb` are
+    /// Indonesian words and the reader picks its own (`kpiValue`). Tiles that
+    /// are not money (a duration, a ratio) keep using [value].
+    int? rupiah,
+    @Default('') String value,
+    @Default('') String sub,
   }) = _KpiTileDto;
 
   factory KpiTileDto.fromJson(Map<String, dynamic> json) =>
@@ -85,7 +97,8 @@ class TakeawaySplitDto with _$TakeawaySplitDto {
 @freezed
 class CoverDayDto with _$CoverDayDto {
   const factory CoverDayDto({
-    required String day,
+    /// ISO weekday, 1 = Monday. Spelled by [formatWeekdayShort] at read time.
+    @Default(1) int dow,
     required int thisWeek,
     required int lastWeek,
   }) = _CoverDayDto;
@@ -280,8 +293,10 @@ class SpeedItemDto with _$SpeedItemDto {
 @freezed
 class StationRowDto with _$StationRowDto {
   const factory StationRowDto({
+    // The station code only — its words come from `stationLabel` at read time
+    // (ADR-0085). The server stopped sending a `label` and this stayed
+    // required, which failed the whole snapshot's parse.
     required String station,
-    required String label,
     @Default(0) int qty,
     @Default(0.0) double utilization,
   }) = _StationRowDto;
@@ -307,7 +322,7 @@ class ReservationStatsDto with _$ReservationStatsDto {
 class VoidReasonDto with _$VoidReasonDto {
   const factory VoidReasonDto({
     required String code,
-    required String label,
+    @Default('') String label,
     @Default(0) int count,
     @Default(0) int lostRupiah,
   }) = _VoidReasonDto;
@@ -367,7 +382,6 @@ class StaffVoidDto with _$StaffVoidDto {
     @Default(0) int count,
     @Default(0) int lostRupiah,
     @Default('other') String topReasonCode,
-    @Default('Lainnya') String topReasonLabel,
   }) = _StaffVoidDto;
 
   factory StaffVoidDto.fromJson(Map<String, dynamic> json) =>

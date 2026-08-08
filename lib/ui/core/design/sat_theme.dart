@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'colors.dart';
 import 'skin.dart';
 
@@ -13,29 +12,26 @@ import 'skin.dart';
 /// `ThemeExtension` would force a snap in `lerp`. [SatSkin] rides along for the
 /// same reason — and because a palette and its shape language are one decision,
 /// not two (see ADR-0047).
+/// The six names are **not** localised, and are deliberately literals rather
+/// than ARB entries (ADR-0083, and the `Tema (Theme)` glossary entry). They are
+/// product names for a palette: a waiter reaches for "the dark one" by name, and
+/// a name that changed with the language setting would break exactly the muscle
+/// memory this app is built for. Being `const` here is also what lets the enum
+/// stay const — an ARB getter needs a locale, which an enum field has no way to
+/// reach.
 enum SatTheme {
-  amberGelap(AppStrings.themeAmberGelap, Brightness.dark, SatColors.dark),
-  amberTerang(AppStrings.themeAmberTerang, Brightness.light, SatColors.light),
-  neonGelap(
-    AppStrings.themeNeonGelap,
-    Brightness.dark,
-    SatColors.glowNoir,
-    SatSkin.glow,
-  ),
-  neonTerang(
-    AppStrings.themeNeonTerang,
-    Brightness.light,
-    SatColors.glow,
-    SatSkin.glow,
-  ),
+  amberGelap('Amber Gelap', Brightness.dark, SatColors.dark),
+  amberTerang('Amber Terang', Brightness.light, SatColors.light),
+  neonGelap('Neon Gelap', Brightness.dark, SatColors.glowNoir, SatSkin.glow),
+  neonTerang('Neon Terang', Brightness.light, SatColors.glow, SatSkin.glow),
   neoKertas(
-    AppStrings.themeNeoKertas,
+    'Neo Kertas',
     Brightness.light,
     SatColors.neoKertas,
     SatSkin.brutal,
   ),
   neoMidnight(
-    AppStrings.themeNeoMidnight,
+    'Neo Tengah Malam',
     Brightness.dark,
     SatColors.neoMidnight,
     SatSkin.brutal,

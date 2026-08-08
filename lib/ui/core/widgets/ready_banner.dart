@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -24,7 +25,7 @@ class ReadyBanner extends StatelessWidget {
           const SizedBox(width: Sp.s2),
           Expanded(
             child: Text(
-              'Item siap diambil di pass — tandai disajikan di bawah',
+              context.l10n.rdyBannerText,
               style: SatType.bodyS(color: sc.success),
             ),
           ),

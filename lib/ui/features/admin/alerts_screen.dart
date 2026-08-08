@@ -1,10 +1,10 @@
+import 'package:satset/core/localization/labels.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/prefs_service.dart';
@@ -16,6 +16,8 @@ import 'package:satset/ui/core/design/typography.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// Everything that decides whether the floor beeps, in one destination.
 ///
@@ -31,8 +33,8 @@ class AlertsScreen extends ConsumerWidget {
     final s = ref.watch(venueSettingsProvider);
     final wide = context.layout.useTabletShell;
     return AdminPage(
-      title: AppStrings.alertsTitle,
-      sub: alertsSummary(s),
+      title: context.l10n.alertsTitle,
+      sub: alertsSummary(context.l10n, s),
       children: [
         if (wide)
           IntrinsicHeight(
@@ -57,10 +59,24 @@ class AlertsScreen extends ConsumerWidget {
   }
 }
 
+/// The one place an [AlertEvent] is named for a human.
+///
+/// Was two static const tables — one on the sound card, one on the device mute
+/// card — which agreed only by luck. Localising them made that duplication a
+/// real hazard, since a translator would have had to find both. ADR-0083.
+String alertEventLabel(AppL10n l10n, AlertEvent e) => switch (e) {
+  AlertEvent.newOrder => l10n.venueSettingsSoundNewOrder,
+  AlertEvent.orderReady => l10n.venueSettingsSoundReady,
+  AlertEvent.voided => l10n.venueSettingsSoundVoid,
+  AlertEvent.overdue => l10n.venueSettingsSoundOverdue,
+  AlertEvent.ungreeted => l10n.venueSettingsSoundUngreeted,
+  AlertEvent.pickup => l10n.venueSettingsSoundPickup,
+};
+
 /// Same summary the hub tile badge shows — the two thresholds an owner tunes
 /// most.
-String alertsSummary(VenueSettingsDto s) =>
-    'Siap ${s.prepTargetMins}m · belum dilayani ${s.ungreetedMins}m';
+String alertsSummary(AppL10n l10n, VenueSettingsDto s) =>
+    l10n.alertsThresholdLine(s.prepTargetMins, s.ungreetedMins);
 
 /// Card chrome shared by the three scope blocks. [scope] is never optional:
 /// a block that does not say who it applies to is the bug this screen exists
@@ -153,15 +169,15 @@ class _ThresholdCard extends ConsumerWidget {
     final s = ref.watch(venueSettingsProvider);
     final n = ref.read(venueSettingsProvider.notifier);
     return _ScopeCard(
-      title: AppStrings.alertsSectionThresholds,
-      scope: AppStrings.alertsScopeVenue,
+      title: context.l10n.alertsSectionThresholds,
+      scope: context.l10n.alertsScopeVenue,
       deviceScoped: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _MinutesRow(
-            label: AppStrings.venueSettingsTimingPrepTarget,
-            hint: AppStrings.venueSettingsTimingPrepTargetHint,
+            label: context.l10n.venueSettingsTimingPrepTarget,
+            hint: context.l10n.venueSettingsTimingPrepTargetHint,
             value: s.prepTargetMins,
             min: 5,
             max: 60,
@@ -169,8 +185,8 @@ class _ThresholdCard extends ConsumerWidget {
           ),
           _rule(sc),
           _MinutesRow(
-            label: AppStrings.venueSettingsTimingPickup,
-            hint: AppStrings.venueSettingsTimingPickupHint,
+            label: context.l10n.venueSettingsTimingPickup,
+            hint: context.l10n.venueSettingsTimingPickupHint,
             value: s.pickupTargetMins,
             min: 1,
             max: 30,
@@ -181,8 +197,8 @@ class _ThresholdCard extends ConsumerWidget {
           ),
           _rule(sc),
           _MinutesRow(
-            label: AppStrings.venueSettingsTimingUngreeted,
-            hint: AppStrings.venueSettingsTimingUngreetedHint,
+            label: context.l10n.venueSettingsTimingUngreeted,
+            hint: context.l10n.venueSettingsTimingUngreetedHint,
             value: s.ungreetedMins,
             min: 1,
             max: 30,
@@ -192,8 +208,8 @@ class _ThresholdCard extends ConsumerWidget {
             onEnabledChanged: (v) => n.patch(ungreetedAlertEnabled: v),
           ),
           _MinutesRow(
-            label: AppStrings.venueSettingsTimingUngreetedEscalate,
-            hint: AppStrings.venueSettingsTimingUngreetedEscalateHint,
+            label: context.l10n.venueSettingsTimingUngreetedEscalate,
+            hint: context.l10n.venueSettingsTimingUngreetedEscalateHint,
             value: s.ungreetedEscalateMins,
             min: 1,
             max: 30,
@@ -202,8 +218,8 @@ class _ThresholdCard extends ConsumerWidget {
           ),
           _rule(sc),
           _MinutesRow(
-            label: AppStrings.venueSettingsTimingLongStay,
-            hint: AppStrings.venueSettingsTimingLongStayHint,
+            label: context.l10n.venueSettingsTimingLongStay,
+            hint: context.l10n.venueSettingsTimingLongStayHint,
             value: s.longStayMins,
             min: 15,
             max: 240,
@@ -211,8 +227,8 @@ class _ThresholdCard extends ConsumerWidget {
             onChanged: (v) => n.patch(longStayMins: v),
           ),
           _MinutesRow(
-            label: AppStrings.venueSettingsTimingIdle,
-            hint: AppStrings.venueSettingsTimingIdleHint,
+            label: context.l10n.venueSettingsTimingIdle,
+            hint: context.l10n.venueSettingsTimingIdleHint,
             value: s.idleTableMins,
             min: 5,
             max: 120,
@@ -220,8 +236,8 @@ class _ThresholdCard extends ConsumerWidget {
           ),
           _rule(sc),
           _MinutesRow(
-            label: AppStrings.venueSettingsTimingReservationGrace,
-            hint: AppStrings.venueSettingsTimingReservationGraceHint,
+            label: context.l10n.venueSettingsTimingReservationGrace,
+            hint: context.l10n.venueSettingsTimingReservationGraceHint,
             value: s.reservationGraceMins,
             min: 0,
             max: 120,
@@ -297,6 +313,7 @@ class _MinutesRow extends StatelessWidget {
             const SizedBox(width: Sp.s1),
           ],
           _step(
+            context,
             sc,
             Icons.remove,
             value > min ? () => onChanged(value - step) : null,
@@ -305,13 +322,14 @@ class _MinutesRow extends StatelessWidget {
           SizedBox(
             width: 66,
             child: Text(
-              '$value min',
+              context.l10n.altMinutes(value),
               textAlign: TextAlign.center,
               style: SatType.monoM(color: sc.textHi),
             ),
           ),
           const SizedBox(width: Sp.s2),
           _step(
+            context,
             sc,
             Icons.add,
             value < max ? () => onChanged(value + step) : null,
@@ -324,12 +342,17 @@ class _MinutesRow extends StatelessWidget {
   /// Delegates to [SatIconButton]: an icon-only target needs a tooltip, and
   /// deriving it from the glyph is how every one of these gets named without
   /// the call sites repeating it.
-  Widget _step(SatColors sc, IconData icon, VoidCallback? onTap) {
+  Widget _step(
+    BuildContext context,
+    SatColors sc,
+    IconData icon,
+    VoidCallback? onTap,
+  ) {
     return SatIconButton.outline(
       icon: icon,
       tooltip: icon == Icons.add
-          ? AppStrings.stepperIncrease
-          : AppStrings.stepperDecrease,
+          ? context.l10n.stepperIncrease
+          : context.l10n.stepperDecrease,
       size: 34,
       onTap: onTap,
     );
@@ -363,13 +386,17 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
     }
   }
 
-  static const _events = <(AlertEvent, String)>[
-    (AlertEvent.newOrder, AppStrings.venueSettingsSoundNewOrder),
-    (AlertEvent.orderReady, AppStrings.venueSettingsSoundReady),
-    (AlertEvent.voided, AppStrings.venueSettingsSoundVoid),
-    (AlertEvent.overdue, AppStrings.venueSettingsSoundOverdue),
-    (AlertEvent.ungreeted, AppStrings.venueSettingsSoundUngreeted),
-    (AlertEvent.pickup, AppStrings.venueSettingsSoundPickup),
+  /// Display order only — the labels come from [alertEventLabel]. This used to
+  /// be a `(AlertEvent, String)` table alongside a second, identical map on
+  /// `_DeviceMuteCard`; localising them made the duplication load-bearing, so
+  /// there is now one order and one naming function.
+  static const _events = <AlertEvent>[
+    AlertEvent.newOrder,
+    AlertEvent.orderReady,
+    AlertEvent.voided,
+    AlertEvent.overdue,
+    AlertEvent.ungreeted,
+    AlertEvent.pickup,
   ];
 
   String _currentId(VenueSettingsDto s, AlertEvent e) => switch (e) {
@@ -404,16 +431,15 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
     final sc = context.sat;
     final s = ref.watch(venueSettingsProvider);
     return _ScopeCard(
-      title: AppStrings.venueSettingsSectionSound,
-      scope: AppStrings.alertsScopeVenue,
+      title: context.l10n.venueSettingsSectionSound,
+      scope: context.l10n.alertsScopeVenue,
       deviceScoped: false,
-      hint:
-          'Pilih nada untuk tiap kejadian. Pilihan ini berlaku untuk semua '
-          'perangkat di venue.',
+      hint: context.l10n.alertsSoundHint,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final (event, label) in _events) _row(sc, s, event, label),
+          for (final event in _events)
+            _row(sc, s, event, alertEventLabel(context.l10n, event)),
         ],
       ),
     );
@@ -450,7 +476,9 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    preset?.label ?? id,
+                    preset == null
+                        ? id
+                        : alertSoundLabel(context.l10n, preset.id),
                     style: SatType.bodyM(color: sc.textHi),
                   ),
                   const SizedBox(width: Sp.s1h),
@@ -474,7 +502,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
                   ? sc.textDim
                   : sc.accentText,
             ),
-            tooltip: AppStrings.venueSettingsSoundPreview,
+            tooltip: context.l10n.venueSettingsSoundPreview,
           ),
         ],
       ),
@@ -510,13 +538,13 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
                     color: preset.id == selected ? sc.accentText : sc.textLo,
                   ),
                   title: Text(
-                    preset.label,
+                    alertSoundLabel(context.l10n, preset.id),
                     style: SatType.bodyM(color: sc.textHi),
                   ),
                   trailing: IconButton(
                     tooltip: preset.isSilent
-                        ? AppStrings.a11ySoundSilent
-                        : AppStrings.a11ySoundPreview,
+                        ? context.l10n.a11ySoundSilent
+                        : context.l10n.a11ySoundPreview,
                     onPressed: preset.isSilent
                         ? null
                         : () => _playPreset(preset.asset),
@@ -541,15 +569,6 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
 class _DeviceMuteCard extends ConsumerWidget {
   const _DeviceMuteCard();
 
-  static const _labels = <AlertEvent, String>{
-    AlertEvent.newOrder: AppStrings.venueSettingsSoundNewOrder,
-    AlertEvent.orderReady: AppStrings.venueSettingsSoundReady,
-    AlertEvent.voided: AppStrings.venueSettingsSoundVoid,
-    AlertEvent.overdue: AppStrings.venueSettingsSoundOverdue,
-    AlertEvent.ungreeted: AppStrings.venueSettingsSoundUngreeted,
-    AlertEvent.pickup: AppStrings.venueSettingsSoundPickup,
-  };
-
   /// Mirrors the routing in `AlertSoundService`: the kitchen (Server mode)
   /// hears the kitchen cues, waiters hear the guest-facing ones.
   static const _kitchen = {
@@ -573,10 +592,10 @@ class _DeviceMuteCard extends ConsumerWidget {
       ..sort((a, b) => a.index.compareTo(b.index));
 
     return _ScopeCard(
-      title: AppStrings.venueSettingsTimingMuteTitle,
-      scope: AppStrings.alertsScopeDevice,
+      title: context.l10n.venueSettingsTimingMuteTitle,
+      scope: context.l10n.alertsScopeDevice,
       deviceScoped: true,
-      hint: AppStrings.venueSettingsTimingMuteHint,
+      hint: context.l10n.venueSettingsTimingMuteHint,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -585,13 +604,13 @@ class _DeviceMuteCard extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    _labels[e]!,
+                    alertEventLabel(context.l10n, e),
                     style: SatType.bodyM(color: sc.textMd),
                   ),
                 ),
                 SatToggle(
                   value: !muted.contains(e),
-                  semanticLabel: _labels[e],
+                  semanticLabel: alertEventLabel(context.l10n, e),
                   onChanged: (v) async {
                     final prefs = ref.read(prefsServiceProvider).valueOrNull;
                     if (prefs == null) return;

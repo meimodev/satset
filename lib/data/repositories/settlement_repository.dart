@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
@@ -391,11 +391,15 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
       });
       return null;
     } on ApiException catch (e) {
-      try {
-        final j = e.body.isEmpty ? null : jsonDecode(e.body);
-        if (j is Map && j['message'] is String) return j['message'] as String;
-      } catch (_) {}
-      return 'Gagal mencetak (${e.statusCode}).';
+      // The code, not the server's `message`: that message is a developer
+      // string in the host tablet's language (ADR-0085).
+      final l = ref.read(l10nProvider);
+      return switch (e.code) {
+        'no_lines' => l.prnErrNoLines,
+        'print_failed' => l.prnErrNotConnected,
+        'no_printer' => l.prnErrNoPrinter,
+        _ => l.prnErrFailedCode('${e.statusCode}'),
+      };
     }
   }
 }

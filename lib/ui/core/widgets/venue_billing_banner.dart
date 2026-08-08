@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/venue_subscription.dart';
 import 'package:satset/domain/models/capability.dart';
@@ -11,6 +10,8 @@ import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/core/localization/dev_contact.dart';
 
 /// Shell-level notice that this venue's subscription is ending or has lapsed.
 /// Sits beside [AdminGraceBanner] and borrows its shape deliberately — same
@@ -43,19 +44,19 @@ class VenueBillingBanner extends ConsumerWidget {
     final fg = lapsed ? sc.urgent : sc.warn;
     final bg = lapsed ? sc.urgentSoft : sc.warnSoft;
     final head = lapsed
-        ? AppStrings.billingLapsed
-        : AppStrings.billingEndsIn(notice.remaining?.inDays ?? 0);
+        ? context.l10n.billingLapsed
+        : context.l10n.billingEndsIn(notice.remaining?.inDays ?? 0);
     // The cutoff, when there is one. A term with no end date never lapses, so
     // that banner keeps the old shape — it has no date to promise.
     final line = switch (notice.cutoffAt) {
       final at? =>
-        '$head ${AppStrings.billingStopsOn(formatShortDateIdSafe(at))}',
+        '$head ${context.l10n.billingStopsOn(formatShortDateId(at))}',
       null => head,
     };
 
     return Semantics(
       button: true,
-      label: '$line ${AppStrings.billingCta}',
+      label: '$line ${context.l10n.billingCta}',
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -76,16 +77,14 @@ class VenueBillingBanner extends ConsumerWidget {
             child: Row(
               children: [
                 Icon(
-                  lapsed
-                      ? Icons.receipt_long_rounded
-                      : Icons.schedule_rounded,
+                  lapsed ? Icons.receipt_long_rounded : Icons.schedule_rounded,
                   size: 16,
                   color: fg,
                 ),
                 const SizedBox(width: Sp.s2),
                 Expanded(
                   child: Text(
-                    '$line ${AppStrings.billingCta}',
+                    '$line ${context.l10n.billingCta}',
                     style: SatType.labelS(color: fg),
                   ),
                 ),
@@ -109,16 +108,16 @@ class VenueBillingBanner extends ConsumerWidget {
     final v = ref.read(venueCloudDocProvider);
     if (v == null) return;
     final uri = Uri.parse(
-      'https://wa.me/${AppStrings.devWhatsApp}?text='
-      '${Uri.encodeComponent(AppStrings.billingRequestMessage(v.name, v.id))}',
+      'https://wa.me/$devWhatsApp?text='
+      '${Uri.encodeComponent(context.l10n.billingRequestMessage(v.name, v.id))}',
     );
     try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(AppStrings.resetRequestFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.resetRequestFailed)));
     }
   }
 }

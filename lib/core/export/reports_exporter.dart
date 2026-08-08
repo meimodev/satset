@@ -7,14 +7,19 @@ import 'package:satset/core/export/export_share.dart';
 import 'package:satset/core/export/pdf_theme.dart';
 import 'package:satset/data/models/reports_dto.dart';
 import 'package:satset/data/repositories/reports_repository.dart';
+import 'package:satset/core/localization/report_copy.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/core/design/format.dart';
 
 /// CSV + PDF builders for the venue report export (ADR-0030). PDF carries the
 /// full report; CSV carries the KPI block plus the key tables (staff, menu
 /// top/slow, category mix, hourly) — visual-only sections are dropped.
 
-final _dateFull = DateFormat('d MMM yyyy, HH:mm', 'id_ID');
-final _dateShort = DateFormat('d MMM yyyy', 'id_ID');
+/// Built per call: a cached [DateFormat] freezes whichever locale was active
+/// when it was first touched, and for a lazily-initialised top-level that is
+/// "whichever screen ran first" (ADR-0084).
+DateFormat get _dateFull => DateFormat('d MMM yyyy, HH:mm');
+DateFormat get _dateShort => DateFormat('d MMM yyyy');
 
 String _fmtIso(String iso) {
   final d = DateTime.tryParse(iso);
@@ -30,9 +35,21 @@ String _windowLine(ReportsSnapshotDto s) {
 
 String _pct(double v) => '${(v * 100).toStringAsFixed(1)}%';
 
+/// Same seven columns in the CSV and the PDF — one list so they cannot drift.
+List<String> _staffHeaders(AppL10n l) => [
+  l.expColName,
+  l.expColCover,
+  l.expColItem,
+  l.expColAvgBill,
+  l.expColVoidPct,
+  l.expNet,
+  l.expColSessions,
+];
+
 // ─── CSV ────────────────────────────────────────────────────────────────────
 
 String buildReportsCsv(
+  AppL10n l,
   ReportsSnapshotDto s,
   ReportRange range, {
   DateTime? from,
@@ -45,23 +62,21 @@ String buildReportsCsv(
     rows.add(csvRow([title.toUpperCase()]));
   }
 
-  rows.add(csvRow(['Laporan SatSet']));
-  rows.add(csvRow(['Periode', rangeLabelId(range, from: from, to: to)]));
-  rows.add(csvRow(['Rentang', _windowLine(s)]));
-  rows.add(csvRow(['Dibuat', _fmtIso(s.generatedAt)]));
+  rows.add(csvRow([l.expReportCsvTitle]));
+  rows.add(csvRow([l.expPeriod, rangeLabel(l, range, from: from, to: to)]));
+  rows.add(csvRow([l.expRange, _windowLine(s)]));
+  rows.add(csvRow([l.expGenerated, _fmtIso(s.generatedAt)]));
 
   // KPIs (sales + ops), already server-formatted strings.
-  section('Ringkasan');
-  rows.add(csvRow(['Metrik', 'Nilai', 'Keterangan']));
+  section(l.expSummary);
+  rows.add(csvRow([l.expColMetric, l.expColValue, l.expColCaption]));
   for (final k in [...s.sales.kpis, ...s.ops.kpis]) {
-    rows.add(csvRow([k.label, k.value, k.sub]));
+    rows.add(csvRow([kpiLabel(l, k), kpiValue(l, k), kpiSub(l, k)]));
   }
 
   // Staff.
-  section('Kinerja Staf');
-  rows.add(
-    csvRow(['Nama', 'Cover', 'Item', 'Rata tagihan', 'Void %', 'Net', 'Sesi']),
-  );
+  section(l.expStaffPerformance);
+  rows.add(csvRow(_staffHeaders(l)));
   for (final r in s.staff.rows) {
     rows.add(
       csvRow([
@@ -77,29 +92,33 @@ String buildReportsCsv(
   }
 
   // Menu — top sellers.
-  section('Menu Terlaris');
-  rows.add(csvRow(['Item', 'Qty', 'Pendapatan', 'Margin %']));
+  section(l.expTopMenu);
+  rows.add(
+    csvRow([l.expColItem, l.expColQty, l.expColRevenue, l.expColMarginPct]),
+  );
   for (final m in s.menu.top) {
     rows.add(csvRow([m.name, m.qty, formatIDR(m.revenue), '${m.marginPct}%']));
   }
 
   // Menu — slow movers.
-  section('Menu Lambat');
-  rows.add(csvRow(['Item', 'Qty', 'Pendapatan']));
+  section(l.expSlowMenu);
+  rows.add(csvRow([l.expColItem, l.expColQty, l.expColRevenue]));
   for (final m in s.menu.slow) {
     rows.add(csvRow([m.name, m.qty, formatIDR(m.revenue)]));
   }
 
   // Category mix.
-  section('Komposisi Kategori');
-  rows.add(csvRow(['Kategori', 'Porsi minggu ini', 'Porsi minggu lalu']));
+  section(l.expCategoryMix);
+  rows.add(
+    csvRow([l.expColCategory, l.expColShareThisWeek, l.expColShareLastWeek]),
+  );
   for (final c in s.menu.categoryMix) {
     rows.add(csvRow([c.name, _pct(c.shareThisWeek), _pct(c.shareLastWeek)]));
   }
 
   // Hourly sales.
-  section('Penjualan per Jam');
-  rows.add(csvRow(['Jam', 'Nilai']));
+  section(l.expHourlySales);
+  rows.add(csvRow([l.expColHour, l.expColValue]));
   for (var h = 0; h < s.sales.hourly.length; h++) {
     rows.add(csvRow(['${h.toString().padLeft(2, '0')}:00', s.sales.hourly[h]]));
   }
@@ -110,6 +129,7 @@ String buildReportsCsv(
 // ─── PDF ────────────────────────────────────────────────────────────────────
 
 Future<Uint8List> buildReportsPdf(
+  AppL10n l,
   ReportsSnapshotDto s,
   ReportRange range, {
   DateTime? from,
@@ -118,49 +138,49 @@ Future<Uint8List> buildReportsPdf(
 }) async {
   final theme = await pdfTheme();
   final doc = pw.Document(theme: theme.base);
+  final label = rangeLabel(l, range, from: from, to: to);
 
   doc.addPage(
     pw.MultiPage(
       pageTheme: pdfPageTheme(theme),
       header: (ctx) => ctx.pageNumber == 1
           ? pw.SizedBox()
-          : pdfRunningHeader(
-              'Laporan SatSet · ${rangeLabelId(range, from: from, to: to)}',
-            ),
-      footer: pdfFooter,
+          : pdfRunningHeader(l.expReportHeader(label)),
+      footer: (ctx) => pdfFooter(l, ctx),
       build: (ctx) => [
         pdfTitleBlock(
-          title: 'Laporan SatSet',
-          subtitle: rangeLabelId(range, from: from, to: to),
+          title: l.expReportCsvTitle,
+          subtitle: label,
           logoBytes: branding?.logoBytes,
           venueName: branding?.venueName,
           address: branding?.address,
           phone: branding?.phone,
           meta: [
-            'Rentang: ${_windowLine(s)}',
-            'Dibuat: ${_fmtIso(s.generatedAt)}',
+            l.expMetaRange(_windowLine(s)),
+            l.expMetaGenerated(_fmtIso(s.generatedAt)),
           ],
         ),
         pw.SizedBox(height: 18),
 
         // KPI cards (sales + ops).
-        pdfSectionTitle('Ringkasan'),
-        _kpiGrid([...s.sales.kpis, ...s.ops.kpis]),
+        pdfSectionTitle(l.expSummary),
+        _kpiGrid(l, [...s.sales.kpis, ...s.ops.kpis]),
 
         // Takeaway split, if present.
         if (s.sales.takeaway != null) ...[
           pw.SizedBox(height: 14),
-          pdfSectionTitle('Dine-in vs Bawa Pulang'),
+          pdfSectionTitle(l.expDineInVsTakeaway),
           pdfTable(
-            headers: const ['', 'Transaksi', 'Net'],
+            l,
+            headers: ['', l.expColTransactions, l.expNet],
             rows: [
               [
-                'Makan di tempat',
+                l.expDineIn,
                 '${s.sales.takeaway!.dineInCount}',
                 formatIDR(s.sales.takeaway!.dineInNet),
               ],
               [
-                'Bawa pulang',
+                l.expTakeaway,
                 '${s.sales.takeaway!.count}',
                 formatIDR(s.sales.takeaway!.net),
               ],
@@ -171,17 +191,10 @@ Future<Uint8List> buildReportsPdf(
 
         // Staff.
         pw.SizedBox(height: 14),
-        pdfSectionTitle('Kinerja Staf'),
+        pdfSectionTitle(l.expStaffPerformance),
         pdfTable(
-          headers: const [
-            'Nama',
-            'Cover',
-            'Item',
-            'Rata tagihan',
-            'Void %',
-            'Net',
-            'Sesi',
-          ],
+          l,
+          headers: _staffHeaders(l),
           rows: [
             for (final r in s.staff.rows)
               [
@@ -199,9 +212,10 @@ Future<Uint8List> buildReportsPdf(
 
         // Menu top.
         pw.SizedBox(height: 14),
-        pdfSectionTitle('Menu Terlaris'),
+        pdfSectionTitle(l.expTopMenu),
         pdfTable(
-          headers: const ['Item', 'Qty', 'Pendapatan', 'Margin'],
+          l,
+          headers: [l.expColItem, l.expColQty, l.expColRevenue, l.expColMargin],
           rows: [
             for (final m in s.menu.top)
               [m.name, '${m.qty}', formatIDR(m.revenue), '${m.marginPct}%'],
@@ -211,9 +225,10 @@ Future<Uint8List> buildReportsPdf(
 
         // Menu slow.
         pw.SizedBox(height: 14),
-        pdfSectionTitle('Menu Lambat'),
+        pdfSectionTitle(l.expSlowMenu),
         pdfTable(
-          headers: const ['Item', 'Qty', 'Pendapatan'],
+          l,
+          headers: [l.expColItem, l.expColQty, l.expColRevenue],
           rows: [
             for (final m in s.menu.slow)
               [m.name, '${m.qty}', formatIDR(m.revenue)],
@@ -224,9 +239,10 @@ Future<Uint8List> buildReportsPdf(
         // Category mix.
         if (s.menu.categoryMix.isNotEmpty) ...[
           pw.SizedBox(height: 14),
-          pdfSectionTitle('Komposisi Kategori'),
+          pdfSectionTitle(l.expCategoryMix),
           pdfTable(
-            headers: const ['Kategori', 'Minggu ini', 'Minggu lalu'],
+            l,
+            headers: [l.expColCategory, l.expColThisWeek, l.expColLastWeek],
             rows: [
               for (final c in s.menu.categoryMix)
                 [c.name, _pct(c.shareThisWeek), _pct(c.shareLastWeek)],
@@ -238,7 +254,7 @@ Future<Uint8List> buildReportsPdf(
         // Hourly.
         if (s.sales.hourly.isNotEmpty) ...[
           pw.SizedBox(height: 14),
-          pdfSectionTitle('Penjualan per Jam'),
+          pdfSectionTitle(l.expHourlySales),
           _hourlyBars(s.sales.hourly),
         ],
       ],
@@ -248,7 +264,7 @@ Future<Uint8List> buildReportsPdf(
   return doc.save();
 }
 
-pw.Widget _kpiGrid(List<KpiTileDto> kpis) {
+pw.Widget _kpiGrid(AppL10n l, List<KpiTileDto> kpis) {
   if (kpis.isEmpty) return pw.SizedBox();
   return pw.Wrap(
     spacing: 10,
@@ -267,12 +283,12 @@ pw.Widget _kpiGrid(List<KpiTileDto> kpis) {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
-                k.label.toUpperCase(),
+                kpiLabel(l, k).toUpperCase(),
                 style: pw.TextStyle(fontSize: 7.5, color: kPdfInkLo),
               ),
               pw.SizedBox(height: 3),
               pw.Text(
-                k.value,
+                kpiValue(l, k),
                 style: pw.TextStyle(
                   fontSize: 15,
                   fontWeight: pw.FontWeight.bold,

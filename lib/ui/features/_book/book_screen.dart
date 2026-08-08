@@ -9,6 +9,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
 
 import 'book_entries.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Debug-only widget gallery: every widget in `lib/ui/core/widgets/`, each
 /// rendered in all of its states against canned data.
@@ -260,6 +261,25 @@ class _BookStageState extends ConsumerState<_BookStage> {
                 label: theme.label,
                 icon: Icons.palette_outlined,
                 on: true,
+              ),
+            ),
+            const SizedBox(width: Sp.s2),
+            // ADR-0083. The book is the *only* place English overflow gets
+            // caught before a user finds it: the 66 goldens use literal stub
+            // labels, not `AppL10n`, so they never render a translated string,
+            // and no feature screen has a golden at all. Writes through to the
+            // real picker for the same reason the theme control does.
+            TextButton(
+              onPressed: () {
+                final next = ref.read(satLocaleProvider).languageCode == 'id'
+                    ? const Locale('en')
+                    : const Locale('id');
+                ref.read(satLocaleProvider.notifier).select(next);
+              },
+              child: _BookPill(
+                label: ref.watch(satLocaleProvider).languageCode.toUpperCase(),
+                icon: Icons.translate_rounded,
+                on: ref.watch(satLocaleProvider).languageCode != 'id',
               ),
             ),
             const SizedBox(width: Sp.s2),

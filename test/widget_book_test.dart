@@ -7,6 +7,7 @@ import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/features/_book/book_entries.dart';
 
 import '_tickers.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// The widget book only earns its place if every state it advertises actually
 /// builds. Pumping them here catches a stub that drifted from a constructor
@@ -40,6 +41,11 @@ void main() {
           ProviderScope(
             overrides: tickerOverrides,
             child: MaterialApp(
+              // Pinned, exactly as the app pins it (ADR-0083). Without this the
+              // test resolves against the host's locale and reads English.
+              locale: const Locale('id'),
+              localizationsDelegates: AppL10n.localizationsDelegates,
+              supportedLocales: AppL10n.supportedLocales,
               theme: satTheme(SatTheme.amberGelap),
               home: Scaffold(
                 body: SingleChildScrollView(

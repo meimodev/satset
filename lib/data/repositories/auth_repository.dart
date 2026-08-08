@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/services/owner_report_service.dart';
 
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/auth_dto.dart';
 import 'package:satset/data/repositories/auth_error.dart';
@@ -20,6 +19,7 @@ import 'package:satset/data/services/secure_storage_service.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/server/server.dart' show serverRuntimeProvider;
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Derive the legacy [UserRole] bucket from the server-authoritative
 /// capabilities set. Source of truth is the role row on the server; the
@@ -146,7 +146,7 @@ class AuthRepository extends StateNotifier<AuthState> {
     if (cfg == null) {
       state = state.copyWith(
         busy: false,
-        error: 'Server belum siap. Tunggu sebentar lalu coba lagi.',
+        error: ref.read(l10nProvider).authServerNotReadyWait,
       );
       return false;
     }
@@ -193,7 +193,7 @@ class AuthRepository extends StateNotifier<AuthState> {
       SatLog.repo('auth.signIn fail ${e.toString()}');
       state = state.copyWith(
         busy: false,
-        error: authErrorMessage(e, pin: true),
+        error: authErrorMessage(ref.read(l10nProvider), e, pin: true),
       );
       return false;
     }
@@ -216,7 +216,10 @@ class AuthRepository extends StateNotifier<AuthState> {
       final cred = await fb.signIn(email: email, password: password);
       final uid = cred.user?.uid;
       if (uid == null) {
-        state = state.copyWith(busy: false, error: 'Login admin gagal.');
+        state = state.copyWith(
+          busy: false,
+          error: ref.read(l10nProvider).authAdminLoginFailed,
+        );
         return false;
       }
       final profile = await fb.fetch(uid);
@@ -242,7 +245,9 @@ class AuthRepository extends StateNotifier<AuthState> {
           await fb.signOut();
           state = state.copyWith(
             busy: false,
-            error: AppStrings.tempPasswordExpired,
+            // No BuildContext in a repository — the strings come off the
+            // provider instead. ADR-0083.
+            error: ref.read(l10nProvider).tempPasswordExpired,
           );
           return false;
         }
@@ -352,7 +357,7 @@ class AuthRepository extends StateNotifier<AuthState> {
       if (!ok) {
         state = state.copyWith(
           busy: false,
-          error: 'Server belum siap. Coba lagi.',
+          error: ref.read(l10nProvider).authServerNotReady,
         );
         return false;
       }
@@ -369,7 +374,7 @@ class AuthRepository extends StateNotifier<AuthState> {
       SatLog.repo('auth.signInAsAdmin fail $e');
       state = state.copyWith(
         busy: false,
-        error: authErrorMessage(e, pin: false),
+        error: authErrorMessage(ref.read(l10nProvider), e, pin: false),
       );
       return false;
     }
@@ -641,37 +646,38 @@ class AuthRepository extends StateNotifier<AuthState> {
   }
 
   String _eligibilityMessage(AdminProfile? p) {
-    if (p == null) return 'Akun admin belum terdaftar. Hubungi pengelola.';
+    final l = ref.read(l10nProvider);
+    if (p == null) return l.authAdminNotRegistered;
     return switch (p.status) {
-      AdminStatus.suspended => 'Akun admin ditangguhkan. Hubungi pengelola.',
-      _ => 'Akun admin tidak aktif.',
+      AdminStatus.suspended => l.authAdminSuspended,
+      _ => l.authAdminInactive,
     };
   }
 
-  static const _noVenueMessage =
-      'Akun belum ditugaskan ke venue. Hubungi pengelola.';
+  String get _noVenueMessage => ref.read(l10nProvider).authNoVenueAssigned;
 
   String _venueMessage(Venue? v) {
-    if (v == null) return 'Venue tidak ditemukan. Hubungi pengelola.';
+    final l = ref.read(l10nProvider);
+    if (v == null) return l.authVenueNotFound;
     return switch (v.status) {
-      AdminStatus.suspended => 'Venue ditangguhkan. Hubungi pengelola.',
+      AdminStatus.suspended => l.authVenueSuspended,
       // Also where a pre-ADR-0076 `banned` document lands: it parses to
       // `unknown`, fails `isActive`, and stops the venue exactly as before.
-      _ => 'Venue tidak aktif.',
+      _ => l.authVenueInactive,
     };
   }
 
   String _firebaseAuthMessage(fb_auth.FirebaseAuthException e) {
+    final l = ref.read(l10nProvider);
     return switch (e.code) {
-      'invalid-email' => 'Email tidak valid.',
-      'user-disabled' => 'Akun admin dinonaktifkan.',
+      'invalid-email' => l.authInvalidEmail,
+      'user-disabled' => l.authAccountDisabled,
       'user-not-found' ||
       'wrong-password' ||
-      'invalid-credential' => 'Email atau password salah.',
-      'too-many-requests' => 'Terlalu banyak percobaan. Coba lagi nanti.',
-      'network-request-failed' =>
-        'Gagal terhubung. Login admin pertama butuh internet.',
-      _ => 'Login admin gagal. Coba lagi.',
+      'invalid-credential' => l.authWrongCredentials,
+      'too-many-requests' => l.authTooManyAttempts,
+      'network-request-failed' => l.authFirstLoginNeedsInternet,
+      _ => l.authAdminLoginFailed,
     };
   }
 

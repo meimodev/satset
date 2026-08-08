@@ -647,7 +647,10 @@ List<BookEntry> bookEntries() => [
         'two tabs, live — the Pesanan scope switch',
         (c, r) => _Live(
           (selected, set) => SatTabs(
-            tabs: const [SatTab(label: 'Milik saya'), SatTab(label: 'Semua')],
+            tabs: const [
+              SatTab(label: 'Milik saya'),
+              SatTab(label: 'Semua'),
+            ],
             selected: selected,
             onSelected: set,
           ),

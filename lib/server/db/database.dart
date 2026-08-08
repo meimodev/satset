@@ -66,7 +66,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 46;
+  int get schemaVersion => 47;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -786,9 +786,17 @@ class AppDatabase extends _$AppDatabase {
         // attribution on every row an ex-employee ever wrote — the one thing
         // an integrity log may not do. Rows written before this migration
         // have neither and fall back to the live join.
-        await _safeAddColumnOn('audit_entries', 'amount_cents', type: 'INTEGER');
+        await _safeAddColumnOn(
+          'audit_entries',
+          'amount_cents',
+          type: 'INTEGER',
+        );
         await _safeAddColumnOn('audit_entries', 'actor_name', type: 'TEXT');
-        await _safeAddColumnOn('audit_entries', 'actor_role_name', type: 'TEXT');
+        await _safeAddColumnOn(
+          'audit_entries',
+          'actor_role_name',
+          type: 'TEXT',
+        );
       }
       if (from < 44) {
         // The sample seed absorbs the demo seed (ADR-0073). The demo clock is
@@ -832,7 +840,9 @@ class AppDatabase extends _$AppDatabase {
         // `sent` — putting an unapproved order on a guest's bill. Deleting is
         // the only reading that stays true. Nothing references tickets by id
         // (`audit_entries` keys on `table_id`), so no row is orphaned.
-        await customStatement("DELETE FROM tickets WHERE status = 'pendingReview'");
+        await customStatement(
+          "DELETE FROM tickets WHERE status = 'pendingReview'",
+        );
         await customStatement(
           "DELETE FROM table_session_tickets WHERE status = 'pendingReview'",
         );
@@ -849,6 +859,34 @@ class AppDatabase extends _$AppDatabase {
         // to re-run and safe to reach a device that skipped intermediate
         // versions. `IF NOT EXISTS` throughout.
         await _createLookupIndexes();
+      }
+      if (from < 47) {
+        // An audit event is structured, not a sentence (ADR-0085). `kind` says
+        // which sentence the row is, `params` holds the values that fill it;
+        // the words are composed at read time in the reader's language.
+        //
+        // **No backfill.** Existing rows keep their `title` and render from it,
+        // in Indonesian, forever. Parsing a year of hand-written prose back
+        // into fields would be guessing, and a wrong guess on an integrity log
+        // is worse than a row that is honestly stuck in one language.
+        await _safeAddColumnOn('audit_entries', 'kind', type: 'TEXT');
+        await _safeAddColumnOn('audit_entries', 'params', type: 'TEXT');
+        // Split-bill part labels were the same bug in miniature: `Bagian 1/3`
+        // stored as prose. New parts store the bare `1/3` and are composed at
+        // read time.
+        //
+        // These *are* rewritten, unlike the audit rows above, because stripping
+        // a fixed prefix is mechanical rather than a guess — the numbers were
+        // always the whole content. Anything that does not match keeps its text
+        // and passes through the renderer verbatim.
+        await customStatement(
+          "UPDATE receipts SET label = REPLACE(label, 'Bagian ', '') "
+          "WHERE label LIKE 'Bagian %'",
+        );
+        await customStatement(
+          "UPDATE table_session_receipts SET label = REPLACE(label, 'Bagian ', '') "
+          "WHERE label LIKE 'Bagian %'",
+        );
       }
     },
     onCreate: (m) async {

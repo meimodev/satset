@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/labels.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/design/channel_visuals.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,6 +33,7 @@ import 'package:satset/ui/core/widgets/tag_badge_row.dart';
 import 'package:satset/ui/features/tables/widgets/assign_table_sheet.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 class ReviewScreen extends ConsumerWidget {
   final String tableId;
@@ -75,9 +76,9 @@ class ReviewScreen extends ConsumerWidget {
     final reviewState = ref.watch(reviewViewModelProvider);
     ref.listen<ReviewState>(reviewViewModelProvider, (prev, next) {
       if (next.error != null && next.error != prev?.error) {
-        ScaffoldMessenger.maybeOf(
-          context,
-        )?.showSnackBar(SnackBar(content: Text('Gagal kirim: ${next.error}')));
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text(context.l10n.revSendFailed('${next.error}'))),
+        );
       }
     });
 
@@ -92,9 +93,9 @@ class ReviewScreen extends ConsumerWidget {
     final taxAmount = breakdown.taxAmount;
     final grandTotal = breakdown.total;
     final serviceLabel = venue.serviceMode == 'fixed'
-        ? 'Layanan'
-        : 'Layanan · ${_fmtPct(venue.serviceRateBps)}';
-    final taxLabel = 'Pajak · ${_fmtPct(venue.taxRateBps)}';
+        ? context.l10n.cshService
+        : context.l10n.mnuServicePct(_fmtPct(venue.serviceRateBps));
+    final taxLabel = context.l10n.mnuTaxPct(_fmtPct(venue.taxRateBps));
     final tagsById = ref.watch(menuTagsByIdProvider);
     final allergens = <String>{};
     for (final c in cart) {
@@ -105,11 +106,11 @@ class ReviewScreen extends ConsumerWidget {
 
     String sendTarget;
     if (kitchenCt > 0 && barCt > 0) {
-      sendTarget = 'dapur + bar';
+      sendTarget = context.l10n.mnuTargetKitchenBar;
     } else if (kitchenCt > 0) {
-      sendTarget = 'dapur';
+      sendTarget = context.l10n.mnuTargetKitchen;
     } else {
-      sendTarget = 'bar';
+      sendTarget = context.l10n.mnuTargetBar;
     }
 
     return Scaffold(
@@ -122,29 +123,36 @@ class ReviewScreen extends ConsumerWidget {
                 onBack: () => safePop(context, fallback: backFallback),
                 crumbs: tableless
                     ? (_isTakeaway
-                          ? const [
-                              AppStrings.crumbBawaPulang,
-                              AppStrings.crumbTinjau,
+                          ? [
+                              context.l10n.crumbBawaPulang,
+                              context.l10n.crumbTinjau,
                             ]
-                          : const [
-                              AppStrings.crumbPesananBaru,
-                              AppStrings.crumbTinjau,
+                          : [
+                              context.l10n.crumbPesananBaru,
+                              context.l10n.crumbTinjau,
                             ])
-                    : [table!.displayName, AppStrings.crumbTinjau],
+                    : [table!.displayName, context.l10n.crumbTinjau],
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Tinjau pesanan', style: SatType.h1(color: sc.textHi)),
+                    Text(
+                      context.l10n.revTitle,
+                      style: SatType.h1(color: sc.textHi),
+                    ),
                     const SizedBox(height: Sp.s1),
                     Text(
                       tableless
                           ? (_isTakeaway
-                                ? 'BAWA PULANG · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM'
-                                : 'TANPA MEJA · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM · PILIH MEJA SAAT KIRIM')
-                          : 'MEJA ${table!.displayName} · ${table.pax} TAMU · ${cart.fold<int>(0, (s, c) => s + c.qty)} ITEM',
+                                ? context.l10n.revHeadTakeaway(kitchenCt)
+                                : context.l10n.revHeadTableless(kitchenCt))
+                          : context.l10n.revHeadTable(
+                              table!.displayName,
+                              table.pax,
+                              kitchenCt,
+                            ),
                       style: SatType.monoS(color: sc.textLo),
                     ),
                   ],
@@ -159,13 +167,13 @@ class ReviewScreen extends ConsumerWidget {
                     if (kitchenCt > 0)
                       SatChip.tag(
                         icon: Icons.local_fire_department,
-                        label: 'Dapur × $kitchenCt',
+                        label: context.l10n.mnuKitchenCount(kitchenCt),
                         size: SatChipSize.sm,
                       ),
                     if (barCt > 0)
                       SatChip.tag(
                         icon: Icons.local_bar,
-                        label: 'Bar × $barCt',
+                        label: context.l10n.mnuBarCount(barCt),
                         size: SatChipSize.sm,
                       ),
                     if (allergens.isNotEmpty)
@@ -222,7 +230,7 @@ class ReviewScreen extends ConsumerWidget {
                             child: Column(
                               children: [
                                 _TotalsRow(
-                                  label: 'Subtotal',
+                                  label: context.l10n.cshSubtotal,
                                   value: formatIDR(subtotal),
                                 ),
                                 if (venue.serviceEnabled)
@@ -244,7 +252,7 @@ class ReviewScreen extends ConsumerWidget {
                                     ),
                                   ),
                                   child: _TotalsRow(
-                                    label: 'Total perkiraan',
+                                    label: context.l10n.revEstimatedTotal,
                                     value: formatIDR(grandTotal),
                                     isTotal: true,
                                   ),
@@ -256,7 +264,7 @@ class ReviewScreen extends ConsumerWidget {
                         Padding(
                           padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
                           child: Text(
-                            'PEMBAYARAN DITANGANI DI LUAR SATSET · BILL DICETAK DARI POS SAAT DISAJIKAN',
+                            context.l10n.revPaymentNote,
                             style: SatType.monoS(color: sc.textLo),
                           ),
                         ),
@@ -277,12 +285,12 @@ class ReviewScreen extends ConsumerWidget {
               width: double.infinity,
               child: SatButton.primary(
                 label: reviewState.busy
-                    ? 'Mengirim…'
+                    ? context.l10n.revSending
                     : _isTakeaway
-                    ? 'Tambah ke pesanan'
+                    ? context.l10n.revAddToOrder
                     : tableless
-                    ? 'Kirim pesanan'
-                    : 'Kirim ke $sendTarget',
+                    ? context.l10n.revSendOrder
+                    : context.l10n.revSendTo(sendTarget),
                 icon: Icons.auto_awesome,
                 busy: reviewState.busy,
                 size: SatButtonSize.lg,
@@ -356,8 +364,10 @@ class ReviewScreen extends ConsumerWidget {
                                 SnackBar(
                                   content: Text(
                                     e.code == 'already_seated'
-                                        ? 'Meja keburu terisi. Pilih meja lain.'
-                                        : 'Gagal menempati meja: ${e.code ?? e.statusCode}',
+                                        ? context.l10n.revTableTaken
+                                        : context.l10n.revSeatFailed(
+                                            '${e.code ?? e.statusCode}',
+                                          ),
                                   ),
                                 ),
                               );
@@ -434,19 +444,19 @@ Future<_Commit?> _chooseCommit(BuildContext context) {
               ),
             ),
             const SizedBox(height: Sp.s4h),
-            Text('Kirim pesanan ke', style: SatType.h3(color: sc.textHi)),
+            Text(ctx.l10n.revCommitTitle, style: SatType.h3(color: sc.textHi)),
             const SizedBox(height: Sp.s4),
             _CommitTile(
               icon: Icons.table_restaurant_rounded,
-              title: 'Meja (dine-in)',
-              sub: 'Tetapkan ke meja kosong',
+              title: ctx.l10n.revCommitDineIn,
+              sub: ctx.l10n.revCommitDineInSub,
               onTap: () => Navigator.of(ctx).pop(_Commit.dineIn),
             ),
             const SizedBox(height: Sp.s2h),
             _CommitTile(
               icon: Icons.shopping_bag_rounded,
-              title: 'Bawa pulang',
-              sub: 'Takeaway tanpa meja',
+              title: ctx.l10n.revCommitTakeaway,
+              sub: ctx.l10n.revCommitTakeawaySub,
               onTap: () => Navigator.of(ctx).pop(_Commit.takeaway),
             ),
           ],
@@ -534,12 +544,18 @@ Future<_TakeawayDetails?> _askTakeawayDetails(BuildContext context) {
             channel == SatChannel.gofood || channel == SatChannel.grab;
         return AlertDialog(
           backgroundColor: sc.bg1,
-          title: Text('Bawa pulang', style: SatType.bodyM(color: sc.textHi)),
+          title: Text(
+            ctx.l10n.revCommitTakeaway,
+            style: SatType.bodyM(color: sc.textHi),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Kanal', style: SatType.labelS(color: sc.textLo)),
+              Text(
+                ctx.l10n.revChannel,
+                style: SatType.labelS(color: sc.textLo),
+              ),
               const SizedBox(height: Sp.s2),
               Wrap(
                 spacing: Sp.s2,
@@ -562,13 +578,13 @@ Future<_TakeawayDetails?> _askTakeawayDetails(BuildContext context) {
               ),
               const SizedBox(height: Sp.s3h),
               Text(
-                'Nama tamu / kurir',
+                ctx.l10n.revGuestOrCourier,
                 style: SatType.labelS(color: sc.textLo),
               ),
               const SizedBox(height: Sp.s2),
               SatField.text(
                 controller: ctrl,
-                hint: 'mis. Budi · atau Rizal (kurir)',
+                hint: ctx.l10n.revGuestHint,
                 autofocus: true,
                 capitalization: TextCapitalization.words,
               ),
@@ -578,13 +594,13 @@ Future<_TakeawayDetails?> _askTakeawayDetails(BuildContext context) {
                   children: [
                     Expanded(
                       child: Text(
-                        'Sudah dibayar aplikasi',
+                        ctx.l10n.revPrepaid,
                         style: SatType.bodyS(color: sc.textHi),
                       ),
                     ),
                     SatToggle(
                       value: prepaid,
-                      semanticLabel: 'Sudah dibayar aplikasi',
+                      semanticLabel: ctx.l10n.revPrepaid,
                       onChanged: (v) => setState(() => prepaid = v),
                     ),
                   ],
@@ -594,19 +610,17 @@ Future<_TakeawayDetails?> _askTakeawayDetails(BuildContext context) {
           ),
           actions: [
             SatButton.ghost(
-              label: AppStrings.cancel,
+              label: ctx.l10n.cancel,
               onTap: () => Navigator.of(ctx).pop(),
             ),
             SatButton.primary(
-              label: 'Lanjut',
+              label: ctx.l10n.revContinue,
               onTap: () {
                 final v = ctrl.text.trim();
                 if (v.isEmpty) return;
-                Navigator.of(ctx).pop((
-                  guestName: v,
-                  channel: channel.id,
-                  prepaid: prepaid,
-                ));
+                Navigator.of(
+                  ctx,
+                ).pop((guestName: v, channel: channel.id, prepaid: prepaid));
               },
             ),
           ],
@@ -654,12 +668,14 @@ class _ReviewCourseBlock extends StatelessWidget {
                 ),
                 const SizedBox(width: Sp.s2h),
                 Text(
-                  course.name.toUpperCase(),
+                  courseLabel(context.l10n, course.serialId).toUpperCase(),
                   style: SatType.caption(color: sc.textMd),
                 ),
                 const Spacer(),
                 Text(
-                  auto ? 'auto-bakar' : 'ditahan sampai dibakar',
+                  auto
+                      ? context.l10n.revAutoFire
+                      : context.l10n.revHeldUntilFired,
                   style: SatType.monoS(color: sc.textLo),
                 ),
               ],
@@ -713,7 +729,7 @@ class _ReviewCourseBlock extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(top: Sp.s1),
                         child: NoteLine(
-                          label: 'Instruksi khusus',
+                          label: context.l10n.tblSpecialInstruction,
                           text: c.note,
                         ),
                       ),

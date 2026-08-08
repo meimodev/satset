@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
@@ -16,6 +15,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/state/tickers.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart' show SatBackButton;
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Single responsive app bar used everywhere chrome is needed.
 ///
@@ -202,7 +202,10 @@ class _Crumbs extends StatelessWidget {
     for (var i = 0; i < items.length; i++) {
       if (i > 0) {
         spans.add(
-          TextSpan(text: '  ›  ', style: SatType.monoS(color: sc.textLo)),
+          TextSpan(
+            text: '  ›  ',
+            style: SatType.monoS(color: sc.textLo),
+          ),
         );
       }
       final last = i == items.length - 1;
@@ -253,9 +256,7 @@ class _SyncStatus extends ConsumerWidget {
     };
     final fg = bare
         ? sc.textMd
-        : (SatShape.brutal && SatShape.brutalPaper
-              ? SatShape.ink
-              : sc.textHi);
+        : (SatShape.brutal && SatShape.brutalPaper ? SatShape.ink : sc.textHi);
 
     final row = Row(
       mainAxisSize: MainAxisSize.min,
@@ -325,12 +326,12 @@ class _ShiftCluster extends ConsumerWidget {
     final started = startedRaw == null ? null : DateTime.tryParse(startedRaw);
     final elapsed = started == null
         ? '00:00:00'
-        : formatElapsedId(now.difference(started));
+        : formatElapsed(context.l10n, now.difference(started));
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(AppStrings.shiftLabel, style: SatType.caption(color: sc.textLo)),
+        Text(context.l10n.shiftLabel, style: SatType.caption(color: sc.textLo)),
         const SizedBox(width: Sp.s1h),
         Text(elapsed, style: SatType.monoM(color: hi)),
         const SizedBox(width: Sp.s3h),
@@ -352,7 +353,7 @@ class _BarAvatar extends ConsumerWidget {
 
     return Semantics(
       button: true,
-      label: AppStrings.tabSaya,
+      label: context.l10n.tabSaya,
       child: GestureDetector(
         onTap: () => context.go('/me'),
         child: StaffAvatar(actor: user, size: 32, mine: true),

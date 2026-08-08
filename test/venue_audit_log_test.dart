@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shelf/shelf.dart';
 
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
+import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/server/audit_log.dart';
 import 'package:satset/server/auth.dart';
@@ -43,43 +44,46 @@ void main() {
   // 1. Keyset paging across a same-millisecond burst.
   // ---------------------------------------------------------------------
 
-  test('paging a burst written in one millisecond loses and repeats nothing', () async {
-    // A round of voids fired back to back lands on one timestamp. With `at`
-    // alone as the cursor every row after the first at that instant is either
-    // skipped or served twice — which is exactly the shape of event this log
-    // exists to record.
-    final at = DateTime.utc(2026, 3, 1, 19, 30);
-    for (var i = 0; i < 25; i++) {
-      await db
-          .into(db.auditEntries)
-          .insert(
-            AuditEntriesCompanion.insert(
-              id: 'a${i.toString().padLeft(2, '0')}',
-              type: AuditType.voidItem.name,
-              title: 'void $i',
-              at: at,
-            ),
-          );
-    }
-    final router = referenceRoutes(db, WsHub()).call;
+  test(
+    'paging a burst written in one millisecond loses and repeats nothing',
+    () async {
+      // A round of voids fired back to back lands on one timestamp. With `at`
+      // alone as the cursor every row after the first at that instant is either
+      // skipped or served twice — which is exactly the shape of event this log
+      // exists to record.
+      final at = DateTime.utc(2026, 3, 1, 19, 30);
+      for (var i = 0; i < 25; i++) {
+        await db
+            .into(db.auditEntries)
+            .insert(
+              AuditEntriesCompanion.insert(
+                id: 'a${i.toString().padLeft(2, '0')}',
+                type: AuditType.voidItem.name,
+                title: 'void $i',
+                at: at,
+              ),
+            );
+      }
+      final router = referenceRoutes(db, WsHub()).call;
 
-    final seen = <String>[];
-    String? cursor;
-    var pages = 0;
-    do {
-      final q = cursor == null
-          ? '/audit/venue?limit=10'
-          : '/audit/venue?limit=10&before=${Uri.encodeQueryComponent(cursor)}';
-      final body = await getJson(router, q) as Map<String, dynamic>;
-      seen.addAll([for (final e in body['items'] as List) e['id'] as String]);
-      cursor = body['nextCursor'] as String?;
-      pages++;
-      expect(pages, lessThan(10), reason: 'cursor is not advancing');
-    } while (cursor != null);
+      final seen = <String>[];
+      String? cursor;
+      var pages = 0;
+      do {
+        final q = cursor == null
+            ? '/audit/venue?limit=10'
+            : '/audit/venue?limit=10&before=${Uri.encodeQueryComponent(cursor)}';
+        final body = await getJson(router, q) as Map<String, dynamic>;
+        seen.addAll([for (final e in body['items'] as List) e['id'] as String]);
+        cursor = body['nextCursor'] as String?;
+        pages++;
+        expect(pages, lessThan(10), reason: 'cursor is not advancing');
+      } while (cursor != null);
 
-    expect(seen.length, 25, reason: 'a row was dropped at a page boundary');
-    expect(seen.toSet().length, 25, reason: 'a row was served on two pages');
-  });
+      expect(seen.length, 25, reason: 'a row was dropped at a page boundary');
+      expect(seen.toSet().length, 25, reason: 'a row was served on two pages');
+    },
+  );
 
   // ---------------------------------------------------------------------
   // 2. The tiles agree with the table.
@@ -91,11 +95,18 @@ void main() {
       await writeAudit(
         db,
         type: AuditType.voidItem,
-        title: 'void $i',
+        kind: AuditKind.voidItem,
+        params: {'qty': '1', 'name': 'void $i', 'amount': 'Rp. 1.000'},
         amountCents: 1000,
       );
     }
-    await writeAudit(db, type: AuditType.comp, title: 'comp', amountCents: 500);
+    await writeAudit(
+      db,
+      type: AuditType.comp,
+      kind: AuditKind.comp,
+      params: const {'qty': '1', 'name': 'comp', 'amount': 'Rp. 500'},
+      amountCents: 500,
+    );
     // Yesterday — inside the type filter but outside the time window.
     await db
         .into(db.auditEntries)
@@ -185,8 +196,18 @@ void main() {
     setUp(() async {
       auth = ServerAuth(db, secret: 'test-secret');
       router = referenceRoutes(db, WsHub(), auth).call;
-      await writeAudit(db, type: AuditType.voidItem, title: 'a void');
-      await writeAudit(db, type: AuditType.staffPinReset, title: 'a PIN reset');
+      await writeAudit(
+        db,
+        type: AuditType.voidItem,
+        kind: AuditKind.voidItem,
+        params: const {'qty': '1', 'name': 'a void', 'amount': 'Rp. 0'},
+      );
+      await writeAudit(
+        db,
+        type: AuditType.staffPinReset,
+        kind: AuditKind.staffPinReset,
+        params: const {'name': 'a waiter'},
+      );
     });
 
     test('viewReports is required to read the log at all', () async {
@@ -195,37 +216,44 @@ void main() {
       expect(res.statusCode, 403);
     });
 
-    test('admin rows need manageStaff, in the table and in the tiles', () async {
-      // A cashier may read the venue's money history but not its personnel
-      // history — an unauthorised reader must not learn a PIN was reset, and
-      // must not see the count either, which would leak the same fact.
-      final cashier = await signIn('cashier', '2222', {Capability.viewReports});
-      final body =
-          jsonDecode(await (await getAs('/audit/venue', cashier)).readAsString())
-              as Map<String, dynamic>;
-      final types = [
-        for (final e in body['items'] as List) e['type'] as String,
-      ];
-      expect(types, contains(AuditType.voidItem.name));
-      expect(types, isNot(contains(AuditType.staffPinReset.name)));
-      expect(
-        (body['summary'] as Map).containsKey(AuditType.staffPinReset.name),
-        isFalse,
-        reason: 'a hidden row must not be counted either',
-      );
+    test(
+      'admin rows need manageStaff, in the table and in the tiles',
+      () async {
+        // A cashier may read the venue's money history but not its personnel
+        // history — an unauthorised reader must not learn a PIN was reset, and
+        // must not see the count either, which would leak the same fact.
+        final cashier = await signIn('cashier', '2222', {
+          Capability.viewReports,
+        });
+        final body =
+            jsonDecode(
+                  await (await getAs('/audit/venue', cashier)).readAsString(),
+                )
+                as Map<String, dynamic>;
+        final types = [
+          for (final e in body['items'] as List) e['type'] as String,
+        ];
+        expect(types, contains(AuditType.voidItem.name));
+        expect(types, isNot(contains(AuditType.staffPinReset.name)));
+        expect(
+          (body['summary'] as Map).containsKey(AuditType.staffPinReset.name),
+          isFalse,
+          reason: 'a hidden row must not be counted either',
+        );
 
-      // The manager sees both.
-      final mgr = await signIn('mgr', '3333', {
-        Capability.viewReports,
-        Capability.manageStaff,
-      });
-      final full =
-          jsonDecode(await (await getAs('/audit/venue', mgr)).readAsString())
-              as Map<String, dynamic>;
-      expect([
-        for (final e in full['items'] as List) e['type'] as String,
-      ], contains(AuditType.staffPinReset.name));
-    });
+        // The manager sees both.
+        final mgr = await signIn('mgr', '3333', {
+          Capability.viewReports,
+          Capability.manageStaff,
+        });
+        final full =
+            jsonDecode(await (await getAs('/audit/venue', mgr)).readAsString())
+                as Map<String, dynamic>;
+        expect([
+          for (final e in full['items'] as List) e['type'] as String,
+        ], contains(AuditType.staffPinReset.name));
+      },
+    );
   });
 
   // ---------------------------------------------------------------------
@@ -323,7 +351,12 @@ void main() {
 
   test('the CSV carries every filtered row, not just the first page', () async {
     for (var i = 0; i < 120; i++) {
-      await writeAudit(db, type: AuditType.voidItem, title: 'void $i');
+      await writeAudit(
+        db,
+        type: AuditType.voidItem,
+        kind: AuditKind.voidItem,
+        params: {'qty': '1', 'name': 'void $i', 'amount': 'Rp. 0'},
+      );
     }
     final router = referenceRoutes(db, WsHub()).call;
 
@@ -347,7 +380,14 @@ void main() {
     await writeAudit(
       db,
       type: AuditType.voidItem,
-      title: 'Batal "Nasi Goreng", meja 4',
+      kind: AuditKind.voidItem,
+      // The comma and the quotes reach the CSV through a *parameter* now, which
+      // is the shape a real row has — the sentence around them is the template.
+      params: const {
+        'qty': '1',
+        'name': '"Nasi Goreng", meja 4',
+        'amount': 'Rp. 0',
+      },
       reason: 'tamu bilang: "salah pesan"',
     );
     final router = referenceRoutes(db, WsHub()).call;
@@ -355,6 +395,6 @@ void main() {
     final row = csv.split('\n')[1];
     // Quotes doubled, field wrapped — otherwise the reason column shifts into
     // the next one and every later column reads as the wrong field.
-    expect(row, contains('"Batal ""Nasi Goreng"", meja 4"'));
+    expect(row, contains('"Dibatalkan ×1 ""Nasi Goreng"", meja 4 · Rp. 0"'));
   });
 }

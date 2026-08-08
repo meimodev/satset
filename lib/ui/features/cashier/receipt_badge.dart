@@ -56,7 +56,9 @@ class ReceiptBadge extends StatelessWidget {
     final hue = unassigned ? sc.warn : receiptHue(label);
     final text = count == null ? label : '$label×$count';
     final style = dense
-        ? SatType.labelS(color: filled ? receiptInk : (unassigned ? hue : sc.textHi))
+        ? SatType.labelS(
+            color: filled ? receiptInk : (unassigned ? hue : sc.textHi),
+          )
         : SatType.labelM(color: filled ? receiptInk : sc.textHi);
     return Container(
       constraints: BoxConstraints(minWidth: dense ? 0 : Sp.s6),

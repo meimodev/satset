@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:drift/drift.dart';
 
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
+import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/server/audit_log.dart';
 import 'package:satset/server/routes/tables_routes.dart'
@@ -110,7 +111,9 @@ Future<void> clearSampleData(AppDatabase db, {WsHub? hub}) async {
     await (db.delete(
       db.tickets,
     )..where((t) => t.id.like('$samplePrefix%'))).go();
-    await (db.delete(db.visits)..where((v) => v.id.like('$samplePrefix%'))).go();
+    await (db.delete(
+      db.visits,
+    )..where((v) => v.id.like('$samplePrefix%'))).go();
   });
   await recomputeBalances(db);
   _broadcastRefetch(hub);
@@ -315,9 +318,8 @@ Future<void> seedHistory(
       await writeAudit(
         db,
         type: AuditType.fire,
-        title:
-            'Course ${_courseLabel(o.lines.first.course)} dibakar untuk '
-            'Meja ${table.id}',
+        kind: AuditKind.fire,
+        params: {'course': o.lines.first.course, 'table': table.id},
         tableId: table.id,
         actorUserId: actor,
         at: o.openedAt.add(const Duration(minutes: 2)),
@@ -341,7 +343,8 @@ Future<void> seedHistory(
           await writeAudit(
             db,
             type: AuditType.voidItem,
-            title: '${t.name} dibatalkan di Meja ${table.id}',
+            kind: AuditKind.voidItemAtTable,
+            params: {'name': t.name, 'table': table.id},
             tableId: table.id,
             actorUserId: actor,
             reason: 'Salah input',
@@ -359,7 +362,8 @@ Future<void> seedHistory(
         await writeAudit(
           db,
           type: AuditType.modify,
-          title: '${t.name} diubah di Meja ${table.id}',
+          kind: AuditKind.modifyAtTable,
+          params: {'name': t.name, 'table': table.id},
           tableId: table.id,
           actorUserId: actor,
           reason: 'Permintaan tamu',
@@ -402,7 +406,8 @@ Future<void> seedHistory(
         await writeAudit(
           db,
           type: AuditType.discountApplied,
-          title: 'Diskon 10% di Meja ${table.id}',
+          kind: AuditKind.discountAtTable,
+          params: {'percent': '10', 'table': table.id},
           tableId: table.id,
           actorUserId: actor,
           approvedBy: approver,
@@ -429,7 +434,8 @@ Future<void> seedHistory(
         await writeAudit(
           db,
           type: AuditType.paymentRecorded,
-          title: 'Pembayaran ${_methodLabel(method)} Meja ${table.id}',
+          kind: AuditKind.paymentAtTable,
+          params: {'method': method, 'table': table.id},
           tableId: table.id,
           actorUserId: actor,
           amountCents: breakdown.total,
@@ -441,9 +447,11 @@ Future<void> seedHistory(
       await writeAudit(
         db,
         type: AuditType.billClosed,
-        title: walkout
-            ? 'Tagihan Meja ${table.id} ditutup tak tertagih'
-            : 'Tagihan Meja ${table.id} ditutup lunas',
+        kind: walkout ? AuditKind.billWrittenOff : AuditKind.billClosed,
+        params: {
+          'table': table.id,
+          if (walkout) 'amount': auditRupiah(breakdown.total),
+        },
         tableId: table.id,
         actorUserId: actor,
         reason: walkout ? 'Tamu pergi tanpa bayar' : null,
@@ -494,20 +502,6 @@ Future<void> seedHistory(
 const _modifyRate = 0.06;
 const _discountRate = 0.04;
 
-String _courseLabel(String course) => switch (course) {
-  'drinks-now' => 'Minuman',
-  'starters' => 'Pembuka',
-  'sides' => 'Pendamping',
-  'desserts' => 'Penutup',
-  _ => 'Utama',
-};
-
-String _methodLabel(String method) => switch (method) {
-  'cash' => 'tunai',
-  'qris' => 'QRIS',
-  _ => 'kartu',
-};
-
 /// The admin half of the audit log, which no amount of simulated service will
 /// ever produce: staff and role changes, and the manual habis toggle.
 ///
@@ -531,107 +525,218 @@ Future<void> seedAdminAudit(AppDatabase db, Random rng) async {
   final admin = firstWithRole(seed.DummyData.roleAdminId) ?? staff.first.id;
   final waiter = firstWithRole(seed.DummyData.roleWaiterId) ?? admin;
 
-  const events = <(int, int, AuditType, String, bool, String?)>[
-    (28, 9, AuditType.staffCreated, 'Pelayan 1 ditambahkan', true, null),
-    (28, 9, AuditType.staffPinSet, 'PIN Pelayan 1 diatur', true, null),
-    (27, 10, AuditType.staffCreated, 'Dapur 1 ditambahkan', true, null),
-    (27, 10, AuditType.staffPinSet, 'PIN Dapur 1 diatur', true, null),
-    (26, 9, AuditType.staffCreated, 'Pelayan 2 ditambahkan', true, null),
-    (26, 9, AuditType.staffPinSet, 'PIN Pelayan 2 diatur', true, null),
-    (25, 16, AuditType.staffCreated, 'Dapur 2 ditambahkan', true, null),
-    (25, 16, AuditType.staffPinSet, 'PIN Dapur 2 diatur', true, null),
-    (
-      24,
-      11,
-      AuditType.roleCapabilityChanged,
-      'Waiter: izin Batalkan item diberikan',
-      true,
-      'Pelayan perlu batalkan sendiri saat jam sibuk',
-    ),
-    (21, 15, AuditType.menuKilled, 'Rendang distop jual', false, 'Bahan habis'),
-    (21, 20, AuditType.menuRestored, 'Rendang dijual lagi', false, null),
-    (18, 8, AuditType.roleRenamed, 'Peran Kitchen jadi Dapur', true, null),
-    (
-      16,
-      14,
-      AuditType.staffPinReset,
-      'PIN Pelayan 1 direset',
-      true,
-      'Staf lupa PIN',
-    ),
-    (
-      13,
-      16,
-      AuditType.menuKilled,
-      'Bebek Goreng Crispy distop jual',
-      false,
-      'Stok bebek belum datang',
-    ),
-    (
-      13,
-      19,
-      AuditType.menuRestored,
-      'Bebek Goreng Crispy dijual lagi',
-      false,
-      null,
-    ),
-    (
-      11,
-      9,
-      AuditType.roleColorChanged,
-      'Warna peran Waiter diubah',
-      true,
-      null,
-    ),
-    (
-      9,
-      17,
-      AuditType.staffDisabled,
-      'Akun Pelayan 1 dinonaktifkan',
-      true,
-      'Cuti dua minggu',
-    ),
-    (
-      7,
-      10,
-      AuditType.staffEnabled,
-      'Akun Pelayan 1 diaktifkan lagi',
-      true,
-      null,
-    ),
-    (
-      5,
-      12,
-      AuditType.staffRoleChanged,
-      'Peran Pelayan 1 diubah ke Kasir',
-      true,
-      'Pindah ke kasir sore',
-    ),
-    (
-      4,
-      15,
-      AuditType.menuKilled,
-      'Ikan Bakar Jimbaran distop jual',
-      false,
-      'Ikan tidak segar',
-    ),
-    (
-      4,
-      21,
-      AuditType.menuRestored,
-      'Ikan Bakar Jimbaran dijual lagi',
-      false,
-      null,
-    ),
-    (2, 11, AuditType.roleCreated, 'Peran Kasir dibuat', true, null),
-  ];
+  // (daysAgo, hour, type, kind, params, byAdmin, reason). Structured like every
+  // other audit row (ADR-0085) — the seeded month renders in whatever language
+  // the reader has set, exactly as a real month would.
+  const events =
+      <(int, int, AuditType, AuditKind, Map<String, String>, bool, String?)>[
+        (
+          28,
+          9,
+          AuditType.staffCreated,
+          AuditKind.staffCreated,
+          {'name': 'Pelayan 1'},
+          true,
+          null,
+        ),
+        (
+          28,
+          9,
+          AuditType.staffPinSet,
+          AuditKind.staffPinSet,
+          {'name': 'Pelayan 1'},
+          true,
+          null,
+        ),
+        (
+          27,
+          10,
+          AuditType.staffCreated,
+          AuditKind.staffCreated,
+          {'name': 'Dapur 1'},
+          true,
+          null,
+        ),
+        (
+          27,
+          10,
+          AuditType.staffPinSet,
+          AuditKind.staffPinSet,
+          {'name': 'Dapur 1'},
+          true,
+          null,
+        ),
+        (
+          26,
+          9,
+          AuditType.staffCreated,
+          AuditKind.staffCreated,
+          {'name': 'Pelayan 2'},
+          true,
+          null,
+        ),
+        (
+          26,
+          9,
+          AuditType.staffPinSet,
+          AuditKind.staffPinSet,
+          {'name': 'Pelayan 2'},
+          true,
+          null,
+        ),
+        (
+          25,
+          16,
+          AuditType.staffCreated,
+          AuditKind.staffCreated,
+          {'name': 'Dapur 2'},
+          true,
+          null,
+        ),
+        (
+          25,
+          16,
+          AuditType.staffPinSet,
+          AuditKind.staffPinSet,
+          {'name': 'Dapur 2'},
+          true,
+          null,
+        ),
+        (
+          24,
+          11,
+          AuditType.roleCapabilityChanged,
+          AuditKind.roleCapabilityChanged,
+          {'name': 'Waiter', 'changes': '+voidItem'},
+          true,
+          'Pelayan perlu batalkan sendiri saat jam sibuk',
+        ),
+        (
+          21,
+          15,
+          AuditType.menuKilled,
+          AuditKind.menuKilled,
+          {'name': 'Rendang'},
+          false,
+          'Bahan habis',
+        ),
+        (
+          21,
+          20,
+          AuditType.menuRestored,
+          AuditKind.menuRestored,
+          {'name': 'Rendang'},
+          false,
+          null,
+        ),
+        (
+          18,
+          8,
+          AuditType.roleRenamed,
+          AuditKind.roleRenamed,
+          {'from': 'Kitchen', 'to': 'Dapur'},
+          true,
+          null,
+        ),
+        (
+          16,
+          14,
+          AuditType.staffPinReset,
+          AuditKind.staffPinReset,
+          {'name': 'Pelayan 1'},
+          true,
+          'Staf lupa PIN',
+        ),
+        (
+          13,
+          16,
+          AuditType.menuKilled,
+          AuditKind.menuKilled,
+          {'name': 'Bebek Goreng Crispy'},
+          false,
+          'Stok bebek belum datang',
+        ),
+        (
+          13,
+          19,
+          AuditType.menuRestored,
+          AuditKind.menuRestored,
+          {'name': 'Bebek Goreng Crispy'},
+          false,
+          null,
+        ),
+        (
+          11,
+          9,
+          AuditType.roleColorChanged,
+          AuditKind.roleColorChanged,
+          {'name': 'Waiter'},
+          true,
+          null,
+        ),
+        (
+          9,
+          17,
+          AuditType.staffDisabled,
+          AuditKind.staffDisabled,
+          {'name': 'Pelayan 1'},
+          true,
+          'Cuti dua minggu',
+        ),
+        (
+          7,
+          10,
+          AuditType.staffEnabled,
+          AuditKind.staffEnabled,
+          {'name': 'Pelayan 1'},
+          true,
+          null,
+        ),
+        (
+          5,
+          12,
+          AuditType.staffRoleChanged,
+          AuditKind.staffRoleChanged,
+          {'name': 'Pelayan 1', 'from': 'Waiter', 'to': 'Kasir'},
+          true,
+          'Pindah ke kasir sore',
+        ),
+        (
+          4,
+          15,
+          AuditType.menuKilled,
+          AuditKind.menuKilled,
+          {'name': 'Ikan Bakar Jimbaran'},
+          false,
+          'Ikan tidak segar',
+        ),
+        (
+          4,
+          21,
+          AuditType.menuRestored,
+          AuditKind.menuRestored,
+          {'name': 'Ikan Bakar Jimbaran'},
+          false,
+          null,
+        ),
+        (
+          2,
+          11,
+          AuditType.roleCreated,
+          AuditKind.roleCreated,
+          {'name': 'Kasir'},
+          true,
+          null,
+        ),
+      ];
 
-  for (final (daysAgo, hour, type, title, byAdmin, reason) in events) {
+  for (final (daysAgo, hour, type, kind, params, byAdmin, reason) in events) {
     final d = today.subtract(Duration(days: daysAgo));
     await writeAudit(
       db,
       type: type,
-      title: title,
+      kind: kind,
+      params: params,
       actorUserId: byAdmin ? admin : waiter,
       reason: reason,
       at: DateTime(d.year, d.month, d.day, hour, rng.nextInt(60)),

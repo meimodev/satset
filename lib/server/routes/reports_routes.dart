@@ -192,32 +192,31 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final covers = sessions.fold<int>(0, (a, s) => a + s.pax);
     final sessionCount = sessions.length;
     final taxService = (net * 0.18).round();
+    // Codes and amounts, not sentences: the reader renders these (ADR-0085).
+    // The compact rupiah these used to carry abbreviated *Indonesian* words.
     final salesKpis = [
       {
-        'label': 'Net',
-        'value': _formatRupiah(net),
-        'sub': '$sessionCount sesi · $covers tamu',
+        'key': 'net',
+        'rupiah': net,
+        'args': [sessionCount, covers],
       },
       {
-        'label': 'Gross',
-        'value': _formatRupiah(gross),
-        'sub': '$sessionCount transaksi',
+        'key': 'gross',
+        'rupiah': gross,
+        'args': [sessionCount],
       },
+      {'key': 'taxService', 'rupiah': taxService, 'args': []},
       {
-        'label': 'Pajak + Service',
-        'value': _formatRupiah(taxService),
-        'sub': 'PB1 11% · Svc 7% (est)',
-      },
-      {
-        'label': 'Void',
-        'value': _formatRupiah(voidTotal),
-        'sub': '${_voidLineCount(tickets)} item void',
+        'key': 'void',
+        'rupiah': voidTotal,
+        'args': [_voidLineCount(tickets)],
       },
     ];
 
     // Cover trend: group sessions by weekday for this/last week (7 days only).
     final coverTrend = <Map<String, dynamic>>[];
-    const dayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+    // The weekday number, not its name — the reader spells it in its own
+    // language (ADR-0085), the same way every other date on screen is spelled.
     for (var dow = 1; dow <= 7; dow++) {
       final thisWk = sessions
           .where((s) => s.closedAt.weekday == dow)
@@ -226,7 +225,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
           .where((s) => s.closedAt.weekday == dow)
           .fold<int>(0, (a, s) => a + s.pax);
       coverTrend.add({
-        'day': dayLabels[dow - 1],
+        'dow': dow,
         'thisWeek': thisWk,
         'lastWeek': lastWk,
       });
@@ -342,12 +341,6 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     // Tolerant of legacy bare-string rows ("group:option") just in case a
     // pre-v22 row slipped through.
     final modCounts = <String, int>{};
-    final modLabels = {
-      'spice': 'Tingkat pedas',
-      'extras': 'Tambahan',
-      'sauce': 'Saus',
-      'protein': 'Pilih protein',
-    };
     for (final t in tickets) {
       try {
         final mods = jsonDecode(t.modifiersJson) as List;
@@ -364,7 +357,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         modCounts.entries
             .map(
               (e) => {
-                'group': modLabels[e.key] ?? e.key,
+                'group': e.key,
                 'rate': tickets.isEmpty ? 0.0 : e.value / tickets.length,
               },
             )
@@ -606,26 +599,19 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     };
 
     final opsKpis = [
+      {'key': 'turnTime', 'value': '$avgTurnMin min', 'args': <int>[]},
       {
-        'label': 'Avg turn time',
-        'value': '$avgTurnMin min',
-        'sub': 'Lama tamu duduk',
-      },
-      {
-        'label': 'Prep dapur',
+        'key': 'prep',
         'value': prepSecs.isEmpty ? '—' : '$prepMedianMin min',
-        'sub': 'Median kirim → siap',
+        'args': <int>[],
       },
       {
-        'label': 'Tunggu antar',
+        'key': 'pickup',
         'value': pickupSecs.isEmpty ? '—' : '$pickupMedianMin min',
-        'sub': 'Median siap → disajikan',
+        'args': <int>[],
       },
-      {
-        'label': 'Reservasi',
-        'value': '—',
-        'sub': '—', // overwritten below once reservations is computed
-      },
+      // Overwritten below, once reservations is computed.
+      {'key': 'reservations', 'value': '—', 'args': <int>[]},
     ];
 
     // Stations: sum qty for the unified station.
@@ -635,7 +621,6 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final stations = [
       {
         'station': 'kitchen',
-        'label': 'Dapur Utama',
         'qty': totalQty,
         'utilization': totalQty == 0 ? 0.0 : 1.0,
       },
@@ -689,10 +674,9 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     };
     if (opsKpis.length >= 4) {
       opsKpis[3] = {
-        'label': 'Reservasi',
+        'key': 'reservations',
         'value': '${reservations['seated']} / ${reservations['booked']}',
-        'sub':
-            '${reservations['noShow']} no-show · ${reservations['cancelled']} batal',
+        'args': [reservations['noShow']!, reservations['cancelled']!],
       };
     }
 
@@ -705,20 +689,11 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       agg.count += 1;
       agg.lostRupiah += t.price * t.qty;
     }
-    const reasonLabels = {
-      'outOfStock': 'Stok habis',
-      'wrongOrder': 'Salah input pelayan',
-      'customerChange': 'Tamu ganti pesanan',
-      'kitchenError': 'Kualitas dapur',
-      'comp': 'Kompensasi manajer',
-      'other': 'Lainnya',
-    };
     final voidReasons =
         reasonAgg.entries
             .map(
               (e) => {
                 'code': e.key,
-                'label': reasonLabels[e.key] ?? e.key,
                 'count': e.value.count,
                 'lostRupiah': e.value.lostRupiah,
               },
@@ -749,13 +724,10 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
                       .key;
             return {
               'id': e.key,
-              'name': e.key == 'unknown'
-                  ? 'Tidak diketahui'
-                  : (userById[e.key]?.name ?? e.key),
+              'name': userById[e.key]?.name ?? e.key,
               'count': e.value.count,
               'lostRupiah': e.value.lostRupiah,
               'topReasonCode': topReason,
-              'topReasonLabel': reasonLabels[topReason] ?? topReason,
             };
           }).toList()
           ..sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
@@ -1019,15 +991,6 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       return out;
     }
 
-    const reasonLabels = {
-      'outOfStock': 'Stok habis',
-      'wrongOrder': 'Salah input pelayan',
-      'customerChange': 'Tamu ganti pesanan',
-      'kitchenError': 'Kualitas dapur',
-      'comp': 'Kompensasi manajer',
-      'other': 'Lainnya',
-    };
-
     List<String> modLabels(String json) {
       try {
         final mods = jsonDecode(json) as List;
@@ -1074,10 +1037,8 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
               'modifiers': modLabels(t.modifiersJson),
               'readyAt': t.readyAt?.toIso8601String(),
               'servedAt': t.servedAt?.toIso8601String(),
-              'voidReasonLabel': t.status == 'voided'
-                  ? (reasonLabels[t.voidReasonCode ?? 'other'] ??
-                        t.voidReasonCode ??
-                        'Lainnya')
+              'voidReasonCode': t.status == 'voided'
+                  ? (t.voidReasonCode ?? 'other')
                   : null,
             },
         ],
@@ -1157,14 +1118,6 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
 
     // Void activity grouped by the waiter who voided (ADR-0006) — a distinct
     // axis from the session actor, joined back per user id below.
-    const reasonLabels = {
-      'outOfStock': 'Stok habis',
-      'wrongOrder': 'Salah input pelayan',
-      'customerChange': 'Tamu ganti pesanan',
-      'kitchenError': 'Kualitas dapur',
-      'comp': 'Kompensasi manajer',
-      'other': 'Lainnya',
-    };
     final voidByStaff = <String, _StaffVoidAgg>{};
     for (final t in tickets) {
       if (t.status != 'voided') continue;
@@ -1225,9 +1178,6 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         'voidPct': voidPct,
         'lostRupiah': v?.lostRupiah ?? 0,
         'topReasonCode': topReason,
-        'topReasonLabel': topReason == null
-            ? null
-            : (reasonLabels[topReason] ?? topReason),
       });
     }
     rows.sort((a, b) => (b['net'] as int).compareTo(a['net'] as int));
@@ -1369,14 +1319,6 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         : await (db.select(
             db.tableSessionTickets,
           )..where((t) => t.sessionId.isIn(sessionIds))).get();
-    const reasonLabels = {
-      'outOfStock': 'Stok habis',
-      'wrongOrder': 'Salah input pelayan',
-      'customerChange': 'Tamu ganti pesanan',
-      'kitchenError': 'Kualitas dapur',
-      'comp': 'Kompensasi manajer',
-      'other': 'Lainnya',
-    };
     final voidAgg = <String, _ReasonAgg>{};
     for (final t in tickets) {
       if (t.status != 'voided') continue;
@@ -1390,7 +1332,6 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
             .map(
               (e) => {
                 'code': e.key,
-                'label': reasonLabels[e.key] ?? e.key,
                 'count': e.value.count,
                 'lostRupiah': e.value.lostRupiah,
               },
@@ -1527,8 +1468,3 @@ double _median(List<double> values) {
       : sorted[mid];
 }
 
-String _formatRupiah(int v) {
-  if (v >= 1000000) return 'Rp ${(v / 1000000).toStringAsFixed(1)}jt';
-  if (v >= 1000) return 'Rp ${(v / 1000).round()}rb';
-  return 'Rp $v';
-}

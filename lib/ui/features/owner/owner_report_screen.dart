@@ -1,4 +1,7 @@
+import 'package:satset/l10n/app_localizations.dart';
 import 'dart:async';
+
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
@@ -36,7 +39,11 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
 
   static const _refreshCooldown = Duration(seconds: 30);
 
-  static const _rangeLabel = {'today': 'Hari ini', 'd7': '7 hari'};
+  String _rangeLabel(AppL10n l, String key) => switch (key) {
+    'today' => l.rangeToday,
+    'd7' => l.rangeD7,
+    _ => key,
+  };
 
   Future<void> _refresh(String vid) async {
     final now = SatClock.now();
@@ -68,7 +75,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => _message(
                   context,
-                  'Gagal memuat laporan.',
+                  context.l10n.ownRptLoadFailed,
                   Icons.error_outline,
                 ),
                 data: (report) => _content(context, report),
@@ -95,17 +102,17 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
             children: [
               Expanded(
                 child: Text(
-                  'Laporan Venue',
+                  context.l10n.ownReportTitle,
                   style: SatType.h2(color: sc.textHi),
                 ),
               ),
               IconButton(
-                tooltip: 'Muat ulang',
+                tooltip: context.l10n.a11yRefresh,
                 onPressed: () => _refresh(vid),
                 icon: Icon(Icons.refresh, color: sc.textMd, size: 20),
               ),
               IconButton(
-                tooltip: 'Keluar',
+                tooltip: context.l10n.logout,
                 onPressed: () => ref.read(authStateProvider.notifier).signOut(),
                 icon: Icon(Icons.logout, color: sc.textMd, size: 20),
               ),
@@ -125,7 +132,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
               const SizedBox(width: Sp.s2),
               Flexible(
                 child: Text(
-                  _freshnessLine(report, pending),
+                  _freshnessLine(context.l10n, report, pending),
                   style: SatType.monoS(color: sc.textLo),
                 ),
               ),
@@ -163,7 +170,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
                     borderRadius: SatR.a(8),
                   ),
                   child: Text(
-                    _rangeLabel[key] ?? key,
+                    _rangeLabel(context.l10n, key),
                     style: SatType.bodyS(
                       color: _range == key ? sc.textHi : sc.textLo,
                     ),
@@ -181,7 +188,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
     if (raw == null) {
       return _message(
         context,
-        'Belum ada laporan dari venue ini.',
+        context.l10n.ownRptNoneYet,
         Icons.hourglass_empty_rounded,
       );
     }
@@ -191,7 +198,7 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
     } catch (_) {
       return _message(
         context,
-        'Format laporan tidak dikenal.',
+        context.l10n.ownRptUnknownFormat,
         Icons.error_outline,
       );
     }
@@ -245,21 +252,21 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
     return gen == null || gen.isBefore(tapped);
   }
 
-  String _freshnessLine(OwnerReport? report, bool pending) {
+  String _freshnessLine(AppL10n l, OwnerReport? report, bool pending) {
     final gen = report?.generatedAt;
     if (gen == null) {
-      return pending ? 'Meminta laporan…' : 'Belum ada data';
+      return pending ? l.ownRptRequesting : l.ownRptNoData;
     }
-    final ago = _ago(gen);
-    if (pending) return 'Diperbarui $ago · menunggu venue (mungkin offline)';
-    return 'Diperbarui $ago';
+    final ago = _ago(l, gen);
+    if (pending) return l.ownRptUpdatedPending(ago);
+    return l.ownRptUpdated(ago);
   }
 
-  String _ago(DateTime t) {
+  String _ago(AppL10n l, DateTime t) {
     final d = SatClock.now().difference(t);
-    if (d.inMinutes < 1) return 'baru saja';
-    if (d.inMinutes < 60) return '${d.inMinutes} menit lalu';
-    if (d.inHours < 24) return '${d.inHours} jam lalu';
-    return '${d.inDays} hari lalu';
+    if (d.inMinutes < 1) return l.elapsedJustNow;
+    if (d.inMinutes < 60) return l.elapsedMinutesAgo(d.inMinutes);
+    if (d.inHours < 24) return l.elapsedHoursAgo(d.inHours);
+    return l.elapsedDaysAgo(d.inDays);
   }
 }

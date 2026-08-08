@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +18,7 @@ import 'package:satset/ui/features/fleet/_fleet_widgets.dart';
 import 'package:satset/ui/features/fleet/venue_edit_screen.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// The super admin's cloud control plane. Reads venues live from Firestore;
 /// every mutation goes through a Cloud Function. Lives outside the app shell (a
@@ -67,11 +67,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   Future<void> _run(Future<void> Function() action, String okMsg) async {
     if (_busy) return;
     if (_offline) {
-      fleetToast(
-        context,
-        'Tidak terhubung — perubahan tidak dikirim.',
-        error: true,
-      );
+      fleetToast(context, context.l10n.fltNotConnected, error: true);
       return;
     }
     setState(() => _busy = true);
@@ -129,9 +125,9 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
                   ),
                   child: FleetHeader(
                     kicker: all.isEmpty
-                        ? 'FLEET'
-                        : '$live DARI ${all.length} ONLINE',
-                    title: 'Fleet',
+                        ? context.l10n.fltKicker
+                        : context.l10n.fltOnlineOf(live, all.length),
+                    title: context.l10n.fltConsoleTitle,
                     // Creating a venue is the rarest act here and it used to
                     // hold row 0 of a list whose job is showing trouble first.
                     // Moved to the toolbar so the top of the list is the top of
@@ -140,7 +136,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         SatButton.primary(
-                          label: 'Venue baru',
+                          label: context.l10n.fltNewVenue,
                           icon: Icons.add,
                           size: SatButtonSize.sm,
                           onTap: _busy || offline ? null : _createVenueDialog,
@@ -148,7 +144,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
                         const SizedBox(width: Sp.s1),
                         SatIconButton.plain(
                           icon: Icons.logout,
-                          tooltip: 'Keluar',
+                          tooltip: context.l10n.logout,
                           onTap: _confirmSignOut,
                         ),
                       ],
@@ -169,13 +165,13 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
                     ),
                     child: SatField.search(
                       controller: _search,
-                      hint: 'Cari nama atau alamat',
+                      hint: context.l10n.fltSearchHint,
                       onChanged: (v) => setState(() => _query = v.trim()),
                       suffix: _query.isEmpty
                           ? null
                           : SatIconButton.plain(
                               icon: Icons.close,
-                              tooltip: 'Hapus pencarian',
+                              tooltip: context.l10n.hapusPencarian,
                               size: 32,
                               onTap: () {
                                 _search.clear();
@@ -234,10 +230,10 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   }
 
   String _lensLabel(_Lens l) => switch (l) {
-    _Lens.all => 'Semua',
-    _Lens.trouble => 'Perlu tindakan',
-    _Lens.billing => 'Tagihan',
-    _Lens.off => 'Nonaktif',
+    _Lens.all => context.l10n.mnaAll,
+    _Lens.trouble => context.l10n.fltLensTrouble,
+    _Lens.billing => context.l10n.fltLensBilling,
+    _Lens.off => context.l10n.fltLensOff,
   };
 
   bool _matchesLens(Venue v, _Lens l, DateTime now) => switch (l) {
@@ -259,9 +255,9 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   /// door: getting back in needs the credentials, which the operator may not
   /// carry. One tap next to the fleet's kill switches was too little friction.
   void _confirmSignOut() => _confirm(
-    'Keluar dari Fleet?',
-    'Perlu email & password lagi untuk masuk.',
-    'Keluar',
+    context.l10n.fltSignOutTitle,
+    context.l10n.fltSignOutBody,
+    context.l10n.fltSignOut,
     () => ref.read(authStateProvider.notifier).signOut(),
   );
 
@@ -276,15 +272,13 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
       error: (e, _) => _errorBox(sc, e),
       data: (list) {
         if (list.isEmpty) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(Sp.s6),
+              padding: const EdgeInsets.all(Sp.s6),
               child: SatEmpty(
                 icon: Icons.storefront_outlined,
-                title: 'Belum ada venue',
-                body:
-                    'Buat venue pertama dengan "Venue baru", lalu tambahkan '
-                    'admin-nya dari dalam venue itu.',
+                title: context.l10n.fltEmptyNoVenue,
+                body: context.l10n.fltEmptyNoVenueBody,
               ),
             ),
           );
@@ -319,11 +313,15 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
               padding: const EdgeInsets.all(Sp.s6),
               child: SatEmpty(
                 icon: Icons.search_off_rounded,
-                title: 'Tidak ada yang cocok',
+                title: context.l10n.fltEmptyNoMatch,
                 body: _query.isEmpty
-                    ? 'Tidak ada venue di lensa "${_lensLabel(_lens)}".'
-                    : 'Tidak ada venue cocok "$_query"'
-                          '${_lens == _Lens.all ? "" : ' di lensa "${_lensLabel(_lens)}"'}.',
+                    ? context.l10n.fltEmptyLensBody(_lensLabel(_lens))
+                    : _lens == _Lens.all
+                    ? context.l10n.fltEmptyQueryBody(_query)
+                    : context.l10n.fltEmptyQueryLensBody(
+                        _query,
+                        _lensLabel(_lens),
+                      ),
               ),
             ),
           );
@@ -393,10 +391,10 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   };
 
   String _bandLabel(_Band b) => switch (b) {
-    _Band.trouble => 'PERLU TINDAKAN',
-    _Band.ending => 'LANGGANAN AKAN BERAKHIR',
-    _Band.idle => 'TIDAK BERJALAN',
-    _Band.running => 'BERJALAN',
+    _Band.trouble => context.l10n.fltBandTrouble,
+    _Band.ending => context.l10n.fltBandEnding,
+    _Band.idle => context.l10n.fltBandIdle,
+    _Band.running => context.l10n.fltBandRunning,
   };
 
   /// Only the bands that want something get a tint. A heading that says
@@ -428,13 +426,14 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
     final vis = fleetStatusVisual(
       sc,
       v.status,
+      l10n: context.l10n,
       activeIcon: Icons.storefront_outlined,
     );
     final billingBad = _billingTrouble(v);
     return FleetTile(
       icon: vis.icon,
       tint: vis.tint,
-      title: v.name.isEmpty ? '(tanpa nama)' : v.name,
+      title: v.name.isEmpty ? context.l10n.fltUnnamed : v.name,
       sub: v.address.isEmpty ? null : v.address,
       meta: _metaLine(v),
       onTap: () => Navigator.of(context).push(
@@ -451,7 +450,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
         if (_endingSoon(v) case final left?)
           fleetPill(
             sc,
-            'Berakhir ${_daysLeftText(left)}',
+            context.l10n.fltEndsIn(_daysLeftText(left)),
             sc.warn,
             sc.warnSoft,
           ),
@@ -466,15 +465,16 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
       trailing: fleetMenu(
         sc,
         enabled: !_busy && !offline,
-        tooltip: 'Tindakan venue',
+        tooltip: context.l10n.fltVenueActions,
         // `Aktifkan` is withheld from a venue past its subscription cutoff — the
         // sweep would only take it down again, and the way back is a future date
         // set in the editor. See ADR-0076.
         items: {
           if (v.status != AdminStatus.active &&
               !fleetCutoffDue(v, SatClock.now()))
-            'activate': 'Aktifkan',
-          if (v.status != AdminStatus.suspended) 'suspend': 'Tangguhkan (kill)',
+            'activate': context.l10n.fltActivate,
+          if (v.status != AdminStatus.suspended)
+            'suspend': context.l10n.fltSuspendKill,
         },
         dangerKeys: const {},
         onSelected: (k) => _onVenueAction(v, k),
@@ -494,7 +494,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
     // 12 Agu" and "Berakhir 5 hari lagi" on one tile — and the quiet copy of a
     // fact is what teaches the eye to stop reading the loud one.
     if (until != null && !_paidUntilPassed(v) && _endingSoon(v) == null) {
-      parts.add('s/d ${formatShortDateId(until)}');
+      parts.add(context.l10n.fltPaidUntil(formatShortDateId(until)));
     }
     parts.add(_offlineText(v));
     return parts.join('  ·  ');
@@ -505,31 +505,31 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   /// job in that gap is to get it renewed before the second one happens.
   String _billingBadText(Venue v) {
     final cutoff = venueCutoffAt(v);
-    if (cutoff == null) return 'Tagihan lewat';
+    if (cutoff == null) return context.l10n.fltBillingOverdue;
     return fleetCutoffDue(v, SatClock.now())
-        ? 'Ditangguhkan ${formatShortDateId(cutoff)}'
-        : 'Lewat — mati ${formatShortDateId(cutoff)}';
+        ? context.l10n.fltSuspendedOn(formatShortDateId(cutoff))
+        : context.l10n.fltOverdueDiesOn(formatShortDateId(cutoff));
   }
 
-  String _daysLeftText(Duration left) =>
-      left.inDays >= 1 ? '${left.inDays} hari lagi' : 'hari ini';
+  String _daysLeftText(Duration left) => left.inDays >= 1
+      ? context.l10n.fltDaysLeft(left.inDays)
+      : context.l10n.fltToday;
 
   void _onVenueAction(Venue v, String k) {
     switch (k) {
       case 'activate':
         _run(
           () => _svc.setVenueStatus(v.id, AdminStatus.active),
-          '${v.name} diaktifkan',
+          context.l10n.fltVenueActivated(v.name),
         );
       case 'suspend':
         _confirm(
-          'Tangguhkan ${v.name}?',
-          'Server venue mati sekarang juga dan semua staf terputus — '
-              'termasuk di tengah jam ramai.',
-          'Tangguhkan',
+          context.l10n.fltSuspendTitle(v.name),
+          context.l10n.fltSuspendBody,
+          context.l10n.fltSuspend,
           () => _run(
             () => _svc.setVenueStatus(v.id, AdminStatus.suspended),
-            '${v.name} ditangguhkan',
+            context.l10n.fltVenueSuspended(v.name),
           ),
         );
     }
@@ -542,6 +542,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   /// created nothing, silently. The dialog also *owns* its controllers — see
   /// [NewVenueDialog].
   Future<void> _createVenueDialog() async {
+    final okMsg = context.l10n.fltVenueCreated;
     final draft = await showSatDialog<VenueDraft>(
       context,
       builder: (_) => const NewVenueDialog(),
@@ -553,7 +554,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
         address: draft.address,
         plan: draft.plan,
       ),
-      'Venue dibuat',
+      okMsg,
     );
   }
 
@@ -574,7 +575,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
         content: Text(body, style: SatType.bodyM(color: sc.textMd)),
         actions: [
           SatButton.ghost(
-            label: AppStrings.cancel,
+            label: context.l10n.cancel,
             onTap: () => Navigator.pop(ctx),
           ),
           SatButton.danger(
@@ -601,7 +602,10 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
         children: [
           Icon(Icons.cloud_off_rounded, size: Sp.s10, color: sc.urgent),
           const SizedBox(height: Sp.s3),
-          Text('Gagal memuat fleet', style: SatType.labelL(color: sc.textHi)),
+          Text(
+            context.l10n.fltLoadFailed,
+            style: SatType.labelL(color: sc.textHi),
+          ),
           const SizedBox(height: Sp.s1h),
           Text(
             fleetErrText(e),
@@ -610,7 +614,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
           ),
           const SizedBox(height: Sp.s4),
           SatButton.outline(
-            label: 'Coba lagi',
+            label: context.l10n.retry,
             icon: Icons.refresh,
             onTap: () => ref.invalidate(fleetVenuesProvider),
           ),
@@ -625,17 +629,17 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
   /// app (will block on restart) from one whose server stayed up but lost
   /// internet (still serving) — so never assert "locked", only the risk.
   String _lockoutText(Duration rem) => rem <= Duration.zero
-      ? 'Lewat batas offline — akan terkunci saat restart'
-      : 'Mendekati batas offline ${rem.inHours}j';
+      ? context.l10n.fltLockoutPast
+      : context.l10n.fltLockoutNear(rem.inHours);
 
   String _offlineText(Venue v) {
     final last = v.lastSeenAt;
-    if (last == null) return 'Belum online';
+    if (last == null) return context.l10n.fltNeverOnline;
     final d = SatClock.now().difference(last);
-    if (d.inSeconds < 90) return 'Online';
-    if (d.inMinutes < 60) return 'Offline ${d.inMinutes}m';
-    if (d.inHours < 24) return 'Offline ${d.inHours}j';
-    return 'Offline ${d.inDays}h';
+    if (d.inSeconds < 90) return context.l10n.fltOnline;
+    if (d.inMinutes < 60) return context.l10n.fltOfflineMinutes(d.inMinutes);
+    if (d.inHours < 24) return context.l10n.fltOfflineHours(d.inHours);
+    return context.l10n.fltOfflineDays(d.inDays);
   }
 }
 
@@ -679,7 +683,10 @@ class _NewVenueDialogState extends State<NewVenueDialog> {
     final valid = _name.text.trim().isNotEmpty;
     return AlertDialog(
       backgroundColor: sc.bg1,
-      title: Text('Venue baru', style: SatType.h3(color: sc.textHi)),
+      title: Text(
+        context.l10n.fltNewVenue,
+        style: SatType.h3(color: sc.textHi),
+      ),
       // Scrollable, and the name field does **not** autofocus. The keyboard
       // takes half a landscape tablet; raised on open it left the form 183px
       // overflowed, actions painted across the Alamat field under yellow tape.
@@ -693,12 +700,16 @@ class _NewVenueDialogState extends State<NewVenueDialog> {
         children: [
           SatField.text(
             controller: _name,
-            label: 'Nama venue',
+            label: context.l10n.fltVenueName,
             hint: '',
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: Sp.s3),
-          SatField.text(controller: _addr, label: 'Alamat', hint: 'opsional'),
+          SatField.text(
+            controller: _addr,
+            label: context.l10n.sysAddress,
+            hint: context.l10n.resOptional,
+          ),
           const SizedBox(height: Sp.s3),
           // Plan only. Term and price belong to the editor (ADR-0076) — two
           // places that can set a term are two places that will drift, and a
@@ -712,11 +723,11 @@ class _NewVenueDialogState extends State<NewVenueDialog> {
       ),
       actions: [
         SatButton.ghost(
-          label: AppStrings.cancel,
+          label: context.l10n.cancel,
           onTap: () => Navigator.pop(context),
         ),
         SatButton.primary(
-          label: AppStrings.save,
+          label: context.l10n.save,
           onTap: valid
               ? () => Navigator.pop(context, (
                   name: _name.text,

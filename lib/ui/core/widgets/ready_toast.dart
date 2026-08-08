@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -28,7 +29,7 @@ class ReadyToast extends StatelessWidget {
     final on = glow ? sc.slab : sc;
     return Semantics(
       button: true,
-      label: 'Tutup',
+      label: context.l10n.close,
       child: GestureDetector(
         onTap: onDismiss,
         child: Container(
@@ -92,7 +93,7 @@ class ReadyToast extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Siap di pass · ${alert.what}',
+                      context.l10n.rtoReadyAtPass(alert.what),
                       style: SatType.labelM(color: on.textHi),
                     ),
                     const SizedBox(height: Sp.sHair),
@@ -102,9 +103,12 @@ class ReadyToast extends StatelessWidget {
                               alert.tableLabel.toUpperCase(),
                               if (alert.zone.isNotEmpty)
                                 alert.zone.toUpperCase(),
-                              'SEKARANG',
+                              context.l10n.rtoNow,
                             ].join(' · ')
-                          : 'MEJA ${alert.tableLabel} · ${alert.zone.toUpperCase()} · SEKARANG',
+                          : context.l10n.rtoTableNow(
+                              alert.tableLabel,
+                              alert.zone.toUpperCase(),
+                            ),
                       style: SatType.monoS(color: on.textMd),
                     ),
                   ],
@@ -126,7 +130,7 @@ class ReadyToast extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'Ambil',
+                  context.l10n.rtoPickUp,
                   style: SatType.labelS(
                     color: glow ? on.accentInk : sc.success,
                   ),

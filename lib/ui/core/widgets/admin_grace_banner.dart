@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -44,7 +46,7 @@ class AdminGraceBanner extends ConsumerWidget {
           const SizedBox(width: Sp.s2),
           Expanded(
             child: Text(
-              _message(grace.remaining),
+              _message(context.l10n, grace.remaining),
               style: SatType.labelS(color: fg),
             ),
           ),
@@ -53,16 +55,11 @@ class AdminGraceBanner extends ConsumerWidget {
     );
   }
 
-  String _message(Duration rem) {
-    if (rem <= Duration.zero) {
-      return 'Server akan terkunci saat aplikasi dimulai ulang — '
-          'sambungkan internet sekarang untuk verifikasi admin.';
-    }
+  String _message(AppL10n l, Duration rem) {
+    if (rem <= Duration.zero) return l.agbLockedOnRestart;
     if (rem <= const Duration(hours: 24)) {
-      return 'Tanpa internet, server terkunci dalam ${rem.inHours} jam. '
-          'Segera sambungkan.';
+      return l.agbLockedInHours(rem.inHours);
     }
-    return 'Tanpa internet, server terkunci dalam ${rem.inDays} hari. '
-        'Sambungkan untuk verifikasi admin.';
+    return l.agbLockedInDays(rem.inDays);
   }
 }

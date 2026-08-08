@@ -24,6 +24,12 @@ class PrefsService {
   /// forced re-theme is another bump; the orphaned value costs nothing.
   static const _kTheme = 'satset.theme.v2';
 
+  /// Device-local language (ADR-0083). Sits beside [_kTheme] on purpose: same
+  /// scope, same reasoning, same sheet on `/me`. Absent means Indonesian — the
+  /// default is hard, never resolved from the system locale, because the cheap
+  /// tablets a venue actually buys ship `en_US` and never have it changed.
+  static const _kLocale = 'satset.locale';
+
   AppMode appMode() => appModeFromKey(_p.getString(_kMode));
   Future<void> setAppMode(AppMode m) async {
     final ok = await _p.setString(_kMode, appModeKey(m));
@@ -105,6 +111,14 @@ class PrefsService {
   String? themeKey() => _p.getString(_kTheme);
   Future<void> setThemeKey(String key) async {
     await _p.setString(_kTheme, key);
+  }
+
+  /// Device-local language tag (`id` / `en`). See [_kLocale] and ADR-0083.
+  /// Stored as an opaque tag — resolving it to a `Locale` is the UI layer's
+  /// job, for the same reason [themeKey] stays a string here.
+  String? localeTag() => _p.getString(_kLocale);
+  Future<void> setLocaleTag(String tag) async {
+    await _p.setString(_kLocale, tag);
   }
 }
 

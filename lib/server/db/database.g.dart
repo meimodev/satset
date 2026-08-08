@@ -7432,6 +7432,24 @@ class $AuditEntriesTable extends AuditEntries
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _paramsMeta = const VerificationMeta('params');
+  @override
+  late final GeneratedColumn<String> params = GeneratedColumn<String>(
+    'params',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -7445,6 +7463,8 @@ class $AuditEntriesTable extends AuditEntries
     amountCents,
     actorName,
     actorRoleName,
+    kind,
+    params,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7535,6 +7555,18 @@ class $AuditEntriesTable extends AuditEntries
         ),
       );
     }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    }
+    if (data.containsKey('params')) {
+      context.handle(
+        _paramsMeta,
+        params.isAcceptableOrUnknown(data['params']!, _paramsMeta),
+      );
+    }
     return context;
   }
 
@@ -7588,6 +7620,14 @@ class $AuditEntriesTable extends AuditEntries
         DriftSqlType.string,
         data['${effectivePrefix}actor_role_name'],
       ),
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      ),
+      params: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}params'],
+      ),
     );
   }
 
@@ -7621,6 +7661,20 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
   /// pre-v43 rows, which fall back to a live join against `users`/`roles`.
   final String? actorName;
   final String? actorRoleName;
+
+  /// Which sentence this row is (an `AuditKind` name) and the values that fill
+  /// it, as a flat `{String: String}` JSON object — ADR-0085.
+  ///
+  /// [title] stays, and stays NOT NULL: it is written from these at write time
+  /// so the raw table is still readable by a human with a SQL client, and it is
+  /// the only thing pre-v47 rows have. The read path prefers [kind] and treats
+  /// [title] as the fallback, never the other way round — a row's stored
+  /// sentence is frozen in whatever language the writing device was set to.
+  ///
+  /// Never rename a kind. The name here is the join to the ARB template, and a
+  /// rename silently drops every existing row back to its frozen title.
+  final String? kind;
+  final String? params;
   const AuditEntry({
     required this.id,
     required this.type,
@@ -7633,6 +7687,8 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
     this.amountCents,
     this.actorName,
     this.actorRoleName,
+    this.kind,
+    this.params,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7661,6 +7717,12 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
     }
     if (!nullToAbsent || actorRoleName != null) {
       map['actor_role_name'] = Variable<String>(actorRoleName);
+    }
+    if (!nullToAbsent || kind != null) {
+      map['kind'] = Variable<String>(kind);
+    }
+    if (!nullToAbsent || params != null) {
+      map['params'] = Variable<String>(params);
     }
     return map;
   }
@@ -7692,6 +7754,10 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
       actorRoleName: actorRoleName == null && nullToAbsent
           ? const Value.absent()
           : Value(actorRoleName),
+      kind: kind == null && nullToAbsent ? const Value.absent() : Value(kind),
+      params: params == null && nullToAbsent
+          ? const Value.absent()
+          : Value(params),
     );
   }
 
@@ -7712,6 +7778,8 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
       amountCents: serializer.fromJson<int?>(json['amountCents']),
       actorName: serializer.fromJson<String?>(json['actorName']),
       actorRoleName: serializer.fromJson<String?>(json['actorRoleName']),
+      kind: serializer.fromJson<String?>(json['kind']),
+      params: serializer.fromJson<String?>(json['params']),
     );
   }
   @override
@@ -7729,6 +7797,8 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
       'amountCents': serializer.toJson<int?>(amountCents),
       'actorName': serializer.toJson<String?>(actorName),
       'actorRoleName': serializer.toJson<String?>(actorRoleName),
+      'kind': serializer.toJson<String?>(kind),
+      'params': serializer.toJson<String?>(params),
     };
   }
 
@@ -7744,6 +7814,8 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
     Value<int?> amountCents = const Value.absent(),
     Value<String?> actorName = const Value.absent(),
     Value<String?> actorRoleName = const Value.absent(),
+    Value<String?> kind = const Value.absent(),
+    Value<String?> params = const Value.absent(),
   }) => AuditEntry(
     id: id ?? this.id,
     type: type ?? this.type,
@@ -7758,6 +7830,8 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
     actorRoleName: actorRoleName.present
         ? actorRoleName.value
         : this.actorRoleName,
+    kind: kind.present ? kind.value : this.kind,
+    params: params.present ? params.value : this.params,
   );
   AuditEntry copyWithCompanion(AuditEntriesCompanion data) {
     return AuditEntry(
@@ -7780,6 +7854,8 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
       actorRoleName: data.actorRoleName.present
           ? data.actorRoleName.value
           : this.actorRoleName,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      params: data.params.present ? data.params.value : this.params,
     );
   }
 
@@ -7796,7 +7872,9 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
           ..write('actorUserId: $actorUserId, ')
           ..write('amountCents: $amountCents, ')
           ..write('actorName: $actorName, ')
-          ..write('actorRoleName: $actorRoleName')
+          ..write('actorRoleName: $actorRoleName, ')
+          ..write('kind: $kind, ')
+          ..write('params: $params')
           ..write(')'))
         .toString();
   }
@@ -7814,6 +7892,8 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
     amountCents,
     actorName,
     actorRoleName,
+    kind,
+    params,
   );
   @override
   bool operator ==(Object other) =>
@@ -7829,7 +7909,9 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
           other.actorUserId == this.actorUserId &&
           other.amountCents == this.amountCents &&
           other.actorName == this.actorName &&
-          other.actorRoleName == this.actorRoleName);
+          other.actorRoleName == this.actorRoleName &&
+          other.kind == this.kind &&
+          other.params == this.params);
 }
 
 class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
@@ -7844,6 +7926,8 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
   final Value<int?> amountCents;
   final Value<String?> actorName;
   final Value<String?> actorRoleName;
+  final Value<String?> kind;
+  final Value<String?> params;
   final Value<int> rowid;
   const AuditEntriesCompanion({
     this.id = const Value.absent(),
@@ -7857,6 +7941,8 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     this.amountCents = const Value.absent(),
     this.actorName = const Value.absent(),
     this.actorRoleName = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.params = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AuditEntriesCompanion.insert({
@@ -7871,6 +7957,8 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     this.amountCents = const Value.absent(),
     this.actorName = const Value.absent(),
     this.actorRoleName = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.params = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        type = Value(type),
@@ -7888,6 +7976,8 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     Expression<int>? amountCents,
     Expression<String>? actorName,
     Expression<String>? actorRoleName,
+    Expression<String>? kind,
+    Expression<String>? params,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7902,6 +7992,8 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
       if (amountCents != null) 'amount_cents': amountCents,
       if (actorName != null) 'actor_name': actorName,
       if (actorRoleName != null) 'actor_role_name': actorRoleName,
+      if (kind != null) 'kind': kind,
+      if (params != null) 'params': params,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7918,6 +8010,8 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     Value<int?>? amountCents,
     Value<String?>? actorName,
     Value<String?>? actorRoleName,
+    Value<String?>? kind,
+    Value<String?>? params,
     Value<int>? rowid,
   }) {
     return AuditEntriesCompanion(
@@ -7932,6 +8026,8 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
       amountCents: amountCents ?? this.amountCents,
       actorName: actorName ?? this.actorName,
       actorRoleName: actorRoleName ?? this.actorRoleName,
+      kind: kind ?? this.kind,
+      params: params ?? this.params,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7972,6 +8068,12 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     if (actorRoleName.present) {
       map['actor_role_name'] = Variable<String>(actorRoleName.value);
     }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (params.present) {
+      map['params'] = Variable<String>(params.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -7992,6 +8094,8 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
           ..write('amountCents: $amountCents, ')
           ..write('actorName: $actorName, ')
           ..write('actorRoleName: $actorRoleName, ')
+          ..write('kind: $kind, ')
+          ..write('params: $params, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -24661,6 +24765,8 @@ typedef $$AuditEntriesTableCreateCompanionBuilder =
       Value<int?> amountCents,
       Value<String?> actorName,
       Value<String?> actorRoleName,
+      Value<String?> kind,
+      Value<String?> params,
       Value<int> rowid,
     });
 typedef $$AuditEntriesTableUpdateCompanionBuilder =
@@ -24676,6 +24782,8 @@ typedef $$AuditEntriesTableUpdateCompanionBuilder =
       Value<int?> amountCents,
       Value<String?> actorName,
       Value<String?> actorRoleName,
+      Value<String?> kind,
+      Value<String?> params,
       Value<int> rowid,
     });
 
@@ -24740,6 +24848,16 @@ class $$AuditEntriesTableFilterComposer
 
   ColumnFilters<String> get actorRoleName => $composableBuilder(
     column: $table.actorRoleName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get params => $composableBuilder(
+    column: $table.params,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -24807,6 +24925,16 @@ class $$AuditEntriesTableOrderingComposer
     column: $table.actorRoleName,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get params => $composableBuilder(
+    column: $table.params,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AuditEntriesTableAnnotationComposer
@@ -24858,6 +24986,12 @@ class $$AuditEntriesTableAnnotationComposer
     column: $table.actorRoleName,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get params =>
+      $composableBuilder(column: $table.params, builder: (column) => column);
 }
 
 class $$AuditEntriesTableTableManager
@@ -24902,6 +25036,8 @@ class $$AuditEntriesTableTableManager
                 Value<int?> amountCents = const Value.absent(),
                 Value<String?> actorName = const Value.absent(),
                 Value<String?> actorRoleName = const Value.absent(),
+                Value<String?> kind = const Value.absent(),
+                Value<String?> params = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AuditEntriesCompanion(
                 id: id,
@@ -24915,6 +25051,8 @@ class $$AuditEntriesTableTableManager
                 amountCents: amountCents,
                 actorName: actorName,
                 actorRoleName: actorRoleName,
+                kind: kind,
+                params: params,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -24930,6 +25068,8 @@ class $$AuditEntriesTableTableManager
                 Value<int?> amountCents = const Value.absent(),
                 Value<String?> actorName = const Value.absent(),
                 Value<String?> actorRoleName = const Value.absent(),
+                Value<String?> kind = const Value.absent(),
+                Value<String?> params = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AuditEntriesCompanion.insert(
                 id: id,
@@ -24943,6 +25083,8 @@ class $$AuditEntriesTableTableManager
                 amountCents: amountCents,
                 actorName: actorName,
                 actorRoleName: actorRoleName,
+                kind: kind,
+                params: params,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

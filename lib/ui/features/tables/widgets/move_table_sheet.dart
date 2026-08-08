@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +13,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Target picker for **Pindah meja** (move table, ADR-0019). Lists every empty
 /// (`available` + `active`) table grouped by zone; tapping one transfers the
@@ -85,12 +85,12 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
             ),
             const SizedBox(height: Sp.s4h),
             Text(
-              'Pindahkan meja ${source.displayName}',
+              context.l10n.mvtTitle(source.displayName),
               style: SatType.h2(color: sc.textHi),
             ),
             const SizedBox(height: Sp.s1),
             Text(
-              'Pilih meja kosong tujuan · ${source.pax} tamu',
+              context.l10n.mvtSubtitle(source.pax),
               style: SatType.monoS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s4),
@@ -99,7 +99,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
                   ? Padding(
                       padding: const EdgeInsets.symmetric(vertical: Sp.s8),
                       child: Text(
-                        'Tidak ada meja kosong untuk dituju.',
+                        context.l10n.mvtNoTargets,
                         textAlign: TextAlign.center,
                         style: SatType.bodyM(color: sc.textLo),
                       ),
@@ -165,7 +165,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
                 ),
                 const SizedBox(width: Sp.s3),
                 Text(
-                  'kapasitas ${target.capacity}',
+                  context.l10n.tblCapacityOf(target.capacity),
                   style: SatType.bodyS(color: sc.textMd),
                 ),
                 const Spacer(),
@@ -193,20 +193,23 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
     final confirm = await showSatDialog<bool>(
       context,
       builder: (ctx) => AlertDialog(
-        title: Text('Pindahkan meja ${source.displayName}?'),
+        title: Text(context.l10n.mvtConfirmTitle(source.displayName)),
         content: Text(
           overCapacity
-              ? 'Tujuan: meja ${target.displayName} (kapasitas ${target.capacity}). '
-                    '${source.pax} tamu melebihi kapasitas — lanjutkan?'
-              : 'Seluruh pesanan dan tamu pindah ke meja ${target.displayName}.',
+              ? context.l10n.mvtConfirmOver(
+                  target.displayName,
+                  target.capacity,
+                  source.pax,
+                )
+              : context.l10n.mvtConfirmBody(target.displayName),
         ),
         actions: [
           SatButton.ghost(
-            label: AppStrings.cancel,
+            label: context.l10n.cancel,
             onTap: () => Navigator.of(ctx).pop(false),
           ),
           SatButton.primary(
-            label: 'Pindahkan',
+            label: context.l10n.mvtConfirmAction,
             onTap: () => Navigator.of(ctx).pop(true),
           ),
         ],
@@ -229,10 +232,10 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
       if (!mounted) return;
       setState(() => _moving = false);
       final msg = switch (e.code) {
-        'target_unavailable' => 'Meja tujuan sudah terisi.',
-        'table_locked' => 'Meja sedang dipakai pengguna lain.',
-        'source_not_occupied' => 'Meja asal sudah kosong.',
-        _ => 'Gagal memindahkan meja: ${e.code ?? e.statusCode}',
+        'target_unavailable' => context.l10n.mvtTargetOccupied,
+        'table_locked' => context.l10n.mvtTableLocked,
+        'source_not_occupied' => context.l10n.mvtSourceEmpty,
+        _ => context.l10n.mvtFailed('${e.code ?? e.statusCode}'),
       };
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -244,7 +247,7 @@ class _MoveTableSheetState extends ConsumerState<_MoveTableSheet> {
       setState(() => _moving = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Gagal memindahkan meja: $e')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.mvtFailed('$e'))));
     }
   }
 }

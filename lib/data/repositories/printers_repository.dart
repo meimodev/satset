@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/printer_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
@@ -124,7 +124,7 @@ class PrintersRepository extends StateNotifier<List<PrinterDto>> {
       return _friendly(e);
     } catch (e) {
       SatLog.repo('printers.test fail $e');
-      return 'Gagal mencetak';
+      return ref.read(l10nProvider).prnErrFailed;
     }
   }
 
@@ -141,19 +141,20 @@ class PrintersRepository extends StateNotifier<List<PrinterDto>> {
       return _friendly(e);
     } catch (e) {
       SatLog.repo('printers.printTable fail $e');
-      return 'Gagal mencetak';
+      return ref.read(l10nProvider).prnErrFailed;
     }
   }
 
+  /// The server's own `message` is a developer string in the host tablet's
+  /// language — never shown. The `code` beside it is the contract, and this
+  /// device renders it (ADR-0085).
   String _friendly(ApiException e) {
-    try {
-      final j = jsonDecode(e.body);
-      if (j is Map && j['message'] is String) return j['message'] as String;
-    } catch (_) {}
+    final l = ref.read(l10nProvider);
     return switch (e.code) {
-      'no_lines' => 'Tidak ada pesanan untuk dicetak',
-      'print_failed' => 'Printer tak terhubung',
-      _ => 'Gagal mencetak',
+      'no_lines' => l.prnErrNoLines,
+      'print_failed' => l.prnErrNotConnected,
+      'no_printer' => l.prnErrNoPrinter,
+      _ => l.prnErrFailed,
     };
   }
 

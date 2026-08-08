@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -36,7 +37,7 @@ class ReportStockSection extends ConsumerWidget {
         child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
       error: (e, _) => Text(
-        'Gagal memuat laporan bahan: $e',
+        context.l10n.rptStockFailed('$e'),
         style: SatType.bodyS(color: sc.warn),
       ),
       data: (r) {
@@ -50,7 +51,7 @@ class ReportStockSection extends ConsumerWidget {
             variance.isEmpty &&
             valuation.isEmpty) {
           return Text(
-            'Belum ada aktivitas bahan pada rentang ini.',
+            context.l10n.rptStockEmpty,
             style: SatType.bodyS(color: sc.textLo),
           );
         }
@@ -63,19 +64,19 @@ class ReportStockSection extends ConsumerWidget {
               children: [
                 _kpi(
                   sc,
-                  'Nilai stok',
+                  context.l10n.rptStockValue,
                   formatIDR(_int(r['totalStockValue'])),
                   sc.textHi,
                 ),
                 _kpi(
                   sc,
-                  'Terbuang',
+                  context.l10n.rptStockWaste,
                   formatIDR(_int(r['totalWasteValue'])),
                   _int(r['totalWasteValue']) > 0 ? sc.urgent : sc.textLo,
                 ),
                 _kpi(
                   sc,
-                  'Selisih opname',
+                  context.l10n.rptStockVariance,
                   formatIDR(_int(r['totalVarianceValue'])),
                   _int(r['totalVarianceValue']) < 0 ? sc.warn : sc.textLo,
                 ),
@@ -83,18 +84,27 @@ class ReportStockSection extends ConsumerWidget {
             ),
             const SizedBox(height: Sp.s3h),
             if (waste.isNotEmpty)
-              _table(sc, 'Terbuang', waste, valueColor: sc.urgent),
+              _table(
+                sc,
+                context.l10n.rptStockWaste,
+                waste,
+                valueColor: sc.urgent,
+              ),
             if (variance.isNotEmpty)
               _table(
                 sc,
-                'Selisih opname',
+                context.l10n.rptStockVariance,
                 variance,
                 valueColor: sc.warn,
-                empty: 'Belum ada opname pada rentang ini.',
+                empty: context.l10n.rptNoStocktake,
               ),
-            if (usage.isNotEmpty) _table(sc, 'Pemakaian', usage),
+            if (usage.isNotEmpty) _table(sc, context.l10n.rptStockUsage, usage),
             if (valuation.isNotEmpty)
-              _table(sc, 'Nilai stok saat ini', valuation.take(8).toList()),
+              _table(
+                sc,
+                context.l10n.rptStockValueNow,
+                valuation.take(8).toList(),
+              ),
           ],
         );
       },

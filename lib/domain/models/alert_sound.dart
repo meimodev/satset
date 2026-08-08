@@ -12,21 +12,17 @@ library;
 /// The other table states ("Meja lama", "Meja selesai makan") are deliberately
 /// **visual only** and so are absent here — a cue a waiter cannot discharge is
 /// noise that devalues every other cue.
-enum AlertEvent {
-  newOrder,
-  orderReady,
-  voided,
-  overdue,
-  ungreeted,
-  pickup,
-}
+enum AlertEvent { newOrder, orderReady, voided, overdue, ungreeted, pickup }
 
 /// A selectable bundled clip. [asset] is null for the silent "none" preset.
+///
+/// The [id] is persisted and is the join to the ARB entry — the words come from
+/// `alertSoundLabel` at build time, so a preset reads as "Doorbell" in an
+/// English shell and "Bel Pintu" in an Indonesian one.
 class AlertSoundPreset {
-  const AlertSoundPreset(this.id, this.label, this.asset);
+  const AlertSoundPreset(this.id, this.asset);
 
   final String id;
-  final String label;
   final String? asset;
 
   bool get isSilent => asset == null;
@@ -39,35 +35,27 @@ const kNoneSoundId = 'none';
 /// a row here. Removing a row is safe — venues still pointing at it fall back to
 /// the per-event default via [resolveSoundId].
 const alertSoundPresets = <AlertSoundPreset>[
-  AlertSoundPreset(kNoneSoundId, 'Senyap', null),
-  AlertSoundPreset('alarm', 'Alarm', 'sounds/alarm.wav'),
-  AlertSoundPreset('alert', 'Alert', 'sounds/alert.wav'),
-  AlertSoundPreset('beep', 'Beep', 'sounds/beep.wav'),
-  AlertSoundPreset('bell', 'Bel', 'sounds/bell.wav'),
-  AlertSoundPreset('chime', 'Chime', 'sounds/chime.wav'),
-  AlertSoundPreset('click', 'Klik', 'sounds/click.wav'),
-  AlertSoundPreset(
-    'critical_alarm',
-    'Alarm Kritis',
-    'sounds/critical_alarm.wav',
-  ),
-  AlertSoundPreset('ding', 'Ding', 'sounds/ding.wav'),
-  AlertSoundPreset('doorbell', 'Bel Pintu', 'sounds/doorbell.wav'),
-  AlertSoundPreset(
-    'facility_alarm',
-    'Alarm Fasilitas',
-    'sounds/facility_alarm.wav',
-  ),
-  AlertSoundPreset('game_alarm', 'Alarm Game', 'sounds/game_alarm.wav'),
-  AlertSoundPreset('happy_bell', 'Lonceng Ceria', 'sounds/happy_bell.wav'),
-  AlertSoundPreset('harp', 'Harpa', 'sounds/harp.wav'),
-  AlertSoundPreset('marimba', 'Marimba', 'sounds/marimba.wav'),
-  AlertSoundPreset('pop', 'Pop', 'sounds/pop.wav'),
-  AlertSoundPreset('remove', 'Hapus', 'sounds/remove.wav'),
-  AlertSoundPreset('reward', 'Reward', 'sounds/reward.wav'),
-  AlertSoundPreset('short_alarm', 'Alarm Pendek', 'sounds/short_alarm.wav'),
-  AlertSoundPreset('start', 'Mulai', 'sounds/start.wav'),
-  AlertSoundPreset('ting', 'Ting', 'sounds/ting.wav'),
+  AlertSoundPreset(kNoneSoundId, null),
+  AlertSoundPreset('alarm', 'sounds/alarm.wav'),
+  AlertSoundPreset('alert', 'sounds/alert.wav'),
+  AlertSoundPreset('beep', 'sounds/beep.wav'),
+  AlertSoundPreset('bell', 'sounds/bell.wav'),
+  AlertSoundPreset('chime', 'sounds/chime.wav'),
+  AlertSoundPreset('click', 'sounds/click.wav'),
+  AlertSoundPreset('critical_alarm', 'sounds/critical_alarm.wav'),
+  AlertSoundPreset('ding', 'sounds/ding.wav'),
+  AlertSoundPreset('doorbell', 'sounds/doorbell.wav'),
+  AlertSoundPreset('facility_alarm', 'sounds/facility_alarm.wav'),
+  AlertSoundPreset('game_alarm', 'sounds/game_alarm.wav'),
+  AlertSoundPreset('happy_bell', 'sounds/happy_bell.wav'),
+  AlertSoundPreset('harp', 'sounds/harp.wav'),
+  AlertSoundPreset('marimba', 'sounds/marimba.wav'),
+  AlertSoundPreset('pop', 'sounds/pop.wav'),
+  AlertSoundPreset('remove', 'sounds/remove.wav'),
+  AlertSoundPreset('reward', 'sounds/reward.wav'),
+  AlertSoundPreset('short_alarm', 'sounds/short_alarm.wav'),
+  AlertSoundPreset('start', 'sounds/start.wav'),
+  AlertSoundPreset('ting', 'sounds/ting.wav'),
 ];
 
 /// Per-event factory default — reproduces ADR-0007's original fixed cues.

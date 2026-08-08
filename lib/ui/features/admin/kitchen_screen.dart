@@ -1,4 +1,3 @@
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/widgets/pulse_dot.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -23,6 +22,8 @@ import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
+import 'package:satset/core/localization/labels.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 /// The timer's ink. Neutral until the ticket is worth worrying about: a ticket
 /// two minutes old is not news, and spending a colour on the good case is how
@@ -155,14 +156,14 @@ class KitchenScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
               child: Text(
-                AppStrings.kitchenQueueTitle,
+                context.l10n.kitchenQueueTitle,
                 style: SatType.h2(color: sc.textHi),
               ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
               child: Text(
-                '${orders.length} ORDER · $itemCount ITEM DI ANTRIAN PERSIAPAN',
+                context.l10n.kitQueueSub(orders.length, itemCount),
                 style: SatType.monoS(color: sc.textLo),
               ),
             ),
@@ -192,9 +193,8 @@ class KitchenScreen extends ConsumerWidget {
     }
 
     return AdminPage(
-      title: AppStrings.kitchenQueueTitle,
-      sub:
-          '${orders.length} order aktif · $itemCount item · tahan untuk tandai selesai',
+      title: context.l10n.kitchenQueueTitle,
+      sub: context.l10n.kitchenQueueSub(orders.length, itemCount),
       topTrailing: headTrailing,
       children: [
         if (orders.isEmpty)
@@ -258,7 +258,7 @@ class _CompletedFilter extends StatelessWidget {
               ),
               const SizedBox(width: Sp.s2),
               Text(
-                'Tampilkan order selesai',
+                context.l10n.kitShowDone,
                 style: SatType.labelM(color: value ? sc.textHi : sc.textMd),
               ),
             ],
@@ -453,12 +453,12 @@ class _CardHead extends StatelessWidget {
                 // on obsidian being a paint chart rather than a signal.
                 for (final c in courses)
                   Text(
-                    SatShape.caps(c.name),
+                    SatShape.caps(courseLabel(context.l10n, c.serialId)),
                     style: SatType.caption(color: sc.textMd),
                   ),
                 if (late)
                   SatChip.tag(
-                    label: 'Telat',
+                    label: context.l10n.reservationActionLate,
                     size: SatChipSize.sm,
                     hue: SatChipHue.urgent,
                     filled: true,
@@ -595,12 +595,15 @@ class _TimerState extends ConsumerState<_Timer>
             style: SatType.monoL(color: color),
           ),
         ),
-        Text('masuk ${widget.sentAt}', style: SatType.monoS(color: sc.textMd)),
+        Text(
+          context.l10n.kitSentAt(widget.sentAt),
+          style: SatType.monoS(color: sc.textMd),
+        ),
         const SizedBox(height: Sp.s1),
         Text(
           widget.done == widget.total
-              ? 'Semua siap'
-              : '${widget.done}/${widget.total} siap',
+              ? context.l10n.kitAllReady
+              : context.l10n.kitReadyOf(widget.done, widget.total),
           style: SatType.monoS(
             color: widget.done == widget.total ? sc.success : sc.textMd,
           ),
@@ -656,9 +659,9 @@ class _ItemRowState extends State<_KdsItemRow>
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
       ..showSnackBar(
-        const SnackBar(
-          content: Text('Tahan untuk tandai selesai'),
-          duration: Duration(milliseconds: 1500),
+        SnackBar(
+          content: Text(context.l10n.kitHoldToFinish),
+          duration: const Duration(milliseconds: 1500),
         ),
       );
   }
@@ -800,7 +803,7 @@ class _ItemRowState extends State<_KdsItemRow>
                           Padding(
                             padding: const EdgeInsets.only(top: Sp.s1h),
                             child: NoteLine(
-                              label: 'Instruksi khusus',
+                              label: context.l10n.tblSpecialInstruction,
                               text: ticket.note!,
                               alert: true,
                             ),
@@ -895,10 +898,13 @@ class _EmptyQueueState extends State<_EmptyQueue>
             child: Icon(Icons.restaurant_rounded, size: 40, color: sc.textDim),
           ),
           const SizedBox(height: Sp.s3h),
-          Text('Antrian masak kosong', style: SatType.labelL(color: sc.textMd)),
+          Text(
+            context.l10n.kitEmptyTitle,
+            style: SatType.labelL(color: sc.textMd),
+          ),
           const SizedBox(height: Sp.s1h),
           Text(
-            'Semua pesanan dapur sudah selesai dimasak.',
+            context.l10n.kitEmptyBody,
             style: SatType.bodyM(color: sc.textLo),
           ),
         ],

@@ -4,7 +4,6 @@ import 'package:satset/ui/core/widgets/sat_stepper.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -23,6 +22,8 @@ import 'package:satset/ui/core/design/course_visuals.dart';
 import 'package:satset/ui/core/widgets/menu_photo.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/core/localization/labels.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 
 const _uuid = Uuid();
 
@@ -314,8 +315,9 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                             _TagLine(
                               icon: Icons.eco_outlined,
                               color: sc.info,
-                              text:
-                                  'Cocok untuk ${_tagNames(widget.item.dietary, tagsById)}',
+                              text: context.l10n.modDietaryLine(
+                                _tagNames(widget.item.dietary, tagsById),
+                              ),
                             ),
                           if (widget.item.allergens.isNotEmpty &&
                               widget.item.dietary.isNotEmpty)
@@ -324,16 +326,17 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                             _TagLine(
                               icon: Icons.warning_amber_rounded,
                               color: sc.urgent,
-                              text:
-                                  'Mengandung ${_tagNames(widget.item.allergens, tagsById)} — konfirmasi ke tamu',
+                              text: context.l10n.modAllergenLine(
+                                _tagNames(widget.item.allergens, tagsById),
+                              ),
                             ),
                         ],
                       ),
                     ),
                   if (widget.item.variants.length > 1)
                     _ModGroup(
-                      title: 'Ukuran',
-                      tag: 'WAJIB',
+                      title: context.l10n.modSize,
+                      tag: context.l10n.modTagRequired,
                       tagColor: sc.urgent,
                       child: Column(
                         children: [
@@ -353,8 +356,10 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                     _ModGroup(
                       title: g.name,
                       tag: g.required
-                          ? 'WAJIB'
-                          : (g.multi ? 'BEBAS PILIH' : 'OPSIONAL'),
+                          ? context.l10n.modTagRequired
+                          : (g.multi
+                                ? context.l10n.modTagFree
+                                : context.l10n.modTagOptional),
                       tagColor: g.required ? sc.urgent : sc.textLo,
                       child: Column(
                         children: [
@@ -377,7 +382,7 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                       ),
                     ),
                   _ModGroup(
-                    title: 'Course',
+                    title: context.l10n.expColCourse,
                     tag: 'TIMING',
                     tagColor: sc.textLo,
                     child: Wrap(
@@ -400,7 +405,7 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                     ),
                   ),
                   _ModGroup(
-                    title: 'Instruksi khusus',
+                    title: context.l10n.tblSpecialInstruction,
                     tag: 'OPSI TERAKHIR',
                     tagColor: sc.textLo,
                     border: false,
@@ -409,7 +414,7 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                       children: [
                         SatField.text(
                           controller: _noteCtl,
-                          hint: 'mis. alergi belum tertera, catatan plating…',
+                          hint: context.l10n.modNoteHint,
                           maxLength: 80,
                           minLines: 2,
                           maxLines: 3,
@@ -417,7 +422,7 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                         ),
                         const SizedBox(height: Sp.s1),
                         Text(
-                          '${_special.length} / 80 · tampil ke dapur',
+                          context.l10n.modSpecialCounter(_special.length),
                           style: SatType.monoS(color: sc.textLo),
                         ),
                       ],
@@ -615,7 +620,7 @@ class _ModOpt extends StatelessWidget {
                   const SizedBox(width: Sp.s3),
                   Expanded(
                     child: Text(
-                      soldOut ? '$name · habis' : name,
+                      soldOut ? context.l10n.modOptionSoldOut(name) : name,
                       style: SatType.bodyM(
                         color: soldOut ? sc.textLo : sc.textHi,
                       ),
@@ -656,7 +661,7 @@ class _CourseChip extends StatelessWidget {
     final sc = context.sat;
     final on = SatShape.glow && selected ? sc.slab : sc;
     return SatChip.select(
-      label: course.name,
+      label: courseLabel(context.l10n, course.serialId),
       dot: course.color(on),
       selected: selected,
       onTap: onTap,
@@ -705,15 +710,15 @@ class _Foot extends StatelessWidget {
             // the last twenty taps of `+` did nothing visible.
             max: _kMaxPerAdd,
             size: SatStepperSize.lg,
-            semanticLabel: AppStrings.quantity,
+            semanticLabel: context.l10n.quantity,
             onChanged: (v) => v > qty ? onInc() : onDec(),
           ),
           const SizedBox(width: Sp.s3),
           Expanded(
             child: SatButton.primary(
               label: valid
-                  ? (editing ? AppStrings.save : AppStrings.add)
-                  : 'Pilih wajib',
+                  ? (editing ? context.l10n.save : context.l10n.add)
+                  : context.l10n.modPickRequired,
               icon: valid ? (editing ? Icons.check : Icons.add) : null,
               size: SatButtonSize.lg,
               trailingValue: valid ? totalLabel : null,

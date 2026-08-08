@@ -5,73 +5,78 @@ import 'package:pdf/widgets.dart' as pw;
 
 import 'package:satset/core/export/export_share.dart';
 import 'package:satset/core/export/pdf_theme.dart';
+import 'package:satset/core/localization/labels.dart';
 import 'package:satset/data/repositories/accounting_report_repository.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/core/design/format.dart';
 
 /// CSV + PDF builders for the accounting export (ADR-0032). A bookkeeping view
 /// of the chosen window: revenue summary on real settled figures, payment
 /// method breakdown, void/refund write-offs, and a per-day breakdown. Tax and
 /// service are the settled session figures, NOT the screen's 18% estimate.
+///
+/// Column headers and section titles follow the exporting device's language
+/// (ADR-0083); every amount inside them stays `Rp 14.500` (ADR-0084). The
+/// [DateFormat]s are built per call rather than held in top-level finals — a
+/// cached formatter freezes whichever locale was active when the field was
+/// first touched, which for a lazily-initialised top-level is "whichever screen
+/// ran first".
 
-final _dateFull = DateFormat('d MMM yyyy, HH:mm', 'id_ID');
-final _dateShort = DateFormat('d MMM yyyy', 'id_ID');
-final _dayFmt = DateFormat('d MMM yyyy', 'id_ID');
-
-const _methodLabel = {
-  'tunai': 'Tunai',
-  'kartu': 'Kartu',
-  'qris': 'QRIS',
-  'transfer': 'Transfer',
-  'lainnya': 'Lainnya',
-};
-
-String _method(String m) => _methodLabel[m] ?? m;
+DateFormat get _dateFull => DateFormat('d MMM yyyy, HH:mm');
+DateFormat get _dateShort => DateFormat('d MMM yyyy');
 
 String _windowLine(AccountingReport s) =>
     '${_dateShort.format(s.rangeFrom.toLocal())} – ${_dateShort.format(s.rangeTo.toLocal())}';
 
 String _day(String ymd) {
   final d = DateTime.tryParse(ymd);
-  return d == null ? ymd : _dayFmt.format(d);
+  return d == null ? ymd : _dateShort.format(d);
 }
 
-const _revenueNote =
-    'Pajak & service = nilai riil dari sesi terselesaikan (bukan estimasi 18% di layar). '
-    'Rentang mengikuti aturan yang sama dengan laporan di layar (ADR-0032).';
-
-const _methodHeaders = [
-  'Metode',
-  'Jumlah',
-  'Transaksi',
-  'Refund',
-  'Refund (n)',
-  'Net',
+List<String> _methodHeaders(AppL10n l) => [
+  l.expColMethod,
+  l.expColAmount,
+  l.expColTransactions,
+  l.expRefund,
+  l.expColRefundCount,
+  l.expNet,
 ];
-const _voidHeaders = ['Alasan', 'Item', 'Rugi'];
-const _dailyHeaders = [
-  'Tanggal',
-  'Bruto',
-  'Void',
-  'Service',
-  'Pajak',
-  'Diskon',
-  'Net',
-  'Terkumpul',
-  'Refund',
+
+List<String> _voidHeaders(AppL10n l) => [
+  l.expColReason,
+  l.expColItem,
+  l.expColLost,
+];
+
+List<String> _dailyHeaders(AppL10n l) => [
+  l.expColDate,
+  l.expColGross,
+  l.expColVoid,
+  l.expService,
+  l.expTax,
+  l.expDiscount,
+  l.expNet,
+  l.expColCollected,
+  l.expRefund,
 ];
 
 /// Per-preset rollup — answers "which promo is costing me money" (ADR-0039).
-const _discountHeaders = ['Diskon', 'Cakupan', 'Dipakai', 'Nilai'];
+List<String> _discountHeaders(AppL10n l) => [
+  l.expDiscount,
+  l.expColScope,
+  l.expColUsed,
+  l.expColValue,
+];
 
-List<String> _discountRow(AccountingDiscountRow d) => [
+List<String> _discountRow(AppL10n l, AccountingDiscountRow d) => [
   d.label,
-  d.scope == 'line' ? 'Per item' : 'Per pesanan',
+  d.scope == 'line' ? l.expScopeLine : l.expScopeOrder,
   '${d.count}',
   formatIDR(d.amount),
 ];
 
-List<String> _methodRow(AccountingMethodRow m) => [
-  _method(m.method),
+List<String> _methodRow(AppL10n l, AccountingMethodRow m) => [
+  paymentMethodLabel(l, m.method),
   formatIDR(m.charged),
   '${m.chargedCount}',
   formatIDR(m.refunded),
@@ -99,7 +104,7 @@ List<String> _dailyRow(AccountingDayRow d) => [
 
 // ─── CSV ────────────────────────────────────────────────────────────────────
 
-String buildAccountingCsv(AccountingReport s) {
+String buildAccountingCsv(AppL10n l, AccountingReport s) {
   final rows = <String>[];
   void blank() => rows.add('');
   void section(String title) {
@@ -108,49 +113,49 @@ String buildAccountingCsv(AccountingReport s) {
   }
 
   final r = s.revenue;
-  rows.add(csvRow(['Laporan Akuntansi SatSet']));
+  rows.add(csvRow([l.expAccountingCsvTitle]));
   rows.add(
     csvRow([
-      'Periode',
-      rangeLabelId(s.range, from: s.rangeFrom, to: s.rangeTo),
+      l.expPeriod,
+      rangeLabel(l, s.range, from: s.rangeFrom, to: s.rangeTo),
     ]),
   );
-  rows.add(csvRow(['Rentang', _windowLine(s)]));
-  rows.add(csvRow(['Dibuat', _dateFull.format(s.generatedAt.toLocal())]));
-  rows.add(csvRow(['Catatan', _revenueNote]));
+  rows.add(csvRow([l.expRange, _windowLine(s)]));
+  rows.add(csvRow([l.expGenerated, _dateFull.format(s.generatedAt.toLocal())]));
+  rows.add(csvRow([l.expNote, l.expAccountingNote]));
 
-  section('Ringkasan Pendapatan');
-  rows.add(csvRow(['Pos', 'Nilai']));
-  rows.add(csvRow(['Bruto (subtotal)', formatIDR(r.gross)]));
-  rows.add(csvRow(['Void / koreksi', formatIDR(r.voidAmount)]));
-  rows.add(csvRow(['Diskon', formatIDR(r.discount)]));
-  rows.add(csvRow(['Net', formatIDR(r.net)]));
-  rows.add(csvRow(['Service', formatIDR(r.service)]));
-  rows.add(csvRow(['Pajak', formatIDR(r.tax)]));
-  rows.add(csvRow(['Terkumpul (tagihan)', formatIDR(r.collected)]));
-  rows.add(csvRow(['Refund', formatIDR(r.refunded)]));
-  rows.add(csvRow(['Jumlah sesi', r.sessionCount]));
+  section(l.expRevenueSummary);
+  rows.add(csvRow([l.expColEntry, l.expColValue]));
+  rows.add(csvRow([l.expGrossSubtotal, formatIDR(r.gross)]));
+  rows.add(csvRow([l.expVoidCorrection, formatIDR(r.voidAmount)]));
+  rows.add(csvRow([l.expDiscount, formatIDR(r.discount)]));
+  rows.add(csvRow([l.expNet, formatIDR(r.net)]));
+  rows.add(csvRow([l.expService, formatIDR(r.service)]));
+  rows.add(csvRow([l.expTax, formatIDR(r.tax)]));
+  rows.add(csvRow([l.expCollectedBilled, formatIDR(r.collected)]));
+  rows.add(csvRow([l.expRefund, formatIDR(r.refunded)]));
+  rows.add(csvRow([l.expSessionCount, r.sessionCount]));
 
-  section('Rincian Metode Bayar');
-  rows.add(csvRow(_methodHeaders));
+  section(l.expMethodBreakdown);
+  rows.add(csvRow(_methodHeaders(l)));
   for (final m in s.methods) {
-    rows.add(csvRow(_methodRow(m)));
+    rows.add(csvRow(_methodRow(l, m)));
   }
 
-  section('Void & Refund (write-off)');
-  rows.add(csvRow(_voidHeaders));
+  section(l.expWriteOffs);
+  rows.add(csvRow(_voidHeaders(l)));
   for (final v in s.voids) {
     rows.add(csvRow(_voidRow(v)));
   }
 
-  section('Diskon per Preset');
-  rows.add(csvRow(_discountHeaders));
+  section(l.expDiscountByPreset);
+  rows.add(csvRow(_discountHeaders(l)));
   for (final d in s.discounts) {
-    rows.add(csvRow(_discountRow(d)));
+    rows.add(csvRow(_discountRow(l, d)));
   }
 
-  section('Rincian Harian');
-  rows.add(csvRow(_dailyHeaders));
+  section(l.expDailyBreakdown);
+  rows.add(csvRow(_dailyHeaders(l)));
   for (final d in s.daily) {
     rows.add(csvRow(_dailyRow(d)));
   }
@@ -161,12 +166,14 @@ String buildAccountingCsv(AccountingReport s) {
 // ─── PDF ────────────────────────────────────────────────────────────────────
 
 Future<Uint8List> buildAccountingPdf(
+  AppL10n l,
   AccountingReport s, {
   PdfBranding? branding,
 }) async {
   final theme = await pdfTheme();
   final doc = pw.Document(theme: theme.base);
   final r = s.revenue;
+  final range = rangeLabel(l, s.range, from: s.rangeFrom, to: s.rangeTo);
 
   pw.Widget kv(String label, String value, {bool strong = false}) => pw.Padding(
     padding: const pw.EdgeInsets.symmetric(vertical: 2),
@@ -198,37 +205,35 @@ Future<Uint8List> buildAccountingPdf(
       pageTheme: pdfPageTheme(theme),
       header: (ctx) => ctx.pageNumber == 1
           ? pw.SizedBox()
-          : pdfRunningHeader(
-              'Laporan Akuntansi · ${rangeLabelId(s.range, from: s.rangeFrom, to: s.rangeTo)}',
-            ),
-      footer: pdfFooter,
+          : pdfRunningHeader(l.expAccountingHeader(range)),
+      footer: (ctx) => pdfFooter(l, ctx),
       build: (ctx) => [
         pdfTitleBlock(
-          title: 'Laporan Akuntansi',
-          subtitle: rangeLabelId(s.range, from: s.rangeFrom, to: s.rangeTo),
+          title: l.expAccountingTitle,
+          subtitle: range,
           logoBytes: branding?.logoBytes,
           venueName: branding?.venueName,
           address: branding?.address,
           phone: branding?.phone,
           meta: [
-            'Rentang: ${_windowLine(s)}',
-            'Dibuat: ${_dateFull.format(s.generatedAt.toLocal())}',
-            'Jumlah sesi: ${r.sessionCount}',
+            l.expMetaRange(_windowLine(s)),
+            l.expMetaGenerated(_dateFull.format(s.generatedAt.toLocal())),
+            l.expMetaSessionCount(r.sessionCount),
           ],
         ),
         pw.SizedBox(height: 16),
-        pdfSectionTitle('Ringkasan Pendapatan'),
-        kv('Bruto (subtotal)', formatIDR(r.gross)),
-        kv('Void / koreksi', formatIDR(r.voidAmount)),
-        kv('Diskon', formatIDR(r.discount)),
-        kv('Net', formatIDR(r.net), strong: true),
-        kv('Service', formatIDR(r.service)),
-        kv('Pajak', formatIDR(r.tax)),
-        kv('Terkumpul (tagihan)', formatIDR(r.collected), strong: true),
-        kv('Refund', formatIDR(r.refunded)),
+        pdfSectionTitle(l.expRevenueSummary),
+        kv(l.expGrossSubtotal, formatIDR(r.gross)),
+        kv(l.expVoidCorrection, formatIDR(r.voidAmount)),
+        kv(l.expDiscount, formatIDR(r.discount)),
+        kv(l.expNet, formatIDR(r.net), strong: true),
+        kv(l.expService, formatIDR(r.service)),
+        kv(l.expTax, formatIDR(r.tax)),
+        kv(l.expCollectedBilled, formatIDR(r.collected), strong: true),
+        kv(l.expRefund, formatIDR(r.refunded)),
         pw.SizedBox(height: 6),
         pw.Text(
-          _revenueNote,
+          l.expAccountingNote,
           style: pw.TextStyle(
             fontSize: 7.5,
             color: kPdfInkLo,
@@ -236,30 +241,34 @@ Future<Uint8List> buildAccountingPdf(
           ),
         ),
         pw.SizedBox(height: 16),
-        pdfSectionTitle('Rincian Metode Bayar'),
+        pdfSectionTitle(l.expMethodBreakdown),
         pdfTable(
-          headers: _methodHeaders,
-          rows: [for (final m in s.methods) _methodRow(m)],
+          l,
+          headers: _methodHeaders(l),
+          rows: [for (final m in s.methods) _methodRow(l, m)],
           numericFrom: 1,
         ),
         pw.SizedBox(height: 16),
-        pdfSectionTitle('Void & Refund (write-off)'),
+        pdfSectionTitle(l.expWriteOffs),
         pdfTable(
-          headers: _voidHeaders,
+          l,
+          headers: _voidHeaders(l),
           rows: [for (final v in s.voids) _voidRow(v)],
           numericFrom: 1,
         ),
         pw.SizedBox(height: 16),
-        pdfSectionTitle('Diskon per Preset'),
+        pdfSectionTitle(l.expDiscountByPreset),
         pdfTable(
-          headers: _discountHeaders,
-          rows: [for (final d in s.discounts) _discountRow(d)],
+          l,
+          headers: _discountHeaders(l),
+          rows: [for (final d in s.discounts) _discountRow(l, d)],
           numericFrom: 2,
         ),
         pw.SizedBox(height: 16),
-        pdfSectionTitle('Rincian Harian'),
+        pdfSectionTitle(l.expDailyBreakdown),
         pdfTable(
-          headers: _dailyHeaders,
+          l,
+          headers: _dailyHeaders(l),
           rows: [for (final d in s.daily) _dailyRow(d)],
           numericFrom: 1,
         ),

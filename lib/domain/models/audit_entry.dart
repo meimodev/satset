@@ -65,37 +65,6 @@ bool isAdminAuditType(AuditType t) {
   }
 }
 
-/// Short pill label for the venue log's Jenis column. Kept beside the enum for
-/// the same reason as `ticketStatusLabel` — the label set has to move with the
-/// values, or a new type ships rendering its raw enum name.
-String auditTypeLabel(AuditType t) => switch (t) {
-  AuditType.fire => 'Kirim',
-  AuditType.modify => 'Ubah',
-  AuditType.voidItem => 'Batal',
-  AuditType.comp => 'Gratis',
-  AuditType.tableMoved => 'Pindah',
-  AuditType.paymentRecorded => 'Bayar',
-  AuditType.refund => 'Refund',
-  AuditType.discountApplied => 'Diskon',
-  AuditType.discountRemoved => 'Diskon−',
-  AuditType.billReopened => 'Buka',
-  AuditType.billClosed => 'Tutup',
-  AuditType.menuKilled => 'Stop jual',
-  AuditType.menuRestored => 'Jual lagi',
-  AuditType.staffCreated => 'Staf +',
-  AuditType.staffDeleted => 'Staf −',
-  AuditType.staffDisabled => 'Nonaktif',
-  AuditType.staffEnabled => 'Aktif',
-  AuditType.staffRoleChanged => 'Peran',
-  AuditType.staffPinSet => 'PIN',
-  AuditType.staffPinReset => 'PIN reset',
-  AuditType.roleCreated => 'Peran +',
-  AuditType.roleRenamed => 'Peran ubah',
-  AuditType.roleDeleted => 'Peran −',
-  AuditType.roleColorChanged => 'Peran warna',
-  AuditType.roleCapabilityChanged => 'Hak akses',
-};
-
 class AuditEntry {
   final String id;
   final AuditType type;
@@ -127,6 +96,23 @@ class AuditEntry {
   final String? actorName;
   final String? actorRoleName;
 
+  /// Which sentence this row is, as an `AuditKind` name — the structured half
+  /// of ADR-0085. Null on rows written before v47, which carry only [title].
+  ///
+  /// Deliberately a `String` and not the enum: a client one release behind a
+  /// server must be able to hold a kind it has no template for and still show
+  /// the row. `auditText` does the widening and falls back on its own.
+  final String? kind;
+
+  /// Named parameters for [kind]'s template. Empty when [kind] is null.
+  ///
+  /// Values are pre-rendered where they are not language: money is formatted
+  /// rupiah at write time (ADR-0084) and venue-authored names — a discount
+  /// preset, a menu item — are stored as the venue wrote them. What stays as a
+  /// key is what the reader's language actually changes: a payment method, a
+  /// course, a receipt label.
+  final Map<String, String> params;
+
   const AuditEntry({
     required this.id,
     required this.type,
@@ -139,5 +125,7 @@ class AuditEntry {
     this.amountCents,
     this.actorName,
     this.actorRoleName,
+    this.kind,
+    this.params = const {},
   });
 }

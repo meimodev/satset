@@ -1,3 +1,4 @@
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:satset/ui/core/design/colors.dart';
@@ -20,8 +21,8 @@ class NoteLine extends StatelessWidget {
   final String text;
 
   /// Low-emphasis lead-in, e.g. "Catatan" (guest note) or "Instruksi khusus"
-  /// (item note).
-  final String label;
+  /// (item note). Null falls back to the generic note heading.
+  final String? label;
 
   /// Renders the note as a filled `urgentSoft` block with high-contrast ink
   /// rather than a grey line. KDS only.
@@ -30,7 +31,7 @@ class NoteLine extends StatelessWidget {
   const NoteLine({
     super.key,
     required this.text,
-    this.label = 'Catatan',
+    this.label,
     this.alert = false,
   });
 
@@ -43,7 +44,7 @@ class NoteLine extends StatelessWidget {
       TextSpan(
         children: [
           TextSpan(
-            text: '$label  ',
+            text: '${label ?? context.l10n.noteLabel}  ',
             style: SatType.labelS(color: alert ? sc.textHi : sc.textLo),
           ),
           TextSpan(
@@ -57,10 +58,7 @@ class NoteLine extends StatelessWidget {
     );
     if (!alert) return body;
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Sp.s2,
-        vertical: Sp.s1h,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s2, vertical: Sp.s1h),
       decoration: SatBox.d(color: sc.urgentSoft, borderRadius: SatR.md),
       child: body,
     );

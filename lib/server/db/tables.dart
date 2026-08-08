@@ -449,6 +449,20 @@ class AuditEntries extends Table {
   /// pre-v43 rows, which fall back to a live join against `users`/`roles`.
   TextColumn get actorName => text().nullable()();
   TextColumn get actorRoleName => text().nullable()();
+
+  /// Which sentence this row is (an `AuditKind` name) and the values that fill
+  /// it, as a flat `{String: String}` JSON object — ADR-0085.
+  ///
+  /// [title] stays, and stays NOT NULL: it is written from these at write time
+  /// so the raw table is still readable by a human with a SQL client, and it is
+  /// the only thing pre-v47 rows have. The read path prefers [kind] and treats
+  /// [title] as the fallback, never the other way round — a row's stored
+  /// sentence is frozen in whatever language the writing device was set to.
+  ///
+  /// Never rename a kind. The name here is the join to the ARB template, and a
+  /// rename silently drops every existing row back to its frozen title.
+  TextColumn get kind => text().nullable()();
+  TextColumn get params => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }

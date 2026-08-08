@@ -32,7 +32,8 @@ void main() {
     final res = await router(
       Request('GET', Uri.parse('http://x/settlement/history$query')),
     );
-    return (jsonDecode(await res.readAsString()) as Map).cast<String, dynamic>();
+    return (jsonDecode(await res.readAsString()) as Map)
+        .cast<String, dynamic>();
   }
 
   /// `count` closed sessions, one minute apart, newest last.
@@ -70,7 +71,11 @@ void main() {
 
     final body = await history(router, '?days=7&limit=$historyPageSize');
 
-    expect(body['total'], closed, reason: 'total counted the page, not the window');
+    expect(
+      body['total'],
+      closed,
+      reason: 'total counted the page, not the window',
+    );
     expect((body['rows'] as List).length, historyPageSize);
   });
 
@@ -78,29 +83,32 @@ void main() {
   // 2. A bigger limit is a superset — growing drops nothing.
   // ---------------------------------------------------------------------
 
-  test('growing the limit keeps every row it already had, newest-first', () async {
-    // Paging here is a refetch at a larger limit, not a cursor: page two is
-    // "the newest 120" rather than "the 60 after the last one I saw". That is
-    // only safe while the bigger fetch is a strict superset of the smaller,
-    // ordered the same way — otherwise a bill visibly jumps or vanishes as the
-    // cashier scrolls past the boundary.
-    await seedClosed(150);
-    final router = settlementRoutes(db, WsHub()).call;
+  test(
+    'growing the limit keeps every row it already had, newest-first',
+    () async {
+      // Paging here is a refetch at a larger limit, not a cursor: page two is
+      // "the newest 120" rather than "the 60 after the last one I saw". That is
+      // only safe while the bigger fetch is a strict superset of the smaller,
+      // ordered the same way — otherwise a bill visibly jumps or vanishes as the
+      // cashier scrolls past the boundary.
+      await seedClosed(150);
+      final router = settlementRoutes(db, WsHub()).call;
 
-    final first = idsOf(await history(router, '?days=7&limit=60'));
-    final second = idsOf(await history(router, '?days=7&limit=120'));
+      final first = idsOf(await history(router, '?days=7&limit=60'));
+      final second = idsOf(await history(router, '?days=7&limit=120'));
 
-    expect(first.length, 60);
-    expect(second.length, 120);
-    expect(
-      second.take(60),
-      first,
-      reason: 'page two reordered or dropped rows page one had shown',
-    );
-    // Newest-first, so the freshest bill leads and the boundary is the oldest.
-    expect(first.first, 's0149');
-    expect(second.last, 's0030');
-  });
+      expect(first.length, 60);
+      expect(second.length, 120);
+      expect(
+        second.take(60),
+        first,
+        reason: 'page two reordered or dropped rows page one had shown',
+      );
+      // Newest-first, so the freshest bill leads and the boundary is the oldest.
+      expect(first.first, 's0149');
+      expect(second.last, 's0030');
+    },
+  );
 
   // ---------------------------------------------------------------------
   // 3. The ceiling holds.

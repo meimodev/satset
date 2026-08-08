@@ -3,7 +3,6 @@ import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/widgets/pulse_dot.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
-import 'package:satset/core/localization/app_strings.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
 import 'package:flutter/foundation.dart';
@@ -22,6 +21,9 @@ import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/ui/features/auth/view_models/pin_view_model.dart';
 import 'package:satset/ui/features/auth/views/change_password_screen.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/l10n/app_localizations.dart';
+import 'package:satset/core/localization/dev_contact.dart';
 
 class PinScreen extends ConsumerStatefulWidget {
   const PinScreen({super.key});
@@ -68,14 +70,14 @@ class _PinScreenState extends ConsumerState<PinScreen>
 
   String? _validateEmail(String v) {
     final e = v.trim();
-    if (e.isEmpty) return 'Email belum diisi.';
-    if (!_emailRegex.hasMatch(e)) return 'Email tidak valid.';
+    if (e.isEmpty) return context.l10n.pinErrEmailEmpty;
+    if (!_emailRegex.hasMatch(e)) return context.l10n.pinErrEmailInvalid;
     return null;
   }
 
   String? _validatePassword(String v) {
-    if (v.isEmpty) return 'Password belum diisi.';
-    if (v.length < 6) return 'Minimal 6 karakter.';
+    if (v.isEmpty) return context.l10n.pinErrPasswordEmpty;
+    if (v.length < 6) return context.l10n.pinErrPasswordShort;
     return null;
   }
 
@@ -142,16 +144,16 @@ class _PinScreenState extends ConsumerState<PinScreen>
     FocusScope.of(context).unfocus();
     final email = _adminEmail.text.trim();
     final uri = Uri.parse(
-      'https://wa.me/${AppStrings.devWhatsApp}?text='
-      '${Uri.encodeComponent(AppStrings.resetRequestMessage(email))}',
+      'https://wa.me/$devWhatsApp?text='
+      '${Uri.encodeComponent(context.l10n.resetRequestMessage(email))}',
     );
     try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(AppStrings.resetRequestFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.resetRequestFailed)));
     }
   }
 
@@ -167,8 +169,8 @@ class _PinScreenState extends ConsumerState<PinScreen>
     });
     final ok = await showPinSheet(
       context,
-      title: 'Masukkan PIN',
-      subtitle: 'Tersambung ke ${server.label}',
+      title: context.l10n.pinEnterPin,
+      subtitle: context.l10n.pinConnectedTo(server.label),
       statusSlot: const _ServerReachabilityPill(),
       onSubmit: (pin) => ref.read(pinViewModelProvider.notifier).verifyPin(pin),
     );
@@ -197,7 +199,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
           bottom: Sp.s2,
           child: SafeArea(
             child: SatButton.ghost(
-              label: 'Widget book',
+              label: context.l10n.pinWidgetBook,
               onTap: () => context.push('/book'),
             ),
           ),
@@ -230,7 +232,8 @@ class _PinScreenState extends ConsumerState<PinScreen>
     // A cached admin session blocked at cold boot (stale offline / ineligible)
     // surfaces under the admin form. Live sign-in errors take precedence.
     final adminServerError =
-        state.adminError ?? _bootBlockText(ref.watch(adminBootBlockProvider));
+        state.adminError ??
+        _bootBlockText(context.l10n, ref.watch(adminBootBlockProvider));
 
     // Admin auto-login: while the boot-time session restore is in flight, mask
     // the sign-in form behind a loading screen so the form never flashes before
@@ -521,9 +524,9 @@ class _AdminAuthForm extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Field(
-          label: 'Email',
+          label: context.l10n.pinEmail,
           controller: email,
-          hint: 'admin@warung.id',
+          hint: context.l10n.pinEmailHint,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
           errorText: emailError,
@@ -532,7 +535,10 @@ class _AdminAuthForm extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('PASSWORD', style: SatType.monoS(color: sc.textLo)),
+            Text(
+              context.l10n.pinPassword,
+              style: SatType.monoS(color: sc.textLo),
+            ),
             const SizedBox(height: Sp.s1h),
             SatField.password(
               controller: password,
@@ -562,7 +568,7 @@ class _AdminAuthForm extends StatelessWidget {
         Align(
           alignment: Alignment.centerRight,
           child: SatButton.ghost(
-            label: 'Lupa password?',
+            label: context.l10n.pinForgotPassword,
             size: SatButtonSize.sm,
             onTap: onForgotPassword,
           ),
@@ -571,7 +577,7 @@ class _AdminAuthForm extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: SatButton.primary(
-            label: busy ? AppStrings.loading : 'Masuk sebagai admin',
+            label: busy ? context.l10n.loading : context.l10n.pinSignInAsAdmin,
             icon: Icons.shield_moon_outlined,
             busy: busy,
             size: SatButtonSize.lg,
@@ -657,7 +663,7 @@ class _ModeSwitcher extends StatelessWidget {
                       context,
                       sc,
                       icon: Icons.shield_moon_outlined,
-                      label: 'Admin',
+                      label: context.l10n.pinModeAdmin,
                       active: isAdmin,
                       onTap: () => onChange(SignInMode.admin),
                     ),
@@ -668,7 +674,7 @@ class _ModeSwitcher extends StatelessWidget {
                       context,
                       sc,
                       icon: Icons.badge_outlined,
-                      label: 'Staff',
+                      label: context.l10n.pinModeStaff,
                       active: !isAdmin,
                       onTap: () => onChange(SignInMode.staff),
                     ),
@@ -760,8 +766,7 @@ class _ServerList extends ConsumerWidget {
               ? Padding(
                   padding: const EdgeInsets.all(Sp.s4h),
                   child: Text(
-                    'Mencari server di jaringan… pastikan tablet server '
-                    'menyala dan berada di Wi-Fi yang sama.',
+                    context.l10n.pinSearchingServers,
                     style: SatType.bodyM(color: sc.textMd),
                   ),
                 )
@@ -936,7 +941,7 @@ class _HostOccupiedScreen extends StatelessWidget {
                   Icon(Icons.devices_other, size: 44, color: sc.warn),
                   const SizedBox(height: Sp.s4),
                   Text(
-                    'Venue ini sudah punya perangkat utama',
+                    context.l10n.pinHostTakenTitle,
                     style: SatType.h2(color: sc.textHi),
                     textAlign: TextAlign.center,
                   ),
@@ -951,27 +956,25 @@ class _HostOccupiedScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: Sp.s3),
                   Text(
-                    'Satu venue berjalan di satu perangkat. Tutup aplikasi di '
-                    'perangkat itu, lalu coba lagi di sini.',
+                    context.l10n.pinHostTakenBody,
                     style: SatType.bodyM(color: sc.textMd),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: Sp.s2h),
                   Text(
-                    'Kalau perangkat itu memang yang dipakai, akun ini bukan '
-                    'admin utama venue — hubungi operator.',
+                    context.l10n.pinHostTakenNote,
                     style: SatType.bodyS(color: sc.textLo),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: Sp.s6),
                   SatButton.primary(
-                    label: 'Coba lagi',
+                    label: context.l10n.retry,
                     icon: Icons.refresh,
                     onTap: busy ? null : onRetry,
                   ),
                   const SizedBox(height: Sp.s2h),
                   SatButton.ghost(
-                    label: 'Keluar',
+                    label: context.l10n.pinSignOut,
                     onTap: busy ? null : onSignOut,
                   ),
                 ],
@@ -1010,7 +1013,10 @@ class _RestoreLoadingScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: Sp.s4),
-              Text('Memeriksa sesi…', style: SatType.monoS(color: sc.textLo)),
+              Text(
+                context.l10n.pinCheckingSession,
+                style: SatType.monoS(color: sc.textLo),
+              ),
             ],
           ),
         ),
@@ -1107,11 +1113,10 @@ class _Field extends StatelessWidget {
 void _retain(WidgetRef ref) => ref.read(authStateProvider);
 
 /// Maps a cold-boot admin block code to user-facing copy. See ADR-0015.
-String? _bootBlockText(String? code) => switch (code) {
-  'stale' =>
-    'Perlu koneksi internet untuk verifikasi admin. Sambungkan internet lalu masuk lagi.',
-  'ineligible' => 'Akses admin dicabut. Hubungi pengelola.',
-  'resetpending' => AppStrings.tempPasswordPending,
+String? _bootBlockText(AppL10n l10n, String? code) => switch (code) {
+  'stale' => l10n.bootBlockStale,
+  'ineligible' => l10n.bootBlockIneligible,
+  'resetpending' => l10n.tempPasswordPending,
   _ => null,
 };
 
@@ -1120,6 +1125,7 @@ String? _bootBlockText(String? code) => switch (code) {
 /// single failed probe stays in the neutral "checking" state so a momentary
 /// Wi-Fi blip doesn't flash "down" while the server is actually up.
 ({Color dot, Color glow, String label, bool offline}) _reachabilityVisual(
+  AppL10n l10n,
   PingState ping,
   SatColors sc,
 ) {
@@ -1128,7 +1134,7 @@ String? _bootBlockText(String? code) => switch (code) {
     return (
       dot: sc.success,
       glow: sc.successSoft,
-      label: ms == null ? 'Tersambung' : 'Tersambung · ${ms}ms',
+      label: ms == null ? l10n.pinReachConnected : l10n.pinReachConnectedMs(ms),
       offline: false,
     );
   }
@@ -1136,14 +1142,14 @@ String? _bootBlockText(String? code) => switch (code) {
     return (
       dot: sc.urgent,
       glow: sc.urgentSoft,
-      label: 'Server tidak terjangkau',
+      label: l10n.pinReachUnreachable,
       offline: true,
     );
   }
   return (
     dot: sc.warn,
     glow: sc.warnSoft,
-    label: 'Memeriksa sambungan…',
+    label: l10n.pinReachChecking,
     offline: false,
   );
 }
@@ -1155,7 +1161,7 @@ class _ServerReachabilityPill extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
-    final v = _reachabilityVisual(ref.watch(pingProvider), sc);
+    final v = _reachabilityVisual(context.l10n, ref.watch(pingProvider), sc);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1191,14 +1197,14 @@ class _ConnectedServerCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
-    final v = _reachabilityVisual(ref.watch(pingProvider), sc);
+    final v = _reachabilityVisual(context.l10n, ref.watch(pingProvider), sc);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
           child: Text(
-            'SERVER TERSAMBUNG',
+            context.l10n.pinServerConnected,
             style: SatType.monoS(color: sc.textLo),
           ),
         ),
@@ -1254,7 +1260,7 @@ class _ConnectedServerCard extends ConsumerWidget {
                   ),
                   IconButton(
                     onPressed: onEdit,
-                    tooltip: 'Ubah server',
+                    tooltip: context.l10n.pinChangeServer,
                     icon: Icon(Icons.edit_outlined, size: 18, color: sc.textMd),
                   ),
                 ],

@@ -10,6 +10,8 @@ import 'package:satset/core/export/order_history_exporter.dart';
 import 'package:satset/core/export/pdf_theme.dart';
 import 'package:satset/core/export/reports_exporter.dart';
 import 'package:satset/core/export/staff_report_exporter.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/reports_dto.dart';
 import 'package:satset/data/repositories/accounting_report_repository.dart';
@@ -28,24 +30,37 @@ import 'package:satset/ui/core/widgets/sat_overlay.dart';
 /// selector. `laporan` needs the in-memory report snapshot; the rest fetch
 /// their own purpose-built window payload on demand and work without one.
 enum _ExportKind {
-  laporan('Umum', 'Ekspor laporan', 'laporan'),
-  pesanan('Pesanan', 'Ekspor pesanan', 'riwayat-pesanan'),
-  staf('Staf', 'Ekspor staf', 'laporan-staf'),
-  akuntansi('Akuntansi', 'Ekspor akuntansi', 'akuntansi');
+  laporan('laporan'),
+  pesanan('riwayat-pesanan'),
+  staf('laporan-staf'),
+  akuntansi('akuntansi');
 
-  const _ExportKind(this.label, this.title, this.fileKind);
+  const _ExportKind(this.fileKind);
 
   /// Only `laporan` reads the in-memory snapshot; the others fetch on demand.
   bool get needsSnapshot => this == _ExportKind.laporan;
 
+  /// `kind` slug threaded into the export filename. Stays Indonesian in both
+  /// languages: it is part of a filename a venue may already be filing by, and
+  /// a download whose name changes with a device setting is not the same
+  /// download.
+  final String fileKind;
+
   /// Selector chip label.
-  final String label;
+  String label(AppL10n l) => switch (this) {
+    _ExportKind.laporan => l.exportKindReport,
+    _ExportKind.pesanan => l.exportKindOrders,
+    _ExportKind.staf => l.exportKindStaff,
+    _ExportKind.akuntansi => l.exportKindAccounting,
+  };
 
   /// Sheet header + share subject prefix.
-  final String title;
-
-  /// `kind` slug threaded into the export filename.
-  final String fileKind;
+  String title(AppL10n l) => switch (this) {
+    _ExportKind.laporan => l.exportTitleReport,
+    _ExportKind.pesanan => l.exportTitleOrders,
+    _ExportKind.staf => l.exportTitleStaff,
+    _ExportKind.akuntansi => l.exportTitleAccounting,
+  };
 }
 
 /// Single export sheet for the Reports screen. Range is fixed to whatever is
@@ -110,6 +125,9 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
   }
 
   Future<void> _run() async {
+    // Captured before the first await: the sheet is torn down on success, and
+    // reading `context.l10n` after an await is exactly the lint this dodges.
+    final l = context.l10n;
     setState(() {
       _busy = true;
       _error = null;
@@ -123,13 +141,16 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
           final snap = widget.reportsSnapshot!;
           bytes = isPdf
               ? await buildReportsPdf(
+                  l,
                   snap,
                   _range,
                   from: _from,
                   to: _to,
                   branding: branding,
                 )
-              : _csvBytes(buildReportsCsv(snap, _range, from: _from, to: _to));
+              : _csvBytes(
+                  buildReportsCsv(l, snap, _range, from: _from, to: _to),
+                );
         case _ExportKind.pesanan:
           final history = await ref.read(orderHistoryFetcherProvider)(
             widget.query,
@@ -140,6 +161,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
               history,
             );
             bytes = await buildOrderHistoryPdf(
+              l,
               history,
               _range,
               photos: photos,
@@ -149,7 +171,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
             );
           } else {
             bytes = _csvBytes(
-              buildOrderHistoryCsv(history, _range, from: _from, to: _to),
+              buildOrderHistoryCsv(l, history, _range, from: _from, to: _to),
             );
           }
         case _ExportKind.staf:
@@ -157,15 +179,15 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
             widget.query,
           );
           bytes = isPdf
-              ? await buildStaffPdf(staff, branding: branding)
-              : _csvBytes(buildStaffCsv(staff));
+              ? await buildStaffPdf(l, staff, branding: branding)
+              : _csvBytes(buildStaffCsv(l, staff));
         case _ExportKind.akuntansi:
           final acct = await ref.read(accountingReportFetcherProvider)(
             widget.query,
           );
           bytes = isPdf
-              ? await buildAccountingPdf(acct, branding: branding)
-              : _csvBytes(buildAccountingCsv(acct));
+              ? await buildAccountingPdf(l, acct, branding: branding)
+              : _csvBytes(buildAccountingCsv(l, acct));
       }
 
       await shareExportBytes(
@@ -179,7 +201,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
         bytes: bytes,
         mime: _format.mime,
         subject:
-            '${_kind.title} · ${rangeLabelId(_range, from: _from, to: _to)}',
+            '${_kind.title(l)} · ${rangeLabel(l, _range, from: _from, to: _to)}',
       );
 
       if (mounted) Navigator.of(context).pop();
@@ -189,7 +211,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
       if (mounted) {
         setState(() {
           _busy = false;
-          _error = 'Gagal mengekspor. Coba lagi.';
+          _error = l.exportFailed;
         });
       }
     }
@@ -210,11 +232,11 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _kind.title.toUpperCase(),
+              _kind.title(context.l10n).toUpperCase(),
               style: SatType.caption(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s4),
-            _label(context, 'Jenis'),
+            _label(context, context.l10n.exportKindField),
             const SizedBox(height: Sp.s2),
             Wrap(
               spacing: 8,
@@ -226,16 +248,16 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
             if (_kind.needsSnapshot && widget.reportsSnapshot == null) ...[
               const SizedBox(height: Sp.s2),
               Text(
-                'Laporan belum siap — buka laporan dulu agar bisa diekspor.',
+                context.l10n.exportNoSnapshot,
                 style: SatType.bodyS(color: sc.textLo),
               ),
             ],
             const SizedBox(height: Sp.s4h),
-            _label(context, 'Periode'),
+            _label(context, context.l10n.expPeriod),
             const SizedBox(height: Sp.s2),
             _periodPill(context),
             const SizedBox(height: Sp.s4h),
-            _label(context, 'Format'),
+            _label(context, context.l10n.exportFormatField),
             const SizedBox(height: Sp.s2),
             Row(
               children: [
@@ -287,13 +309,13 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
                   ),
                   const SizedBox(width: Sp.s2h),
                   Text(
-                    'Menyiapkan…',
+                    context.l10n.exportPreparing,
                     style: SatType.labelM(color: sc.accentText),
                   ),
                 ],
               )
             : Text(
-                'Ekspor ${_format.label}',
+                context.l10n.exportAction(_format.label),
                 style: SatType.labelL(color: sc.accentInk),
               ),
       ),
@@ -314,7 +336,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
         borderRadius: SatR.a(999),
       ),
       child: Text(
-        rangeLabelId(_range, from: _from, to: _to),
+        rangeLabel(context.l10n, _range, from: _from, to: _to),
         style: SatType.labelM(color: sc.accentText),
       ),
     );
@@ -328,7 +350,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
     final disabled = k == _ExportKind.laporan && widget.reportsSnapshot == null;
     return _pill(
       context,
-      k.label,
+      k.label(context.l10n),
       on: _kind == k,
       enabled: !disabled,
       onTap: (_busy || disabled) ? null : () => setState(() => _kind = k),

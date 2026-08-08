@@ -4,6 +4,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 
@@ -54,8 +55,10 @@ class ReceiptPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = data;
+    // Same fallback the renderers use (`bill_struk_renderer`, `struk_renderer`)
+    // — a preview that invents its own sign-off is a preview of nothing.
     final thanks = d.thankYou.trim().isEmpty
-        ? 'Terima kasih'
+        ? context.l10n.strukThanks
         : d.thankYou.trim();
     return Container(
       width: 300,
@@ -88,7 +91,9 @@ class ReceiptPreview extends StatelessWidget {
             const SizedBox(height: 10),
           ],
           _center(
-            d.venueName.isEmpty ? 'NAMA VENUE' : d.venueName,
+            d.venueName.isEmpty
+                ? context.l10n.rcpVenueNamePlaceholder
+                : d.venueName,
             size: 15,
             weight: FontWeight.w700,
           ),
@@ -108,18 +113,22 @@ class ReceiptPreview extends StatelessWidget {
             _center(d.header.trim(), size: 11),
           ],
           _dashes(),
-          _center('TAGIHAN', size: 11.5, weight: FontWeight.w700),
+          _center(
+            context.l10n.strukBillTitle,
+            size: 11.5,
+            weight: FontWeight.w700,
+          ),
           const SizedBox(height: 2),
-          _line('Meja 4 · Contoh', 'No. 0042', muted: true),
+          _line(context.l10n.rcpSampleTable, 'No. 0042', muted: true),
           _dashes(),
           _line('2× Nasi Goreng', formatIDR(60000)),
           _line('1× Es Teh', formatIDR(8000)),
           _line('1× Ayam Bakar', formatIDR(45000)),
           _dashes(),
-          _line('Subtotal', formatIDR(113000)),
-          _line('PPN 11%', formatIDR(12430)),
+          _line(context.l10n.strukSubtotal, formatIDR(113000)),
+          _line('${context.l10n.strukTax} 11%', formatIDR(12430)),
           const SizedBox(height: 2),
-          _line('TOTAL', formatIDR(125430), strong: true),
+          _line(context.l10n.strukTotal, formatIDR(125430), strong: true),
           _dashes(),
           if (d.footer.trim().isNotEmpty) ...[
             _center(d.footer.trim(), size: 10.5, color: _inkLo),

@@ -82,7 +82,8 @@ void main() {
     expect(
       second.single.age,
       const Duration(minutes: 10),
-      reason: 'the batch re-froze at the new now — the card is now claiming a '
+      reason:
+          'the batch re-froze at the new now — the card is now claiming a '
           'time-to-pass the kitchen never took',
     );
   });

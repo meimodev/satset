@@ -12,20 +12,18 @@ import 'package:satset/data/services/firebase_admin_service.dart';
 void main() {
   final now = DateTime(2026, 8, 1, 12);
 
-  AdminProfile profile({
-    bool mustChange = true,
-    DateTime? resetAt,
-  }) => AdminProfile(
-    uid: 'u1',
-    status: AdminStatus.active,
-    role: AdminRole.admin,
-    name: 'Budi',
-    venueId: 'v1',
-    avatarColorHex: null,
-    fromCache: false,
-    mustChangePassword: mustChange,
-    passwordResetAt: resetAt,
-  );
+  AdminProfile profile({bool mustChange = true, DateTime? resetAt}) =>
+      AdminProfile(
+        uid: 'u1',
+        status: AdminStatus.active,
+        role: AdminRole.admin,
+        name: 'Budi',
+        venueId: 'v1',
+        avatarColorHex: null,
+        fromCache: false,
+        mustChangePassword: mustChange,
+        passwordResetAt: resetAt,
+      );
 
   test('an account with no reset pending is never expired', () {
     // The flag is what puts an account in this state at all; an old timestamp

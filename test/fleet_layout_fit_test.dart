@@ -6,6 +6,7 @@ import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/fleet/_fleet_widgets.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// The fleet console's two layout rules, pinned.
 ///
@@ -36,6 +37,11 @@ void main() {
       MediaQuery(
         data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
         child: MaterialApp(
+          // Pinned, exactly as the app pins it (ADR-0083). Without this the
+          // test resolves against the host's locale and reads English.
+          locale: const Locale('id'),
+          localizationsDelegates: AppL10n.localizationsDelegates,
+          supportedLocales: AppL10n.supportedLocales,
           theme: satTheme(SatTheme.neonTerang),
           home: Scaffold(
             body: Align(alignment: Alignment.topLeft, child: child),
@@ -95,7 +101,11 @@ void main() {
   });
 
   group('FleetTile', () {
-    Widget tile({bool big = true, String? meta, List<Widget> pills = const []}) {
+    Widget tile({
+      bool big = true,
+      String? meta,
+      List<Widget> pills = const [],
+    }) {
       // A name long enough to want more than two lines, which is the case the
       // `maxLines` cap exists for.
       return Builder(

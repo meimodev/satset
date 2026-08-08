@@ -2,6 +2,7 @@ import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 
 import 'package:satset/core/printing/bill_struk_data.dart';
 import 'package:satset/core/printing/printer_branding.dart';
+import 'package:satset/l10n/app_localizations.dart';
 
 /// The single, shared ESC/POS renderer for the MONEY document
 /// ([[Tagihan / Struk pembayaran]]). Turns a [BillStrukData] into printer bytes
@@ -12,6 +13,12 @@ import 'package:satset/core/printing/printer_branding.dart';
 /// Sibling to [StrukRenderer] (the no-money order slip) — kept apart on purpose
 /// so the deliberate "Struk carries no money" distinction survives. The title
 /// and payment block are driven purely by [BillStrukData.isTagihan].
+///
+/// Copy follows the **printing device's** language (ADR-0083), so [AppL10n]
+/// arrives as a parameter — a shelf route has neither a `BuildContext` nor a
+/// `Ref` and passes `satL10n`. Amounts do not follow it: [_money] renders
+/// `Rp14.500` in both languages (ADR-0084). Venue-authored branding and the
+/// snapshotted discount-preset names are never translated either.
 class BillStrukRenderer {
   static const _paper = PaperSize.mm58;
 
@@ -77,7 +84,7 @@ class BillStrukRenderer {
     return out;
   }
 
-  static Future<List<int>> render(BillStrukData d) async {
+  static Future<List<int>> render(AppL10n l, BillStrukData d) async {
     final profile = await CapabilityProfile.load();
     final g = Generator(_paper, profile);
     final out = <int>[];
@@ -136,7 +143,7 @@ class BillStrukRenderer {
     out.addAll(g.hr());
     out.addAll(
       g.text(
-        d.isTagihan ? 'TAGIHAN' : 'STRUK PEMBAYARAN',
+        d.isTagihan ? l.strukBillTitle : l.strukReceiptTitle,
         styles: const PosStyles(align: PosAlign.center, bold: true),
       ),
     );
@@ -144,12 +151,12 @@ class BillStrukRenderer {
     // ── meta: table / party / time / which receipt ──
     out.addAll(
       g.text(
-        'Meja ${d.tableLabel}  ·  ${d.pax} org  ·  ${_clock(d.at)}',
+        l.strukTableLine(d.tableLabel, d.pax, _clock(d.at)),
         styles: const PosStyles(bold: true),
       ),
     );
     if (d.guestName.trim().isNotEmpty) {
-      out.addAll(g.text('Tamu: ${d.guestName.trim()}'));
+      out.addAll(g.text(l.strukGuest(d.guestName.trim())));
     }
     if (d.docLabel.trim().isNotEmpty && d.kind != BillDocKind.wholeBill) {
       out.addAll(
@@ -160,7 +167,9 @@ class BillStrukRenderer {
 
     // ── body lines ──
     if (d.isEven) {
-      out.addAll(g.text('Patungan meja:', styles: const PosStyles(bold: true)));
+      out.addAll(
+        g.text(l.strukEvenHeading, styles: const PosStyles(bold: true)),
+      );
       for (final l in d.lines) {
         out.addAll(
           g.text(
@@ -193,27 +202,34 @@ class BillStrukRenderer {
 
     // ── totals ──
     if (d.isEven) {
-      out.addAll(_kv(g, 'Total tagihan', d.billTotal));
+      out.addAll(_kv(g, l.strukBillTotal, d.billTotal));
       out.addAll(
-        _kv(g, d.docLabel.isEmpty ? 'Bagian' : d.docLabel, d.total, bold: true),
+        _kv(
+          g,
+          d.docLabel.isEmpty ? l.strukPart : d.docLabel,
+          d.total,
+          bold: true,
+        ),
       );
     } else {
-      out.addAll(_kv(g, 'Subtotal', d.subtotal));
+      out.addAll(_kv(g, l.strukSubtotal, d.subtotal));
       // The Diskon row's position follows the actual pipeline (ADR-0038):
       // above Layanan when the discount reduced the base service and tax were
       // computed on, below Pajak when they were computed gross. Printing it in
       // a fixed slot would show a guest arithmetic that does not add up.
       List<int> discountRow() => _kv(
         g,
-        d.discountLabel.isEmpty ? 'Diskon' : d.discountLabel,
+        d.discountLabel.isEmpty ? l.strukDiscount : d.discountLabel,
         -d.discountAmount,
       );
       final hasDiscount = d.discountAmount > 0;
       if (hasDiscount && d.taxAfterDiscount) out.addAll(discountRow());
-      if (d.serviceAmount > 0) out.addAll(_kv(g, 'Layanan', d.serviceAmount));
-      if (d.taxAmount > 0) out.addAll(_kv(g, 'Pajak', d.taxAmount));
+      if (d.serviceAmount > 0) {
+        out.addAll(_kv(g, l.strukService, d.serviceAmount));
+      }
+      if (d.taxAmount > 0) out.addAll(_kv(g, l.strukTax, d.taxAmount));
       if (hasDiscount && !d.taxAfterDiscount) out.addAll(discountRow());
-      out.addAll(_kv(g, 'TOTAL', d.total, bold: true));
+      out.addAll(_kv(g, l.strukTotal, d.total, bold: true));
     }
 
     // ── payment block (only when paid ⇒ Struk pembayaran) ──
@@ -223,22 +239,24 @@ class BillStrukRenderer {
         out.addAll(
           _kv(
             g,
-            p.isRefund ? 'Refund ${p.methodLabel}' : 'Bayar ${p.methodLabel}',
+            p.isRefund
+                ? l.strukRefunded(p.methodLabel)
+                : l.strukPaid(p.methodLabel),
             p.amount,
           ),
         );
       }
       if (d.tenderedTotal != null && d.tenderedTotal! > 0) {
-        out.addAll(_kv(g, 'Tunai diterima', d.tenderedTotal!));
+        out.addAll(_kv(g, l.strukCashReceived, d.tenderedTotal!));
         final change = d.tenderedTotal! - d.paidNet;
-        if (change > 0) out.addAll(_kv(g, 'Kembali', change));
+        if (change > 0) out.addAll(_kv(g, l.strukChange, change));
       }
       if (d.outstanding > 0) {
-        out.addAll(_kv(g, 'SISA', d.outstanding, bold: true));
+        out.addAll(_kv(g, l.strukOutstanding, d.outstanding, bold: true));
       } else {
         out.addAll(
           g.text(
-            'LUNAS',
+            l.strukSettled,
             styles: const PosStyles(align: PosAlign.center, bold: true),
           ),
         );
@@ -248,7 +266,7 @@ class BillStrukRenderer {
     // ── footer ──
     out.addAll(g.hr());
     final thanks = d.thankYou.trim().isEmpty
-        ? 'Terima kasih'
+        ? l.strukThanks
         : d.thankYou.trim();
     out.addAll(g.text(thanks, styles: const PosStyles(align: PosAlign.center)));
     if (d.footer.trim().isNotEmpty) {

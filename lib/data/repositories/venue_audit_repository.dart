@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/repositories/audit_repository.dart'
@@ -187,7 +188,9 @@ class VenueAuditRepository extends StateNotifier<VenueAuditState> {
     } catch (e) {
       SatLog.repo('audit.venue.refresh fail $e');
       state = state.copyWith(loading: false, error: e);
-      _ref.read(errorBusServiceProvider).push('Gagal memuat audit');
+      _ref
+          .read(errorBusServiceProvider)
+          .push(_ref.read(l10nProvider).auditLoadFailed);
     }
   }
 
@@ -221,7 +224,9 @@ class VenueAuditRepository extends StateNotifier<VenueAuditState> {
     } catch (e) {
       SatLog.repo('audit.venue.loadMore fail $e');
       state = state.copyWith(loadingMore: false, error: e);
-      _ref.read(errorBusServiceProvider).push('Gagal memuat audit');
+      _ref
+          .read(errorBusServiceProvider)
+          .push(_ref.read(l10nProvider).auditLoadFailed);
     }
   }
 
