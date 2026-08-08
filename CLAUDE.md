@@ -55,7 +55,7 @@ Strict three-layer split: `ui/` ← `domain/` ← `data/`. Server lives separate
 - `ui/core/widgets/` — the shared vocabulary (ADR-0055): controls (`sat_button`, `sat_icon_button`, `sat_chip`, `sat_toggle`, `sat_stepper`, `sat_tabs`, `sat_field`, `sat_dropdown`, `sat_card`, `sat_empty`, `sat_sheet_header`, `pulse_dot`) plus chrome (`sat_app_bar`, `satset_top_bar`, `tablet_chrome`, `ready_banner`, `ready_toast`). **`CATALOG.md` in that folder lists every shared widget and token — read it before writing a new widget, and update it in the same commit when you add or remove one.** Enforced by `test/design_tokens_test.dart`, which is now all bans, no baselines: raw Material buttons, text inputs and dropdowns, literal type sizes, off-scale spacing, literal radii, hardcoded colours, roleless tap targets and duplicated widget class names all fail CI.
 - `ui/features/<area>/` — screens grouped by flow. Each feature owns `view_models/` and `views/` (or top-level screens + `widgets/`).
   - Order-taking: `tables/` → `menu/` (+ `modifier_sheet.dart`) → `review/` → `sent/` → `orders/`.
-  - Admin: `admin/` (`venue_hub_screen`, `alerts_screen`, `audit_screen`, `floor_screen`, `menu_admin_screen` + `_item_screen` + `_item_editor`, `reports_screen`, `settings_screen`, `staff_screen`, `kitchen_screen`); `_common.dart` for shared widgets; `kitchen/view_models/`.
+  - Admin: `admin/` (`venue_hub_screen`, `alerts_screen`, `audit_screen`, `kas_screen`, `floor_screen`, `menu_admin_screen` + `_item_screen` + `_item_editor`, `reports_screen`, `settings_screen`, `staff_screen`, `kitchen_screen`); `_common.dart` for shared widgets; `kitchen/view_models/`.
   - Onboarding: `onboarding/views/` (`mode_select_screen`, `forbidden_screen`). Pairing itself lives on `PinScreen` — mDNS discovery + auto-claim (ADR-0080).
   - Auth: `auth/views/pin_screen.dart`.
   - Other: `me/`, `void_flow/`, `shell/app_shell.dart`, `_stub/`.
@@ -67,15 +67,16 @@ Strict three-layer split: `ui/` ← `domain/` ← `data/`. Server lives separate
 
 **`lib/data/`** — IO + caching, exposes Riverpod providers consumed by UI.
 - `models/` — wire DTOs (freezed + json_serializable): `auth_dto`, `pair_dto`, `menu_dto`, `order_dto`, `ticket_dto`, `table_dto`, `ws_event_dto`.
-- `repositories/` — `auth_repository`, `tables_repository`, `tickets_repository`, `menu_repository`, `zones_repository`, `staff_repository`, `roles_repository`, `audit_repository` (own shift), `venue_audit_repository` (venue-wide, paged). Each is a `StateNotifier` that hits the embedded server over HTTP/WS and re-emits domain models.
+- `repositories/` — `auth_repository`, `tables_repository`, `tickets_repository`, `menu_repository`, `zones_repository`, `staff_repository`, `roles_repository`, `audit_repository` (own shift), `venue_audit_repository` (venue-wide, paged), `cash_repository` (petty cash: WS-fed ledger + server-derived balance). Each is a `StateNotifier` that hits the embedded server over HTTP/WS and re-emits domain models.
 - `services/` — `api_client` (HTTP + `apiConfigProvider`), `ws_client` (WebSocket fan-out), `mdns_browser_service`, `prefs_service`, `secure_storage_service`, `error_bus_service`.
 
 **`lib/server/`** — embedded shelf server (runs in-process in Server mode).
 - `server.dart` — bootstrap, mounts router, runs TLS listener.
-- `routes/` — `auth_routes`, `tables_routes`, `tickets_routes`, `menu_routes`, `reference_routes`, `health_routes`.
+- `routes/` — `auth_routes`, `tables_routes`, `tickets_routes`, `menu_routes`, `reference_routes`, `health_routes`, `cash_routes`.
 - `db/` — Drift: `database.dart`, `tables.dart` (schema), `seed.dart` + `seed_data.dart` (DB seeded on first boot — no more `DummyData`), `seed_history.dart` + `seed_history_mix.dart` (the fabricated month), `seed_inventory_data.dart` (bahan + resep).
 - `seed_job.dart` — job marker + the venue-wide "prompt answered" flag (ADR-0073).
 - `audit_log.dart` — **the** audit writer (`writeAudit`) + wire shape (`auditJson`). Every route that audits an act goes through it; hand-rolling the insert is how a new column reaches three call sites out of four. A row stores an `AuditKind` + params, never a sentence (ADR-0085) — the words are composed at read time by `auditText` in `lib/core/localization/audit_text.dart`.
+- `cash.dart` — **the** petty cash writer (§Kas kecil). Every write to `cash_entries` goes through it, for the same reason `writeAudit` exists. Holds the two invariants: the balance is always `SUM(delta)` (nothing stores it) and the box cannot go negative (ADR-0088, with a reversal and a count exempt). `cashReportSection` is the Kas report block — a count's delta is booked as variance, never as cash moving (ADR-0089).
 - `auth.dart` (PIN + JWT), `tls.dart` (self-signed cert), `mdns.dart` (advertise), `ws_hub.dart` (WebSocket broadcast). Pairing is a single unauthenticated `POST /pair/auto-claim` in `server.dart` that upserts the `Devices` row; there is no token table (ADR-0080).
 
 **`lib/core/log/`** — `sat_log.dart` (logger), `sat_nav_observer.dart` (router observer).
@@ -91,6 +92,7 @@ GoRouter with refresh-listener pattern (auth / prefs / apiConfig changes trigger
 - `ShellRoute` → `AppShell` wraps tab routes: `/tables`, `/orders`, `/kitchen`, `/venue`, `/floor`, `/menuadm`, `/alerts`, `/reports`, `/settings`, `/staff`, `/me`.
   - `/alerts` = alert config (thresholds + sounds + this-device mute), reached from the Venue hub. Gated `editSettings`.
   - `/audit` = venue-wide integrity log (ADR-0072), reached from the Venue hub. Gated `viewReports`; admin rows need `manageStaff` on top, enforced server-side. **Tablet only** — the phone route renders an explanation. A row with a non-null `paymentId` shows a camera glyph and opens the proof photo on tap (ADR-0086) — this is the only place proofs are browsed across a range; Reports has no payments section.
+  - `/kas` = the petty cash box (§Kas kecil), reached from the Venue hub. **Two capabilities open it** — `manageCash` (post an expense) or `editSettings` (fund it, count it) — which is why `_capabilityFor` returns a *list* and any one of them is enough; which of the three actions each may take is enforced per-route, server-side. **Tablet only**, like `/audit`. Nothing here is revenue (ADR-0089) — the box is not the cash drawer, and `openDrawer`/`closeShift` stay reserved for the drawer.
 - **Outside the shell** (root-navigator pushes, full-page transitions):
   - `/table/:id` (+ `/menu`, `/review`, `/sent` subroutes) — order-taking flow.
   - `/menuadm/:id` — menu item editor.
@@ -99,9 +101,9 @@ GoRouter with refresh-listener pattern (auth / prefs / apiConfig changes trigger
 1. Hard pair gate: `apiConfigProvider == null` → `/pin` (no data screen renders against an empty repo cache).
 2. Not authenticated → `/pin`.
 3. Authenticated on `/pin` → `/venue` (server mode) or `/tables` (client mode), per `prefs.appMode()`.
-4. Authenticated elsewhere → check `_capabilityFor(loc)` against `auth.has(cap)`; fail-closed → `/forbidden`.
+4. Authenticated elsewhere → `_capabilityFor(loc)` returns the capabilities that open it; **any one** is enough (`needed.any(auth.has)`); fail-closed → `/forbidden`.
 
-Capabilities (`domain/models/capability.dart`): `viewKds`, `takeOrder`, `manageStaff`. Route → capability mapping is in `_capabilityFor` at the top of `app_router.dart`.
+Capabilities (`domain/models/capability.dart`): `viewKds`, `takeOrder`, `manageStaff`, `manageCash`, … Route → capability mapping is in `_capabilityFor` at the top of `app_router.dart`.
 
 ### Shell
 
@@ -119,6 +121,8 @@ Capabilities (`domain/models/capability.dart`): `viewKds`, `takeOrder`, `manageS
 - The first-run seed prompt is a **blocking, non-dismissible dialog** on the Venue Hub, answered once and recorded server-side. Admin → Sistem → Operasional holds the permanent way back in.
 - `apiConfigProvider == null` blocks every non-onboarding route — pair before exercising data screens.
 - **Never rename an `AuditKind`** (`lib/domain/models/audit_kind.dart`). The name is persisted in `audit_entries.kind` and is the join to the ARB template; a rename silently drops every existing row back to its frozen Indonesian `title`. Adding one means an ARB entry in both locales — the `switch` in `auditText` is exhaustive, so the analyzer will say so.
+- **`CashEntryKind` / `CashCategory` names are persisted** in `cash_entries.kind` and `.category`, and a category name also rides the Kas report's `byCategory` map. Renaming an enum value orphans every existing row — the resolvers fall through to the raw key, so it fails silently as a code where a word should be. Adding one needs an ARB entry in both locales.
+- **A new `Capability` reaches existing venues only because the admin role is reconciled on boot.** `_ensureAdminRole` (`lib/server/db/seed.dart`) rewrites `role-admin` to `Capability.values` every Server boot, because that role *is* all capabilities by definition and the Staf sheet shows it read-only — a stored snapshot is the one set nobody can repair. Every other role stores its own set, so a capability a non-admin role needs must be added to `seed_data.dart` **and** granted on already-seeded venues through the role sheet; there is no backfill but the one-off `_ensureWaiterCanVoid` pattern.
 - **Release builds run R8** (`isMinifyEnabled` + `isShrinkResources`). Dart is AOT and untouched, but a new plugin that resolves Java/Kotlin classes reflectively needs a keep rule in `android/app/proguard-rules.pro` or it fails only in release. `flutter build apk --release` is the check; debug will not catch it. Crashlytics' Gradle plugin uploads the mapping file, so minified traces stay symbolicated.
 
 ## graphify

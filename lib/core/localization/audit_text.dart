@@ -65,6 +65,14 @@ String auditText(AppL10n l, AuditEntry e) {
     AuditKind.billClosed => l.auditBillClosed(s('table')),
     AuditKind.billWrittenOff => l.auditBillWrittenOff(s('amount'), s('table')),
 
+    AuditKind.cashToppedUp => l.auditCashToppedUp(s('amount')),
+    AuditKind.cashSpent => l.auditCashSpent(
+      s('amount'),
+      cashCategoryKeyLabel(l, s('category')),
+    ),
+    AuditKind.cashCounted => l.auditCashCounted(s('counted'), s('variance')),
+    AuditKind.cashReversed => l.auditCashReversed(s('amount')),
+
     AuditKind.menuKilled => l.auditMenuKilled(s('name')),
     AuditKind.menuRestored => l.auditMenuRestored(s('name')),
 

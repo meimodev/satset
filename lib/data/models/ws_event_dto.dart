@@ -42,6 +42,11 @@ class WsEventTypes {
   static const staffUpdated = 'staff.updated';
   static const staffDeleted = 'staff.deleted';
   static const auditCreated = 'audit.created';
+
+  /// A petty cash movement. Payload `{entry, balance}` — the new authoritative
+  /// balance rides along because the balance is derived (`SUM(delta)`) and a
+  /// client holding one ledger page cannot compute it. See §Kas kecil.
+  static const cashEntryCreated = 'cash.created';
   static const rolesUpdated = 'roles.updated';
 
   /// Sample-data seed job progress. Payload `{daysDone, daysTotal}` while

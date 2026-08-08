@@ -14,6 +14,14 @@ enum Capability {
   settleBill(CapabilityGroup.money),
   refund(CapabilityGroup.money),
   closeShift(CapabilityGroup.money),
+
+  /// Post an expense against the petty cash box. Funding it (top-up) and
+  /// counting it (opname) sit behind `editSettings` instead — a supervisor
+  /// spends from the box, the owner fills and verifies it.
+  ///
+  /// Deliberately **not** `openDrawer`, which names the sales drawer and stays
+  /// reserved for it. See §Kas kecil in CONTEXT.md.
+  manageCash(CapabilityGroup.money),
   editMenu(CapabilityGroup.inventory),
   markSoldOut(CapabilityGroup.inventory),
   adjustStock(CapabilityGroup.inventory),

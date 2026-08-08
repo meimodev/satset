@@ -20849,6 +20849,749 @@ class StockMovementsCompanion extends UpdateCompanion<StockMovementRow> {
   }
 }
 
+class $CashEntriesTable extends CashEntries
+    with TableInfo<$CashEntriesTable, CashEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CashEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deltaMeta = const VerificationMeta('delta');
+  @override
+  late final GeneratedColumn<int> delta = GeneratedColumn<int>(
+    'delta',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reversesIdMeta = const VerificationMeta(
+    'reversesId',
+  );
+  @override
+  late final GeneratedColumn<String> reversesId = GeneratedColumn<String>(
+    'reverses_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reversedByIdMeta = const VerificationMeta(
+    'reversedById',
+  );
+  @override
+  late final GeneratedColumn<String> reversedById = GeneratedColumn<String>(
+    'reversed_by_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _countedAmountMeta = const VerificationMeta(
+    'countedAmount',
+  );
+  @override
+  late final GeneratedColumn<int> countedAmount = GeneratedColumn<int>(
+    'counted_amount',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _photoMeta = const VerificationMeta('photo');
+  @override
+  late final GeneratedColumn<Uint8List> photo = GeneratedColumn<Uint8List>(
+    'photo',
+    aliasedName,
+    true,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorUserIdMeta = const VerificationMeta(
+    'actorUserId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUserId = GeneratedColumn<String>(
+    'actor_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorNameMeta = const VerificationMeta(
+    'actorName',
+  );
+  @override
+  late final GeneratedColumn<String> actorName = GeneratedColumn<String>(
+    'actor_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _atMeta = const VerificationMeta('at');
+  @override
+  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+    'at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    kind,
+    delta,
+    category,
+    note,
+    reversesId,
+    reversedById,
+    countedAmount,
+    photo,
+    actorUserId,
+    actorName,
+    at,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cash_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CashEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('delta')) {
+      context.handle(
+        _deltaMeta,
+        delta.isAcceptableOrUnknown(data['delta']!, _deltaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deltaMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('reverses_id')) {
+      context.handle(
+        _reversesIdMeta,
+        reversesId.isAcceptableOrUnknown(data['reverses_id']!, _reversesIdMeta),
+      );
+    }
+    if (data.containsKey('reversed_by_id')) {
+      context.handle(
+        _reversedByIdMeta,
+        reversedById.isAcceptableOrUnknown(
+          data['reversed_by_id']!,
+          _reversedByIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('counted_amount')) {
+      context.handle(
+        _countedAmountMeta,
+        countedAmount.isAcceptableOrUnknown(
+          data['counted_amount']!,
+          _countedAmountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('photo')) {
+      context.handle(
+        _photoMeta,
+        photo.isAcceptableOrUnknown(data['photo']!, _photoMeta),
+      );
+    }
+    if (data.containsKey('actor_user_id')) {
+      context.handle(
+        _actorUserIdMeta,
+        actorUserId.isAcceptableOrUnknown(
+          data['actor_user_id']!,
+          _actorUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actor_name')) {
+      context.handle(
+        _actorNameMeta,
+        actorName.isAcceptableOrUnknown(data['actor_name']!, _actorNameMeta),
+      );
+    }
+    if (data.containsKey('at')) {
+      context.handle(_atMeta, at.isAcceptableOrUnknown(data['at']!, _atMeta));
+    } else if (isInserting) {
+      context.missing(_atMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CashEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CashEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      delta: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}delta'],
+      )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      reversesId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reverses_id'],
+      ),
+      reversedById: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reversed_by_id'],
+      ),
+      countedAmount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}counted_amount'],
+      ),
+      photo: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}photo'],
+      ),
+      actorUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_user_id'],
+      ),
+      actorName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_name'],
+      ),
+      at: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}at'],
+      )!,
+    );
+  }
+
+  @override
+  $CashEntriesTable createAlias(String alias) {
+    return $CashEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class CashEntry extends DataClass implements Insertable<CashEntry> {
+  final String id;
+
+  /// `topUp | expense | count | reversal`.
+  final String kind;
+
+  /// Signed **plain rupiah** — positive into the box, negative out. Not micro-
+  /// scaled like `costMicro`: the box is counted in notes.
+  final int delta;
+
+  /// `ingredients | operations | transport | dailyWage | other`. Set on an
+  /// expense, null on every other kind.
+  final String? category;
+
+  /// Optional on top-up / expense / count; **required** on a reversal, enforced
+  /// in the route — a reversal with no reason is a hole in the ledger.
+  final String? note;
+
+  /// The row this one undoes, on a reversal only.
+  final String? reversesId;
+
+  /// The reversal that undid this row. Non-null is the whole already-reversed
+  /// test, which is what caps a row at one reversal.
+  final String? reversedById;
+
+  /// Absolute cash the counter reported, on a `count` only. Kept beside [delta]
+  /// because the variance alone cannot be read back into what was in the box.
+  final int? countedAmount;
+
+  /// Optional photo of whatever receipt existed (JPEG blob), expense only.
+  /// Read **only** by the photo route — never select it in the ledger or report
+  /// path; use `selectOnly` excluding it, the same discipline `Payments.photo`
+  /// keeps.
+  final Uint8List? photo;
+  final String? actorUserId;
+
+  /// Attribution frozen at write time so a later rename or deletion cannot
+  /// rewrite the trail.
+  final String? actorName;
+  final DateTime at;
+  const CashEntry({
+    required this.id,
+    required this.kind,
+    required this.delta,
+    this.category,
+    this.note,
+    this.reversesId,
+    this.reversedById,
+    this.countedAmount,
+    this.photo,
+    this.actorUserId,
+    this.actorName,
+    required this.at,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['kind'] = Variable<String>(kind);
+    map['delta'] = Variable<int>(delta);
+    if (!nullToAbsent || category != null) {
+      map['category'] = Variable<String>(category);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    if (!nullToAbsent || reversesId != null) {
+      map['reverses_id'] = Variable<String>(reversesId);
+    }
+    if (!nullToAbsent || reversedById != null) {
+      map['reversed_by_id'] = Variable<String>(reversedById);
+    }
+    if (!nullToAbsent || countedAmount != null) {
+      map['counted_amount'] = Variable<int>(countedAmount);
+    }
+    if (!nullToAbsent || photo != null) {
+      map['photo'] = Variable<Uint8List>(photo);
+    }
+    if (!nullToAbsent || actorUserId != null) {
+      map['actor_user_id'] = Variable<String>(actorUserId);
+    }
+    if (!nullToAbsent || actorName != null) {
+      map['actor_name'] = Variable<String>(actorName);
+    }
+    map['at'] = Variable<DateTime>(at);
+    return map;
+  }
+
+  CashEntriesCompanion toCompanion(bool nullToAbsent) {
+    return CashEntriesCompanion(
+      id: Value(id),
+      kind: Value(kind),
+      delta: Value(delta),
+      category: category == null && nullToAbsent
+          ? const Value.absent()
+          : Value(category),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      reversesId: reversesId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reversesId),
+      reversedById: reversedById == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reversedById),
+      countedAmount: countedAmount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(countedAmount),
+      photo: photo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(photo),
+      actorUserId: actorUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actorUserId),
+      actorName: actorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actorName),
+      at: Value(at),
+    );
+  }
+
+  factory CashEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CashEntry(
+      id: serializer.fromJson<String>(json['id']),
+      kind: serializer.fromJson<String>(json['kind']),
+      delta: serializer.fromJson<int>(json['delta']),
+      category: serializer.fromJson<String?>(json['category']),
+      note: serializer.fromJson<String?>(json['note']),
+      reversesId: serializer.fromJson<String?>(json['reversesId']),
+      reversedById: serializer.fromJson<String?>(json['reversedById']),
+      countedAmount: serializer.fromJson<int?>(json['countedAmount']),
+      photo: serializer.fromJson<Uint8List?>(json['photo']),
+      actorUserId: serializer.fromJson<String?>(json['actorUserId']),
+      actorName: serializer.fromJson<String?>(json['actorName']),
+      at: serializer.fromJson<DateTime>(json['at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'kind': serializer.toJson<String>(kind),
+      'delta': serializer.toJson<int>(delta),
+      'category': serializer.toJson<String?>(category),
+      'note': serializer.toJson<String?>(note),
+      'reversesId': serializer.toJson<String?>(reversesId),
+      'reversedById': serializer.toJson<String?>(reversedById),
+      'countedAmount': serializer.toJson<int?>(countedAmount),
+      'photo': serializer.toJson<Uint8List?>(photo),
+      'actorUserId': serializer.toJson<String?>(actorUserId),
+      'actorName': serializer.toJson<String?>(actorName),
+      'at': serializer.toJson<DateTime>(at),
+    };
+  }
+
+  CashEntry copyWith({
+    String? id,
+    String? kind,
+    int? delta,
+    Value<String?> category = const Value.absent(),
+    Value<String?> note = const Value.absent(),
+    Value<String?> reversesId = const Value.absent(),
+    Value<String?> reversedById = const Value.absent(),
+    Value<int?> countedAmount = const Value.absent(),
+    Value<Uint8List?> photo = const Value.absent(),
+    Value<String?> actorUserId = const Value.absent(),
+    Value<String?> actorName = const Value.absent(),
+    DateTime? at,
+  }) => CashEntry(
+    id: id ?? this.id,
+    kind: kind ?? this.kind,
+    delta: delta ?? this.delta,
+    category: category.present ? category.value : this.category,
+    note: note.present ? note.value : this.note,
+    reversesId: reversesId.present ? reversesId.value : this.reversesId,
+    reversedById: reversedById.present ? reversedById.value : this.reversedById,
+    countedAmount: countedAmount.present
+        ? countedAmount.value
+        : this.countedAmount,
+    photo: photo.present ? photo.value : this.photo,
+    actorUserId: actorUserId.present ? actorUserId.value : this.actorUserId,
+    actorName: actorName.present ? actorName.value : this.actorName,
+    at: at ?? this.at,
+  );
+  CashEntry copyWithCompanion(CashEntriesCompanion data) {
+    return CashEntry(
+      id: data.id.present ? data.id.value : this.id,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      delta: data.delta.present ? data.delta.value : this.delta,
+      category: data.category.present ? data.category.value : this.category,
+      note: data.note.present ? data.note.value : this.note,
+      reversesId: data.reversesId.present
+          ? data.reversesId.value
+          : this.reversesId,
+      reversedById: data.reversedById.present
+          ? data.reversedById.value
+          : this.reversedById,
+      countedAmount: data.countedAmount.present
+          ? data.countedAmount.value
+          : this.countedAmount,
+      photo: data.photo.present ? data.photo.value : this.photo,
+      actorUserId: data.actorUserId.present
+          ? data.actorUserId.value
+          : this.actorUserId,
+      actorName: data.actorName.present ? data.actorName.value : this.actorName,
+      at: data.at.present ? data.at.value : this.at,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CashEntry(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('delta: $delta, ')
+          ..write('category: $category, ')
+          ..write('note: $note, ')
+          ..write('reversesId: $reversesId, ')
+          ..write('reversedById: $reversedById, ')
+          ..write('countedAmount: $countedAmount, ')
+          ..write('photo: $photo, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('actorName: $actorName, ')
+          ..write('at: $at')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    kind,
+    delta,
+    category,
+    note,
+    reversesId,
+    reversedById,
+    countedAmount,
+    $driftBlobEquality.hash(photo),
+    actorUserId,
+    actorName,
+    at,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CashEntry &&
+          other.id == this.id &&
+          other.kind == this.kind &&
+          other.delta == this.delta &&
+          other.category == this.category &&
+          other.note == this.note &&
+          other.reversesId == this.reversesId &&
+          other.reversedById == this.reversedById &&
+          other.countedAmount == this.countedAmount &&
+          $driftBlobEquality.equals(other.photo, this.photo) &&
+          other.actorUserId == this.actorUserId &&
+          other.actorName == this.actorName &&
+          other.at == this.at);
+}
+
+class CashEntriesCompanion extends UpdateCompanion<CashEntry> {
+  final Value<String> id;
+  final Value<String> kind;
+  final Value<int> delta;
+  final Value<String?> category;
+  final Value<String?> note;
+  final Value<String?> reversesId;
+  final Value<String?> reversedById;
+  final Value<int?> countedAmount;
+  final Value<Uint8List?> photo;
+  final Value<String?> actorUserId;
+  final Value<String?> actorName;
+  final Value<DateTime> at;
+  final Value<int> rowid;
+  const CashEntriesCompanion({
+    this.id = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.delta = const Value.absent(),
+    this.category = const Value.absent(),
+    this.note = const Value.absent(),
+    this.reversesId = const Value.absent(),
+    this.reversedById = const Value.absent(),
+    this.countedAmount = const Value.absent(),
+    this.photo = const Value.absent(),
+    this.actorUserId = const Value.absent(),
+    this.actorName = const Value.absent(),
+    this.at = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CashEntriesCompanion.insert({
+    required String id,
+    required String kind,
+    required int delta,
+    this.category = const Value.absent(),
+    this.note = const Value.absent(),
+    this.reversesId = const Value.absent(),
+    this.reversedById = const Value.absent(),
+    this.countedAmount = const Value.absent(),
+    this.photo = const Value.absent(),
+    this.actorUserId = const Value.absent(),
+    this.actorName = const Value.absent(),
+    required DateTime at,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       kind = Value(kind),
+       delta = Value(delta),
+       at = Value(at);
+  static Insertable<CashEntry> custom({
+    Expression<String>? id,
+    Expression<String>? kind,
+    Expression<int>? delta,
+    Expression<String>? category,
+    Expression<String>? note,
+    Expression<String>? reversesId,
+    Expression<String>? reversedById,
+    Expression<int>? countedAmount,
+    Expression<Uint8List>? photo,
+    Expression<String>? actorUserId,
+    Expression<String>? actorName,
+    Expression<DateTime>? at,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (kind != null) 'kind': kind,
+      if (delta != null) 'delta': delta,
+      if (category != null) 'category': category,
+      if (note != null) 'note': note,
+      if (reversesId != null) 'reverses_id': reversesId,
+      if (reversedById != null) 'reversed_by_id': reversedById,
+      if (countedAmount != null) 'counted_amount': countedAmount,
+      if (photo != null) 'photo': photo,
+      if (actorUserId != null) 'actor_user_id': actorUserId,
+      if (actorName != null) 'actor_name': actorName,
+      if (at != null) 'at': at,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CashEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? kind,
+    Value<int>? delta,
+    Value<String?>? category,
+    Value<String?>? note,
+    Value<String?>? reversesId,
+    Value<String?>? reversedById,
+    Value<int?>? countedAmount,
+    Value<Uint8List?>? photo,
+    Value<String?>? actorUserId,
+    Value<String?>? actorName,
+    Value<DateTime>? at,
+    Value<int>? rowid,
+  }) {
+    return CashEntriesCompanion(
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      delta: delta ?? this.delta,
+      category: category ?? this.category,
+      note: note ?? this.note,
+      reversesId: reversesId ?? this.reversesId,
+      reversedById: reversedById ?? this.reversedById,
+      countedAmount: countedAmount ?? this.countedAmount,
+      photo: photo ?? this.photo,
+      actorUserId: actorUserId ?? this.actorUserId,
+      actorName: actorName ?? this.actorName,
+      at: at ?? this.at,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (delta.present) {
+      map['delta'] = Variable<int>(delta.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (reversesId.present) {
+      map['reverses_id'] = Variable<String>(reversesId.value);
+    }
+    if (reversedById.present) {
+      map['reversed_by_id'] = Variable<String>(reversedById.value);
+    }
+    if (countedAmount.present) {
+      map['counted_amount'] = Variable<int>(countedAmount.value);
+    }
+    if (photo.present) {
+      map['photo'] = Variable<Uint8List>(photo.value);
+    }
+    if (actorUserId.present) {
+      map['actor_user_id'] = Variable<String>(actorUserId.value);
+    }
+    if (actorName.present) {
+      map['actor_name'] = Variable<String>(actorName.value);
+    }
+    if (at.present) {
+      map['at'] = Variable<DateTime>(at.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CashEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('delta: $delta, ')
+          ..write('category: $category, ')
+          ..write('note: $note, ')
+          ..write('reversesId: $reversesId, ')
+          ..write('reversedById: $reversedById, ')
+          ..write('countedAmount: $countedAmount, ')
+          ..write('photo: $photo, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('actorName: $actorName, ')
+          ..write('at: $at, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $DemoStatesTable extends DemoStates
     with TableInfo<$DemoStatesTable, DemoState> {
   @override
@@ -21268,6 +22011,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $IngredientsTable ingredients = $IngredientsTable(this);
   late final $RecipeLinesTable recipeLines = $RecipeLinesTable(this);
   late final $StockMovementsTable stockMovements = $StockMovementsTable(this);
+  late final $CashEntriesTable cashEntries = $CashEntriesTable(this);
   late final $DemoStatesTable demoStates = $DemoStatesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -21305,6 +22049,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ingredients,
     recipeLines,
     stockMovements,
+    cashEntries,
     demoStates,
   ];
 }
@@ -31300,6 +32045,344 @@ typedef $$StockMovementsTableProcessedTableManager =
       StockMovementRow,
       PrefetchHooks Function()
     >;
+typedef $$CashEntriesTableCreateCompanionBuilder =
+    CashEntriesCompanion Function({
+      required String id,
+      required String kind,
+      required int delta,
+      Value<String?> category,
+      Value<String?> note,
+      Value<String?> reversesId,
+      Value<String?> reversedById,
+      Value<int?> countedAmount,
+      Value<Uint8List?> photo,
+      Value<String?> actorUserId,
+      Value<String?> actorName,
+      required DateTime at,
+      Value<int> rowid,
+    });
+typedef $$CashEntriesTableUpdateCompanionBuilder =
+    CashEntriesCompanion Function({
+      Value<String> id,
+      Value<String> kind,
+      Value<int> delta,
+      Value<String?> category,
+      Value<String?> note,
+      Value<String?> reversesId,
+      Value<String?> reversedById,
+      Value<int?> countedAmount,
+      Value<Uint8List?> photo,
+      Value<String?> actorUserId,
+      Value<String?> actorName,
+      Value<DateTime> at,
+      Value<int> rowid,
+    });
+
+class $$CashEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $CashEntriesTable> {
+  $$CashEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get delta => $composableBuilder(
+    column: $table.delta,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reversesId => $composableBuilder(
+    column: $table.reversesId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reversedById => $composableBuilder(
+    column: $table.reversedById,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get countedAmount => $composableBuilder(
+    column: $table.countedAmount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get photo => $composableBuilder(
+    column: $table.photo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actorUserId => $composableBuilder(
+    column: $table.actorUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actorName => $composableBuilder(
+    column: $table.actorName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CashEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $CashEntriesTable> {
+  $$CashEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get delta => $composableBuilder(
+    column: $table.delta,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reversesId => $composableBuilder(
+    column: $table.reversesId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reversedById => $composableBuilder(
+    column: $table.reversedById,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get countedAmount => $composableBuilder(
+    column: $table.countedAmount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get photo => $composableBuilder(
+    column: $table.photo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actorUserId => $composableBuilder(
+    column: $table.actorUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actorName => $composableBuilder(
+    column: $table.actorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CashEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CashEntriesTable> {
+  $$CashEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get delta =>
+      $composableBuilder(column: $table.delta, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<String> get reversesId => $composableBuilder(
+    column: $table.reversesId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get reversedById => $composableBuilder(
+    column: $table.reversedById,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get countedAmount => $composableBuilder(
+    column: $table.countedAmount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<Uint8List> get photo =>
+      $composableBuilder(column: $table.photo, builder: (column) => column);
+
+  GeneratedColumn<String> get actorUserId => $composableBuilder(
+    column: $table.actorUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actorName =>
+      $composableBuilder(column: $table.actorName, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get at =>
+      $composableBuilder(column: $table.at, builder: (column) => column);
+}
+
+class $$CashEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CashEntriesTable,
+          CashEntry,
+          $$CashEntriesTableFilterComposer,
+          $$CashEntriesTableOrderingComposer,
+          $$CashEntriesTableAnnotationComposer,
+          $$CashEntriesTableCreateCompanionBuilder,
+          $$CashEntriesTableUpdateCompanionBuilder,
+          (
+            CashEntry,
+            BaseReferences<_$AppDatabase, $CashEntriesTable, CashEntry>,
+          ),
+          CashEntry,
+          PrefetchHooks Function()
+        > {
+  $$CashEntriesTableTableManager(_$AppDatabase db, $CashEntriesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CashEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CashEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CashEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<int> delta = const Value.absent(),
+                Value<String?> category = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<String?> reversesId = const Value.absent(),
+                Value<String?> reversedById = const Value.absent(),
+                Value<int?> countedAmount = const Value.absent(),
+                Value<Uint8List?> photo = const Value.absent(),
+                Value<String?> actorUserId = const Value.absent(),
+                Value<String?> actorName = const Value.absent(),
+                Value<DateTime> at = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CashEntriesCompanion(
+                id: id,
+                kind: kind,
+                delta: delta,
+                category: category,
+                note: note,
+                reversesId: reversesId,
+                reversedById: reversedById,
+                countedAmount: countedAmount,
+                photo: photo,
+                actorUserId: actorUserId,
+                actorName: actorName,
+                at: at,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String kind,
+                required int delta,
+                Value<String?> category = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<String?> reversesId = const Value.absent(),
+                Value<String?> reversedById = const Value.absent(),
+                Value<int?> countedAmount = const Value.absent(),
+                Value<Uint8List?> photo = const Value.absent(),
+                Value<String?> actorUserId = const Value.absent(),
+                Value<String?> actorName = const Value.absent(),
+                required DateTime at,
+                Value<int> rowid = const Value.absent(),
+              }) => CashEntriesCompanion.insert(
+                id: id,
+                kind: kind,
+                delta: delta,
+                category: category,
+                note: note,
+                reversesId: reversesId,
+                reversedById: reversedById,
+                countedAmount: countedAmount,
+                photo: photo,
+                actorUserId: actorUserId,
+                actorName: actorName,
+                at: at,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CashEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CashEntriesTable,
+      CashEntry,
+      $$CashEntriesTableFilterComposer,
+      $$CashEntriesTableOrderingComposer,
+      $$CashEntriesTableAnnotationComposer,
+      $$CashEntriesTableCreateCompanionBuilder,
+      $$CashEntriesTableUpdateCompanionBuilder,
+      (CashEntry, BaseReferences<_$AppDatabase, $CashEntriesTable, CashEntry>),
+      CashEntry,
+      PrefetchHooks Function()
+    >;
 typedef $$DemoStatesTableCreateCompanionBuilder =
     DemoStatesCompanion Function({
       Value<String> id,
@@ -31565,6 +32648,8 @@ class $AppDatabaseManager {
       $$RecipeLinesTableTableManager(_db, _db.recipeLines);
   $$StockMovementsTableTableManager get stockMovements =>
       $$StockMovementsTableTableManager(_db, _db.stockMovements);
+  $$CashEntriesTableTableManager get cashEntries =>
+      $$CashEntriesTableTableManager(_db, _db.cashEntries);
   $$DemoStatesTableTableManager get demoStates =>
       $$DemoStatesTableTableManager(_db, _db.demoStates);
 }

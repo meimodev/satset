@@ -3,6 +3,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/ui/features/admin/widgets/seed_data_dialog.dart';
+import 'package:satset/data/repositories/cash_repository.dart';
 import 'package:satset/data/repositories/generic_seed.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/staff_repository.dart';
@@ -13,6 +14,7 @@ import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
@@ -147,6 +149,17 @@ List<_HubSection> _sectionsFor(AppL10n l10n) => <_HubSection>[
     route: '/reports',
     tint: (sc) => sc.urgent,
     badgeBuilder: (ref) => ref.read(l10nProvider).venueHubShiftReport,
+  ),
+  _HubSection(
+    label: l10n.kasTitle,
+    sub: l10n.kasHubSubtitle,
+    icon: Icons.savings_outlined,
+    route: '/kas',
+    // Info, not success: green on a money tile reads as takings, and the box is
+    // deliberately not revenue (ADR-0089).
+    tint: (sc) => sc.info,
+    badgeBuilder: (ref) => formatIDR(ref.watch(cashProvider).balance),
+    phoneBadge: l10n.kasPhoneOnly,
   ),
   _HubSection(
     label: l10n.venueHubSectionAudit,

@@ -22,6 +22,7 @@ String auditTypeLabel(AppL10n l10n, AuditType t) => switch (t) {
   AuditType.discountRemoved => l10n.auditTypeDiscountRemoved,
   AuditType.billReopened => l10n.auditTypeBillReopened,
   AuditType.billClosed => l10n.auditTypeBillClosed,
+  AuditType.cashMovement => l10n.auditTypeCashMovement,
   AuditType.menuKilled => l10n.auditTypeMenuKilled,
   AuditType.menuRestored => l10n.auditTypeMenuRestored,
   AuditType.staffCreated => l10n.auditTypeStaffCreated,

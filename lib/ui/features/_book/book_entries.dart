@@ -9,6 +9,7 @@ import 'package:satset/data/repositories/order_history_repository.dart';
 import 'package:satset/data/repositories/reports_repository.dart';
 import 'package:satset/data/repositories/staff_report_repository.dart';
 import 'package:satset/data/repositories/release_gate_repository.dart';
+import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/data/services/app_update_service.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
 import 'package:satset/data/services/ws_client.dart';
@@ -2041,7 +2042,7 @@ List<BookEntry> bookEntries() => [
         'proof exists, bytes unreachable',
         (c, r) => const PaymentProofThumb(
           paymentId: 'pay-1',
-          history: true,
+          scope: ProofScope.history,
           fetchable: false,
         ),
         note:

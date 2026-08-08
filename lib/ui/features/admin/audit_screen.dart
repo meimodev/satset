@@ -204,7 +204,7 @@ class _AuditToolbarState extends ConsumerState<_AuditToolbar> {
             value: f.types.length == 1 ? f.types.first : null,
             options: [
               SatOption(null, context.l10n.auditTypeAll),
-              for (final t in auditSummaryTypes)
+              for (final t in auditFilterTypes)
                 SatOption(t, auditTypeLabel(context.l10n, t)),
             ],
             onChanged: (t) => repo.setFilters(
@@ -465,7 +465,9 @@ class _AuditProofPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(auditProofPhotoProvider(paymentId));
+    final async = ref.watch(
+      proofPhotoProvider((id: paymentId, scope: ProofScope.audit)),
+    );
     return async.maybeWhen(
       data: (bytes) =>
           bytes == null ? _pending(context, failed: true) : ProofViewer(bytes),

@@ -25,6 +25,9 @@ _$ReportsSnapshotDtoImpl _$$ReportsSnapshotDtoImplFromJson(
       : MoneyAuditSectionDto.fromJson(
           json['moneyAudit'] as Map<String, dynamic>,
         ),
+  kas: json['kas'] == null
+      ? const KasSectionDto()
+      : KasSectionDto.fromJson(json['kas'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$$ReportsSnapshotDtoImplToJson(
@@ -40,6 +43,7 @@ Map<String, dynamic> _$$ReportsSnapshotDtoImplToJson(
   'menu': instance.menu,
   'ops': instance.ops,
   'moneyAudit': instance.moneyAudit,
+  'kas': instance.kas,
 };
 
 _$FilterOptionsDtoImpl _$$FilterOptionsDtoImplFromJson(
@@ -505,6 +509,32 @@ Map<String, dynamic> _$$VoidReasonDtoImplToJson(_$VoidReasonDtoImpl instance) =>
       'label': instance.label,
       'count': instance.count,
       'lostRupiah': instance.lostRupiah,
+    };
+
+_$KasSectionDtoImpl _$$KasSectionDtoImplFromJson(Map<String, dynamic> json) =>
+    _$KasSectionDtoImpl(
+      opening: (json['opening'] as num?)?.toInt() ?? 0,
+      inflow: (json['inflow'] as num?)?.toInt() ?? 0,
+      outflow: (json['outflow'] as num?)?.toInt() ?? 0,
+      variance: (json['variance'] as num?)?.toInt() ?? 0,
+      closing: (json['closing'] as num?)?.toInt() ?? 0,
+      byCategory:
+          (json['byCategory'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, (e as num).toInt()),
+          ) ??
+          const <String, int>{},
+      count: (json['count'] as num?)?.toInt() ?? 0,
+    );
+
+Map<String, dynamic> _$$KasSectionDtoImplToJson(_$KasSectionDtoImpl instance) =>
+    <String, dynamic>{
+      'opening': instance.opening,
+      'inflow': instance.inflow,
+      'outflow': instance.outflow,
+      'variance': instance.variance,
+      'closing': instance.closing,
+      'byCategory': instance.byCategory,
+      'count': instance.count,
     };
 
 _$MoneyAuditSectionDtoImpl _$$MoneyAuditSectionDtoImplFromJson(

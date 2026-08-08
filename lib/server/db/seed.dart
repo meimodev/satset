@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 
+import 'package:satset/domain/models/capability.dart';
+
 import '../stock.dart';
 import '../ws_hub.dart';
 import 'database.dart';
@@ -312,11 +314,25 @@ Future<void> _ensureWaiterCanVoid(AppDatabase db) async {
 /// Ensure the shared admin role exists so Firebase-provisioned admin users
 /// (`ServerAuth.provisionAdminUser`) and the `/auth/me` role join resolve,
 /// even on an install that predates a given role seed. See ADR-0015.
+///
+/// Its capabilities are **reconciled on every boot**, not written once: the
+/// admin role *is* `Capability.values` by definition and the Staf sheet shows it
+/// read-only, so a stored snapshot is the one set nobody can repair. Adding a
+/// capability to the enum used to leave every existing venue's admin at 19/20
+/// with no way back — which is exactly how `manageCash` shipped unreachable.
 Future<void> _ensureAdminRole(AppDatabase db) async {
+  final all = jsonEncode([for (final c in Capability.values) c.name]);
   final adminRole = await (db.select(
     db.roles,
   )..where((r) => r.id.equals(seed.DummyData.roleAdminId))).getSingleOrNull();
-  if (adminRole != null) return;
+  if (adminRole != null) {
+    if (adminRole.capabilitiesJson != all) {
+      await (db.update(db.roles)
+            ..where((r) => r.id.equals(seed.DummyData.roleAdminId)))
+          .write(RolesCompanion(capabilitiesJson: Value(all)));
+    }
+    return;
+  }
   await db
       .into(db.roles)
       .insertOnConflictUpdate(
@@ -324,15 +340,7 @@ Future<void> _ensureAdminRole(AppDatabase db) async {
           id: seed.DummyData.roleAdminId,
           name: 'Admin',
           colorHex: const Value('#C08AFF'),
-          capabilitiesJson: Value(
-            jsonEncode([
-              for (final c
-                  in seed.DummyData.initialRoles()
-                      .firstWhere((r) => r.id == seed.DummyData.roleAdminId)
-                      .capabilities)
-                c.name,
-            ]),
-          ),
+          capabilitiesJson: Value(all),
         ),
       );
 }

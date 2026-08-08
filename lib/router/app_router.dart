@@ -34,36 +34,48 @@ import 'package:satset/ui/features/admin/reports_screen.dart';
 import 'package:satset/ui/features/admin/venue_hub_screen.dart';
 import 'package:satset/ui/features/admin/alerts_screen.dart';
 import 'package:satset/ui/features/admin/audit_screen.dart';
+import 'package:satset/ui/features/admin/kas_screen.dart';
 import 'package:satset/ui/features/admin/venue_settings_screen.dart';
 import 'package:satset/ui/features/admin/system_screen.dart';
 import 'package:satset/ui/features/admin/staff_screen.dart';
 import 'package:satset/ui/features/cashier/cashier_screen.dart';
 import 'package:satset/ui/features/_book/book_screen.dart';
 
-Capability? _capabilityFor(String loc) {
-  if (loc.startsWith('/kitchen')) return Capability.viewKds;
-  if (loc.startsWith('/kasir')) return Capability.settleBill;
+/// Which capabilities open a location. **Any** of them is enough — a list
+/// rather than a single capability because one screen (`/kas`) is genuinely
+/// reachable by two unrelated authorities, and encoding that as "the lower one"
+/// would lock out an owner whose role happens not to carry it.
+List<Capability>? _capabilityFor(String loc) {
+  if (loc.startsWith('/kitchen')) return const [Capability.viewKds];
+  if (loc.startsWith('/kasir')) return const [Capability.settleBill];
   if (loc.startsWith('/table/') ||
       loc.startsWith('/orders') ||
       loc.startsWith('/order/') ||
       loc.startsWith('/takeaway')) {
-    return Capability.takeOrder;
+    return const [Capability.takeOrder];
   }
-  if (loc.startsWith('/venue-settings')) return Capability.editSettings;
-  if (loc.startsWith('/alerts')) return Capability.editSettings;
-  if (loc.startsWith('/stock')) return Capability.manageIngredients;
-  if (loc.startsWith('/reports')) return Capability.viewReports;
+  if (loc.startsWith('/venue-settings')) return const [Capability.editSettings];
+  if (loc.startsWith('/alerts')) return const [Capability.editSettings];
+  if (loc.startsWith('/stock')) return const [Capability.manageIngredients];
+  if (loc.startsWith('/reports')) return const [Capability.viewReports];
   // Same permission as reports: both answer "what really happened in my
   // venue". Admin rows inside the log carry a second `manageStaff` check
   // server-side (ADR-0072) — the route gate cannot express that.
-  if (loc.startsWith('/audit')) return Capability.viewReports;
-  if (loc.startsWith('/venue/diskon')) return Capability.editSettings;
+  if (loc.startsWith('/audit')) return const [Capability.viewReports];
+  // The box has two authorities, per §Kas kecil: `manageCash` posts expenses,
+  // `editSettings` funds and counts. Either one opens the screen — `/venue` sits
+  // behind `manageStaff`, so the hub cannot be the supervisor's door — and which
+  // of the three actions each may take is enforced per-route, server-side.
+  if (loc.startsWith('/kas')) {
+    return const [Capability.manageCash, Capability.editSettings];
+  }
+  if (loc.startsWith('/venue/diskon')) return const [Capability.editSettings];
   if (loc.startsWith('/menuadm') ||
       loc.startsWith('/staff') ||
       loc.startsWith('/system') ||
       loc.startsWith('/zone-admin') ||
       loc.startsWith('/venue')) {
-    return Capability.manageStaff;
+    return const [Capability.manageStaff];
   }
   return null;
 }
@@ -165,8 +177,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         decision = mode == AppMode.server ? '/venue' : '/tables';
       } else if (loggedIn) {
         final needed = _capabilityFor(loc);
-        // Fail-closed: missing capability denies the route.
-        if (needed != null && !auth.has(needed)) {
+        // Fail-closed: none of the route's capabilities denies the route.
+        if (needed != null && !needed.any(auth.has)) {
           decision = '/forbidden';
         }
       }
@@ -217,6 +229,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/stock', builder: (_, _) => const StockScreen()),
           GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen()),
           GoRoute(path: '/audit', builder: (_, _) => const AuditScreen()),
+          GoRoute(path: '/kas', builder: (_, _) => const KasScreen()),
           GoRoute(path: '/system', builder: (_, _) => const SystemScreen()),
           GoRoute(path: '/staff', builder: (_, _) => const StaffScreen()),
           GoRoute(path: '/me', builder: (_, _) => const MeScreen()),

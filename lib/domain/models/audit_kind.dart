@@ -73,6 +73,22 @@ enum AuditKind {
   billClosed,
   billWrittenOff,
 
+  // ---------- petty cash ----------
+  /// `{amount}` (pre-formatted rupiah, ADR-0084).
+  cashToppedUp,
+
+  /// `{amount}`, `{category}` — the category travels as its **key** and is
+  /// rendered through `cashCategoryLabel`, so it follows the reader's language
+  /// the way `paymentRecorded`'s method key already does.
+  cashSpent,
+
+  /// `{counted}` (what was physically found) and `{variance}` (signed, against
+  /// what the ledger said). Both pre-formatted rupiah.
+  cashCounted,
+
+  /// `{amount}` — the magnitude of the movement being undone.
+  cashReversed,
+
   // ---------- menu ----------
   /// `{name}`.
   menuKilled,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:satset/core/localization/labels.dart';
 import 'package:satset/core/localization/report_copy.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/l10n/app_localizations.dart';
@@ -47,7 +48,7 @@ class ReportSectionsView extends StatefulWidget {
   State<ReportSectionsView> createState() => _ReportSectionsViewState();
 }
 
-enum _Section { sales, staff, menu, bahan, ops }
+enum _Section { sales, staff, menu, bahan, ops, kas }
 
 enum _StaffSort { net, covers, voidPct, avgTicket }
 
@@ -66,6 +67,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.menu,
     _Section.bahan,
     _Section.ops,
+    _Section.kas,
   };
   _StaffSort _staffSort = _StaffSort.net;
 
@@ -75,6 +77,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.menu => l10n.rptSecMenu,
     _Section.bahan => l10n.rptSecBahan,
     _Section.ops => l10n.rptSecOps,
+    _Section.kas => l10n.rptSecKas,
   };
 
   @override
@@ -124,6 +127,8 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                     style: SatType.bodyS(
                       color: _on.contains(s) ? sc.textHi : sc.textLo,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
@@ -178,6 +183,12 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           key: const ValueKey('ops'),
           index: 4,
           child: _opsSection(context, isTab, snapshot.ops),
+        ),
+      if (_on.contains(_Section.kas))
+        Reveal(
+          key: const ValueKey('kas'),
+          index: 5,
+          child: _kasSection(context, snapshot.kas),
         ),
     ];
     final col = Column(
@@ -1994,6 +2005,119 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             ),
         ],
       ),
+    );
+  }
+
+  // ──────────── KAS KECIL ────────────
+
+  /// The petty cash box over the window. Its own card, never a line in Sales:
+  /// none of this is revenue and none of Sales is net of it (ADR-0089).
+  ///
+  /// Reads as the arithmetic it is — opening, in, out, count variance, closing —
+  /// because the one question a box gets asked is "does this add up".
+  Widget _kasSection(BuildContext context, KasSectionDto kas) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    if (kas.count == 0) {
+      return _card(
+        context,
+        l10n.rptSecKas,
+        sub: l10n.rptKasEmpty,
+        child: const SizedBox(height: Sp.s8),
+      );
+    }
+    return _card(
+      context,
+      l10n.rptSecKas,
+      sub: l10n.kasBalance,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            spacing: Sp.s6,
+            runSpacing: Sp.s3,
+            children: [
+              _kasFigure(context, l10n.rptKasOpening, kas.opening, sc.textMd),
+              _kasFigure(context, l10n.rptKasIn, kas.inflow, sc.success),
+              _kasFigure(context, l10n.rptKasOut, kas.outflow, sc.warn),
+              // Signed on purpose: a count that found less than the ledger
+              // claimed is the finding, and its direction is the whole point.
+              _kasFigure(
+                context,
+                l10n.rptKasVariance,
+                kas.variance,
+                kas.variance == 0 ? sc.textMd : sc.urgent,
+              ),
+              _kasFigure(context, l10n.rptKasClosing, kas.closing, sc.textHi),
+            ],
+          ),
+          if (kas.byCategory.isNotEmpty) ...[
+            const SizedBox(height: Sp.s4),
+            Text(
+              l10n.rptKasByCategory.toUpperCase(),
+              style: SatType.monoS(color: sc.textLo),
+            ),
+            const SizedBox(height: Sp.s2),
+            ..._kasCategoryRows(context, kas.byCategory),
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _kasCategoryRows(BuildContext context, Map<String, int> byCat) {
+    final sc = context.sat;
+    final rows = byCat.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final max = rows.first.value == 0 ? 1 : rows.first.value;
+    return [
+      for (final e in rows)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: Sp.s1h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      // A code off the wire, worded here (ADR-0085).
+                      cashCategoryKeyLabel(context.l10n, e.key),
+                      style: SatType.bodyM(color: sc.textHi),
+                    ),
+                  ),
+                  Text(
+                    formatCompactIDR(context.l10n, e.value),
+                    style: SatType.monoM(color: sc.textHi),
+                  ),
+                ],
+              ),
+              const SizedBox(height: Sp.s1h),
+              AnimatedBarFill(
+                factor: e.value / max,
+                color: sc.warn,
+                track: sc.bg3,
+              ),
+            ],
+          ),
+        ),
+    ];
+  }
+
+  Widget _kasFigure(
+    BuildContext context,
+    String label,
+    int rupiah,
+    Color tone,
+  ) {
+    final sc = context.sat;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
+        const SizedBox(height: Sp.sHair),
+        Text(formatIDR(rupiah), style: SatType.monoM(color: tone)),
+      ],
     );
   }
 

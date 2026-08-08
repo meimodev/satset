@@ -61,6 +61,14 @@ AuditTone auditTone(AuditType t, SatColors sc) => switch (t) {
     bg: sc.successSoft,
     fg: sc.success,
   ),
+  // Deliberately `info` and not `success`: one hue covers all four movements,
+  // and green on money leaving the box would read as revenue — which petty cash
+  // never is (ADR-0089).
+  AuditType.cashMovement => (
+    icon: Icons.savings_outlined,
+    bg: sc.infoSoft,
+    fg: sc.info,
+  ),
   AuditType.menuKilled => (
     icon: Icons.remove_circle_outline,
     bg: sc.urgentSoft,

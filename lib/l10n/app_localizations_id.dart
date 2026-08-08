@@ -277,6 +277,9 @@ class AppL10nId extends AppL10n {
   String get auditTypeBillClosed => 'Tutup';
 
   @override
+  String get auditTypeCashMovement => 'Kas';
+
+  @override
   String get auditTypeMenuKilled => 'Stop jual';
 
   @override
@@ -1916,6 +1919,26 @@ class AppL10nId extends AppL10n {
   @override
   String auditBillWrittenOff(String amount, String table) {
     return 'Tagihan tak tertagih $amount $table';
+  }
+
+  @override
+  String auditCashToppedUp(String amount) {
+    return 'Isi kas kecil $amount';
+  }
+
+  @override
+  String auditCashSpent(String amount, String category) {
+    return 'Pengeluaran kas $amount — $category';
+  }
+
+  @override
+  String auditCashCounted(String counted, String variance) {
+    return 'Opname kas $counted (selisih $variance)';
+  }
+
+  @override
+  String auditCashReversed(String amount) {
+    return 'Batalkan mutasi kas $amount';
   }
 
   @override
@@ -5939,6 +5962,186 @@ class AppL10nId extends AppL10n {
   String get capRefund => 'Refund';
 
   @override
+  String get capManageCash => 'Kelola kas kecil';
+
+  @override
+  String get cashCatIngredients => 'Belanja bahan';
+
+  @override
+  String get cashCatOperations => 'Operasional';
+
+  @override
+  String get cashCatTransport => 'Transport';
+
+  @override
+  String get cashCatDailyWage => 'Upah harian';
+
+  @override
+  String get cashCatOther => 'Lainnya';
+
+  @override
+  String get cashKindTopUp => 'Isi kas';
+
+  @override
+  String get cashKindExpense => 'Pengeluaran';
+
+  @override
+  String get cashKindCount => 'Opname';
+
+  @override
+  String get cashKindReversal => 'Pembatalan';
+
+  @override
+  String get kasTitle => 'Kas kecil';
+
+  @override
+  String get kasHubSubtitle => 'Saldo, pengeluaran, opname';
+
+  @override
+  String get kasBalance => 'Saldo kas';
+
+  @override
+  String kasLastCount(String when) {
+    return 'Opname terakhir $when';
+  }
+
+  @override
+  String get kasNeverCounted => 'Belum pernah diopname';
+
+  @override
+  String get kasEmptyTitle => 'Kas kecil masih kosong';
+
+  @override
+  String get kasEmptyBody => 'Isi kas dulu, baru pengeluaran bisa dicatat.';
+
+  @override
+  String get kasActionTopUp => 'Isi kas';
+
+  @override
+  String get kasActionExpense => 'Pengeluaran';
+
+  @override
+  String get kasActionCount => 'Opname';
+
+  @override
+  String get kasSheetTopUpTitle => 'Isi kas kecil';
+
+  @override
+  String get kasSheetExpenseTitle => 'Pengeluaran kas';
+
+  @override
+  String get kasSheetCountTitle => 'Opname kas';
+
+  @override
+  String get kasFieldAmount => 'Jumlah';
+
+  @override
+  String get kasFieldCounted => 'Uang yang ada di kotak';
+
+  @override
+  String get kasFieldNote => 'Catatan';
+
+  @override
+  String get kasFieldReason => 'Alasan';
+
+  @override
+  String get kasFieldCategory => 'Kategori';
+
+  @override
+  String get kasPhotoAdd => 'Foto nota';
+
+  @override
+  String kasLedgerSays(String amount) {
+    return 'Catatan kas: $amount';
+  }
+
+  @override
+  String kasVariance(String amount) {
+    return 'Selisih $amount';
+  }
+
+  @override
+  String get kasDetailTitle => 'Mutasi kas';
+
+  @override
+  String kasCounted(String amount) {
+    return 'Terhitung $amount';
+  }
+
+  @override
+  String get kasReverse => 'Batalkan mutasi';
+
+  @override
+  String get kasReverseTitle => 'Batalkan mutasi kas';
+
+  @override
+  String get kasReverseBody =>
+      'Baris ini tetap ada; pembatalan dicatat sebagai mutasi baru.';
+
+  @override
+  String get kasReversed => 'Sudah dibatalkan';
+
+  @override
+  String get kasIsReversal => 'Membatalkan mutasi sebelumnya';
+
+  @override
+  String get kasActorUnknown => 'Sistem';
+
+  @override
+  String kasBy(String name) {
+    return 'oleh $name';
+  }
+
+  @override
+  String kasErrInsufficient(String amount) {
+    return 'Saldo kas cuma $amount';
+  }
+
+  @override
+  String get kasErrReasonRequired => 'Alasan wajib diisi';
+
+  @override
+  String get kasErrAlreadyReversed => 'Mutasi ini sudah dibatalkan';
+
+  @override
+  String get kasErrNotReversible => 'Pembatalan tidak bisa dibatalkan lagi';
+
+  @override
+  String get kasErrInvalidAmount => 'Jumlah tidak sah';
+
+  @override
+  String kasErrFailed(String code) {
+    return 'Gagal menyimpan ($code)';
+  }
+
+  @override
+  String get kasPhoneOnly => 'Kas kecil dibaca di tablet.';
+
+  @override
+  String get rptSecKas => 'Kas kecil';
+
+  @override
+  String get rptKasOpening => 'Saldo awal';
+
+  @override
+  String get rptKasIn => 'Masuk';
+
+  @override
+  String get rptKasOut => 'Keluar';
+
+  @override
+  String get rptKasVariance => 'Selisih opname';
+
+  @override
+  String get rptKasClosing => 'Saldo akhir';
+
+  @override
+  String get rptKasByCategory => 'Pengeluaran per kategori';
+
+  @override
+  String get rptKasEmpty => 'Tidak ada mutasi kas di rentang ini.';
+
+  @override
   String get capCloseShift => 'Tutup shift';
 
   @override
@@ -5999,6 +6202,10 @@ class AppL10nId extends AppL10n {
 
   @override
   String get capCloseShiftDesc => 'Akhiri shift dan hitung kas.';
+
+  @override
+  String get capManageCashDesc =>
+      'Catat pengeluaran dari kas kecil. Mengisi dan mengopname kas butuh izin pengaturan.';
 
   @override
   String get capEditMenuDesc =>

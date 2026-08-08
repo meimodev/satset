@@ -277,6 +277,9 @@ class AppL10nEn extends AppL10n {
   String get auditTypeBillClosed => 'Close';
 
   @override
+  String get auditTypeCashMovement => 'Cash';
+
+  @override
   String get auditTypeMenuKilled => 'Sold out';
 
   @override
@@ -1922,6 +1925,26 @@ class AppL10nEn extends AppL10n {
   @override
   String auditBillWrittenOff(String amount, String table) {
     return 'Bill written off $amount $table';
+  }
+
+  @override
+  String auditCashToppedUp(String amount) {
+    return 'Topped up petty cash $amount';
+  }
+
+  @override
+  String auditCashSpent(String amount, String category) {
+    return 'Petty cash expense $amount — $category';
+  }
+
+  @override
+  String auditCashCounted(String counted, String variance) {
+    return 'Counted petty cash $counted (variance $variance)';
+  }
+
+  @override
+  String auditCashReversed(String amount) {
+    return 'Reversed cash movement $amount';
   }
 
   @override
@@ -6012,6 +6035,187 @@ class AppL10nEn extends AppL10n {
   String get capRefund => 'Refund';
 
   @override
+  String get capManageCash => 'Manage petty cash';
+
+  @override
+  String get cashCatIngredients => 'Ingredients';
+
+  @override
+  String get cashCatOperations => 'Operations';
+
+  @override
+  String get cashCatTransport => 'Transport';
+
+  @override
+  String get cashCatDailyWage => 'Daily wages';
+
+  @override
+  String get cashCatOther => 'Other';
+
+  @override
+  String get cashKindTopUp => 'Top-up';
+
+  @override
+  String get cashKindExpense => 'Expense';
+
+  @override
+  String get cashKindCount => 'Count';
+
+  @override
+  String get cashKindReversal => 'Reversal';
+
+  @override
+  String get kasTitle => 'Petty cash';
+
+  @override
+  String get kasHubSubtitle => 'Balance, expenses, counts';
+
+  @override
+  String get kasBalance => 'Cash balance';
+
+  @override
+  String kasLastCount(String when) {
+    return 'Last counted $when';
+  }
+
+  @override
+  String get kasNeverCounted => 'Never counted';
+
+  @override
+  String get kasEmptyTitle => 'The petty cash box is empty';
+
+  @override
+  String get kasEmptyBody =>
+      'Fund the box first — expenses can only be recorded against cash that is in it.';
+
+  @override
+  String get kasActionTopUp => 'Top up';
+
+  @override
+  String get kasActionExpense => 'Expense';
+
+  @override
+  String get kasActionCount => 'Count';
+
+  @override
+  String get kasSheetTopUpTitle => 'Top up petty cash';
+
+  @override
+  String get kasSheetExpenseTitle => 'Cash expense';
+
+  @override
+  String get kasSheetCountTitle => 'Count the box';
+
+  @override
+  String get kasFieldAmount => 'Amount';
+
+  @override
+  String get kasFieldCounted => 'Cash in the box';
+
+  @override
+  String get kasFieldNote => 'Note';
+
+  @override
+  String get kasFieldReason => 'Reason';
+
+  @override
+  String get kasFieldCategory => 'Category';
+
+  @override
+  String get kasPhotoAdd => 'Receipt photo';
+
+  @override
+  String kasLedgerSays(String amount) {
+    return 'Ledger says $amount';
+  }
+
+  @override
+  String kasVariance(String amount) {
+    return 'Variance $amount';
+  }
+
+  @override
+  String get kasDetailTitle => 'Cash movement';
+
+  @override
+  String kasCounted(String amount) {
+    return 'Counted $amount';
+  }
+
+  @override
+  String get kasReverse => 'Reverse movement';
+
+  @override
+  String get kasReverseTitle => 'Reverse this movement';
+
+  @override
+  String get kasReverseBody =>
+      'The row stays; the reversal is recorded as a new movement.';
+
+  @override
+  String get kasReversed => 'Reversed';
+
+  @override
+  String get kasIsReversal => 'Reverses an earlier movement';
+
+  @override
+  String get kasActorUnknown => 'System';
+
+  @override
+  String kasBy(String name) {
+    return 'by $name';
+  }
+
+  @override
+  String kasErrInsufficient(String amount) {
+    return 'The box only holds $amount';
+  }
+
+  @override
+  String get kasErrReasonRequired => 'A reason is required';
+
+  @override
+  String get kasErrAlreadyReversed => 'This movement has already been reversed';
+
+  @override
+  String get kasErrNotReversible => 'A reversal cannot itself be reversed';
+
+  @override
+  String get kasErrInvalidAmount => 'Not a valid amount';
+
+  @override
+  String kasErrFailed(String code) {
+    return 'Could not save ($code)';
+  }
+
+  @override
+  String get kasPhoneOnly => 'Petty cash is read on a tablet.';
+
+  @override
+  String get rptSecKas => 'Petty cash';
+
+  @override
+  String get rptKasOpening => 'Opening';
+
+  @override
+  String get rptKasIn => 'In';
+
+  @override
+  String get rptKasOut => 'Out';
+
+  @override
+  String get rptKasVariance => 'Count variance';
+
+  @override
+  String get rptKasClosing => 'Closing';
+
+  @override
+  String get rptKasByCategory => 'Expenses by category';
+
+  @override
+  String get rptKasEmpty => 'No cash movements in this range.';
+
+  @override
   String get capCloseShift => 'Close shift';
 
   @override
@@ -6072,6 +6276,10 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get capCloseShiftDesc => 'End a shift and count the cash.';
+
+  @override
+  String get capManageCashDesc =>
+      'Record expenses from the petty cash box. Funding and counting it need the settings permission.';
 
   @override
   String get capEditMenuDesc =>

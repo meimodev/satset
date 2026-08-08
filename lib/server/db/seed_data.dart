@@ -49,6 +49,9 @@ class DummyData {
         Capability.manageStaff,
         Capability.viewReports,
         Capability.editSettings,
+        // A manager is exactly who spends from the box (§Kas kecil). Admin gets
+        // it via `Capability.values`; every other role must ask for it.
+        Capability.manageCash,
       },
     ),
     // The cashier role CONTEXT.md described but the seed never created —

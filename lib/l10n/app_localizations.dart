@@ -571,6 +571,12 @@ abstract class AppL10n {
   /// **'Tutup'**
   String get auditTypeBillClosed;
 
+  /// No description provided for @auditTypeCashMovement.
+  ///
+  /// In id, this message translates to:
+  /// **'Kas'**
+  String get auditTypeCashMovement;
+
   /// No description provided for @auditTypeMenuKilled.
   ///
   /// In id, this message translates to:
@@ -3396,6 +3402,30 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Tagihan tak tertagih {amount} {table}'**
   String auditBillWrittenOff(String amount, String table);
+
+  /// No description provided for @auditCashToppedUp.
+  ///
+  /// In id, this message translates to:
+  /// **'Isi kas kecil {amount}'**
+  String auditCashToppedUp(String amount);
+
+  /// No description provided for @auditCashSpent.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengeluaran kas {amount} — {category}'**
+  String auditCashSpent(String amount, String category);
+
+  /// No description provided for @auditCashCounted.
+  ///
+  /// In id, this message translates to:
+  /// **'Opname kas {counted} (selisih {variance})'**
+  String auditCashCounted(String counted, String variance);
+
+  /// No description provided for @auditCashReversed.
+  ///
+  /// In id, this message translates to:
+  /// **'Batalkan mutasi kas {amount}'**
+  String auditCashReversed(String amount);
 
   /// No description provided for @auditMenuKilled.
   ///
@@ -9607,6 +9637,336 @@ abstract class AppL10n {
   /// **'Refund'**
   String get capRefund;
 
+  /// No description provided for @capManageCash.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelola kas kecil'**
+  String get capManageCash;
+
+  /// No description provided for @cashCatIngredients.
+  ///
+  /// In id, this message translates to:
+  /// **'Belanja bahan'**
+  String get cashCatIngredients;
+
+  /// No description provided for @cashCatOperations.
+  ///
+  /// In id, this message translates to:
+  /// **'Operasional'**
+  String get cashCatOperations;
+
+  /// No description provided for @cashCatTransport.
+  ///
+  /// In id, this message translates to:
+  /// **'Transport'**
+  String get cashCatTransport;
+
+  /// No description provided for @cashCatDailyWage.
+  ///
+  /// In id, this message translates to:
+  /// **'Upah harian'**
+  String get cashCatDailyWage;
+
+  /// No description provided for @cashCatOther.
+  ///
+  /// In id, this message translates to:
+  /// **'Lainnya'**
+  String get cashCatOther;
+
+  /// No description provided for @cashKindTopUp.
+  ///
+  /// In id, this message translates to:
+  /// **'Isi kas'**
+  String get cashKindTopUp;
+
+  /// No description provided for @cashKindExpense.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengeluaran'**
+  String get cashKindExpense;
+
+  /// No description provided for @cashKindCount.
+  ///
+  /// In id, this message translates to:
+  /// **'Opname'**
+  String get cashKindCount;
+
+  /// No description provided for @cashKindReversal.
+  ///
+  /// In id, this message translates to:
+  /// **'Pembatalan'**
+  String get cashKindReversal;
+
+  /// No description provided for @kasTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Kas kecil'**
+  String get kasTitle;
+
+  /// No description provided for @kasHubSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Saldo, pengeluaran, opname'**
+  String get kasHubSubtitle;
+
+  /// No description provided for @kasBalance.
+  ///
+  /// In id, this message translates to:
+  /// **'Saldo kas'**
+  String get kasBalance;
+
+  /// No description provided for @kasLastCount.
+  ///
+  /// In id, this message translates to:
+  /// **'Opname terakhir {when}'**
+  String kasLastCount(String when);
+
+  /// No description provided for @kasNeverCounted.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum pernah diopname'**
+  String get kasNeverCounted;
+
+  /// No description provided for @kasEmptyTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Kas kecil masih kosong'**
+  String get kasEmptyTitle;
+
+  /// No description provided for @kasEmptyBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Isi kas dulu, baru pengeluaran bisa dicatat.'**
+  String get kasEmptyBody;
+
+  /// No description provided for @kasActionTopUp.
+  ///
+  /// In id, this message translates to:
+  /// **'Isi kas'**
+  String get kasActionTopUp;
+
+  /// No description provided for @kasActionExpense.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengeluaran'**
+  String get kasActionExpense;
+
+  /// No description provided for @kasActionCount.
+  ///
+  /// In id, this message translates to:
+  /// **'Opname'**
+  String get kasActionCount;
+
+  /// No description provided for @kasSheetTopUpTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Isi kas kecil'**
+  String get kasSheetTopUpTitle;
+
+  /// No description provided for @kasSheetExpenseTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengeluaran kas'**
+  String get kasSheetExpenseTitle;
+
+  /// No description provided for @kasSheetCountTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Opname kas'**
+  String get kasSheetCountTitle;
+
+  /// No description provided for @kasFieldAmount.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah'**
+  String get kasFieldAmount;
+
+  /// No description provided for @kasFieldCounted.
+  ///
+  /// In id, this message translates to:
+  /// **'Uang yang ada di kotak'**
+  String get kasFieldCounted;
+
+  /// No description provided for @kasFieldNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan'**
+  String get kasFieldNote;
+
+  /// No description provided for @kasFieldReason.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan'**
+  String get kasFieldReason;
+
+  /// No description provided for @kasFieldCategory.
+  ///
+  /// In id, this message translates to:
+  /// **'Kategori'**
+  String get kasFieldCategory;
+
+  /// No description provided for @kasPhotoAdd.
+  ///
+  /// In id, this message translates to:
+  /// **'Foto nota'**
+  String get kasPhotoAdd;
+
+  /// No description provided for @kasLedgerSays.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan kas: {amount}'**
+  String kasLedgerSays(String amount);
+
+  /// No description provided for @kasVariance.
+  ///
+  /// In id, this message translates to:
+  /// **'Selisih {amount}'**
+  String kasVariance(String amount);
+
+  /// No description provided for @kasDetailTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Mutasi kas'**
+  String get kasDetailTitle;
+
+  /// No description provided for @kasCounted.
+  ///
+  /// In id, this message translates to:
+  /// **'Terhitung {amount}'**
+  String kasCounted(String amount);
+
+  /// No description provided for @kasReverse.
+  ///
+  /// In id, this message translates to:
+  /// **'Batalkan mutasi'**
+  String get kasReverse;
+
+  /// No description provided for @kasReverseTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Batalkan mutasi kas'**
+  String get kasReverseTitle;
+
+  /// No description provided for @kasReverseBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Baris ini tetap ada; pembatalan dicatat sebagai mutasi baru.'**
+  String get kasReverseBody;
+
+  /// No description provided for @kasReversed.
+  ///
+  /// In id, this message translates to:
+  /// **'Sudah dibatalkan'**
+  String get kasReversed;
+
+  /// No description provided for @kasIsReversal.
+  ///
+  /// In id, this message translates to:
+  /// **'Membatalkan mutasi sebelumnya'**
+  String get kasIsReversal;
+
+  /// No description provided for @kasActorUnknown.
+  ///
+  /// In id, this message translates to:
+  /// **'Sistem'**
+  String get kasActorUnknown;
+
+  /// No description provided for @kasBy.
+  ///
+  /// In id, this message translates to:
+  /// **'oleh {name}'**
+  String kasBy(String name);
+
+  /// No description provided for @kasErrInsufficient.
+  ///
+  /// In id, this message translates to:
+  /// **'Saldo kas cuma {amount}'**
+  String kasErrInsufficient(String amount);
+
+  /// No description provided for @kasErrReasonRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan wajib diisi'**
+  String get kasErrReasonRequired;
+
+  /// No description provided for @kasErrAlreadyReversed.
+  ///
+  /// In id, this message translates to:
+  /// **'Mutasi ini sudah dibatalkan'**
+  String get kasErrAlreadyReversed;
+
+  /// No description provided for @kasErrNotReversible.
+  ///
+  /// In id, this message translates to:
+  /// **'Pembatalan tidak bisa dibatalkan lagi'**
+  String get kasErrNotReversible;
+
+  /// No description provided for @kasErrInvalidAmount.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah tidak sah'**
+  String get kasErrInvalidAmount;
+
+  /// No description provided for @kasErrFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menyimpan ({code})'**
+  String kasErrFailed(String code);
+
+  /// No description provided for @kasPhoneOnly.
+  ///
+  /// In id, this message translates to:
+  /// **'Kas kecil dibaca di tablet.'**
+  String get kasPhoneOnly;
+
+  /// No description provided for @rptSecKas.
+  ///
+  /// In id, this message translates to:
+  /// **'Kas kecil'**
+  String get rptSecKas;
+
+  /// No description provided for @rptKasOpening.
+  ///
+  /// In id, this message translates to:
+  /// **'Saldo awal'**
+  String get rptKasOpening;
+
+  /// No description provided for @rptKasIn.
+  ///
+  /// In id, this message translates to:
+  /// **'Masuk'**
+  String get rptKasIn;
+
+  /// No description provided for @rptKasOut.
+  ///
+  /// In id, this message translates to:
+  /// **'Keluar'**
+  String get rptKasOut;
+
+  /// No description provided for @rptKasVariance.
+  ///
+  /// In id, this message translates to:
+  /// **'Selisih opname'**
+  String get rptKasVariance;
+
+  /// No description provided for @rptKasClosing.
+  ///
+  /// In id, this message translates to:
+  /// **'Saldo akhir'**
+  String get rptKasClosing;
+
+  /// No description provided for @rptKasByCategory.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengeluaran per kategori'**
+  String get rptKasByCategory;
+
+  /// No description provided for @rptKasEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada mutasi kas di rentang ini.'**
+  String get rptKasEmpty;
+
   /// No description provided for @capCloseShift.
   ///
   /// In id, this message translates to:
@@ -9726,6 +10086,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Akhiri shift dan hitung kas.'**
   String get capCloseShiftDesc;
+
+  /// No description provided for @capManageCashDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Catat pengeluaran dari kas kecil. Mengisi dan mengopname kas butuh izin pengaturan.'**
+  String get capManageCashDesc;
 
   /// No description provided for @capEditMenuDesc.
   ///

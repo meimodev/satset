@@ -32,14 +32,17 @@ const double satProofThumb = 56;
 /// The last two used to be a hand-rolled box at one call site, pinned to its
 /// own size, which is how the placeholder and the thumb drifted apart.
 ///
-/// [history] picks the blob: true reads the snapshotted (settled bill / report)
-/// copy, false the live payment.
+/// [scope] picks the blob — live payment, snapshotted copy, audit row, or a
+/// petty cash expense's receipt.
 class PaymentProofThumb extends ConsumerWidget {
   /// Null only for a proof that has not been submitted yet — the settle flow's
   /// capture preview, which holds its bytes locally and has no payment to name.
   /// Such a call must pass [previewBytes].
   final String? paymentId;
-  final bool history;
+
+  /// Which route resolves [paymentId] — a live payment, its snapshotted copy, an
+  /// audit row's payment, or a petty cash expense.
+  final ProofScope scope;
 
   /// Bytes to render instead of fetching. The capture preview's own shot, and
   /// the widget book's stub — both need the loaded state with no server.
@@ -54,7 +57,7 @@ class PaymentProofThumb extends ConsumerWidget {
   const PaymentProofThumb({
     super.key,
     required this.paymentId,
-    this.history = false,
+    this.scope = ProofScope.live,
     this.previewBytes,
     this.hasPhoto = true,
     this.fetchable = true,
@@ -74,7 +77,7 @@ class PaymentProofThumb extends ConsumerWidget {
       return _Placeholder(Icons.photo_camera_back_outlined);
     }
     final async = ref.watch(
-      proofPhotoProvider((id: paymentId!, history: history)),
+      proofPhotoProvider((id: paymentId!, scope: scope)),
     );
     return async.maybeWhen(
       data: (bytes) => bytes == null
@@ -103,7 +106,12 @@ class PaymentProofThumb extends ConsumerWidget {
       onTap: () => Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(
           fullscreenDialog: true,
-          builder: (_) => ProofViewer(bytes),
+          builder: (_) => ProofViewer(
+            bytes,
+            // A petty cash receipt is not a payment proof, and the sheet that
+            // opened it says "Foto nota" — the lightbox must not rename it.
+            title: scope == ProofScope.cash ? context.l10n.kasPhotoAdd : null,
+          ),
         ),
       ),
       child: ClipRRect(
@@ -136,7 +144,11 @@ class _Placeholder extends StatelessWidget {
 /// would be a second set of chrome to keep in step.
 class ProofViewer extends StatelessWidget {
   final Uint8List bytes;
-  const ProofViewer(this.bytes, {super.key});
+
+  /// Overrides the "Bukti pembayaran" heading. Only petty cash needs it — its
+  /// blob is a receipt, not proof that a guest paid.
+  final String? title;
+  const ProofViewer(this.bytes, {super.key, this.title});
 
   // A lightbox, not a themed screen — see satMediaChrome.
   @override
@@ -146,7 +158,7 @@ class ProofViewer extends StatelessWidget {
       backgroundColor: satMediaChrome,
       iconTheme: const IconThemeData(color: satMediaInk),
       title: Text(
-        context.l10n.ppfTitle,
+        title ?? context.l10n.ppfTitle,
         style: SatType.labelL(color: satMediaInk),
       ),
     ),

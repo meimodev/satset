@@ -6,6 +6,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import 'package:satset/server/auth.dart';
+import 'package:satset/server/cash.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/service_timing.dart';
@@ -843,6 +844,12 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         'voidByStaff': voidStaff,
       },
       'moneyAudit': {'rows': moneyAudit, 'truncated': auditTruncated},
+      // Its own top-level section, never folded into `sales` (ADR-0089). The box
+      // is the venue's money leaving by a door that is not a bill; adding it to
+      // takings would overstate revenue and understate cost in one stroke.
+      // Shares the business-day window so "today" means the same thing here as
+      // it does two sections up.
+      'kas': await cashReportSection(db, from: from, to: to),
     };
 
     return Response.ok(

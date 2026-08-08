@@ -2324,7 +2324,10 @@ class PastBillDetailScreen extends ConsumerWidget {
                             ),
                             if (p.hasPhoto) ...[
                               const SizedBox(width: Sp.s2),
-                              PaymentProofThumb(paymentId: p.id, history: true),
+                              PaymentProofThumb(
+                                paymentId: p.id,
+                                scope: ProofScope.history,
+                              ),
                             ],
                           ],
                         ),

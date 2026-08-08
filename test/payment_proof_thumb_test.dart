@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/core/widgets/payment_proof_thumb.dart';
@@ -68,7 +69,7 @@ void main() {
       tester,
       const PaymentProofThumb(
         paymentId: 'pay-1',
-        history: true,
+        scope: ProofScope.history,
         fetchable: false,
       ),
     );
@@ -108,6 +109,23 @@ void main() {
 
     expect(find.text('Bukti pembayaran'), findsOneWidget);
     expect(find.byType(InteractiveViewer), findsOneWidget);
+  });
+
+  testWidgets('a cash receipt is not titled a payment proof', (tester) async {
+    await pump(
+      tester,
+      PaymentProofThumb(
+        paymentId: null,
+        scope: ProofScope.cash,
+        previewBytes: pngBytes,
+      ),
+    );
+
+    await tester.tap(find.byType(PaymentProofThumb));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Foto nota'), findsOneWidget);
+    expect(find.text('Bukti pembayaran'), findsNothing);
   });
 
   testWidgets('a tight parent cannot stretch the box', (tester) async {

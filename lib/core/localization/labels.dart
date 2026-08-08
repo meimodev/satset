@@ -1,6 +1,7 @@
 import 'package:satset/data/repositories/staff_repository.dart';
 import 'package:satset/domain/models/alert_sound.dart';
 import 'package:satset/domain/models/capability.dart';
+import 'package:satset/domain/models/cash_entry.dart';
 import 'package:satset/domain/models/ingredient.dart';
 import 'package:satset/domain/models/reservation.dart';
 import 'package:satset/domain/models/receipt_label.dart';
@@ -94,6 +95,7 @@ String capabilityLabel(AppL10n l10n, Capability c) => switch (c) {
   Capability.settleBill => l10n.capSettleBill,
   Capability.refund => l10n.capRefund,
   Capability.closeShift => l10n.capCloseShift,
+  Capability.manageCash => l10n.capManageCash,
   Capability.editMenu => l10n.capEditMenu,
   Capability.markSoldOut => l10n.capMarkSoldOut,
   Capability.adjustStock => l10n.capAdjustStock,
@@ -120,6 +122,7 @@ String capabilityDescription(AppL10n l10n, Capability c) => switch (c) {
   Capability.settleBill => l10n.capSettleBillDesc,
   Capability.refund => l10n.capRefundDesc,
   Capability.closeShift => l10n.capCloseShiftDesc,
+  Capability.manageCash => l10n.capManageCashDesc,
   Capability.editMenu => l10n.capEditMenuDesc,
   Capability.markSoldOut => l10n.capMarkSoldOutDesc,
   Capability.adjustStock => l10n.capAdjustStockDesc,
@@ -181,6 +184,33 @@ String stockReasonLabel(AppL10n l10n, StockReason r) => switch (r) {
   StockReason.receive => l10n.stkReasonReceive,
   StockReason.adjust => l10n.stkReasonAdjust,
   StockReason.produce => l10n.stkReasonProduce,
+};
+
+/// What a petty cash expense was for. Stored by `name` (see [CashCategory]) and
+/// rendered on the Kas ledger, its post sheet, the Kas report section and the
+/// audit sentence — one resolver so all four agree.
+String cashCategoryLabel(AppL10n l10n, CashCategory c) => switch (c) {
+  CashCategory.ingredients => l10n.cashCatIngredients,
+  CashCategory.operations => l10n.cashCatOperations,
+  CashCategory.transport => l10n.cashCatTransport,
+  CashCategory.dailyWage => l10n.cashCatDailyWage,
+  CashCategory.other => l10n.cashCatOther,
+};
+
+/// Same, from the raw persisted key — what an audit row and a report section
+/// carry. Falls through to the key so a category written by a newer build never
+/// renders blank.
+String cashCategoryKeyLabel(AppL10n l10n, String key) {
+  final c = cashCategoryFromName(key);
+  return c == null ? key : cashCategoryLabel(l10n, c);
+}
+
+/// Which movement of the petty cash box a row is.
+String cashEntryKindLabel(AppL10n l10n, CashEntryKind k) => switch (k) {
+  CashEntryKind.topUp => l10n.cashKindTopUp,
+  CashEntryKind.expense => l10n.cashKindExpense,
+  CashEntryKind.count => l10n.cashKindCount,
+  CashEntryKind.reversal => l10n.cashKindReversal,
 };
 
 /// Display name for a bundled alert clip. Ids that are already words in both

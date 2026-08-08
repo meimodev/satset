@@ -19,6 +19,11 @@ class ReportsSnapshotDto with _$ReportsSnapshotDto {
     /// no route to the venue log. Empty on the admin's own snapshot, which
     /// reads the live log instead.
     @Default(MoneyAuditSectionDto()) MoneyAuditSectionDto moneyAudit,
+
+    /// The petty cash box over the same window (§Kas kecil). Its own section
+    /// because none of it is revenue (ADR-0089) — no figure here appears in
+    /// [sales], and no figure in [sales] is net of it.
+    @Default(KasSectionDto()) KasSectionDto kas,
   }) = _ReportsSnapshotDto;
 
   factory ReportsSnapshotDto.fromJson(Map<String, dynamic> json) =>
@@ -337,6 +342,34 @@ class VoidReasonDto with _$VoidReasonDto {
 /// The money half of the venue log, published to the cloud for the off-site
 /// owner (ADR-0086).
 ///
+/// The petty cash box over a report window.
+///
+/// [opening] + [inflow] − [outflow] + [variance] = [closing]. The variance term
+/// is what a count found that the ledger did not know: it moves the closing
+/// balance without being money in or out, and keeping it separate is the only
+/// way a shortfall reads as a shortfall rather than as a purchase.
+///
+/// [byCategory] is keyed by `CashCategory.name` — a code, not a word, resolved
+/// at read time (ADR-0085).
+@freezed
+class KasSectionDto with _$KasSectionDto {
+  const factory KasSectionDto({
+    @Default(0) int opening,
+    @Default(0) int inflow,
+    @Default(0) int outflow,
+    @Default(0) int variance,
+    @Default(0) int closing,
+    @Default(<String, int>{}) Map<String, int> byCategory,
+
+    /// Movements in the window. Zero is what the empty line keys off — a box
+    /// with a balance and no movements is still nothing to report on.
+    @Default(0) int count,
+  }) = _KasSectionDto;
+
+  factory KasSectionDto.fromJson(Map<String, dynamic> json) =>
+      _$KasSectionDtoFromJson(json);
+}
+
 /// Rows only — no proof-photo bytes. Blobs stay on the LAN (ADR-0036 §"No proof
 /// photos off-site"); an owner who sees a figure they dislike names the row for
 /// the on-site admin to open.

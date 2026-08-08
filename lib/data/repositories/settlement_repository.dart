@@ -283,24 +283,22 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return _billFrom(raw);
   }
 
-  /// Proof-photo bytes for a non-cash payment (ADR-0025). [history] reads the
-  /// snapshotted (past-bill / report) blob; otherwise the live payment blob.
-  Future<Uint8List> paymentPhoto(String paymentId, {bool history = false}) {
-    final base = history
-        ? '/settlement/history/payments'
-        : '/settlement/payments';
-    return ref.read(apiClientProvider).getBytes('$base/$paymentId/photo');
-  }
-
-  /// Proof bytes for a payment named by an **audit row** (ADR-0086).
+  /// Proof-photo bytes for one id (ADR-0025, ADR-0082), from whichever route
+  /// [scope] names.
   ///
-  /// A separate route because the venue log scrolls across the bill close and
-  /// cannot know which side of it a row fell on; the server looks in both
-  /// tables. Callers that already know — a live bill, a settled bill — keep
-  /// using [paymentPhoto] and its cheaper single lookup.
-  Future<Uint8List> auditPaymentPhoto(String paymentId) => ref
-      .read(apiClientProvider)
-      .getBytes('/audit/payments/$paymentId/photo');
+  /// [ProofScope.audit] is the expensive one — the server looks in both the live
+  /// and snapshotted tables, because the venue log scrolls across the bill close
+  /// and cannot know which side a row fell on. A caller that already knows keeps
+  /// its cheaper single lookup.
+  Future<Uint8List> proofPhoto(String id, ProofScope scope) {
+    final path = switch (scope) {
+      ProofScope.live => '/settlement/payments/$id/photo',
+      ProofScope.history => '/settlement/history/payments/$id/photo',
+      ProofScope.audit => '/audit/payments/$id/photo',
+      ProofScope.cash => '/cash/$id/photo',
+    };
+    return ref.read(apiClientProvider).getBytes(path);
+  }
 
   Future<Bill> refund(
     String receiptId, {
@@ -420,36 +418,39 @@ final settlementProvider =
       return SettlementRepository(ref: ref);
     });
 
-/// Proof-photo bytes for one payment, keyed by `(id, history)` — see
-/// [SettlementRepository.paymentPhoto] for what `history` selects.
+/// Where a proof blob is read from. Four routes resolve an id, and the only
+/// thing that differs between them is which.
+enum ProofScope {
+  /// A payment on a live, still-open bill.
+  live,
+
+  /// The snapshotted copy frozen at bill close — past bills, reports.
+  history,
+
+  /// Named by an audit row (ADR-0086); the server looks on both sides of the
+  /// bill close, because the venue log scrolls across it.
+  audit,
+
+  /// A petty cash expense's receipt photo (§Kas kecil).
+  cash,
+}
+
+/// Proof-photo bytes for one id, keyed by `(id, scope)`.
 ///
 /// Cached rather than fetched per build: the same slip is shown on the live
-/// bill, on the settled bill detail and in the non-cash report, and the thumb
-/// used to rebuild a `Future` inside `build()`, so every theme flip and parent
+/// bill, on the settled bill detail and on the venue log, and the thumb used to
+/// rebuild a `Future` inside `build()`, so every theme flip and parent
 /// `setState` re-pulled the JPEG over the pinned client. Null when unpaired.
 /// See ADR-0082.
-final proofPhotoProvider = FutureProvider.autoDispose
-    .family<Uint8List?, ({String id, bool history})>((ref, key) async {
-      if (ref.watch(apiConfigProvider) == null) return null;
-      final bytes = await ref
-          .read(settlementProvider.notifier)
-          .paymentPhoto(key.id, history: key.history);
-      ref.keepAlive();
-      return bytes;
-    });
-
-/// Proof bytes for an audit row's payment (ADR-0086), cached the same way and
-/// for the same reason as [proofPhotoProvider].
 ///
-/// ponytail: a near-twin of the provider above, kept separate because the only
-/// difference is which route resolves the id. If a third source ever appears,
-/// collapse all three into one family keyed by a scope enum.
-final auditProofPhotoProvider = FutureProvider.autoDispose
-    .family<Uint8List?, String>((ref, paymentId) async {
+/// Was three near-identical providers, collapsed when petty cash became the
+/// fourth caller — exactly the trigger the old `ponytail:` note named.
+final proofPhotoProvider = FutureProvider.autoDispose
+    .family<Uint8List?, ({String id, ProofScope scope})>((ref, key) async {
       if (ref.watch(apiConfigProvider) == null) return null;
       final bytes = await ref
           .read(settlementProvider.notifier)
-          .auditPaymentPhoto(paymentId);
+          .proofPhoto(key.id, key.scope);
       ref.keepAlive();
       return bytes;
     });

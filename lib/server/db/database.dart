@@ -46,6 +46,7 @@ part 'database.g.dart';
     Ingredients,
     RecipeLines,
     StockMovements,
+    CashEntries,
     DemoStates,
   ],
 )
@@ -66,7 +67,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 48;
+  int get schemaVersion => 49;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -898,6 +899,13 @@ class AppDatabase extends _$AppDatabase {
         // photo is still on the bill it belongs to. Existing rows stay null and
         // simply show no indicator.
         await _safeAddColumnOn('audit_entries', 'payment_id', type: 'TEXT');
+      }
+      if (from < 49) {
+        // The petty cash box (§Kas kecil). A new table, so nothing to backfill
+        // and nothing to migrate: an upgrading venue starts at a balance of
+        // zero, which is the honest answer — the app has never known what was
+        // in the box.
+        await m.createTable(cashEntries);
       }
     },
     onCreate: (m) async {

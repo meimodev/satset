@@ -947,6 +947,61 @@ class StockMovements extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// The [[Kas kecil]] ledger — the venue's petty cash box, append-only.
+///
+/// **There is no balance column and there never will be.** The balance is
+/// `SUM(delta)`, derived on every read: a box sees tens of rows a week, so the
+/// denormalised column `Ingredients.stockOnHand` earns for a 42-item menu screen
+/// buys nothing here, and money must never have two answers.
+///
+/// Rows are never updated and never deleted, with the single exception of
+/// [reversedById] being stamped onto a row that has been undone — a link, not a
+/// rewrite of what happened. See §Kas kecil in CONTEXT.md, ADR-0088 and ADR-0089.
+class CashEntries extends Table {
+  TextColumn get id => text()();
+
+  /// `topUp | expense | count | reversal`.
+  TextColumn get kind => text()();
+
+  /// Signed **plain rupiah** — positive into the box, negative out. Not micro-
+  /// scaled like `costMicro`: the box is counted in notes.
+  IntColumn get delta => integer()();
+
+  /// `ingredients | operations | transport | dailyWage | other`. Set on an
+  /// expense, null on every other kind.
+  TextColumn get category => text().nullable()();
+
+  /// Optional on top-up / expense / count; **required** on a reversal, enforced
+  /// in the route — a reversal with no reason is a hole in the ledger.
+  TextColumn get note => text().nullable()();
+
+  /// The row this one undoes, on a reversal only.
+  TextColumn get reversesId => text().nullable()();
+
+  /// The reversal that undid this row. Non-null is the whole already-reversed
+  /// test, which is what caps a row at one reversal.
+  TextColumn get reversedById => text().nullable()();
+
+  /// Absolute cash the counter reported, on a `count` only. Kept beside [delta]
+  /// because the variance alone cannot be read back into what was in the box.
+  IntColumn get countedAmount => integer().nullable()();
+
+  /// Optional photo of whatever receipt existed (JPEG blob), expense only.
+  /// Read **only** by the photo route — never select it in the ledger or report
+  /// path; use `selectOnly` excluding it, the same discipline `Payments.photo`
+  /// keeps.
+  BlobColumn get photo => blob().nullable()();
+
+  TextColumn get actorUserId => text().nullable()();
+
+  /// Attribution frozen at write time so a later rename or deletion cannot
+  /// rewrite the trail.
+  TextColumn get actorName => text().nullable()();
+  DateTimeColumn get at => dateTime()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// Single-row state for the [[Generic seed (sample data)]] job and its
 /// first-run prompt (ADR-0073).
 ///

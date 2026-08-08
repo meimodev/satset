@@ -82,6 +82,7 @@
   "auditTypeDiscountRemoved": "Discount−",
   "auditTypeBillReopened": "Reopen",
   "auditTypeBillClosed": "Close",
+  "auditTypeCashMovement": "Cash",
   "auditTypeMenuKilled": "Sold out",
   "auditTypeMenuRestored": "On sale",
   "auditTypeStaffCreated": "Staff +",
@@ -589,6 +590,44 @@
   "auditBillReopened": "Reopened bill {table}",
   "auditBillClosed": "Closed bill {table}",
   "auditBillWrittenOff": "Bill written off {amount} {table}",
+  "auditCashToppedUp": "Topped up petty cash {amount}",
+  "@auditCashToppedUp": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashSpent": "Petty cash expense {amount} — {category}",
+  "@auditCashSpent": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashCounted": "Counted petty cash {counted} (variance {variance})",
+  "@auditCashCounted": {
+    "placeholders": {
+      "counted": {
+        "type": "String"
+      },
+      "variance": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashReversed": "Reversed cash movement {amount}",
+  "@auditCashReversed": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "auditMenuKilled": "Marked {name} sold out",
   "auditMenuRestored": "{name} back on sale",
   "auditStaffCreated": "Created {name}",
@@ -1631,6 +1670,110 @@
   "capApplyDiscount": "Apply discount",
   "capSettleBill": "Settle bill",
   "capRefund": "Refund",
+  "capManageCash": "Manage petty cash",
+  "cashCatIngredients": "Ingredients",
+  "cashCatOperations": "Operations",
+  "cashCatTransport": "Transport",
+  "cashCatDailyWage": "Daily wages",
+  "cashCatOther": "Other",
+  "cashKindTopUp": "Top-up",
+  "cashKindExpense": "Expense",
+  "cashKindCount": "Count",
+  "cashKindReversal": "Reversal",
+  "kasTitle": "Petty cash",
+  "kasHubSubtitle": "Balance, expenses, counts",
+  "kasBalance": "Cash balance",
+  "kasLastCount": "Last counted {when}",
+  "@kasLastCount": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "kasNeverCounted": "Never counted",
+  "kasEmptyTitle": "The petty cash box is empty",
+  "kasEmptyBody": "Fund the box first — expenses can only be recorded against cash that is in it.",
+  "kasActionTopUp": "Top up",
+  "kasActionExpense": "Expense",
+  "kasActionCount": "Count",
+  "kasSheetTopUpTitle": "Top up petty cash",
+  "kasSheetExpenseTitle": "Cash expense",
+  "kasSheetCountTitle": "Count the box",
+  "kasFieldAmount": "Amount",
+  "kasFieldCounted": "Cash in the box",
+  "kasFieldNote": "Note",
+  "kasFieldReason": "Reason",
+  "kasFieldCategory": "Category",
+  "kasPhotoAdd": "Receipt photo",
+  "kasLedgerSays": "Ledger says {amount}",
+  "@kasLedgerSays": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "kasVariance": "Variance {amount}",
+  "@kasVariance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "kasDetailTitle": "Cash movement",
+  "kasCounted": "Counted {amount}",
+  "@kasCounted": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "kasReverse": "Reverse movement",
+  "kasReverseTitle": "Reverse this movement",
+  "kasReverseBody": "The row stays; the reversal is recorded as a new movement.",
+  "kasReversed": "Reversed",
+  "kasIsReversal": "Reverses an earlier movement",
+  "kasActorUnknown": "System",
+  "kasBy": "by {name}",
+  "@kasBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "kasErrInsufficient": "The box only holds {amount}",
+  "@kasErrInsufficient": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "kasErrReasonRequired": "A reason is required",
+  "kasErrAlreadyReversed": "This movement has already been reversed",
+  "kasErrNotReversible": "A reversal cannot itself be reversed",
+  "kasErrInvalidAmount": "Not a valid amount",
+  "kasErrFailed": "Could not save ({code})",
+  "@kasErrFailed": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "kasPhoneOnly": "Petty cash is read on a tablet.",
+  "rptSecKas": "Petty cash",
+  "rptKasOpening": "Opening",
+  "rptKasIn": "In",
+  "rptKasOut": "Out",
+  "rptKasVariance": "Count variance",
+  "rptKasClosing": "Closing",
+  "rptKasByCategory": "Expenses by category",
+  "rptKasEmpty": "No cash movements in this range.",
   "capCloseShift": "Close shift",
   "capEditMenu": "Edit menu",
   "capMarkSoldOut": "Mark sold out",
@@ -1651,6 +1794,7 @@
   "capSettleBillDesc": "Take payment and close the bill.",
   "capRefundDesc": "Return money on a bill that is already paid.",
   "capCloseShiftDesc": "End a shift and count the cash.",
+  "capManageCashDesc": "Record expenses from the petty cash box. Funding and counting it need the settings permission.",
   "capEditMenuDesc": "Add, edit and remove menu items and categories.",
   "capMarkSoldOutDesc": "Flag an item sold out without touching ingredient stock.",
   "capAdjustStockDesc": "Record a stocktake, receive goods and log waste.",

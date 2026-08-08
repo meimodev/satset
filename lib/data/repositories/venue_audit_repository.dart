@@ -28,6 +28,15 @@ const auditSummaryTypes = <AuditType>[
   AuditType.modify,
 ];
 
+/// What the log's type filter offers. A superset of [auditSummaryTypes]: a
+/// petty cash movement is worth filtering *to* but not worth a tile, because its
+/// totals live in the Kas report section and a tile here would be a second place
+/// for the same number to be wrong (ADR-0089).
+const auditFilterTypes = <AuditType>[
+  ...auditSummaryTypes,
+  AuditType.cashMovement,
+];
+
 typedef AuditTally = ({int count, int amount});
 
 class VenueAuditFilters {

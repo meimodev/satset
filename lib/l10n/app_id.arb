@@ -104,6 +104,7 @@
   "auditTypeDiscountRemoved": "Diskon−",
   "auditTypeBillReopened": "Buka",
   "auditTypeBillClosed": "Tutup",
+  "auditTypeCashMovement": "Kas",
   "auditTypeMenuKilled": "Stop jual",
   "auditTypeMenuRestored": "Jual lagi",
   "auditTypeStaffCreated": "Staf +",
@@ -1287,6 +1288,44 @@
         "type": "String"
       },
       "table": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashToppedUp": "Isi kas kecil {amount}",
+  "@auditCashToppedUp": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashSpent": "Pengeluaran kas {amount} — {category}",
+  "@auditCashSpent": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashCounted": "Opname kas {counted} (selisih {variance})",
+  "@auditCashCounted": {
+    "placeholders": {
+      "counted": {
+        "type": "String"
+      },
+      "variance": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashReversed": "Batalkan mutasi kas {amount}",
+  "@auditCashReversed": {
+    "placeholders": {
+      "amount": {
         "type": "String"
       }
     }
@@ -4508,6 +4547,110 @@
   "capApplyDiscount": "Beri diskon",
   "capSettleBill": "Tutup tagihan",
   "capRefund": "Refund",
+  "capManageCash": "Kelola kas kecil",
+  "cashCatIngredients": "Belanja bahan",
+  "cashCatOperations": "Operasional",
+  "cashCatTransport": "Transport",
+  "cashCatDailyWage": "Upah harian",
+  "cashCatOther": "Lainnya",
+  "cashKindTopUp": "Isi kas",
+  "cashKindExpense": "Pengeluaran",
+  "cashKindCount": "Opname",
+  "cashKindReversal": "Pembatalan",
+  "kasTitle": "Kas kecil",
+  "kasHubSubtitle": "Saldo, pengeluaran, opname",
+  "kasBalance": "Saldo kas",
+  "kasLastCount": "Opname terakhir {when}",
+  "@kasLastCount": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "kasNeverCounted": "Belum pernah diopname",
+  "kasEmptyTitle": "Kas kecil masih kosong",
+  "kasEmptyBody": "Isi kas dulu, baru pengeluaran bisa dicatat.",
+  "kasActionTopUp": "Isi kas",
+  "kasActionExpense": "Pengeluaran",
+  "kasActionCount": "Opname",
+  "kasSheetTopUpTitle": "Isi kas kecil",
+  "kasSheetExpenseTitle": "Pengeluaran kas",
+  "kasSheetCountTitle": "Opname kas",
+  "kasFieldAmount": "Jumlah",
+  "kasFieldCounted": "Uang yang ada di kotak",
+  "kasFieldNote": "Catatan",
+  "kasFieldReason": "Alasan",
+  "kasFieldCategory": "Kategori",
+  "kasPhotoAdd": "Foto nota",
+  "kasLedgerSays": "Catatan kas: {amount}",
+  "@kasLedgerSays": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "kasVariance": "Selisih {amount}",
+  "@kasVariance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "kasDetailTitle": "Mutasi kas",
+  "kasCounted": "Terhitung {amount}",
+  "@kasCounted": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "kasReverse": "Batalkan mutasi",
+  "kasReverseTitle": "Batalkan mutasi kas",
+  "kasReverseBody": "Baris ini tetap ada; pembatalan dicatat sebagai mutasi baru.",
+  "kasReversed": "Sudah dibatalkan",
+  "kasIsReversal": "Membatalkan mutasi sebelumnya",
+  "kasActorUnknown": "Sistem",
+  "kasBy": "oleh {name}",
+  "@kasBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "kasErrInsufficient": "Saldo kas cuma {amount}",
+  "@kasErrInsufficient": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "kasErrReasonRequired": "Alasan wajib diisi",
+  "kasErrAlreadyReversed": "Mutasi ini sudah dibatalkan",
+  "kasErrNotReversible": "Pembatalan tidak bisa dibatalkan lagi",
+  "kasErrInvalidAmount": "Jumlah tidak sah",
+  "kasErrFailed": "Gagal menyimpan ({code})",
+  "@kasErrFailed": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "kasPhoneOnly": "Kas kecil dibaca di tablet.",
+  "rptSecKas": "Kas kecil",
+  "rptKasOpening": "Saldo awal",
+  "rptKasIn": "Masuk",
+  "rptKasOut": "Keluar",
+  "rptKasVariance": "Selisih opname",
+  "rptKasClosing": "Saldo akhir",
+  "rptKasByCategory": "Pengeluaran per kategori",
+  "rptKasEmpty": "Tidak ada mutasi kas di rentang ini.",
   "capCloseShift": "Tutup shift",
   "capEditMenu": "Ubah menu",
   "capMarkSoldOut": "Tandai habis",
@@ -4528,6 +4671,7 @@
   "capSettleBillDesc": "Terima pembayaran dan tutup tagihan.",
   "capRefundDesc": "Kembalikan uang atas tagihan yang sudah dibayar.",
   "capCloseShiftDesc": "Akhiri shift dan hitung kas.",
+  "capManageCashDesc": "Catat pengeluaran dari kas kecil. Mengisi dan mengopname kas butuh izin pengaturan.",
   "capEditMenuDesc": "Tambah, ubah, dan hapus item serta kategori menu.",
   "capMarkSoldOutDesc": "Tandai item habis tanpa mengubah stok bahan.",
   "capAdjustStockDesc": "Catat opname, terima barang, dan buang bahan.",

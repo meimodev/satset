@@ -17,6 +17,14 @@ enum AuditType {
   /// log exists to record.
   menuKilled,
   menuRestored,
+
+  /// Any movement of the petty cash box — top-up, expense, count, reversal.
+  /// **One** type covering all four on purpose: the type axis drives the venue
+  /// log's filter chips, and four near-identical chips reading Kas would crowd
+  /// the bar to say one thing. Which movement it was lives on the [AuditKind]
+  /// (`cashToppedUp` / `cashSpent` / `cashCounted` / `cashReversed`), which is
+  /// the sentence axis and where that distinction belongs.
+  cashMovement,
   staffCreated,
   staffDeleted,
   staffDisabled,
@@ -61,6 +69,9 @@ bool isAdminAuditType(AuditType t) {
     case AuditType.billClosed:
     case AuditType.menuKilled:
     case AuditType.menuRestored:
+    // A money act, and it sits with the money acts: a supervisor reading the
+    // log should see the box move without holding `manageStaff`.
+    case AuditType.cashMovement:
       return false;
   }
 }

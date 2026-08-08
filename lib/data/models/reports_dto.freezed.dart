@@ -36,6 +36,11 @@ mixin _$ReportsSnapshotDto {
   /// reads the live log instead.
   MoneyAuditSectionDto get moneyAudit => throw _privateConstructorUsedError;
 
+  /// The petty cash box over the same window (§Kas kecil). Its own section
+  /// because none of it is revenue (ADR-0089) — no figure here appears in
+  /// [sales], and no figure in [sales] is net of it.
+  KasSectionDto get kas => throw _privateConstructorUsedError;
+
   /// Serializes this ReportsSnapshotDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -64,6 +69,7 @@ abstract class $ReportsSnapshotDtoCopyWith<$Res> {
     MenuSectionDto menu,
     OpsSectionDto ops,
     MoneyAuditSectionDto moneyAudit,
+    KasSectionDto kas,
   });
 
   $FilterOptionsDtoCopyWith<$Res> get filterOptions;
@@ -72,6 +78,7 @@ abstract class $ReportsSnapshotDtoCopyWith<$Res> {
   $MenuSectionDtoCopyWith<$Res> get menu;
   $OpsSectionDtoCopyWith<$Res> get ops;
   $MoneyAuditSectionDtoCopyWith<$Res> get moneyAudit;
+  $KasSectionDtoCopyWith<$Res> get kas;
 }
 
 /// @nodoc
@@ -99,6 +106,7 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
     Object? menu = null,
     Object? ops = null,
     Object? moneyAudit = null,
+    Object? kas = null,
   }) {
     return _then(
       _value.copyWith(
@@ -142,6 +150,10 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
                 ? _value.moneyAudit
                 : moneyAudit // ignore: cast_nullable_to_non_nullable
                       as MoneyAuditSectionDto,
+            kas: null == kas
+                ? _value.kas
+                : kas // ignore: cast_nullable_to_non_nullable
+                      as KasSectionDto,
           )
           as $Val,
     );
@@ -206,6 +218,16 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
       return _then(_value.copyWith(moneyAudit: value) as $Val);
     });
   }
+
+  /// Create a copy of ReportsSnapshotDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $KasSectionDtoCopyWith<$Res> get kas {
+    return $KasSectionDtoCopyWith<$Res>(_value.kas, (value) {
+      return _then(_value.copyWith(kas: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -228,6 +250,7 @@ abstract class _$$ReportsSnapshotDtoImplCopyWith<$Res>
     MenuSectionDto menu,
     OpsSectionDto ops,
     MoneyAuditSectionDto moneyAudit,
+    KasSectionDto kas,
   });
 
   @override
@@ -242,6 +265,8 @@ abstract class _$$ReportsSnapshotDtoImplCopyWith<$Res>
   $OpsSectionDtoCopyWith<$Res> get ops;
   @override
   $MoneyAuditSectionDtoCopyWith<$Res> get moneyAudit;
+  @override
+  $KasSectionDtoCopyWith<$Res> get kas;
 }
 
 /// @nodoc
@@ -268,6 +293,7 @@ class __$$ReportsSnapshotDtoImplCopyWithImpl<$Res>
     Object? menu = null,
     Object? ops = null,
     Object? moneyAudit = null,
+    Object? kas = null,
   }) {
     return _then(
       _$ReportsSnapshotDtoImpl(
@@ -311,6 +337,10 @@ class __$$ReportsSnapshotDtoImplCopyWithImpl<$Res>
             ? _value.moneyAudit
             : moneyAudit // ignore: cast_nullable_to_non_nullable
                   as MoneyAuditSectionDto,
+        kas: null == kas
+            ? _value.kas
+            : kas // ignore: cast_nullable_to_non_nullable
+                  as KasSectionDto,
       ),
     );
   }
@@ -330,6 +360,7 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
     required this.menu,
     required this.ops,
     this.moneyAudit = const MoneyAuditSectionDto(),
+    this.kas = const KasSectionDto(),
   });
 
   factory _$ReportsSnapshotDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -361,9 +392,16 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
   @JsonKey()
   final MoneyAuditSectionDto moneyAudit;
 
+  /// The petty cash box over the same window (§Kas kecil). Its own section
+  /// because none of it is revenue (ADR-0089) — no figure here appears in
+  /// [sales], and no figure in [sales] is net of it.
+  @override
+  @JsonKey()
+  final KasSectionDto kas;
+
   @override
   String toString() {
-    return 'ReportsSnapshotDto(generatedAt: $generatedAt, rangeFrom: $rangeFrom, rangeTo: $rangeTo, range: $range, filterOptions: $filterOptions, sales: $sales, staff: $staff, menu: $menu, ops: $ops, moneyAudit: $moneyAudit)';
+    return 'ReportsSnapshotDto(generatedAt: $generatedAt, rangeFrom: $rangeFrom, rangeTo: $rangeTo, range: $range, filterOptions: $filterOptions, sales: $sales, staff: $staff, menu: $menu, ops: $ops, moneyAudit: $moneyAudit, kas: $kas)';
   }
 
   @override
@@ -384,7 +422,8 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
             (identical(other.menu, menu) || other.menu == menu) &&
             (identical(other.ops, ops) || other.ops == ops) &&
             (identical(other.moneyAudit, moneyAudit) ||
-                other.moneyAudit == moneyAudit));
+                other.moneyAudit == moneyAudit) &&
+            (identical(other.kas, kas) || other.kas == kas));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -401,6 +440,7 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
     menu,
     ops,
     moneyAudit,
+    kas,
   );
 
   /// Create a copy of ReportsSnapshotDto
@@ -432,6 +472,7 @@ abstract class _ReportsSnapshotDto implements ReportsSnapshotDto {
     required final MenuSectionDto menu,
     required final OpsSectionDto ops,
     final MoneyAuditSectionDto moneyAudit,
+    final KasSectionDto kas,
   }) = _$ReportsSnapshotDtoImpl;
 
   factory _ReportsSnapshotDto.fromJson(Map<String, dynamic> json) =
@@ -461,6 +502,12 @@ abstract class _ReportsSnapshotDto implements ReportsSnapshotDto {
   /// reads the live log instead.
   @override
   MoneyAuditSectionDto get moneyAudit;
+
+  /// The petty cash box over the same window (§Kas kecil). Its own section
+  /// because none of it is revenue (ADR-0089) — no figure here appears in
+  /// [sales], and no figure in [sales] is net of it.
+  @override
+  KasSectionDto get kas;
 
   /// Create a copy of ReportsSnapshotDto
   /// with the given fields replaced by the non-null parameter values.
@@ -5748,6 +5795,323 @@ abstract class _VoidReasonDto implements VoidReasonDto {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$VoidReasonDtoImplCopyWith<_$VoidReasonDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+KasSectionDto _$KasSectionDtoFromJson(Map<String, dynamic> json) {
+  return _KasSectionDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$KasSectionDto {
+  int get opening => throw _privateConstructorUsedError;
+  int get inflow => throw _privateConstructorUsedError;
+  int get outflow => throw _privateConstructorUsedError;
+  int get variance => throw _privateConstructorUsedError;
+  int get closing => throw _privateConstructorUsedError;
+  Map<String, int> get byCategory => throw _privateConstructorUsedError;
+
+  /// Movements in the window. Zero is what the empty line keys off — a box
+  /// with a balance and no movements is still nothing to report on.
+  int get count => throw _privateConstructorUsedError;
+
+  /// Serializes this KasSectionDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of KasSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $KasSectionDtoCopyWith<KasSectionDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $KasSectionDtoCopyWith<$Res> {
+  factory $KasSectionDtoCopyWith(
+    KasSectionDto value,
+    $Res Function(KasSectionDto) then,
+  ) = _$KasSectionDtoCopyWithImpl<$Res, KasSectionDto>;
+  @useResult
+  $Res call({
+    int opening,
+    int inflow,
+    int outflow,
+    int variance,
+    int closing,
+    Map<String, int> byCategory,
+    int count,
+  });
+}
+
+/// @nodoc
+class _$KasSectionDtoCopyWithImpl<$Res, $Val extends KasSectionDto>
+    implements $KasSectionDtoCopyWith<$Res> {
+  _$KasSectionDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of KasSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? opening = null,
+    Object? inflow = null,
+    Object? outflow = null,
+    Object? variance = null,
+    Object? closing = null,
+    Object? byCategory = null,
+    Object? count = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            opening: null == opening
+                ? _value.opening
+                : opening // ignore: cast_nullable_to_non_nullable
+                      as int,
+            inflow: null == inflow
+                ? _value.inflow
+                : inflow // ignore: cast_nullable_to_non_nullable
+                      as int,
+            outflow: null == outflow
+                ? _value.outflow
+                : outflow // ignore: cast_nullable_to_non_nullable
+                      as int,
+            variance: null == variance
+                ? _value.variance
+                : variance // ignore: cast_nullable_to_non_nullable
+                      as int,
+            closing: null == closing
+                ? _value.closing
+                : closing // ignore: cast_nullable_to_non_nullable
+                      as int,
+            byCategory: null == byCategory
+                ? _value.byCategory
+                : byCategory // ignore: cast_nullable_to_non_nullable
+                      as Map<String, int>,
+            count: null == count
+                ? _value.count
+                : count // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$KasSectionDtoImplCopyWith<$Res>
+    implements $KasSectionDtoCopyWith<$Res> {
+  factory _$$KasSectionDtoImplCopyWith(
+    _$KasSectionDtoImpl value,
+    $Res Function(_$KasSectionDtoImpl) then,
+  ) = __$$KasSectionDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    int opening,
+    int inflow,
+    int outflow,
+    int variance,
+    int closing,
+    Map<String, int> byCategory,
+    int count,
+  });
+}
+
+/// @nodoc
+class __$$KasSectionDtoImplCopyWithImpl<$Res>
+    extends _$KasSectionDtoCopyWithImpl<$Res, _$KasSectionDtoImpl>
+    implements _$$KasSectionDtoImplCopyWith<$Res> {
+  __$$KasSectionDtoImplCopyWithImpl(
+    _$KasSectionDtoImpl _value,
+    $Res Function(_$KasSectionDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of KasSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? opening = null,
+    Object? inflow = null,
+    Object? outflow = null,
+    Object? variance = null,
+    Object? closing = null,
+    Object? byCategory = null,
+    Object? count = null,
+  }) {
+    return _then(
+      _$KasSectionDtoImpl(
+        opening: null == opening
+            ? _value.opening
+            : opening // ignore: cast_nullable_to_non_nullable
+                  as int,
+        inflow: null == inflow
+            ? _value.inflow
+            : inflow // ignore: cast_nullable_to_non_nullable
+                  as int,
+        outflow: null == outflow
+            ? _value.outflow
+            : outflow // ignore: cast_nullable_to_non_nullable
+                  as int,
+        variance: null == variance
+            ? _value.variance
+            : variance // ignore: cast_nullable_to_non_nullable
+                  as int,
+        closing: null == closing
+            ? _value.closing
+            : closing // ignore: cast_nullable_to_non_nullable
+                  as int,
+        byCategory: null == byCategory
+            ? _value._byCategory
+            : byCategory // ignore: cast_nullable_to_non_nullable
+                  as Map<String, int>,
+        count: null == count
+            ? _value.count
+            : count // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$KasSectionDtoImpl implements _KasSectionDto {
+  const _$KasSectionDtoImpl({
+    this.opening = 0,
+    this.inflow = 0,
+    this.outflow = 0,
+    this.variance = 0,
+    this.closing = 0,
+    final Map<String, int> byCategory = const <String, int>{},
+    this.count = 0,
+  }) : _byCategory = byCategory;
+
+  factory _$KasSectionDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$KasSectionDtoImplFromJson(json);
+
+  @override
+  @JsonKey()
+  final int opening;
+  @override
+  @JsonKey()
+  final int inflow;
+  @override
+  @JsonKey()
+  final int outflow;
+  @override
+  @JsonKey()
+  final int variance;
+  @override
+  @JsonKey()
+  final int closing;
+  final Map<String, int> _byCategory;
+  @override
+  @JsonKey()
+  Map<String, int> get byCategory {
+    if (_byCategory is EqualUnmodifiableMapView) return _byCategory;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_byCategory);
+  }
+
+  /// Movements in the window. Zero is what the empty line keys off — a box
+  /// with a balance and no movements is still nothing to report on.
+  @override
+  @JsonKey()
+  final int count;
+
+  @override
+  String toString() {
+    return 'KasSectionDto(opening: $opening, inflow: $inflow, outflow: $outflow, variance: $variance, closing: $closing, byCategory: $byCategory, count: $count)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$KasSectionDtoImpl &&
+            (identical(other.opening, opening) || other.opening == opening) &&
+            (identical(other.inflow, inflow) || other.inflow == inflow) &&
+            (identical(other.outflow, outflow) || other.outflow == outflow) &&
+            (identical(other.variance, variance) ||
+                other.variance == variance) &&
+            (identical(other.closing, closing) || other.closing == closing) &&
+            const DeepCollectionEquality().equals(
+              other._byCategory,
+              _byCategory,
+            ) &&
+            (identical(other.count, count) || other.count == count));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    opening,
+    inflow,
+    outflow,
+    variance,
+    closing,
+    const DeepCollectionEquality().hash(_byCategory),
+    count,
+  );
+
+  /// Create a copy of KasSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$KasSectionDtoImplCopyWith<_$KasSectionDtoImpl> get copyWith =>
+      __$$KasSectionDtoImplCopyWithImpl<_$KasSectionDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$KasSectionDtoImplToJson(this);
+  }
+}
+
+abstract class _KasSectionDto implements KasSectionDto {
+  const factory _KasSectionDto({
+    final int opening,
+    final int inflow,
+    final int outflow,
+    final int variance,
+    final int closing,
+    final Map<String, int> byCategory,
+    final int count,
+  }) = _$KasSectionDtoImpl;
+
+  factory _KasSectionDto.fromJson(Map<String, dynamic> json) =
+      _$KasSectionDtoImpl.fromJson;
+
+  @override
+  int get opening;
+  @override
+  int get inflow;
+  @override
+  int get outflow;
+  @override
+  int get variance;
+  @override
+  int get closing;
+  @override
+  Map<String, int> get byCategory;
+
+  /// Movements in the window. Zero is what the empty line keys off — a box
+  /// with a balance and no movements is still nothing to report on.
+  @override
+  int get count;
+
+  /// Create a copy of KasSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$KasSectionDtoImplCopyWith<_$KasSectionDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
