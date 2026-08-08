@@ -875,6 +875,62 @@ class AppL10nId extends AppL10n {
   String get billingCta => 'Ketuk untuk perpanjang lewat WhatsApp.';
 
   @override
+  String updateAvailable(String latest, String installed) {
+    return 'Versi $latest tersedia. Perangkat ini di $installed.';
+  }
+
+  @override
+  String get updateAction => 'Perbarui';
+
+  @override
+  String get updateBlockedTitle => 'Versi ini tidak didukung lagi';
+
+  @override
+  String updateBlockedBody(String installed, String min) {
+    return 'Perangkat ini menjalankan versi $installed. Versi minimum sekarang $min.';
+  }
+
+  @override
+  String get updateBlockedAskAdmin => 'Minta admin memperbarui perangkat ini.';
+
+  @override
+  String updateDownloading(int percent) {
+    return 'Mengunduh $percent%';
+  }
+
+  @override
+  String get updateInstalling => 'Membuka pemasang...';
+
+  @override
+  String get updateFailed => 'Unduhan gagal. Periksa koneksi lalu coba lagi.';
+
+  @override
+  String get updateRetry => 'Coba lagi';
+
+  @override
+  String get updatePermissionNeeded =>
+      'Izinkan pemasangan aplikasi dari SatSet, lalu coba lagi.';
+
+  @override
+  String get fltReleaseGate => 'Gerbang versi';
+
+  @override
+  String get fltReleaseGateHint => 'Kosongkan untuk menghapus batas.';
+
+  @override
+  String get fltReleaseGateMin => 'Minimum (wajib)';
+
+  @override
+  String get fltReleaseGateRecommended => 'Disarankan';
+
+  @override
+  String get fltReleaseGateLatest => 'Terbaru';
+
+  @override
+  String get fltReleaseGateInvalid =>
+      'Format harus 1.2.3, dan min <= disarankan <= terbaru.';
+
+  @override
   String get bootBlockStale =>
       'Perlu koneksi internet untuk verifikasi admin. Sambungkan internet lalu masuk lagi.';
 

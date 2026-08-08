@@ -26,6 +26,11 @@
         android:maxSdkVersion="30"/>
     <uses-feature android:name="android.hardware.bluetooth" android:required="false"/>
 
+    <!-- The update gate installs the release APK in-app (ADR-0087). SatSet is
+         side-loaded from a GitHub Release, not Play, so there is no store to do
+         this. Only ever exercised on the Main Device. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+
     <application
         android:label="SatSet"
         android:name="${applicationName}"

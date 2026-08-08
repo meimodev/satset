@@ -8,8 +8,11 @@ import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/order_history_repository.dart';
 import 'package:satset/data/repositories/reports_repository.dart';
 import 'package:satset/data/repositories/staff_report_repository.dart';
+import 'package:satset/data/repositories/release_gate_repository.dart';
+import 'package:satset/data/services/app_update_service.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
 import 'package:satset/data/services/ws_client.dart';
+import 'package:satset/domain/models/release_gate.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -50,6 +53,8 @@ import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/widgets/status_chip.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
 import 'package:satset/ui/core/widgets/tag_badge_row.dart';
+import 'package:satset/ui/core/widgets/update_banner.dart';
+import 'package:satset/ui/core/widgets/update_block.dart';
 import 'package:satset/ui/features/me/widgets/theme_sheet.dart';
 
 import 'book_stubs.dart';
@@ -126,6 +131,27 @@ Override _grace(AdminGrace? g) =>
 
 Override _billing(VenueBillingNotice? n) =>
     venueBillingNoticeProvider.overrideWithValue(n);
+
+/// The release gate (ADR-0087), parked. `listen: false` keeps the notifier off
+/// the cloud and off the socket, so a book state is exactly the gate it names.
+/// [host] is the Main Device question both widgets branch on.
+List<Override> _gate(ReleaseGate g, {bool host = true}) => [
+  isHostDeviceProvider.overrideWithValue(host),
+  releaseGateProvider.overrideWith(
+    (ref) => ReleaseGateRepository(ref: ref, seed: g, listen: false),
+  ),
+];
+
+/// The installer mid-flight. Inert — [AppUpdateService] starts nothing until
+/// `downloadAndInstall` is called, so seeding `state` touches no network.
+class _BookInstall extends AppUpdateService {
+  _BookInstall(UpdateInstall s) {
+    state = s;
+  }
+}
+
+Override _install(UpdateInstall s) =>
+    appUpdateServiceProvider.overrideWith((ref) => _BookInstall(s));
 
 final _menu = <Override>[
   menuItemsProvider.overrideWith((ref) => BookStubs.menuItems),
@@ -1549,6 +1575,110 @@ List<BookEntry> bookEntries() => [
             ),
           ),
         ], const VenueBillingBanner()),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'UpdateBanner',
+    group: _gChrome,
+    note:
+        'Main Device only — the one device that can install. The floors are '
+        '9.9.9 so the state is the same whatever this build happens to be.',
+    states: [
+      BookState(
+        'up to date — renders nothing',
+        (c, r) => _scope(_gate(
+          const ReleaseGate(latest: '1.0.0'),
+        ), const UpdateBanner()),
+      ),
+      BookState(
+        'update available',
+        (c, r) => _scope(_gate(
+          const ReleaseGate(recommended: '9.9.9', latest: '9.9.9'),
+        ), const UpdateBanner()),
+      ),
+      BookState(
+        'downloading',
+        (c, r) => _scope([
+          ..._gate(const ReleaseGate(recommended: '9.9.9', latest: '9.9.9')),
+          _install(const UpdateDownloading(42)),
+        ], const UpdateBanner()),
+      ),
+      BookState(
+        'failed — the CTA becomes a retry',
+        (c, r) => _scope([
+          ..._gate(const ReleaseGate(recommended: '9.9.9', latest: '9.9.9')),
+          _install(const UpdateFailed()),
+        ], const UpdateBanner()),
+      ),
+      BookState(
+        'a client is looking — renders nothing',
+        (c, r) => _scope(
+          _gate(
+            const ReleaseGate(recommended: '9.9.9', latest: '9.9.9'),
+            host: false,
+          ),
+          const UpdateBanner(),
+        ),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'UpdateBlock',
+    group: _gChrome,
+    note:
+        'Covers everything and cannot be popped. Sized here by the book frame; '
+        'in the app it is a full-screen layer above the router.',
+    states: [
+      BookState(
+        'above the floor — passes the child through',
+        (c, r) => _scope(
+          _gate(const ReleaseGate(min: '1.0.0')),
+          const SizedBox(
+            height: 240,
+            child: UpdateBlock(child: _BookSwatch('app')),
+          ),
+        ),
+      ),
+      BookState(
+        'blocked, on the Main Device — can install',
+        (c, r) => _scope(
+          _gate(const ReleaseGate(min: '9.9.9', latest: '9.9.9')),
+          const SizedBox(
+            height: 320,
+            child: UpdateBlock(child: _BookSwatch('app')),
+          ),
+        ),
+      ),
+      BookState(
+        'blocked, downloading',
+        (c, r) => _scope([
+          ..._gate(const ReleaseGate(min: '9.9.9', latest: '9.9.9')),
+          _install(const UpdateDownloading(7)),
+        ], const SizedBox(
+          height: 320,
+          child: UpdateBlock(child: _BookSwatch('app')),
+        )),
+      ),
+      BookState(
+        'blocked, install permission refused',
+        (c, r) => _scope([
+          ..._gate(const ReleaseGate(min: '9.9.9', latest: '9.9.9')),
+          _install(const UpdateNeedsPermission()),
+        ], const SizedBox(
+          height: 320,
+          child: UpdateBlock(child: _BookSwatch('app')),
+        )),
+      ),
+      BookState(
+        'blocked, on a client — fetch the admin',
+        (c, r) => _scope(
+          _gate(const ReleaseGate(min: '9.9.9'), host: false),
+          const SizedBox(
+            height: 320,
+            child: UpdateBlock(child: _BookSwatch('app')),
+          ),
+        ),
       ),
     ],
   ),

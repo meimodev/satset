@@ -376,6 +376,50 @@
     }
   },
   "billingCta": "Ketuk untuk perpanjang lewat WhatsApp.",
+  "updateAvailable": "Versi {latest} tersedia. Perangkat ini di {installed}.",
+  "@updateAvailable": {
+    "description": "Shell banner on the Main Device only (ADR-0087). Version numbers only — no release notes.",
+    "placeholders": {
+      "latest": {
+        "type": "String"
+      },
+      "installed": {
+        "type": "String"
+      }
+    }
+  },
+  "updateAction": "Perbarui",
+  "updateBlockedTitle": "Versi ini tidak didukung lagi",
+  "updateBlockedBody": "Perangkat ini menjalankan versi {installed}. Versi minimum sekarang {min}.",
+  "@updateBlockedBody": {
+    "placeholders": {
+      "installed": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      }
+    }
+  },
+  "updateBlockedAskAdmin": "Minta admin memperbarui perangkat ini.",
+  "updateDownloading": "Mengunduh {percent}%",
+  "@updateDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "updateInstalling": "Membuka pemasang...",
+  "updateFailed": "Unduhan gagal. Periksa koneksi lalu coba lagi.",
+  "updateRetry": "Coba lagi",
+  "updatePermissionNeeded": "Izinkan pemasangan aplikasi dari SatSet, lalu coba lagi.",
+  "fltReleaseGate": "Gerbang versi",
+  "fltReleaseGateHint": "Kosongkan untuk menghapus batas.",
+  "fltReleaseGateMin": "Minimum (wajib)",
+  "fltReleaseGateRecommended": "Disarankan",
+  "fltReleaseGateLatest": "Terbaru",
+  "fltReleaseGateInvalid": "Format harus 1.2.3, dan min <= disarankan <= terbaru.",
   "bootBlockStale": "Perlu koneksi internet untuk verifikasi admin. Sambungkan internet lalu masuk lagi.",
   "bootBlockIneligible": "Akses admin dicabut. Hubungi pengelola.",
   "tempPasswordTitle": "Ganti sandi",

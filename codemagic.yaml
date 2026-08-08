@@ -16,7 +16,14 @@
 #        / CM_KEY_ALIAS / CM_KEY_PASSWORD at build time.
 #   3. Environment variables group `firebase_credentials` (mark Secure):
 #        FIREBASE_SERVICE_ACCOUNT = full JSON of a service account that has the
-#        "Firebase App Distribution Admin" role on project satset-3a795.
+#        "Firebase App Distribution Admin" role on project satset-3a795. The
+#        last step of this workflow also writes the release gate at
+#        config/release_gate (ADR-0087), which needs datastore.entities.create
+#        / .update — the project's `firebase-adminsdk` account already carries
+#        both, via roles/firebase.sdkAdminServiceAgent, so a key generated from
+#        the Firebase console needs nothing added. A hand-rolled account with
+#        App Distribution alone does: grant it "Cloud Datastore User" or the
+#        build ships the APK and then fails on the gate write.
 #   4. Environment variables group `github_release` (mark Secure):
 #        GH_TOKEN = fine-grained PAT on meimodev/satset with Contents: write.
 #
@@ -73,6 +80,11 @@ workflows:
             --title "SatSet $VERSION" \
             --generate-notes \
             "satset-$VERSION.apk" "satset.apk"
+      # LAST step, deliberately. Raising the floor before the APK is published
+      # points every device in the fleet at a download that does not exist yet,
+      # and nothing inside the app recovers from that. See ADR-0087.
+      - name: Publish the release gate
+        script: node tool/publish_release_gate.mjs "$CM_TAG"
     artifacts:
       - build/**/outputs/**/*.apk
     publishing:

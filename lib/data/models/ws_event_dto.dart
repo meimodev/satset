@@ -66,6 +66,11 @@ class WsEventTypes {
   /// payment/refund recorded, or a receipt reopened. Carries the tableId so the
   /// cashier list + any open bill detail re-fetch. See ADR-0023.
   static const billUpdated = 'bill.updated';
+  /// The [[Release gate]] changed in the cloud (ADR-0087). Payload is the gate
+  /// itself — `{min, recommended, latest}`, any key absent. Only the host reads
+  /// Firebase, so this is how a client hears that a floor moved without waiting
+  /// for its next `/healthz` poll.
+  static const releaseGate = 'release.gate';
   static const reservationCreated = 'reservation.created';
   static const reservationUpdated = 'reservation.updated';
   static const reservationDeleted = 'reservation.deleted';

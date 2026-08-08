@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
+import 'package:satset/domain/models/release_gate.dart';
 
 /// Eligibility states shared by `admins/{uid}.status` and `venues/{vid}.status`.
 /// Only `active` permits operation. See
@@ -302,6 +303,24 @@ class FirebaseAdminService {
   /// Live per-venue kill-switch listener (`venues/{vid}.status`). See ADR-0016.
   Stream<Venue?> watchVenue(String vid) =>
       _venueDoc(vid).snapshots().map((s) => _venueFromSnap(vid, s));
+
+  /// Live release-gate listener (`config/release_gate`). See ADR-0087.
+  ///
+  /// The one document in this app that belongs to no venue and no admin — it
+  /// describes which builds of SatSet the fleet may run, which is a fact about
+  /// the software, not about a customer. Every signed-in admin may read it;
+  /// nothing on a client writes it. Firestore's cache serves it offline exactly
+  /// as it does the kill switch, so a host that has seen the gate once keeps
+  /// relaying it to its clients through a WAN outage.
+  Stream<ReleaseGate> watchReleaseGate() => _fs
+      .collection('config')
+      .doc('release_gate')
+      .snapshots()
+      .map(
+        (s) => s.exists
+            ? ReleaseGate.fromJson(s.data() ?? const {})
+            : ReleaseGate.unknown,
+      );
 
   /// Heartbeat: stamp `venues/{vid}.lastSeenAt` so the fleet console can derive
   /// offline duration. A field-scoped security rule lets a venue's own admin

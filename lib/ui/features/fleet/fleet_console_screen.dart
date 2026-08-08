@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:satset/data/services/fleet_service.dart';
+import 'package:satset/domain/models/release_gate.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -140,6 +141,14 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
                           icon: Icons.add,
                           size: SatButtonSize.sm,
                           onTap: _busy || offline ? null : _createVenueDialog,
+                        ),
+                        const SizedBox(width: Sp.s1),
+                        // Fleet-wide, not per-venue — so it sits in the
+                        // toolbar and not on a tile. See ADR-0087.
+                        SatIconButton.plain(
+                          icon: Icons.system_update_alt_rounded,
+                          tooltip: context.l10n.fltReleaseGate,
+                          onTap: _busy || offline ? null : _releaseGateDialog,
                         ),
                         const SizedBox(width: Sp.s1),
                         SatIconButton.plain(
@@ -558,6 +567,28 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
     );
   }
 
+  /// The manual override on the gate CI writes from the tag (ADR-0087). Rare,
+  /// fleet-wide, and the only way back from a `-breaking` tag that blocked a
+  /// fleet mid-service — so it is a toolbar button and not a venue action.
+  Future<void> _releaseGateDialog() async {
+    final okMsg = context.l10n.saved;
+    final current =
+        ref.read(fleetReleaseGateProvider).valueOrNull ?? ReleaseGate.unknown;
+    final draft = await showSatDialog<ReleaseGate>(
+      context,
+      builder: (_) => ReleaseGateDialog(current: current),
+    );
+    if (draft == null) return;
+    await _run(
+      () => _svc.setReleaseGate(
+        min: draft.min ?? '',
+        recommended: draft.recommended ?? '',
+        latest: draft.latest ?? '',
+      ),
+      okMsg,
+    );
+  }
+
   /// [confirmLabel] names the act — "Tangguhkan", "Blokir", "Keluar". A danger
   /// button that just says "Lanjut" makes every confirmation the same tap.
   void _confirm(
@@ -734,6 +765,124 @@ class _NewVenueDialogState extends State<NewVenueDialog> {
                   address: _addr.text,
                   plan: _plan,
                 ))
+              : null,
+        ),
+      ],
+    );
+  }
+}
+
+/// The release gate override (ADR-0087). Three version fields, no version
+/// picker and no release list: the super admin is reading the tag they just
+/// pushed off another screen, and a picker here would need its own source of
+/// truth for what has been built.
+///
+/// Owns its controllers for the reason [NewVenueDialog] does. Validation is
+/// inside, and it is the same rule the callable enforces — a dialog that lets
+/// an invalid ordering through would pop, fire, and fail into a toast.
+class ReleaseGateDialog extends StatefulWidget {
+  const ReleaseGateDialog({super.key, required this.current});
+
+  final ReleaseGate current;
+
+  @override
+  State<ReleaseGateDialog> createState() => _ReleaseGateDialogState();
+}
+
+class _ReleaseGateDialogState extends State<ReleaseGateDialog> {
+  late final _min = TextEditingController(text: widget.current.min ?? '');
+  late final _rec = TextEditingController(
+    text: widget.current.recommended ?? '',
+  );
+  late final _latest = TextEditingController(text: widget.current.latest ?? '');
+
+  @override
+  void dispose() {
+    _min.dispose();
+    _rec.dispose();
+    _latest.dispose();
+    super.dispose();
+  }
+
+  /// Empty is legal everywhere — it clears that floor. Anything else must parse
+  /// and must not break the min ≤ recommended ≤ latest ordering, comparing only
+  /// the pairs that are actually set.
+  bool get _valid {
+    final v = [_min.text.trim(), _rec.text.trim(), _latest.text.trim()];
+    if (v.any((s) => s.isNotEmpty && parseVersion(s) == null)) return false;
+    final set = [for (final s in v) s.isEmpty ? null : s];
+    for (var i = 0; i < set.length; i++) {
+      for (var j = i + 1; j < set.length; j++) {
+        if (set[i] != null &&
+            set[j] != null &&
+            compareVersions(set[i], set[j]) > 0) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final valid = _valid;
+    return AlertDialog(
+      backgroundColor: sc.bg1,
+      title: Text(
+        context.l10n.fltReleaseGate,
+        style: SatType.h3(color: sc.textHi),
+      ),
+      scrollable: true,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SatField.text(
+            controller: _min,
+            label: context.l10n.fltReleaseGateMin,
+            hint: '1.2.3',
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: Sp.s3),
+          SatField.text(
+            controller: _rec,
+            label: context.l10n.fltReleaseGateRecommended,
+            hint: '1.2.3',
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: Sp.s3),
+          SatField.text(
+            controller: _latest,
+            label: context.l10n.fltReleaseGateLatest,
+            hint: '1.2.3',
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: Sp.s2),
+          Text(
+            valid
+                ? context.l10n.fltReleaseGateHint
+                : context.l10n.fltReleaseGateInvalid,
+            style: SatType.bodyS(color: valid ? sc.textDim : sc.urgent),
+          ),
+        ],
+      ),
+      actions: [
+        SatButton.ghost(
+          label: context.l10n.cancel,
+          onTap: () => Navigator.pop(context),
+        ),
+        SatButton.primary(
+          label: context.l10n.save,
+          onTap: valid
+              ? () => Navigator.pop(
+                  context,
+                  ReleaseGate(
+                    min: _min.text.trim(),
+                    recommended: _rec.text.trim(),
+                    latest: _latest.text.trim(),
+                  ),
+                )
               : null,
         ),
       ],

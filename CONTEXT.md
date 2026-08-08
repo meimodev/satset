@@ -505,6 +505,30 @@ The venue-side counterpart to [[Venue billing]] — a shell banner on the [[Main
 
 **Gated on `editSettings`**, which the grace banner deliberately is not: reconnecting the wifi is operational and any staff member can act on it, while "the restaurant has not paid" read by a waiter mid-shift is a different message with no action attached. Tapping opens WhatsApp to the developer with the venue's **name and id** prefilled — names repeat across the fleet, the id is what makes the venue findable in one tap on the other end. There is no in-app payment; this is the whole of the renewal path. _Avoid_: showing it to the floor; wording it as a shutdown warning; a second definition of "ending" that disagrees with the console's.
 
+### Release gate (Gerbang versi)
+**ID · EN** — Pembaruan · Update; Perbarui · Update (the button); Versi · Version; Pembaruan wajib · Mandatory update.
+
+Three semver strings — `min`, `recommended`, `latest` — in **one global Firestore doc**, `config/release_gate`, describing what the fleet is allowed to be running. Not per-venue: the gate says which builds of SatSet are acceptable anywhere, and a venue-by-venue floor would be a rollout schedule, which is a different thing nobody asked for.
+
+Written by **Codemagic, from the release tag** — `/push-deploy`'s `-breaking` / `-recommended` suffix, which CI already parses off `CM_TAG` and used to discard. The write cascades so `min ≤ recommended ≤ latest` can never be violated, and it happens **after the GitHub Release publishes**, never before: a floor that rises while the APK is still building points every device at a download that does not exist. The [[Fleet console]] can edit the same doc, and that override is the only correction that reaches a venue nobody can drive to.
+
+**Only the [[Main Device|host]] reads the cloud.** It caches the gate off the `config/release_gate` listener, folds it into the unauthenticated `/healthz` payload, and pushes a `releaseGate` WS event when it changes; clients never touch Firebase (see [[Admin session (Firebase-gated)]]). A paired client persists the last gate it saw, so it stays gated with the host down. An unpaired client has no gate and is never blocked.
+
+**An unknown gate never blocks.** No doc, no network, an unparseable version — every one of them fails open. Comparison is on `versionName` alone; the build number is invisible to the gate, because CI is free to move it and the tag is not.
+
+_Avoid_: a per-venue gate; a gate written before the artefact exists; blocking on a version the device could not read; reading the build number.
+
+### Pembaruan wajib (Mandatory update)
+**ID · EN** — Pembaruan wajib · Mandatory update; "Versi ini tidak didukung lagi" · "This version is no longer supported"; "Minta admin memperbarui perangkat ini" · "Ask an admin to update this device".
+
+A **policy floor, not a wire-compatibility floor**. `min` is a decree — a bad build, wrong tax arithmetic, a corruption — and it is enforced in-app on each device against that device's own installed version. It is not a statement about whether an old client can still talk to a new host; the LAN protocol is unaffected and the host never rejects a client for its version.
+
+Below `min` the device shows a **non-dismissible block, immediately, wherever the user is** — not at the next cold launch. This is deliberately harsher than the [[Offline grace period]] lock, which "only bites on restart": that guard protects against a network the venue can fix, this one against a build the venue must stop running. The cost is real and accepted — a wrong `-breaking` tag darkens the fleet mid-service, and the console override is the mitigation, not a cure. **The block never stops the embedded server**, or a client would report the host offline instead of telling its holder to fetch an admin.
+
+Between `recommended` and `latest` the [[Main Device]] alone carries a **persistent shell banner** — no sheet, no snooze, no release notes, just the two version numbers. Nothing else is nagged: a waiter cannot install and telling them is noise on the one screen that must stay quiet under chaos.
+
+**Only the [[Main Device]] ever installs.** It downloads the signed APK from the GitHub Release the website already links to and hands it to Android's package installer. Every other device — staff client and admin-client alike — is told to fetch an admin, because SatSet is distributed by hand and updating a device means someone holding it. _Avoid_: a staff-installable update; a block that also tears down the server; a nag on a device that cannot act on it; release notes written for developers on a screen read by a restaurant owner.
+
 ### Shift
 **ID · EN** — Shift · Shift; Ringkasan shift · Shift summary; Saya · Me. Exits: "Keluar" · "Sign out"; "Akhiri shift & keluar" · "End shift & sign out". The two exits must stay as visibly different in English as in Indonesian — one keeps the clock running, the other stops it.
 

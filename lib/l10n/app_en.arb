@@ -265,6 +265,49 @@
   "billingLapsed": "The subscription has lapsed.",
   "billingStopsOn": "The venue stops trading on {date}.",
   "billingCta": "Tap to renew over WhatsApp.",
+  "updateAvailable": "Version {latest} is available. This device is on {installed}.",
+  "@updateAvailable": {
+    "placeholders": {
+      "latest": {
+        "type": "String"
+      },
+      "installed": {
+        "type": "String"
+      }
+    }
+  },
+  "updateAction": "Update",
+  "updateBlockedTitle": "This version is no longer supported",
+  "updateBlockedBody": "This device is running {installed}. The minimum version is now {min}.",
+  "@updateBlockedBody": {
+    "placeholders": {
+      "installed": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      }
+    }
+  },
+  "updateBlockedAskAdmin": "Ask an admin to update this device.",
+  "updateDownloading": "Downloading {percent}%",
+  "@updateDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "updateInstalling": "Opening the installer...",
+  "updateFailed": "Download failed. Check the connection and try again.",
+  "updateRetry": "Try again",
+  "updatePermissionNeeded": "Allow app installs from SatSet, then try again.",
+  "fltReleaseGate": "Release gate",
+  "fltReleaseGateHint": "Leave a field empty to clear that floor.",
+  "fltReleaseGateMin": "Minimum (mandatory)",
+  "fltReleaseGateRecommended": "Recommended",
+  "fltReleaseGateLatest": "Latest",
+  "fltReleaseGateInvalid": "Must be 1.2.3, and min <= recommended <= latest.",
   "bootBlockStale": "Internet is needed to verify the admin. Reconnect, then sign in again.",
   "bootBlockIneligible": "Admin access has been revoked. Contact the operator.",
   "tempPasswordTitle": "Change password",

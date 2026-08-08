@@ -6,6 +6,7 @@ import 'package:satset/ui/core/design/theme.dart';
 import 'router/app_router.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
 import 'package:satset/ui/core/widgets/alert_host.dart';
+import 'package:satset/ui/core/widgets/update_block.dart';
 
 class SatSetApp extends ConsumerWidget {
   const SatSetApp({super.key});
@@ -44,7 +45,11 @@ class SatSetApp extends ConsumerWidget {
             // should rise.
             child: MediaQuery.withClampedTextScaling(
               maxScaleFactor: 1.3,
-              child: AlertHost(child: child ?? const SizedBox.shrink()),
+              // Outermost of the two hosts: a device below the release floor
+              // must not be reachable by a ready toast either. See ADR-0087.
+              child: UpdateBlock(
+                child: AlertHost(child: child ?? const SizedBox.shrink()),
+              ),
             ),
           ),
         );

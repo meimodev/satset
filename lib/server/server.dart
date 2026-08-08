@@ -14,6 +14,7 @@ import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/core/printing/struk_socket.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
+import 'package:satset/domain/models/release_gate.dart';
 import 'auth.dart';
 import 'db/database.dart';
 import 'db/seed.dart';
@@ -71,6 +72,28 @@ class ServerRuntime {
   final WsHub hub;
   final SatSetAdvertiser advertiser;
   final int port;
+
+  /// The release gate this host last saw in the cloud, relayed to every client
+  /// over the LAN (ADR-0087).
+  ///
+  /// Held on the runtime rather than fetched per request because only the host
+  /// has Firebase — a client learns the floor from `/healthz` and from the
+  /// `releaseGate` broadcast, and neither can wait on a network the client
+  /// cannot reach. [ReleaseGate.unknown] until the listener delivers, which
+  /// fails every device open.
+  ReleaseGate releaseGate = ReleaseGate.unknown;
+
+  /// Stores the gate and, when it actually changed, tells the floor.
+  ///
+  /// Idempotent on purpose: the Firestore listener re-fires on unrelated
+  /// document metadata, and a broadcast per re-fire would be a WS message every
+  /// time the cache blinks.
+  void publishReleaseGate(ReleaseGate next) {
+    if (next == releaseGate) return;
+    releaseGate = next;
+    SatLog.srv('release gate → $next');
+    hub.broadcast(WsEventTypes.releaseGate, next.toJson());
+  }
   HttpServer? _http;
   Timer? _statusTicker;
   Timer? _printerHeartbeat;
@@ -300,7 +323,7 @@ class ServerRuntime {
 
   Router _buildRouter() {
     final r = Router();
-    r.mount('/', healthRoutes().call);
+    r.mount('/', healthRoutes(() => releaseGate).call);
     r.mount('/', authRoutes(auth).call);
     r.mount('/', menuRoutes(db, hub, auth).call);
     r.mount('/', stockRoutes(db, hub, auth).call);

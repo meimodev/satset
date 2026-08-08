@@ -58,6 +58,31 @@ const OTP_TTL_MS = 24 * 60 * 60 * 1000;
 /** The shortest password Firebase Auth will accept. */
 const MIN_PASSWORD_LEN = 6;
 
+/**
+ * The release gate (ADR-0087): which builds of SatSet the fleet may run.
+ * `min` hard-blocks below it, `recommended` nags the host, `latest` is what the
+ * GitHub Release currently holds. Each is a plain MAJOR.MINOR.PATCH string or
+ * null; the build number never appears, because CI is free to move it and the
+ * release tag never carries it.
+ */
+const RELEASE_GATE_KEYS = ["min", "recommended", "latest"];
+const SEMVER_RE = /^\d+\.\d+\.\d+$/;
+
+/**
+ * Orders two version strings. **A null on either side compares equal**: null is
+ * "no floor set", not "version zero", and treating it as a version would make
+ * `min: null` fail the ordering check against every real `recommended`.
+ */
+function cmpSemver(a, b) {
+  if (!a || !b) return 0;
+  const pa = String(a).split(".").map(Number);
+  const pb = String(b).split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) < (pb[i] || 0) ? -1 : 1;
+  }
+  return 0;
+}
+
 /** Throw unless the caller is signed in AND their admins/{uid}.role == 'super'. */
 async function assertSuper(request) {
   const uid = request.auth && request.auth.uid;
@@ -626,6 +651,61 @@ exports.setVenueBilling = onCall(async (request) => {
     "setVenueBilling",
     { type: "venue", id: vid, name: prev.get("name") },
     auditFields(prev, VENUE_BILLING_KEYS),
+    patch,
+  );
+  return { ok: true };
+});
+
+/**
+ * The super admin's override of the release gate (ADR-0087).
+ *
+ * Codemagic writes `config/release_gate` from the tag on every release; this is
+ * the other way in. It exists for exactly one situation — a `-breaking` tag that
+ * should not have been breaking — and it is the only correction that reaches a
+ * venue nobody can drive to. Cutting a higher tag takes a CI round trip and then
+ * a physical visit to every device, which is a week of outage for a typo.
+ *
+ * Each field is independently clearable: pass "" to drop a floor entirely.
+ * Absent keys are left alone.
+ */
+exports.setReleaseGate = onCall(async (request) => {
+  const actor = await assertSuper(request);
+  const ref = db.collection("config").doc("release_gate");
+  const prev = await ref.get();
+
+  const patch = {};
+  for (const key of RELEASE_GATE_KEYS) {
+    if (!(key in (request.data || {}))) continue;
+    const raw = request.data[key];
+    if (raw === "" || raw === null) {
+      patch[key] = null;
+      continue;
+    }
+    if (typeof raw !== "string" || !SEMVER_RE.test(raw.trim())) {
+      throw new HttpsError("invalid-argument", `${key} must be MAJOR.MINOR.PATCH or empty.`);
+    }
+    patch[key] = raw.trim();
+  }
+  if (Object.keys(patch).length === 0) {
+    throw new HttpsError("invalid-argument", "Nothing to set.");
+  }
+
+  // min ≤ recommended ≤ latest is an invariant of the write, not something the
+  // reader checks. A console that could publish min > latest would block every
+  // device in the fleet on a build that does not exist.
+  const merged = { ...(prev.exists ? prev.data() : {}), ...patch };
+  if (cmpSemver(merged.min, merged.recommended) > 0 || cmpSemver(merged.recommended, merged.latest) > 0) {
+    throw new HttpsError("invalid-argument", "Requires min <= recommended <= latest.");
+  }
+
+  patch.updatedAt = FieldValue.serverTimestamp();
+  patch.updatedBy = actor;
+  await ref.set(patch, { merge: true });
+  await writeFleetAudit(
+    actor,
+    "setReleaseGate",
+    { type: "config", id: "release_gate", name: null },
+    auditFields(prev, RELEASE_GATE_KEYS),
     patch,
   );
   return { ok: true };

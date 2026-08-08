@@ -96,6 +96,19 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Fleet-wide configuration that belongs to no venue and no admin. Today
+    // that is `config/release_gate` (ADR-0087): the min/recommended/latest
+    // versions the fleet may run. Every signed-in admin reads it — a host that
+    // could not read the gate would fail open and never update — and no client
+    // writes it. Codemagic writes it with a service account (which bypasses
+    // these rules); the super admin's console override goes through the
+    // setReleaseGate callable, for the same reason every other privileged
+    // mutation does.
+    match /config/{doc} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
     // Fleet audit trail: who did what to which venue/admin, written by the
     // Cloud Functions (Admin SDK, bypasses these rules) and by nothing else.
     // Read is super-only — a venue admin has no business reading the fleet's
