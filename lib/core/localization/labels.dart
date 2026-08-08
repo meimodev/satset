@@ -81,8 +81,8 @@ String stockDimensionLabel(AppL10n l10n, StockDimension d) => switch (d) {
 };
 
 /// Display name for a capability. The enum carries only its key: the words are
-/// copy and belong in the ARB, and a role matrix that reads "Take order" in an
-/// Indonesian build is the one screen an owner has to get right.
+/// copy and belong in the ARB, and a permission list that reads "Take order" in
+/// an Indonesian build is the one screen an owner has to get right.
 String capabilityLabel(AppL10n l10n, Capability c) => switch (c) {
   Capability.takeOrder => l10n.capTakeOrder,
   Capability.modifyOrder => l10n.capModifyOrder,
@@ -103,6 +103,43 @@ String capabilityLabel(AppL10n l10n, Capability c) => switch (c) {
   Capability.manageRoles => l10n.capManageRoles,
   Capability.viewReports => l10n.capViewReports,
   Capability.editSettings => l10n.capEditSettings,
+};
+
+/// One line saying what a capability actually lets a person do. The labels
+/// alone don't separate `adjustStock` from `manageIngredients` from
+/// `overrideStock` — the grid this replaced had no room to say, and an owner
+/// guessing at those three is how a waiter ends up able to sell past empty.
+String capabilityDescription(AppL10n l10n, Capability c) => switch (c) {
+  Capability.takeOrder => l10n.capTakeOrderDesc,
+  Capability.modifyOrder => l10n.capModifyOrderDesc,
+  Capability.voidItem => l10n.capVoidItemDesc,
+  Capability.compItem => l10n.capCompItemDesc,
+  Capability.viewKds => l10n.capViewKdsDesc,
+  Capability.openDrawer => l10n.capOpenDrawerDesc,
+  Capability.applyDiscount => l10n.capApplyDiscountDesc,
+  Capability.settleBill => l10n.capSettleBillDesc,
+  Capability.refund => l10n.capRefundDesc,
+  Capability.closeShift => l10n.capCloseShiftDesc,
+  Capability.editMenu => l10n.capEditMenuDesc,
+  Capability.markSoldOut => l10n.capMarkSoldOutDesc,
+  Capability.adjustStock => l10n.capAdjustStockDesc,
+  Capability.manageIngredients => l10n.capManageIngredientsDesc,
+  Capability.overrideStock => l10n.capOverrideStockDesc,
+  Capability.manageStaff => l10n.capManageStaffDesc,
+  Capability.manageRoles => l10n.capManageRolesDesc,
+  Capability.viewReports => l10n.capViewReportsDesc,
+  Capability.editSettings => l10n.capEditSettingsDesc,
+};
+
+/// Heading for a group of capabilities. The groups existed on the enum long
+/// before anything rendered them — the grid iterated in group order and drew no
+/// headers, so the grouping was structure nobody could see.
+String capabilityGroupLabel(AppL10n l10n, CapabilityGroup g) => switch (g) {
+  CapabilityGroup.orders => l10n.capGrpOrders,
+  CapabilityGroup.money => l10n.capGrpMoney,
+  CapabilityGroup.inventory => l10n.capGrpInventory,
+  CapabilityGroup.admin => l10n.capGrpAdmin,
+  CapabilityGroup.kitchen => l10n.capGrpKitchen,
 };
 
 /// Display name for a staff role. The enum name is persisted and is the join to

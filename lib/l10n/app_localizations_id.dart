@@ -1004,9 +1004,6 @@ class AppL10nId extends AppL10n {
   String get staffTabRoles => 'Peran';
 
   @override
-  String get staffTabPermissions => 'Izin';
-
-  @override
   String get staffSearchHint => 'Cari nama';
 
   @override
@@ -1040,11 +1037,15 @@ class AppL10nId extends AppL10n {
   String get staffAvatarColor => 'Warna avatar';
 
   @override
-  String get staffMatrixTitle => 'Matriks peran × izin';
+  String get staffRolePermsHint => 'Ketuk peran untuk mengatur izinnya.';
 
   @override
-  String get staffMatrixHint =>
-      'Ketuk sel untuk mengubah. Baris peran admin dikunci — dikelola pengelola, bukan dari layar ini.';
+  String get staffRoleLockedBanner =>
+      'Peran admin dikelola pengelola. Izinnya bisa dilihat, tidak bisa diubah.';
+
+  @override
+  String get staffCapAdminOnly =>
+      'Hanya bisa diberikan lewat pengelola, bukan dari layar ini.';
 
   @override
   String get staffRole => 'Peran';
@@ -1147,6 +1148,11 @@ class AppL10nId extends AppL10n {
       other: '$total izin',
     );
     return '$held/$_temp0';
+  }
+
+  @override
+  String capGrpCount(int on, int total) {
+    return '$on/$total';
   }
 
   @override
@@ -5961,6 +5967,87 @@ class AppL10nId extends AppL10n {
 
   @override
   String get capEditSettings => 'Ubah pengaturan';
+
+  @override
+  String get capTakeOrderDesc => 'Buat pesanan baru dan kirim ke dapur.';
+
+  @override
+  String get capModifyOrderDesc =>
+      'Ubah jumlah atau catatan pada pesanan yang belum dimasak.';
+
+  @override
+  String get capVoidItemDesc => 'Hapus item terkirim sebelum disajikan.';
+
+  @override
+  String get capCompItemDesc => 'Nolkan harga item yang sudah disajikan.';
+
+  @override
+  String get capViewKdsDesc => 'Buka antrian persiapan dapur.';
+
+  @override
+  String get capOpenDrawerDesc => 'Buka laci kas tanpa transaksi.';
+
+  @override
+  String get capApplyDiscountDesc => 'Potong harga pada tagihan.';
+
+  @override
+  String get capSettleBillDesc => 'Terima pembayaran dan tutup tagihan.';
+
+  @override
+  String get capRefundDesc =>
+      'Kembalikan uang atas tagihan yang sudah dibayar.';
+
+  @override
+  String get capCloseShiftDesc => 'Akhiri shift dan hitung kas.';
+
+  @override
+  String get capEditMenuDesc =>
+      'Tambah, ubah, dan hapus item serta kategori menu.';
+
+  @override
+  String get capMarkSoldOutDesc =>
+      'Tandai item habis tanpa mengubah stok bahan.';
+
+  @override
+  String get capAdjustStockDesc =>
+      'Catat opname, terima barang, dan buang bahan.';
+
+  @override
+  String get capManageIngredientsDesc =>
+      'Tambah dan ubah bahan beserta resepnya.';
+
+  @override
+  String get capOverrideStockDesc =>
+      'Kirim pesanan meski bahan tercatat habis.';
+
+  @override
+  String get capManageStaffDesc =>
+      'Tambah staf, atur peran, dan setel ulang PIN.';
+
+  @override
+  String get capManageRolesDesc => 'Buat peran dan atur izin yang dibawanya.';
+
+  @override
+  String get capViewReportsDesc => 'Buka laporan penjualan dan jejak audit.';
+
+  @override
+  String get capEditSettingsDesc =>
+      'Ubah pengaturan venue, waktu, dan peringatan.';
+
+  @override
+  String get capGrpOrders => 'Pesanan';
+
+  @override
+  String get capGrpMoney => 'Uang';
+
+  @override
+  String get capGrpInventory => 'Menu & stok';
+
+  @override
+  String get capGrpAdmin => 'Admin';
+
+  @override
+  String get capGrpKitchen => 'Dapur';
 
   @override
   String get agbLockedOnRestart =>

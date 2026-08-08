@@ -1004,9 +1004,6 @@ class AppL10nEn extends AppL10n {
   String get staffTabRoles => 'Roles';
 
   @override
-  String get staffTabPermissions => 'Permissions';
-
-  @override
   String get staffSearchHint => 'Search by name';
 
   @override
@@ -1040,11 +1037,15 @@ class AppL10nEn extends AppL10n {
   String get staffAvatarColor => 'Avatar colour';
 
   @override
-  String get staffMatrixTitle => 'Roles × permissions';
+  String get staffRolePermsHint => 'Tap a role to set its permissions.';
 
   @override
-  String get staffMatrixHint =>
-      'Tap a cell to change it. The admin role row is locked — managed by the operator, not from this screen.';
+  String get staffRoleLockedBanner =>
+      'The admin role is managed by the operator. Its permissions can be seen, not changed.';
+
+  @override
+  String get staffCapAdminOnly =>
+      'Granted only through the operator, never from this screen.';
 
   @override
   String get staffRole => 'Role';
@@ -1152,6 +1153,11 @@ class AppL10nEn extends AppL10n {
       one: '1 permission',
     );
     return '$held/$_temp0';
+  }
+
+  @override
+  String capGrpCount(int on, int total) {
+    return '$on/$total';
   }
 
   @override
@@ -6034,6 +6040,86 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get capEditSettings => 'Edit settings';
+
+  @override
+  String get capTakeOrderDesc =>
+      'Create a new order and send it to the kitchen.';
+
+  @override
+  String get capModifyOrderDesc =>
+      'Change quantity or notes on an order that isn\'t cooking yet.';
+
+  @override
+  String get capVoidItemDesc => 'Remove a sent item before it is served.';
+
+  @override
+  String get capCompItemDesc => 'Zero the price of an item already served.';
+
+  @override
+  String get capViewKdsDesc => 'Open the kitchen prep queue.';
+
+  @override
+  String get capOpenDrawerDesc => 'Open the cash drawer without a transaction.';
+
+  @override
+  String get capApplyDiscountDesc => 'Take money off a bill.';
+
+  @override
+  String get capSettleBillDesc => 'Take payment and close the bill.';
+
+  @override
+  String get capRefundDesc => 'Return money on a bill that is already paid.';
+
+  @override
+  String get capCloseShiftDesc => 'End a shift and count the cash.';
+
+  @override
+  String get capEditMenuDesc =>
+      'Add, edit and remove menu items and categories.';
+
+  @override
+  String get capMarkSoldOutDesc =>
+      'Flag an item sold out without touching ingredient stock.';
+
+  @override
+  String get capAdjustStockDesc =>
+      'Record a stocktake, receive goods and log waste.';
+
+  @override
+  String get capManageIngredientsDesc =>
+      'Add and edit ingredients and their recipes.';
+
+  @override
+  String get capOverrideStockDesc =>
+      'Send an order even when an ingredient reads empty.';
+
+  @override
+  String get capManageStaffDesc => 'Add staff, assign roles and reset PINs.';
+
+  @override
+  String get capManageRolesDesc =>
+      'Create roles and set the permissions they carry.';
+
+  @override
+  String get capViewReportsDesc => 'Open sales reports and the audit trail.';
+
+  @override
+  String get capEditSettingsDesc => 'Change venue, timing and alert settings.';
+
+  @override
+  String get capGrpOrders => 'Orders';
+
+  @override
+  String get capGrpMoney => 'Money';
+
+  @override
+  String get capGrpInventory => 'Menu & stock';
+
+  @override
+  String get capGrpAdmin => 'Admin';
+
+  @override
+  String get capGrpKitchen => 'Kitchen';
 
   @override
   String get agbLockedOnRestart =>

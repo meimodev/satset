@@ -23,7 +23,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 
-enum _Tab { people, roles, permissions }
+enum _Tab { people, roles }
 
 class StaffScreen extends ConsumerStatefulWidget {
   const StaffScreen({super.key});
@@ -58,15 +58,12 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           _tabChip(context.l10n.staffTabPeople, _Tab.people),
           const SizedBox(width: Sp.s1h),
           _tabChip(context.l10n.staffTabRoles, _Tab.roles),
-          const SizedBox(width: Sp.s1h),
-          _tabChip(context.l10n.staffTabPermissions, _Tab.permissions),
         ],
       ),
       children: [
         switch (_tab) {
           _Tab.people => _peopleTab(users, roles),
           _Tab.roles => _rolesTab(users, roles),
-          _Tab.permissions => _permissionsTab(roles),
         },
       ],
     );
@@ -238,6 +235,11 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
             ),
           ],
         ),
+        const SizedBox(height: Sp.s1),
+        Text(
+          context.l10n.staffRolePermsHint,
+          style: SatType.bodyS(color: sc.textLo),
+        ),
         const SizedBox(height: Sp.s3h),
         Container(
           decoration: SatBox.d(
@@ -256,264 +258,91 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     );
   }
 
+  /// Scan only. Rename, colour and delete moved into the sheet this row opens —
+  /// the row's job is comparing four roles at a glance, and a delete button
+  /// sitting in a list you scan is one mis-tap from a role nobody meant to lose.
   Widget _roleRow(Role r, List<AppUser> users, {bool last = false}) {
     final sc = context.sat;
     final memberCount = users
         .where((u) => u.roleId == r.id && !u.disabled)
         .length;
     final isAdminRole = r.has(Capability.manageStaff);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-      decoration: SatBox.d(
-        border: Border(
-          bottom: last ? BorderSide.none : SatB.side(color: sc.border0),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 14,
-            height: 14,
-            decoration: SatBox.d(color: r.color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: Sp.s3),
-          Expanded(
-            flex: 5,
-            child: Text(r.name, style: SatType.labelM(color: sc.textHi)),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              context.l10n.staffCapsCount(
-                r.capabilities.length,
-                Capability.values.length,
-              ),
-              style: SatType.monoS(color: sc.textMd),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              context.l10n.staffMembersCount(memberCount),
-              style: SatType.monoS(color: sc.textMd),
-            ),
-          ),
-          if (isAdminRole)
-            _tagBadge(
-              context,
-              context.l10n.staffRoleBadgeAdmin,
-              sc.violet,
-              sc.violetSoft,
-            ),
-          const SizedBox(width: Sp.s2),
-          // The admin role is infrastructure, not a role this screen hands out:
-          // it belongs to the venue's one Firebase admin (ADR-0077), and every
-          // path that could assign, grant or mint it is already refused here and
-          // at the server. Shown but locked rather than hidden — a person in the
-          // Orang tab holds it, so a list that omitted it would leave that row
-          // pointing at a role defined nowhere.
-          if (isAdminRole)
-            Text(
-              context.l10n.staffRoleManagedByOperator,
-              style: SatType.bodyS(color: sc.textLo),
-            )
-          else ...[
-            SatButton.outline(
-              label: context.l10n.staffColor,
-              size: SatButtonSize.sm,
-              onTap: () => _pickRoleColor(r),
-            ),
-            const SizedBox(width: Sp.s1h),
-            SatButton.outline(
-              label: context.l10n.a11yRename,
-              size: SatButtonSize.sm,
-              onTap: () => _renameRole(r),
-            ),
-            const SizedBox(width: Sp.s1h),
-            SatButton.danger(
-              label: context.l10n.delete,
-              size: SatButtonSize.sm,
-              onTap: memberCount == 0 ? () => _deleteRole(r) : null,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // ── Permissions tab ─────────────────────────────────────────
-  Widget _permissionsTab(List<Role> roles) {
-    final sc = context.sat;
-    final caps = Capability.values;
-    final grouped = <CapabilityGroup, List<Capability>>{};
-    for (final c in caps) {
-      grouped.putIfAbsent(c.group, () => []).add(c);
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(Sp.s5),
-      decoration: SatBox.d(
-        color: sc.bg2,
-        border: SatB.all(color: sc.border0),
-        borderRadius: SatR.a(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.l10n.staffMatrixTitle,
-            style: SatType.labelL(color: sc.textHi),
-          ),
-          const SizedBox(height: Sp.s1),
-          Text(
-            context.l10n.staffMatrixHint,
-            style: SatType.bodyS(color: sc.textLo),
-          ),
-          const SizedBox(height: Sp.s4h),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    SizedBox(width: 160, child: _h(context.l10n.staffRole)),
-                    for (final g in CapabilityGroup.values) ...[
-                      for (final c in grouped[g]!)
-                        SizedBox(
-                          width: 110,
-                          child: _h(capabilityLabel(context.l10n, c)),
-                        ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: Sp.s2),
-                for (final r in roles)
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: Sp.s2),
-                    decoration: SatBox.d(
-                      border: Border(top: SatB.side(color: sc.border0)),
-                    ),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 160,
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: SatBox.d(
-                                  color: r.color,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: Sp.s2),
-                              Expanded(
-                                child: Text(
-                                  r.name,
-                                  style: SatType.bodyM(color: sc.textHi),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        for (final g in CapabilityGroup.values) ...[
-                          for (final c in grouped[g]!)
-                            SizedBox(width: 110, child: _capCell(r, c)),
-                        ],
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _capCell(Role r, Capability c) {
-    final sc = context.sat;
-    final on = r.has(c);
-    // The admin role's whole row is read-only (ADR-0077). Not a disabled tap
-    // that toasts — the cells simply aren't controls, and dimming them says so
-    // before a finger arrives. Stripping `editSettings` here was the one edit
-    // that could lock a venue's only admin out of the screen holding the fix.
-    final locked = r.has(Capability.manageStaff);
-    final cell = Container(
-      margin: const EdgeInsets.symmetric(horizontal: Sp.s1),
-      height: 26,
-      decoration: SatBox.d(
-        color: on && !locked ? sc.successSoft : sc.bg3,
-        border: SatB.all(
-          color: locked
-              ? sc.border0
-              : on
-              ? sc.success
-              : sc.border1,
-        ),
-        borderRadius: SatR.a(6),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        on ? '✓' : '—',
-        style: SatType.monoM(
-          color: locked
-              ? sc.textDim
-              : on
-              ? sc.success
-              : sc.textDim,
-        ),
-      ),
-    );
-    // Returned bare, with no tap target at all — a locked cell is not a
-    // disabled control, it is not a control. TalkBack reads the row's state
-    // without ever offering an action on it.
-    if (locked) {
-      return Semantics(
-        label: context.l10n.stfRoleLockedSemantics(
-          r.name,
-          capabilityLabel(context.l10n, c),
-          on ? context.l10n.stfRoleActive : context.l10n.dscInactive,
-        ),
-        excludeSemantics: true,
-        child: cell,
-      );
-    }
     return Semantics(
       button: true,
-      toggled: on,
-      label: context.l10n.stfRoleSemantics(
-        r.name,
-        capabilityLabel(context.l10n, c),
+      label: r.name,
+      child: GestureDetector(
+        onTap: () => _openRole(r),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
+          decoration: SatBox.d(
+            border: Border(
+              bottom: last ? BorderSide.none : SatB.side(color: sc.border0),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 14,
+                height: 14,
+                decoration: SatBox.d(color: r.color, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: Sp.s3),
+              Expanded(
+                flex: 5,
+                child: Text(r.name, style: SatType.labelM(color: sc.textHi)),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  context.l10n.staffCapsCount(
+                    r.capabilities.length,
+                    Capability.values.length,
+                  ),
+                  style: SatType.monoS(color: sc.textMd),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  context.l10n.staffMembersCount(memberCount),
+                  style: SatType.monoS(color: sc.textMd),
+                ),
+              ),
+              // The admin role is infrastructure, not a role this screen hands
+              // out: it belongs to the venue's one Firebase admin (ADR-0077),
+              // and every path that could assign, grant or mint it is already
+              // refused here and at the server. Shown but locked rather than
+              // hidden — a person in the Orang tab holds it, so a list that
+              // omitted it would leave that row pointing at a role defined
+              // nowhere. The row still opens: its sheet is read-only, which
+              // shows the state without ever offering an action on it.
+              if (isAdminRole) ...[
+                _tagBadge(
+                  context,
+                  context.l10n.staffRoleBadgeAdmin,
+                  sc.violet,
+                  sc.violetSoft,
+                ),
+                const SizedBox(width: Sp.s2),
+              ],
+              Icon(Icons.chevron_right, size: 20, color: sc.textDim),
+            ],
+          ),
+        ),
       ),
-      child: GestureDetector(onTap: () => _toggleCap(r, c, !on), child: cell),
     );
   }
 
-  void _toggleCap(Role r, Capability c, bool on) {
-    // The admin role is read-only here, in both directions (ADR-0077). The
-    // cells don't call this, but the guard stays: it is the rule, and the next
-    // caller of _toggleCap will not remember that the matrix hides its cells.
-    if (r.has(Capability.manageStaff)) {
-      _toast(context.l10n.staffRoleManagedByOperator);
-      return;
-    }
-    // Admin is Firebase-only: a local admin can't newly grant manageStaff to a
-    // role (it would mint an admin-level role as a backdoor). Server enforces
-    // the same. See ADR-0017.
-    if (on && c == Capability.manageStaff) {
-      _toast(context.l10n.staffErrAdminBySuperOnly);
-      return;
-    }
-    // The old "don't revoke the last manageStaff holder" guard lived here. It
-    // is unreachable now and gone: revoking manageStaff means `r` already had
-    // it, and a role that has it returned above. The invariant it protected is
-    // now held by something stronger than a count — the admin role cannot be
-    // edited at all.
-    ref.read(rolesRepositoryProvider.notifier).setCapability(r.id, c, on);
+  void _openRole(Role r) {
+    showSatSheet<void>(
+      context,
+      bare: true,
+      builder: (ctx) => FractionallySizedBox(
+        heightFactor: 0.92,
+        child: _RolePermissionsDrawer(roleId: r.id),
+      ),
+    );
   }
 
   // ── Detail drawer ───────────────────────────────────────────
@@ -580,97 +409,6 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     ref.read(rolesRepositoryProvider.notifier).create(name.trim());
   }
 
-  Future<void> _pickRoleColor(Role r) async {
-    const swatches = <int>[
-      0xFFC08AFF,
-      0xFF6DB5FF,
-      0xFF4DD487,
-      0xFFFF9233,
-      0xFFFFC04D,
-      0xFFFF5C5C,
-      0xFF7ED6C4,
-      0xFFE48BB7,
-    ];
-    final picked = await showSatSheet<int>(
-      context,
-      builder: (ctx) {
-        final sc = ctx.sat;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(child: _sheetHandle(sc)),
-                const SizedBox(height: Sp.s4h),
-                Text(
-                  context.l10n.staffRoleColor,
-                  style: SatType.labelL(color: sc.textHi),
-                ),
-                const SizedBox(height: Sp.s4),
-                Wrap(
-                  spacing: 14,
-                  runSpacing: 14,
-                  children: [
-                    for (final c in swatches)
-                      Semantics(
-                        button: true,
-                        selected: c == r.colorHex,
-                        label: context.l10n.staffColor,
-                        child: GestureDetector(
-                          onTap: () => Navigator.pop(ctx, c),
-                          child: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: SatBox.d(
-                              color: Color(c),
-                              shape: BoxShape.circle,
-                              border: SatB.all(
-                                color: c == r.colorHex ? sc.textHi : sc.border1,
-                                width: c == r.colorHex ? 3 : 1,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-    if (picked == null || picked == r.colorHex) return;
-    ref.read(rolesRepositoryProvider.notifier).setColor(r.id, picked);
-  }
-
-  Future<void> _renameRole(Role r) async {
-    final name = await _prompt(context.l10n.staffRenameRole, r.name);
-    if (name == null || name.trim().isEmpty) return;
-    ref.read(rolesRepositoryProvider.notifier).rename(r.id, name.trim());
-  }
-
-  Future<void> _deleteRole(Role r) async {
-    // Captured before the await: reading it off `context` afterwards is
-    // exactly the use_build_context_synchronously the analyzer flags.
-    final l10n = context.l10n;
-    final ok = await _confirm(
-      l10n.staffDeleteRoleTitle(r.name),
-      l10n.staffDeleteRoleBody,
-    );
-    if (ok != true) return;
-    // The admin role has no delete button to reach this, and the server refuses
-    // it besides (ADR-0077) — but this is the function a future caller will
-    // reach for, so it states the rule rather than trusting the caller.
-    if (r.has(Capability.manageStaff)) {
-      _toast(l10n.staffRoleManagedByOperator);
-      return;
-    }
-    ref.read(rolesRepositoryProvider.notifier).delete(r.id);
-  }
-
   // ── Helpers ─────────────────────────────────────────────────
   bool _isAdmin(AppUser u, List<Role> roles) {
     if (u.disabled || u.roleId == null) return false;
@@ -687,8 +425,8 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     return null;
   }
 
-  /// Three tabs that all fit on one line — a chip row shows every choice at
-  /// once, where SatTabs would give the same three a heavier frame.
+  /// Two tabs that fit on one line — a chip row shows both choices at once,
+  /// where SatTabs would give the pair a heavier frame.
   Widget _tabChip(String label, _Tab t) {
     return SatChip.select(
       label: label,
@@ -713,11 +451,6 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     );
   }
 
-  Widget _h(String t) {
-    final sc = context.sat;
-    return Text(t.toUpperCase(), style: SatType.caption(color: sc.textLo));
-  }
-
   Widget _tagBadge(BuildContext context, String t, Color fg, Color bg) {
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -729,63 +462,67 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     );
   }
 
-  Future<bool?> _confirm(String title, String body) =>
-      _confirmSheet(context, title, body);
+  Future<String?> _prompt(String title, String initial) =>
+      _promptSheet(context, title, initial);
 
-  Future<String?> _prompt(String title, String initial) {
-    final ctl = TextEditingController(text: initial);
-    return showSatSheet<String>(
-      context,
-      builder: (ctx) {
-        final sc = ctx.sat;
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(child: _sheetHandle(sc)),
-                  const SizedBox(height: Sp.s4h),
-                  Text(title, style: SatType.labelL(color: sc.textHi)),
-                  const SizedBox(height: Sp.s3h),
-                  SatField.text(controller: ctl, hint: '', autofocus: true),
-                  const SizedBox(height: Sp.s4),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SatButton.outline(
-                          label: context.l10n.cancel,
-                          onTap: () => Navigator.pop(ctx),
-                        ),
+  void _toast(String msg) => _snack(context, msg);
+}
+
+Future<String?> _promptSheet(
+  BuildContext context,
+  String title,
+  String initial,
+) {
+  final ctl = TextEditingController(text: initial);
+  return showSatSheet<String>(
+    context,
+    builder: (ctx) {
+      final sc = ctx.sat;
+      return Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(child: _sheetHandle(sc)),
+                const SizedBox(height: Sp.s4h),
+                Text(title, style: SatType.labelL(color: sc.textHi)),
+                const SizedBox(height: Sp.s3h),
+                SatField.text(controller: ctl, hint: '', autofocus: true),
+                const SizedBox(height: Sp.s4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SatButton.outline(
+                        label: context.l10n.cancel,
+                        onTap: () => Navigator.pop(ctx),
                       ),
-                      const SizedBox(width: Sp.s2h),
-                      Expanded(
-                        child: SatButton.primary(
-                          label: context.l10n.save,
-                          onTap: () => Navigator.pop(ctx, ctl.text),
-                        ),
+                    ),
+                    const SizedBox(width: Sp.s2h),
+                    Expanded(
+                      child: SatButton.primary(
+                        label: context.l10n.save,
+                        onTap: () => Navigator.pop(ctx, ctl.text),
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
-  void _toast(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), duration: const Duration(seconds: 3)),
-    );
-  }
+void _snack(BuildContext context, String msg) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(msg), duration: const Duration(seconds: 3)),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1502,4 +1239,353 @@ Role? _findRole(List<Role> roles, String? id) {
     if (r.id == id) return r;
   }
   return null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Role permissions drawer
+// ─────────────────────────────────────────────────────────────
+
+/// One role's permissions, grouped. Replaced the role × capability grid
+/// (ADR-0087): the grid could compare four roles at once but had 110dp of
+/// width per cell, which is enough for a label and nothing else. A sheet holds
+/// one role and can afford to say what each capability actually does.
+class _RolePermissionsDrawer extends ConsumerWidget {
+  final String roleId;
+  const _RolePermissionsDrawer({required this.roleId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final roles = ref.watch(rolesRepositoryProvider);
+    final users = ref.watch(staffRepositoryProvider);
+    final role = _findRole(roles, roleId);
+    if (role == null) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Navigator.of(context).maybePop(),
+      );
+      return const SizedBox.shrink();
+    }
+    final sc = context.sat;
+    // The admin role is read-only end to end (ADR-0077). Locked here means the
+    // whole sheet states rather than offers: no toggles, no rename, no delete.
+    final locked = role.has(Capability.manageStaff);
+    final memberCount = users
+        .where((u) => u.roleId == role.id && !u.disabled)
+        .length;
+
+    final grouped = <CapabilityGroup, List<Capability>>{};
+    for (final c in Capability.values) {
+      grouped.putIfAbsent(c.group, () => []).add(c);
+    }
+
+    return Material(
+      color: sc.bg1,
+      clipBehavior: Clip.antiAlias,
+      borderRadius: BorderRadius.vertical(top: SatR.c(24)),
+      child: SizedBox(
+        height: double.infinity,
+        child: SafeArea(
+          top: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: Sp.s2),
+              Center(child: _sheetHandle(sc)),
+              const SizedBox(height: Sp.s1),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 16, 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 18,
+                      height: 18,
+                      decoration: SatBox.d(
+                        color: role.color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: Sp.s3),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(role.name, style: SatType.h3(color: sc.textHi)),
+                          const SizedBox(height: Sp.sHair),
+                          Text(
+                            context.l10n.staffMembersCount(memberCount),
+                            style: SatType.monoS(color: sc.textLo),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: context.l10n.close,
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  children: [
+                    if (locked)
+                      Container(
+                        padding: const EdgeInsets.all(Sp.s3h),
+                        decoration: SatBox.d(
+                          color: sc.violetSoft,
+                          border: SatB.all(color: sc.violet),
+                          borderRadius: SatR.a(12),
+                        ),
+                        child: Text(
+                          context.l10n.staffRoleLockedBanner,
+                          style: SatType.bodyS(color: sc.textHi),
+                        ),
+                      )
+                    else
+                      Row(
+                        children: [
+                          SatButton.outline(
+                            label: context.l10n.staffColor,
+                            size: SatButtonSize.sm,
+                            onTap: () => _pickColor(context, ref, role),
+                          ),
+                          const SizedBox(width: Sp.s1h),
+                          SatButton.outline(
+                            label: context.l10n.a11yRename,
+                            size: SatButtonSize.sm,
+                            onTap: () => _rename(context, ref, role),
+                          ),
+                          const Spacer(),
+                          // Guarded by member count, not by confidence: a role
+                          // still worn by someone cannot be deleted, and the
+                          // dead button says so before the sheet does.
+                          SatButton.danger(
+                            label: context.l10n.delete,
+                            size: SatButtonSize.sm,
+                            onTap: memberCount == 0
+                                ? () => _delete(context, ref, role)
+                                : null,
+                          ),
+                        ],
+                      ),
+                    for (final g in CapabilityGroup.values) ...[
+                      const SizedBox(height: Sp.s4),
+                      SatCard.section(
+                        header: capabilityGroupLabel(context.l10n, g),
+                        // textLo, not textMd: the count sits beside a caps
+                        // header and matching its weight made an empty group
+                        // read as loud as a full one.
+                        headerTrailing: Text(
+                          context.l10n.capGrpCount(
+                            grouped[g]!.where(role.has).length,
+                            grouped[g]!.length,
+                          ),
+                          style: SatType.monoS(color: sc.textLo),
+                        ),
+                        padding: const EdgeInsets.fromLTRB(
+                          Sp.s4,
+                          Sp.s4,
+                          Sp.s4,
+                          Sp.s2,
+                        ),
+                        child: Column(
+                          children: [
+                            for (final c in grouped[g]!)
+                              _CapRow(role: role, cap: c, roleLocked: locked),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _rename(BuildContext context, WidgetRef ref, Role r) async {
+    final name = await _promptSheet(
+      context,
+      context.l10n.staffRenameRole,
+      r.name,
+    );
+    if (name == null || name.trim().isEmpty) return;
+    ref.read(rolesRepositoryProvider.notifier).rename(r.id, name.trim());
+  }
+
+  Future<void> _delete(BuildContext context, WidgetRef ref, Role r) async {
+    // Captured before the await: reading it off `context` afterwards is
+    // exactly the use_build_context_synchronously the analyzer flags.
+    final l10n = context.l10n;
+    final nav = Navigator.of(context);
+    final ok = await _confirmSheet(
+      context,
+      l10n.staffDeleteRoleTitle(r.name),
+      l10n.staffDeleteRoleBody,
+    );
+    if (ok != true) return;
+    // The admin role's sheet has no delete button to reach this, and the server
+    // refuses it besides (ADR-0077) — but this is the function a future caller
+    // will reach for, so it states the rule rather than trusting the caller.
+    if (r.has(Capability.manageStaff)) return;
+    ref.read(rolesRepositoryProvider.notifier).delete(r.id);
+    nav.maybePop();
+  }
+
+  Future<void> _pickColor(BuildContext context, WidgetRef ref, Role r) async {
+    const swatches = <int>[
+      0xFFC08AFF,
+      0xFF6DB5FF,
+      0xFF4DD487,
+      0xFFFF9233,
+      0xFFFFC04D,
+      0xFFFF5C5C,
+      0xFF7ED6C4,
+      0xFFE48BB7,
+    ];
+    final picked = await showSatSheet<int>(
+      context,
+      builder: (ctx) {
+        final sc = ctx.sat;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(child: _sheetHandle(sc)),
+                const SizedBox(height: Sp.s4h),
+                Text(
+                  ctx.l10n.staffRoleColor,
+                  style: SatType.labelL(color: sc.textHi),
+                ),
+                const SizedBox(height: Sp.s4),
+                Wrap(
+                  spacing: 14,
+                  runSpacing: 14,
+                  children: [
+                    for (final c in swatches)
+                      Semantics(
+                        button: true,
+                        selected: c == r.colorHex,
+                        label: ctx.l10n.staffColor,
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(ctx, c),
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: SatBox.d(
+                              color: Color(c),
+                              shape: BoxShape.circle,
+                              border: SatB.all(
+                                color: c == r.colorHex ? sc.textHi : sc.border1,
+                                width: c == r.colorHex ? 3 : 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (picked == null || picked == r.colorHex) return;
+    ref.read(rolesRepositoryProvider.notifier).setColor(r.id, picked);
+  }
+}
+
+/// One capability: what it is, what it lets a person do, and whether this role
+/// has it. Three shapes, and only the first is a control — a locked row is not
+/// a disabled toggle that refuses on tap, it is state (ADR-0077's rule, applied
+/// to `manageStaff` too, where a toast used to stand in for it).
+class _CapRow extends ConsumerWidget {
+  final Role role;
+  final Capability cap;
+  final bool roleLocked;
+  const _CapRow({
+    required this.role,
+    required this.cap,
+    required this.roleLocked,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final on = role.has(cap);
+    // Admin is Firebase-only: a local admin granting `manageStaff` would mint
+    // an admin-level role as a backdoor, so the row never offers it. The server
+    // refuses the same PATCH regardless. See ADR-0017.
+    final adminOnly = cap == Capability.manageStaff;
+    final locked = roleLocked || adminOnly;
+    final label = capabilityLabel(context.l10n, cap);
+    final desc = adminOnly && !roleLocked
+        ? context.l10n.staffCapAdminOnly
+        : capabilityDescription(context.l10n, cap);
+
+    final body = Padding(
+      padding: const EdgeInsets.symmetric(vertical: Sp.s2h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: SatType.bodyM(
+                    color: locked && !on ? sc.textLo : sc.textHi,
+                  ),
+                ),
+                const SizedBox(height: Sp.sHair),
+                Text(desc, style: SatType.bodyS(color: sc.textLo)),
+              ],
+            ),
+          ),
+          const SizedBox(width: Sp.s3),
+          if (locked)
+            Padding(
+              padding: const EdgeInsets.only(top: Sp.sHair),
+              child: Text(
+                on ? context.l10n.stfRoleActive : context.l10n.dscInactive,
+                style: SatType.monoS(color: on ? sc.success : sc.textDim),
+              ),
+            )
+          else
+            SatToggle(
+              value: on,
+              onChanged: (v) => ref
+                  .read(rolesRepositoryProvider.notifier)
+                  .setCapability(role.id, cap, v),
+              semanticLabel: context.l10n.stfRoleSemantics(role.name, label),
+            ),
+        ],
+      ),
+    );
+
+    // Returned with no tap target at all — TalkBack reads the state without
+    // ever offering an action on it.
+    if (locked) {
+      return Semantics(
+        label: context.l10n.stfRoleLockedSemantics(
+          role.name,
+          label,
+          on ? context.l10n.stfRoleActive : context.l10n.dscInactive,
+        ),
+        excludeSemantics: true,
+        child: body,
+      );
+    }
+    return body;
+  }
 }

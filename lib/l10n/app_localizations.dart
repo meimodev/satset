@@ -1879,12 +1879,6 @@ abstract class AppL10n {
   /// **'Peran'**
   String get staffTabRoles;
 
-  /// No description provided for @staffTabPermissions.
-  ///
-  /// In id, this message translates to:
-  /// **'Izin'**
-  String get staffTabPermissions;
-
   /// No description provided for @staffSearchHint.
   ///
   /// In id, this message translates to:
@@ -1951,17 +1945,23 @@ abstract class AppL10n {
   /// **'Warna avatar'**
   String get staffAvatarColor;
 
-  /// No description provided for @staffMatrixTitle.
+  /// No description provided for @staffRolePermsHint.
   ///
   /// In id, this message translates to:
-  /// **'Matriks peran × izin'**
-  String get staffMatrixTitle;
+  /// **'Ketuk peran untuk mengatur izinnya.'**
+  String get staffRolePermsHint;
 
-  /// No description provided for @staffMatrixHint.
+  /// No description provided for @staffRoleLockedBanner.
   ///
   /// In id, this message translates to:
-  /// **'Ketuk sel untuk mengubah. Baris peran admin dikunci — dikelola pengelola, bukan dari layar ini.'**
-  String get staffMatrixHint;
+  /// **'Peran admin dikelola pengelola. Izinnya bisa dilihat, tidak bisa diubah.'**
+  String get staffRoleLockedBanner;
+
+  /// No description provided for @staffCapAdminOnly.
+  ///
+  /// In id, this message translates to:
+  /// **'Hanya bisa diberikan lewat pengelola, bukan dari layar ini.'**
+  String get staffCapAdminOnly;
 
   /// No description provided for @staffRole.
   ///
@@ -2106,6 +2106,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'{held}/{total, plural, other{{total} izin}}'**
   String staffCapsCount(int held, int total);
+
+  /// No description provided for @capGrpCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{on}/{total}'**
+  String capGrpCount(int on, int total);
 
   /// No description provided for @staffMembersCount.
   ///
@@ -9660,6 +9666,150 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Ubah pengaturan'**
   String get capEditSettings;
+
+  /// No description provided for @capTakeOrderDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Buat pesanan baru dan kirim ke dapur.'**
+  String get capTakeOrderDesc;
+
+  /// No description provided for @capModifyOrderDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah jumlah atau catatan pada pesanan yang belum dimasak.'**
+  String get capModifyOrderDesc;
+
+  /// No description provided for @capVoidItemDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus item terkirim sebelum disajikan.'**
+  String get capVoidItemDesc;
+
+  /// No description provided for @capCompItemDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Nolkan harga item yang sudah disajikan.'**
+  String get capCompItemDesc;
+
+  /// No description provided for @capViewKdsDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka antrian persiapan dapur.'**
+  String get capViewKdsDesc;
+
+  /// No description provided for @capOpenDrawerDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka laci kas tanpa transaksi.'**
+  String get capOpenDrawerDesc;
+
+  /// No description provided for @capApplyDiscountDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Potong harga pada tagihan.'**
+  String get capApplyDiscountDesc;
+
+  /// No description provided for @capSettleBillDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Terima pembayaran dan tutup tagihan.'**
+  String get capSettleBillDesc;
+
+  /// No description provided for @capRefundDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Kembalikan uang atas tagihan yang sudah dibayar.'**
+  String get capRefundDesc;
+
+  /// No description provided for @capCloseShiftDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Akhiri shift dan hitung kas.'**
+  String get capCloseShiftDesc;
+
+  /// No description provided for @capEditMenuDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah, ubah, dan hapus item serta kategori menu.'**
+  String get capEditMenuDesc;
+
+  /// No description provided for @capMarkSoldOutDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai item habis tanpa mengubah stok bahan.'**
+  String get capMarkSoldOutDesc;
+
+  /// No description provided for @capAdjustStockDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Catat opname, terima barang, dan buang bahan.'**
+  String get capAdjustStockDesc;
+
+  /// No description provided for @capManageIngredientsDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah dan ubah bahan beserta resepnya.'**
+  String get capManageIngredientsDesc;
+
+  /// No description provided for @capOverrideStockDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Kirim pesanan meski bahan tercatat habis.'**
+  String get capOverrideStockDesc;
+
+  /// No description provided for @capManageStaffDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah staf, atur peran, dan setel ulang PIN.'**
+  String get capManageStaffDesc;
+
+  /// No description provided for @capManageRolesDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Buat peran dan atur izin yang dibawanya.'**
+  String get capManageRolesDesc;
+
+  /// No description provided for @capViewReportsDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka laporan penjualan dan jejak audit.'**
+  String get capViewReportsDesc;
+
+  /// No description provided for @capEditSettingsDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah pengaturan venue, waktu, dan peringatan.'**
+  String get capEditSettingsDesc;
+
+  /// No description provided for @capGrpOrders.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan'**
+  String get capGrpOrders;
+
+  /// No description provided for @capGrpMoney.
+  ///
+  /// In id, this message translates to:
+  /// **'Uang'**
+  String get capGrpMoney;
+
+  /// No description provided for @capGrpInventory.
+  ///
+  /// In id, this message translates to:
+  /// **'Menu & stok'**
+  String get capGrpInventory;
+
+  /// No description provided for @capGrpAdmin.
+  ///
+  /// In id, this message translates to:
+  /// **'Admin'**
+  String get capGrpAdmin;
+
+  /// No description provided for @capGrpKitchen.
+  ///
+  /// In id, this message translates to:
+  /// **'Dapur'**
+  String get capGrpKitchen;
 
   /// No description provided for @agbLockedOnRestart.
   ///

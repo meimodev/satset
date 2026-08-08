@@ -453,7 +453,6 @@
   "staffTitle": "Staf & akun",
   "staffTabPeople": "Orang",
   "staffTabRoles": "Peran",
-  "staffTabPermissions": "Izin",
   "staffSearchHint": "Cari nama",
   "staffFilterAll": "Semua",
   "staffAdd": "Tambah staf",
@@ -465,8 +464,9 @@
   "staffRoleColor": "Warna peran",
   "staffColor": "Warna",
   "staffAvatarColor": "Warna avatar",
-  "staffMatrixTitle": "Matriks peran × izin",
-  "staffMatrixHint": "Ketuk sel untuk mengubah. Baris peran admin dikunci — dikelola pengelola, bukan dari layar ini.",
+  "staffRolePermsHint": "Ketuk peran untuk mengatur izinnya.",
+  "staffRoleLockedBanner": "Peran admin dikelola pengelola. Izinnya bisa dilihat, tidak bisa diubah.",
+  "staffCapAdminOnly": "Hanya bisa diberikan lewat pengelola, bukan dari layar ini.",
   "staffRole": "Peran",
   "staffNoRole": "Tanpa peran",
   "staffName": "Nama",
@@ -511,6 +511,17 @@
   "@staffCapsCount": {
     "placeholders": {
       "held": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "capGrpCount": "{on}/{total}",
+  "@capGrpCount": {
+    "placeholders": {
+      "on": {
         "type": "int"
       },
       "total": {
@@ -4507,6 +4518,30 @@
   "capManageRoles": "Kelola peran",
   "capViewReports": "Lihat laporan",
   "capEditSettings": "Ubah pengaturan",
+  "capTakeOrderDesc": "Buat pesanan baru dan kirim ke dapur.",
+  "capModifyOrderDesc": "Ubah jumlah atau catatan pada pesanan yang belum dimasak.",
+  "capVoidItemDesc": "Hapus item terkirim sebelum disajikan.",
+  "capCompItemDesc": "Nolkan harga item yang sudah disajikan.",
+  "capViewKdsDesc": "Buka antrian persiapan dapur.",
+  "capOpenDrawerDesc": "Buka laci kas tanpa transaksi.",
+  "capApplyDiscountDesc": "Potong harga pada tagihan.",
+  "capSettleBillDesc": "Terima pembayaran dan tutup tagihan.",
+  "capRefundDesc": "Kembalikan uang atas tagihan yang sudah dibayar.",
+  "capCloseShiftDesc": "Akhiri shift dan hitung kas.",
+  "capEditMenuDesc": "Tambah, ubah, dan hapus item serta kategori menu.",
+  "capMarkSoldOutDesc": "Tandai item habis tanpa mengubah stok bahan.",
+  "capAdjustStockDesc": "Catat opname, terima barang, dan buang bahan.",
+  "capManageIngredientsDesc": "Tambah dan ubah bahan beserta resepnya.",
+  "capOverrideStockDesc": "Kirim pesanan meski bahan tercatat habis.",
+  "capManageStaffDesc": "Tambah staf, atur peran, dan setel ulang PIN.",
+  "capManageRolesDesc": "Buat peran dan atur izin yang dibawanya.",
+  "capViewReportsDesc": "Buka laporan penjualan dan jejak audit.",
+  "capEditSettingsDesc": "Ubah pengaturan venue, waktu, dan peringatan.",
+  "capGrpOrders": "Pesanan",
+  "capGrpMoney": "Uang",
+  "capGrpInventory": "Menu & stok",
+  "capGrpAdmin": "Admin",
+  "capGrpKitchen": "Dapur",
   "agbLockedOnRestart": "Server akan terkunci saat aplikasi dimulai ulang — sambungkan internet sekarang untuk verifikasi admin.",
   "agbLockedInHours": "Tanpa internet, server terkunci dalam {hours, plural, other{{hours} jam.}} Segera sambungkan.",
   "@agbLockedInHours": {
