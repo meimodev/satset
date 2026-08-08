@@ -503,7 +503,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                     Expanded(
                       child: SetTile(
                         label: kpiLabel(context.l10n, tiles[i]),
-                        value: tiles[i].value,
+                        value: kpiValue(context.l10n, tiles[i]),
                         sub: kpiSub(context.l10n, tiles[i]),
                       ),
                     ),
@@ -519,7 +519,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       Expanded(
                         child: SetTile(
                           label: kpiLabel(context.l10n, tiles[i]),
-                          value: tiles[i].value,
+                          value: kpiValue(context.l10n, tiles[i]),
                           sub: kpiSub(context.l10n, tiles[i]),
                         ),
                       ),
@@ -537,7 +537,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
               Expanded(
                 child: SetTile(
                   label: kpiLabel(context.l10n, tiles[i]),
-                  value: tiles[i].value,
+                  value: kpiValue(context.l10n, tiles[i]),
                   sub: kpiSub(context.l10n, tiles[i]),
                 ),
               ),
@@ -856,16 +856,14 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
 
   Widget _staffRow(BuildContext context, StaffRowDto r, int idx) {
     final sc = context.sat;
-    final netStr = r.net == 0
-        ? '—'
-        : 'Rp ${(r.net / 1000000).toStringAsFixed(1)}jt';
+    final netStr = r.net == 0 ? '—' : formatCompactIDR(context.l10n, r.net);
     final voidStr = r.voidPct == 0 ? '—' : '${r.voidPct.toStringAsFixed(1)}%';
     final voidColor = r.voidPct > 2.0
         ? sc.warn
         : (r.voidPct > 1.0 ? sc.textMd : sc.textLo);
     final avgStr = r.avgTicket == 0
         ? '—'
-        : 'Rp ${(r.avgTicket / 1000).round()}rb';
+        : formatCompactIDR(context.l10n, r.avgTicket);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: Sp.s2h),
       child: Row(
@@ -1111,7 +1109,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   ),
                   const SizedBox(width: Sp.s2h),
                   Text(
-                    _compactRp(rows[i].revenue),
+                    formatCompactIDR(context.l10n, rows[i].revenue),
                     style: SatType.monoM(color: sc.textMd),
                   ),
                   const SizedBox(width: Sp.s3),
@@ -1589,7 +1587,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   Expanded(
                     child: SetTile(
                       label: kpiLabel(context.l10n, tiles[0]),
-                      value: tiles[0].value,
+                      value: kpiValue(context.l10n, tiles[0]),
                       sub: kpiSub(context.l10n, tiles[0]),
                     ),
                   ),
@@ -1598,7 +1596,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                     Expanded(
                       child: SetTile(
                         label: kpiLabel(context.l10n, tiles[1]),
-                        value: tiles[1].value,
+                        value: kpiValue(context.l10n, tiles[1]),
                         sub: kpiSub(context.l10n, tiles[1]),
                       ),
                     ),
@@ -1611,7 +1609,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                     Expanded(
                       child: SetTile(
                         label: kpiLabel(context.l10n, tiles[2]),
-                        value: tiles[2].value,
+                        value: kpiValue(context.l10n, tiles[2]),
                         sub: kpiSub(context.l10n, tiles[2]),
                       ),
                     ),
@@ -1620,7 +1618,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       Expanded(
                         child: SetTile(
                           label: kpiLabel(context.l10n, tiles[3]),
-                          value: tiles[3].value,
+                          value: kpiValue(context.l10n, tiles[3]),
                           sub: kpiSub(context.l10n, tiles[3]),
                         ),
                       ),
@@ -1636,7 +1634,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
               Expanded(
                 child: SetTile(
                   label: kpiLabel(context.l10n, tiles[i]),
-                  value: tiles[i].value,
+                  value: kpiValue(context.l10n, tiles[i]),
                   sub: kpiSub(context.l10n, tiles[i]),
                 ),
               ),
@@ -2007,7 +2005,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     return _card(
       context,
       context.l10n.rptVoidReasons,
-      sub: context.l10n.rptVoidSub(total, _compactRp(totalRp)),
+      sub: context.l10n.rptVoidSub(total, formatCompactIDR(context.l10n, totalRp)),
       child: Column(
         children: [
           for (var i = 0; i < rows.length; i++)
@@ -2030,7 +2028,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       ),
                       const SizedBox(width: Sp.s2h),
                       Text(
-                        _compactRp(rows[i].lostRupiah),
+                        formatCompactIDR(context.l10n, rows[i].lostRupiah),
                         style: SatType.monoS(color: sc.textMd),
                       ),
                     ],
@@ -2065,7 +2063,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     return _card(
       context,
       context.l10n.rptVoidPerWaiter,
-      sub: context.l10n.rptVoidSub(total, _compactRp(totalRp)),
+      sub: context.l10n.rptVoidSub(total, formatCompactIDR(context.l10n, totalRp)),
       child: Column(
         children: [
           for (final r in rows)
@@ -2088,7 +2086,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                       ),
                       const SizedBox(width: Sp.s2h),
                       Text(
-                        _compactRp(r.lostRupiah),
+                        formatCompactIDR(context.l10n, r.lostRupiah),
                         style: SatType.monoS(color: sc.textMd),
                       ),
                     ],
@@ -2155,11 +2153,6 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     );
   }
 
-  String _compactRp(int v) {
-    if (v >= 1000000) return 'Rp ${(v / 1000000).toStringAsFixed(1)}jt';
-    if (v >= 1000) return 'Rp ${(v / 1000).round()}rb';
-    return 'Rp $v';
-  }
 }
 
 /// Compact secondary metric row: a label, its figure, and one line of context.

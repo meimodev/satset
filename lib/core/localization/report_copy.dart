@@ -14,6 +14,7 @@ library;
 
 import 'package:satset/data/models/reports_dto.dart';
 import 'package:satset/l10n/app_localizations.dart';
+import 'package:satset/ui/core/design/format.dart';
 
 /// Canonical void reasons (ADR-0006). Same six the void sheet offers, so a
 /// report names a void with the words the waiter picked.
@@ -61,9 +62,13 @@ String stationLabel(AppL10n l, String station) => switch (station) {
 String staffName(AppL10n l, String id, String name) =>
     id == 'unknown' ? l.rptUnknownStaff : name;
 
-/// The eight report headline tiles. [KpiTileDto.value] is already formatted by
-/// the server: it is money or a minute count, and money never localises
-/// (ADR-0084).
+/// The headline number on a tile. A money tile carries the amount and is
+/// rendered here; everything else (a minute count, a seated/booked ratio) is
+/// already a string the server formatted.
+String kpiValue(AppL10n l, KpiTileDto k) =>
+    k.rupiah == null ? k.value : formatCompactIDR(l, k.rupiah!);
+
+/// The eight report headline tiles.
 String kpiLabel(AppL10n l, KpiTileDto k) => switch (k.key) {
   'net' => l.rptKpiNet,
   'gross' => l.rptKpiGross,

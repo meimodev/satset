@@ -55,6 +55,20 @@ String formatBarClockId(DateTime d) => DateFormat('HH:mm · EEE').format(d);
 /// paid-until.
 String formatShortDateId(DateTime d) => DateFormat('d MMM yyyy').format(d);
 
+/// Money at a glance, for a report tile or a dense table: "Rp 15,1jt",
+/// "Rp 15.1M".
+///
+/// The one part of a rupiah amount that is *not* exempt from translation
+/// (ADR-0084): `jt` and `rb` abbreviate juta and ribu, which are Indonesian
+/// words an English reader cannot expand. The digits and the `Rp` stay put.
+String formatCompactIDR(AppL10n l10n, int v) {
+  if (v >= 1000000) {
+    return l10n.moneyCompactJt((v / 1000000).toStringAsFixed(1));
+  }
+  if (v >= 1000) return l10n.moneyCompactRb('${(v / 1000).round()}');
+  return l10n.moneyCompactPlain('$v');
+}
+
 /// A bare ISO weekday (1 = Monday) as a short name: "Sen", "Mon". The report
 /// trend chart labels its bars with this — the server sends the number.
 ///

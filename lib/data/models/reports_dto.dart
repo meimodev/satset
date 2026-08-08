@@ -54,7 +54,12 @@ class KpiTileDto with _$KpiTileDto {
     /// The caption's counts, in the order its message declares them.
     @Default(<int>[]) List<int> args,
     @Default('') String label,
-    required String value,
+
+    /// Money tiles ship the amount, not its rendering — `jt` and `rb` are
+    /// Indonesian words and the reader picks its own (`kpiValue`). Tiles that
+    /// are not money (a duration, a ratio) keep using [value].
+    int? rupiah,
+    @Default('') String value,
     @Default('') String sub,
   }) = _KpiTileDto;
 

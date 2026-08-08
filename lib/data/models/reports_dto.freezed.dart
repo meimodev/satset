@@ -876,6 +876,11 @@ mixin _$KpiTileDto {
   /// The caption's counts, in the order its message declares them.
   List<int> get args => throw _privateConstructorUsedError;
   String get label => throw _privateConstructorUsedError;
+
+  /// Money tiles ship the amount, not its rendering — `jt` and `rb` are
+  /// Indonesian words and the reader picks its own (`kpiValue`). Tiles that
+  /// are not money (a duration, a ratio) keep using [value].
+  int? get rupiah => throw _privateConstructorUsedError;
   String get value => throw _privateConstructorUsedError;
   String get sub => throw _privateConstructorUsedError;
 
@@ -900,6 +905,7 @@ abstract class $KpiTileDtoCopyWith<$Res> {
     String key,
     List<int> args,
     String label,
+    int? rupiah,
     String value,
     String sub,
   });
@@ -923,6 +929,7 @@ class _$KpiTileDtoCopyWithImpl<$Res, $Val extends KpiTileDto>
     Object? key = null,
     Object? args = null,
     Object? label = null,
+    Object? rupiah = freezed,
     Object? value = null,
     Object? sub = null,
   }) {
@@ -940,6 +947,10 @@ class _$KpiTileDtoCopyWithImpl<$Res, $Val extends KpiTileDto>
                 ? _value.label
                 : label // ignore: cast_nullable_to_non_nullable
                       as String,
+            rupiah: freezed == rupiah
+                ? _value.rupiah
+                : rupiah // ignore: cast_nullable_to_non_nullable
+                      as int?,
             value: null == value
                 ? _value.value
                 : value // ignore: cast_nullable_to_non_nullable
@@ -967,6 +978,7 @@ abstract class _$$KpiTileDtoImplCopyWith<$Res>
     String key,
     List<int> args,
     String label,
+    int? rupiah,
     String value,
     String sub,
   });
@@ -989,6 +1001,7 @@ class __$$KpiTileDtoImplCopyWithImpl<$Res>
     Object? key = null,
     Object? args = null,
     Object? label = null,
+    Object? rupiah = freezed,
     Object? value = null,
     Object? sub = null,
   }) {
@@ -1006,6 +1019,10 @@ class __$$KpiTileDtoImplCopyWithImpl<$Res>
             ? _value.label
             : label // ignore: cast_nullable_to_non_nullable
                   as String,
+        rupiah: freezed == rupiah
+            ? _value.rupiah
+            : rupiah // ignore: cast_nullable_to_non_nullable
+                  as int?,
         value: null == value
             ? _value.value
             : value // ignore: cast_nullable_to_non_nullable
@@ -1026,7 +1043,8 @@ class _$KpiTileDtoImpl implements _KpiTileDto {
     this.key = '',
     final List<int> args = const <int>[],
     this.label = '',
-    required this.value,
+    this.rupiah,
+    this.value = '',
     this.sub = '',
   }) : _args = args;
 
@@ -1055,7 +1073,14 @@ class _$KpiTileDtoImpl implements _KpiTileDto {
   @override
   @JsonKey()
   final String label;
+
+  /// Money tiles ship the amount, not its rendering — `jt` and `rb` are
+  /// Indonesian words and the reader picks its own (`kpiValue`). Tiles that
+  /// are not money (a duration, a ratio) keep using [value].
   @override
+  final int? rupiah;
+  @override
+  @JsonKey()
   final String value;
   @override
   @JsonKey()
@@ -1063,7 +1088,7 @@ class _$KpiTileDtoImpl implements _KpiTileDto {
 
   @override
   String toString() {
-    return 'KpiTileDto(key: $key, args: $args, label: $label, value: $value, sub: $sub)';
+    return 'KpiTileDto(key: $key, args: $args, label: $label, rupiah: $rupiah, value: $value, sub: $sub)';
   }
 
   @override
@@ -1074,6 +1099,7 @@ class _$KpiTileDtoImpl implements _KpiTileDto {
             (identical(other.key, key) || other.key == key) &&
             const DeepCollectionEquality().equals(other._args, _args) &&
             (identical(other.label, label) || other.label == label) &&
+            (identical(other.rupiah, rupiah) || other.rupiah == rupiah) &&
             (identical(other.value, value) || other.value == value) &&
             (identical(other.sub, sub) || other.sub == sub));
   }
@@ -1085,6 +1111,7 @@ class _$KpiTileDtoImpl implements _KpiTileDto {
     key,
     const DeepCollectionEquality().hash(_args),
     label,
+    rupiah,
     value,
     sub,
   );
@@ -1108,7 +1135,8 @@ abstract class _KpiTileDto implements KpiTileDto {
     final String key,
     final List<int> args,
     final String label,
-    required final String value,
+    final int? rupiah,
+    final String value,
     final String sub,
   }) = _$KpiTileDtoImpl;
 
@@ -1126,6 +1154,12 @@ abstract class _KpiTileDto implements KpiTileDto {
   List<int> get args;
   @override
   String get label;
+
+  /// Money tiles ship the amount, not its rendering — `jt` and `rb` are
+  /// Indonesian words and the reader picks its own (`kpiValue`). Tiles that
+  /// are not money (a duration, a ratio) keep using [value].
+  @override
+  int? get rupiah;
   @override
   String get value;
   @override

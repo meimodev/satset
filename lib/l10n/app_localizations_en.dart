@@ -6775,4 +6775,19 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get venueHubLanLocal => 'LOCAL';
+
+  @override
+  String moneyCompactJt(String v) {
+    return 'Rp ${v}M';
+  }
+
+  @override
+  String moneyCompactRb(String v) {
+    return 'Rp ${v}K';
+  }
+
+  @override
+  String moneyCompactPlain(String v) {
+    return 'Rp $v';
+  }
 }

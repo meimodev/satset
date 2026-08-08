@@ -5452,5 +5452,32 @@
   "venueHubLanLocal": "LOKAL",
   "@venueHubLanLocal": {
     "description": "Venue header chip when running without a LAN server"
+  },
+  "moneyCompactJt": "Rp {v}jt",
+  "@moneyCompactJt": {
+    "description": "Compact rupiah in the millions on a report tile. Only the magnitude word translates; the digits and Rp stay id_ID (ADR-0084).",
+    "placeholders": {
+      "v": {
+        "type": "String"
+      }
+    }
+  },
+  "moneyCompactRb": "Rp {v}rb",
+  "@moneyCompactRb": {
+    "description": "Compact rupiah in the thousands on a report tile.",
+    "placeholders": {
+      "v": {
+        "type": "String"
+      }
+    }
+  },
+  "moneyCompactPlain": "Rp {v}",
+  "@moneyCompactPlain": {
+    "description": "Compact rupiah under a thousand — nothing to abbreviate.",
+    "placeholders": {
+      "v": {
+        "type": "String"
+      }
+    }
   }
 }

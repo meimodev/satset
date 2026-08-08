@@ -192,23 +192,23 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final covers = sessions.fold<int>(0, (a, s) => a + s.pax);
     final sessionCount = sessions.length;
     final taxService = (net * 0.18).round();
-    // Codes, not sentences: the reader renders these (ADR-0085). `value` stays
-    // server-formatted — it is money, which never localises (ADR-0084).
+    // Codes and amounts, not sentences: the reader renders these (ADR-0085).
+    // The compact rupiah these used to carry abbreviated *Indonesian* words.
     final salesKpis = [
       {
         'key': 'net',
-        'value': _formatRupiah(net),
+        'rupiah': net,
         'args': [sessionCount, covers],
       },
       {
         'key': 'gross',
-        'value': _formatRupiah(gross),
+        'rupiah': gross,
         'args': [sessionCount],
       },
-      {'key': 'taxService', 'value': _formatRupiah(taxService), 'args': []},
+      {'key': 'taxService', 'rupiah': taxService, 'args': []},
       {
         'key': 'void',
-        'value': _formatRupiah(voidTotal),
+        'rupiah': voidTotal,
         'args': [_voidLineCount(tickets)],
       },
     ];
@@ -1468,8 +1468,3 @@ double _median(List<double> values) {
       : sorted[mid];
 }
 
-String _formatRupiah(int v) {
-  if (v >= 1000000) return 'Rp ${(v / 1000000).toStringAsFixed(1)}jt';
-  if (v >= 1000) return 'Rp ${(v / 1000).round()}rb';
-  return 'Rp $v';
-}

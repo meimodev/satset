@@ -10806,6 +10806,24 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'LOKAL'**
   String get venueHubLanLocal;
+
+  /// Compact rupiah in the millions on a report tile. Only the magnitude word translates; the digits and Rp stay id_ID (ADR-0084).
+  ///
+  /// In id, this message translates to:
+  /// **'Rp {v}jt'**
+  String moneyCompactJt(String v);
+
+  /// Compact rupiah in the thousands on a report tile.
+  ///
+  /// In id, this message translates to:
+  /// **'Rp {v}rb'**
+  String moneyCompactRb(String v);
+
+  /// Compact rupiah under a thousand — nothing to abbreviate.
+  ///
+  /// In id, this message translates to:
+  /// **'Rp {v}'**
+  String moneyCompactPlain(String v);
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

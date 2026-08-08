@@ -1786,5 +1786,8 @@
   "venueHubBadgeStockOk": "{n, plural, =1{1 ingredient} other{{n} ingredients}}",
   "venueHubBadgeVenue": "Tax {tax}% · Service {svc}%",
   "venueHubLanActive": "LAN ACTIVE",
-  "venueHubLanLocal": "LOCAL"
+  "venueHubLanLocal": "LOCAL",
+  "moneyCompactJt": "Rp {v}M",
+  "moneyCompactRb": "Rp {v}K",
+  "moneyCompactPlain": "Rp {v}"
 }

@@ -71,7 +71,7 @@ String buildReportsCsv(
   section(l.expSummary);
   rows.add(csvRow([l.expColMetric, l.expColValue, l.expColCaption]));
   for (final k in [...s.sales.kpis, ...s.ops.kpis]) {
-    rows.add(csvRow([kpiLabel(l, k), k.value, kpiSub(l, k)]));
+    rows.add(csvRow([kpiLabel(l, k), kpiValue(l, k), kpiSub(l, k)]));
   }
 
   // Staff.
@@ -288,7 +288,7 @@ pw.Widget _kpiGrid(AppL10n l, List<KpiTileDto> kpis) {
               ),
               pw.SizedBox(height: 3),
               pw.Text(
-                k.value,
+                kpiValue(l, k),
                 style: pw.TextStyle(
                   fontSize: 15,
                   fontWeight: pw.FontWeight.bold,

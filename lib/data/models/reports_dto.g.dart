@@ -83,7 +83,8 @@ _$KpiTileDtoImpl _$$KpiTileDtoImplFromJson(Map<String, dynamic> json) =>
               .toList() ??
           const <int>[],
       label: json['label'] as String? ?? '',
-      value: json['value'] as String,
+      rupiah: (json['rupiah'] as num?)?.toInt(),
+      value: json['value'] as String? ?? '',
       sub: json['sub'] as String? ?? '',
     );
 
@@ -92,6 +93,7 @@ Map<String, dynamic> _$$KpiTileDtoImplToJson(_$KpiTileDtoImpl instance) =>
       'key': instance.key,
       'args': instance.args,
       'label': instance.label,
+      'rupiah': instance.rupiah,
       'value': instance.value,
       'sub': instance.sub,
     };
