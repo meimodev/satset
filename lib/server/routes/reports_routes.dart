@@ -215,7 +215,8 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
 
     // Cover trend: group sessions by weekday for this/last week (7 days only).
     final coverTrend = <Map<String, dynamic>>[];
-    const dayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+    // The weekday number, not its name — the reader spells it in its own
+    // language (ADR-0085), the same way every other date on screen is spelled.
     for (var dow = 1; dow <= 7; dow++) {
       final thisWk = sessions
           .where((s) => s.closedAt.weekday == dow)
@@ -224,7 +225,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
           .where((s) => s.closedAt.weekday == dow)
           .fold<int>(0, (a, s) => a + s.pax);
       coverTrend.add({
-        'day': dayLabels[dow - 1],
+        'dow': dow,
         'thisWeek': thisWk,
         'lastWeek': lastWk,
       });

@@ -148,14 +148,14 @@ Map<String, dynamic> _$$TakeawaySplitDtoImplToJson(
 
 _$CoverDayDtoImpl _$$CoverDayDtoImplFromJson(Map<String, dynamic> json) =>
     _$CoverDayDtoImpl(
-      day: json['day'] as String,
+      dow: (json['dow'] as num?)?.toInt() ?? 1,
       thisWeek: (json['thisWeek'] as num).toInt(),
       lastWeek: (json['lastWeek'] as num).toInt(),
     );
 
 Map<String, dynamic> _$$CoverDayDtoImplToJson(_$CoverDayDtoImpl instance) =>
     <String, dynamic>{
-      'day': instance.day,
+      'dow': instance.dow,
       'thisWeek': instance.thisWeek,
       'lastWeek': instance.lastWeek,
     };
@@ -458,7 +458,6 @@ Map<String, dynamic> _$$SpeedItemDtoImplToJson(_$SpeedItemDtoImpl instance) =>
 _$StationRowDtoImpl _$$StationRowDtoImplFromJson(Map<String, dynamic> json) =>
     _$StationRowDtoImpl(
       station: json['station'] as String,
-      label: json['label'] as String,
       qty: (json['qty'] as num?)?.toInt() ?? 0,
       utilization: (json['utilization'] as num?)?.toDouble() ?? 0.0,
     );
@@ -466,7 +465,6 @@ _$StationRowDtoImpl _$$StationRowDtoImplFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$$StationRowDtoImplToJson(_$StationRowDtoImpl instance) =>
     <String, dynamic>{
       'station': instance.station,
-      'label': instance.label,
       'qty': instance.qty,
       'utilization': instance.utilization,
     };

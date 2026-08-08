@@ -1646,7 +1646,8 @@ CoverDayDto _$CoverDayDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$CoverDayDto {
-  String get day => throw _privateConstructorUsedError;
+  /// ISO weekday, 1 = Monday. Spelled by [formatWeekdayShort] at read time.
+  int get dow => throw _privateConstructorUsedError;
   int get thisWeek => throw _privateConstructorUsedError;
   int get lastWeek => throw _privateConstructorUsedError;
 
@@ -1667,7 +1668,7 @@ abstract class $CoverDayDtoCopyWith<$Res> {
     $Res Function(CoverDayDto) then,
   ) = _$CoverDayDtoCopyWithImpl<$Res, CoverDayDto>;
   @useResult
-  $Res call({String day, int thisWeek, int lastWeek});
+  $Res call({int dow, int thisWeek, int lastWeek});
 }
 
 /// @nodoc
@@ -1685,16 +1686,16 @@ class _$CoverDayDtoCopyWithImpl<$Res, $Val extends CoverDayDto>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? day = null,
+    Object? dow = null,
     Object? thisWeek = null,
     Object? lastWeek = null,
   }) {
     return _then(
       _value.copyWith(
-            day: null == day
-                ? _value.day
-                : day // ignore: cast_nullable_to_non_nullable
-                      as String,
+            dow: null == dow
+                ? _value.dow
+                : dow // ignore: cast_nullable_to_non_nullable
+                      as int,
             thisWeek: null == thisWeek
                 ? _value.thisWeek
                 : thisWeek // ignore: cast_nullable_to_non_nullable
@@ -1718,7 +1719,7 @@ abstract class _$$CoverDayDtoImplCopyWith<$Res>
   ) = __$$CoverDayDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String day, int thisWeek, int lastWeek});
+  $Res call({int dow, int thisWeek, int lastWeek});
 }
 
 /// @nodoc
@@ -1735,16 +1736,16 @@ class __$$CoverDayDtoImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? day = null,
+    Object? dow = null,
     Object? thisWeek = null,
     Object? lastWeek = null,
   }) {
     return _then(
       _$CoverDayDtoImpl(
-        day: null == day
-            ? _value.day
-            : day // ignore: cast_nullable_to_non_nullable
-                  as String,
+        dow: null == dow
+            ? _value.dow
+            : dow // ignore: cast_nullable_to_non_nullable
+                  as int,
         thisWeek: null == thisWeek
             ? _value.thisWeek
             : thisWeek // ignore: cast_nullable_to_non_nullable
@@ -1762,7 +1763,7 @@ class __$$CoverDayDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$CoverDayDtoImpl implements _CoverDayDto {
   const _$CoverDayDtoImpl({
-    required this.day,
+    this.dow = 1,
     required this.thisWeek,
     required this.lastWeek,
   });
@@ -1770,8 +1771,10 @@ class _$CoverDayDtoImpl implements _CoverDayDto {
   factory _$CoverDayDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$CoverDayDtoImplFromJson(json);
 
+  /// ISO weekday, 1 = Monday. Spelled by [formatWeekdayShort] at read time.
   @override
-  final String day;
+  @JsonKey()
+  final int dow;
   @override
   final int thisWeek;
   @override
@@ -1779,7 +1782,7 @@ class _$CoverDayDtoImpl implements _CoverDayDto {
 
   @override
   String toString() {
-    return 'CoverDayDto(day: $day, thisWeek: $thisWeek, lastWeek: $lastWeek)';
+    return 'CoverDayDto(dow: $dow, thisWeek: $thisWeek, lastWeek: $lastWeek)';
   }
 
   @override
@@ -1787,7 +1790,7 @@ class _$CoverDayDtoImpl implements _CoverDayDto {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$CoverDayDtoImpl &&
-            (identical(other.day, day) || other.day == day) &&
+            (identical(other.dow, dow) || other.dow == dow) &&
             (identical(other.thisWeek, thisWeek) ||
                 other.thisWeek == thisWeek) &&
             (identical(other.lastWeek, lastWeek) ||
@@ -1796,7 +1799,7 @@ class _$CoverDayDtoImpl implements _CoverDayDto {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, day, thisWeek, lastWeek);
+  int get hashCode => Object.hash(runtimeType, dow, thisWeek, lastWeek);
 
   /// Create a copy of CoverDayDto
   /// with the given fields replaced by the non-null parameter values.
@@ -1814,7 +1817,7 @@ class _$CoverDayDtoImpl implements _CoverDayDto {
 
 abstract class _CoverDayDto implements CoverDayDto {
   const factory _CoverDayDto({
-    required final String day,
+    final int dow,
     required final int thisWeek,
     required final int lastWeek,
   }) = _$CoverDayDtoImpl;
@@ -1822,8 +1825,9 @@ abstract class _CoverDayDto implements CoverDayDto {
   factory _CoverDayDto.fromJson(Map<String, dynamic> json) =
       _$CoverDayDtoImpl.fromJson;
 
+  /// ISO weekday, 1 = Monday. Spelled by [formatWeekdayShort] at read time.
   @override
-  String get day;
+  int get dow;
   @override
   int get thisWeek;
   @override
@@ -5061,8 +5065,10 @@ StationRowDto _$StationRowDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$StationRowDto {
+  // The station code only — its words come from `stationLabel` at read time
+  // (ADR-0085). The server stopped sending a `label` and this stayed
+  // required, which failed the whole snapshot's parse.
   String get station => throw _privateConstructorUsedError;
-  String get label => throw _privateConstructorUsedError;
   int get qty => throw _privateConstructorUsedError;
   double get utilization => throw _privateConstructorUsedError;
 
@@ -5083,7 +5089,7 @@ abstract class $StationRowDtoCopyWith<$Res> {
     $Res Function(StationRowDto) then,
   ) = _$StationRowDtoCopyWithImpl<$Res, StationRowDto>;
   @useResult
-  $Res call({String station, String label, int qty, double utilization});
+  $Res call({String station, int qty, double utilization});
 }
 
 /// @nodoc
@@ -5102,7 +5108,6 @@ class _$StationRowDtoCopyWithImpl<$Res, $Val extends StationRowDto>
   @override
   $Res call({
     Object? station = null,
-    Object? label = null,
     Object? qty = null,
     Object? utilization = null,
   }) {
@@ -5111,10 +5116,6 @@ class _$StationRowDtoCopyWithImpl<$Res, $Val extends StationRowDto>
             station: null == station
                 ? _value.station
                 : station // ignore: cast_nullable_to_non_nullable
-                      as String,
-            label: null == label
-                ? _value.label
-                : label // ignore: cast_nullable_to_non_nullable
                       as String,
             qty: null == qty
                 ? _value.qty
@@ -5139,7 +5140,7 @@ abstract class _$$StationRowDtoImplCopyWith<$Res>
   ) = __$$StationRowDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String station, String label, int qty, double utilization});
+  $Res call({String station, int qty, double utilization});
 }
 
 /// @nodoc
@@ -5157,7 +5158,6 @@ class __$$StationRowDtoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? station = null,
-    Object? label = null,
     Object? qty = null,
     Object? utilization = null,
   }) {
@@ -5166,10 +5166,6 @@ class __$$StationRowDtoImplCopyWithImpl<$Res>
         station: null == station
             ? _value.station
             : station // ignore: cast_nullable_to_non_nullable
-                  as String,
-        label: null == label
-            ? _value.label
-            : label // ignore: cast_nullable_to_non_nullable
                   as String,
         qty: null == qty
             ? _value.qty
@@ -5189,7 +5185,6 @@ class __$$StationRowDtoImplCopyWithImpl<$Res>
 class _$StationRowDtoImpl implements _StationRowDto {
   const _$StationRowDtoImpl({
     required this.station,
-    required this.label,
     this.qty = 0,
     this.utilization = 0.0,
   });
@@ -5197,10 +5192,11 @@ class _$StationRowDtoImpl implements _StationRowDto {
   factory _$StationRowDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$StationRowDtoImplFromJson(json);
 
+  // The station code only — its words come from `stationLabel` at read time
+  // (ADR-0085). The server stopped sending a `label` and this stayed
+  // required, which failed the whole snapshot's parse.
   @override
   final String station;
-  @override
-  final String label;
   @override
   @JsonKey()
   final int qty;
@@ -5210,7 +5206,7 @@ class _$StationRowDtoImpl implements _StationRowDto {
 
   @override
   String toString() {
-    return 'StationRowDto(station: $station, label: $label, qty: $qty, utilization: $utilization)';
+    return 'StationRowDto(station: $station, qty: $qty, utilization: $utilization)';
   }
 
   @override
@@ -5219,7 +5215,6 @@ class _$StationRowDtoImpl implements _StationRowDto {
         (other.runtimeType == runtimeType &&
             other is _$StationRowDtoImpl &&
             (identical(other.station, station) || other.station == station) &&
-            (identical(other.label, label) || other.label == label) &&
             (identical(other.qty, qty) || other.qty == qty) &&
             (identical(other.utilization, utilization) ||
                 other.utilization == utilization));
@@ -5227,8 +5222,7 @@ class _$StationRowDtoImpl implements _StationRowDto {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, station, label, qty, utilization);
+  int get hashCode => Object.hash(runtimeType, station, qty, utilization);
 
   /// Create a copy of StationRowDto
   /// with the given fields replaced by the non-null parameter values.
@@ -5247,7 +5241,6 @@ class _$StationRowDtoImpl implements _StationRowDto {
 abstract class _StationRowDto implements StationRowDto {
   const factory _StationRowDto({
     required final String station,
-    required final String label,
     final int qty,
     final double utilization,
   }) = _$StationRowDtoImpl;
@@ -5255,10 +5248,11 @@ abstract class _StationRowDto implements StationRowDto {
   factory _StationRowDto.fromJson(Map<String, dynamic> json) =
       _$StationRowDtoImpl.fromJson;
 
+  // The station code only — its words come from `stationLabel` at read time
+  // (ADR-0085). The server stopped sending a `label` and this stayed
+  // required, which failed the whole snapshot's parse.
   @override
   String get station;
-  @override
-  String get label;
   @override
   int get qty;
   @override

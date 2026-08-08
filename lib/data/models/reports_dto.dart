@@ -92,7 +92,8 @@ class TakeawaySplitDto with _$TakeawaySplitDto {
 @freezed
 class CoverDayDto with _$CoverDayDto {
   const factory CoverDayDto({
-    required String day,
+    /// ISO weekday, 1 = Monday. Spelled by [formatWeekdayShort] at read time.
+    @Default(1) int dow,
     required int thisWeek,
     required int lastWeek,
   }) = _CoverDayDto;
@@ -287,8 +288,10 @@ class SpeedItemDto with _$SpeedItemDto {
 @freezed
 class StationRowDto with _$StationRowDto {
   const factory StationRowDto({
+    // The station code only — its words come from `stationLabel` at read time
+    // (ADR-0085). The server stopped sending a `label` and this stayed
+    // required, which failed the whole snapshot's parse.
     required String station,
-    required String label,
     @Default(0) int qty,
     @Default(0.0) double utilization,
   }) = _StationRowDto;

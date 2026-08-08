@@ -55,6 +55,13 @@ String formatBarClockId(DateTime d) => DateFormat('HH:mm · EEE').format(d);
 /// paid-until.
 String formatShortDateId(DateTime d) => DateFormat('d MMM yyyy').format(d);
 
+/// A bare ISO weekday (1 = Monday) as a short name: "Sen", "Mon". The report
+/// trend chart labels its bars with this — the server sends the number.
+///
+/// 1 Jan 2024 was a Monday, so the day-of-month doubles as the weekday.
+String formatWeekdayShort(int dow) =>
+    DateFormat.E().format(DateTime(2024, 1, dow));
+
 final _grouping = NumberFormat.decimalPattern('id_ID');
 
 /// Group an integer amount for seeding a rupiah text field: `14500` → `14.500`.

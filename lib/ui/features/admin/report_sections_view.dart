@@ -606,7 +606,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                         ),
                         const SizedBox(height: Sp.s1h),
                         Text(
-                          pairs[i].day,
+                          formatWeekdayShort(pairs[i].dow),
                           style: SatType.monoS(color: sc.textLo),
                         ),
                       ],
