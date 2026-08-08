@@ -93,4 +93,33 @@ void main() {
       );
     }
   });
+
+  test('an English count reads right at one', () {
+    // Indonesian does not mark plurals, so copy authored in the template and
+    // then translated arrives as "1 items" unless the English entry is an ICU
+    // plural. The template cannot catch this — only the target can.
+    final counted = RegExp(r'\{(\w+)\}\s+(?:[a-z]+\s+)?([a-z]+s)\b');
+    // Words that end in `s` without being a plural, or that never inflect.
+    const invariant = {'ms', 'status', 'is', 'was', 'has', 'less', 'across'};
+    // Placeholders that are not counts at all, so the noun after them never
+    // agrees with them: a money amount, a venue's own name.
+    const notACount = {'cshWrittenOffBody', 'ordTitleVenue'};
+    final offenders = <String>[];
+    for (final k in messages(id)) {
+      final v = en[k] as String;
+      if (v.contains(', plural,') || notACount.contains(k)) continue;
+      for (final m in counted.allMatches(v)) {
+        if (invariant.contains(m[2])) continue;
+        offenders.add('$k: "${m[0]}"');
+      }
+    }
+    expect(
+      offenders,
+      isEmpty,
+      reason:
+          'an English count needs an ICU plural, or it renders "1 items". '
+          'Write {n, plural, =1{1 item} other{{n} items}} and mirror it in '
+          'the template with an `other` arm only.',
+    );
+  });
 }

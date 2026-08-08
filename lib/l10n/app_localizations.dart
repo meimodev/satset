@@ -1996,7 +1996,7 @@ abstract class AppL10n {
   /// No description provided for @staffSubtitle.
   ///
   /// In id, this message translates to:
-  /// **'{members} anggota · {admins} admin'**
+  /// **'{members, plural, other{{members} anggota}} · {admins, plural, other{{admins} admin}}'**
   String staffSubtitle(int members, int admins);
 
   /// No description provided for @staffRolesCount.
@@ -2008,7 +2008,7 @@ abstract class AppL10n {
   /// No description provided for @staffCapsCount.
   ///
   /// In id, this message translates to:
-  /// **'{held}/{total} izin'**
+  /// **'{held}/{total, plural, other{{total} izin}}'**
   String staffCapsCount(int held, int total);
 
   /// No description provided for @staffMembersCount.
@@ -3640,7 +3640,7 @@ abstract class AppL10n {
   /// No description provided for @cshAssignSub.
   ///
   /// In id, this message translates to:
-  /// **'{qty} unit total · {unassigned} belum diatur'**
+  /// **'{qty, plural, other{{qty} unit}} total · {unassigned} belum diatur'**
   String cshAssignSub(int qty, int unassigned);
 
   /// No description provided for @cshSettled.
@@ -3814,7 +3814,7 @@ abstract class AppL10n {
   /// No description provided for @cshEvenSplit.
   ///
   /// In id, this message translates to:
-  /// **'Split rata · {count} bagian'**
+  /// **'Split rata · {count, plural, other{{count} bagian}}'**
   String cshEvenSplit(int count);
 
   /// No description provided for @cshPerHead.
@@ -3904,7 +3904,7 @@ abstract class AppL10n {
   /// No description provided for @cshSettledParts.
   ///
   /// In id, this message translates to:
-  /// **'{amount} diterima penuh dalam {parts} bagian.'**
+  /// **'{amount} diterima penuh dalam {parts, plural, other{{parts} bagian.}}'**
   String cshSettledParts(String amount, int parts);
 
   /// No description provided for @cshPrintSettledReceipt.
@@ -4126,7 +4126,7 @@ abstract class AppL10n {
   /// No description provided for @rptGuestTrendSub.
   ///
   /// In id, this message translates to:
-  /// **'{count} tamu · {delta}% WoW'**
+  /// **'{count, plural, other{{count} tamu}} · {delta}% WoW'**
   String rptGuestTrendSub(int count, String delta);
 
   /// No description provided for @rptThisWeek.
@@ -4282,13 +4282,13 @@ abstract class AppL10n {
   /// No description provided for @rptMenuHighMargin.
   ///
   /// In id, this message translates to:
-  /// **'{n} item · margin tinggi'**
+  /// **'{n, plural, other{{n} item}} · margin tinggi'**
   String rptMenuHighMargin(int n);
 
   /// No description provided for @rptMenuSlowStock.
   ///
   /// In id, this message translates to:
-  /// **'{n} item · stok mengendap'**
+  /// **'{n, plural, other{{n} item}} · stok mengendap'**
   String rptMenuSlowStock(int n);
 
   /// No description provided for @rptQtyMargin.
@@ -4474,7 +4474,7 @@ abstract class AppL10n {
   /// No description provided for @rptServiceSpeedSub.
   ///
   /// In id, this message translates to:
-  /// **'Median prep {prep}m · antar {pickup}m · {n} item'**
+  /// **'Median prep {prep}m · antar {pickup}m · {n, plural, other{{n} item}}'**
   String rptServiceSpeedSub(int prep, int pickup, int n);
 
   /// No description provided for @rptSlaCourses.
@@ -4504,7 +4504,7 @@ abstract class AppL10n {
   /// No description provided for @rptGreetSub.
   ///
   /// In id, this message translates to:
-  /// **'median {median}m · {n} kunjungan'**
+  /// **'median {median}m · {n, plural, other{{n} kunjungan}}'**
   String rptGreetSub(int median, int n);
 
   /// No description provided for @rptSlowestMenu.
@@ -4594,7 +4594,7 @@ abstract class AppL10n {
   /// No description provided for @rptVoidSub.
   ///
   /// In id, this message translates to:
-  /// **'{count} kejadian · {amount} hilang'**
+  /// **'{count, plural, other{{count} kejadian}} · {amount} hilang'**
   String rptVoidSub(int count, String amount);
 
   /// No description provided for @rptVoidPerWaiter.
@@ -4708,7 +4708,7 @@ abstract class AppL10n {
   /// No description provided for @stkCountIngredients.
   ///
   /// In id, this message translates to:
-  /// **'{n} Bahan'**
+  /// **'{n, plural, other{{n} Bahan}}'**
   String stkCountIngredients(int n);
 
   /// No description provided for @stkNeedReorder.
@@ -4744,7 +4744,7 @@ abstract class AppL10n {
   /// No description provided for @stkOfRegistered.
   ///
   /// In id, this message translates to:
-  /// **'dari {n} bahan terdaftar'**
+  /// **'dari {n, plural, other{{n} bahan terdaftar}}'**
   String stkOfRegistered(int n);
 
   /// No description provided for @stkOpnameMode.
@@ -4888,7 +4888,7 @@ abstract class AppL10n {
   /// No description provided for @stkOpnameDone.
   ///
   /// In id, this message translates to:
-  /// **'Opname selesai — {n} bahan disesuaikan'**
+  /// **'Opname selesai — {n, plural, other{{n} bahan}} disesuaikan'**
   String stkOpnameDone(int n);
 
   /// No description provided for @stkSaveFailed.
@@ -5158,7 +5158,7 @@ abstract class AppL10n {
   /// No description provided for @elapsedDaysAgo.
   ///
   /// In id, this message translates to:
-  /// **'{n} hari lalu'**
+  /// **'{n, plural, other{{n} hari}} lalu'**
   String elapsedDaysAgo(int n);
 
   /// No description provided for @sysTitle.
@@ -5386,7 +5386,7 @@ abstract class AppL10n {
   /// No description provided for @sysStationLoad.
   ///
   /// In id, this message translates to:
-  /// **'{staff} staf · {tickets} tiket'**
+  /// **'{staff} staf · {tickets, plural, other{{tickets} tiket}}'**
   String sysStationLoad(int staff, int tickets);
 
   /// No description provided for @sysStationQuiet.
@@ -5506,7 +5506,7 @@ abstract class AppL10n {
   /// No description provided for @sysPrinterStationCount.
   ///
   /// In id, this message translates to:
-  /// **'{printers} printer · {stations} stasiun'**
+  /// **'{printers, plural, other{{printers} printer}} · {stations, plural, other{{stations} stasiun}}'**
   String sysPrinterStationCount(int printers, int stations);
 
   /// No description provided for @sysDevices.
@@ -5620,7 +5620,7 @@ abstract class AppL10n {
   /// No description provided for @sysHeroOkDesc.
   ///
   /// In id, this message translates to:
-  /// **'{sessions} sesi aktif · {devices} perangkat · WS {ws}'**
+  /// **'{sessions, plural, other{{sessions} sesi aktif}} · {devices, plural, other{{devices} perangkat}} · WS {ws}'**
   String sysHeroOkDesc(int sessions, int devices, String ws);
 
   /// No description provided for @sysReachOk.
@@ -5776,13 +5776,13 @@ abstract class AppL10n {
   /// No description provided for @tblItemCount.
   ///
   /// In id, this message translates to:
-  /// **'{n} item'**
+  /// **'{n, plural, other{{n} item}}'**
   String tblItemCount(int n);
 
   /// No description provided for @tblItemCountHeld.
   ///
   /// In id, this message translates to:
-  /// **'{n} item · ditahan'**
+  /// **'{n, plural, other{{n} item}} · ditahan'**
   String tblItemCountHeld(int n);
 
   /// No description provided for @tblFireCourse.
@@ -6340,13 +6340,13 @@ abstract class AppL10n {
   /// No description provided for @mnaHeaderSub.
   ///
   /// In id, this message translates to:
-  /// **'{total} item · {cats} kategori · {out} tidak tersedia'**
+  /// **'{total, plural, other{{total} item}} · {cats, plural, other{{cats} kategori}} · {out} tidak tersedia'**
   String mnaHeaderSub(int total, int cats, int out);
 
   /// No description provided for @mnaPhoneSub.
   ///
   /// In id, this message translates to:
-  /// **'{total} item · {out} tidak tersedia'**
+  /// **'{total, plural, other{{total} item}} · {out} tidak tersedia'**
   String mnaPhoneSub(int total, int out);
 
   /// No description provided for @mnaAddItem.
@@ -6406,7 +6406,7 @@ abstract class AppL10n {
   /// No description provided for @mnaVariantsOut.
   ///
   /// In id, this message translates to:
-  /// **'{n} varian habis'**
+  /// **'{n, plural, other{{n} varian}} habis'**
   String mnaVariantsOut(int n);
 
   /// No description provided for @mnaAutoOut.
@@ -6460,7 +6460,7 @@ abstract class AppL10n {
   /// No description provided for @mnaMoveItemsFirst.
   ///
   /// In id, this message translates to:
-  /// **'Pindahkan {count} item dulu sebelum hapus \"{name}\"'**
+  /// **'Pindahkan {count, plural, other{{count} item}} dulu sebelum hapus \"{name}\"'**
   String mnaMoveItemsFirst(int count, String name);
 
   /// No description provided for @mnaCategoryInUse.
@@ -6586,7 +6586,7 @@ abstract class AppL10n {
   /// No description provided for @mnuPending.
   ///
   /// In id, this message translates to:
-  /// **'{n} item pending'**
+  /// **'{n, plural, other{{n} item}} pending'**
   String mnuPending(int n);
 
   /// No description provided for @mnuServicePct.
@@ -6628,7 +6628,7 @@ abstract class AppL10n {
   /// No description provided for @mnuCartReady.
   ///
   /// In id, this message translates to:
-  /// **'{n} item siap kirim'**
+  /// **'{n, plural, other{{n} item}} siap kirim'**
   String mnuCartReady(int n);
 
   /// No description provided for @mnuKitchenCount.
@@ -7378,7 +7378,7 @@ abstract class AppL10n {
   /// No description provided for @zoneAdminSummary.
   ///
   /// In id, this message translates to:
-  /// **'{zones} zona · {tables} meja · {seats} kursi'**
+  /// **'{zones, plural, other{{zones} zona}} · {tables, plural, other{{tables} meja}} · {seats, plural, other{{seats} kursi}}'**
   String zoneAdminSummary(int zones, int tables, int seats);
 
   /// No description provided for @zoneAdminEmpty.
@@ -7768,7 +7768,7 @@ abstract class AppL10n {
   /// No description provided for @mvtConfirmOver.
   ///
   /// In id, this message translates to:
-  /// **'Tujuan: meja {table} (kapasitas {capacity}). {pax} tamu melebihi kapasitas — lanjutkan?'**
+  /// **'Tujuan: meja {table} (kapasitas {capacity}). {pax, plural, other{{pax} tamu}} melebihi kapasitas — lanjutkan?'**
   String mvtConfirmOver(String table, int capacity, int pax);
 
   /// No description provided for @mvtConfirmBody.
@@ -7912,7 +7912,7 @@ abstract class AppL10n {
   /// No description provided for @resDaySummary.
   ///
   /// In id, this message translates to:
-  /// **'{day} · {bookings} booking · {covers} tamu'**
+  /// **'{day} · {bookings, plural, other{{bookings} booking}} · {covers, plural, other{{covers} tamu}}'**
   String resDaySummary(String day, int bookings, int covers);
 
   /// No description provided for @resNoTableForParty.
@@ -8110,7 +8110,7 @@ abstract class AppL10n {
   /// No description provided for @cshSummary.
   ///
   /// In id, this message translates to:
-  /// **'{running} tagihan berjalan · {takeaway} tanpa meja · {settled} lunas'**
+  /// **'{running, plural, other{{running} tagihan}} berjalan · {takeaway} tanpa meja · {settled} lunas'**
   String cshSummary(int running, int takeaway, int settled);
 
   /// No description provided for @cshUnbilled.
@@ -8374,7 +8374,7 @@ abstract class AppL10n {
   /// No description provided for @fveManyAdmins.
   ///
   /// In id, this message translates to:
-  /// **'Venue ini punya {count} admin aktif. Satu venue kini hanya boleh punya satu admin aktif — tangguhkan yang lain, sisakan akun di perangkat yang memegang data venue. Admin yang tersisa aktif tidak akan bisa masuk.'**
+  /// **'Venue ini punya {count, plural, other{{count} admin aktif}}. Satu venue kini hanya boleh punya satu admin aktif — tangguhkan yang lain, sisakan akun di perangkat yang memegang data venue. Admin yang tersisa aktif tidak akan bisa masuk.'**
   String fveManyAdmins(int count);
 
   /// No description provided for @fveLoadFailed.
@@ -8482,7 +8482,7 @@ abstract class AppL10n {
   /// No description provided for @cpdNoteSemantics.
   ///
   /// In id, this message translates to:
-  /// **'{label}, {count} lembar'**
+  /// **'{label}, {count, plural, other{{count} lembar}}'**
   String cpdNoteSemantics(String label, int count);
 
   /// No description provided for @cpdReceived.
@@ -9016,19 +9016,19 @@ abstract class AppL10n {
   /// No description provided for @zonAdminSub.
   ///
   /// In id, this message translates to:
-  /// **'{tables} meja · {zones} zona · {seats} kursi'**
+  /// **'{tables, plural, other{{tables} meja}} · {zones, plural, other{{zones} zona}} · {seats, plural, other{{seats} kursi}}'**
   String zonAdminSub(int tables, int zones, int seats);
 
   /// No description provided for @venueHubTablesZones.
   ///
   /// In id, this message translates to:
-  /// **'{tables} meja ({zones} zona)'**
+  /// **'{tables, plural, other{{tables} meja}} ({zones, plural, other{{zones} zona)}}'**
   String venueHubTablesZones(int tables, int zones);
 
   /// No description provided for @venueHubMenuItems.
   ///
   /// In id, this message translates to:
-  /// **'{count} item menu'**
+  /// **'{count, plural, other{{count} item menu}}'**
   String venueHubMenuItems(int count);
 
   /// No description provided for @venueHubStaffCount.
@@ -9076,13 +9076,13 @@ abstract class AppL10n {
   /// No description provided for @venueHubStock.
   ///
   /// In id, this message translates to:
-  /// **'{count} bahan'**
+  /// **'{count, plural, other{{count} bahan}}'**
   String venueHubStock(int count);
 
   /// No description provided for @venueHubStockLow.
   ///
   /// In id, this message translates to:
-  /// **'{count} bahan ({low} low)'**
+  /// **'{count, plural, other{{count} bahan}} ({low} low)'**
   String venueHubStockLow(int count, int low);
 
   /// No description provided for @alertsSoundHint.
@@ -9094,7 +9094,7 @@ abstract class AppL10n {
   /// No description provided for @kitchenQueueSub.
   ///
   /// In id, this message translates to:
-  /// **'{orders} order aktif · {items} item · tahan untuk tandai selesai'**
+  /// **'{orders, plural, other{{orders} order aktif}} · {items, plural, other{{items} item}} · tahan untuk tandai selesai'**
   String kitchenQueueSub(int orders, int items);
 
   /// No description provided for @modDietaryLine.
@@ -9112,13 +9112,13 @@ abstract class AppL10n {
   /// No description provided for @rptSubNet.
   ///
   /// In id, this message translates to:
-  /// **'{sessions} sesi · {covers} tamu'**
+  /// **'{sessions, plural, other{{sessions} sesi}} · {covers, plural, other{{covers} tamu}}'**
   String rptSubNet(int sessions, int covers);
 
   /// No description provided for @rptSubGross.
   ///
   /// In id, this message translates to:
-  /// **'{count} transaksi'**
+  /// **'{count, plural, other{{count} transaksi}}'**
   String rptSubGross(int count);
 
   /// No description provided for @rptSubTaxService.
@@ -9130,7 +9130,7 @@ abstract class AppL10n {
   /// No description provided for @rptSubVoid.
   ///
   /// In id, this message translates to:
-  /// **'{count} item void'**
+  /// **'{count, plural, other{{count} item void}}'**
   String rptSubVoid(int count);
 
   /// No description provided for @rptSubTurnTime.
@@ -9550,13 +9550,13 @@ abstract class AppL10n {
   /// No description provided for @agbLockedInHours.
   ///
   /// In id, this message translates to:
-  /// **'Tanpa internet, server terkunci dalam {hours} jam. Segera sambungkan.'**
+  /// **'Tanpa internet, server terkunci dalam {hours, plural, other{{hours} jam.}} Segera sambungkan.'**
   String agbLockedInHours(int hours);
 
   /// No description provided for @agbLockedInDays.
   ///
   /// In id, this message translates to:
-  /// **'Tanpa internet, server terkunci dalam {days} hari. Sambungkan untuk verifikasi admin.'**
+  /// **'Tanpa internet, server terkunci dalam {days, plural, other{{days} hari.}} Sambungkan untuk verifikasi admin.'**
   String agbLockedInDays(int days);
 
   /// No description provided for @crsStartBeforeEnd.
@@ -9568,7 +9568,7 @@ abstract class AppL10n {
   /// No description provided for @crsMaxSpan.
   ///
   /// In id, this message translates to:
-  /// **'Rentang maksimal {days} hari.'**
+  /// **'Rentang maksimal {days, plural, other{{days} hari.}}'**
   String crsMaxSpan(int days);
 
   /// No description provided for @pinPickServerFirst.
@@ -9898,7 +9898,7 @@ abstract class AppL10n {
   /// Sign-out warning on the server device while tables are still live.
   ///
   /// In id, this message translates to:
-  /// **'{n} meja masih aktif. Keluar akan mematikan server — semua staff terputus dan tidak bisa menyambung sampai admin masuk lagi.'**
+  /// **'{n, plural, other{{n} meja}} masih aktif. Keluar akan mematikan server — semua staff terputus dan tidak bisa menyambung sampai admin masuk lagi.'**
   String meEndServerBodyLive(int n);
 
   /// Sign-out warning on the server device with no live tables.
@@ -9952,7 +9952,7 @@ abstract class AppL10n {
   /// Receipt line with the cover count.
   ///
   /// In id, this message translates to:
-  /// **'{n} tamu'**
+  /// **'{n, plural, other{{n} tamu}}'**
   String rcpPaxCount(int n);
 
   /// Staff role name: waiter.
@@ -10162,7 +10162,7 @@ abstract class AppL10n {
   /// Venue hub badge under the floor plan tile.
   ///
   /// In id, this message translates to:
-  /// **'{tables} meja · {zones} zona'**
+  /// **'{tables, plural, other{{tables} meja}} · {zones, plural, other{{zones} zona}}'**
   String venueHubBadgeFloor(int tables, int zones);
 
   /// Venue hub badge under the staff tile.
@@ -10372,7 +10372,7 @@ abstract class AppL10n {
   /// Relative phrase: n days from now.
   ///
   /// In id, this message translates to:
-  /// **'{n} hari lagi'**
+  /// **'{n, plural, other{{n} hari}} lagi'**
   String fltDaysLeft(int n);
 
   /// Relative phrase: it happens today.
@@ -10774,7 +10774,7 @@ abstract class AppL10n {
   /// Menu card badge on the venue hub
   ///
   /// In id, this message translates to:
-  /// **'{items} item · {cats} kategori'**
+  /// **'{items, plural, other{{items} item}} · {cats, plural, other{{cats} kategori}}'**
   String venueHubBadgeMenu(int items, int cats);
 
   /// Stock card badge when ingredients are low
@@ -10786,7 +10786,7 @@ abstract class AppL10n {
   /// Stock card badge when nothing is low
   ///
   /// In id, this message translates to:
-  /// **'{n} bahan'**
+  /// **'{n, plural, other{{n} bahan}}'**
   String venueHubBadgeStockOk(int n);
 
   /// Venue settings card badge: tax and service rates

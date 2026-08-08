@@ -1060,7 +1060,19 @@ class AppL10nEn extends AppL10n {
 
   @override
   String staffSubtitle(int members, int admins) {
-    return '$members members · $admins admin';
+    String _temp0 = intl.Intl.pluralLogic(
+      members,
+      locale: localeName,
+      other: '$members members',
+      one: '1 member',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      admins,
+      locale: localeName,
+      other: '$admins admin',
+      one: '1 admin',
+    );
+    return '$_temp0 · $_temp1';
   }
 
   @override
@@ -1076,7 +1088,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String staffCapsCount(int held, int total) {
-    return '$held/$total permissions';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total permissions',
+      one: '1 permission',
+    );
+    return '$held/$_temp0';
   }
 
   @override
@@ -2074,7 +2092,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String cshAssignSub(int qty, int unassigned) {
-    return '$qty units total · $unassigned unassigned';
+    String _temp0 = intl.Intl.pluralLogic(
+      qty,
+      locale: localeName,
+      other: '$qty units',
+      one: '1 unit',
+    );
+    return '$_temp0 total · $unassigned unassigned';
   }
 
   @override
@@ -2179,7 +2203,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String cshEvenSplit(int count) {
-    return 'Even split · $count parts';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count parts',
+      one: '1 part',
+    );
+    return 'Even split · $_temp0';
   }
 
   @override
@@ -2250,7 +2280,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String cshSettledParts(String amount, int parts) {
-    return '$amount received in full across $parts parts.';
+    String _temp0 = intl.Intl.pluralLogic(
+      parts,
+      locale: localeName,
+      other: '$parts parts',
+      one: '1 part',
+    );
+    return '$amount received in full across $_temp0.';
   }
 
   @override
@@ -2380,7 +2416,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String rptGuestTrendSub(int count, String delta) {
-    return '$count guests · $delta% WoW';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count guests',
+      one: '1 guest',
+    );
+    return '$_temp0 · $delta% WoW';
   }
 
   @override
@@ -2466,12 +2508,24 @@ class AppL10nEn extends AppL10n {
 
   @override
   String rptMenuHighMargin(int n) {
-    return '$n items · high margin';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n items',
+      one: '1 item',
+    );
+    return '$_temp0 · high margin';
   }
 
   @override
   String rptMenuSlowStock(int n) {
-    return '$n items · slow stock';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n items',
+      one: '1 item',
+    );
+    return '$_temp0 · slow stock';
   }
 
   @override
@@ -2576,7 +2630,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String rptServiceSpeedSub(int prep, int pickup, int n) {
-    return 'Median prep ${prep}m · runner ${pickup}m · $n items';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n items',
+      one: '1 item',
+    );
+    return 'Median prep ${prep}m · runner ${pickup}m · $_temp0';
   }
 
   @override
@@ -2599,7 +2659,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String rptGreetSub(int median, int n) {
-    return 'median ${median}m · $n visits';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n visits',
+      one: '1 visit',
+    );
+    return 'median ${median}m · $_temp0';
   }
 
   @override
@@ -2649,7 +2715,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String rptVoidSub(int count, String amount) {
-    return '$count events · $amount lost';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count events',
+      one: '1 event',
+    );
+    return '$_temp0 · $amount lost';
   }
 
   @override
@@ -2715,7 +2787,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String stkCountIngredients(int n) {
-    return '$n ingredients';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n ingredients',
+      one: '1 ingredient',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2735,7 +2813,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String stkOfRegistered(int n) {
-    return 'of $n registered ingredients';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n registered ingredients',
+      one: '1 registered ingredient',
+    );
+    return 'of $_temp0';
   }
 
   @override
@@ -2824,7 +2908,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String stkOpnameDone(int n) {
-    return 'Stocktake done — $n ingredients adjusted';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n ingredients',
+      one: '1 ingredient',
+    );
+    return 'Stocktake done — $_temp0 adjusted';
   }
 
   @override
@@ -3013,7 +3103,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String elapsedDaysAgo(int n) {
-    return '$n days ago';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n days',
+      one: '1 day',
+    );
+    return '$_temp0 ago';
   }
 
   @override
@@ -3137,7 +3233,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String sysStationLoad(int staff, int tickets) {
-    return '$staff staff · $tickets tickets';
+    String _temp0 = intl.Intl.pluralLogic(
+      tickets,
+      locale: localeName,
+      other: '$tickets tickets',
+      one: '1 ticket',
+    );
+    return '$staff staff · $_temp0';
   }
 
   @override
@@ -3205,7 +3307,19 @@ class AppL10nEn extends AppL10n {
 
   @override
   String sysPrinterStationCount(int printers, int stations) {
-    return '$printers printers · $stations stations';
+    String _temp0 = intl.Intl.pluralLogic(
+      printers,
+      locale: localeName,
+      other: '$printers printers',
+      one: '1 printer',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      stations,
+      locale: localeName,
+      other: '$stations stations',
+      one: '1 station',
+    );
+    return '$_temp0 · $_temp1';
   }
 
   @override
@@ -3276,7 +3390,19 @@ class AppL10nEn extends AppL10n {
 
   @override
   String sysHeroOkDesc(int sessions, int devices, String ws) {
-    return '$sessions active sessions · $devices devices · WS $ws';
+    String _temp0 = intl.Intl.pluralLogic(
+      sessions,
+      locale: localeName,
+      other: '$sessions active sessions',
+      one: '1 active session',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      devices,
+      locale: localeName,
+      other: '$devices devices',
+      one: '1 device',
+    );
+    return '$_temp0 · $_temp1 · WS $ws';
   }
 
   @override
@@ -3372,12 +3498,24 @@ class AppL10nEn extends AppL10n {
 
   @override
   String tblItemCount(int n) {
-    return '$n items';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n items',
+      one: '1 item',
+    );
+    return '$_temp0';
   }
 
   @override
   String tblItemCountHeld(int n) {
-    return '$n items · held';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n items',
+      one: '1 item',
+    );
+    return '$_temp0 · held';
   }
 
   @override
@@ -3694,12 +3832,30 @@ class AppL10nEn extends AppL10n {
 
   @override
   String mnaHeaderSub(int total, int cats, int out) {
-    return '$total items · $cats categories · $out unavailable';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total items',
+      one: '1 item',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      cats,
+      locale: localeName,
+      other: '$cats categories',
+      one: '1 category',
+    );
+    return '$_temp0 · $_temp1 · $out unavailable';
   }
 
   @override
   String mnaPhoneSub(int total, int out) {
-    return '$total items · $out unavailable';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total items',
+      one: '1 item',
+    );
+    return '$_temp0 · $out unavailable';
   }
 
   @override
@@ -3733,7 +3889,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String mnaVariantsOut(int n) {
-    return '$n variants sold out';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n variants',
+      one: '1 variant',
+    );
+    return '$_temp0 sold out';
   }
 
   @override
@@ -3762,7 +3924,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String mnaMoveItemsFirst(int count, String name) {
-    return 'Move $count items out before deleting \"$name\"';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return 'Move $_temp0 out before deleting \"$name\"';
   }
 
   @override
@@ -3838,7 +4006,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String mnuPending(int n) {
-    return '$n items pending';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n items',
+      one: '1 item',
+    );
+    return '$_temp0 pending';
   }
 
   @override
@@ -3867,7 +4041,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String mnuCartReady(int n) {
-    return '$n items ready to send';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n items',
+      one: '1 item',
+    );
+    return '$_temp0 ready to send';
   }
 
   @override
@@ -4312,7 +4492,25 @@ class AppL10nEn extends AppL10n {
 
   @override
   String zoneAdminSummary(int zones, int tables, int seats) {
-    return '$zones zones · $tables tables · $seats seats';
+    String _temp0 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zones',
+      one: '1 zone',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables tables',
+      one: '1 table',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      seats,
+      locale: localeName,
+      other: '$seats seats',
+      one: '1 seat',
+    );
+    return '$_temp0 · $_temp1 · $_temp2';
   }
 
   @override
@@ -4568,7 +4766,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String mvtConfirmOver(String table, int capacity, int pax) {
-    return 'Destination: table $table (seats $capacity). $pax guests is over capacity — go ahead?';
+    String _temp0 = intl.Intl.pluralLogic(
+      pax,
+      locale: localeName,
+      other: '$pax guests are',
+      one: '1 guest is',
+    );
+    return 'Destination: table $table (seats $capacity). $_temp0 over capacity — go ahead?';
   }
 
   @override
@@ -4659,7 +4863,19 @@ class AppL10nEn extends AppL10n {
 
   @override
   String resDaySummary(String day, int bookings, int covers) {
-    return '$day · $bookings bookings · $covers guests';
+    String _temp0 = intl.Intl.pluralLogic(
+      bookings,
+      locale: localeName,
+      other: '$bookings bookings',
+      one: '1 booking',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      covers,
+      locale: localeName,
+      other: '$covers guests',
+      one: '1 guest',
+    );
+    return '$day · $_temp0 · $_temp1';
   }
 
   @override
@@ -4779,7 +4995,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String cshSummary(int running, int takeaway, int settled) {
-    return '$running bills running · $takeaway without a table · $settled settled';
+    String _temp0 = intl.Intl.pluralLogic(
+      running,
+      locale: localeName,
+      other: '$running bills',
+      one: '1 bill',
+    );
+    return '$_temp0 running · $takeaway without a table · $settled settled';
   }
 
   @override
@@ -4974,7 +5196,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String fveManyAdmins(int count) {
-    return 'This venue has $count active admins. A venue may now have only one — suspend the rest and keep the account on the device that holds the venue\'s data. Any admin left active will not be able to sign in.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count active admins',
+      one: '1 active admin',
+    );
+    return 'This venue has $_temp0. A venue may now have only one — suspend the rest and keep the account on the device that holds the venue\'s data. Any admin left active will not be able to sign in.';
   }
 
   @override
@@ -5042,7 +5270,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String cpdNoteSemantics(String label, int count) {
-    return '$label, $count notes';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notes',
+      one: '1 note',
+    );
+    return '$label, $_temp0';
   }
 
   @override
@@ -5340,17 +5574,53 @@ class AppL10nEn extends AppL10n {
 
   @override
   String zonAdminSub(int tables, int zones, int seats) {
-    return '$tables tables · $zones zones · $seats seats';
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables tables',
+      one: '1 table',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zones',
+      one: '1 zone',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      seats,
+      locale: localeName,
+      other: '$seats seats',
+      one: '1 seat',
+    );
+    return '$_temp0 · $_temp1 · $_temp2';
   }
 
   @override
   String venueHubTablesZones(int tables, int zones) {
-    return '$tables tables ($zones zones)';
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables tables',
+      one: '1 table',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zones',
+      one: '1 zone',
+    );
+    return '$_temp0 ($_temp1)';
   }
 
   @override
   String venueHubMenuItems(int count) {
-    return '$count menu items';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count menu items',
+      one: '1 menu item',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5380,12 +5650,24 @@ class AppL10nEn extends AppL10n {
 
   @override
   String venueHubStock(int count) {
-    return '$count ingredients';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ingredients',
+      one: '1 ingredient',
+    );
+    return '$_temp0';
   }
 
   @override
   String venueHubStockLow(int count, int low) {
-    return '$count ingredients ($low low)';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ingredients',
+      one: '1 ingredient',
+    );
+    return '$_temp0 ($low low)';
   }
 
   @override
@@ -5394,7 +5676,19 @@ class AppL10nEn extends AppL10n {
 
   @override
   String kitchenQueueSub(int orders, int items) {
-    return '$orders active orders · $items items · hold to mark done';
+    String _temp0 = intl.Intl.pluralLogic(
+      orders,
+      locale: localeName,
+      other: '$orders active orders',
+      one: '1 active order',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      items,
+      locale: localeName,
+      other: '$items items',
+      one: '1 item',
+    );
+    return '$_temp0 · $_temp1 · hold to mark done';
   }
 
   @override
@@ -5409,12 +5703,30 @@ class AppL10nEn extends AppL10n {
 
   @override
   String rptSubNet(int sessions, int covers) {
-    return '$sessions sessions · $covers guests';
+    String _temp0 = intl.Intl.pluralLogic(
+      sessions,
+      locale: localeName,
+      other: '$sessions sessions',
+      one: '1 session',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      covers,
+      locale: localeName,
+      other: '$covers guests',
+      one: '1 guest',
+    );
+    return '$_temp0 · $_temp1';
   }
 
   @override
   String rptSubGross(int count) {
-    return '$count transactions';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count transactions',
+      one: '1 transaction',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5422,7 +5734,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String rptSubVoid(int count) {
-    return '$count voided items';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count voided items',
+      one: '1 voided item',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5652,12 +5970,24 @@ class AppL10nEn extends AppL10n {
 
   @override
   String agbLockedInHours(int hours) {
-    return 'Without internet the server locks in $hours hours. Connect soon.';
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: '$hours hours',
+      one: '1 hour',
+    );
+    return 'Without internet the server locks in $_temp0. Connect soon.';
   }
 
   @override
   String agbLockedInDays(int days) {
-    return 'Without internet the server locks in $days days. Connect to verify the admin.';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return 'Without internet the server locks in $_temp0. Connect to verify the admin.';
   }
 
   @override
@@ -5666,7 +5996,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String crsMaxSpan(int days) {
-    return 'The range can span at most $days days.';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return 'The range can span at most $_temp0.';
   }
 
   @override
@@ -5849,7 +6185,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String meEndServerBodyLive(int n) {
-    return '$n tables are still live. Signing out shuts the server down — every staff device disconnects and cannot reconnect until an admin signs in again.';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tables are',
+      one: '1 table is',
+    );
+    return '$_temp0 still live. Signing out shuts the server down — every staff device disconnects and cannot reconnect until an admin signs in again.';
   }
 
   @override
@@ -5884,7 +6226,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String rcpPaxCount(int n) {
-    return '$n guests';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n guests',
+      one: '1 guest',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5995,7 +6343,19 @@ class AppL10nEn extends AppL10n {
 
   @override
   String venueHubBadgeFloor(int tables, int zones) {
-    return '$tables tables · $zones zones';
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables tables',
+      one: '1 table',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zones',
+      one: '1 zone',
+    );
+    return '$_temp0 · $_temp1';
   }
 
   @override
@@ -6126,7 +6486,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String fltDaysLeft(int n) {
-    return 'in $n days';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n days',
+      one: '1 day',
+    );
+    return 'in $_temp0';
   }
 
   @override
@@ -6368,7 +6734,19 @@ class AppL10nEn extends AppL10n {
 
   @override
   String venueHubBadgeMenu(int items, int cats) {
-    return '$items items · $cats categories';
+    String _temp0 = intl.Intl.pluralLogic(
+      items,
+      locale: localeName,
+      other: '$items items',
+      one: '1 item',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      cats,
+      locale: localeName,
+      other: '$cats categories',
+      one: '1 category',
+    );
+    return '$_temp0 · $_temp1';
   }
 
   @override
@@ -6378,7 +6756,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String venueHubBadgeStockOk(int n) {
-    return '$n ingredients';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n ingredients',
+      one: '1 ingredient',
+    );
+    return '$_temp0';
   }
 
   @override

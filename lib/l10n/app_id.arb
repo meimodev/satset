@@ -444,7 +444,7 @@
   "staffDisableBody": "Pengguna tidak bisa masuk lagi. Bisa diaktifkan kembali nanti.",
   "staffDeleteBody": "Akun dihapus permanen. Catatan audit lama tetap ada.",
   "staffDeleteRoleBody": "Izin yang melekat pada peran ini akan hilang.",
-  "staffSubtitle": "{members} anggota · {admins} admin",
+  "staffSubtitle": "{members, plural, other{{members} anggota}} · {admins, plural, other{{admins} admin}}",
   "@staffSubtitle": {
     "placeholders": {
       "members": {
@@ -463,7 +463,7 @@
       }
     }
   },
-  "staffCapsCount": "{held}/{total} izin",
+  "staffCapsCount": "{held}/{total, plural, other{{total} izin}}",
   "@staffCapsCount": {
     "placeholders": {
       "held": {
@@ -1510,7 +1510,7 @@
       }
     }
   },
-  "cshAssignSub": "{qty} unit total · {unassigned} belum diatur",
+  "cshAssignSub": "{qty, plural, other{{qty} unit}} total · {unassigned} belum diatur",
   "@cshAssignSub": {
     "placeholders": {
       "qty": {
@@ -1614,7 +1614,7 @@
   "cshRetakePhoto": "Ambil ulang",
   "cshRecordRefund": "Catat refund",
   "cshRecordPayment": "Catat pembayaran",
-  "cshEvenSplit": "Split rata · {count} bagian",
+  "cshEvenSplit": "Split rata · {count, plural, other{{count} bagian}}",
   "@cshEvenSplit": {
     "placeholders": {
       "count": {
@@ -1714,7 +1714,7 @@
       }
     }
   },
-  "cshSettledParts": "{amount} diterima penuh dalam {parts} bagian.",
+  "cshSettledParts": "{amount} diterima penuh dalam {parts, plural, other{{parts} bagian.}}",
   "@cshSettledParts": {
     "placeholders": {
       "amount": {
@@ -1820,7 +1820,7 @@
     "description": "Lower-case, sits under a KPI value."
   },
   "rptGuestTrend": "Tren tamu vs minggu lalu",
-  "rptGuestTrendSub": "{count} tamu · {delta}% WoW",
+  "rptGuestTrendSub": "{count, plural, other{{count} tamu}} · {delta}% WoW",
   "@rptGuestTrendSub": {
     "placeholders": {
       "count": {
@@ -1880,7 +1880,7 @@
   },
   "rptTopSellers": "Top sellers",
   "rptSlowMovers": "Slow movers",
-  "rptMenuHighMargin": "{n} item · margin tinggi",
+  "rptMenuHighMargin": "{n, plural, other{{n} item}} · margin tinggi",
   "@rptMenuHighMargin": {
     "placeholders": {
       "n": {
@@ -1888,7 +1888,7 @@
       }
     }
   },
-  "rptMenuSlowStock": "{n} item · stok mengendap",
+  "rptMenuSlowStock": "{n, plural, other{{n} item}} · stok mengendap",
   "@rptMenuSlowStock": {
     "placeholders": {
       "n": {
@@ -1967,7 +1967,7 @@
   "rptKpiReservations": "Reservasi",
   "rptServiceSpeed": "Kecepatan layanan",
   "rptServiceSpeedEmpty": "Belum ada item siap/disajikan",
-  "rptServiceSpeedSub": "Median prep {prep}m · antar {pickup}m · {n} item",
+  "rptServiceSpeedSub": "Median prep {prep}m · antar {pickup}m · {n, plural, other{{n} item}}",
   "@rptServiceSpeedSub": {
     "placeholders": {
       "prep": {
@@ -2006,7 +2006,7 @@
       }
     }
   },
-  "rptGreetSub": "median {median}m · {n} kunjungan",
+  "rptGreetSub": "median {median}m · {n, plural, other{{n} kunjungan}}",
   "@rptGreetSub": {
     "placeholders": {
       "median": {
@@ -2044,7 +2044,7 @@
   "rptCancelled": "Batal",
   "rptVoidReasons": "Alasan void & comp",
   "rptNoVoids": "Belum ada void",
-  "rptVoidSub": "{count} kejadian · {amount} hilang",
+  "rptVoidSub": "{count, plural, other{{count} kejadian}} · {amount} hilang",
   "@rptVoidSub": {
     "placeholders": {
       "count": {
@@ -2097,7 +2097,7 @@
   "stkEmptyBody": "Tambahkan bahan pertama Anda, lalu susun resepnya di editor menu agar stok berkurang otomatis saat pesanan dikirim.",
   "stkNoMatch": "Tidak ada bahan yang cocok dengan pencarian / filter.",
   "stkKpiLow": "MENIPIS",
-  "stkCountIngredients": "{n} Bahan",
+  "stkCountIngredients": "{n, plural, other{{n} Bahan}}",
   "@stkCountIngredients": {
     "placeholders": {
       "n": {
@@ -2110,7 +2110,7 @@
   "stkKpiNegative": "STOK MINUS",
   "stkNeedOpname": "Perlu opname segera",
   "stkKpiProduced": "PRODUKSI MANDIRI",
-  "stkOfRegistered": "dari {n} bahan terdaftar",
+  "stkOfRegistered": "dari {n, plural, other{{n} bahan terdaftar}}",
   "@stkOfRegistered": {
     "placeholders": {
       "n": {
@@ -2190,7 +2190,7 @@
   },
   "stkVarianceExact": "Pas",
   "stkOpnameDoneNoVariance": "Opname selesai — tidak ada selisih",
-  "stkOpnameDone": "Opname selesai — {n} bahan disesuaikan",
+  "stkOpnameDone": "Opname selesai — {n, plural, other{{n} bahan}} disesuaikan",
   "@stkOpnameDone": {
     "placeholders": {
       "n": {
@@ -2439,7 +2439,7 @@
     }
   },
   "elapsedYesterday": "kemarin",
-  "elapsedDaysAgo": "{n} hari lalu",
+  "elapsedDaysAgo": "{n, plural, other{{n} hari}} lalu",
   "@elapsedDaysAgo": {
     "placeholders": {
       "n": {
@@ -2518,7 +2518,7 @@
   "sysTestPrinted": "Tes tercetak",
   "sysOnline": "Online",
   "sysOffline": "Offline",
-  "sysStationLoad": "{staff} staf · {tickets} tiket",
+  "sysStationLoad": "{staff} staf · {tickets, plural, other{{tickets} tiket}}",
   "@sysStationLoad": {
     "placeholders": {
       "staff": {
@@ -2572,7 +2572,7 @@
     }
   },
   "sysPhoneSub": "Server, jaringan, printer, perangkat",
-  "sysPrinterStationCount": "{printers} printer · {stations} stasiun",
+  "sysPrinterStationCount": "{printers, plural, other{{printers} printer}} · {stations, plural, other{{stations} stasiun}}",
   "@sysPrinterStationCount": {
     "placeholders": {
       "printers": {
@@ -2655,7 +2655,7 @@
       }
     }
   },
-  "sysHeroOkDesc": "{sessions} sesi aktif · {devices} perangkat · WS {ws}",
+  "sysHeroOkDesc": "{sessions, plural, other{{sessions} sesi aktif}} · {devices, plural, other{{devices} perangkat}} · WS {ws}",
   "@sysHeroOkDesc": {
     "placeholders": {
       "sessions": {
@@ -2746,7 +2746,7 @@
       }
     }
   },
-  "tblItemCount": "{n} item",
+  "tblItemCount": "{n, plural, other{{n} item}}",
   "@tblItemCount": {
     "placeholders": {
       "n": {
@@ -2754,7 +2754,7 @@
       }
     }
   },
-  "tblItemCountHeld": "{n} item · ditahan",
+  "tblItemCountHeld": "{n, plural, other{{n} item}} · ditahan",
   "@tblItemCountHeld": {
     "placeholders": {
       "n": {
@@ -2981,7 +2981,7 @@
     }
   },
   "mnaTitle": "Menu",
-  "mnaHeaderSub": "{total} item · {cats} kategori · {out} tidak tersedia",
+  "mnaHeaderSub": "{total, plural, other{{total} item}} · {cats, plural, other{{cats} kategori}} · {out} tidak tersedia",
   "@mnaHeaderSub": {
     "placeholders": {
       "total": {
@@ -2995,7 +2995,7 @@
       }
     }
   },
-  "mnaPhoneSub": "{total} item · {out} tidak tersedia",
+  "mnaPhoneSub": "{total, plural, other{{total} item}} · {out} tidak tersedia",
   "@mnaPhoneSub": {
     "placeholders": {
       "total": {
@@ -3015,7 +3015,7 @@
   "mnaAll": "Semua",
   "mnaNoMatch": "Tidak ada item cocok.",
   "mnaIngredientsOut": "Bahan habis",
-  "mnaVariantsOut": "{n} varian habis",
+  "mnaVariantsOut": "{n, plural, other{{n} varian}} habis",
   "@mnaVariantsOut": {
     "placeholders": {
       "n": {
@@ -3031,7 +3031,7 @@
   "mnaTabTags": "Tag",
   "mnaNewCategory": "Kategori baru",
   "mnaRenameCategory": "Ubah nama kategori",
-  "mnaMoveItemsFirst": "Pindahkan {count} item dulu sebelum hapus \"{name}\"",
+  "mnaMoveItemsFirst": "Pindahkan {count, plural, other{{count} item}} dulu sebelum hapus \"{name}\"",
   "@mnaMoveItemsFirst": {
     "placeholders": {
       "count": {
@@ -3093,7 +3093,7 @@
   },
   "mnuAddItem": "Tambah item",
   "mnuAddItemHint": "KETUK UNTUK ATUR · TEKAN LAMA UNTUK TAMBAH DEFAULT",
-  "mnuPending": "{n} item pending",
+  "mnuPending": "{n, plural, other{{n} item}} pending",
   "@mnuPending": {
     "placeholders": {
       "n": {
@@ -3128,7 +3128,7 @@
     }
   },
   "mnuCartEmpty": "Keranjang kosong",
-  "mnuCartReady": "{n} item siap kirim",
+  "mnuCartReady": "{n, plural, other{{n} item}} siap kirim",
   "@mnuCartReady": {
     "placeholders": {
       "n": {
@@ -3402,7 +3402,7 @@
   "stlAutoPrintHint": "Struk tercetak otomatis setelah dikonfirmasi",
   "zoneAdminTableNameHint": "mis. T7, Booth A",
   "zoneAdminManageZones": "Kelola Zona",
-  "zoneAdminSummary": "{zones} zona · {tables} meja · {seats} kursi",
+  "zoneAdminSummary": "{zones, plural, other{{zones} zona}} · {tables, plural, other{{tables} meja}} · {seats, plural, other{{seats} kursi}}",
   "@zoneAdminSummary": {
     "placeholders": {
       "zones": {
@@ -3585,7 +3585,7 @@
       }
     }
   },
-  "mvtConfirmOver": "Tujuan: meja {table} (kapasitas {capacity}). {pax} tamu melebihi kapasitas — lanjutkan?",
+  "mvtConfirmOver": "Tujuan: meja {table} (kapasitas {capacity}). {pax, plural, other{{pax} tamu}} melebihi kapasitas — lanjutkan?",
   "@mvtConfirmOver": {
     "placeholders": {
       "table": {
@@ -3690,7 +3690,7 @@
       }
     }
   },
-  "resDaySummary": "{day} · {bookings} booking · {covers} tamu",
+  "resDaySummary": "{day} · {bookings, plural, other{{bookings} booking}} · {covers, plural, other{{covers} tamu}}",
   "@resDaySummary": {
     "placeholders": {
       "day": {
@@ -3788,7 +3788,7 @@
     }
   },
   "cshTitle": "Kasir",
-  "cshSummary": "{running} tagihan berjalan · {takeaway} tanpa meja · {settled} lunas",
+  "cshSummary": "{running, plural, other{{running} tagihan}} berjalan · {takeaway} tanpa meja · {settled} lunas",
   "@cshSummary": {
     "placeholders": {
       "running": {
@@ -3966,7 +3966,7 @@
     }
   },
   "fveLapsedNote": "Langganan sudah lewat batas. Perpanjang dulu di bawah sebelum venue bisa diaktifkan.",
-  "fveManyAdmins": "Venue ini punya {count} admin aktif. Satu venue kini hanya boleh punya satu admin aktif — tangguhkan yang lain, sisakan akun di perangkat yang memegang data venue. Admin yang tersisa aktif tidak akan bisa masuk.",
+  "fveManyAdmins": "Venue ini punya {count, plural, other{{count} admin aktif}}. Satu venue kini hanya boleh punya satu admin aktif — tangguhkan yang lain, sisakan akun di perangkat yang memegang data venue. Admin yang tersisa aktif tidak akan bisa masuk.",
   "@fveManyAdmins": {
     "placeholders": {
       "count": {
@@ -4025,7 +4025,7 @@
   "dscApprove": "Setujui",
   "cpdExact": "Pas",
   "cpdClear": "Kosongkan",
-  "cpdNoteSemantics": "{label}, {count} lembar",
+  "cpdNoteSemantics": "{label}, {count, plural, other{{count} lembar}}",
   "@cpdNoteSemantics": {
     "placeholders": {
       "label": {
@@ -4228,7 +4228,7 @@
       }
     }
   },
-  "zonAdminSub": "{tables} meja · {zones} zona · {seats} kursi",
+  "zonAdminSub": "{tables, plural, other{{tables} meja}} · {zones, plural, other{{zones} zona}} · {seats, plural, other{{seats} kursi}}",
   "@zonAdminSub": {
     "placeholders": {
       "tables": {
@@ -4242,7 +4242,7 @@
       }
     }
   },
-  "venueHubTablesZones": "{tables} meja ({zones} zona)",
+  "venueHubTablesZones": "{tables, plural, other{{tables} meja}} ({zones, plural, other{{zones} zona)}}",
   "@venueHubTablesZones": {
     "placeholders": {
       "tables": {
@@ -4253,7 +4253,7 @@
       }
     }
   },
-  "venueHubMenuItems": "{count} item menu",
+  "venueHubMenuItems": "{count, plural, other{{count} item menu}}",
   "@venueHubMenuItems": {
     "placeholders": {
       "count": {
@@ -4275,7 +4275,7 @@
   "onbModeClientSub": "Tablet ini ambil order, terhubung ke server lewat LAN.",
   "modSize": "Ukuran",
   "modNoteHint": "mis. alergi belum tertera, catatan plating…",
-  "venueHubStock": "{count} bahan",
+  "venueHubStock": "{count, plural, other{{count} bahan}}",
   "@venueHubStock": {
     "placeholders": {
       "count": {
@@ -4283,7 +4283,7 @@
       }
     }
   },
-  "venueHubStockLow": "{count} bahan ({low} low)",
+  "venueHubStockLow": "{count, plural, other{{count} bahan}} ({low} low)",
   "@venueHubStockLow": {
     "placeholders": {
       "count": {
@@ -4295,7 +4295,7 @@
     }
   },
   "alertsSoundHint": "Pilih nada untuk tiap kejadian. Pilihan ini berlaku untuk semua perangkat di venue.",
-  "kitchenQueueSub": "{orders} order aktif · {items} item · tahan untuk tandai selesai",
+  "kitchenQueueSub": "{orders, plural, other{{orders} order aktif}} · {items, plural, other{{items} item}} · tahan untuk tandai selesai",
   "@kitchenQueueSub": {
     "placeholders": {
       "orders": {
@@ -4322,7 +4322,7 @@
       }
     }
   },
-  "rptSubNet": "{sessions} sesi · {covers} tamu",
+  "rptSubNet": "{sessions, plural, other{{sessions} sesi}} · {covers, plural, other{{covers} tamu}}",
   "@rptSubNet": {
     "placeholders": {
       "sessions": {
@@ -4333,7 +4333,7 @@
       }
     }
   },
-  "rptSubGross": "{count} transaksi",
+  "rptSubGross": "{count, plural, other{{count} transaksi}}",
   "@rptSubGross": {
     "placeholders": {
       "count": {
@@ -4342,7 +4342,7 @@
     }
   },
   "rptSubTaxService": "PB1 11% · Svc 7% (est)",
-  "rptSubVoid": "{count} item void",
+  "rptSubVoid": "{count, plural, other{{count} item void}}",
   "@rptSubVoid": {
     "placeholders": {
       "count": {
@@ -4453,7 +4453,7 @@
   "capViewReports": "Lihat laporan",
   "capEditSettings": "Ubah pengaturan",
   "agbLockedOnRestart": "Server akan terkunci saat aplikasi dimulai ulang — sambungkan internet sekarang untuk verifikasi admin.",
-  "agbLockedInHours": "Tanpa internet, server terkunci dalam {hours} jam. Segera sambungkan.",
+  "agbLockedInHours": "Tanpa internet, server terkunci dalam {hours, plural, other{{hours} jam.}} Segera sambungkan.",
   "@agbLockedInHours": {
     "placeholders": {
       "hours": {
@@ -4461,7 +4461,7 @@
       }
     }
   },
-  "agbLockedInDays": "Tanpa internet, server terkunci dalam {days} hari. Sambungkan untuk verifikasi admin.",
+  "agbLockedInDays": "Tanpa internet, server terkunci dalam {days, plural, other{{days} hari.}} Sambungkan untuk verifikasi admin.",
   "@agbLockedInDays": {
     "placeholders": {
       "days": {
@@ -4470,7 +4470,7 @@
     }
   },
   "crsStartBeforeEnd": "Tanggal mulai harus sebelum tanggal selesai.",
-  "crsMaxSpan": "Rentang maksimal {days} hari.",
+  "crsMaxSpan": "Rentang maksimal {days, plural, other{{days} hari.}}",
   "@crsMaxSpan": {
     "placeholders": {
       "days": {
@@ -4636,7 +4636,7 @@
   "@meEndShiftTitle": {
     "description": "Dialog title when a waiter ends their shift."
   },
-  "meEndServerBodyLive": "{n} meja masih aktif. Keluar akan mematikan server — semua staff terputus dan tidak bisa menyambung sampai admin masuk lagi.",
+  "meEndServerBodyLive": "{n, plural, other{{n} meja}} masih aktif. Keluar akan mematikan server — semua staff terputus dan tidak bisa menyambung sampai admin masuk lagi.",
   "@meEndServerBodyLive": {
     "description": "Sign-out warning on the server device while tables are still live.",
     "placeholders": {
@@ -4687,7 +4687,7 @@
       }
     }
   },
-  "rcpPaxCount": "{n} tamu",
+  "rcpPaxCount": "{n, plural, other{{n} tamu}}",
   "@rcpPaxCount": {
     "description": "Receipt line with the cover count.",
     "placeholders": {
@@ -4842,7 +4842,7 @@
       }
     }
   },
-  "venueHubBadgeFloor": "{tables} meja · {zones} zona",
+  "venueHubBadgeFloor": "{tables, plural, other{{tables} meja}} · {zones, plural, other{{zones} zona}}",
   "@venueHubBadgeFloor": {
     "description": "Venue hub badge under the floor plan tile.",
     "placeholders": {
@@ -5050,7 +5050,7 @@
       }
     }
   },
-  "fltDaysLeft": "{n} hari lagi",
+  "fltDaysLeft": "{n, plural, other{{n} hari}} lagi",
   "@fltDaysLeft": {
     "description": "Relative phrase: n days from now.",
     "placeholders": {
@@ -5403,7 +5403,7 @@
   "@meShiftReady": {
     "description": "Shift summary word, joined as \"3 siap\"."
   },
-  "venueHubBadgeMenu": "{items} item · {cats} kategori",
+  "venueHubBadgeMenu": "{items, plural, other{{items} item}} · {cats, plural, other{{cats} kategori}}",
   "@venueHubBadgeMenu": {
     "description": "Menu card badge on the venue hub",
     "placeholders": {
@@ -5424,7 +5424,7 @@
       }
     }
   },
-  "venueHubBadgeStockOk": "{n} bahan",
+  "venueHubBadgeStockOk": "{n, plural, other{{n} bahan}}",
   "@venueHubBadgeStockOk": {
     "description": "Stock card badge when nothing is low",
     "placeholders": {

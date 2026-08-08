@@ -1060,7 +1060,17 @@ class AppL10nId extends AppL10n {
 
   @override
   String staffSubtitle(int members, int admins) {
-    return '$members anggota · $admins admin';
+    String _temp0 = intl.Intl.pluralLogic(
+      members,
+      locale: localeName,
+      other: '$members anggota',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      admins,
+      locale: localeName,
+      other: '$admins admin',
+    );
+    return '$_temp0 · $_temp1';
   }
 
   @override
@@ -1075,7 +1085,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String staffCapsCount(int held, int total) {
-    return '$held/$total izin';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total izin',
+    );
+    return '$held/$_temp0';
   }
 
   @override
@@ -2071,7 +2086,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String cshAssignSub(int qty, int unassigned) {
-    return '$qty unit total · $unassigned belum diatur';
+    String _temp0 = intl.Intl.pluralLogic(
+      qty,
+      locale: localeName,
+      other: '$qty unit',
+    );
+    return '$_temp0 total · $unassigned belum diatur';
   }
 
   @override
@@ -2176,7 +2196,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String cshEvenSplit(int count) {
-    return 'Split rata · $count bagian';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bagian',
+    );
+    return 'Split rata · $_temp0';
   }
 
   @override
@@ -2246,7 +2271,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String cshSettledParts(String amount, int parts) {
-    return '$amount diterima penuh dalam $parts bagian.';
+    String _temp0 = intl.Intl.pluralLogic(
+      parts,
+      locale: localeName,
+      other: '$parts bagian.',
+    );
+    return '$amount diterima penuh dalam $_temp0';
   }
 
   @override
@@ -2377,7 +2407,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String rptGuestTrendSub(int count, String delta) {
-    return '$count tamu · $delta% WoW';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tamu',
+    );
+    return '$_temp0 · $delta% WoW';
   }
 
   @override
@@ -2463,12 +2498,22 @@ class AppL10nId extends AppL10n {
 
   @override
   String rptMenuHighMargin(int n) {
-    return '$n item · margin tinggi';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n item',
+    );
+    return '$_temp0 · margin tinggi';
   }
 
   @override
   String rptMenuSlowStock(int n) {
-    return '$n item · stok mengendap';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n item',
+    );
+    return '$_temp0 · stok mengendap';
   }
 
   @override
@@ -2573,7 +2618,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String rptServiceSpeedSub(int prep, int pickup, int n) {
-    return 'Median prep ${prep}m · antar ${pickup}m · $n item';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n item',
+    );
+    return 'Median prep ${prep}m · antar ${pickup}m · $_temp0';
   }
 
   @override
@@ -2596,7 +2646,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String rptGreetSub(int median, int n) {
-    return 'median ${median}m · $n kunjungan';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n kunjungan',
+    );
+    return 'median ${median}m · $_temp0';
   }
 
   @override
@@ -2646,7 +2701,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String rptVoidSub(int count, String amount) {
-    return '$count kejadian · $amount hilang';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kejadian',
+    );
+    return '$_temp0 · $amount hilang';
   }
 
   @override
@@ -2713,7 +2773,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String stkCountIngredients(int n) {
-    return '$n Bahan';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Bahan',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2733,7 +2798,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String stkOfRegistered(int n) {
-    return 'dari $n bahan terdaftar';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n bahan terdaftar',
+    );
+    return 'dari $_temp0';
   }
 
   @override
@@ -2822,7 +2892,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String stkOpnameDone(int n) {
-    return 'Opname selesai — $n bahan disesuaikan';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n bahan',
+    );
+    return 'Opname selesai — $_temp0 disesuaikan';
   }
 
   @override
@@ -3011,7 +3086,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String elapsedDaysAgo(int n) {
-    return '$n hari lalu';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n hari',
+    );
+    return '$_temp0 lalu';
   }
 
   @override
@@ -3135,7 +3215,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String sysStationLoad(int staff, int tickets) {
-    return '$staff staf · $tickets tiket';
+    String _temp0 = intl.Intl.pluralLogic(
+      tickets,
+      locale: localeName,
+      other: '$tickets tiket',
+    );
+    return '$staff staf · $_temp0';
   }
 
   @override
@@ -3203,7 +3288,17 @@ class AppL10nId extends AppL10n {
 
   @override
   String sysPrinterStationCount(int printers, int stations) {
-    return '$printers printer · $stations stasiun';
+    String _temp0 = intl.Intl.pluralLogic(
+      printers,
+      locale: localeName,
+      other: '$printers printer',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      stations,
+      locale: localeName,
+      other: '$stations stasiun',
+    );
+    return '$_temp0 · $_temp1';
   }
 
   @override
@@ -3274,7 +3369,17 @@ class AppL10nId extends AppL10n {
 
   @override
   String sysHeroOkDesc(int sessions, int devices, String ws) {
-    return '$sessions sesi aktif · $devices perangkat · WS $ws';
+    String _temp0 = intl.Intl.pluralLogic(
+      sessions,
+      locale: localeName,
+      other: '$sessions sesi aktif',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      devices,
+      locale: localeName,
+      other: '$devices perangkat',
+    );
+    return '$_temp0 · $_temp1 · WS $ws';
   }
 
   @override
@@ -3370,12 +3475,22 @@ class AppL10nId extends AppL10n {
 
   @override
   String tblItemCount(int n) {
-    return '$n item';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n item',
+    );
+    return '$_temp0';
   }
 
   @override
   String tblItemCountHeld(int n) {
-    return '$n item · ditahan';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n item',
+    );
+    return '$_temp0 · ditahan';
   }
 
   @override
@@ -3691,12 +3806,27 @@ class AppL10nId extends AppL10n {
 
   @override
   String mnaHeaderSub(int total, int cats, int out) {
-    return '$total item · $cats kategori · $out tidak tersedia';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total item',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      cats,
+      locale: localeName,
+      other: '$cats kategori',
+    );
+    return '$_temp0 · $_temp1 · $out tidak tersedia';
   }
 
   @override
   String mnaPhoneSub(int total, int out) {
-    return '$total item · $out tidak tersedia';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total item',
+    );
+    return '$_temp0 · $out tidak tersedia';
   }
 
   @override
@@ -3730,7 +3860,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String mnaVariantsOut(int n) {
-    return '$n varian habis';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n varian',
+    );
+    return '$_temp0 habis';
   }
 
   @override
@@ -3759,7 +3894,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String mnaMoveItemsFirst(int count, String name) {
-    return 'Pindahkan $count item dulu sebelum hapus \"$name\"';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count item',
+    );
+    return 'Pindahkan $_temp0 dulu sebelum hapus \"$name\"';
   }
 
   @override
@@ -3834,7 +3974,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String mnuPending(int n) {
-    return '$n item pending';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n item',
+    );
+    return '$_temp0 pending';
   }
 
   @override
@@ -3863,7 +4008,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String mnuCartReady(int n) {
-    return '$n item siap kirim';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n item',
+    );
+    return '$_temp0 siap kirim';
   }
 
   @override
@@ -4301,7 +4451,22 @@ class AppL10nId extends AppL10n {
 
   @override
   String zoneAdminSummary(int zones, int tables, int seats) {
-    return '$zones zona · $tables meja · $seats kursi';
+    String _temp0 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zona',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables meja',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      seats,
+      locale: localeName,
+      other: '$seats kursi',
+    );
+    return '$_temp0 · $_temp1 · $_temp2';
   }
 
   @override
@@ -4553,7 +4718,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String mvtConfirmOver(String table, int capacity, int pax) {
-    return 'Tujuan: meja $table (kapasitas $capacity). $pax tamu melebihi kapasitas — lanjutkan?';
+    String _temp0 = intl.Intl.pluralLogic(
+      pax,
+      locale: localeName,
+      other: '$pax tamu',
+    );
+    return 'Tujuan: meja $table (kapasitas $capacity). $_temp0 melebihi kapasitas — lanjutkan?';
   }
 
   @override
@@ -4644,7 +4814,17 @@ class AppL10nId extends AppL10n {
 
   @override
   String resDaySummary(String day, int bookings, int covers) {
-    return '$day · $bookings booking · $covers tamu';
+    String _temp0 = intl.Intl.pluralLogic(
+      bookings,
+      locale: localeName,
+      other: '$bookings booking',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      covers,
+      locale: localeName,
+      other: '$covers tamu',
+    );
+    return '$day · $_temp0 · $_temp1';
   }
 
   @override
@@ -4764,7 +4944,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String cshSummary(int running, int takeaway, int settled) {
-    return '$running tagihan berjalan · $takeaway tanpa meja · $settled lunas';
+    String _temp0 = intl.Intl.pluralLogic(
+      running,
+      locale: localeName,
+      other: '$running tagihan',
+    );
+    return '$_temp0 berjalan · $takeaway tanpa meja · $settled lunas';
   }
 
   @override
@@ -4955,7 +5140,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String fveManyAdmins(int count) {
-    return 'Venue ini punya $count admin aktif. Satu venue kini hanya boleh punya satu admin aktif — tangguhkan yang lain, sisakan akun di perangkat yang memegang data venue. Admin yang tersisa aktif tidak akan bisa masuk.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count admin aktif',
+    );
+    return 'Venue ini punya $_temp0. Satu venue kini hanya boleh punya satu admin aktif — tangguhkan yang lain, sisakan akun di perangkat yang memegang data venue. Admin yang tersisa aktif tidak akan bisa masuk.';
   }
 
   @override
@@ -5023,7 +5213,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String cpdNoteSemantics(String label, int count) {
-    return '$label, $count lembar';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lembar',
+    );
+    return '$label, $_temp0';
   }
 
   @override
@@ -5320,17 +5515,47 @@ class AppL10nId extends AppL10n {
 
   @override
   String zonAdminSub(int tables, int zones, int seats) {
-    return '$tables meja · $zones zona · $seats kursi';
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables meja',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zona',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      seats,
+      locale: localeName,
+      other: '$seats kursi',
+    );
+    return '$_temp0 · $_temp1 · $_temp2';
   }
 
   @override
   String venueHubTablesZones(int tables, int zones) {
-    return '$tables meja ($zones zona)';
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables meja',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zona)',
+    );
+    return '$_temp0 ($_temp1';
   }
 
   @override
   String venueHubMenuItems(int count) {
-    return '$count item menu';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count item menu',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5360,12 +5585,22 @@ class AppL10nId extends AppL10n {
 
   @override
   String venueHubStock(int count) {
-    return '$count bahan';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bahan',
+    );
+    return '$_temp0';
   }
 
   @override
   String venueHubStockLow(int count, int low) {
-    return '$count bahan ($low low)';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bahan',
+    );
+    return '$_temp0 ($low low)';
   }
 
   @override
@@ -5374,7 +5609,17 @@ class AppL10nId extends AppL10n {
 
   @override
   String kitchenQueueSub(int orders, int items) {
-    return '$orders order aktif · $items item · tahan untuk tandai selesai';
+    String _temp0 = intl.Intl.pluralLogic(
+      orders,
+      locale: localeName,
+      other: '$orders order aktif',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      items,
+      locale: localeName,
+      other: '$items item',
+    );
+    return '$_temp0 · $_temp1 · tahan untuk tandai selesai';
   }
 
   @override
@@ -5389,12 +5634,27 @@ class AppL10nId extends AppL10n {
 
   @override
   String rptSubNet(int sessions, int covers) {
-    return '$sessions sesi · $covers tamu';
+    String _temp0 = intl.Intl.pluralLogic(
+      sessions,
+      locale: localeName,
+      other: '$sessions sesi',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      covers,
+      locale: localeName,
+      other: '$covers tamu',
+    );
+    return '$_temp0 · $_temp1';
   }
 
   @override
   String rptSubGross(int count) {
-    return '$count transaksi';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count transaksi',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5402,7 +5662,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String rptSubVoid(int count) {
-    return '$count item void';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count item void',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5632,12 +5897,22 @@ class AppL10nId extends AppL10n {
 
   @override
   String agbLockedInHours(int hours) {
-    return 'Tanpa internet, server terkunci dalam $hours jam. Segera sambungkan.';
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: '$hours jam.',
+    );
+    return 'Tanpa internet, server terkunci dalam $_temp0 Segera sambungkan.';
   }
 
   @override
   String agbLockedInDays(int days) {
-    return 'Tanpa internet, server terkunci dalam $days hari. Sambungkan untuk verifikasi admin.';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days hari.',
+    );
+    return 'Tanpa internet, server terkunci dalam $_temp0 Sambungkan untuk verifikasi admin.';
   }
 
   @override
@@ -5646,7 +5921,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String crsMaxSpan(int days) {
-    return 'Rentang maksimal $days hari.';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days hari.',
+    );
+    return 'Rentang maksimal $_temp0';
   }
 
   @override
@@ -5829,7 +6109,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String meEndServerBodyLive(int n) {
-    return '$n meja masih aktif. Keluar akan mematikan server — semua staff terputus dan tidak bisa menyambung sampai admin masuk lagi.';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n meja',
+    );
+    return '$_temp0 masih aktif. Keluar akan mematikan server — semua staff terputus dan tidak bisa menyambung sampai admin masuk lagi.';
   }
 
   @override
@@ -5864,7 +6149,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String rcpPaxCount(int n) {
-    return '$n tamu';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tamu',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5975,7 +6265,17 @@ class AppL10nId extends AppL10n {
 
   @override
   String venueHubBadgeFloor(int tables, int zones) {
-    return '$tables meja · $zones zona';
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables meja',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zona',
+    );
+    return '$_temp0 · $_temp1';
   }
 
   @override
@@ -6106,7 +6406,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String fltDaysLeft(int n) {
-    return '$n hari lagi';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n hari',
+    );
+    return '$_temp0 lagi';
   }
 
   @override
@@ -6349,7 +6654,17 @@ class AppL10nId extends AppL10n {
 
   @override
   String venueHubBadgeMenu(int items, int cats) {
-    return '$items item · $cats kategori';
+    String _temp0 = intl.Intl.pluralLogic(
+      items,
+      locale: localeName,
+      other: '$items item',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      cats,
+      locale: localeName,
+      other: '$cats kategori',
+    );
+    return '$_temp0 · $_temp1';
   }
 
   @override
@@ -6359,7 +6674,12 @@ class AppL10nId extends AppL10n {
 
   @override
   String venueHubBadgeStockOk(int n) {
-    return '$n bahan';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n bahan',
+    );
+    return '$_temp0';
   }
 
   @override
