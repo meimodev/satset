@@ -34,6 +34,7 @@ import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/core/localization/report_copy.dart';
 
 class SystemScreen extends ConsumerStatefulWidget {
   const SystemScreen({super.key});
@@ -359,7 +360,9 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     Map<String, dynamic> s, {
     bool last = false,
   }) {
-    final name = s['station'] as String? ?? '—';
+    // The server sends the station code (`kitchen`), not its name — resolve it
+    // the same way the reports do, or the row reads as a wire value.
+    final name = stationLabel(context.l10n, s['station'] as String? ?? '—');
     final pending = (s['pendingTickets'] as num? ?? 0).toInt();
     final staffOnline = (s['staffOnline'] as num? ?? 0).toInt();
     return AdminRow(
