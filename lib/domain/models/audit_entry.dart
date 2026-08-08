@@ -113,6 +113,12 @@ class AuditEntry {
   /// course, a receipt label.
   final Map<String, String> params;
 
+  /// The payment whose proof photo this row can pull up, or null when there is
+  /// no image — see the DB column doc (ADR-0086). Non-null is the whole
+  /// has-photo test: the server writes it only when a photo exists, so the log
+  /// never offers a tap that leads to a 404.
+  final String? paymentId;
+
   const AuditEntry({
     required this.id,
     required this.type,
@@ -127,5 +133,6 @@ class AuditEntry {
     this.actorRoleName,
     this.kind,
     this.params = const {},
+    this.paymentId,
   });
 }

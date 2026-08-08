@@ -403,7 +403,11 @@ Future<void> snapshotVisitAndDelete(
             .into(db.tableSessionPayments)
             .insert(
               TableSessionPaymentsCompanion.insert(
-                id: _uuid.v4(),
+                // The live id, not a fresh one: an audit row points at the
+                // payment by id (ADR-0086) and minting a new one here severed
+                // that link the moment a bill closed. Both tables are keyed by
+                // uuid and the live row is deleted below, so nothing collides.
+                id: p.id,
                 sessionId: sid,
                 receiptId: rec.id,
                 method: p.method,

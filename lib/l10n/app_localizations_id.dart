@@ -4991,6 +4991,9 @@ class AppL10nId extends AppL10n {
   String get ppfTitle => 'Bukti pembayaran';
 
   @override
+  String get ppfUnavailable => 'Foto bukti tidak bisa dimuat';
+
+  @override
   String get cpdTitle => 'Uang tamu · ketuk pecahan';
 
   @override
@@ -5005,6 +5008,18 @@ class AppL10nId extends AppL10n {
   @override
   String tblNoTablesInZone(String zone) {
     return 'Belum ada meja di $zone';
+  }
+
+  @override
+  String get ownMoneyAuditTitle => 'Catatan uang';
+
+  @override
+  String get ownMoneyAuditEmpty =>
+      'Tidak ada aktivitas yang menyentuh uang pada rentang ini.';
+
+  @override
+  String ownMoneyAuditTruncated(int count) {
+    return 'Menampilkan $count terbaru — catatan lengkap ada di perangkat venue';
   }
 
   @override

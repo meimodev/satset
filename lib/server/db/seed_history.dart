@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:drift/drift.dart';
@@ -23,6 +24,18 @@ import 'seed_history_mix.dart';
 /// A real order taken on a seeded venue afterwards carries no prefix, so it
 /// survives the clear that removes everything around it.
 const samplePrefix = 'contoh-';
+
+/// A stand-in proof photo for seeded non-cash payments (ADR-0086).
+///
+/// A 1×1 JPEG, on purpose. Its only job is to be *real bytes on a real route*
+/// so the venue log's camera glyph, its fetch and its lightbox can be tried on
+/// a freshly seeded venue. It is not pretending to be a bank slip, and shipping
+/// a convincing fake into an integrity log would be the wrong kind of helpful.
+final Uint8List placeholderProofJpeg = base64Decode(
+  '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRof'
+  'Hh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAAB'
+  'AAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==',
+);
 
 /// Fixed so the dataset is byte-identical run to run: screenshots compare,
 /// a bug found in a demo is reproducible, goldens stay possible (ADR-0052 §7).
@@ -191,6 +204,17 @@ Future<void> seedHistory(
   final today = DateTime.now();
   var seq = 0;
   String nextId(String kind) => '$samplePrefix$kind-${seq++}';
+
+  /// How many seeded non-cash payments still get a proof photo (ADR-0086).
+  ///
+  /// A handful, not all ~600: the point is that the venue log's camera glyph
+  /// and its lightbox can be exercised on a freshly seeded venue without
+  /// anyone having to take a real card payment first. Spending a JPEG on every
+  /// tender would prove nothing extra and put the bytes on a tablet.
+  ///
+  /// Only spent inside the last week, so the rows land in the ranges anyone
+  /// actually opens — `today` and `7d`.
+  var proofBudget = 20;
 
   final balance = {for (final i in ingredients) i.id: i.stockOnHand};
   final lowAt = {for (final i in ingredients) i.id: i.lowStockAt ?? 0};
@@ -419,16 +443,22 @@ Future<void> seedHistory(
 
       if (!walkout) {
         final method = const ['cash', 'qris', 'card'][rng.nextInt(3)];
+        final paymentId = nextId('pm');
+        // A stand-in slip on a few recent non-cash tenders, so the venue log
+        // has something to open out of the box. Cash never carries one.
+        final withProof = method != 'cash' && d <= 7 && proofBudget > 0;
+        if (withProof) proofBudget--;
         await db
             .into(db.payments)
             .insert(
               PaymentsCompanion.insert(
-                id: nextId('pm'),
+                id: paymentId,
                 receiptId: receiptId,
                 method: method,
                 amount: breakdown.total,
                 cashierUserId: Value(actor),
                 at: closedAt,
+                photo: Value(withProof ? placeholderProofJpeg : null),
               ),
             );
         await writeAudit(
@@ -441,6 +471,9 @@ Future<void> seedHistory(
           amountCents: breakdown.total,
           at: closedAt,
           idPrefix: samplePrefix,
+          // Same contract as the live route: set only when there is genuinely
+          // an image behind it (ADR-0086).
+          paymentId: withProof ? paymentId : null,
         );
       }
 

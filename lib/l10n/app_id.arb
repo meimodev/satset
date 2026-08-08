@@ -3830,6 +3830,7 @@
   },
   "rdyBannerText": "Item siap diambil di pass — tandai disajikan di bawah",
   "ppfTitle": "Bukti pembayaran",
+  "ppfUnavailable": "Foto bukti tidak bisa dimuat",
   "cpdTitle": "Uang tamu · ketuk pecahan",
   "blcPaidPct": "{amount} masuk · {pct}%",
   "@blcPaidPct": {
@@ -3848,6 +3849,16 @@
     "placeholders": {
       "zone": {
         "type": "String"
+      }
+    }
+  },
+  "ownMoneyAuditTitle": "Catatan uang",
+  "ownMoneyAuditEmpty": "Tidak ada aktivitas yang menyentuh uang pada rentang ini.",
+  "ownMoneyAuditTruncated": "Menampilkan {count} terbaru \u2014 catatan lengkap ada di perangkat venue",
+  "@ownMoneyAuditTruncated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   },

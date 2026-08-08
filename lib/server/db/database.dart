@@ -66,7 +66,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 47;
+  int get schemaVersion => 48;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -887,6 +887,17 @@ class AppDatabase extends _$AppDatabase {
           "UPDATE table_session_receipts SET label = REPLACE(label, 'Bagian ', '') "
           "WHERE label LIKE 'Bagian %'",
         );
+      }
+      if (from < 48) {
+        // A proof photo is reached from the audit trail, not the reports card
+        // (ADR-0086). The column is the reference *and* the has-photo flag —
+        // it is written only when an image exists.
+        //
+        // **No backfill.** A pre-v48 payment that closed had its id regenerated
+        // on the way into history, so there is nothing left to point at; the
+        // photo is still on the bill it belongs to. Existing rows stay null and
+        // simply show no indicator.
+        await _safeAddColumnOn('audit_entries', 'payment_id', type: 'TEXT');
       }
     },
     onCreate: (m) async {

@@ -15,6 +15,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/admin/report_sections_view.dart';
+import 'package:satset/ui/features/owner/owner_money_audit_block.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
 
@@ -203,15 +204,25 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
       );
     }
     // Full parity with the on-site Admin → Reports screen — same renderer,
-    // sourced from the cloud snapshot. Proof photos are LAN-only (no server
-    // off-site), so they fall back to a placeholder. See ADR-0036.
+    // sourced from the cloud snapshot. See ADR-0036.
+    //
+    // The money-audit block below it is the one thing the owner sees that the
+    // admin does not, and for a plain reason: the admin has the venue log
+    // itself, which is richer and live. This is the off-site substitute for it
+    // (ADR-0086), not a second copy.
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
-      child: ReportSectionsView(
-        snapshot: snap,
-        isTab: context.layout.useTabletShell,
-        showProofPhotos: false,
-        showStock: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ReportSectionsView(
+            snapshot: snap,
+            isTab: context.layout.useTabletShell,
+            showStock: false,
+          ),
+          const SizedBox(height: Sp.s3h),
+          OwnerMoneyAuditBlock(section: snap.moneyAudit),
+        ],
       ),
     );
   }

@@ -111,6 +111,7 @@ AuditEntry auditEntryFromJson(Map<String, dynamic> j) => AuditEntry(
     },
     _ => const {},
   },
+  paymentId: j['paymentId'] as String?,
 );
 
 final auditProvider = StateNotifierProvider<AuditRepository, List<AuditEntry>>(

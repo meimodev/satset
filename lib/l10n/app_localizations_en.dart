@@ -5043,6 +5043,9 @@ class AppL10nEn extends AppL10n {
   String get ppfTitle => 'Payment proof';
 
   @override
+  String get ppfUnavailable => 'This proof photo could not be loaded';
+
+  @override
   String get cpdTitle => 'Guest\'s cash · tap the notes';
 
   @override
@@ -5057,6 +5060,17 @@ class AppL10nEn extends AppL10n {
   @override
   String tblNoTablesInZone(String zone) {
     return 'No tables in $zone yet';
+  }
+
+  @override
+  String get ownMoneyAuditTitle => 'Money log';
+
+  @override
+  String get ownMoneyAuditEmpty => 'No money-affecting activity in this range.';
+
+  @override
+  String ownMoneyAuditTruncated(int count) {
+    return 'Showing the $count most recent — the full log is on the venue device';
   }
 
   @override

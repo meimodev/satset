@@ -30,7 +30,11 @@ mixin _$ReportsSnapshotDto {
   StaffSectionDto get staff => throw _privateConstructorUsedError;
   MenuSectionDto get menu => throw _privateConstructorUsedError;
   OpsSectionDto get ops => throw _privateConstructorUsedError;
-  PaymentsSectionDto get payments => throw _privateConstructorUsedError;
+
+  /// Money-shaped audit rows for the off-site owner (ADR-0086), who has
+  /// no route to the venue log. Empty on the admin's own snapshot, which
+  /// reads the live log instead.
+  MoneyAuditSectionDto get moneyAudit => throw _privateConstructorUsedError;
 
   /// Serializes this ReportsSnapshotDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -59,7 +63,7 @@ abstract class $ReportsSnapshotDtoCopyWith<$Res> {
     StaffSectionDto staff,
     MenuSectionDto menu,
     OpsSectionDto ops,
-    PaymentsSectionDto payments,
+    MoneyAuditSectionDto moneyAudit,
   });
 
   $FilterOptionsDtoCopyWith<$Res> get filterOptions;
@@ -67,7 +71,7 @@ abstract class $ReportsSnapshotDtoCopyWith<$Res> {
   $StaffSectionDtoCopyWith<$Res> get staff;
   $MenuSectionDtoCopyWith<$Res> get menu;
   $OpsSectionDtoCopyWith<$Res> get ops;
-  $PaymentsSectionDtoCopyWith<$Res> get payments;
+  $MoneyAuditSectionDtoCopyWith<$Res> get moneyAudit;
 }
 
 /// @nodoc
@@ -94,7 +98,7 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
     Object? staff = null,
     Object? menu = null,
     Object? ops = null,
-    Object? payments = null,
+    Object? moneyAudit = null,
   }) {
     return _then(
       _value.copyWith(
@@ -134,10 +138,10 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
                 ? _value.ops
                 : ops // ignore: cast_nullable_to_non_nullable
                       as OpsSectionDto,
-            payments: null == payments
-                ? _value.payments
-                : payments // ignore: cast_nullable_to_non_nullable
-                      as PaymentsSectionDto,
+            moneyAudit: null == moneyAudit
+                ? _value.moneyAudit
+                : moneyAudit // ignore: cast_nullable_to_non_nullable
+                      as MoneyAuditSectionDto,
           )
           as $Val,
     );
@@ -197,9 +201,9 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $PaymentsSectionDtoCopyWith<$Res> get payments {
-    return $PaymentsSectionDtoCopyWith<$Res>(_value.payments, (value) {
-      return _then(_value.copyWith(payments: value) as $Val);
+  $MoneyAuditSectionDtoCopyWith<$Res> get moneyAudit {
+    return $MoneyAuditSectionDtoCopyWith<$Res>(_value.moneyAudit, (value) {
+      return _then(_value.copyWith(moneyAudit: value) as $Val);
     });
   }
 }
@@ -223,7 +227,7 @@ abstract class _$$ReportsSnapshotDtoImplCopyWith<$Res>
     StaffSectionDto staff,
     MenuSectionDto menu,
     OpsSectionDto ops,
-    PaymentsSectionDto payments,
+    MoneyAuditSectionDto moneyAudit,
   });
 
   @override
@@ -237,7 +241,7 @@ abstract class _$$ReportsSnapshotDtoImplCopyWith<$Res>
   @override
   $OpsSectionDtoCopyWith<$Res> get ops;
   @override
-  $PaymentsSectionDtoCopyWith<$Res> get payments;
+  $MoneyAuditSectionDtoCopyWith<$Res> get moneyAudit;
 }
 
 /// @nodoc
@@ -263,7 +267,7 @@ class __$$ReportsSnapshotDtoImplCopyWithImpl<$Res>
     Object? staff = null,
     Object? menu = null,
     Object? ops = null,
-    Object? payments = null,
+    Object? moneyAudit = null,
   }) {
     return _then(
       _$ReportsSnapshotDtoImpl(
@@ -303,10 +307,10 @@ class __$$ReportsSnapshotDtoImplCopyWithImpl<$Res>
             ? _value.ops
             : ops // ignore: cast_nullable_to_non_nullable
                   as OpsSectionDto,
-        payments: null == payments
-            ? _value.payments
-            : payments // ignore: cast_nullable_to_non_nullable
-                  as PaymentsSectionDto,
+        moneyAudit: null == moneyAudit
+            ? _value.moneyAudit
+            : moneyAudit // ignore: cast_nullable_to_non_nullable
+                  as MoneyAuditSectionDto,
       ),
     );
   }
@@ -325,7 +329,7 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
     required this.staff,
     required this.menu,
     required this.ops,
-    this.payments = const PaymentsSectionDto(),
+    this.moneyAudit = const MoneyAuditSectionDto(),
   });
 
   factory _$ReportsSnapshotDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -349,13 +353,17 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
   final MenuSectionDto menu;
   @override
   final OpsSectionDto ops;
+
+  /// Money-shaped audit rows for the off-site owner (ADR-0086), who has
+  /// no route to the venue log. Empty on the admin's own snapshot, which
+  /// reads the live log instead.
   @override
   @JsonKey()
-  final PaymentsSectionDto payments;
+  final MoneyAuditSectionDto moneyAudit;
 
   @override
   String toString() {
-    return 'ReportsSnapshotDto(generatedAt: $generatedAt, rangeFrom: $rangeFrom, rangeTo: $rangeTo, range: $range, filterOptions: $filterOptions, sales: $sales, staff: $staff, menu: $menu, ops: $ops, payments: $payments)';
+    return 'ReportsSnapshotDto(generatedAt: $generatedAt, rangeFrom: $rangeFrom, rangeTo: $rangeTo, range: $range, filterOptions: $filterOptions, sales: $sales, staff: $staff, menu: $menu, ops: $ops, moneyAudit: $moneyAudit)';
   }
 
   @override
@@ -375,8 +383,8 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
             (identical(other.staff, staff) || other.staff == staff) &&
             (identical(other.menu, menu) || other.menu == menu) &&
             (identical(other.ops, ops) || other.ops == ops) &&
-            (identical(other.payments, payments) ||
-                other.payments == payments));
+            (identical(other.moneyAudit, moneyAudit) ||
+                other.moneyAudit == moneyAudit));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -392,7 +400,7 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
     staff,
     menu,
     ops,
-    payments,
+    moneyAudit,
   );
 
   /// Create a copy of ReportsSnapshotDto
@@ -423,7 +431,7 @@ abstract class _ReportsSnapshotDto implements ReportsSnapshotDto {
     required final StaffSectionDto staff,
     required final MenuSectionDto menu,
     required final OpsSectionDto ops,
-    final PaymentsSectionDto payments,
+    final MoneyAuditSectionDto moneyAudit,
   }) = _$ReportsSnapshotDtoImpl;
 
   factory _ReportsSnapshotDto.fromJson(Map<String, dynamic> json) =
@@ -447,8 +455,12 @@ abstract class _ReportsSnapshotDto implements ReportsSnapshotDto {
   MenuSectionDto get menu;
   @override
   OpsSectionDto get ops;
+
+  /// Money-shaped audit rows for the off-site owner (ADR-0086), who has
+  /// no route to the venue log. Empty on the admin's own snapshot, which
+  /// reads the live log instead.
   @override
-  PaymentsSectionDto get payments;
+  MoneyAuditSectionDto get moneyAudit;
 
   /// Create a copy of ReportsSnapshotDto
   /// with the given fields replaced by the non-null parameter values.
@@ -5739,539 +5751,66 @@ abstract class _VoidReasonDto implements VoidReasonDto {
       throw _privateConstructorUsedError;
 }
 
-PaymentsSectionDto _$PaymentsSectionDtoFromJson(Map<String, dynamic> json) {
-  return _PaymentsSectionDto.fromJson(json);
+MoneyAuditSectionDto _$MoneyAuditSectionDtoFromJson(Map<String, dynamic> json) {
+  return _MoneyAuditSectionDto.fromJson(json);
 }
 
 /// @nodoc
-mixin _$PaymentsSectionDto {
-  int get nonCashTotal => throw _privateConstructorUsedError;
-  List<PaymentMethodTotalDto> get methodTotals =>
-      throw _privateConstructorUsedError;
-  List<NonCashPaymentDto> get rows => throw _privateConstructorUsedError;
+mixin _$MoneyAuditSectionDto {
+  List<MoneyAuditRowDto> get rows => throw _privateConstructorUsedError;
 
-  /// Serializes this PaymentsSectionDto to a JSON map.
+  /// True when the range held more rows than were published. The snapshot is
+  /// a Firestore document with a hard ceiling, so the cap is real and the
+  /// owner is told rather than shown a quietly short list.
+  bool get truncated => throw _privateConstructorUsedError;
+
+  /// Serializes this MoneyAuditSectionDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
-  /// Create a copy of PaymentsSectionDto
+  /// Create a copy of MoneyAuditSectionDto
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $PaymentsSectionDtoCopyWith<PaymentsSectionDto> get copyWith =>
+  $MoneyAuditSectionDtoCopyWith<MoneyAuditSectionDto> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $PaymentsSectionDtoCopyWith<$Res> {
-  factory $PaymentsSectionDtoCopyWith(
-    PaymentsSectionDto value,
-    $Res Function(PaymentsSectionDto) then,
-  ) = _$PaymentsSectionDtoCopyWithImpl<$Res, PaymentsSectionDto>;
+abstract class $MoneyAuditSectionDtoCopyWith<$Res> {
+  factory $MoneyAuditSectionDtoCopyWith(
+    MoneyAuditSectionDto value,
+    $Res Function(MoneyAuditSectionDto) then,
+  ) = _$MoneyAuditSectionDtoCopyWithImpl<$Res, MoneyAuditSectionDto>;
   @useResult
-  $Res call({
-    int nonCashTotal,
-    List<PaymentMethodTotalDto> methodTotals,
-    List<NonCashPaymentDto> rows,
-  });
+  $Res call({List<MoneyAuditRowDto> rows, bool truncated});
 }
 
 /// @nodoc
-class _$PaymentsSectionDtoCopyWithImpl<$Res, $Val extends PaymentsSectionDto>
-    implements $PaymentsSectionDtoCopyWith<$Res> {
-  _$PaymentsSectionDtoCopyWithImpl(this._value, this._then);
+class _$MoneyAuditSectionDtoCopyWithImpl<
+  $Res,
+  $Val extends MoneyAuditSectionDto
+>
+    implements $MoneyAuditSectionDtoCopyWith<$Res> {
+  _$MoneyAuditSectionDtoCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
   // ignore: unused_field
   final $Res Function($Val) _then;
 
-  /// Create a copy of PaymentsSectionDto
+  /// Create a copy of MoneyAuditSectionDto
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? nonCashTotal = null,
-    Object? methodTotals = null,
-    Object? rows = null,
-  }) {
+  $Res call({Object? rows = null, Object? truncated = null}) {
     return _then(
       _value.copyWith(
-            nonCashTotal: null == nonCashTotal
-                ? _value.nonCashTotal
-                : nonCashTotal // ignore: cast_nullable_to_non_nullable
-                      as int,
-            methodTotals: null == methodTotals
-                ? _value.methodTotals
-                : methodTotals // ignore: cast_nullable_to_non_nullable
-                      as List<PaymentMethodTotalDto>,
             rows: null == rows
                 ? _value.rows
                 : rows // ignore: cast_nullable_to_non_nullable
-                      as List<NonCashPaymentDto>,
-          )
-          as $Val,
-    );
-  }
-}
-
-/// @nodoc
-abstract class _$$PaymentsSectionDtoImplCopyWith<$Res>
-    implements $PaymentsSectionDtoCopyWith<$Res> {
-  factory _$$PaymentsSectionDtoImplCopyWith(
-    _$PaymentsSectionDtoImpl value,
-    $Res Function(_$PaymentsSectionDtoImpl) then,
-  ) = __$$PaymentsSectionDtoImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({
-    int nonCashTotal,
-    List<PaymentMethodTotalDto> methodTotals,
-    List<NonCashPaymentDto> rows,
-  });
-}
-
-/// @nodoc
-class __$$PaymentsSectionDtoImplCopyWithImpl<$Res>
-    extends _$PaymentsSectionDtoCopyWithImpl<$Res, _$PaymentsSectionDtoImpl>
-    implements _$$PaymentsSectionDtoImplCopyWith<$Res> {
-  __$$PaymentsSectionDtoImplCopyWithImpl(
-    _$PaymentsSectionDtoImpl _value,
-    $Res Function(_$PaymentsSectionDtoImpl) _then,
-  ) : super(_value, _then);
-
-  /// Create a copy of PaymentsSectionDto
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? nonCashTotal = null,
-    Object? methodTotals = null,
-    Object? rows = null,
-  }) {
-    return _then(
-      _$PaymentsSectionDtoImpl(
-        nonCashTotal: null == nonCashTotal
-            ? _value.nonCashTotal
-            : nonCashTotal // ignore: cast_nullable_to_non_nullable
-                  as int,
-        methodTotals: null == methodTotals
-            ? _value._methodTotals
-            : methodTotals // ignore: cast_nullable_to_non_nullable
-                  as List<PaymentMethodTotalDto>,
-        rows: null == rows
-            ? _value._rows
-            : rows // ignore: cast_nullable_to_non_nullable
-                  as List<NonCashPaymentDto>,
-      ),
-    );
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$PaymentsSectionDtoImpl implements _PaymentsSectionDto {
-  const _$PaymentsSectionDtoImpl({
-    this.nonCashTotal = 0,
-    final List<PaymentMethodTotalDto> methodTotals =
-        const <PaymentMethodTotalDto>[],
-    final List<NonCashPaymentDto> rows = const <NonCashPaymentDto>[],
-  }) : _methodTotals = methodTotals,
-       _rows = rows;
-
-  factory _$PaymentsSectionDtoImpl.fromJson(Map<String, dynamic> json) =>
-      _$$PaymentsSectionDtoImplFromJson(json);
-
-  @override
-  @JsonKey()
-  final int nonCashTotal;
-  final List<PaymentMethodTotalDto> _methodTotals;
-  @override
-  @JsonKey()
-  List<PaymentMethodTotalDto> get methodTotals {
-    if (_methodTotals is EqualUnmodifiableListView) return _methodTotals;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_methodTotals);
-  }
-
-  final List<NonCashPaymentDto> _rows;
-  @override
-  @JsonKey()
-  List<NonCashPaymentDto> get rows {
-    if (_rows is EqualUnmodifiableListView) return _rows;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_rows);
-  }
-
-  @override
-  String toString() {
-    return 'PaymentsSectionDto(nonCashTotal: $nonCashTotal, methodTotals: $methodTotals, rows: $rows)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$PaymentsSectionDtoImpl &&
-            (identical(other.nonCashTotal, nonCashTotal) ||
-                other.nonCashTotal == nonCashTotal) &&
-            const DeepCollectionEquality().equals(
-              other._methodTotals,
-              _methodTotals,
-            ) &&
-            const DeepCollectionEquality().equals(other._rows, _rows));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    nonCashTotal,
-    const DeepCollectionEquality().hash(_methodTotals),
-    const DeepCollectionEquality().hash(_rows),
-  );
-
-  /// Create a copy of PaymentsSectionDto
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$PaymentsSectionDtoImplCopyWith<_$PaymentsSectionDtoImpl> get copyWith =>
-      __$$PaymentsSectionDtoImplCopyWithImpl<_$PaymentsSectionDtoImpl>(
-        this,
-        _$identity,
-      );
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$PaymentsSectionDtoImplToJson(this);
-  }
-}
-
-abstract class _PaymentsSectionDto implements PaymentsSectionDto {
-  const factory _PaymentsSectionDto({
-    final int nonCashTotal,
-    final List<PaymentMethodTotalDto> methodTotals,
-    final List<NonCashPaymentDto> rows,
-  }) = _$PaymentsSectionDtoImpl;
-
-  factory _PaymentsSectionDto.fromJson(Map<String, dynamic> json) =
-      _$PaymentsSectionDtoImpl.fromJson;
-
-  @override
-  int get nonCashTotal;
-  @override
-  List<PaymentMethodTotalDto> get methodTotals;
-  @override
-  List<NonCashPaymentDto> get rows;
-
-  /// Create a copy of PaymentsSectionDto
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$PaymentsSectionDtoImplCopyWith<_$PaymentsSectionDtoImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-PaymentMethodTotalDto _$PaymentMethodTotalDtoFromJson(
-  Map<String, dynamic> json,
-) {
-  return _PaymentMethodTotalDto.fromJson(json);
-}
-
-/// @nodoc
-mixin _$PaymentMethodTotalDto {
-  String get method => throw _privateConstructorUsedError;
-  int get amount => throw _privateConstructorUsedError;
-  int get count => throw _privateConstructorUsedError;
-
-  /// Serializes this PaymentMethodTotalDto to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of PaymentMethodTotalDto
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $PaymentMethodTotalDtoCopyWith<PaymentMethodTotalDto> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $PaymentMethodTotalDtoCopyWith<$Res> {
-  factory $PaymentMethodTotalDtoCopyWith(
-    PaymentMethodTotalDto value,
-    $Res Function(PaymentMethodTotalDto) then,
-  ) = _$PaymentMethodTotalDtoCopyWithImpl<$Res, PaymentMethodTotalDto>;
-  @useResult
-  $Res call({String method, int amount, int count});
-}
-
-/// @nodoc
-class _$PaymentMethodTotalDtoCopyWithImpl<
-  $Res,
-  $Val extends PaymentMethodTotalDto
->
-    implements $PaymentMethodTotalDtoCopyWith<$Res> {
-  _$PaymentMethodTotalDtoCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of PaymentMethodTotalDto
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? method = null,
-    Object? amount = null,
-    Object? count = null,
-  }) {
-    return _then(
-      _value.copyWith(
-            method: null == method
-                ? _value.method
-                : method // ignore: cast_nullable_to_non_nullable
-                      as String,
-            amount: null == amount
-                ? _value.amount
-                : amount // ignore: cast_nullable_to_non_nullable
-                      as int,
-            count: null == count
-                ? _value.count
-                : count // ignore: cast_nullable_to_non_nullable
-                      as int,
-          )
-          as $Val,
-    );
-  }
-}
-
-/// @nodoc
-abstract class _$$PaymentMethodTotalDtoImplCopyWith<$Res>
-    implements $PaymentMethodTotalDtoCopyWith<$Res> {
-  factory _$$PaymentMethodTotalDtoImplCopyWith(
-    _$PaymentMethodTotalDtoImpl value,
-    $Res Function(_$PaymentMethodTotalDtoImpl) then,
-  ) = __$$PaymentMethodTotalDtoImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({String method, int amount, int count});
-}
-
-/// @nodoc
-class __$$PaymentMethodTotalDtoImplCopyWithImpl<$Res>
-    extends
-        _$PaymentMethodTotalDtoCopyWithImpl<$Res, _$PaymentMethodTotalDtoImpl>
-    implements _$$PaymentMethodTotalDtoImplCopyWith<$Res> {
-  __$$PaymentMethodTotalDtoImplCopyWithImpl(
-    _$PaymentMethodTotalDtoImpl _value,
-    $Res Function(_$PaymentMethodTotalDtoImpl) _then,
-  ) : super(_value, _then);
-
-  /// Create a copy of PaymentMethodTotalDto
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? method = null,
-    Object? amount = null,
-    Object? count = null,
-  }) {
-    return _then(
-      _$PaymentMethodTotalDtoImpl(
-        method: null == method
-            ? _value.method
-            : method // ignore: cast_nullable_to_non_nullable
-                  as String,
-        amount: null == amount
-            ? _value.amount
-            : amount // ignore: cast_nullable_to_non_nullable
-                  as int,
-        count: null == count
-            ? _value.count
-            : count // ignore: cast_nullable_to_non_nullable
-                  as int,
-      ),
-    );
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$PaymentMethodTotalDtoImpl implements _PaymentMethodTotalDto {
-  const _$PaymentMethodTotalDtoImpl({
-    required this.method,
-    this.amount = 0,
-    this.count = 0,
-  });
-
-  factory _$PaymentMethodTotalDtoImpl.fromJson(Map<String, dynamic> json) =>
-      _$$PaymentMethodTotalDtoImplFromJson(json);
-
-  @override
-  final String method;
-  @override
-  @JsonKey()
-  final int amount;
-  @override
-  @JsonKey()
-  final int count;
-
-  @override
-  String toString() {
-    return 'PaymentMethodTotalDto(method: $method, amount: $amount, count: $count)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$PaymentMethodTotalDtoImpl &&
-            (identical(other.method, method) || other.method == method) &&
-            (identical(other.amount, amount) || other.amount == amount) &&
-            (identical(other.count, count) || other.count == count));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(runtimeType, method, amount, count);
-
-  /// Create a copy of PaymentMethodTotalDto
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$PaymentMethodTotalDtoImplCopyWith<_$PaymentMethodTotalDtoImpl>
-  get copyWith =>
-      __$$PaymentMethodTotalDtoImplCopyWithImpl<_$PaymentMethodTotalDtoImpl>(
-        this,
-        _$identity,
-      );
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$PaymentMethodTotalDtoImplToJson(this);
-  }
-}
-
-abstract class _PaymentMethodTotalDto implements PaymentMethodTotalDto {
-  const factory _PaymentMethodTotalDto({
-    required final String method,
-    final int amount,
-    final int count,
-  }) = _$PaymentMethodTotalDtoImpl;
-
-  factory _PaymentMethodTotalDto.fromJson(Map<String, dynamic> json) =
-      _$PaymentMethodTotalDtoImpl.fromJson;
-
-  @override
-  String get method;
-  @override
-  int get amount;
-  @override
-  int get count;
-
-  /// Create a copy of PaymentMethodTotalDto
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$PaymentMethodTotalDtoImplCopyWith<_$PaymentMethodTotalDtoImpl>
-  get copyWith => throw _privateConstructorUsedError;
-}
-
-NonCashPaymentDto _$NonCashPaymentDtoFromJson(Map<String, dynamic> json) {
-  return _NonCashPaymentDto.fromJson(json);
-}
-
-/// @nodoc
-mixin _$NonCashPaymentDto {
-  String get paymentId => throw _privateConstructorUsedError;
-  String get method => throw _privateConstructorUsedError;
-  int get amount => throw _privateConstructorUsedError;
-  String get at => throw _privateConstructorUsedError;
-  String? get tableLabel => throw _privateConstructorUsedError;
-  String? get cashierName => throw _privateConstructorUsedError;
-  bool get hasPhoto => throw _privateConstructorUsedError;
-
-  /// Serializes this NonCashPaymentDto to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of NonCashPaymentDto
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $NonCashPaymentDtoCopyWith<NonCashPaymentDto> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $NonCashPaymentDtoCopyWith<$Res> {
-  factory $NonCashPaymentDtoCopyWith(
-    NonCashPaymentDto value,
-    $Res Function(NonCashPaymentDto) then,
-  ) = _$NonCashPaymentDtoCopyWithImpl<$Res, NonCashPaymentDto>;
-  @useResult
-  $Res call({
-    String paymentId,
-    String method,
-    int amount,
-    String at,
-    String? tableLabel,
-    String? cashierName,
-    bool hasPhoto,
-  });
-}
-
-/// @nodoc
-class _$NonCashPaymentDtoCopyWithImpl<$Res, $Val extends NonCashPaymentDto>
-    implements $NonCashPaymentDtoCopyWith<$Res> {
-  _$NonCashPaymentDtoCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of NonCashPaymentDto
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? paymentId = null,
-    Object? method = null,
-    Object? amount = null,
-    Object? at = null,
-    Object? tableLabel = freezed,
-    Object? cashierName = freezed,
-    Object? hasPhoto = null,
-  }) {
-    return _then(
-      _value.copyWith(
-            paymentId: null == paymentId
-                ? _value.paymentId
-                : paymentId // ignore: cast_nullable_to_non_nullable
-                      as String,
-            method: null == method
-                ? _value.method
-                : method // ignore: cast_nullable_to_non_nullable
-                      as String,
-            amount: null == amount
-                ? _value.amount
-                : amount // ignore: cast_nullable_to_non_nullable
-                      as int,
-            at: null == at
-                ? _value.at
-                : at // ignore: cast_nullable_to_non_nullable
-                      as String,
-            tableLabel: freezed == tableLabel
-                ? _value.tableLabel
-                : tableLabel // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            cashierName: freezed == cashierName
-                ? _value.cashierName
-                : cashierName // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            hasPhoto: null == hasPhoto
-                ? _value.hasPhoto
-                : hasPhoto // ignore: cast_nullable_to_non_nullable
+                      as List<MoneyAuditRowDto>,
+            truncated: null == truncated
+                ? _value.truncated
+                : truncated // ignore: cast_nullable_to_non_nullable
                       as bool,
           )
           as $Val,
@@ -6280,76 +5819,40 @@ class _$NonCashPaymentDtoCopyWithImpl<$Res, $Val extends NonCashPaymentDto>
 }
 
 /// @nodoc
-abstract class _$$NonCashPaymentDtoImplCopyWith<$Res>
-    implements $NonCashPaymentDtoCopyWith<$Res> {
-  factory _$$NonCashPaymentDtoImplCopyWith(
-    _$NonCashPaymentDtoImpl value,
-    $Res Function(_$NonCashPaymentDtoImpl) then,
-  ) = __$$NonCashPaymentDtoImplCopyWithImpl<$Res>;
+abstract class _$$MoneyAuditSectionDtoImplCopyWith<$Res>
+    implements $MoneyAuditSectionDtoCopyWith<$Res> {
+  factory _$$MoneyAuditSectionDtoImplCopyWith(
+    _$MoneyAuditSectionDtoImpl value,
+    $Res Function(_$MoneyAuditSectionDtoImpl) then,
+  ) = __$$MoneyAuditSectionDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String paymentId,
-    String method,
-    int amount,
-    String at,
-    String? tableLabel,
-    String? cashierName,
-    bool hasPhoto,
-  });
+  $Res call({List<MoneyAuditRowDto> rows, bool truncated});
 }
 
 /// @nodoc
-class __$$NonCashPaymentDtoImplCopyWithImpl<$Res>
-    extends _$NonCashPaymentDtoCopyWithImpl<$Res, _$NonCashPaymentDtoImpl>
-    implements _$$NonCashPaymentDtoImplCopyWith<$Res> {
-  __$$NonCashPaymentDtoImplCopyWithImpl(
-    _$NonCashPaymentDtoImpl _value,
-    $Res Function(_$NonCashPaymentDtoImpl) _then,
+class __$$MoneyAuditSectionDtoImplCopyWithImpl<$Res>
+    extends _$MoneyAuditSectionDtoCopyWithImpl<$Res, _$MoneyAuditSectionDtoImpl>
+    implements _$$MoneyAuditSectionDtoImplCopyWith<$Res> {
+  __$$MoneyAuditSectionDtoImplCopyWithImpl(
+    _$MoneyAuditSectionDtoImpl _value,
+    $Res Function(_$MoneyAuditSectionDtoImpl) _then,
   ) : super(_value, _then);
 
-  /// Create a copy of NonCashPaymentDto
+  /// Create a copy of MoneyAuditSectionDto
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? paymentId = null,
-    Object? method = null,
-    Object? amount = null,
-    Object? at = null,
-    Object? tableLabel = freezed,
-    Object? cashierName = freezed,
-    Object? hasPhoto = null,
-  }) {
+  $Res call({Object? rows = null, Object? truncated = null}) {
     return _then(
-      _$NonCashPaymentDtoImpl(
-        paymentId: null == paymentId
-            ? _value.paymentId
-            : paymentId // ignore: cast_nullable_to_non_nullable
-                  as String,
-        method: null == method
-            ? _value.method
-            : method // ignore: cast_nullable_to_non_nullable
-                  as String,
-        amount: null == amount
-            ? _value.amount
-            : amount // ignore: cast_nullable_to_non_nullable
-                  as int,
-        at: null == at
-            ? _value.at
-            : at // ignore: cast_nullable_to_non_nullable
-                  as String,
-        tableLabel: freezed == tableLabel
-            ? _value.tableLabel
-            : tableLabel // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        cashierName: freezed == cashierName
-            ? _value.cashierName
-            : cashierName // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        hasPhoto: null == hasPhoto
-            ? _value.hasPhoto
-            : hasPhoto // ignore: cast_nullable_to_non_nullable
+      _$MoneyAuditSectionDtoImpl(
+        rows: null == rows
+            ? _value._rows
+            : rows // ignore: cast_nullable_to_non_nullable
+                  as List<MoneyAuditRowDto>,
+        truncated: null == truncated
+            ? _value.truncated
+            : truncated // ignore: cast_nullable_to_non_nullable
                   as bool,
       ),
     );
@@ -6358,125 +5861,444 @@ class __$$NonCashPaymentDtoImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$NonCashPaymentDtoImpl implements _NonCashPaymentDto {
-  const _$NonCashPaymentDtoImpl({
-    required this.paymentId,
-    required this.method,
-    this.amount = 0,
-    this.at = '',
-    this.tableLabel,
-    this.cashierName,
-    this.hasPhoto = false,
-  });
+class _$MoneyAuditSectionDtoImpl implements _MoneyAuditSectionDto {
+  const _$MoneyAuditSectionDtoImpl({
+    final List<MoneyAuditRowDto> rows = const <MoneyAuditRowDto>[],
+    this.truncated = false,
+  }) : _rows = rows;
 
-  factory _$NonCashPaymentDtoImpl.fromJson(Map<String, dynamic> json) =>
-      _$$NonCashPaymentDtoImplFromJson(json);
+  factory _$MoneyAuditSectionDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$MoneyAuditSectionDtoImplFromJson(json);
 
-  @override
-  final String paymentId;
-  @override
-  final String method;
+  final List<MoneyAuditRowDto> _rows;
   @override
   @JsonKey()
-  final int amount;
+  List<MoneyAuditRowDto> get rows {
+    if (_rows is EqualUnmodifiableListView) return _rows;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_rows);
+  }
+
+  /// True when the range held more rows than were published. The snapshot is
+  /// a Firestore document with a hard ceiling, so the cap is real and the
+  /// owner is told rather than shown a quietly short list.
   @override
   @JsonKey()
-  final String at;
-  @override
-  final String? tableLabel;
-  @override
-  final String? cashierName;
-  @override
-  @JsonKey()
-  final bool hasPhoto;
+  final bool truncated;
 
   @override
   String toString() {
-    return 'NonCashPaymentDto(paymentId: $paymentId, method: $method, amount: $amount, at: $at, tableLabel: $tableLabel, cashierName: $cashierName, hasPhoto: $hasPhoto)';
+    return 'MoneyAuditSectionDto(rows: $rows, truncated: $truncated)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$NonCashPaymentDtoImpl &&
-            (identical(other.paymentId, paymentId) ||
-                other.paymentId == paymentId) &&
-            (identical(other.method, method) || other.method == method) &&
-            (identical(other.amount, amount) || other.amount == amount) &&
-            (identical(other.at, at) || other.at == at) &&
-            (identical(other.tableLabel, tableLabel) ||
-                other.tableLabel == tableLabel) &&
-            (identical(other.cashierName, cashierName) ||
-                other.cashierName == cashierName) &&
-            (identical(other.hasPhoto, hasPhoto) ||
-                other.hasPhoto == hasPhoto));
+            other is _$MoneyAuditSectionDtoImpl &&
+            const DeepCollectionEquality().equals(other._rows, _rows) &&
+            (identical(other.truncated, truncated) ||
+                other.truncated == truncated));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
     runtimeType,
-    paymentId,
-    method,
-    amount,
-    at,
-    tableLabel,
-    cashierName,
-    hasPhoto,
+    const DeepCollectionEquality().hash(_rows),
+    truncated,
   );
 
-  /// Create a copy of NonCashPaymentDto
+  /// Create a copy of MoneyAuditSectionDto
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
-  _$$NonCashPaymentDtoImplCopyWith<_$NonCashPaymentDtoImpl> get copyWith =>
-      __$$NonCashPaymentDtoImplCopyWithImpl<_$NonCashPaymentDtoImpl>(
+  _$$MoneyAuditSectionDtoImplCopyWith<_$MoneyAuditSectionDtoImpl>
+  get copyWith =>
+      __$$MoneyAuditSectionDtoImplCopyWithImpl<_$MoneyAuditSectionDtoImpl>(
         this,
         _$identity,
       );
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$NonCashPaymentDtoImplToJson(this);
+    return _$$MoneyAuditSectionDtoImplToJson(this);
   }
 }
 
-abstract class _NonCashPaymentDto implements NonCashPaymentDto {
-  const factory _NonCashPaymentDto({
-    required final String paymentId,
-    required final String method,
-    final int amount,
-    final String at,
-    final String? tableLabel,
-    final String? cashierName,
-    final bool hasPhoto,
-  }) = _$NonCashPaymentDtoImpl;
+abstract class _MoneyAuditSectionDto implements MoneyAuditSectionDto {
+  const factory _MoneyAuditSectionDto({
+    final List<MoneyAuditRowDto> rows,
+    final bool truncated,
+  }) = _$MoneyAuditSectionDtoImpl;
 
-  factory _NonCashPaymentDto.fromJson(Map<String, dynamic> json) =
-      _$NonCashPaymentDtoImpl.fromJson;
+  factory _MoneyAuditSectionDto.fromJson(Map<String, dynamic> json) =
+      _$MoneyAuditSectionDtoImpl.fromJson;
 
   @override
-  String get paymentId;
-  @override
-  String get method;
-  @override
-  int get amount;
-  @override
-  String get at;
-  @override
-  String? get tableLabel;
-  @override
-  String? get cashierName;
-  @override
-  bool get hasPhoto;
+  List<MoneyAuditRowDto> get rows;
 
-  /// Create a copy of NonCashPaymentDto
+  /// True when the range held more rows than were published. The snapshot is
+  /// a Firestore document with a hard ceiling, so the cap is real and the
+  /// owner is told rather than shown a quietly short list.
+  @override
+  bool get truncated;
+
+  /// Create a copy of MoneyAuditSectionDto
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$NonCashPaymentDtoImplCopyWith<_$NonCashPaymentDtoImpl> get copyWith =>
+  _$$MoneyAuditSectionDtoImplCopyWith<_$MoneyAuditSectionDtoImpl>
+  get copyWith => throw _privateConstructorUsedError;
+}
+
+MoneyAuditRowDto _$MoneyAuditRowDtoFromJson(Map<String, dynamic> json) {
+  return _MoneyAuditRowDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$MoneyAuditRowDto {
+  String get id => throw _privateConstructorUsedError;
+  String get type => throw _privateConstructorUsedError;
+  String get at => throw _privateConstructorUsedError;
+  String get title => throw _privateConstructorUsedError;
+  String? get kind => throw _privateConstructorUsedError;
+  Map<String, String> get params => throw _privateConstructorUsedError;
+  String? get actorName => throw _privateConstructorUsedError;
+  String? get tableLabel => throw _privateConstructorUsedError;
+  int? get amountCents => throw _privateConstructorUsedError;
+
+  /// Serializes this MoneyAuditRowDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of MoneyAuditRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $MoneyAuditRowDtoCopyWith<MoneyAuditRowDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $MoneyAuditRowDtoCopyWith<$Res> {
+  factory $MoneyAuditRowDtoCopyWith(
+    MoneyAuditRowDto value,
+    $Res Function(MoneyAuditRowDto) then,
+  ) = _$MoneyAuditRowDtoCopyWithImpl<$Res, MoneyAuditRowDto>;
+  @useResult
+  $Res call({
+    String id,
+    String type,
+    String at,
+    String title,
+    String? kind,
+    Map<String, String> params,
+    String? actorName,
+    String? tableLabel,
+    int? amountCents,
+  });
+}
+
+/// @nodoc
+class _$MoneyAuditRowDtoCopyWithImpl<$Res, $Val extends MoneyAuditRowDto>
+    implements $MoneyAuditRowDtoCopyWith<$Res> {
+  _$MoneyAuditRowDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of MoneyAuditRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? type = null,
+    Object? at = null,
+    Object? title = null,
+    Object? kind = freezed,
+    Object? params = null,
+    Object? actorName = freezed,
+    Object? tableLabel = freezed,
+    Object? amountCents = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            type: null == type
+                ? _value.type
+                : type // ignore: cast_nullable_to_non_nullable
+                      as String,
+            at: null == at
+                ? _value.at
+                : at // ignore: cast_nullable_to_non_nullable
+                      as String,
+            title: null == title
+                ? _value.title
+                : title // ignore: cast_nullable_to_non_nullable
+                      as String,
+            kind: freezed == kind
+                ? _value.kind
+                : kind // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            params: null == params
+                ? _value.params
+                : params // ignore: cast_nullable_to_non_nullable
+                      as Map<String, String>,
+            actorName: freezed == actorName
+                ? _value.actorName
+                : actorName // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            tableLabel: freezed == tableLabel
+                ? _value.tableLabel
+                : tableLabel // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            amountCents: freezed == amountCents
+                ? _value.amountCents
+                : amountCents // ignore: cast_nullable_to_non_nullable
+                      as int?,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$MoneyAuditRowDtoImplCopyWith<$Res>
+    implements $MoneyAuditRowDtoCopyWith<$Res> {
+  factory _$$MoneyAuditRowDtoImplCopyWith(
+    _$MoneyAuditRowDtoImpl value,
+    $Res Function(_$MoneyAuditRowDtoImpl) then,
+  ) = __$$MoneyAuditRowDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String id,
+    String type,
+    String at,
+    String title,
+    String? kind,
+    Map<String, String> params,
+    String? actorName,
+    String? tableLabel,
+    int? amountCents,
+  });
+}
+
+/// @nodoc
+class __$$MoneyAuditRowDtoImplCopyWithImpl<$Res>
+    extends _$MoneyAuditRowDtoCopyWithImpl<$Res, _$MoneyAuditRowDtoImpl>
+    implements _$$MoneyAuditRowDtoImplCopyWith<$Res> {
+  __$$MoneyAuditRowDtoImplCopyWithImpl(
+    _$MoneyAuditRowDtoImpl _value,
+    $Res Function(_$MoneyAuditRowDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of MoneyAuditRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? type = null,
+    Object? at = null,
+    Object? title = null,
+    Object? kind = freezed,
+    Object? params = null,
+    Object? actorName = freezed,
+    Object? tableLabel = freezed,
+    Object? amountCents = freezed,
+  }) {
+    return _then(
+      _$MoneyAuditRowDtoImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        type: null == type
+            ? _value.type
+            : type // ignore: cast_nullable_to_non_nullable
+                  as String,
+        at: null == at
+            ? _value.at
+            : at // ignore: cast_nullable_to_non_nullable
+                  as String,
+        title: null == title
+            ? _value.title
+            : title // ignore: cast_nullable_to_non_nullable
+                  as String,
+        kind: freezed == kind
+            ? _value.kind
+            : kind // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        params: null == params
+            ? _value._params
+            : params // ignore: cast_nullable_to_non_nullable
+                  as Map<String, String>,
+        actorName: freezed == actorName
+            ? _value.actorName
+            : actorName // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        tableLabel: freezed == tableLabel
+            ? _value.tableLabel
+            : tableLabel // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        amountCents: freezed == amountCents
+            ? _value.amountCents
+            : amountCents // ignore: cast_nullable_to_non_nullable
+                  as int?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$MoneyAuditRowDtoImpl implements _MoneyAuditRowDto {
+  const _$MoneyAuditRowDtoImpl({
+    required this.id,
+    required this.type,
+    this.at = '',
+    this.title = '',
+    this.kind,
+    final Map<String, String> params = const <String, String>{},
+    this.actorName,
+    this.tableLabel,
+    this.amountCents,
+  }) : _params = params;
+
+  factory _$MoneyAuditRowDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$MoneyAuditRowDtoImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String type;
+  @override
+  @JsonKey()
+  final String at;
+  @override
+  @JsonKey()
+  final String title;
+  @override
+  final String? kind;
+  final Map<String, String> _params;
+  @override
+  @JsonKey()
+  Map<String, String> get params {
+    if (_params is EqualUnmodifiableMapView) return _params;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_params);
+  }
+
+  @override
+  final String? actorName;
+  @override
+  final String? tableLabel;
+  @override
+  final int? amountCents;
+
+  @override
+  String toString() {
+    return 'MoneyAuditRowDto(id: $id, type: $type, at: $at, title: $title, kind: $kind, params: $params, actorName: $actorName, tableLabel: $tableLabel, amountCents: $amountCents)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$MoneyAuditRowDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.at, at) || other.at == at) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.kind, kind) || other.kind == kind) &&
+            const DeepCollectionEquality().equals(other._params, _params) &&
+            (identical(other.actorName, actorName) ||
+                other.actorName == actorName) &&
+            (identical(other.tableLabel, tableLabel) ||
+                other.tableLabel == tableLabel) &&
+            (identical(other.amountCents, amountCents) ||
+                other.amountCents == amountCents));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    type,
+    at,
+    title,
+    kind,
+    const DeepCollectionEquality().hash(_params),
+    actorName,
+    tableLabel,
+    amountCents,
+  );
+
+  /// Create a copy of MoneyAuditRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$MoneyAuditRowDtoImplCopyWith<_$MoneyAuditRowDtoImpl> get copyWith =>
+      __$$MoneyAuditRowDtoImplCopyWithImpl<_$MoneyAuditRowDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$MoneyAuditRowDtoImplToJson(this);
+  }
+}
+
+abstract class _MoneyAuditRowDto implements MoneyAuditRowDto {
+  const factory _MoneyAuditRowDto({
+    required final String id,
+    required final String type,
+    final String at,
+    final String title,
+    final String? kind,
+    final Map<String, String> params,
+    final String? actorName,
+    final String? tableLabel,
+    final int? amountCents,
+  }) = _$MoneyAuditRowDtoImpl;
+
+  factory _MoneyAuditRowDto.fromJson(Map<String, dynamic> json) =
+      _$MoneyAuditRowDtoImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get type;
+  @override
+  String get at;
+  @override
+  String get title;
+  @override
+  String? get kind;
+  @override
+  Map<String, String> get params;
+  @override
+  String? get actorName;
+  @override
+  String? get tableLabel;
+  @override
+  int? get amountCents;
+
+  /// Create a copy of MoneyAuditRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$MoneyAuditRowDtoImplCopyWith<_$MoneyAuditRowDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

@@ -292,6 +292,16 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return ref.read(apiClientProvider).getBytes('$base/$paymentId/photo');
   }
 
+  /// Proof bytes for a payment named by an **audit row** (ADR-0086).
+  ///
+  /// A separate route because the venue log scrolls across the bill close and
+  /// cannot know which side of it a row fell on; the server looks in both
+  /// tables. Callers that already know — a live bill, a settled bill — keep
+  /// using [paymentPhoto] and its cheaper single lookup.
+  Future<Uint8List> auditPaymentPhoto(String paymentId) => ref
+      .read(apiClientProvider)
+      .getBytes('/audit/payments/$paymentId/photo');
+
   Future<Bill> refund(
     String receiptId, {
     required String method,
@@ -424,6 +434,22 @@ final proofPhotoProvider = FutureProvider.autoDispose
       final bytes = await ref
           .read(settlementProvider.notifier)
           .paymentPhoto(key.id, history: key.history);
+      ref.keepAlive();
+      return bytes;
+    });
+
+/// Proof bytes for an audit row's payment (ADR-0086), cached the same way and
+/// for the same reason as [proofPhotoProvider].
+///
+/// ponytail: a near-twin of the provider above, kept separate because the only
+/// difference is which route resolves the id. If a third source ever appears,
+/// collapse all three into one family keyed by a scope enum.
+final auditProofPhotoProvider = FutureProvider.autoDispose
+    .family<Uint8List?, String>((ref, paymentId) async {
+      if (ref.watch(apiConfigProvider) == null) return null;
+      final bytes = await ref
+          .read(settlementProvider.notifier)
+          .auditPaymentPhoto(paymentId);
       ref.keepAlive();
       return bytes;
     });

@@ -7450,6 +7450,17 @@ class $AuditEntriesTable extends AuditEntries
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _paymentIdMeta = const VerificationMeta(
+    'paymentId',
+  );
+  @override
+  late final GeneratedColumn<String> paymentId = GeneratedColumn<String>(
+    'payment_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -7465,6 +7476,7 @@ class $AuditEntriesTable extends AuditEntries
     actorRoleName,
     kind,
     params,
+    paymentId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7567,6 +7579,12 @@ class $AuditEntriesTable extends AuditEntries
         params.isAcceptableOrUnknown(data['params']!, _paramsMeta),
       );
     }
+    if (data.containsKey('payment_id')) {
+      context.handle(
+        _paymentIdMeta,
+        paymentId.isAcceptableOrUnknown(data['payment_id']!, _paymentIdMeta),
+      );
+    }
     return context;
   }
 
@@ -7628,6 +7646,10 @@ class $AuditEntriesTable extends AuditEntries
         DriftSqlType.string,
         data['${effectivePrefix}params'],
       ),
+      paymentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payment_id'],
+      ),
     );
   }
 
@@ -7675,6 +7697,23 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
   /// rename silently drops every existing row back to its frozen title.
   final String? kind;
   final String? params;
+
+  /// The payment whose **proof photo** this row can pull up — ADR-0086.
+  ///
+  /// Set only when a proof actually exists, which is why this doubles as the
+  /// `hasPhoto` flag and no join is needed to render the log: cash tenders and
+  /// refunds carry no photo and store null here, so a non-null value always
+  /// means there is an image to show.
+  ///
+  /// Not a [params] key. `params` exists to compose a sentence in the reader's
+  /// language (ADR-0085); this is a reference, and belongs somewhere queryable
+  /// rather than inside an opaque blob.
+  ///
+  /// The id survives the bill closing: the close path carries the payment's id
+  /// into `table_session_payments` rather than minting a new one, so the photo
+  /// route resolves against whichever table still holds the row. Null on rows
+  /// written before v48 — history shows no indicator, and nothing is backfilled.
+  final String? paymentId;
   const AuditEntry({
     required this.id,
     required this.type,
@@ -7689,6 +7728,7 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
     this.actorRoleName,
     this.kind,
     this.params,
+    this.paymentId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7724,6 +7764,9 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
     if (!nullToAbsent || params != null) {
       map['params'] = Variable<String>(params);
     }
+    if (!nullToAbsent || paymentId != null) {
+      map['payment_id'] = Variable<String>(paymentId);
+    }
     return map;
   }
 
@@ -7758,6 +7801,9 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
       params: params == null && nullToAbsent
           ? const Value.absent()
           : Value(params),
+      paymentId: paymentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(paymentId),
     );
   }
 
@@ -7780,6 +7826,7 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
       actorRoleName: serializer.fromJson<String?>(json['actorRoleName']),
       kind: serializer.fromJson<String?>(json['kind']),
       params: serializer.fromJson<String?>(json['params']),
+      paymentId: serializer.fromJson<String?>(json['paymentId']),
     );
   }
   @override
@@ -7799,6 +7846,7 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
       'actorRoleName': serializer.toJson<String?>(actorRoleName),
       'kind': serializer.toJson<String?>(kind),
       'params': serializer.toJson<String?>(params),
+      'paymentId': serializer.toJson<String?>(paymentId),
     };
   }
 
@@ -7816,6 +7864,7 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
     Value<String?> actorRoleName = const Value.absent(),
     Value<String?> kind = const Value.absent(),
     Value<String?> params = const Value.absent(),
+    Value<String?> paymentId = const Value.absent(),
   }) => AuditEntry(
     id: id ?? this.id,
     type: type ?? this.type,
@@ -7832,6 +7881,7 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
         : this.actorRoleName,
     kind: kind.present ? kind.value : this.kind,
     params: params.present ? params.value : this.params,
+    paymentId: paymentId.present ? paymentId.value : this.paymentId,
   );
   AuditEntry copyWithCompanion(AuditEntriesCompanion data) {
     return AuditEntry(
@@ -7856,6 +7906,7 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
           : this.actorRoleName,
       kind: data.kind.present ? data.kind.value : this.kind,
       params: data.params.present ? data.params.value : this.params,
+      paymentId: data.paymentId.present ? data.paymentId.value : this.paymentId,
     );
   }
 
@@ -7874,7 +7925,8 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
           ..write('actorName: $actorName, ')
           ..write('actorRoleName: $actorRoleName, ')
           ..write('kind: $kind, ')
-          ..write('params: $params')
+          ..write('params: $params, ')
+          ..write('paymentId: $paymentId')
           ..write(')'))
         .toString();
   }
@@ -7894,6 +7946,7 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
     actorRoleName,
     kind,
     params,
+    paymentId,
   );
   @override
   bool operator ==(Object other) =>
@@ -7911,7 +7964,8 @@ class AuditEntry extends DataClass implements Insertable<AuditEntry> {
           other.actorName == this.actorName &&
           other.actorRoleName == this.actorRoleName &&
           other.kind == this.kind &&
-          other.params == this.params);
+          other.params == this.params &&
+          other.paymentId == this.paymentId);
 }
 
 class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
@@ -7928,6 +7982,7 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
   final Value<String?> actorRoleName;
   final Value<String?> kind;
   final Value<String?> params;
+  final Value<String?> paymentId;
   final Value<int> rowid;
   const AuditEntriesCompanion({
     this.id = const Value.absent(),
@@ -7943,6 +7998,7 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     this.actorRoleName = const Value.absent(),
     this.kind = const Value.absent(),
     this.params = const Value.absent(),
+    this.paymentId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AuditEntriesCompanion.insert({
@@ -7959,6 +8015,7 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     this.actorRoleName = const Value.absent(),
     this.kind = const Value.absent(),
     this.params = const Value.absent(),
+    this.paymentId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        type = Value(type),
@@ -7978,6 +8035,7 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     Expression<String>? actorRoleName,
     Expression<String>? kind,
     Expression<String>? params,
+    Expression<String>? paymentId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7994,6 +8052,7 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
       if (actorRoleName != null) 'actor_role_name': actorRoleName,
       if (kind != null) 'kind': kind,
       if (params != null) 'params': params,
+      if (paymentId != null) 'payment_id': paymentId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -8012,6 +8071,7 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     Value<String?>? actorRoleName,
     Value<String?>? kind,
     Value<String?>? params,
+    Value<String?>? paymentId,
     Value<int>? rowid,
   }) {
     return AuditEntriesCompanion(
@@ -8028,6 +8088,7 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
       actorRoleName: actorRoleName ?? this.actorRoleName,
       kind: kind ?? this.kind,
       params: params ?? this.params,
+      paymentId: paymentId ?? this.paymentId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -8074,6 +8135,9 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
     if (params.present) {
       map['params'] = Variable<String>(params.value);
     }
+    if (paymentId.present) {
+      map['payment_id'] = Variable<String>(paymentId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -8096,6 +8160,7 @@ class AuditEntriesCompanion extends UpdateCompanion<AuditEntry> {
           ..write('actorRoleName: $actorRoleName, ')
           ..write('kind: $kind, ')
           ..write('params: $params, ')
+          ..write('paymentId: $paymentId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -24767,6 +24832,7 @@ typedef $$AuditEntriesTableCreateCompanionBuilder =
       Value<String?> actorRoleName,
       Value<String?> kind,
       Value<String?> params,
+      Value<String?> paymentId,
       Value<int> rowid,
     });
 typedef $$AuditEntriesTableUpdateCompanionBuilder =
@@ -24784,6 +24850,7 @@ typedef $$AuditEntriesTableUpdateCompanionBuilder =
       Value<String?> actorRoleName,
       Value<String?> kind,
       Value<String?> params,
+      Value<String?> paymentId,
       Value<int> rowid,
     });
 
@@ -24858,6 +24925,11 @@ class $$AuditEntriesTableFilterComposer
 
   ColumnFilters<String> get params => $composableBuilder(
     column: $table.params,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get paymentId => $composableBuilder(
+    column: $table.paymentId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -24935,6 +25007,11 @@ class $$AuditEntriesTableOrderingComposer
     column: $table.params,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get paymentId => $composableBuilder(
+    column: $table.paymentId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AuditEntriesTableAnnotationComposer
@@ -24992,6 +25069,9 @@ class $$AuditEntriesTableAnnotationComposer
 
   GeneratedColumn<String> get params =>
       $composableBuilder(column: $table.params, builder: (column) => column);
+
+  GeneratedColumn<String> get paymentId =>
+      $composableBuilder(column: $table.paymentId, builder: (column) => column);
 }
 
 class $$AuditEntriesTableTableManager
@@ -25038,6 +25118,7 @@ class $$AuditEntriesTableTableManager
                 Value<String?> actorRoleName = const Value.absent(),
                 Value<String?> kind = const Value.absent(),
                 Value<String?> params = const Value.absent(),
+                Value<String?> paymentId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AuditEntriesCompanion(
                 id: id,
@@ -25053,6 +25134,7 @@ class $$AuditEntriesTableTableManager
                 actorRoleName: actorRoleName,
                 kind: kind,
                 params: params,
+                paymentId: paymentId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -25070,6 +25152,7 @@ class $$AuditEntriesTableTableManager
                 Value<String?> actorRoleName = const Value.absent(),
                 Value<String?> kind = const Value.absent(),
                 Value<String?> params = const Value.absent(),
+                Value<String?> paymentId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AuditEntriesCompanion.insert(
                 id: id,
@@ -25085,6 +25168,7 @@ class $$AuditEntriesTableTableManager
                 actorRoleName: actorRoleName,
                 kind: kind,
                 params: params,
+                paymentId: paymentId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

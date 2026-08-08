@@ -2,6 +2,8 @@
 
 **Status:** accepted — builds on [0023](0023-two-phase-settlement-and-split-bills.md) (settlement/payments), [0024](0024-visit-decoupled-from-table-and-bill-close.md) (snapshot timing), and [0014](0014-menu-photo-blob-and-pinned-byte-fetch.md) (blob storage + pinned byte fetch).
 
+**Amended by [0086](0086-proof-lives-on-the-audit-trail.md):** the "Pembayaran non-tunai" report section named below is **gone**. A proof photo is now reached from the venue log's payment row (camera glyph → lightbox), which is where the void and the comp it sits beside already live. Everything else here — the photo is mandatory, captured in the same request, pinned, one size — is unchanged.
+
 ## Context
 
 [[Payment (manual confirmation)]] records money with **no gateway** — recording *is* the confirmation, so there is nothing external attesting that a card/QRIS/transfer actually cleared. Owners want a hard audit trail for non-cash money: a photo of the EDC slip / QR confirmation / transfer screen taken at the till. Cash needs none (the drawer is the evidence).

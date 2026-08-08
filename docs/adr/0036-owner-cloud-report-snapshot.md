@@ -4,6 +4,8 @@
 
 **Amends [0016](0016-fleet-superadmin-cloud-control-plane.md):** adds a third cloud role (`owner`) beside `admin`/`super` on the same `admins` collection and login-divert machinery, and adds two report collections the fleet model did not have.
 
+**Amended by [0086](0086-proof-lives-on-the-audit-trail.md):** the owner no longer reads individual tenders from a payments section — that section was removed app-wide. The snapshot instead publishes the **money half of the venue log** (rows with a non-null amount, newest 500 per range, with a `truncated` flag), rendered in its own block on `OwnerReportScreen`. This exists precisely because `/audit` is a LAN, tablet-only screen the owner cannot reach. The **no proof photos off-site** rule below is reaffirmed by 0086, not weakened: the published rows carry no payment id at all.
+
 ## Context
 
 SatSet is LAN-first: every operational screen — including Admin → Reports — is hard-gated on `apiConfigProvider != null` (paired to the local server), and reports are computed on demand by the embedded shelf server from the host's Drift DB (`/reports/snapshot`). A venue stakeholder who wants to **watch activity from outside the venue** can satisfy none of that: no LAN, no pairing, no server to query.

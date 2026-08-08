@@ -90,7 +90,7 @@ GoRouter with refresh-listener pattern (auth / prefs / apiConfig changes trigger
 - `/book` — **debug builds only** (`if (kDebugMode)`). Widget book: every `core/widgets/` widget in all its states against stub data, with theme/skin, text-scale, reduced-motion and phone/tablet toggles. In the pair-gate bypass set, so it works unpaired. Two entries: a debug button on `PinScreen` (pre-pairing) and a "Book" item at the foot of `TabletSideRail` (pushed, not `go`ne — back returns to your tab). Lives in `lib/ui/features/_book/`. See ADR-0054 — add an entry there in the same commit as a new shared widget.
 - `ShellRoute` → `AppShell` wraps tab routes: `/tables`, `/orders`, `/kitchen`, `/venue`, `/floor`, `/menuadm`, `/alerts`, `/reports`, `/settings`, `/staff`, `/me`.
   - `/alerts` = alert config (thresholds + sounds + this-device mute), reached from the Venue hub. Gated `editSettings`.
-  - `/audit` = venue-wide integrity log (ADR-0072), reached from the Venue hub. Gated `viewReports`; admin rows need `manageStaff` on top, enforced server-side. **Tablet only** — the phone route renders an explanation.
+  - `/audit` = venue-wide integrity log (ADR-0072), reached from the Venue hub. Gated `viewReports`; admin rows need `manageStaff` on top, enforced server-side. **Tablet only** — the phone route renders an explanation. A row with a non-null `paymentId` shows a camera glyph and opens the proof photo on tap (ADR-0086) — this is the only place proofs are browsed across a range; Reports has no payments section.
 - **Outside the shell** (root-navigator pushes, full-page transitions):
   - `/table/:id` (+ `/menu`, `/review`, `/sent` subroutes) — order-taking flow.
   - `/menuadm/:id` — menu item editor.

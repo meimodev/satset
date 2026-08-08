@@ -15,7 +15,10 @@ class ReportsSnapshotDto with _$ReportsSnapshotDto {
     required StaffSectionDto staff,
     required MenuSectionDto menu,
     required OpsSectionDto ops,
-    @Default(PaymentsSectionDto()) PaymentsSectionDto payments,
+    /// Money-shaped audit rows for the off-site owner (ADR-0086), who has
+    /// no route to the venue log. Empty on the admin's own snapshot, which
+    /// reads the live log instead.
+    @Default(MoneyAuditSectionDto()) MoneyAuditSectionDto moneyAudit,
   }) = _ReportsSnapshotDto;
 
   factory ReportsSnapshotDto.fromJson(Map<String, dynamic> json) =>
@@ -331,47 +334,49 @@ class VoidReasonDto with _$VoidReasonDto {
       _$VoidReasonDtoFromJson(json);
 }
 
-/// Non-cash payments section (ADR-0025): every non-cash, non-refund payment in
-/// the range with a fetchable proof photo, plus per-method totals.
+/// The money half of the venue log, published to the cloud for the off-site
+/// owner (ADR-0086).
+///
+/// Rows only — no proof-photo bytes. Blobs stay on the LAN (ADR-0036 §"No proof
+/// photos off-site"); an owner who sees a figure they dislike names the row for
+/// the on-site admin to open.
 @freezed
-class PaymentsSectionDto with _$PaymentsSectionDto {
-  const factory PaymentsSectionDto({
-    @Default(0) int nonCashTotal,
-    @Default(<PaymentMethodTotalDto>[])
-    List<PaymentMethodTotalDto> methodTotals,
-    @Default(<NonCashPaymentDto>[]) List<NonCashPaymentDto> rows,
-  }) = _PaymentsSectionDto;
+class MoneyAuditSectionDto with _$MoneyAuditSectionDto {
+  const factory MoneyAuditSectionDto({
+    @Default(<MoneyAuditRowDto>[]) List<MoneyAuditRowDto> rows,
 
-  factory PaymentsSectionDto.fromJson(Map<String, dynamic> json) =>
-      _$PaymentsSectionDtoFromJson(json);
+    /// True when the range held more rows than were published. The snapshot is
+    /// a Firestore document with a hard ceiling, so the cap is real and the
+    /// owner is told rather than shown a quietly short list.
+    @Default(false) bool truncated,
+  }) = _MoneyAuditSectionDto;
+
+  factory MoneyAuditSectionDto.fromJson(Map<String, dynamic> json) =>
+      _$MoneyAuditSectionDtoFromJson(json);
 }
 
+/// One published audit row. Mirrors the venue log's own wire shape, structured
+/// half included, so the owner composes the sentence in **their** language
+/// (ADR-0085) rather than reading the venue device's frozen [title].
+///
+/// No `paymentId`: the photo it would name is unreachable from off-site, and
+/// an indicator that cannot be tapped is worse than none.
 @freezed
-class PaymentMethodTotalDto with _$PaymentMethodTotalDto {
-  const factory PaymentMethodTotalDto({
-    required String method,
-    @Default(0) int amount,
-    @Default(0) int count,
-  }) = _PaymentMethodTotalDto;
-
-  factory PaymentMethodTotalDto.fromJson(Map<String, dynamic> json) =>
-      _$PaymentMethodTotalDtoFromJson(json);
-}
-
-@freezed
-class NonCashPaymentDto with _$NonCashPaymentDto {
-  const factory NonCashPaymentDto({
-    required String paymentId,
-    required String method,
-    @Default(0) int amount,
+class MoneyAuditRowDto with _$MoneyAuditRowDto {
+  const factory MoneyAuditRowDto({
+    required String id,
+    required String type,
     @Default('') String at,
+    @Default('') String title,
+    String? kind,
+    @Default(<String, String>{}) Map<String, String> params,
+    String? actorName,
     String? tableLabel,
-    String? cashierName,
-    @Default(false) bool hasPhoto,
-  }) = _NonCashPaymentDto;
+    int? amountCents,
+  }) = _MoneyAuditRowDto;
 
-  factory NonCashPaymentDto.fromJson(Map<String, dynamic> json) =>
-      _$NonCashPaymentDtoFromJson(json);
+  factory MoneyAuditRowDto.fromJson(Map<String, dynamic> json) =>
+      _$MoneyAuditRowDtoFromJson(json);
 }
 
 @freezed

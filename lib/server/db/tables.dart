@@ -463,6 +463,23 @@ class AuditEntries extends Table {
   /// rename silently drops every existing row back to its frozen title.
   TextColumn get kind => text().nullable()();
   TextColumn get params => text().nullable()();
+
+  /// The payment whose **proof photo** this row can pull up — ADR-0086.
+  ///
+  /// Set only when a proof actually exists, which is why this doubles as the
+  /// `hasPhoto` flag and no join is needed to render the log: cash tenders and
+  /// refunds carry no photo and store null here, so a non-null value always
+  /// means there is an image to show.
+  ///
+  /// Not a [params] key. `params` exists to compose a sentence in the reader's
+  /// language (ADR-0085); this is a reference, and belongs somewhere queryable
+  /// rather than inside an opaque blob.
+  ///
+  /// The id survives the bill closing: the close path carries the payment's id
+  /// into `table_session_payments` rather than minting a new one, so the photo
+  /// route resolves against whichever table still holds the row. Null on rows
+  /// written before v48 — history shows no indicator, and nothing is backfilled.
+  TextColumn get paymentId => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }

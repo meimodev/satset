@@ -8179,6 +8179,12 @@ abstract class AppL10n {
   /// **'Bukti pembayaran'**
   String get ppfTitle;
 
+  /// No description provided for @ppfUnavailable.
+  ///
+  /// In id, this message translates to:
+  /// **'Foto bukti tidak bisa dimuat'**
+  String get ppfUnavailable;
+
   /// No description provided for @cpdTitle.
   ///
   /// In id, this message translates to:
@@ -8202,6 +8208,24 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Belum ada meja di {zone}'**
   String tblNoTablesInZone(String zone);
+
+  /// No description provided for @ownMoneyAuditTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan uang'**
+  String get ownMoneyAuditTitle;
+
+  /// No description provided for @ownMoneyAuditEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada aktivitas yang menyentuh uang pada rentang ini.'**
+  String get ownMoneyAuditEmpty;
+
+  /// No description provided for @ownMoneyAuditTruncated.
+  ///
+  /// In id, this message translates to:
+  /// **'Menampilkan {count} terbaru — catatan lengkap ada di perangkat venue'**
+  String ownMoneyAuditTruncated(int count);
 
   /// No description provided for @ownReportTitle.
   ///

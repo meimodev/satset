@@ -20,9 +20,11 @@ _$ReportsSnapshotDtoImpl _$$ReportsSnapshotDtoImplFromJson(
   staff: StaffSectionDto.fromJson(json['staff'] as Map<String, dynamic>),
   menu: MenuSectionDto.fromJson(json['menu'] as Map<String, dynamic>),
   ops: OpsSectionDto.fromJson(json['ops'] as Map<String, dynamic>),
-  payments: json['payments'] == null
-      ? const PaymentsSectionDto()
-      : PaymentsSectionDto.fromJson(json['payments'] as Map<String, dynamic>),
+  moneyAudit: json['moneyAudit'] == null
+      ? const MoneyAuditSectionDto()
+      : MoneyAuditSectionDto.fromJson(
+          json['moneyAudit'] as Map<String, dynamic>,
+        ),
 );
 
 Map<String, dynamic> _$$ReportsSnapshotDtoImplToJson(
@@ -37,7 +39,7 @@ Map<String, dynamic> _$$ReportsSnapshotDtoImplToJson(
   'staff': instance.staff,
   'menu': instance.menu,
   'ops': instance.ops,
-  'payments': instance.payments,
+  'moneyAudit': instance.moneyAudit,
 };
 
 _$FilterOptionsDtoImpl _$$FilterOptionsDtoImplFromJson(
@@ -505,70 +507,51 @@ Map<String, dynamic> _$$VoidReasonDtoImplToJson(_$VoidReasonDtoImpl instance) =>
       'lostRupiah': instance.lostRupiah,
     };
 
-_$PaymentsSectionDtoImpl _$$PaymentsSectionDtoImplFromJson(
+_$MoneyAuditSectionDtoImpl _$$MoneyAuditSectionDtoImplFromJson(
   Map<String, dynamic> json,
-) => _$PaymentsSectionDtoImpl(
-  nonCashTotal: (json['nonCashTotal'] as num?)?.toInt() ?? 0,
-  methodTotals:
-      (json['methodTotals'] as List<dynamic>?)
-          ?.map(
-            (e) => PaymentMethodTotalDto.fromJson(e as Map<String, dynamic>),
-          )
-          .toList() ??
-      const <PaymentMethodTotalDto>[],
+) => _$MoneyAuditSectionDtoImpl(
   rows:
       (json['rows'] as List<dynamic>?)
-          ?.map((e) => NonCashPaymentDto.fromJson(e as Map<String, dynamic>))
+          ?.map((e) => MoneyAuditRowDto.fromJson(e as Map<String, dynamic>))
           .toList() ??
-      const <NonCashPaymentDto>[],
+      const <MoneyAuditRowDto>[],
+  truncated: json['truncated'] as bool? ?? false,
 );
 
-Map<String, dynamic> _$$PaymentsSectionDtoImplToJson(
-  _$PaymentsSectionDtoImpl instance,
-) => <String, dynamic>{
-  'nonCashTotal': instance.nonCashTotal,
-  'methodTotals': instance.methodTotals,
-  'rows': instance.rows,
-};
+Map<String, dynamic> _$$MoneyAuditSectionDtoImplToJson(
+  _$MoneyAuditSectionDtoImpl instance,
+) => <String, dynamic>{'rows': instance.rows, 'truncated': instance.truncated};
 
-_$PaymentMethodTotalDtoImpl _$$PaymentMethodTotalDtoImplFromJson(
+_$MoneyAuditRowDtoImpl _$$MoneyAuditRowDtoImplFromJson(
   Map<String, dynamic> json,
-) => _$PaymentMethodTotalDtoImpl(
-  method: json['method'] as String,
-  amount: (json['amount'] as num?)?.toInt() ?? 0,
-  count: (json['count'] as num?)?.toInt() ?? 0,
-);
-
-Map<String, dynamic> _$$PaymentMethodTotalDtoImplToJson(
-  _$PaymentMethodTotalDtoImpl instance,
-) => <String, dynamic>{
-  'method': instance.method,
-  'amount': instance.amount,
-  'count': instance.count,
-};
-
-_$NonCashPaymentDtoImpl _$$NonCashPaymentDtoImplFromJson(
-  Map<String, dynamic> json,
-) => _$NonCashPaymentDtoImpl(
-  paymentId: json['paymentId'] as String,
-  method: json['method'] as String,
-  amount: (json['amount'] as num?)?.toInt() ?? 0,
+) => _$MoneyAuditRowDtoImpl(
+  id: json['id'] as String,
+  type: json['type'] as String,
   at: json['at'] as String? ?? '',
+  title: json['title'] as String? ?? '',
+  kind: json['kind'] as String?,
+  params:
+      (json['params'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ) ??
+      const <String, String>{},
+  actorName: json['actorName'] as String?,
   tableLabel: json['tableLabel'] as String?,
-  cashierName: json['cashierName'] as String?,
-  hasPhoto: json['hasPhoto'] as bool? ?? false,
+  amountCents: (json['amountCents'] as num?)?.toInt(),
 );
 
-Map<String, dynamic> _$$NonCashPaymentDtoImplToJson(
-  _$NonCashPaymentDtoImpl instance,
+Map<String, dynamic> _$$MoneyAuditRowDtoImplToJson(
+  _$MoneyAuditRowDtoImpl instance,
 ) => <String, dynamic>{
-  'paymentId': instance.paymentId,
-  'method': instance.method,
-  'amount': instance.amount,
+  'id': instance.id,
+  'type': instance.type,
   'at': instance.at,
+  'title': instance.title,
+  'kind': instance.kind,
+  'params': instance.params,
+  'actorName': instance.actorName,
   'tableLabel': instance.tableLabel,
-  'cashierName': instance.cashierName,
-  'hasPhoto': instance.hasPhoto,
+  'amountCents': instance.amountCents,
 };
 
 _$StaffVoidDtoImpl _$$StaffVoidDtoImplFromJson(Map<String, dynamic> json) =>

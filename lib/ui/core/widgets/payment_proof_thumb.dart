@@ -103,7 +103,7 @@ class PaymentProofThumb extends ConsumerWidget {
       onTap: () => Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(
           fullscreenDialog: true,
-          builder: (_) => _ProofViewer(bytes),
+          builder: (_) => ProofViewer(bytes),
         ),
       ),
       child: ClipRRect(
@@ -131,9 +131,12 @@ class _Placeholder extends StatelessWidget {
   }
 }
 
-class _ProofViewer extends StatelessWidget {
+/// The one fullscreen proof lightbox. Public because the venue log opens the
+/// same image from a row rather than a thumb (ADR-0086), and a second viewer
+/// would be a second set of chrome to keep in step.
+class ProofViewer extends StatelessWidget {
   final Uint8List bytes;
-  const _ProofViewer(this.bytes);
+  const ProofViewer(this.bytes, {super.key});
 
   // A lightbox, not a themed screen — see satMediaChrome.
   @override

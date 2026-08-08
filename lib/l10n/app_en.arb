@@ -1349,10 +1349,21 @@
   "olcVoidedBy": "Voided · {reason} · approved by {approver}",
   "rdyBannerText": "Items are ready at the pass — mark them served below",
   "ppfTitle": "Payment proof",
+  "ppfUnavailable": "This proof photo could not be loaded",
   "cpdTitle": "Guest's cash · tap the notes",
   "blcPaidPct": "{amount} in · {pct}%",
   "tblDetailEmptyLines": "No items yet — tap Add order on the right to start.",
   "tblNoTablesInZone": "No tables in {zone} yet",
+  "ownMoneyAuditTitle": "Money log",
+  "ownMoneyAuditEmpty": "No money-affecting activity in this range.",
+  "ownMoneyAuditTruncated": "Showing the {count} most recent \u2014 the full log is on the venue device",
+  "@ownMoneyAuditTruncated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "ownReportTitle": "Venue report",
   "altMinutes": "{value} min",
   "vhbSettings": "Settings",

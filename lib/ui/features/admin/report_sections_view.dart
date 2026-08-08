@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:satset/core/localization/labels.dart';
 import 'package:satset/core/localization/report_copy.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/l10n/app_localizations.dart';
@@ -10,47 +9,45 @@ import 'package:satset/data/models/reports_dto.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
-import 'package:satset/ui/core/widgets/payment_proof_thumb.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import '_common.dart';
 import 'report_stock_section.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
-/// The full reports rendering — five sections (sales / staff / menu / ops /
-/// payments) with their section-toggle tabs and staff sort. Extracted from
+/// The full reports rendering — five sections (sales / staff / menu / bahan /
+/// ops) with their section-toggle tabs and staff sort. Extracted from
 /// `ReportsScreen` so the off-site owner view (ADR-0036) renders identical
 /// content from a cloud snapshot, while the admin screen keeps its own chrome
 /// (range pills, filters, export, freshness) above it.
 ///
-/// [showProofPhotos] gates the payments proof thumbnails, which fetch pinned
-/// bytes from the local server: the owner has no LAN server, so it passes
-/// `false` and gets a placeholder instead of a broken fetch.
+/// There is no non-cash payments section here any more (ADR-0086). A proof
+/// photo is evidence, and evidence belongs on the integrity log beside the
+/// void and the comp it sits next to — not in a report a manager reads for
+/// totals. The venue log carries it; the owner, who has no route to that log,
+/// gets the money rows in their own block on `OwnerReportScreen`.
 class ReportSectionsView extends StatefulWidget {
   const ReportSectionsView({
     super.key,
     required this.snapshot,
     required this.isTab,
     this.loading = false,
-    this.showProofPhotos = true,
     this.showStock = true,
   });
 
   final ReportsSnapshotDto snapshot;
   final bool isTab;
   final bool loading;
-  final bool showProofPhotos;
 
   /// The Bahan section reads the **local** server's stock endpoints, which the
   /// off-site owner (ADR-0036) has no route to — their view renders from a
-  /// cloud snapshot only, so it passes `false`. Same reasoning as
-  /// [showProofPhotos].
+  /// cloud snapshot only, so it passes `false`.
   final bool showStock;
 
   @override
   State<ReportSectionsView> createState() => _ReportSectionsViewState();
 }
 
-enum _Section { sales, staff, menu, bahan, ops, payments }
+enum _Section { sales, staff, menu, bahan, ops }
 
 enum _StaffSort { net, covers, voidPct, avgTicket }
 
@@ -69,7 +66,6 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.menu,
     _Section.bahan,
     _Section.ops,
-    _Section.payments,
   };
   _StaffSort _staffSort = _StaffSort.net;
 
@@ -79,7 +75,6 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.menu => l10n.rptSecMenu,
     _Section.bahan => l10n.rptSecBahan,
     _Section.ops => l10n.rptSecOps,
-    _Section.payments => l10n.rptSecPayments,
   };
 
   @override
@@ -183,12 +178,6 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           key: const ValueKey('ops'),
           index: 4,
           child: _opsSection(context, isTab, snapshot.ops),
-        ),
-      if (_on.contains(_Section.payments))
-        Reveal(
-          key: const ValueKey('payments'),
-          index: 5,
-          child: _paymentsSection(context, snapshot.payments),
         ),
     ];
     final col = Column(
@@ -299,116 +288,6 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           ),
           const SizedBox(height: Sp.s3h),
           child,
-        ],
-      ),
-    );
-  }
-
-  // ──────────── PAYMENTS (non-cash proof, ADR-0025) ────────────
-  String _payTime(String iso) {
-    final d = DateTime.tryParse(iso)?.toLocal();
-    if (d == null) return '';
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(d.hour)}:${two(d.minute)}';
-  }
-
-  Widget _paymentsSection(BuildContext context, PaymentsSectionDto p) {
-    final sc = context.sat;
-    if (p.rows.isEmpty) {
-      return _card(
-        context,
-        context.l10n.rptNonCash,
-        sub: context.l10n.rptNonCashSub,
-        child: Text(
-          context.l10n.rptNonCashEmpty,
-          style: SatType.bodyM(color: sc.textLo),
-        ),
-      );
-    }
-    return _card(
-      context,
-      context.l10n.rptNonCash,
-      sub: context.l10n.rptTotalOf(formatIDR(p.nonCashTotal)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!widget.showProofPhotos && p.rows.any((r) => r.hasPhoto)) ...[
-            Text(
-              context.l10n.rptProofOnVenue,
-              style: SatType.bodyS(color: sc.textLo),
-            ),
-            const SizedBox(height: Sp.s2h),
-          ],
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final m in p.methodTotals)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Sp.s2h,
-                    vertical: Sp.s1h,
-                  ),
-                  decoration: SatBox.d(
-                    color: sc.bg1,
-                    borderRadius: SatR.a(999),
-                    border: SatB.all(color: sc.border0),
-                  ),
-                  child: Text(
-                    context.l10n.rptMethodCount(
-                      paymentMethodLabel(context.l10n, m.method),
-                      m.count,
-                      formatIDR(m.amount),
-                    ),
-                    style: SatType.bodyS(color: sc.textHi),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: Sp.s3h),
-          for (final r in p.rows)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: Sp.s1h),
-              child: Row(
-                children: [
-                  // Bytes live only on the LAN server, so off-site (owner) the
-                  // proof exists but is unfetchable — the widget says so, in a
-                  // box the same size as a slip, and distinct from a genuinely
-                  // photo-less (cash/legacy) row. ADR-0036, ADR-0082.
-                  PaymentProofThumb(
-                    paymentId: r.paymentId,
-                    history: true,
-                    hasPhoto: r.hasPhoto,
-                    fetchable: widget.showProofPhotos,
-                  ),
-                  const SizedBox(width: Sp.s3),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.l10n.rptMethodTable(
-                            paymentMethodLabel(context.l10n, r.method),
-                            r.tableLabel ?? '-',
-                          ),
-                          style: SatType.labelM(color: sc.textHi),
-                        ),
-                        const SizedBox(height: Sp.sHair),
-                        Text(
-                          '${_payTime(r.at)} · ${r.cashierName ?? '-'}',
-                          style: SatType.bodyS(color: sc.textLo),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: Sp.s2),
-                  Text(
-                    formatIDR(r.amount),
-                    style: SatType.monoM(color: sc.textHi),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );

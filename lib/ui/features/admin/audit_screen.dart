@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/localization/audit_text.dart';
 import 'package:satset/core/export/audit_exporter.dart';
+import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/data/repositories/venue_audit_repository.dart';
 import 'package:satset/data/services/error_bus_service.dart';
 import 'package:satset/domain/models/audit_entry.dart';
@@ -16,6 +17,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
+import 'package:satset/ui/core/widgets/payment_proof_thumb.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import '_common.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
@@ -354,7 +356,8 @@ class _AuditLogRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final tone = auditTone(entry.type, sc);
-    return Container(
+    final proofId = entry.paymentId;
+    final row = Container(
       decoration: SatBox.d(
         color: sc.bg2,
         border: SatB.all(color: sc.border0),
@@ -390,11 +393,30 @@ class _AuditLogRow extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        event: Text(
-          auditText(context.l10n, entry),
-          style: SatType.bodyS(color: sc.textHi),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+        event: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Flexible(
+              child: Text(
+                auditText(context.l10n, entry),
+                style: SatType.bodyS(color: sc.textHi),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            // Glyph, not a thumbnail. A 56px slip in this column would set the
+            // height of all six for every row in the log, and pull a JPEG per
+            // row per page, to decorate the ~1 in 20 that is a card tender.
+            // ADR-0086.
+            if (proofId != null) ...[
+              const SizedBox(width: Sp.s1h),
+              Icon(
+                Icons.photo_camera_back_outlined,
+                size: Sp.s4,
+                color: sc.textLo,
+              ),
+            ],
+          ],
         ),
         amount: Text(
           entry.amountCents == null ? '—' : formatIDR(entry.amountCents!),
@@ -410,7 +432,64 @@ class _AuditLogRow extends StatelessWidget {
         ),
       ),
     );
+    if (proofId == null) return row;
+    return Semantics(
+      button: true,
+      label: context.l10n.a11yViewPhoto,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _openProof(context, proofId),
+        child: row,
+      ),
+    );
   }
+
+  /// Fetch on tap, never on build: the log pages in forty rows at a time and
+  /// eager blobs would make scrolling it cost a JPEG each.
+  void _openProof(BuildContext context, String paymentId) {
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => _AuditProofPage(paymentId: paymentId),
+      ),
+    );
+  }
+}
+
+/// The venue log's proof lightbox — the shared [ProofViewer] once its bytes
+/// land, and the same media chrome while they are still in flight so the sheet
+/// does not flash a themed screen on the way to a black one.
+class _AuditProofPage extends ConsumerWidget {
+  final String paymentId;
+  const _AuditProofPage({required this.paymentId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(auditProofPhotoProvider(paymentId));
+    return async.maybeWhen(
+      data: (bytes) =>
+          bytes == null ? _pending(context, failed: true) : ProofViewer(bytes),
+      error: (_, _) => _pending(context, failed: true),
+      orElse: () => _pending(context),
+    );
+  }
+
+  Widget _pending(BuildContext context, {bool failed = false}) => Scaffold(
+    backgroundColor: satMediaChrome,
+    appBar: AppBar(
+      backgroundColor: satMediaChrome,
+      iconTheme: const IconThemeData(color: satMediaInk),
+      title: Text(context.l10n.ppfTitle, style: SatType.labelL(color: satMediaInk)),
+    ),
+    body: Center(
+      child: failed
+          ? Text(
+              context.l10n.ppfUnavailable,
+              style: SatType.bodyM(color: satMediaInk),
+            )
+          : const CircularProgressIndicator(color: satMediaInk),
+    ),
+  );
 }
 
 /// One column geometry for the header and every row — they must not drift

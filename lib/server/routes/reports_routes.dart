@@ -53,6 +53,14 @@ Future<Response?> _requireCap(
 /// pull an unbounded window.
 const int _customRangeMaxDays = 92;
 
+/// How many money-audit rows the snapshot publishes per range (ADR-0086).
+///
+/// The snapshot is a single Firestore document with a 1 MiB ceiling, and going
+/// over does not drop the audit rows — it fails the whole write, taking sales,
+/// staff and menu down with it. So the cap is enforced here, and the payload
+/// says when it bit rather than showing a quietly short list.
+const int _moneyAuditCap = 500;
+
 (DateTime, DateTime) _windowFor(
   String range,
   DateTime now,
@@ -732,62 +740,48 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
           }).toList()
           ..sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
 
-    // ─── PAYMENTS (non-cash proof, ADR-0025) ─────────────────────
-    // Every non-cash, non-refund payment in the window, each with a fetchable
-    // proof photo. Blob stays out of the list (only `hasPhoto` rides).
-    final sessionById = {for (final s in sessions) s.id: s};
-    final spPhoto = db.tableSessionPayments.photo.isNotNull();
-    final spRows =
-        await (db.selectOnly(db.tableSessionPayments)
-              ..addColumns([
-                db.tableSessionPayments.id,
-                db.tableSessionPayments.sessionId,
-                db.tableSessionPayments.method,
-                db.tableSessionPayments.amount,
-                db.tableSessionPayments.cashierUserId,
-                db.tableSessionPayments.at,
-                spPhoto,
-              ])
-              ..where(db.tableSessionPayments.sessionId.isIn(sessionIds))
-              ..where(db.tableSessionPayments.method.equals('tunai').not())
-              ..where(db.tableSessionPayments.isRefund.equals(false))
-              ..orderBy([OrderingTerm.desc(db.tableSessionPayments.at)]))
+    // ─── MONEY AUDIT (ADR-0086) ──────────────────────────────────
+    // The money half of the venue log, for the off-site owner — who has no
+    // route to `/audit` and, since the non-cash card was removed, no other way
+    // to see an individual tender at all.
+    //
+    // The filter is `amountCents IS NOT NULL` rather than a list of types on
+    // purpose: that column is by definition what a row is worth, so a money
+    // type added later is published without anyone remembering to come back
+    // here. Rows with no amount (fire, tableMoved, staff and role edits) are
+    // not money and stay on the venue device.
+    //
+    // Structured fields ride along so the owner's device composes the sentence
+    // in its own language (ADR-0085). Proof-photo bytes do not (ADR-0036).
+    final tableLabelById = {
+      for (final t in await db.select(db.venueTables).get()) t.id: t.label,
+    };
+    final auditRows =
+        await (db.select(db.auditEntries)
+              ..where((a) => a.amountCents.isNotNull())
+              ..where((a) => a.at.isBiggerOrEqualValue(from))
+              ..where((a) => a.at.isSmallerThanValue(to))
+              ..orderBy([(a) => OrderingTerm.desc(a.at)])
+              // One over the cap, purely to learn whether there were more.
+              ..limit(_moneyAuditCap + 1))
             .get();
-    final nonCashRows = <Map<String, dynamic>>[];
-    final methodTotal = <String, int>{};
-    final methodCount = <String, int>{};
-    var nonCashTotal = 0;
-    for (final r in spRows) {
-      final sid = r.read(db.tableSessionPayments.sessionId)!;
-      final method = r.read(db.tableSessionPayments.method)!;
-      final amount = r.read(db.tableSessionPayments.amount)!;
-      final cashier = r.read(db.tableSessionPayments.cashierUserId);
-      methodTotal[method] = (methodTotal[method] ?? 0) + amount;
-      methodCount[method] = (methodCount[method] ?? 0) + 1;
-      nonCashTotal += amount;
-      nonCashRows.add({
-        'paymentId': r.read(db.tableSessionPayments.id)!,
-        'method': method,
-        'amount': amount,
-        'at': r.read(db.tableSessionPayments.at)!.toIso8601String(),
-        'tableLabel': sessionById[sid]?.tableLabel,
-        'cashierName': cashier == null
-            ? null
-            : (userById[cashier]?.name ?? cashier),
-        'hasPhoto': r.read(spPhoto) ?? false,
-      });
-    }
-    final methodTotals =
-        methodTotal.entries
-            .map(
-              (e) => {
-                'method': e.key,
-                'amount': e.value,
-                'count': methodCount[e.key] ?? 0,
-              },
-            )
-            .toList()
-          ..sort((a, b) => (b['amount'] as int).compareTo(a['amount'] as int));
+    final auditTruncated = auditRows.length > _moneyAuditCap;
+    final moneyAudit = [
+      for (final a in auditRows.take(_moneyAuditCap))
+        {
+          'id': a.id,
+          'type': a.type,
+          'at': a.at.toIso8601String(),
+          'title': a.title,
+          'kind': a.kind,
+          'params': a.params == null
+              ? const <String, dynamic>{}
+              : (jsonDecode(a.params!) as Map).cast<String, dynamic>(),
+          'actorName': a.actorName,
+          'tableLabel': a.tableId == null ? null : tableLabelById[a.tableId],
+          'amountCents': a.amountCents,
+        },
+    ];
 
     // Filter options (always full list — UI prepends "Semua X").
     final filterOptions = {
@@ -848,11 +842,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         'voidReasons': voidReasons,
         'voidByStaff': voidStaff,
       },
-      'payments': {
-        'nonCashTotal': nonCashTotal,
-        'methodTotals': methodTotals,
-        'rows': nonCashRows,
-      },
+      'moneyAudit': {'rows': moneyAudit, 'truncated': auditTruncated},
     };
 
     return Response.ok(

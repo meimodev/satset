@@ -59,6 +59,12 @@ Future<AuditEntry?> writeAudit(
   int? amountCents,
   WsHub? hub,
 
+  /// The payment this row can show a **proof photo** for (ADR-0086). Pass it
+  /// only when the payment actually carries an image — a cash tender and a
+  /// refund pass nothing, and the reader treats non-null as "there is a photo"
+  /// rather than joining to find out.
+  String? paymentId,
+
   /// Stamp this instead of "now". The sample seed replays a month through the
   /// audit writer and each row belongs at its own moment; dragging `SatClock`
   /// through the month would swing the running app's clock instead. Production
@@ -100,6 +106,7 @@ Future<AuditEntry?> writeAudit(
           amountCents: Value(amountCents),
           actorName: Value(actor?.name),
           actorRoleName: Value(actor?.roleName),
+          paymentId: Value(paymentId),
         ),
       );
   final row = await (db.select(
@@ -151,6 +158,9 @@ Map<String, dynamic> auditJson(
   'actorName': e.actorName ?? fallbackName,
   'actorRoleName': e.actorRoleName ?? fallbackRoleName,
   'kind': e.kind,
+  // Non-null ⇒ this row has a proof photo to show (ADR-0086). The bytes never
+  // ride this JSON; the client fetches them per row, on tap.
+  'paymentId': e.paymentId,
   // Sent decoded, not as a JSON string: the client would only have to parse it
   // again, and a nested-encoded blob is the kind of thing that survives one
   // release and breaks on the next.

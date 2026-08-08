@@ -841,12 +841,15 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         'foto bukti wajib untuk pembayaran non-tunai',
       );
     }
+    // Minted up front so the audit row can point at it (ADR-0086).
+    final paymentId = _uuid.v4();
+    final storedPhoto = method == 'tunai' ? null : photo;
     await db.transaction(() async {
       await db
           .into(db.payments)
           .insert(
             PaymentsCompanion.insert(
-              id: _uuid.v4(),
+              id: paymentId,
               receiptId: receiptId,
               method: method,
               amount: amount,
@@ -854,7 +857,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
               cashierUserId: Value(user?.id),
               note: Value((body['note'] as String?)?.trim()),
               at: SatClock.now().toUtc(),
-              photo: Value(method == 'tunai' ? null : photo),
+              photo: Value(storedPhoto),
             ),
           );
       await _recompute(db, visitId);
@@ -870,6 +873,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         tableId: rec.tableId,
         actor: user?.id,
         amountCents: amount,
+        // Only when there is genuinely an image behind it — a cash tender
+        // leaves this null so the venue log shows no indicator to tap.
+        paymentId: storedPhoto == null ? null : paymentId,
       );
     });
     await settleOrBroadcast(visitId, user?.id);
@@ -900,6 +906,29 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (row == null || row.photo == null) return Response.notFound('no photo');
     return Response.ok(
       row.photo,
+      headers: {'content-type': 'image/jpeg', 'cache-control': 'no-cache'},
+    );
+  });
+
+  // Proof-photo bytes for a payment named by an AUDIT row (ADR-0086). The venue
+  // log spans open and closed bills in one scroll and has no idea which side of
+  // the close a row fell on — so this looks in both tables rather than making
+  // the client guess between the two routes above. The id is stable across the
+  // close, so exactly one of them can match.
+  r.get('/audit/payments/<id>/photo', (Request req, String id) async {
+    final denied = await requireCap(req, Capability.viewReports);
+    if (denied != null) return denied;
+    final live = await (db.select(
+      db.payments,
+    )..where((p) => p.id.equals(id))).getSingleOrNull();
+    final photo =
+        live?.photo ??
+        (await (db.select(
+          db.tableSessionPayments,
+        )..where((p) => p.id.equals(id))).getSingleOrNull())?.photo;
+    if (photo == null) return Response.notFound('no photo');
+    return Response.ok(
+      photo,
       headers: {'content-type': 'image/jpeg', 'cache-control': 'no-cache'},
     );
   });
@@ -1557,6 +1586,7 @@ Future<void> _audit(
   String? actor,
   String? reason,
   int? amountCents,
+  String? paymentId,
 }) => writeAudit(
   db,
   type: type,
@@ -1566,6 +1596,7 @@ Future<void> _audit(
   actorUserId: actor,
   reason: reason,
   amountCents: amountCents,
+  paymentId: paymentId,
 );
 
 /// Build the full bill JSON for one visit, or null if it has no sent lines.

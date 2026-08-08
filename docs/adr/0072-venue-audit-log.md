@@ -6,6 +6,10 @@ Accepted. Adds a second, venue-scoped audit surface alongside the personal
 feed defined in ADR-0065, and makes real two audit types that ADR-0065
 observed could only ever read zero.
 
+Amended by [ADR-0086](0086-proof-lives-on-the-audit-trail.md): the row gains a
+nullable `payment_id`, and a row that carries one shows a camera glyph that
+opens the payment's proof photo. The log is now where a proof is browsed.
+
 ## Context
 
 `GET /audit` is deliberately narrow. ADR-0065 rewrote it to return **the
