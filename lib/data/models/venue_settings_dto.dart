@@ -55,6 +55,21 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default('alert') String soundOverdue,
     @Default('chime') String soundUngreeted,
     @Default('chime') String soundPickup,
+
+    // Membership (ADR-0091). Off by default — a venue opts in, and until it
+    // does the member row, the directory and the receipt lines do not exist.
+    @Default(false) bool membersEnabled,
+    @Default(true) bool memberPointsEnabled,
+    @Default(false) bool memberPunchEnabled,
+
+    /// The [[Preset diskon]] nominated as the standing member discount, or null
+    /// for a venue running membership on points and stempel alone (ADR-0094).
+    String? memberPresetId,
+    @Default(1) int memberEarnPerThousand,
+    @Default(1000) int memberPointValue,
+    @Default(10) int memberRedeemMin,
+    String? memberPunchItemId,
+    @Default(10) int memberPunchTarget,
   }) = _VenueSettingsDto;
 
   factory VenueSettingsDto.fromJson(Map<String, dynamic> json) =>

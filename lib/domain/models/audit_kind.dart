@@ -89,6 +89,22 @@ enum AuditKind {
   /// `{amount}` — the magnitude of the movement being undone.
   cashReversed,
 
+  // ---------- membership ----------
+  /// `{name}` — the member's own name, guest-authored and never translated.
+  memberCreated,
+  memberDeleted,
+
+  /// `{from}`, `{to}` — the member absorbed and the one that survives.
+  memberMerged,
+
+  /// `{name}`, `{points}` (signed, e.g. `+40`). The reason rides `reason`,
+  /// where every other explained act keeps it.
+  memberPointsAdjusted,
+
+  /// `{name}`, `{points}` (magnitude spent), `{amount}` (pre-formatted rupiah
+  /// taken off the bill).
+  memberPointsRedeemed,
+
   // ---------- menu ----------
   /// `{name}`.
   menuKilled,

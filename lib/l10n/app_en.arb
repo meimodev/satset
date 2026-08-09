@@ -83,6 +83,7 @@
   "auditTypeBillReopened": "Reopen",
   "auditTypeBillClosed": "Close",
   "auditTypeCashMovement": "Cash",
+  "auditTypeMemberChanged": "Member",
   "auditTypeMenuKilled": "Sold out",
   "auditTypeMenuRestored": "On sale",
   "auditTypeStaffCreated": "Staff +",
@@ -524,6 +525,9 @@
   "expAuditCsvHeader": "Time,Type,User,Role,Event,Table,Amount,Reason,Approved",
   "strukTableLine": "Table {label}  ·  {pax} pax  ·  {time}",
   "strukGuest": "Guest: {name}",
+  "strukMember": "Member: {name}",
+  "strukMemberPoints": "Points balance: {points}",
+  "strukMemberPunch": "Stamp card: {progress}",
   "strukNote": "Note: {note}",
   "strukVerify": "Check your order",
   "strukThanks": "Thank you",
@@ -623,6 +627,58 @@
   "auditCashReversed": "Reversed cash movement {amount}",
   "@auditCashReversed": {
     "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "auditMemberCreated": "Enrolled member {name}",
+  "@auditMemberCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditMemberDeleted": "Deleted member {name}",
+  "@auditMemberDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditMemberMerged": "Merged member {from} into {to}",
+  "@auditMemberMerged": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "auditMemberPointsAdjusted": "Point correction for {name}: {points}",
+  "@auditMemberPointsAdjusted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "points": {
+        "type": "String"
+      }
+    }
+  },
+  "auditMemberPointsRedeemed": "Redemption for {name}: {amount} off ({points} pt)",
+  "@auditMemberPointsRedeemed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "points": {
+        "type": "String"
+      },
       "amount": {
         "type": "String"
       }
@@ -1449,7 +1505,7 @@
   "tblNoTablesInZone": "No tables in {zone} yet",
   "ownMoneyAuditTitle": "Money log",
   "ownMoneyAuditEmpty": "No money-affecting activity in this range.",
-  "ownMoneyAuditTruncated": "Showing the {count} most recent \u2014 the full log is on the venue device",
+  "ownMoneyAuditTruncated": "Showing the {count} most recent — the full log is on the venue device",
   "@ownMoneyAuditTruncated": {
     "placeholders": {
       "count": {
@@ -1810,6 +1866,30 @@
   },
   "kasPhoneOnly": "Petty cash is read on a tablet.",
   "rptSecKas": "Petty cash",
+  "rptSecMembers": "Membership",
+  "rptMembersSub": "Members over this range",
+  "rptMembersEmpty": "No members enrolled in this range.",
+  "rptMembersEnrolled": "New sign-ups",
+  "rptMembersActive": "Active",
+  "rptMembersBills": "Bills",
+  "rptMembersAvgBill": "Member average",
+  "rptMembersAvgGuest": "Walk-in average",
+  "rptMembersLift": "Lift",
+  "rptMembersPoints": "Points",
+  "rptMembersEarned": "Earned",
+  "rptMembersRedeemed": "Redeemed",
+  "rptMembersOutstanding": "Outstanding",
+  "rptMembersLiability": "Outstanding value",
+  "rptMembersTop": "Top members",
+  "rptMembersGone": "Deleted member",
+  "rptMembersVisits": "Visits: {count}",
+  "@rptMembersVisits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "rptKasOpening": "Opening",
   "rptKasIn": "In",
   "rptKasOut": "Out",
@@ -1823,6 +1903,8 @@
   "capAdjustStock": "Adjust stock",
   "capManageIngredients": "Manage ingredients",
   "capOverrideStock": "Sell when out of stock",
+  "capManageMembers": "Manage members",
+  "capManageMembersDesc": "Edit, merge and delete member records, and correct points by hand. A cashier does not need this to enrol or redeem.",
   "capManageStaff": "Manage staff",
   "capManageRoles": "Manage roles",
   "capViewReports": "View reports",
@@ -2065,5 +2147,193 @@
   "venueHubLanLocal": "LOCAL",
   "moneyCompactJt": "Rp {v}M",
   "moneyCompactRb": "Rp {v}K",
-  "moneyCompactPlain": "Rp {v}"
+  "moneyCompactPlain": "Rp {v}",
+  "memTitle": "Members",
+  "memCount": "Enrolled: {count}",
+  "@memCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "memSearchHint": "Search name or number",
+  "memActionAdd": "Add",
+  "memBirthdayFilter": "Birthdays this month",
+  "memEmptyTitle": "No members yet",
+  "memEmptyBody": "Enrol a regular with the Add button, or from the bill screen while they pay.",
+  "memOffTitle": "Membership is off",
+  "memOffBody": "Turn it on in Venue settings → Membership. Points and stamps already recorded stay intact.",
+  "memPhoneOnly": "Open this on a tablet. A directory is read row against row, and a phone shows one.",
+  "memPoints": "{points} pt",
+  "@memPoints": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "memPunch": "Stamps {progress}/{target}",
+  "@memPunch": {
+    "placeholders": {
+      "progress": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "memRewardDue": "Reward due",
+  "memVisits": "Visits: {count}",
+  "@memVisits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "memColPoints": "Points",
+  "memColPunch": "Stamps",
+  "memColVisits": "Visits",
+  "memColLifetime": "Lifetime spend",
+  "memColJoined": "Joined",
+  "memLedgerTitle": "Point history",
+  "memLedgerLoading": "Loading history…",
+  "memLedgerEmpty": "No point movements yet.",
+  "memSheetAddTitle": "New member",
+  "memSheetEditTitle": "Edit member",
+  "memFieldName": "Name",
+  "memFieldPhone": "Phone number",
+  "memPhoneHelp": "The phone number is the identity. 0812…, +62812… and 62812… are one person.",
+  "memFieldNote": "Note",
+  "memFieldBirthday": "Birthday",
+  "memPickBirthday": "Pick a birth date",
+  "memSave": "Save",
+  "memActionEdit": "Edit",
+  "memActionAdjust": "Correct points",
+  "memActionMerge": "Merge",
+  "memActionDelete": "Delete",
+  "memAdjustTitle": "Correct points",
+  "memAdjustAdd": "Add",
+  "memAdjustSubtract": "Subtract",
+  "memFieldDelta": "Point amount",
+  "memFieldReason": "Reason",
+  "memMergeTitle": "Merge members",
+  "memMergeBody": "{name} will be folded into the member you pick. Their points and history move across, then their record is dropped.",
+  "@memMergeBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "memDeleteTitle": "Delete member?",
+  "memDeleteBody": "{name} and their point history are gone for good. The trade they did still counts in reports.",
+  "@memDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "memErrNameRequired": "A name is required.",
+  "memErrPhoneRequired": "A phone number is required.",
+  "memErrPhoneTaken": "Another member already uses this number.",
+  "memErrNotFound": "Member not found.",
+  "memErrSameMember": "Pick a different member.",
+  "memErrReasonRequired": "A reason is required.",
+  "memErrInvalidAmount": "Invalid amount.",
+  "memErrPointsOff": "Points are frozen.",
+  "memErrBelowMin": "Redemption starts at {points}.",
+  "@memErrBelowMin": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "memErrInsufficient": "Only {points} available.",
+  "@memErrInsufficient": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "memErrExceedsBill": "This bill takes at most {points} pt.",
+  "@memErrExceedsBill": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "memErrRedeemExists": "This bill already has a redemption.",
+  "memErrFailed": "Failed: {code}",
+  "@memErrFailed": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "memPointKindEarn": "Earned",
+  "memPointKindRedeem": "Redeemed",
+  "memPointKindAdjust": "Correction",
+  "memPointKindReversal": "Reversed",
+  "memHubSubtitle": "Points, stamps and the regulars list",
+  "memHubBadgeOn": "On",
+  "memHubBadgeOff": "Off",
+  "vstSectionMembers": "Membership",
+  "vstMembersTag": "Program",
+  "vstMembersEnable": "Enable membership",
+  "vstMembersEnableHint": "The member directory, points and stamps. Leave off if the venue runs no loyalty program.",
+  "vstMembersPoints": "Points",
+  "vstMembersPointsHint": "Turning this off freezes points rather than clearing them — balances stay intact.",
+  "vstMembersEarnRate": "Points per Rp 1,000",
+  "vstMembersEarnRateHint": "Computed on the net bill, before service and tax.",
+  "vstMembersPointValue": "What 1 point is worth",
+  "vstMembersPointValueHint": "How much comes off the bill for one point redeemed.",
+  "vstMembersRedeemMin": "Minimum redemption",
+  "vstMembersRedeemMinHint": "The floor on a single redemption.",
+  "vstMembersPunch": "Punch card",
+  "vstMembersPunchHint": "Buy so many, get one free. The reward is booked as a comp.",
+  "vstMembersPunchItem": "Item being stamped",
+  "vstMembersPunchItemNone": "Not chosen yet",
+  "vstMembersPunchTarget": "Stamps per reward",
+  "vstMembersPunchTargetHint": "How many are bought before the next one is free.",
+  "vstMembersPreset": "Member discount",
+  "vstMembersPresetNone": "No standing discount",
+  "vstMembersPresetHint": "The bill discount preset applied automatically the moment a member is attached to a bill.",
+  "cshMemberNone": "No member on this bill",
+  "cshMemberFind": "Find member",
+  "cshMemberEnrol": "Enrol someone new",
+  "cshMemberDetach": "Detach",
+  "cshMemberRedeem": "Redeem points",
+  "cshMemberRedeemUndo": "Undo redemption ({amount})",
+  "@cshMemberRedeemUndo": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshMemberRedeemMax": "This bill takes at most {points} pt.",
+  "@cshMemberRedeemMax": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "cshMemberRedeemWorth": "Takes {amount} off",
+  "@cshMemberRedeemWorth": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshMemberRedeemAll": "Redeem the lot"
 }

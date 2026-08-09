@@ -28,6 +28,9 @@ _$ReportsSnapshotDtoImpl _$$ReportsSnapshotDtoImplFromJson(
   kas: json['kas'] == null
       ? const KasSectionDto()
       : KasSectionDto.fromJson(json['kas'] as Map<String, dynamic>),
+  members: json['members'] == null
+      ? const MembersSectionDto()
+      : MembersSectionDto.fromJson(json['members'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$$ReportsSnapshotDtoImplToJson(
@@ -44,6 +47,7 @@ Map<String, dynamic> _$$ReportsSnapshotDtoImplToJson(
   'ops': instance.ops,
   'moneyAudit': instance.moneyAudit,
   'kas': instance.kas,
+  'members': instance.members,
 };
 
 _$FilterOptionsDtoImpl _$$FilterOptionsDtoImplFromJson(
@@ -536,6 +540,68 @@ Map<String, dynamic> _$$KasSectionDtoImplToJson(_$KasSectionDtoImpl instance) =>
       'byCategory': instance.byCategory,
       'count': instance.count,
     };
+
+_$MembersSectionDtoImpl _$$MembersSectionDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$MembersSectionDtoImpl(
+  enabled: json['enabled'] as bool? ?? false,
+  enrolled: (json['enrolled'] as num?)?.toInt() ?? 0,
+  activeMembers: (json['activeMembers'] as num?)?.toInt() ?? 0,
+  memberBills: (json['memberBills'] as num?)?.toInt() ?? 0,
+  memberNet: (json['memberNet'] as num?)?.toInt() ?? 0,
+  guestBills: (json['guestBills'] as num?)?.toInt() ?? 0,
+  guestNet: (json['guestNet'] as num?)?.toInt() ?? 0,
+  avgMemberBill: (json['avgMemberBill'] as num?)?.toInt() ?? 0,
+  avgGuestBill: (json['avgGuestBill'] as num?)?.toInt() ?? 0,
+  pointsEarned: (json['pointsEarned'] as num?)?.toInt() ?? 0,
+  pointsRedeemed: (json['pointsRedeemed'] as num?)?.toInt() ?? 0,
+  pointsAdjusted: (json['pointsAdjusted'] as num?)?.toInt() ?? 0,
+  pointsOutstanding: (json['pointsOutstanding'] as num?)?.toInt() ?? 0,
+  liabilityEstimate: (json['liabilityEstimate'] as num?)?.toInt() ?? 0,
+  top:
+      (json['top'] as List<dynamic>?)
+          ?.map((e) => MemberTopRowDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <MemberTopRowDto>[],
+);
+
+Map<String, dynamic> _$$MembersSectionDtoImplToJson(
+  _$MembersSectionDtoImpl instance,
+) => <String, dynamic>{
+  'enabled': instance.enabled,
+  'enrolled': instance.enrolled,
+  'activeMembers': instance.activeMembers,
+  'memberBills': instance.memberBills,
+  'memberNet': instance.memberNet,
+  'guestBills': instance.guestBills,
+  'guestNet': instance.guestNet,
+  'avgMemberBill': instance.avgMemberBill,
+  'avgGuestBill': instance.avgGuestBill,
+  'pointsEarned': instance.pointsEarned,
+  'pointsRedeemed': instance.pointsRedeemed,
+  'pointsAdjusted': instance.pointsAdjusted,
+  'pointsOutstanding': instance.pointsOutstanding,
+  'liabilityEstimate': instance.liabilityEstimate,
+  'top': instance.top,
+};
+
+_$MemberTopRowDtoImpl _$$MemberTopRowDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$MemberTopRowDtoImpl(
+  memberId: json['memberId'] as String? ?? '',
+  name: json['name'] as String?,
+  visits: (json['visits'] as num?)?.toInt() ?? 0,
+  spend: (json['spend'] as num?)?.toInt() ?? 0,
+);
+
+Map<String, dynamic> _$$MemberTopRowDtoImplToJson(
+  _$MemberTopRowDtoImpl instance,
+) => <String, dynamic>{
+  'memberId': instance.memberId,
+  'name': instance.name,
+  'visits': instance.visits,
+  'spend': instance.spend,
+};
 
 _$MoneyAuditSectionDtoImpl _$$MoneyAuditSectionDtoImplFromJson(
   Map<String, dynamic> json,

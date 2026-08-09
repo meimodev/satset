@@ -178,6 +178,44 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         soundPickup: body.containsKey('soundPickup')
             ? Value((body['soundPickup'] as String).trim())
             : const Value.absent(),
+        // Membership (ADR-0091). Switching the program off leaves every row
+        // standing — a balance is a debt to a guest, not a feature flag, so the
+        // ledger freezes rather than clears.
+        membersEnabled: body.containsKey('membersEnabled')
+            ? Value(body['membersEnabled'] == true)
+            : const Value.absent(),
+        memberPointsEnabled: body.containsKey('memberPointsEnabled')
+            ? Value(body['memberPointsEnabled'] == true)
+            : const Value.absent(),
+        memberPunchEnabled: body.containsKey('memberPunchEnabled')
+            ? Value(body['memberPunchEnabled'] == true)
+            : const Value.absent(),
+        // Pointers, both nullable: a venue may run membership on points alone,
+        // or on stempel alone.
+        memberPresetId: body.containsKey('memberPresetId')
+            ? Value(_idOrNull(body['memberPresetId']))
+            : const Value.absent(),
+        memberPunchItemId: body.containsKey('memberPunchItemId')
+            ? Value(_idOrNull(body['memberPunchItemId']))
+            : const Value.absent(),
+        // Clamped for the reason the alert thresholds are: "off" is the flag
+        // above, never a degenerate rate that silently earns nothing.
+        memberEarnPerThousand: body.containsKey('memberEarnPerThousand')
+            ? Value(
+                ((body['memberEarnPerThousand'] as num).toInt()).clamp(1, 100),
+              )
+            : const Value.absent(),
+        memberPointValue: body.containsKey('memberPointValue')
+            ? Value(
+                ((body['memberPointValue'] as num).toInt()).clamp(1, 1000000),
+              )
+            : const Value.absent(),
+        memberRedeemMin: body.containsKey('memberRedeemMin')
+            ? Value(((body['memberRedeemMin'] as num).toInt()).clamp(1, 100000))
+            : const Value.absent(),
+        memberPunchTarget: body.containsKey('memberPunchTarget')
+            ? Value(((body['memberPunchTarget'] as num).toInt()).clamp(2, 100))
+            : const Value.absent(),
       ),
     );
     final row = await _readOrSeed(db);
@@ -257,6 +295,14 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
 
 String _validMode(String m) => (m == 'fixed') ? 'fixed' : 'percent';
 
+/// An empty string clears a pointer — the sheets send `''` for "none" rather
+/// than omitting the key, which would mean "leave it alone".
+String? _idOrNull(Object? raw) {
+  if (raw is! String) return null;
+  final t = raw.trim();
+  return t.isEmpty ? null : t;
+}
+
 Future<VenueSetting> _readOrSeed(AppDatabase db) async {
   final existing = await (db.select(
     db.venueSettings,
@@ -307,4 +353,16 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
   'soundOverdue': s.soundOverdue,
   'soundUngreeted': s.soundUngreeted,
   'soundPickup': s.soundPickup,
+  // Membership (ADR-0091). Readable by anyone, like the rest of this snapshot:
+  // the bill overlay needs to know whether the program is running before it can
+  // decide whether to offer a member row.
+  'membersEnabled': s.membersEnabled,
+  'memberPointsEnabled': s.memberPointsEnabled,
+  'memberPunchEnabled': s.memberPunchEnabled,
+  'memberPresetId': s.memberPresetId,
+  'memberEarnPerThousand': s.memberEarnPerThousand,
+  'memberPointValue': s.memberPointValue,
+  'memberRedeemMin': s.memberRedeemMin,
+  'memberPunchItemId': s.memberPunchItemId,
+  'memberPunchTarget': s.memberPunchTarget,
 };

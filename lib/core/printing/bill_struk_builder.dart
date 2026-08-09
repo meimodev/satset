@@ -42,6 +42,14 @@ class BillStrukBuilder {
         tableLabel: bill.tableLabel ?? bill.tableId,
         pax: bill.pax,
         guestName: bill.guestName ?? '',
+        memberName: bill.member?.name ?? '',
+        memberPoints: bill.member?.points ?? 0,
+        memberPunch: bill.member == null
+            ? ''
+            : punchText(
+                bill.member!.member.punchProgress,
+                bill.member!.punchTarget,
+              ),
         at: DateTime.now(),
         kind: BillDocKind.wholeBill,
         lines: [
@@ -101,6 +109,14 @@ class BillStrukBuilder {
       tableLabel: bill.tableLabel ?? bill.tableId,
       pax: bill.pax,
       guestName: bill.guestName ?? '',
+      memberName: bill.member?.name ?? '',
+      memberPoints: bill.member?.points ?? 0,
+      memberPunch: bill.member == null
+          ? ''
+          : punchText(
+              bill.member!.member.punchProgress,
+              bill.member!.punchTarget,
+            ),
       at: DateTime.now(),
       kind: even ? BillDocKind.evenReceipt : BillDocKind.itemizedReceipt,
       // "Tamu A", not a bare "A" — the guest reads this line to know the slip
@@ -168,6 +184,12 @@ class BillStrukBuilder {
           ),
       ];
 
+  /// Punch progress as the card reads it — `'3/10'`, or '' when the venue runs
+  /// no punch program. Built once here so the client and the server print the
+  /// same string rather than each inventing a separator.
+  static String punchText(int progress, int target) =>
+      target <= 0 ? '' : '$progress/$target';
+
   static int? _tendered(List<BillPayment> pays) {
     var sum = 0;
     for (final p in pays) {
@@ -220,6 +242,12 @@ class BillStrukBuilder {
     final pax = n(bill['pax']);
     final guestName = (bill['guestName'] as String?) ?? '';
     final billTotal = n(bill['total']);
+    final member = bill['member'] as Map?;
+    final memberName = (member?['name'] as String?) ?? '';
+    final memberPoints = n(member?['points']);
+    final memberPunch = member == null
+        ? ''
+        : punchText(n(member['punchProgress']), n(member['punchTarget']));
 
     List<BillStrukPayment> mapPays(List pays) => [
       for (final p in pays.cast<Map>())
@@ -286,6 +314,9 @@ class BillStrukBuilder {
         tableLabel: tableLabel,
         pax: pax,
         guestName: guestName,
+        memberName: memberName,
+        memberPoints: memberPoints,
+        memberPunch: memberPunch,
         at: DateTime.now(),
         kind: BillDocKind.wholeBill,
         lines: [
@@ -382,6 +413,9 @@ class BillStrukBuilder {
       tableLabel: tableLabel,
       pax: pax,
       guestName: guestName,
+      memberName: memberName,
+      memberPoints: memberPoints,
+      memberPunch: memberPunch,
       at: DateTime.now(),
       kind: even ? BillDocKind.evenReceipt : BillDocKind.itemizedReceipt,
       docLabel: receiptTitle(l, (rec['label'] as String?) ?? ''),

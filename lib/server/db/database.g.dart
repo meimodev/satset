@@ -2751,6 +2751,17 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _tableFreedAtMeta = const VerificationMeta(
     'tableFreedAt',
   );
@@ -2856,6 +2867,7 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
     guestNotes,
     reservationId,
     lastActorId,
+    memberId,
     tableFreedAt,
     billClosedAt,
     billClosedBy,
@@ -2942,6 +2954,12 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
           data['last_actor_id']!,
           _lastActorIdMeta,
         ),
+      );
+    }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
       );
     }
     if (data.containsKey('table_freed_at')) {
@@ -3052,6 +3070,10 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
         DriftSqlType.string,
         data['${effectivePrefix}last_actor_id'],
       ),
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      ),
       tableFreedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}table_freed_at'],
@@ -3105,6 +3127,15 @@ class Visit extends DataClass implements Insertable<Visit> {
   final String? reservationId;
   final String? lastActorId;
 
+  /// The [[Pelanggan (member)]] this party belongs to, attached at the till any
+  /// time before bill close (ADR-0093). Distinct from [guestName], which is the
+  /// waiter's per-visit party label — attaching fills an empty one and never
+  /// overwrites a typed one. Nullable forever: most visits are not members.
+  ///
+  /// A weak reference. A deleted member leaves it dangling on purpose
+  /// (ADR-0092) — the visit *was* a member visit, and history does not rewrite.
+  final String? memberId;
+
   /// Set when the waiter frees the table (table-close / detach). Non-null ⇒
   /// the visit is detached: floor shows the table kosong, the cashier still
   /// lists this bill, flagged.
@@ -3150,6 +3181,7 @@ class Visit extends DataClass implements Insertable<Visit> {
     this.guestNotes,
     this.reservationId,
     this.lastActorId,
+    this.memberId,
     this.tableFreedAt,
     this.billClosedAt,
     this.billClosedBy,
@@ -3183,6 +3215,9 @@ class Visit extends DataClass implements Insertable<Visit> {
     }
     if (!nullToAbsent || lastActorId != null) {
       map['last_actor_id'] = Variable<String>(lastActorId);
+    }
+    if (!nullToAbsent || memberId != null) {
+      map['member_id'] = Variable<String>(memberId);
     }
     if (!nullToAbsent || tableFreedAt != null) {
       map['table_freed_at'] = Variable<DateTime>(tableFreedAt);
@@ -3225,6 +3260,9 @@ class Visit extends DataClass implements Insertable<Visit> {
       lastActorId: lastActorId == null && nullToAbsent
           ? const Value.absent()
           : Value(lastActorId),
+      memberId: memberId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(memberId),
       tableFreedAt: tableFreedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(tableFreedAt),
@@ -3258,6 +3296,7 @@ class Visit extends DataClass implements Insertable<Visit> {
       guestNotes: serializer.fromJson<String?>(json['guestNotes']),
       reservationId: serializer.fromJson<String?>(json['reservationId']),
       lastActorId: serializer.fromJson<String?>(json['lastActorId']),
+      memberId: serializer.fromJson<String?>(json['memberId']),
       tableFreedAt: serializer.fromJson<DateTime?>(json['tableFreedAt']),
       billClosedAt: serializer.fromJson<DateTime?>(json['billClosedAt']),
       billClosedBy: serializer.fromJson<String?>(json['billClosedBy']),
@@ -3282,6 +3321,7 @@ class Visit extends DataClass implements Insertable<Visit> {
       'guestNotes': serializer.toJson<String?>(guestNotes),
       'reservationId': serializer.toJson<String?>(reservationId),
       'lastActorId': serializer.toJson<String?>(lastActorId),
+      'memberId': serializer.toJson<String?>(memberId),
       'tableFreedAt': serializer.toJson<DateTime?>(tableFreedAt),
       'billClosedAt': serializer.toJson<DateTime?>(billClosedAt),
       'billClosedBy': serializer.toJson<String?>(billClosedBy),
@@ -3304,6 +3344,7 @@ class Visit extends DataClass implements Insertable<Visit> {
     Value<String?> guestNotes = const Value.absent(),
     Value<String?> reservationId = const Value.absent(),
     Value<String?> lastActorId = const Value.absent(),
+    Value<String?> memberId = const Value.absent(),
     Value<DateTime?> tableFreedAt = const Value.absent(),
     Value<DateTime?> billClosedAt = const Value.absent(),
     Value<String?> billClosedBy = const Value.absent(),
@@ -3325,6 +3366,7 @@ class Visit extends DataClass implements Insertable<Visit> {
         ? reservationId.value
         : this.reservationId,
     lastActorId: lastActorId.present ? lastActorId.value : this.lastActorId,
+    memberId: memberId.present ? memberId.value : this.memberId,
     tableFreedAt: tableFreedAt.present ? tableFreedAt.value : this.tableFreedAt,
     billClosedAt: billClosedAt.present ? billClosedAt.value : this.billClosedAt,
     billClosedBy: billClosedBy.present ? billClosedBy.value : this.billClosedBy,
@@ -3354,6 +3396,7 @@ class Visit extends DataClass implements Insertable<Visit> {
       lastActorId: data.lastActorId.present
           ? data.lastActorId.value
           : this.lastActorId,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
       tableFreedAt: data.tableFreedAt.present
           ? data.tableFreedAt.value
           : this.tableFreedAt,
@@ -3386,6 +3429,7 @@ class Visit extends DataClass implements Insertable<Visit> {
           ..write('guestNotes: $guestNotes, ')
           ..write('reservationId: $reservationId, ')
           ..write('lastActorId: $lastActorId, ')
+          ..write('memberId: $memberId, ')
           ..write('tableFreedAt: $tableFreedAt, ')
           ..write('billClosedAt: $billClosedAt, ')
           ..write('billClosedBy: $billClosedBy, ')
@@ -3410,6 +3454,7 @@ class Visit extends DataClass implements Insertable<Visit> {
     guestNotes,
     reservationId,
     lastActorId,
+    memberId,
     tableFreedAt,
     billClosedAt,
     billClosedBy,
@@ -3433,6 +3478,7 @@ class Visit extends DataClass implements Insertable<Visit> {
           other.guestNotes == this.guestNotes &&
           other.reservationId == this.reservationId &&
           other.lastActorId == this.lastActorId &&
+          other.memberId == this.memberId &&
           other.tableFreedAt == this.tableFreedAt &&
           other.billClosedAt == this.billClosedAt &&
           other.billClosedBy == this.billClosedBy &&
@@ -3454,6 +3500,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
   final Value<String?> guestNotes;
   final Value<String?> reservationId;
   final Value<String?> lastActorId;
+  final Value<String?> memberId;
   final Value<DateTime?> tableFreedAt;
   final Value<DateTime?> billClosedAt;
   final Value<String?> billClosedBy;
@@ -3474,6 +3521,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     this.guestNotes = const Value.absent(),
     this.reservationId = const Value.absent(),
     this.lastActorId = const Value.absent(),
+    this.memberId = const Value.absent(),
     this.tableFreedAt = const Value.absent(),
     this.billClosedAt = const Value.absent(),
     this.billClosedBy = const Value.absent(),
@@ -3495,6 +3543,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     this.guestNotes = const Value.absent(),
     this.reservationId = const Value.absent(),
     this.lastActorId = const Value.absent(),
+    this.memberId = const Value.absent(),
     this.tableFreedAt = const Value.absent(),
     this.billClosedAt = const Value.absent(),
     this.billClosedBy = const Value.absent(),
@@ -3518,6 +3567,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     Expression<String>? guestNotes,
     Expression<String>? reservationId,
     Expression<String>? lastActorId,
+    Expression<String>? memberId,
     Expression<DateTime>? tableFreedAt,
     Expression<DateTime>? billClosedAt,
     Expression<String>? billClosedBy,
@@ -3539,6 +3589,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
       if (guestNotes != null) 'guest_notes': guestNotes,
       if (reservationId != null) 'reservation_id': reservationId,
       if (lastActorId != null) 'last_actor_id': lastActorId,
+      if (memberId != null) 'member_id': memberId,
       if (tableFreedAt != null) 'table_freed_at': tableFreedAt,
       if (billClosedAt != null) 'bill_closed_at': billClosedAt,
       if (billClosedBy != null) 'bill_closed_by': billClosedBy,
@@ -3562,6 +3613,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     Value<String?>? guestNotes,
     Value<String?>? reservationId,
     Value<String?>? lastActorId,
+    Value<String?>? memberId,
     Value<DateTime?>? tableFreedAt,
     Value<DateTime?>? billClosedAt,
     Value<String?>? billClosedBy,
@@ -3583,6 +3635,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
       guestNotes: guestNotes ?? this.guestNotes,
       reservationId: reservationId ?? this.reservationId,
       lastActorId: lastActorId ?? this.lastActorId,
+      memberId: memberId ?? this.memberId,
       tableFreedAt: tableFreedAt ?? this.tableFreedAt,
       billClosedAt: billClosedAt ?? this.billClosedAt,
       billClosedBy: billClosedBy ?? this.billClosedBy,
@@ -3628,6 +3681,9 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     if (lastActorId.present) {
       map['last_actor_id'] = Variable<String>(lastActorId.value);
     }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
+    }
     if (tableFreedAt.present) {
       map['table_freed_at'] = Variable<DateTime>(tableFreedAt.value);
     }
@@ -3671,6 +3727,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
           ..write('guestNotes: $guestNotes, ')
           ..write('reservationId: $reservationId, ')
           ..write('lastActorId: $lastActorId, ')
+          ..write('memberId: $memberId, ')
           ..write('tableFreedAt: $tableFreedAt, ')
           ..write('billClosedAt: $billClosedAt, ')
           ..write('billClosedBy: $billClosedBy, ')
@@ -8740,6 +8797,119 @@ class $VenueSettingsTable extends VenueSettings
     requiredDuringInsert: false,
     defaultValue: const Constant('chime'),
   );
+  static const VerificationMeta _membersEnabledMeta = const VerificationMeta(
+    'membersEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> membersEnabled = GeneratedColumn<bool>(
+    'members_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("members_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _memberPointsEnabledMeta =
+      const VerificationMeta('memberPointsEnabled');
+  @override
+  late final GeneratedColumn<bool> memberPointsEnabled = GeneratedColumn<bool>(
+    'member_points_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("member_points_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _memberPunchEnabledMeta =
+      const VerificationMeta('memberPunchEnabled');
+  @override
+  late final GeneratedColumn<bool> memberPunchEnabled = GeneratedColumn<bool>(
+    'member_punch_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("member_punch_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _memberPresetIdMeta = const VerificationMeta(
+    'memberPresetId',
+  );
+  @override
+  late final GeneratedColumn<String> memberPresetId = GeneratedColumn<String>(
+    'member_preset_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _memberEarnPerThousandMeta =
+      const VerificationMeta('memberEarnPerThousand');
+  @override
+  late final GeneratedColumn<int> memberEarnPerThousand = GeneratedColumn<int>(
+    'member_earn_per_thousand',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _memberPointValueMeta = const VerificationMeta(
+    'memberPointValue',
+  );
+  @override
+  late final GeneratedColumn<int> memberPointValue = GeneratedColumn<int>(
+    'member_point_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1000),
+  );
+  static const VerificationMeta _memberRedeemMinMeta = const VerificationMeta(
+    'memberRedeemMin',
+  );
+  @override
+  late final GeneratedColumn<int> memberRedeemMin = GeneratedColumn<int>(
+    'member_redeem_min',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(10),
+  );
+  static const VerificationMeta _memberPunchItemIdMeta = const VerificationMeta(
+    'memberPunchItemId',
+  );
+  @override
+  late final GeneratedColumn<String> memberPunchItemId =
+      GeneratedColumn<String>(
+        'member_punch_item_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _memberPunchTargetMeta = const VerificationMeta(
+    'memberPunchTarget',
+  );
+  @override
+  late final GeneratedColumn<int> memberPunchTarget = GeneratedColumn<int>(
+    'member_punch_target',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(10),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -8779,6 +8949,15 @@ class $VenueSettingsTable extends VenueSettings
     soundOverdue,
     soundUngreeted,
     soundPickup,
+    membersEnabled,
+    memberPointsEnabled,
+    memberPunchEnabled,
+    memberPresetId,
+    memberEarnPerThousand,
+    memberPointValue,
+    memberRedeemMin,
+    memberPunchItemId,
+    memberPunchTarget,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9097,6 +9276,87 @@ class $VenueSettingsTable extends VenueSettings
         ),
       );
     }
+    if (data.containsKey('members_enabled')) {
+      context.handle(
+        _membersEnabledMeta,
+        membersEnabled.isAcceptableOrUnknown(
+          data['members_enabled']!,
+          _membersEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('member_points_enabled')) {
+      context.handle(
+        _memberPointsEnabledMeta,
+        memberPointsEnabled.isAcceptableOrUnknown(
+          data['member_points_enabled']!,
+          _memberPointsEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('member_punch_enabled')) {
+      context.handle(
+        _memberPunchEnabledMeta,
+        memberPunchEnabled.isAcceptableOrUnknown(
+          data['member_punch_enabled']!,
+          _memberPunchEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('member_preset_id')) {
+      context.handle(
+        _memberPresetIdMeta,
+        memberPresetId.isAcceptableOrUnknown(
+          data['member_preset_id']!,
+          _memberPresetIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('member_earn_per_thousand')) {
+      context.handle(
+        _memberEarnPerThousandMeta,
+        memberEarnPerThousand.isAcceptableOrUnknown(
+          data['member_earn_per_thousand']!,
+          _memberEarnPerThousandMeta,
+        ),
+      );
+    }
+    if (data.containsKey('member_point_value')) {
+      context.handle(
+        _memberPointValueMeta,
+        memberPointValue.isAcceptableOrUnknown(
+          data['member_point_value']!,
+          _memberPointValueMeta,
+        ),
+      );
+    }
+    if (data.containsKey('member_redeem_min')) {
+      context.handle(
+        _memberRedeemMinMeta,
+        memberRedeemMin.isAcceptableOrUnknown(
+          data['member_redeem_min']!,
+          _memberRedeemMinMeta,
+        ),
+      );
+    }
+    if (data.containsKey('member_punch_item_id')) {
+      context.handle(
+        _memberPunchItemIdMeta,
+        memberPunchItemId.isAcceptableOrUnknown(
+          data['member_punch_item_id']!,
+          _memberPunchItemIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('member_punch_target')) {
+      context.handle(
+        _memberPunchTargetMeta,
+        memberPunchTarget.isAcceptableOrUnknown(
+          data['member_punch_target']!,
+          _memberPunchTargetMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -9254,6 +9514,42 @@ class $VenueSettingsTable extends VenueSettings
         DriftSqlType.string,
         data['${effectivePrefix}sound_pickup'],
       )!,
+      membersEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}members_enabled'],
+      )!,
+      memberPointsEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}member_points_enabled'],
+      )!,
+      memberPunchEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}member_punch_enabled'],
+      )!,
+      memberPresetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_preset_id'],
+      ),
+      memberEarnPerThousand: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}member_earn_per_thousand'],
+      )!,
+      memberPointValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}member_point_value'],
+      )!,
+      memberRedeemMin: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}member_redeem_min'],
+      )!,
+      memberPunchItemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_punch_item_id'],
+      ),
+      memberPunchTarget: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}member_punch_target'],
+      )!,
     );
   }
 
@@ -9356,6 +9652,39 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   /// Presets for the two table cues added by ADR-0044.
   final String soundUngreeted;
   final String soundPickup;
+
+  /// **Keanggotaan** — the master switch. Off by default: a venue that does not
+  /// want a guest directory must not grow one by upgrading. Off hides
+  /// `/members`, the bill overlay's member row, the receipt lines and the whole
+  /// Reports section; it never deletes anything.
+  final bool membersEnabled;
+
+  /// The two mechanisms that nest under it, both off by default. Turning
+  /// [memberPointsEnabled] off **freezes** the [[Poin]] ledger — balances stay,
+  /// redemption hides, flipping it back on restores history (ADR-0095).
+  final bool memberPointsEnabled;
+  final bool memberPunchEnabled;
+
+  /// The [[Preset diskon]] the owner nominates as the member discount, applied
+  /// in the `member` slot (ADR-0094). Null is a valid state — a venue can run
+  /// membership on points and stempel alone. A **pointer, not a flag on the
+  /// preset**: presets are hard-deleted, and a dangling pointer reads as "not
+  /// configured" where a stale flag on two presets has no obvious repair.
+  final String? memberPresetId;
+
+  /// Earn rate: poin per Rp 1.000 of the bill net of discount, excluding
+  /// service and tax, floored (ADR-0095).
+  final int memberEarnPerThousand;
+
+  /// Redemption: rupiah a single poin is worth, and the floor below which
+  /// redeeming is refused (a 3-poin redemption is not worth a cashier's tap).
+  final int memberPointValue;
+  final int memberRedeemMin;
+
+  /// The [[Kartu stempel (punch card)]] program: one menu item, N paid units
+  /// earn one free. Null item ⇒ no program running even when the toggle is on.
+  final String? memberPunchItemId;
+  final int memberPunchTarget;
   const VenueSetting({
     required this.id,
     required this.displayName,
@@ -9394,6 +9723,15 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     required this.soundOverdue,
     required this.soundUngreeted,
     required this.soundPickup,
+    required this.membersEnabled,
+    required this.memberPointsEnabled,
+    required this.memberPunchEnabled,
+    this.memberPresetId,
+    required this.memberEarnPerThousand,
+    required this.memberPointValue,
+    required this.memberRedeemMin,
+    this.memberPunchItemId,
+    required this.memberPunchTarget,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -9437,6 +9775,19 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     map['sound_overdue'] = Variable<String>(soundOverdue);
     map['sound_ungreeted'] = Variable<String>(soundUngreeted);
     map['sound_pickup'] = Variable<String>(soundPickup);
+    map['members_enabled'] = Variable<bool>(membersEnabled);
+    map['member_points_enabled'] = Variable<bool>(memberPointsEnabled);
+    map['member_punch_enabled'] = Variable<bool>(memberPunchEnabled);
+    if (!nullToAbsent || memberPresetId != null) {
+      map['member_preset_id'] = Variable<String>(memberPresetId);
+    }
+    map['member_earn_per_thousand'] = Variable<int>(memberEarnPerThousand);
+    map['member_point_value'] = Variable<int>(memberPointValue);
+    map['member_redeem_min'] = Variable<int>(memberRedeemMin);
+    if (!nullToAbsent || memberPunchItemId != null) {
+      map['member_punch_item_id'] = Variable<String>(memberPunchItemId);
+    }
+    map['member_punch_target'] = Variable<int>(memberPunchTarget);
     return map;
   }
 
@@ -9479,6 +9830,19 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       soundOverdue: Value(soundOverdue),
       soundUngreeted: Value(soundUngreeted),
       soundPickup: Value(soundPickup),
+      membersEnabled: Value(membersEnabled),
+      memberPointsEnabled: Value(memberPointsEnabled),
+      memberPunchEnabled: Value(memberPunchEnabled),
+      memberPresetId: memberPresetId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(memberPresetId),
+      memberEarnPerThousand: Value(memberEarnPerThousand),
+      memberPointValue: Value(memberPointValue),
+      memberRedeemMin: Value(memberRedeemMin),
+      memberPunchItemId: memberPunchItemId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(memberPunchItemId),
+      memberPunchTarget: Value(memberPunchTarget),
     );
   }
 
@@ -9533,6 +9897,21 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       soundOverdue: serializer.fromJson<String>(json['soundOverdue']),
       soundUngreeted: serializer.fromJson<String>(json['soundUngreeted']),
       soundPickup: serializer.fromJson<String>(json['soundPickup']),
+      membersEnabled: serializer.fromJson<bool>(json['membersEnabled']),
+      memberPointsEnabled: serializer.fromJson<bool>(
+        json['memberPointsEnabled'],
+      ),
+      memberPunchEnabled: serializer.fromJson<bool>(json['memberPunchEnabled']),
+      memberPresetId: serializer.fromJson<String?>(json['memberPresetId']),
+      memberEarnPerThousand: serializer.fromJson<int>(
+        json['memberEarnPerThousand'],
+      ),
+      memberPointValue: serializer.fromJson<int>(json['memberPointValue']),
+      memberRedeemMin: serializer.fromJson<int>(json['memberRedeemMin']),
+      memberPunchItemId: serializer.fromJson<String?>(
+        json['memberPunchItemId'],
+      ),
+      memberPunchTarget: serializer.fromJson<int>(json['memberPunchTarget']),
     );
   }
   @override
@@ -9576,6 +9955,15 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       'soundOverdue': serializer.toJson<String>(soundOverdue),
       'soundUngreeted': serializer.toJson<String>(soundUngreeted),
       'soundPickup': serializer.toJson<String>(soundPickup),
+      'membersEnabled': serializer.toJson<bool>(membersEnabled),
+      'memberPointsEnabled': serializer.toJson<bool>(memberPointsEnabled),
+      'memberPunchEnabled': serializer.toJson<bool>(memberPunchEnabled),
+      'memberPresetId': serializer.toJson<String?>(memberPresetId),
+      'memberEarnPerThousand': serializer.toJson<int>(memberEarnPerThousand),
+      'memberPointValue': serializer.toJson<int>(memberPointValue),
+      'memberRedeemMin': serializer.toJson<int>(memberRedeemMin),
+      'memberPunchItemId': serializer.toJson<String?>(memberPunchItemId),
+      'memberPunchTarget': serializer.toJson<int>(memberPunchTarget),
     };
   }
 
@@ -9617,6 +10005,15 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     String? soundOverdue,
     String? soundUngreeted,
     String? soundPickup,
+    bool? membersEnabled,
+    bool? memberPointsEnabled,
+    bool? memberPunchEnabled,
+    Value<String?> memberPresetId = const Value.absent(),
+    int? memberEarnPerThousand,
+    int? memberPointValue,
+    int? memberRedeemMin,
+    Value<String?> memberPunchItemId = const Value.absent(),
+    int? memberPunchTarget,
   }) => VenueSetting(
     id: id ?? this.id,
     displayName: displayName ?? this.displayName,
@@ -9655,6 +10052,19 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     soundOverdue: soundOverdue ?? this.soundOverdue,
     soundUngreeted: soundUngreeted ?? this.soundUngreeted,
     soundPickup: soundPickup ?? this.soundPickup,
+    membersEnabled: membersEnabled ?? this.membersEnabled,
+    memberPointsEnabled: memberPointsEnabled ?? this.memberPointsEnabled,
+    memberPunchEnabled: memberPunchEnabled ?? this.memberPunchEnabled,
+    memberPresetId: memberPresetId.present
+        ? memberPresetId.value
+        : this.memberPresetId,
+    memberEarnPerThousand: memberEarnPerThousand ?? this.memberEarnPerThousand,
+    memberPointValue: memberPointValue ?? this.memberPointValue,
+    memberRedeemMin: memberRedeemMin ?? this.memberRedeemMin,
+    memberPunchItemId: memberPunchItemId.present
+        ? memberPunchItemId.value
+        : this.memberPunchItemId,
+    memberPunchTarget: memberPunchTarget ?? this.memberPunchTarget,
   );
   VenueSetting copyWithCompanion(VenueSettingsCompanion data) {
     return VenueSetting(
@@ -9755,6 +10165,33 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       soundPickup: data.soundPickup.present
           ? data.soundPickup.value
           : this.soundPickup,
+      membersEnabled: data.membersEnabled.present
+          ? data.membersEnabled.value
+          : this.membersEnabled,
+      memberPointsEnabled: data.memberPointsEnabled.present
+          ? data.memberPointsEnabled.value
+          : this.memberPointsEnabled,
+      memberPunchEnabled: data.memberPunchEnabled.present
+          ? data.memberPunchEnabled.value
+          : this.memberPunchEnabled,
+      memberPresetId: data.memberPresetId.present
+          ? data.memberPresetId.value
+          : this.memberPresetId,
+      memberEarnPerThousand: data.memberEarnPerThousand.present
+          ? data.memberEarnPerThousand.value
+          : this.memberEarnPerThousand,
+      memberPointValue: data.memberPointValue.present
+          ? data.memberPointValue.value
+          : this.memberPointValue,
+      memberRedeemMin: data.memberRedeemMin.present
+          ? data.memberRedeemMin.value
+          : this.memberRedeemMin,
+      memberPunchItemId: data.memberPunchItemId.present
+          ? data.memberPunchItemId.value
+          : this.memberPunchItemId,
+      memberPunchTarget: data.memberPunchTarget.present
+          ? data.memberPunchTarget.value
+          : this.memberPunchTarget,
     );
   }
 
@@ -9797,7 +10234,16 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           ..write('soundVoid: $soundVoid, ')
           ..write('soundOverdue: $soundOverdue, ')
           ..write('soundUngreeted: $soundUngreeted, ')
-          ..write('soundPickup: $soundPickup')
+          ..write('soundPickup: $soundPickup, ')
+          ..write('membersEnabled: $membersEnabled, ')
+          ..write('memberPointsEnabled: $memberPointsEnabled, ')
+          ..write('memberPunchEnabled: $memberPunchEnabled, ')
+          ..write('memberPresetId: $memberPresetId, ')
+          ..write('memberEarnPerThousand: $memberEarnPerThousand, ')
+          ..write('memberPointValue: $memberPointValue, ')
+          ..write('memberRedeemMin: $memberRedeemMin, ')
+          ..write('memberPunchItemId: $memberPunchItemId, ')
+          ..write('memberPunchTarget: $memberPunchTarget')
           ..write(')'))
         .toString();
   }
@@ -9841,6 +10287,15 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     soundOverdue,
     soundUngreeted,
     soundPickup,
+    membersEnabled,
+    memberPointsEnabled,
+    memberPunchEnabled,
+    memberPresetId,
+    memberEarnPerThousand,
+    memberPointValue,
+    memberRedeemMin,
+    memberPunchItemId,
+    memberPunchTarget,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -9882,7 +10337,16 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           other.soundVoid == this.soundVoid &&
           other.soundOverdue == this.soundOverdue &&
           other.soundUngreeted == this.soundUngreeted &&
-          other.soundPickup == this.soundPickup);
+          other.soundPickup == this.soundPickup &&
+          other.membersEnabled == this.membersEnabled &&
+          other.memberPointsEnabled == this.memberPointsEnabled &&
+          other.memberPunchEnabled == this.memberPunchEnabled &&
+          other.memberPresetId == this.memberPresetId &&
+          other.memberEarnPerThousand == this.memberEarnPerThousand &&
+          other.memberPointValue == this.memberPointValue &&
+          other.memberRedeemMin == this.memberRedeemMin &&
+          other.memberPunchItemId == this.memberPunchItemId &&
+          other.memberPunchTarget == this.memberPunchTarget);
 }
 
 class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
@@ -9923,6 +10387,15 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
   final Value<String> soundOverdue;
   final Value<String> soundUngreeted;
   final Value<String> soundPickup;
+  final Value<bool> membersEnabled;
+  final Value<bool> memberPointsEnabled;
+  final Value<bool> memberPunchEnabled;
+  final Value<String?> memberPresetId;
+  final Value<int> memberEarnPerThousand;
+  final Value<int> memberPointValue;
+  final Value<int> memberRedeemMin;
+  final Value<String?> memberPunchItemId;
+  final Value<int> memberPunchTarget;
   final Value<int> rowid;
   const VenueSettingsCompanion({
     this.id = const Value.absent(),
@@ -9962,6 +10435,15 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.soundOverdue = const Value.absent(),
     this.soundUngreeted = const Value.absent(),
     this.soundPickup = const Value.absent(),
+    this.membersEnabled = const Value.absent(),
+    this.memberPointsEnabled = const Value.absent(),
+    this.memberPunchEnabled = const Value.absent(),
+    this.memberPresetId = const Value.absent(),
+    this.memberEarnPerThousand = const Value.absent(),
+    this.memberPointValue = const Value.absent(),
+    this.memberRedeemMin = const Value.absent(),
+    this.memberPunchItemId = const Value.absent(),
+    this.memberPunchTarget = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueSettingsCompanion.insert({
@@ -10002,6 +10484,15 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.soundOverdue = const Value.absent(),
     this.soundUngreeted = const Value.absent(),
     this.soundPickup = const Value.absent(),
+    this.membersEnabled = const Value.absent(),
+    this.memberPointsEnabled = const Value.absent(),
+    this.memberPunchEnabled = const Value.absent(),
+    this.memberPresetId = const Value.absent(),
+    this.memberEarnPerThousand = const Value.absent(),
+    this.memberPointValue = const Value.absent(),
+    this.memberRedeemMin = const Value.absent(),
+    this.memberPunchItemId = const Value.absent(),
+    this.memberPunchTarget = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id);
   static Insertable<VenueSetting> custom({
@@ -10042,6 +10533,15 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Expression<String>? soundOverdue,
     Expression<String>? soundUngreeted,
     Expression<String>? soundPickup,
+    Expression<bool>? membersEnabled,
+    Expression<bool>? memberPointsEnabled,
+    Expression<bool>? memberPunchEnabled,
+    Expression<String>? memberPresetId,
+    Expression<int>? memberEarnPerThousand,
+    Expression<int>? memberPointValue,
+    Expression<int>? memberRedeemMin,
+    Expression<String>? memberPunchItemId,
+    Expression<int>? memberPunchTarget,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -10088,6 +10588,18 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       if (soundOverdue != null) 'sound_overdue': soundOverdue,
       if (soundUngreeted != null) 'sound_ungreeted': soundUngreeted,
       if (soundPickup != null) 'sound_pickup': soundPickup,
+      if (membersEnabled != null) 'members_enabled': membersEnabled,
+      if (memberPointsEnabled != null)
+        'member_points_enabled': memberPointsEnabled,
+      if (memberPunchEnabled != null)
+        'member_punch_enabled': memberPunchEnabled,
+      if (memberPresetId != null) 'member_preset_id': memberPresetId,
+      if (memberEarnPerThousand != null)
+        'member_earn_per_thousand': memberEarnPerThousand,
+      if (memberPointValue != null) 'member_point_value': memberPointValue,
+      if (memberRedeemMin != null) 'member_redeem_min': memberRedeemMin,
+      if (memberPunchItemId != null) 'member_punch_item_id': memberPunchItemId,
+      if (memberPunchTarget != null) 'member_punch_target': memberPunchTarget,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -10130,6 +10642,15 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Value<String>? soundOverdue,
     Value<String>? soundUngreeted,
     Value<String>? soundPickup,
+    Value<bool>? membersEnabled,
+    Value<bool>? memberPointsEnabled,
+    Value<bool>? memberPunchEnabled,
+    Value<String?>? memberPresetId,
+    Value<int>? memberEarnPerThousand,
+    Value<int>? memberPointValue,
+    Value<int>? memberRedeemMin,
+    Value<String?>? memberPunchItemId,
+    Value<int>? memberPunchTarget,
     Value<int>? rowid,
   }) {
     return VenueSettingsCompanion(
@@ -10172,6 +10693,16 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       soundOverdue: soundOverdue ?? this.soundOverdue,
       soundUngreeted: soundUngreeted ?? this.soundUngreeted,
       soundPickup: soundPickup ?? this.soundPickup,
+      membersEnabled: membersEnabled ?? this.membersEnabled,
+      memberPointsEnabled: memberPointsEnabled ?? this.memberPointsEnabled,
+      memberPunchEnabled: memberPunchEnabled ?? this.memberPunchEnabled,
+      memberPresetId: memberPresetId ?? this.memberPresetId,
+      memberEarnPerThousand:
+          memberEarnPerThousand ?? this.memberEarnPerThousand,
+      memberPointValue: memberPointValue ?? this.memberPointValue,
+      memberRedeemMin: memberRedeemMin ?? this.memberRedeemMin,
+      memberPunchItemId: memberPunchItemId ?? this.memberPunchItemId,
+      memberPunchTarget: memberPunchTarget ?? this.memberPunchTarget,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -10296,6 +10827,35 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     if (soundPickup.present) {
       map['sound_pickup'] = Variable<String>(soundPickup.value);
     }
+    if (membersEnabled.present) {
+      map['members_enabled'] = Variable<bool>(membersEnabled.value);
+    }
+    if (memberPointsEnabled.present) {
+      map['member_points_enabled'] = Variable<bool>(memberPointsEnabled.value);
+    }
+    if (memberPunchEnabled.present) {
+      map['member_punch_enabled'] = Variable<bool>(memberPunchEnabled.value);
+    }
+    if (memberPresetId.present) {
+      map['member_preset_id'] = Variable<String>(memberPresetId.value);
+    }
+    if (memberEarnPerThousand.present) {
+      map['member_earn_per_thousand'] = Variable<int>(
+        memberEarnPerThousand.value,
+      );
+    }
+    if (memberPointValue.present) {
+      map['member_point_value'] = Variable<int>(memberPointValue.value);
+    }
+    if (memberRedeemMin.present) {
+      map['member_redeem_min'] = Variable<int>(memberRedeemMin.value);
+    }
+    if (memberPunchItemId.present) {
+      map['member_punch_item_id'] = Variable<String>(memberPunchItemId.value);
+    }
+    if (memberPunchTarget.present) {
+      map['member_punch_target'] = Variable<int>(memberPunchTarget.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -10342,6 +10902,15 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
           ..write('soundOverdue: $soundOverdue, ')
           ..write('soundUngreeted: $soundUngreeted, ')
           ..write('soundPickup: $soundPickup, ')
+          ..write('membersEnabled: $membersEnabled, ')
+          ..write('memberPointsEnabled: $memberPointsEnabled, ')
+          ..write('memberPunchEnabled: $memberPunchEnabled, ')
+          ..write('memberPresetId: $memberPresetId, ')
+          ..write('memberEarnPerThousand: $memberEarnPerThousand, ')
+          ..write('memberPointValue: $memberPointValue, ')
+          ..write('memberRedeemMin: $memberRedeemMin, ')
+          ..write('memberPunchItemId: $memberPunchItemId, ')
+          ..write('memberPunchTarget: $memberPunchTarget, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -11105,6 +11674,17 @@ class $TableSessionsTable extends TableSessions
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -11129,6 +11709,7 @@ class $TableSessionsTable extends TableSessions
     kind,
     channel,
     prepaid,
+    memberId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -11300,6 +11881,12 @@ class $TableSessionsTable extends TableSessions
         prepaid.isAcceptableOrUnknown(data['prepaid']!, _prepaidMeta),
       );
     }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
+    }
     return context;
   }
 
@@ -11397,6 +11984,10 @@ class $TableSessionsTable extends TableSessions
         DriftSqlType.bool,
         data['${effectivePrefix}prepaid'],
       )!,
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      ),
     );
   }
 
@@ -11460,6 +12051,12 @@ class TableSession extends DataClass implements Insertable<TableSession> {
   /// for pre-v42 rows. ADR-0066.
   final String channel;
   final bool prepaid;
+
+  /// The [[Pelanggan (member)]] frozen at snapshot. Every member figure in
+  /// Reports reads this, not the live directory — which is what lets a deleted
+  /// member's past trade still count in the member/non-member split while the
+  /// person themselves is gone (ADR-0092).
+  final String? memberId;
   const TableSession({
     required this.id,
     required this.tableId,
@@ -11483,6 +12080,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
     required this.kind,
     required this.channel,
     required this.prepaid,
+    this.memberId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -11517,6 +12115,9 @@ class TableSession extends DataClass implements Insertable<TableSession> {
     map['kind'] = Variable<String>(kind);
     map['channel'] = Variable<String>(channel);
     map['prepaid'] = Variable<bool>(prepaid);
+    if (!nullToAbsent || memberId != null) {
+      map['member_id'] = Variable<String>(memberId);
+    }
     return map;
   }
 
@@ -11552,6 +12153,9 @@ class TableSession extends DataClass implements Insertable<TableSession> {
       kind: Value(kind),
       channel: Value(channel),
       prepaid: Value(prepaid),
+      memberId: memberId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(memberId),
     );
   }
 
@@ -11583,6 +12187,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
       kind: serializer.fromJson<String>(json['kind']),
       channel: serializer.fromJson<String>(json['channel']),
       prepaid: serializer.fromJson<bool>(json['prepaid']),
+      memberId: serializer.fromJson<String?>(json['memberId']),
     );
   }
   @override
@@ -11611,6 +12216,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
       'kind': serializer.toJson<String>(kind),
       'channel': serializer.toJson<String>(channel),
       'prepaid': serializer.toJson<bool>(prepaid),
+      'memberId': serializer.toJson<String?>(memberId),
     };
   }
 
@@ -11637,6 +12243,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
     String? kind,
     String? channel,
     bool? prepaid,
+    Value<String?> memberId = const Value.absent(),
   }) => TableSession(
     id: id ?? this.id,
     tableId: tableId ?? this.tableId,
@@ -11660,6 +12267,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
     kind: kind ?? this.kind,
     channel: channel ?? this.channel,
     prepaid: prepaid ?? this.prepaid,
+    memberId: memberId.present ? memberId.value : this.memberId,
   );
   TableSession copyWithCompanion(TableSessionsCompanion data) {
     return TableSession(
@@ -11705,6 +12313,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
       kind: data.kind.present ? data.kind.value : this.kind,
       channel: data.channel.present ? data.channel.value : this.channel,
       prepaid: data.prepaid.present ? data.prepaid.value : this.prepaid,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
     );
   }
 
@@ -11732,7 +12341,8 @@ class TableSession extends DataClass implements Insertable<TableSession> {
           ..write('billClosedBy: $billClosedBy, ')
           ..write('kind: $kind, ')
           ..write('channel: $channel, ')
-          ..write('prepaid: $prepaid')
+          ..write('prepaid: $prepaid, ')
+          ..write('memberId: $memberId')
           ..write(')'))
         .toString();
   }
@@ -11761,6 +12371,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
     kind,
     channel,
     prepaid,
+    memberId,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -11787,7 +12398,8 @@ class TableSession extends DataClass implements Insertable<TableSession> {
           other.billClosedBy == this.billClosedBy &&
           other.kind == this.kind &&
           other.channel == this.channel &&
-          other.prepaid == this.prepaid);
+          other.prepaid == this.prepaid &&
+          other.memberId == this.memberId);
 }
 
 class TableSessionsCompanion extends UpdateCompanion<TableSession> {
@@ -11813,6 +12425,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
   final Value<String> kind;
   final Value<String> channel;
   final Value<bool> prepaid;
+  final Value<String?> memberId;
   final Value<int> rowid;
   const TableSessionsCompanion({
     this.id = const Value.absent(),
@@ -11837,6 +12450,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     this.kind = const Value.absent(),
     this.channel = const Value.absent(),
     this.prepaid = const Value.absent(),
+    this.memberId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TableSessionsCompanion.insert({
@@ -11862,6 +12476,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     this.kind = const Value.absent(),
     this.channel = const Value.absent(),
     this.prepaid = const Value.absent(),
+    this.memberId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        tableId = Value(tableId),
@@ -11890,6 +12505,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     Expression<String>? kind,
     Expression<String>? channel,
     Expression<bool>? prepaid,
+    Expression<String>? memberId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -11915,6 +12531,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
       if (kind != null) 'kind': kind,
       if (channel != null) 'channel': channel,
       if (prepaid != null) 'prepaid': prepaid,
+      if (memberId != null) 'member_id': memberId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -11942,6 +12559,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     Value<String>? kind,
     Value<String>? channel,
     Value<bool>? prepaid,
+    Value<String?>? memberId,
     Value<int>? rowid,
   }) {
     return TableSessionsCompanion(
@@ -11967,6 +12585,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
       kind: kind ?? this.kind,
       channel: channel ?? this.channel,
       prepaid: prepaid ?? this.prepaid,
+      memberId: memberId ?? this.memberId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -12040,6 +12659,9 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     if (prepaid.present) {
       map['prepaid'] = Variable<bool>(prepaid.value);
     }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -12071,6 +12693,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
           ..write('kind: $kind, ')
           ..write('channel: $channel, ')
           ..write('prepaid: $prepaid, ')
+          ..write('memberId: $memberId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -13760,6 +14383,17 @@ class $ReservationsTable extends Reservations
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -13804,6 +14438,7 @@ class $ReservationsTable extends Reservations
     zoneId,
     tableId,
     notes,
+    memberId,
     createdAt,
     updatedAt,
     seatedAt,
@@ -13877,6 +14512,12 @@ class $ReservationsTable extends Reservations
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -13942,6 +14583,10 @@ class $ReservationsTable extends Reservations
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -13973,6 +14618,13 @@ class Reservation extends DataClass implements Insertable<Reservation> {
   final String? zoneId;
   final String? tableId;
   final String? notes;
+
+  /// Set when the phone typed at booking already belongs to a
+  /// [[Pelanggan (member)]] — member lookup is the primary path in the booking
+  /// flow, manual name+phone the fallback. [name] and [phone] stay a **snapshot
+  /// of what was booked**: a later edit to the member never rewrites the
+  /// booking, the same rule `discounts` keeps against its preset.
+  final String? memberId;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -13991,6 +14643,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
     this.zoneId,
     this.tableId,
     this.notes,
+    this.memberId,
     required this.createdAt,
     this.updatedAt,
     this.seatedAt,
@@ -14014,6 +14667,9 @@ class Reservation extends DataClass implements Insertable<Reservation> {
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || memberId != null) {
+      map['member_id'] = Variable<String>(memberId);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
@@ -14044,6 +14700,9 @@ class Reservation extends DataClass implements Insertable<Reservation> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      memberId: memberId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(memberId),
       createdAt: Value(createdAt),
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
@@ -14069,6 +14728,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
       zoneId: serializer.fromJson<String?>(json['zoneId']),
       tableId: serializer.fromJson<String?>(json['tableId']),
       notes: serializer.fromJson<String?>(json['notes']),
+      memberId: serializer.fromJson<String?>(json['memberId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
       seatedAt: serializer.fromJson<DateTime?>(json['seatedAt']),
@@ -14087,6 +14747,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
       'zoneId': serializer.toJson<String?>(zoneId),
       'tableId': serializer.toJson<String?>(tableId),
       'notes': serializer.toJson<String?>(notes),
+      'memberId': serializer.toJson<String?>(memberId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
       'seatedAt': serializer.toJson<DateTime?>(seatedAt),
@@ -14103,6 +14764,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
     Value<String?> zoneId = const Value.absent(),
     Value<String?> tableId = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    Value<String?> memberId = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
     Value<DateTime?> seatedAt = const Value.absent(),
@@ -14116,6 +14778,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
     zoneId: zoneId.present ? zoneId.value : this.zoneId,
     tableId: tableId.present ? tableId.value : this.tableId,
     notes: notes.present ? notes.value : this.notes,
+    memberId: memberId.present ? memberId.value : this.memberId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     seatedAt: seatedAt.present ? seatedAt.value : this.seatedAt,
@@ -14133,6 +14796,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
       zoneId: data.zoneId.present ? data.zoneId.value : this.zoneId,
       tableId: data.tableId.present ? data.tableId.value : this.tableId,
       notes: data.notes.present ? data.notes.value : this.notes,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       seatedAt: data.seatedAt.present ? data.seatedAt.value : this.seatedAt,
@@ -14151,6 +14815,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
           ..write('zoneId: $zoneId, ')
           ..write('tableId: $tableId, ')
           ..write('notes: $notes, ')
+          ..write('memberId: $memberId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('seatedAt: $seatedAt')
@@ -14169,6 +14834,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
     zoneId,
     tableId,
     notes,
+    memberId,
     createdAt,
     updatedAt,
     seatedAt,
@@ -14186,6 +14852,7 @@ class Reservation extends DataClass implements Insertable<Reservation> {
           other.zoneId == this.zoneId &&
           other.tableId == this.tableId &&
           other.notes == this.notes &&
+          other.memberId == this.memberId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.seatedAt == this.seatedAt);
@@ -14201,6 +14868,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
   final Value<String?> zoneId;
   final Value<String?> tableId;
   final Value<String?> notes;
+  final Value<String?> memberId;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
   final Value<DateTime?> seatedAt;
@@ -14215,6 +14883,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
     this.zoneId = const Value.absent(),
     this.tableId = const Value.absent(),
     this.notes = const Value.absent(),
+    this.memberId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.seatedAt = const Value.absent(),
@@ -14230,6 +14899,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
     this.zoneId = const Value.absent(),
     this.tableId = const Value.absent(),
     this.notes = const Value.absent(),
+    this.memberId = const Value.absent(),
     required DateTime createdAt,
     this.updatedAt = const Value.absent(),
     this.seatedAt = const Value.absent(),
@@ -14248,6 +14918,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
     Expression<String>? zoneId,
     Expression<String>? tableId,
     Expression<String>? notes,
+    Expression<String>? memberId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? seatedAt,
@@ -14263,6 +14934,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
       if (zoneId != null) 'zone_id': zoneId,
       if (tableId != null) 'table_id': tableId,
       if (notes != null) 'notes': notes,
+      if (memberId != null) 'member_id': memberId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (seatedAt != null) 'seated_at': seatedAt,
@@ -14280,6 +14952,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
     Value<String?>? zoneId,
     Value<String?>? tableId,
     Value<String?>? notes,
+    Value<String?>? memberId,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
     Value<DateTime?>? seatedAt,
@@ -14295,6 +14968,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
       zoneId: zoneId ?? this.zoneId,
       tableId: tableId ?? this.tableId,
       notes: notes ?? this.notes,
+      memberId: memberId ?? this.memberId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       seatedAt: seatedAt ?? this.seatedAt,
@@ -14332,6 +15006,9 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -14359,6 +15036,7 @@ class ReservationsCompanion extends UpdateCompanion<Reservation> {
           ..write('zoneId: $zoneId, ')
           ..write('tableId: $tableId, ')
           ..write('notes: $notes, ')
+          ..write('memberId: $memberId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('seatedAt: $seatedAt, ')
@@ -17700,6 +18378,16 @@ class $DiscountsTable extends Discounts
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('manual'),
+  );
   static const VerificationMeta _presetIdMeta = const VerificationMeta(
     'presetId',
   );
@@ -17786,6 +18474,7 @@ class $DiscountsTable extends Discounts
     receiptId,
     visitId,
     ticketId,
+    source,
     presetId,
     name,
     kind,
@@ -17828,6 +18517,12 @@ class $DiscountsTable extends Discounts
       context.handle(
         _ticketIdMeta,
         ticketId.isAcceptableOrUnknown(data['ticket_id']!, _ticketIdMeta),
+      );
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
       );
     }
     if (data.containsKey('preset_id')) {
@@ -17909,6 +18604,10 @@ class $DiscountsTable extends Discounts
         DriftSqlType.string,
         data['${effectivePrefix}ticket_id'],
       ),
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
       presetId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}preset_id'],
@@ -17963,6 +18662,16 @@ class Discount extends DataClass implements Insertable<Discount> {
   /// Null ⇒ whole-order discount. Set ⇒ line discount on this ticket's units.
   final String? ticketId;
 
+  /// Which authority applied a **bill** discount: `manual` (a cashier's promo),
+  /// `member` (the venue's nominated member preset), `redeem` (a
+  /// [[Tukar poin (redeem)|points redemption]]). Always `manual` on order- and
+  /// line-scope rows, which have no such contest.
+  ///
+  /// The one-per-visit rule of ADR-0070 is now **one per source** (ADR-0094):
+  /// the partial unique index covers `(visit_id, source)`, so the three stack
+  /// by design and none can be applied twice.
+  final String source;
+
   /// Weak reference — the preset may be edited or deleted afterwards. Never
   /// read it to render or report a settled bill; use the snapshot below.
   final String? presetId;
@@ -17984,6 +18693,7 @@ class Discount extends DataClass implements Insertable<Discount> {
     this.receiptId,
     this.visitId,
     this.ticketId,
+    required this.source,
     this.presetId,
     required this.name,
     required this.kind,
@@ -18006,6 +18716,7 @@ class Discount extends DataClass implements Insertable<Discount> {
     if (!nullToAbsent || ticketId != null) {
       map['ticket_id'] = Variable<String>(ticketId);
     }
+    map['source'] = Variable<String>(source);
     if (!nullToAbsent || presetId != null) {
       map['preset_id'] = Variable<String>(presetId);
     }
@@ -18035,6 +18746,7 @@ class Discount extends DataClass implements Insertable<Discount> {
       ticketId: ticketId == null && nullToAbsent
           ? const Value.absent()
           : Value(ticketId),
+      source: Value(source),
       presetId: presetId == null && nullToAbsent
           ? const Value.absent()
           : Value(presetId),
@@ -18062,6 +18774,7 @@ class Discount extends DataClass implements Insertable<Discount> {
       receiptId: serializer.fromJson<String?>(json['receiptId']),
       visitId: serializer.fromJson<String?>(json['visitId']),
       ticketId: serializer.fromJson<String?>(json['ticketId']),
+      source: serializer.fromJson<String>(json['source']),
       presetId: serializer.fromJson<String?>(json['presetId']),
       name: serializer.fromJson<String>(json['name']),
       kind: serializer.fromJson<String>(json['kind']),
@@ -18080,6 +18793,7 @@ class Discount extends DataClass implements Insertable<Discount> {
       'receiptId': serializer.toJson<String?>(receiptId),
       'visitId': serializer.toJson<String?>(visitId),
       'ticketId': serializer.toJson<String?>(ticketId),
+      'source': serializer.toJson<String>(source),
       'presetId': serializer.toJson<String?>(presetId),
       'name': serializer.toJson<String>(name),
       'kind': serializer.toJson<String>(kind),
@@ -18096,6 +18810,7 @@ class Discount extends DataClass implements Insertable<Discount> {
     Value<String?> receiptId = const Value.absent(),
     Value<String?> visitId = const Value.absent(),
     Value<String?> ticketId = const Value.absent(),
+    String? source,
     Value<String?> presetId = const Value.absent(),
     String? name,
     String? kind,
@@ -18109,6 +18824,7 @@ class Discount extends DataClass implements Insertable<Discount> {
     receiptId: receiptId.present ? receiptId.value : this.receiptId,
     visitId: visitId.present ? visitId.value : this.visitId,
     ticketId: ticketId.present ? ticketId.value : this.ticketId,
+    source: source ?? this.source,
     presetId: presetId.present ? presetId.value : this.presetId,
     name: name ?? this.name,
     kind: kind ?? this.kind,
@@ -18126,6 +18842,7 @@ class Discount extends DataClass implements Insertable<Discount> {
       receiptId: data.receiptId.present ? data.receiptId.value : this.receiptId,
       visitId: data.visitId.present ? data.visitId.value : this.visitId,
       ticketId: data.ticketId.present ? data.ticketId.value : this.ticketId,
+      source: data.source.present ? data.source.value : this.source,
       presetId: data.presetId.present ? data.presetId.value : this.presetId,
       name: data.name.present ? data.name.value : this.name,
       kind: data.kind.present ? data.kind.value : this.kind,
@@ -18146,6 +18863,7 @@ class Discount extends DataClass implements Insertable<Discount> {
           ..write('receiptId: $receiptId, ')
           ..write('visitId: $visitId, ')
           ..write('ticketId: $ticketId, ')
+          ..write('source: $source, ')
           ..write('presetId: $presetId, ')
           ..write('name: $name, ')
           ..write('kind: $kind, ')
@@ -18164,6 +18882,7 @@ class Discount extends DataClass implements Insertable<Discount> {
     receiptId,
     visitId,
     ticketId,
+    source,
     presetId,
     name,
     kind,
@@ -18181,6 +18900,7 @@ class Discount extends DataClass implements Insertable<Discount> {
           other.receiptId == this.receiptId &&
           other.visitId == this.visitId &&
           other.ticketId == this.ticketId &&
+          other.source == this.source &&
           other.presetId == this.presetId &&
           other.name == this.name &&
           other.kind == this.kind &&
@@ -18196,6 +18916,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
   final Value<String?> receiptId;
   final Value<String?> visitId;
   final Value<String?> ticketId;
+  final Value<String> source;
   final Value<String?> presetId;
   final Value<String> name;
   final Value<String> kind;
@@ -18210,6 +18931,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
     this.receiptId = const Value.absent(),
     this.visitId = const Value.absent(),
     this.ticketId = const Value.absent(),
+    this.source = const Value.absent(),
     this.presetId = const Value.absent(),
     this.name = const Value.absent(),
     this.kind = const Value.absent(),
@@ -18225,6 +18947,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
     this.receiptId = const Value.absent(),
     this.visitId = const Value.absent(),
     this.ticketId = const Value.absent(),
+    this.source = const Value.absent(),
     this.presetId = const Value.absent(),
     required String name,
     required String kind,
@@ -18243,6 +18966,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
     Expression<String>? receiptId,
     Expression<String>? visitId,
     Expression<String>? ticketId,
+    Expression<String>? source,
     Expression<String>? presetId,
     Expression<String>? name,
     Expression<String>? kind,
@@ -18258,6 +18982,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
       if (receiptId != null) 'receipt_id': receiptId,
       if (visitId != null) 'visit_id': visitId,
       if (ticketId != null) 'ticket_id': ticketId,
+      if (source != null) 'source': source,
       if (presetId != null) 'preset_id': presetId,
       if (name != null) 'name': name,
       if (kind != null) 'kind': kind,
@@ -18275,6 +19000,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
     Value<String?>? receiptId,
     Value<String?>? visitId,
     Value<String?>? ticketId,
+    Value<String>? source,
     Value<String?>? presetId,
     Value<String>? name,
     Value<String>? kind,
@@ -18290,6 +19016,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
       receiptId: receiptId ?? this.receiptId,
       visitId: visitId ?? this.visitId,
       ticketId: ticketId ?? this.ticketId,
+      source: source ?? this.source,
       presetId: presetId ?? this.presetId,
       name: name ?? this.name,
       kind: kind ?? this.kind,
@@ -18316,6 +19043,9 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
     }
     if (ticketId.present) {
       map['ticket_id'] = Variable<String>(ticketId.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
     }
     if (presetId.present) {
       map['preset_id'] = Variable<String>(presetId.value);
@@ -18354,6 +19084,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
           ..write('receiptId: $receiptId, ')
           ..write('visitId: $visitId, ')
           ..write('ticketId: $ticketId, ')
+          ..write('source: $source, ')
           ..write('presetId: $presetId, ')
           ..write('name: $name, ')
           ..write('kind: $kind, ')
@@ -18465,6 +19196,16 @@ class $TableSessionDiscountsTable extends TableSessionDiscounts
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('manual'),
+  );
   static const VerificationMeta _byUserIdMeta = const VerificationMeta(
     'byUserId',
   );
@@ -18507,6 +19248,7 @@ class $TableSessionDiscountsTable extends TableSessionDiscounts
     kind,
     value,
     amount,
+    source,
     byUserId,
     approvedByUserId,
     at,
@@ -18582,6 +19324,12 @@ class $TableSessionDiscountsTable extends TableSessionDiscounts
         amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
       );
     }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
     if (data.containsKey('by_user_id')) {
       context.handle(
         _byUserIdMeta,
@@ -18647,6 +19395,10 @@ class $TableSessionDiscountsTable extends TableSessionDiscounts
         DriftSqlType.int,
         data['${effectivePrefix}amount'],
       )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
       byUserId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}by_user_id'],
@@ -18685,6 +19437,11 @@ class TableSessionDiscount extends DataClass
   final String kind;
   final int value;
   final int amount;
+
+  /// Mirrors `Discounts.source` at close so history can still say *why* money
+  /// came off — promo, membership or redemption (ADR-0094). Pre-v51 rows are
+  /// `manual`, which is what they all were.
+  final String source;
   final String? byUserId;
   final String? approvedByUserId;
   final DateTime at;
@@ -18698,6 +19455,7 @@ class TableSessionDiscount extends DataClass
     required this.kind,
     required this.value,
     required this.amount,
+    required this.source,
     this.byUserId,
     this.approvedByUserId,
     required this.at,
@@ -18720,6 +19478,7 @@ class TableSessionDiscount extends DataClass
     map['kind'] = Variable<String>(kind);
     map['value'] = Variable<int>(value);
     map['amount'] = Variable<int>(amount);
+    map['source'] = Variable<String>(source);
     if (!nullToAbsent || byUserId != null) {
       map['by_user_id'] = Variable<String>(byUserId);
     }
@@ -18747,6 +19506,7 @@ class TableSessionDiscount extends DataClass
       kind: Value(kind),
       value: Value(value),
       amount: Value(amount),
+      source: Value(source),
       byUserId: byUserId == null && nullToAbsent
           ? const Value.absent()
           : Value(byUserId),
@@ -18772,6 +19532,7 @@ class TableSessionDiscount extends DataClass
       kind: serializer.fromJson<String>(json['kind']),
       value: serializer.fromJson<int>(json['value']),
       amount: serializer.fromJson<int>(json['amount']),
+      source: serializer.fromJson<String>(json['source']),
       byUserId: serializer.fromJson<String?>(json['byUserId']),
       approvedByUserId: serializer.fromJson<String?>(json['approvedByUserId']),
       at: serializer.fromJson<DateTime>(json['at']),
@@ -18790,6 +19551,7 @@ class TableSessionDiscount extends DataClass
       'kind': serializer.toJson<String>(kind),
       'value': serializer.toJson<int>(value),
       'amount': serializer.toJson<int>(amount),
+      'source': serializer.toJson<String>(source),
       'byUserId': serializer.toJson<String?>(byUserId),
       'approvedByUserId': serializer.toJson<String?>(approvedByUserId),
       'at': serializer.toJson<DateTime>(at),
@@ -18806,6 +19568,7 @@ class TableSessionDiscount extends DataClass
     String? kind,
     int? value,
     int? amount,
+    String? source,
     Value<String?> byUserId = const Value.absent(),
     Value<String?> approvedByUserId = const Value.absent(),
     DateTime? at,
@@ -18819,6 +19582,7 @@ class TableSessionDiscount extends DataClass
     kind: kind ?? this.kind,
     value: value ?? this.value,
     amount: amount ?? this.amount,
+    source: source ?? this.source,
     byUserId: byUserId.present ? byUserId.value : this.byUserId,
     approvedByUserId: approvedByUserId.present
         ? approvedByUserId.value
@@ -18836,6 +19600,7 @@ class TableSessionDiscount extends DataClass
       kind: data.kind.present ? data.kind.value : this.kind,
       value: data.value.present ? data.value.value : this.value,
       amount: data.amount.present ? data.amount.value : this.amount,
+      source: data.source.present ? data.source.value : this.source,
       byUserId: data.byUserId.present ? data.byUserId.value : this.byUserId,
       approvedByUserId: data.approvedByUserId.present
           ? data.approvedByUserId.value
@@ -18856,6 +19621,7 @@ class TableSessionDiscount extends DataClass
           ..write('kind: $kind, ')
           ..write('value: $value, ')
           ..write('amount: $amount, ')
+          ..write('source: $source, ')
           ..write('byUserId: $byUserId, ')
           ..write('approvedByUserId: $approvedByUserId, ')
           ..write('at: $at')
@@ -18874,6 +19640,7 @@ class TableSessionDiscount extends DataClass
     kind,
     value,
     amount,
+    source,
     byUserId,
     approvedByUserId,
     at,
@@ -18891,6 +19658,7 @@ class TableSessionDiscount extends DataClass
           other.kind == this.kind &&
           other.value == this.value &&
           other.amount == this.amount &&
+          other.source == this.source &&
           other.byUserId == this.byUserId &&
           other.approvedByUserId == this.approvedByUserId &&
           other.at == this.at);
@@ -18907,6 +19675,7 @@ class TableSessionDiscountsCompanion
   final Value<String> kind;
   final Value<int> value;
   final Value<int> amount;
+  final Value<String> source;
   final Value<String?> byUserId;
   final Value<String?> approvedByUserId;
   final Value<DateTime> at;
@@ -18921,6 +19690,7 @@ class TableSessionDiscountsCompanion
     this.kind = const Value.absent(),
     this.value = const Value.absent(),
     this.amount = const Value.absent(),
+    this.source = const Value.absent(),
     this.byUserId = const Value.absent(),
     this.approvedByUserId = const Value.absent(),
     this.at = const Value.absent(),
@@ -18936,6 +19706,7 @@ class TableSessionDiscountsCompanion
     required String kind,
     this.value = const Value.absent(),
     this.amount = const Value.absent(),
+    this.source = const Value.absent(),
     this.byUserId = const Value.absent(),
     this.approvedByUserId = const Value.absent(),
     required DateTime at,
@@ -18955,6 +19726,7 @@ class TableSessionDiscountsCompanion
     Expression<String>? kind,
     Expression<int>? value,
     Expression<int>? amount,
+    Expression<String>? source,
     Expression<String>? byUserId,
     Expression<String>? approvedByUserId,
     Expression<DateTime>? at,
@@ -18970,6 +19742,7 @@ class TableSessionDiscountsCompanion
       if (kind != null) 'kind': kind,
       if (value != null) 'value': value,
       if (amount != null) 'amount': amount,
+      if (source != null) 'source': source,
       if (byUserId != null) 'by_user_id': byUserId,
       if (approvedByUserId != null) 'approved_by_user_id': approvedByUserId,
       if (at != null) 'at': at,
@@ -18987,6 +19760,7 @@ class TableSessionDiscountsCompanion
     Value<String>? kind,
     Value<int>? value,
     Value<int>? amount,
+    Value<String>? source,
     Value<String?>? byUserId,
     Value<String?>? approvedByUserId,
     Value<DateTime>? at,
@@ -19002,6 +19776,7 @@ class TableSessionDiscountsCompanion
       kind: kind ?? this.kind,
       value: value ?? this.value,
       amount: amount ?? this.amount,
+      source: source ?? this.source,
       byUserId: byUserId ?? this.byUserId,
       approvedByUserId: approvedByUserId ?? this.approvedByUserId,
       at: at ?? this.at,
@@ -19039,6 +19814,9 @@ class TableSessionDiscountsCompanion
     if (amount.present) {
       map['amount'] = Variable<int>(amount.value);
     }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
     if (byUserId.present) {
       map['by_user_id'] = Variable<String>(byUserId.value);
     }
@@ -19066,6 +19844,7 @@ class TableSessionDiscountsCompanion
           ..write('kind: $kind, ')
           ..write('value: $value, ')
           ..write('amount: $amount, ')
+          ..write('source: $source, ')
           ..write('byUserId: $byUserId, ')
           ..write('approvedByUserId: $approvedByUserId, ')
           ..write('at: $at, ')
@@ -21713,6 +22492,1082 @@ class CashEntriesCompanion extends UpdateCompanion<CashEntry> {
   }
 }
 
+class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MembersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
+  @override
+  late final GeneratedColumn<String> phone = GeneratedColumn<String>(
+    'phone',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+    'code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _birthdayMeta = const VerificationMeta(
+    'birthday',
+  );
+  @override
+  late final GeneratedColumn<DateTime> birthday = GeneratedColumn<DateTime>(
+    'birthday',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _joinedAtMeta = const VerificationMeta(
+    'joinedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> joinedAt = GeneratedColumn<DateTime>(
+    'joined_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    phone,
+    code,
+    note,
+    birthday,
+    joinedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'members';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Member> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('phone')) {
+      context.handle(
+        _phoneMeta,
+        phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_phoneMeta);
+    }
+    if (data.containsKey('code')) {
+      context.handle(
+        _codeMeta,
+        code.isAcceptableOrUnknown(data['code']!, _codeMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('birthday')) {
+      context.handle(
+        _birthdayMeta,
+        birthday.isAcceptableOrUnknown(data['birthday']!, _birthdayMeta),
+      );
+    }
+    if (data.containsKey('joined_at')) {
+      context.handle(
+        _joinedAtMeta,
+        joinedAt.isAcceptableOrUnknown(data['joined_at']!, _joinedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_joinedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Member map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Member(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      phone: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phone'],
+      )!,
+      code: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}code'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      birthday: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}birthday'],
+      ),
+      joinedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}joined_at'],
+      )!,
+    );
+  }
+
+  @override
+  $MembersTable createAlias(String alias) {
+    return $MembersTable(attachedDatabase, alias);
+  }
+}
+
+class Member extends DataClass implements Insertable<Member> {
+  final String id;
+  final String name;
+
+  /// Normalised to digits at write time so `0812…`, `+62812…` and `62812…`
+  /// cannot become three members. Unique — see `_createMemberIndexes`.
+  final String phone;
+
+  /// Short human-readable code printed on the receipt and read back over the
+  /// counter. **Display only** — never the lookup key, which is [phone].
+  final String code;
+  final String? note;
+
+  /// Date only (time ignored). Feeds the directory's "ulang tahun bulan ini"
+  /// filter and nothing else: there is deliberately no birthday rules engine.
+  final DateTime? birthday;
+  final DateTime joinedAt;
+  const Member({
+    required this.id,
+    required this.name,
+    required this.phone,
+    required this.code,
+    this.note,
+    this.birthday,
+    required this.joinedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['phone'] = Variable<String>(phone);
+    map['code'] = Variable<String>(code);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    if (!nullToAbsent || birthday != null) {
+      map['birthday'] = Variable<DateTime>(birthday);
+    }
+    map['joined_at'] = Variable<DateTime>(joinedAt);
+    return map;
+  }
+
+  MembersCompanion toCompanion(bool nullToAbsent) {
+    return MembersCompanion(
+      id: Value(id),
+      name: Value(name),
+      phone: Value(phone),
+      code: Value(code),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      birthday: birthday == null && nullToAbsent
+          ? const Value.absent()
+          : Value(birthday),
+      joinedAt: Value(joinedAt),
+    );
+  }
+
+  factory Member.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Member(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      phone: serializer.fromJson<String>(json['phone']),
+      code: serializer.fromJson<String>(json['code']),
+      note: serializer.fromJson<String?>(json['note']),
+      birthday: serializer.fromJson<DateTime?>(json['birthday']),
+      joinedAt: serializer.fromJson<DateTime>(json['joinedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'phone': serializer.toJson<String>(phone),
+      'code': serializer.toJson<String>(code),
+      'note': serializer.toJson<String?>(note),
+      'birthday': serializer.toJson<DateTime?>(birthday),
+      'joinedAt': serializer.toJson<DateTime>(joinedAt),
+    };
+  }
+
+  Member copyWith({
+    String? id,
+    String? name,
+    String? phone,
+    String? code,
+    Value<String?> note = const Value.absent(),
+    Value<DateTime?> birthday = const Value.absent(),
+    DateTime? joinedAt,
+  }) => Member(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    phone: phone ?? this.phone,
+    code: code ?? this.code,
+    note: note.present ? note.value : this.note,
+    birthday: birthday.present ? birthday.value : this.birthday,
+    joinedAt: joinedAt ?? this.joinedAt,
+  );
+  Member copyWithCompanion(MembersCompanion data) {
+    return Member(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      phone: data.phone.present ? data.phone.value : this.phone,
+      code: data.code.present ? data.code.value : this.code,
+      note: data.note.present ? data.note.value : this.note,
+      birthday: data.birthday.present ? data.birthday.value : this.birthday,
+      joinedAt: data.joinedAt.present ? data.joinedAt.value : this.joinedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Member(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('phone: $phone, ')
+          ..write('code: $code, ')
+          ..write('note: $note, ')
+          ..write('birthday: $birthday, ')
+          ..write('joinedAt: $joinedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, phone, code, note, birthday, joinedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Member &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.phone == this.phone &&
+          other.code == this.code &&
+          other.note == this.note &&
+          other.birthday == this.birthday &&
+          other.joinedAt == this.joinedAt);
+}
+
+class MembersCompanion extends UpdateCompanion<Member> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> phone;
+  final Value<String> code;
+  final Value<String?> note;
+  final Value<DateTime?> birthday;
+  final Value<DateTime> joinedAt;
+  final Value<int> rowid;
+  const MembersCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.code = const Value.absent(),
+    this.note = const Value.absent(),
+    this.birthday = const Value.absent(),
+    this.joinedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MembersCompanion.insert({
+    required String id,
+    required String name,
+    required String phone,
+    this.code = const Value.absent(),
+    this.note = const Value.absent(),
+    this.birthday = const Value.absent(),
+    required DateTime joinedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       phone = Value(phone),
+       joinedAt = Value(joinedAt);
+  static Insertable<Member> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? phone,
+    Expression<String>? code,
+    Expression<String>? note,
+    Expression<DateTime>? birthday,
+    Expression<DateTime>? joinedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (phone != null) 'phone': phone,
+      if (code != null) 'code': code,
+      if (note != null) 'note': note,
+      if (birthday != null) 'birthday': birthday,
+      if (joinedAt != null) 'joined_at': joinedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MembersCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? phone,
+    Value<String>? code,
+    Value<String?>? note,
+    Value<DateTime?>? birthday,
+    Value<DateTime>? joinedAt,
+    Value<int>? rowid,
+  }) {
+    return MembersCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      code: code ?? this.code,
+      note: note ?? this.note,
+      birthday: birthday ?? this.birthday,
+      joinedAt: joinedAt ?? this.joinedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (phone.present) {
+      map['phone'] = Variable<String>(phone.value);
+    }
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (birthday.present) {
+      map['birthday'] = Variable<DateTime>(birthday.value);
+    }
+    if (joinedAt.present) {
+      map['joined_at'] = Variable<DateTime>(joinedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MembersCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('phone: $phone, ')
+          ..write('code: $code, ')
+          ..write('note: $note, ')
+          ..write('birthday: $birthday, ')
+          ..write('joinedAt: $joinedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MemberPointsTable extends MemberPoints
+    with TableInfo<$MemberPointsTable, MemberPoint> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MemberPointsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deltaMeta = const VerificationMeta('delta');
+  @override
+  late final GeneratedColumn<int> delta = GeneratedColumn<int>(
+    'delta',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _visitIdMeta = const VerificationMeta(
+    'visitId',
+  );
+  @override
+  late final GeneratedColumn<String> visitId = GeneratedColumn<String>(
+    'visit_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _baseAmountMeta = const VerificationMeta(
+    'baseAmount',
+  );
+  @override
+  late final GeneratedColumn<int> baseAmount = GeneratedColumn<int>(
+    'base_amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorUserIdMeta = const VerificationMeta(
+    'actorUserId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUserId = GeneratedColumn<String>(
+    'actor_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorNameMeta = const VerificationMeta(
+    'actorName',
+  );
+  @override
+  late final GeneratedColumn<String> actorName = GeneratedColumn<String>(
+    'actor_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _atMeta = const VerificationMeta('at');
+  @override
+  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+    'at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    memberId,
+    kind,
+    delta,
+    visitId,
+    baseAmount,
+    note,
+    actorUserId,
+    actorName,
+    at,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'member_points';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MemberPoint> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_memberIdMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('delta')) {
+      context.handle(
+        _deltaMeta,
+        delta.isAcceptableOrUnknown(data['delta']!, _deltaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deltaMeta);
+    }
+    if (data.containsKey('visit_id')) {
+      context.handle(
+        _visitIdMeta,
+        visitId.isAcceptableOrUnknown(data['visit_id']!, _visitIdMeta),
+      );
+    }
+    if (data.containsKey('base_amount')) {
+      context.handle(
+        _baseAmountMeta,
+        baseAmount.isAcceptableOrUnknown(data['base_amount']!, _baseAmountMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('actor_user_id')) {
+      context.handle(
+        _actorUserIdMeta,
+        actorUserId.isAcceptableOrUnknown(
+          data['actor_user_id']!,
+          _actorUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actor_name')) {
+      context.handle(
+        _actorNameMeta,
+        actorName.isAcceptableOrUnknown(data['actor_name']!, _actorNameMeta),
+      );
+    }
+    if (data.containsKey('at')) {
+      context.handle(_atMeta, at.isAcceptableOrUnknown(data['at']!, _atMeta));
+    } else if (isInserting) {
+      context.missing(_atMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MemberPoint map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MemberPoint(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      delta: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}delta'],
+      )!,
+      visitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}visit_id'],
+      ),
+      baseAmount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}base_amount'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      actorUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_user_id'],
+      ),
+      actorName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_name'],
+      ),
+      at: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}at'],
+      )!,
+    );
+  }
+
+  @override
+  $MemberPointsTable createAlias(String alias) {
+    return $MemberPointsTable(attachedDatabase, alias);
+  }
+}
+
+class MemberPoint extends DataClass implements Insertable<MemberPoint> {
+  final String id;
+  final String memberId;
+
+  /// `earn | redeem | adjust | reversal`. A reversal is what a reopened bill
+  /// writes against its own earn; a re-close then earns afresh.
+  final String kind;
+
+  /// Signed points — positive earned, negative spent or reversed.
+  final int delta;
+
+  /// The [[Visit]] that produced it, on `earn`, `redeem` and `reversal`. Null on
+  /// a hand adjustment, which is the only movement with no bill behind it.
+  final String? visitId;
+
+  /// The bill figure the earn was computed from (net of discount, excluding
+  /// service and tax). Kept so a balance can be explained without re-deriving
+  /// it from a snapshot whose rate may since have changed.
+  final int baseAmount;
+
+  /// Required on `adjust` (enforced in the writer) — an adjustment with no
+  /// reason is a hole in the ledger, exactly as it is in the cash box.
+  final String? note;
+  final String? actorUserId;
+
+  /// Attribution frozen at write time so a later rename cannot rewrite history.
+  final String? actorName;
+  final DateTime at;
+  const MemberPoint({
+    required this.id,
+    required this.memberId,
+    required this.kind,
+    required this.delta,
+    this.visitId,
+    required this.baseAmount,
+    this.note,
+    this.actorUserId,
+    this.actorName,
+    required this.at,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['member_id'] = Variable<String>(memberId);
+    map['kind'] = Variable<String>(kind);
+    map['delta'] = Variable<int>(delta);
+    if (!nullToAbsent || visitId != null) {
+      map['visit_id'] = Variable<String>(visitId);
+    }
+    map['base_amount'] = Variable<int>(baseAmount);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    if (!nullToAbsent || actorUserId != null) {
+      map['actor_user_id'] = Variable<String>(actorUserId);
+    }
+    if (!nullToAbsent || actorName != null) {
+      map['actor_name'] = Variable<String>(actorName);
+    }
+    map['at'] = Variable<DateTime>(at);
+    return map;
+  }
+
+  MemberPointsCompanion toCompanion(bool nullToAbsent) {
+    return MemberPointsCompanion(
+      id: Value(id),
+      memberId: Value(memberId),
+      kind: Value(kind),
+      delta: Value(delta),
+      visitId: visitId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(visitId),
+      baseAmount: Value(baseAmount),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      actorUserId: actorUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actorUserId),
+      actorName: actorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actorName),
+      at: Value(at),
+    );
+  }
+
+  factory MemberPoint.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MemberPoint(
+      id: serializer.fromJson<String>(json['id']),
+      memberId: serializer.fromJson<String>(json['memberId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      delta: serializer.fromJson<int>(json['delta']),
+      visitId: serializer.fromJson<String?>(json['visitId']),
+      baseAmount: serializer.fromJson<int>(json['baseAmount']),
+      note: serializer.fromJson<String?>(json['note']),
+      actorUserId: serializer.fromJson<String?>(json['actorUserId']),
+      actorName: serializer.fromJson<String?>(json['actorName']),
+      at: serializer.fromJson<DateTime>(json['at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'memberId': serializer.toJson<String>(memberId),
+      'kind': serializer.toJson<String>(kind),
+      'delta': serializer.toJson<int>(delta),
+      'visitId': serializer.toJson<String?>(visitId),
+      'baseAmount': serializer.toJson<int>(baseAmount),
+      'note': serializer.toJson<String?>(note),
+      'actorUserId': serializer.toJson<String?>(actorUserId),
+      'actorName': serializer.toJson<String?>(actorName),
+      'at': serializer.toJson<DateTime>(at),
+    };
+  }
+
+  MemberPoint copyWith({
+    String? id,
+    String? memberId,
+    String? kind,
+    int? delta,
+    Value<String?> visitId = const Value.absent(),
+    int? baseAmount,
+    Value<String?> note = const Value.absent(),
+    Value<String?> actorUserId = const Value.absent(),
+    Value<String?> actorName = const Value.absent(),
+    DateTime? at,
+  }) => MemberPoint(
+    id: id ?? this.id,
+    memberId: memberId ?? this.memberId,
+    kind: kind ?? this.kind,
+    delta: delta ?? this.delta,
+    visitId: visitId.present ? visitId.value : this.visitId,
+    baseAmount: baseAmount ?? this.baseAmount,
+    note: note.present ? note.value : this.note,
+    actorUserId: actorUserId.present ? actorUserId.value : this.actorUserId,
+    actorName: actorName.present ? actorName.value : this.actorName,
+    at: at ?? this.at,
+  );
+  MemberPoint copyWithCompanion(MemberPointsCompanion data) {
+    return MemberPoint(
+      id: data.id.present ? data.id.value : this.id,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      delta: data.delta.present ? data.delta.value : this.delta,
+      visitId: data.visitId.present ? data.visitId.value : this.visitId,
+      baseAmount: data.baseAmount.present
+          ? data.baseAmount.value
+          : this.baseAmount,
+      note: data.note.present ? data.note.value : this.note,
+      actorUserId: data.actorUserId.present
+          ? data.actorUserId.value
+          : this.actorUserId,
+      actorName: data.actorName.present ? data.actorName.value : this.actorName,
+      at: data.at.present ? data.at.value : this.at,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MemberPoint(')
+          ..write('id: $id, ')
+          ..write('memberId: $memberId, ')
+          ..write('kind: $kind, ')
+          ..write('delta: $delta, ')
+          ..write('visitId: $visitId, ')
+          ..write('baseAmount: $baseAmount, ')
+          ..write('note: $note, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('actorName: $actorName, ')
+          ..write('at: $at')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    memberId,
+    kind,
+    delta,
+    visitId,
+    baseAmount,
+    note,
+    actorUserId,
+    actorName,
+    at,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MemberPoint &&
+          other.id == this.id &&
+          other.memberId == this.memberId &&
+          other.kind == this.kind &&
+          other.delta == this.delta &&
+          other.visitId == this.visitId &&
+          other.baseAmount == this.baseAmount &&
+          other.note == this.note &&
+          other.actorUserId == this.actorUserId &&
+          other.actorName == this.actorName &&
+          other.at == this.at);
+}
+
+class MemberPointsCompanion extends UpdateCompanion<MemberPoint> {
+  final Value<String> id;
+  final Value<String> memberId;
+  final Value<String> kind;
+  final Value<int> delta;
+  final Value<String?> visitId;
+  final Value<int> baseAmount;
+  final Value<String?> note;
+  final Value<String?> actorUserId;
+  final Value<String?> actorName;
+  final Value<DateTime> at;
+  final Value<int> rowid;
+  const MemberPointsCompanion({
+    this.id = const Value.absent(),
+    this.memberId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.delta = const Value.absent(),
+    this.visitId = const Value.absent(),
+    this.baseAmount = const Value.absent(),
+    this.note = const Value.absent(),
+    this.actorUserId = const Value.absent(),
+    this.actorName = const Value.absent(),
+    this.at = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MemberPointsCompanion.insert({
+    required String id,
+    required String memberId,
+    required String kind,
+    required int delta,
+    this.visitId = const Value.absent(),
+    this.baseAmount = const Value.absent(),
+    this.note = const Value.absent(),
+    this.actorUserId = const Value.absent(),
+    this.actorName = const Value.absent(),
+    required DateTime at,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       memberId = Value(memberId),
+       kind = Value(kind),
+       delta = Value(delta),
+       at = Value(at);
+  static Insertable<MemberPoint> custom({
+    Expression<String>? id,
+    Expression<String>? memberId,
+    Expression<String>? kind,
+    Expression<int>? delta,
+    Expression<String>? visitId,
+    Expression<int>? baseAmount,
+    Expression<String>? note,
+    Expression<String>? actorUserId,
+    Expression<String>? actorName,
+    Expression<DateTime>? at,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (memberId != null) 'member_id': memberId,
+      if (kind != null) 'kind': kind,
+      if (delta != null) 'delta': delta,
+      if (visitId != null) 'visit_id': visitId,
+      if (baseAmount != null) 'base_amount': baseAmount,
+      if (note != null) 'note': note,
+      if (actorUserId != null) 'actor_user_id': actorUserId,
+      if (actorName != null) 'actor_name': actorName,
+      if (at != null) 'at': at,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MemberPointsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? memberId,
+    Value<String>? kind,
+    Value<int>? delta,
+    Value<String?>? visitId,
+    Value<int>? baseAmount,
+    Value<String?>? note,
+    Value<String?>? actorUserId,
+    Value<String?>? actorName,
+    Value<DateTime>? at,
+    Value<int>? rowid,
+  }) {
+    return MemberPointsCompanion(
+      id: id ?? this.id,
+      memberId: memberId ?? this.memberId,
+      kind: kind ?? this.kind,
+      delta: delta ?? this.delta,
+      visitId: visitId ?? this.visitId,
+      baseAmount: baseAmount ?? this.baseAmount,
+      note: note ?? this.note,
+      actorUserId: actorUserId ?? this.actorUserId,
+      actorName: actorName ?? this.actorName,
+      at: at ?? this.at,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (delta.present) {
+      map['delta'] = Variable<int>(delta.value);
+    }
+    if (visitId.present) {
+      map['visit_id'] = Variable<String>(visitId.value);
+    }
+    if (baseAmount.present) {
+      map['base_amount'] = Variable<int>(baseAmount.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (actorUserId.present) {
+      map['actor_user_id'] = Variable<String>(actorUserId.value);
+    }
+    if (actorName.present) {
+      map['actor_name'] = Variable<String>(actorName.value);
+    }
+    if (at.present) {
+      map['at'] = Variable<DateTime>(at.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MemberPointsCompanion(')
+          ..write('id: $id, ')
+          ..write('memberId: $memberId, ')
+          ..write('kind: $kind, ')
+          ..write('delta: $delta, ')
+          ..write('visitId: $visitId, ')
+          ..write('baseAmount: $baseAmount, ')
+          ..write('note: $note, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('actorName: $actorName, ')
+          ..write('at: $at, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $DemoStatesTable extends DemoStates
     with TableInfo<$DemoStatesTable, DemoState> {
   @override
@@ -22133,6 +23988,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $RecipeLinesTable recipeLines = $RecipeLinesTable(this);
   late final $StockMovementsTable stockMovements = $StockMovementsTable(this);
   late final $CashEntriesTable cashEntries = $CashEntriesTable(this);
+  late final $MembersTable members = $MembersTable(this);
+  late final $MemberPointsTable memberPoints = $MemberPointsTable(this);
   late final $DemoStatesTable demoStates = $DemoStatesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -22171,6 +24028,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     recipeLines,
     stockMovements,
     cashEntries,
+    members,
+    memberPoints,
     demoStates,
   ];
 }
@@ -23435,6 +25294,7 @@ typedef $$VisitsTableCreateCompanionBuilder =
       Value<String?> guestNotes,
       Value<String?> reservationId,
       Value<String?> lastActorId,
+      Value<String?> memberId,
       Value<DateTime?> tableFreedAt,
       Value<DateTime?> billClosedAt,
       Value<String?> billClosedBy,
@@ -23457,6 +25317,7 @@ typedef $$VisitsTableUpdateCompanionBuilder =
       Value<String?> guestNotes,
       Value<String?> reservationId,
       Value<String?> lastActorId,
+      Value<String?> memberId,
       Value<DateTime?> tableFreedAt,
       Value<DateTime?> billClosedAt,
       Value<String?> billClosedBy,
@@ -23524,6 +25385,11 @@ class $$VisitsTableFilterComposer
 
   ColumnFilters<String> get lastActorId => $composableBuilder(
     column: $table.lastActorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberId => $composableBuilder(
+    column: $table.memberId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -23627,6 +25493,11 @@ class $$VisitsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get tableFreedAt => $composableBuilder(
     column: $table.tableFreedAt,
     builder: (column) => ColumnOrderings(column),
@@ -23715,6 +25586,9 @@ class $$VisitsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get memberId =>
+      $composableBuilder(column: $table.memberId, builder: (column) => column);
+
   GeneratedColumn<DateTime> get tableFreedAt => $composableBuilder(
     column: $table.tableFreedAt,
     builder: (column) => column,
@@ -23786,6 +25660,7 @@ class $$VisitsTableTableManager
                 Value<String?> guestNotes = const Value.absent(),
                 Value<String?> reservationId = const Value.absent(),
                 Value<String?> lastActorId = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 Value<DateTime?> tableFreedAt = const Value.absent(),
                 Value<DateTime?> billClosedAt = const Value.absent(),
                 Value<String?> billClosedBy = const Value.absent(),
@@ -23806,6 +25681,7 @@ class $$VisitsTableTableManager
                 guestNotes: guestNotes,
                 reservationId: reservationId,
                 lastActorId: lastActorId,
+                memberId: memberId,
                 tableFreedAt: tableFreedAt,
                 billClosedAt: billClosedAt,
                 billClosedBy: billClosedBy,
@@ -23828,6 +25704,7 @@ class $$VisitsTableTableManager
                 Value<String?> guestNotes = const Value.absent(),
                 Value<String?> reservationId = const Value.absent(),
                 Value<String?> lastActorId = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 Value<DateTime?> tableFreedAt = const Value.absent(),
                 Value<DateTime?> billClosedAt = const Value.absent(),
                 Value<String?> billClosedBy = const Value.absent(),
@@ -23848,6 +25725,7 @@ class $$VisitsTableTableManager
                 guestNotes: guestNotes,
                 reservationId: reservationId,
                 lastActorId: lastActorId,
+                memberId: memberId,
                 tableFreedAt: tableFreedAt,
                 billClosedAt: billClosedAt,
                 billClosedBy: billClosedBy,
@@ -26143,6 +28021,15 @@ typedef $$VenueSettingsTableCreateCompanionBuilder =
       Value<String> soundOverdue,
       Value<String> soundUngreeted,
       Value<String> soundPickup,
+      Value<bool> membersEnabled,
+      Value<bool> memberPointsEnabled,
+      Value<bool> memberPunchEnabled,
+      Value<String?> memberPresetId,
+      Value<int> memberEarnPerThousand,
+      Value<int> memberPointValue,
+      Value<int> memberRedeemMin,
+      Value<String?> memberPunchItemId,
+      Value<int> memberPunchTarget,
       Value<int> rowid,
     });
 typedef $$VenueSettingsTableUpdateCompanionBuilder =
@@ -26184,6 +28071,15 @@ typedef $$VenueSettingsTableUpdateCompanionBuilder =
       Value<String> soundOverdue,
       Value<String> soundUngreeted,
       Value<String> soundPickup,
+      Value<bool> membersEnabled,
+      Value<bool> memberPointsEnabled,
+      Value<bool> memberPunchEnabled,
+      Value<String?> memberPresetId,
+      Value<int> memberEarnPerThousand,
+      Value<int> memberPointValue,
+      Value<int> memberRedeemMin,
+      Value<String?> memberPunchItemId,
+      Value<int> memberPunchTarget,
       Value<int> rowid,
     });
 
@@ -26378,6 +28274,51 @@ class $$VenueSettingsTableFilterComposer
 
   ColumnFilters<String> get soundPickup => $composableBuilder(
     column: $table.soundPickup,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get membersEnabled => $composableBuilder(
+    column: $table.membersEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get memberPointsEnabled => $composableBuilder(
+    column: $table.memberPointsEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get memberPunchEnabled => $composableBuilder(
+    column: $table.memberPunchEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberPresetId => $composableBuilder(
+    column: $table.memberPresetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get memberEarnPerThousand => $composableBuilder(
+    column: $table.memberEarnPerThousand,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get memberPointValue => $composableBuilder(
+    column: $table.memberPointValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get memberRedeemMin => $composableBuilder(
+    column: $table.memberRedeemMin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberPunchItemId => $composableBuilder(
+    column: $table.memberPunchItemId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get memberPunchTarget => $composableBuilder(
+    column: $table.memberPunchTarget,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -26575,6 +28516,51 @@ class $$VenueSettingsTableOrderingComposer
     column: $table.soundPickup,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get membersEnabled => $composableBuilder(
+    column: $table.membersEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get memberPointsEnabled => $composableBuilder(
+    column: $table.memberPointsEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get memberPunchEnabled => $composableBuilder(
+    column: $table.memberPunchEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get memberPresetId => $composableBuilder(
+    column: $table.memberPresetId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get memberEarnPerThousand => $composableBuilder(
+    column: $table.memberEarnPerThousand,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get memberPointValue => $composableBuilder(
+    column: $table.memberPointValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get memberRedeemMin => $composableBuilder(
+    column: $table.memberRedeemMin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get memberPunchItemId => $composableBuilder(
+    column: $table.memberPunchItemId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get memberPunchTarget => $composableBuilder(
+    column: $table.memberPunchTarget,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VenueSettingsTableAnnotationComposer
@@ -26756,6 +28742,51 @@ class $$VenueSettingsTableAnnotationComposer
     column: $table.soundPickup,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get membersEnabled => $composableBuilder(
+    column: $table.membersEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get memberPointsEnabled => $composableBuilder(
+    column: $table.memberPointsEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get memberPunchEnabled => $composableBuilder(
+    column: $table.memberPunchEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get memberPresetId => $composableBuilder(
+    column: $table.memberPresetId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get memberEarnPerThousand => $composableBuilder(
+    column: $table.memberEarnPerThousand,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get memberPointValue => $composableBuilder(
+    column: $table.memberPointValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get memberRedeemMin => $composableBuilder(
+    column: $table.memberRedeemMin,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get memberPunchItemId => $composableBuilder(
+    column: $table.memberPunchItemId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get memberPunchTarget => $composableBuilder(
+    column: $table.memberPunchTarget,
+    builder: (column) => column,
+  );
 }
 
 class $$VenueSettingsTableTableManager
@@ -26826,6 +28857,15 @@ class $$VenueSettingsTableTableManager
                 Value<String> soundOverdue = const Value.absent(),
                 Value<String> soundUngreeted = const Value.absent(),
                 Value<String> soundPickup = const Value.absent(),
+                Value<bool> membersEnabled = const Value.absent(),
+                Value<bool> memberPointsEnabled = const Value.absent(),
+                Value<bool> memberPunchEnabled = const Value.absent(),
+                Value<String?> memberPresetId = const Value.absent(),
+                Value<int> memberEarnPerThousand = const Value.absent(),
+                Value<int> memberPointValue = const Value.absent(),
+                Value<int> memberRedeemMin = const Value.absent(),
+                Value<String?> memberPunchItemId = const Value.absent(),
+                Value<int> memberPunchTarget = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion(
                 id: id,
@@ -26865,6 +28905,15 @@ class $$VenueSettingsTableTableManager
                 soundOverdue: soundOverdue,
                 soundUngreeted: soundUngreeted,
                 soundPickup: soundPickup,
+                membersEnabled: membersEnabled,
+                memberPointsEnabled: memberPointsEnabled,
+                memberPunchEnabled: memberPunchEnabled,
+                memberPresetId: memberPresetId,
+                memberEarnPerThousand: memberEarnPerThousand,
+                memberPointValue: memberPointValue,
+                memberRedeemMin: memberRedeemMin,
+                memberPunchItemId: memberPunchItemId,
+                memberPunchTarget: memberPunchTarget,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -26906,6 +28955,15 @@ class $$VenueSettingsTableTableManager
                 Value<String> soundOverdue = const Value.absent(),
                 Value<String> soundUngreeted = const Value.absent(),
                 Value<String> soundPickup = const Value.absent(),
+                Value<bool> membersEnabled = const Value.absent(),
+                Value<bool> memberPointsEnabled = const Value.absent(),
+                Value<bool> memberPunchEnabled = const Value.absent(),
+                Value<String?> memberPresetId = const Value.absent(),
+                Value<int> memberEarnPerThousand = const Value.absent(),
+                Value<int> memberPointValue = const Value.absent(),
+                Value<int> memberRedeemMin = const Value.absent(),
+                Value<String?> memberPunchItemId = const Value.absent(),
+                Value<int> memberPunchTarget = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion.insert(
                 id: id,
@@ -26945,6 +29003,15 @@ class $$VenueSettingsTableTableManager
                 soundOverdue: soundOverdue,
                 soundUngreeted: soundUngreeted,
                 soundPickup: soundPickup,
+                membersEnabled: membersEnabled,
+                memberPointsEnabled: memberPointsEnabled,
+                memberPunchEnabled: memberPunchEnabled,
+                memberPresetId: memberPresetId,
+                memberEarnPerThousand: memberEarnPerThousand,
+                memberPointValue: memberPointValue,
+                memberRedeemMin: memberRedeemMin,
+                memberPunchItemId: memberPunchItemId,
+                memberPunchTarget: memberPunchTarget,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -27249,6 +29316,7 @@ typedef $$TableSessionsTableCreateCompanionBuilder =
       Value<String> kind,
       Value<String> channel,
       Value<bool> prepaid,
+      Value<String?> memberId,
       Value<int> rowid,
     });
 typedef $$TableSessionsTableUpdateCompanionBuilder =
@@ -27275,6 +29343,7 @@ typedef $$TableSessionsTableUpdateCompanionBuilder =
       Value<String> kind,
       Value<String> channel,
       Value<bool> prepaid,
+      Value<String?> memberId,
       Value<int> rowid,
     });
 
@@ -27394,6 +29463,11 @@ class $$TableSessionsTableFilterComposer
 
   ColumnFilters<bool> get prepaid => $composableBuilder(
     column: $table.prepaid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberId => $composableBuilder(
+    column: $table.memberId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -27516,6 +29590,11 @@ class $$TableSessionsTableOrderingComposer
     column: $table.prepaid,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TableSessionsTableAnnotationComposer
@@ -27612,6 +29691,9 @@ class $$TableSessionsTableAnnotationComposer
 
   GeneratedColumn<bool> get prepaid =>
       $composableBuilder(column: $table.prepaid, builder: (column) => column);
+
+  GeneratedColumn<String> get memberId =>
+      $composableBuilder(column: $table.memberId, builder: (column) => column);
 }
 
 class $$TableSessionsTableTableManager
@@ -27667,6 +29749,7 @@ class $$TableSessionsTableTableManager
                 Value<String> kind = const Value.absent(),
                 Value<String> channel = const Value.absent(),
                 Value<bool> prepaid = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TableSessionsCompanion(
                 id: id,
@@ -27691,6 +29774,7 @@ class $$TableSessionsTableTableManager
                 kind: kind,
                 channel: channel,
                 prepaid: prepaid,
+                memberId: memberId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -27717,6 +29801,7 @@ class $$TableSessionsTableTableManager
                 Value<String> kind = const Value.absent(),
                 Value<String> channel = const Value.absent(),
                 Value<bool> prepaid = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TableSessionsCompanion.insert(
                 id: id,
@@ -27741,6 +29826,7 @@ class $$TableSessionsTableTableManager
                 kind: kind,
                 channel: channel,
                 prepaid: prepaid,
+                memberId: memberId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -28550,6 +30636,7 @@ typedef $$ReservationsTableCreateCompanionBuilder =
       Value<String?> zoneId,
       Value<String?> tableId,
       Value<String?> notes,
+      Value<String?> memberId,
       required DateTime createdAt,
       Value<DateTime?> updatedAt,
       Value<DateTime?> seatedAt,
@@ -28566,6 +30653,7 @@ typedef $$ReservationsTableUpdateCompanionBuilder =
       Value<String?> zoneId,
       Value<String?> tableId,
       Value<String?> notes,
+      Value<String?> memberId,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
       Value<DateTime?> seatedAt,
@@ -28623,6 +30711,11 @@ class $$ReservationsTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberId => $composableBuilder(
+    column: $table.memberId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -28696,6 +30789,11 @@ class $$ReservationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -28750,6 +30848,9 @@ class $$ReservationsTableAnnotationComposer
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
 
+  GeneratedColumn<String> get memberId =>
+      $composableBuilder(column: $table.memberId, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -28800,6 +30901,7 @@ class $$ReservationsTableTableManager
                 Value<String?> zoneId = const Value.absent(),
                 Value<String?> tableId = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<DateTime?> seatedAt = const Value.absent(),
@@ -28814,6 +30916,7 @@ class $$ReservationsTableTableManager
                 zoneId: zoneId,
                 tableId: tableId,
                 notes: notes,
+                memberId: memberId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 seatedAt: seatedAt,
@@ -28830,6 +30933,7 @@ class $$ReservationsTableTableManager
                 Value<String?> zoneId = const Value.absent(),
                 Value<String?> tableId = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 required DateTime createdAt,
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<DateTime?> seatedAt = const Value.absent(),
@@ -28844,6 +30948,7 @@ class $$ReservationsTableTableManager
                 zoneId: zoneId,
                 tableId: tableId,
                 notes: notes,
+                memberId: memberId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 seatedAt: seatedAt,
@@ -30557,6 +32662,7 @@ typedef $$DiscountsTableCreateCompanionBuilder =
       Value<String?> receiptId,
       Value<String?> visitId,
       Value<String?> ticketId,
+      Value<String> source,
       Value<String?> presetId,
       required String name,
       required String kind,
@@ -30573,6 +32679,7 @@ typedef $$DiscountsTableUpdateCompanionBuilder =
       Value<String?> receiptId,
       Value<String?> visitId,
       Value<String?> ticketId,
+      Value<String> source,
       Value<String?> presetId,
       Value<String> name,
       Value<String> kind,
@@ -30610,6 +32717,11 @@ class $$DiscountsTableFilterComposer
 
   ColumnFilters<String> get ticketId => $composableBuilder(
     column: $table.ticketId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -30683,6 +32795,11 @@ class $$DiscountsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get presetId => $composableBuilder(
     column: $table.presetId,
     builder: (column) => ColumnOrderings(column),
@@ -30745,6 +32862,9 @@ class $$DiscountsTableAnnotationComposer
   GeneratedColumn<String> get ticketId =>
       $composableBuilder(column: $table.ticketId, builder: (column) => column);
 
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
   GeneratedColumn<String> get presetId =>
       $composableBuilder(column: $table.presetId, builder: (column) => column);
 
@@ -30804,6 +32924,7 @@ class $$DiscountsTableTableManager
                 Value<String?> receiptId = const Value.absent(),
                 Value<String?> visitId = const Value.absent(),
                 Value<String?> ticketId = const Value.absent(),
+                Value<String> source = const Value.absent(),
                 Value<String?> presetId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> kind = const Value.absent(),
@@ -30818,6 +32939,7 @@ class $$DiscountsTableTableManager
                 receiptId: receiptId,
                 visitId: visitId,
                 ticketId: ticketId,
+                source: source,
                 presetId: presetId,
                 name: name,
                 kind: kind,
@@ -30834,6 +32956,7 @@ class $$DiscountsTableTableManager
                 Value<String?> receiptId = const Value.absent(),
                 Value<String?> visitId = const Value.absent(),
                 Value<String?> ticketId = const Value.absent(),
+                Value<String> source = const Value.absent(),
                 Value<String?> presetId = const Value.absent(),
                 required String name,
                 required String kind,
@@ -30848,6 +32971,7 @@ class $$DiscountsTableTableManager
                 receiptId: receiptId,
                 visitId: visitId,
                 ticketId: ticketId,
+                source: source,
                 presetId: presetId,
                 name: name,
                 kind: kind,
@@ -30891,6 +33015,7 @@ typedef $$TableSessionDiscountsTableCreateCompanionBuilder =
       required String kind,
       Value<int> value,
       Value<int> amount,
+      Value<String> source,
       Value<String?> byUserId,
       Value<String?> approvedByUserId,
       required DateTime at,
@@ -30907,6 +33032,7 @@ typedef $$TableSessionDiscountsTableUpdateCompanionBuilder =
       Value<String> kind,
       Value<int> value,
       Value<int> amount,
+      Value<String> source,
       Value<String?> byUserId,
       Value<String?> approvedByUserId,
       Value<DateTime> at,
@@ -30964,6 +33090,11 @@ class $$TableSessionDiscountsTableFilterComposer
 
   ColumnFilters<int> get amount => $composableBuilder(
     column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -31037,6 +33168,11 @@ class $$TableSessionDiscountsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get byUserId => $composableBuilder(
     column: $table.byUserId,
     builder: (column) => ColumnOrderings(column),
@@ -31088,6 +33224,9 @@ class $$TableSessionDiscountsTableAnnotationComposer
 
   GeneratedColumn<int> get amount =>
       $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
 
   GeneratedColumn<String> get byUserId =>
       $composableBuilder(column: $table.byUserId, builder: (column) => column);
@@ -31156,6 +33295,7 @@ class $$TableSessionDiscountsTableTableManager
                 Value<String> kind = const Value.absent(),
                 Value<int> value = const Value.absent(),
                 Value<int> amount = const Value.absent(),
+                Value<String> source = const Value.absent(),
                 Value<String?> byUserId = const Value.absent(),
                 Value<String?> approvedByUserId = const Value.absent(),
                 Value<DateTime> at = const Value.absent(),
@@ -31170,6 +33310,7 @@ class $$TableSessionDiscountsTableTableManager
                 kind: kind,
                 value: value,
                 amount: amount,
+                source: source,
                 byUserId: byUserId,
                 approvedByUserId: approvedByUserId,
                 at: at,
@@ -31186,6 +33327,7 @@ class $$TableSessionDiscountsTableTableManager
                 required String kind,
                 Value<int> value = const Value.absent(),
                 Value<int> amount = const Value.absent(),
+                Value<String> source = const Value.absent(),
                 Value<String?> byUserId = const Value.absent(),
                 Value<String?> approvedByUserId = const Value.absent(),
                 required DateTime at,
@@ -31200,6 +33342,7 @@ class $$TableSessionDiscountsTableTableManager
                 kind: kind,
                 value: value,
                 amount: amount,
+                source: source,
                 byUserId: byUserId,
                 approvedByUserId: approvedByUserId,
                 at: at,
@@ -32546,6 +34689,537 @@ typedef $$CashEntriesTableProcessedTableManager =
       CashEntry,
       PrefetchHooks Function()
     >;
+typedef $$MembersTableCreateCompanionBuilder =
+    MembersCompanion Function({
+      required String id,
+      required String name,
+      required String phone,
+      Value<String> code,
+      Value<String?> note,
+      Value<DateTime?> birthday,
+      required DateTime joinedAt,
+      Value<int> rowid,
+    });
+typedef $$MembersTableUpdateCompanionBuilder =
+    MembersCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> phone,
+      Value<String> code,
+      Value<String?> note,
+      Value<DateTime?> birthday,
+      Value<DateTime> joinedAt,
+      Value<int> rowid,
+    });
+
+class $$MembersTableFilterComposer
+    extends Composer<_$AppDatabase, $MembersTable> {
+  $$MembersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get birthday => $composableBuilder(
+    column: $table.birthday,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get joinedAt => $composableBuilder(
+    column: $table.joinedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MembersTableOrderingComposer
+    extends Composer<_$AppDatabase, $MembersTable> {
+  $$MembersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get birthday => $composableBuilder(
+    column: $table.birthday,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get joinedAt => $composableBuilder(
+    column: $table.joinedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MembersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MembersTable> {
+  $$MembersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get phone =>
+      $composableBuilder(column: $table.phone, builder: (column) => column);
+
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get birthday =>
+      $composableBuilder(column: $table.birthday, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get joinedAt =>
+      $composableBuilder(column: $table.joinedAt, builder: (column) => column);
+}
+
+class $$MembersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MembersTable,
+          Member,
+          $$MembersTableFilterComposer,
+          $$MembersTableOrderingComposer,
+          $$MembersTableAnnotationComposer,
+          $$MembersTableCreateCompanionBuilder,
+          $$MembersTableUpdateCompanionBuilder,
+          (Member, BaseReferences<_$AppDatabase, $MembersTable, Member>),
+          Member,
+          PrefetchHooks Function()
+        > {
+  $$MembersTableTableManager(_$AppDatabase db, $MembersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MembersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MembersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MembersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> phone = const Value.absent(),
+                Value<String> code = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<DateTime?> birthday = const Value.absent(),
+                Value<DateTime> joinedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MembersCompanion(
+                id: id,
+                name: name,
+                phone: phone,
+                code: code,
+                note: note,
+                birthday: birthday,
+                joinedAt: joinedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required String phone,
+                Value<String> code = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<DateTime?> birthday = const Value.absent(),
+                required DateTime joinedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => MembersCompanion.insert(
+                id: id,
+                name: name,
+                phone: phone,
+                code: code,
+                note: note,
+                birthday: birthday,
+                joinedAt: joinedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MembersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MembersTable,
+      Member,
+      $$MembersTableFilterComposer,
+      $$MembersTableOrderingComposer,
+      $$MembersTableAnnotationComposer,
+      $$MembersTableCreateCompanionBuilder,
+      $$MembersTableUpdateCompanionBuilder,
+      (Member, BaseReferences<_$AppDatabase, $MembersTable, Member>),
+      Member,
+      PrefetchHooks Function()
+    >;
+typedef $$MemberPointsTableCreateCompanionBuilder =
+    MemberPointsCompanion Function({
+      required String id,
+      required String memberId,
+      required String kind,
+      required int delta,
+      Value<String?> visitId,
+      Value<int> baseAmount,
+      Value<String?> note,
+      Value<String?> actorUserId,
+      Value<String?> actorName,
+      required DateTime at,
+      Value<int> rowid,
+    });
+typedef $$MemberPointsTableUpdateCompanionBuilder =
+    MemberPointsCompanion Function({
+      Value<String> id,
+      Value<String> memberId,
+      Value<String> kind,
+      Value<int> delta,
+      Value<String?> visitId,
+      Value<int> baseAmount,
+      Value<String?> note,
+      Value<String?> actorUserId,
+      Value<String?> actorName,
+      Value<DateTime> at,
+      Value<int> rowid,
+    });
+
+class $$MemberPointsTableFilterComposer
+    extends Composer<_$AppDatabase, $MemberPointsTable> {
+  $$MemberPointsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get delta => $composableBuilder(
+    column: $table.delta,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get visitId => $composableBuilder(
+    column: $table.visitId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get baseAmount => $composableBuilder(
+    column: $table.baseAmount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actorUserId => $composableBuilder(
+    column: $table.actorUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actorName => $composableBuilder(
+    column: $table.actorName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MemberPointsTableOrderingComposer
+    extends Composer<_$AppDatabase, $MemberPointsTable> {
+  $$MemberPointsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get delta => $composableBuilder(
+    column: $table.delta,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get visitId => $composableBuilder(
+    column: $table.visitId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get baseAmount => $composableBuilder(
+    column: $table.baseAmount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actorUserId => $composableBuilder(
+    column: $table.actorUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actorName => $composableBuilder(
+    column: $table.actorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MemberPointsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MemberPointsTable> {
+  $$MemberPointsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get memberId =>
+      $composableBuilder(column: $table.memberId, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get delta =>
+      $composableBuilder(column: $table.delta, builder: (column) => column);
+
+  GeneratedColumn<String> get visitId =>
+      $composableBuilder(column: $table.visitId, builder: (column) => column);
+
+  GeneratedColumn<int> get baseAmount => $composableBuilder(
+    column: $table.baseAmount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<String> get actorUserId => $composableBuilder(
+    column: $table.actorUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actorName =>
+      $composableBuilder(column: $table.actorName, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get at =>
+      $composableBuilder(column: $table.at, builder: (column) => column);
+}
+
+class $$MemberPointsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MemberPointsTable,
+          MemberPoint,
+          $$MemberPointsTableFilterComposer,
+          $$MemberPointsTableOrderingComposer,
+          $$MemberPointsTableAnnotationComposer,
+          $$MemberPointsTableCreateCompanionBuilder,
+          $$MemberPointsTableUpdateCompanionBuilder,
+          (
+            MemberPoint,
+            BaseReferences<_$AppDatabase, $MemberPointsTable, MemberPoint>,
+          ),
+          MemberPoint,
+          PrefetchHooks Function()
+        > {
+  $$MemberPointsTableTableManager(_$AppDatabase db, $MemberPointsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MemberPointsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MemberPointsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MemberPointsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> memberId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<int> delta = const Value.absent(),
+                Value<String?> visitId = const Value.absent(),
+                Value<int> baseAmount = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<String?> actorUserId = const Value.absent(),
+                Value<String?> actorName = const Value.absent(),
+                Value<DateTime> at = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MemberPointsCompanion(
+                id: id,
+                memberId: memberId,
+                kind: kind,
+                delta: delta,
+                visitId: visitId,
+                baseAmount: baseAmount,
+                note: note,
+                actorUserId: actorUserId,
+                actorName: actorName,
+                at: at,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String memberId,
+                required String kind,
+                required int delta,
+                Value<String?> visitId = const Value.absent(),
+                Value<int> baseAmount = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<String?> actorUserId = const Value.absent(),
+                Value<String?> actorName = const Value.absent(),
+                required DateTime at,
+                Value<int> rowid = const Value.absent(),
+              }) => MemberPointsCompanion.insert(
+                id: id,
+                memberId: memberId,
+                kind: kind,
+                delta: delta,
+                visitId: visitId,
+                baseAmount: baseAmount,
+                note: note,
+                actorUserId: actorUserId,
+                actorName: actorName,
+                at: at,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MemberPointsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MemberPointsTable,
+      MemberPoint,
+      $$MemberPointsTableFilterComposer,
+      $$MemberPointsTableOrderingComposer,
+      $$MemberPointsTableAnnotationComposer,
+      $$MemberPointsTableCreateCompanionBuilder,
+      $$MemberPointsTableUpdateCompanionBuilder,
+      (
+        MemberPoint,
+        BaseReferences<_$AppDatabase, $MemberPointsTable, MemberPoint>,
+      ),
+      MemberPoint,
+      PrefetchHooks Function()
+    >;
 typedef $$DemoStatesTableCreateCompanionBuilder =
     DemoStatesCompanion Function({
       Value<String> id,
@@ -32813,6 +35487,10 @@ class $AppDatabaseManager {
       $$StockMovementsTableTableManager(_db, _db.stockMovements);
   $$CashEntriesTableTableManager get cashEntries =>
       $$CashEntriesTableTableManager(_db, _db.cashEntries);
+  $$MembersTableTableManager get members =>
+      $$MembersTableTableManager(_db, _db.members);
+  $$MemberPointsTableTableManager get memberPoints =>
+      $$MemberPointsTableTableManager(_db, _db.memberPoints);
   $$DemoStatesTableTableManager get demoStates =>
       $$DemoStatesTableTableManager(_db, _db.demoStates);
 }

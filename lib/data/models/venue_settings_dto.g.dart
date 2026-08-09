@@ -45,6 +45,15 @@ _$VenueSettingsDtoImpl _$$VenueSettingsDtoImplFromJson(
   soundOverdue: json['soundOverdue'] as String? ?? 'alert',
   soundUngreeted: json['soundUngreeted'] as String? ?? 'chime',
   soundPickup: json['soundPickup'] as String? ?? 'chime',
+  membersEnabled: json['membersEnabled'] as bool? ?? false,
+  memberPointsEnabled: json['memberPointsEnabled'] as bool? ?? true,
+  memberPunchEnabled: json['memberPunchEnabled'] as bool? ?? false,
+  memberPresetId: json['memberPresetId'] as String?,
+  memberEarnPerThousand: (json['memberEarnPerThousand'] as num?)?.toInt() ?? 1,
+  memberPointValue: (json['memberPointValue'] as num?)?.toInt() ?? 1000,
+  memberRedeemMin: (json['memberRedeemMin'] as num?)?.toInt() ?? 10,
+  memberPunchItemId: json['memberPunchItemId'] as String?,
+  memberPunchTarget: (json['memberPunchTarget'] as num?)?.toInt() ?? 10,
 );
 
 Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
@@ -86,4 +95,13 @@ Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
   'soundOverdue': instance.soundOverdue,
   'soundUngreeted': instance.soundUngreeted,
   'soundPickup': instance.soundPickup,
+  'membersEnabled': instance.membersEnabled,
+  'memberPointsEnabled': instance.memberPointsEnabled,
+  'memberPunchEnabled': instance.memberPunchEnabled,
+  'memberPresetId': instance.memberPresetId,
+  'memberEarnPerThousand': instance.memberEarnPerThousand,
+  'memberPointValue': instance.memberPointValue,
+  'memberRedeemMin': instance.memberRedeemMin,
+  'memberPunchItemId': instance.memberPunchItemId,
+  'memberPunchTarget': instance.memberPunchTarget,
 };

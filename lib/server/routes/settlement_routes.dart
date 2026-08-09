@@ -21,6 +21,7 @@ import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
+import 'package:satset/server/members.dart';
 import 'package:satset/server/routes/tables_routes.dart'
     show snapshotVisitAndDelete, tableJson, syncVisitMoney;
 import 'package:satset/server/ws_hub.dart';
@@ -109,6 +110,27 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       // carries no amount rather than a zero the venue log would tally.
       amountCents: loss > 0 ? loss : null,
     );
+    // [[Poin]] earn at bill close, once per visit (ADR-0095). A write-off pays
+    // out nothing — the guest did not pay, so there is no spend to reward — and
+    // the base is the bill net of discount, before service and tax, so the
+    // points agree with the figure the guest was actually charged for food.
+    if (visit.memberId != null && loss <= 0) {
+      final bill = await _buildBill(db, visitId);
+      if (bill != null) {
+        final base =
+            (bill['total'] as int) -
+            (bill['serviceAmount'] as int) -
+            (bill['taxAmount'] as int);
+        await earnPointsForVisit(
+          db,
+          memberId: visit.memberId!,
+          visitId: visitId,
+          base: base,
+          actorUserId: actorId,
+          hub: hub,
+        );
+      }
+    }
     final fresh = await _visit(db, visitId);
     final snapshotted = fresh != null && fresh.tableFreedAt != null;
     if (snapshotted) {
@@ -711,7 +733,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (preset.scope != 'bill') {
       return _err(409, 'scope_mismatch', 'preset ini bukan diskon tagihan');
     }
-    if (await _billDiscount(db, visitId) != null) {
+    // Only the cashier's own slot is in the way — a member discount or a
+    // redemption sits in a slot of its own and stacks (ADR-0094).
+    if (await _billDiscountOf(db, visitId, 'manual') != null) {
       return _err(
         409,
         'discount_exists',
@@ -797,6 +821,15 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             ))
             .getSingleOrNull();
     if (row == null) return _err(404, 'no_discount', 'diskon tidak ditemukan');
+    // A member discount rides the member and a redemption owes points back, so
+    // neither is a row this route may quietly delete (ADR-0094).
+    if (row.source != 'manual') {
+      return _err(
+        409,
+        'discount_not_manual',
+        'diskon ini dilepas dari panel pelanggan',
+      );
+    }
     await (db.delete(db.discounts)..where((x) => x.id.equals(discountId))).go();
     await _recompute(db, visitId);
     await _audit(
@@ -807,6 +840,257 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       tableId: visit.tableId,
       actor: actor?.id,
     );
+    await broadcastBill(visitId);
+    return _ok({'bill': await _buildBill(db, visitId)});
+  });
+
+  // ---------------------------------------------------------------------
+  // Membership at the till (ADR-0093). Everything below moves a live bill, so
+  // it lives here rather than in `members_routes.dart`: attaching a member and
+  // redeeming points both change what the guest owes.
+  // ---------------------------------------------------------------------
+
+  /// A member discount and a redemption are quotes the guest was already given
+  /// once money has been taken, so both are frozen at the first payment — the
+  /// same rule ADR-0068 puts on a bill discount.
+  Future<Response?> unpaidGuard(String visitId) async {
+    final paid = await (db.select(
+      db.receipts,
+    )..where((x) => x.visitId.equals(visitId) & x.status.equals('paid'))).get();
+    if (paid.isNotEmpty) {
+      return _err(
+        409,
+        'receipt_paid',
+        'buka ulang struk yang sudah dibayar dulu',
+      );
+    }
+    return null;
+  }
+
+  /// Drop the member's two bill-discount slots. Returns the points a live
+  /// redemption is worth so the caller can hand them back.
+  Future<void> clearMemberDiscounts(String visitId) async {
+    await (db.delete(db.discounts)..where(
+          (x) =>
+              x.visitId.equals(visitId) &
+              x.receiptId.isNull() &
+              x.source.isIn(['member', 'redeem']),
+        ))
+        .go();
+  }
+
+  // Attach a [[Pelanggan (member)]] to a live bill. {memberId}. The member's
+  // standing discount lands in its own slot straight away, so a cashier who
+  // looked the guest up never has to remember to apply it.
+  r.post('/settlement/visits/<visitId>/member', (
+    Request req,
+    String visitId,
+  ) async {
+    final denied = await requireCap(req, Capability.settleBill);
+    if (denied != null) return denied;
+    final visit = await _visit(db, visitId);
+    if (visit == null) return _err(404, 'no_visit', 'visit not found');
+    final locked = await lockGuard(visitId);
+    if (locked != null) return locked;
+    final unpaid = await unpaidGuard(visitId);
+    if (unpaid != null) return unpaid;
+    final cfg = await memberConfig(db);
+    if (!cfg.enabled) {
+      return _err(409, 'members_disabled', 'keanggotaan tidak aktif');
+    }
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final member = await getMember(db, (body['memberId'] as String?) ?? '');
+    if (member == null) return _err(404, 'no_member', 'pelanggan tidak ada');
+
+    final actor = await resolve(req);
+    // Swapping one member for another gives the first one's points back before
+    // the second takes the slot.
+    if (visit.memberId != null && visit.memberId != member.id) {
+      await reverseRedeemForVisit(
+        db,
+        visitId: visitId,
+        actorUserId: actor?.id,
+        hub: hub,
+      );
+      await clearMemberDiscounts(visitId);
+    }
+    await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
+      VisitsCompanion(
+        memberId: Value(member.id),
+        // Fills an empty guest name, never overwrites one a waiter typed —
+        // "Pak Budi, ulang tahun" is knowledge the directory does not hold.
+        guestName: (visit.guestName ?? '').trim().isEmpty
+            ? Value(member.name)
+            : const Value.absent(),
+      ),
+    );
+
+    // The standing member discount, if the venue configured one.
+    if (cfg.presetId != null &&
+        await _billDiscountOf(db, visitId, 'member') == null) {
+      final preset = await (db.select(
+        db.discountPresets,
+      )..where((x) => x.id.equals(cfg.presetId!))).getSingleOrNull();
+      if (preset != null && preset.active && preset.scope == 'bill') {
+        await db
+            .into(db.discounts)
+            .insert(
+              DiscountsCompanion.insert(
+                id: _uuid.v4(),
+                visitId: Value(visitId),
+                presetId: Value(preset.id),
+                name: preset.name,
+                kind: preset.kind,
+                value: Value(preset.value),
+                source: const Value('member'),
+                byUserId: Value(actor?.id),
+                at: SatClock.now().toUtc(),
+              ),
+            );
+      }
+    }
+    await _recompute(db, visitId);
+    await settleOrBroadcast(visitId, actor?.id);
+    return _ok({'bill': await _buildBill(db, visitId)});
+  });
+
+  // Detach the member. Any live redemption is handed back first — the guest
+  // spent nothing, so they keep their points.
+  r.post('/settlement/visits/<visitId>/member/detach', (
+    Request req,
+    String visitId,
+  ) async {
+    final denied = await requireCap(req, Capability.settleBill);
+    if (denied != null) return denied;
+    final visit = await _visit(db, visitId);
+    if (visit == null) return _err(404, 'no_visit', 'visit not found');
+    final locked = await lockGuard(visitId);
+    if (locked != null) return locked;
+    final unpaid = await unpaidGuard(visitId);
+    if (unpaid != null) return unpaid;
+    final actor = await resolve(req);
+    await reverseRedeemForVisit(
+      db,
+      visitId: visitId,
+      actorUserId: actor?.id,
+      hub: hub,
+    );
+    await clearMemberDiscounts(visitId);
+    await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
+      const VisitsCompanion(memberId: Value(null)),
+    );
+    await _recompute(db, visitId);
+    await broadcastBill(visitId);
+    return _ok({'bill': await _buildBill(db, visitId)});
+  });
+
+  // Spend points as money off this bill. {points}. The ledger row and the
+  // matching `redeem`-slot discount land together or not at all — a balance
+  // that moved without the bill moving is a balance somebody spent twice.
+  r.post('/settlement/visits/<visitId>/redeem', (
+    Request req,
+    String visitId,
+  ) async {
+    final denied = await requireCap(req, Capability.settleBill);
+    if (denied != null) return denied;
+    final visit = await _visit(db, visitId);
+    if (visit == null) return _err(404, 'no_visit', 'visit not found');
+    final memberId = visit.memberId;
+    if (memberId == null) {
+      return _err(409, 'no_member', 'tidak ada pelanggan di tagihan ini');
+    }
+    final locked = await lockGuard(visitId);
+    if (locked != null) return locked;
+    final unpaid = await unpaidGuard(visitId);
+    if (unpaid != null) return unpaid;
+    if (await _billDiscountOf(db, visitId, 'redeem') != null) {
+      return _err(409, 'redeem_exists', 'sudah ada penukaran poin di tagihan');
+    }
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final points = (body['points'] as num?)?.toInt() ?? 0;
+    final cfg = await memberConfig(db);
+
+    // A redemption bigger than the bill would burn points for nothing, so the
+    // ceiling is what this bill can actually absorb.
+    final bill = await _buildBill(db, visitId);
+    if (bill == null) return _err(409, 'no_lines', 'tidak ada pesanan');
+    final room =
+        (bill['total'] as int) -
+        (bill['serviceAmount'] as int) -
+        (bill['taxAmount'] as int);
+    final maxPoints = cfg.pointValue <= 0 ? 0 : room ~/ cfg.pointValue;
+    if (points > maxPoints) {
+      return _err(409, 'exceeds_bill', 'poin melebihi nilai tagihan', {
+        'points': maxPoints,
+      });
+    }
+
+    final actor = await resolve(req);
+    final int amount;
+    try {
+      amount = await spendPoints(
+        db,
+        memberId: memberId,
+        visitId: visitId,
+        points: points,
+        actorUserId: actor?.id,
+        hub: hub,
+      );
+    } on MemberException catch (e) {
+      return _err(409, e.code, 'penukaran poin ditolak', {
+        if (e.points != null) 'points': e.points,
+      });
+    }
+    await db
+        .into(db.discounts)
+        .insert(
+          DiscountsCompanion.insert(
+            id: _uuid.v4(),
+            visitId: Value(visitId),
+            // No preset behind it — the guest's own points are the authority,
+            // and the amount is what the venue's own rate makes them worth.
+            name: 'Tukar poin',
+            kind: 'amount',
+            value: Value(amount),
+            amount: Value(amount),
+            source: const Value('redeem'),
+            byUserId: Value(actor?.id),
+            at: SatClock.now().toUtc(),
+          ),
+        );
+    await _recompute(db, visitId);
+    await settleOrBroadcast(visitId, actor?.id);
+    return _ok({'bill': await _buildBill(db, visitId)});
+  });
+
+  // Take the redemption back off an unpaid bill; the points return.
+  r.post('/settlement/visits/<visitId>/redeem/remove', (
+    Request req,
+    String visitId,
+  ) async {
+    final denied = await requireCap(req, Capability.settleBill);
+    if (denied != null) return denied;
+    final visit = await _visit(db, visitId);
+    if (visit == null) return _err(404, 'no_visit', 'visit not found');
+    final locked = await lockGuard(visitId);
+    if (locked != null) return locked;
+    final unpaid = await unpaidGuard(visitId);
+    if (unpaid != null) return unpaid;
+    final actor = await resolve(req);
+    await reverseRedeemForVisit(
+      db,
+      visitId: visitId,
+      actorUserId: actor?.id,
+      hub: hub,
+    );
+    await (db.delete(db.discounts)..where(
+          (x) =>
+              x.visitId.equals(visitId) &
+              x.receiptId.isNull() &
+              x.source.equals('redeem'),
+        ))
+        .go();
+    await _recompute(db, visitId);
     await broadcastBill(visitId);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
@@ -1196,6 +1480,15 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         hub.broadcast(WsEventTypes.tableUpdated, tableJson(fresh));
       }
     }
+    // The earn this close already paid out is taken back; a later re-close
+    // earns afresh against whatever the corrected bill turns out to be. The
+    // ledger corrects forwards (ADR-0095), exactly as the cash box does.
+    await reverseEarnForVisit(
+      db,
+      visitId: visitId,
+      actorUserId: user?.id,
+      hub: hub,
+    );
     await _audit(
       db,
       AuditType.billReopened,
@@ -1474,14 +1767,20 @@ Future<void> _recompute(AppDatabase db, String visitId) async {
   // `distributeFixed` does for a fixed service charge. Amount receipts are
   // excluded on purpose: their claim was frozen at mint time (ADR-0068), and a
   // discount applied afterwards must not silently re-quote a guest.
-  final billDiscRow = await _billDiscount(db, visitId);
-  final billDiscAmount = billDiscRow == null
-      ? 0
-      : await _resolveDiscountRow(
-          db,
-          billDiscRow,
-          billSub - _sum(lineDiscounts),
-        );
+  //
+  // Sources stack (ADR-0094) and every one of them resolves against the SAME
+  // base — a percentage never compounds on top of another source's give-away,
+  // because a guest cannot be told what "10%" meant if the answer depends on
+  // which slot was filled first.
+  final billDiscBase = billSub - _sum(lineDiscounts);
+  var billDiscAmount = 0;
+  for (final d in await _billDiscounts(db, visitId)) {
+    billDiscAmount += await _resolveDiscountRow(db, d, billDiscBase);
+  }
+  // ponytail: the stack is clamped to the base rather than reconciled row by
+  // row. Only reachable when the slots together exceed 100%, and the printed
+  // rows stay honest about what each promised.
+  if (billDiscAmount > billDiscBase) billDiscAmount = billDiscBase;
   if (billDiscAmount > 0 && itemized.isNotEmpty) {
     final fanned = distributeFixed(subtotals, billDiscAmount);
     for (var i = 0; i < itemized.length; i++) {
@@ -1635,11 +1934,14 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
   // The bill-scope discount (ADR-0070) belongs to the visit, not to any
   // receipt, so it is fetched separately and lands in the same slot an order
   // discount does — same position in the ADR-0038 stack, different owner.
-  final billDisc = await _billDiscount(db, visitId);
+  final billDiscs = await _billDiscounts(db, visitId);
+  final billDiscTotal = _sum(
+    billDiscs.map((d) => d.amount),
+  ).clamp(0, billSub - billLineDiscount);
   final billBreak = computeBreakdown(
     billSub - billLineDiscount,
     cfg,
-    discount: billOrderDiscount + (billDisc?.amount ?? 0),
+    discount: billOrderDiscount + billDiscTotal,
   );
 
   var paidNet = 0;
@@ -1741,6 +2043,10 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
       recs.isNotEmpty && recs.every((r) => r.status == 'paid');
   final outstanding = (billBreak.total - paidNet).clamp(0, 1 << 31);
   final detached = visit.tableFreedAt != null;
+  final member = visit.memberId == null
+      ? null
+      : await getMember(db, visit.memberId!);
+  final punch = member == null ? null : await punchStatus(db, member.id);
 
   return {
     'visitId': visit.id,
@@ -1776,19 +2082,48 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
     'outstanding': outstanding,
     'fullyAssigned': fullyAssigned,
     'fullySettled': fullyAssigned && allReceiptsPaid,
-    // The bill-scope discount row, so the totals ladder and the printed slip
-    // can name it. Receipt-scoped rows still ride on their receipt. ADR-0070.
-    'billDiscount': billDisc == null ? null : _discountJson(billDisc),
+    // The bill-scope discount rows, so the totals ladder and the printed slip
+    // can name each one. Receipt-scoped rows still ride on their receipt.
+    // ADR-0070; a list rather than a row since ADR-0094.
+    'billDiscounts': [for (final d in billDiscs) _discountJson(d)],
+    // The [[Pelanggan (member)]] on this bill, if one is attached — carried
+    // whole so the cashier panel can show the balance and the punch card
+    // without a second round trip mid-settlement.
+    'memberId': visit.memberId,
+    'member': member == null
+        ? null
+        : {
+            ...memberJson(member),
+            'punchTarget': punch?.target ?? 0,
+            'punchRewardDue': punch?.rewardDue ?? false,
+          },
     'lines': linesJson,
     'receipts': receiptsJson,
   };
 }
 
-/// The one bill-scope [[Diskon (discount)]] on a visit, or null. At most one by
-/// the `idx_discounts_bill_uniq` partial index. ADR-0070.
-Future<Discount?> _billDiscount(AppDatabase db, String visitId) =>
-    (db.select(db.discounts)
-          ..where((x) => x.visitId.equals(visitId) & x.receiptId.isNull()))
+/// Every bill-scope [[Diskon (discount)]] on a visit — at most one **per
+/// [[Sumber diskon (discount source)|source]]**, by the
+/// `idx_discounts_bill_source_uniq` partial index. ADR-0070, amended by
+/// ADR-0094: a cashier's promo, a member's standing discount and a points
+/// redemption each hold their own slot and stack by design.
+Future<List<Discount>> _billDiscounts(AppDatabase db, String visitId) =>
+    (db.select(
+      db.discounts,
+    )..where((x) => x.visitId.equals(visitId) & x.receiptId.isNull())).get();
+
+/// The bill discount occupying one slot, or null if that slot is free.
+Future<Discount?> _billDiscountOf(
+  AppDatabase db,
+  String visitId,
+  String source,
+) =>
+    (db.select(db.discounts)..where(
+          (x) =>
+              x.visitId.equals(visitId) &
+              x.receiptId.isNull() &
+              x.source.equals(source),
+        ))
         .getSingleOrNull();
 
 /// Reconstruct a bill-shaped map for a CLOSED session (past bill), from the
@@ -1920,7 +2255,16 @@ Map<String, dynamic> _summarize(Map<String, dynamic> bill) => {
   'lineCount': (bill['lines'] as List).length,
   // The card's pill row states the discount by name, so the label has to reach
   // the list payload — the amount alone would render as an unexplained cut.
-  'billDiscountLabel': (bill['billDiscount'] as Map?)?['name'],
+  // The cashier's own slot is the one named; a member discount is implied by
+  // the member pill sitting beside it (ADR-0094).
+  'billDiscountLabel': (bill['billDiscounts'] as List)
+      .cast<Map<String, dynamic>>()
+      .where((d) => d['source'] == 'manual')
+      .map((d) => d['name'])
+      .firstOrNull,
+  // The member on the bill, so the payable card can show a pill without
+  // fetching each bill in full.
+  'memberName': (bill['member'] as Map?)?['name'],
   // Just the letter and its paid-ness — enough for the /kasir tile's progress
   // strip, without shipping every line and payment into a list payload. See
   // ADR-0063.
@@ -1937,8 +2281,13 @@ Response _ok(Object body) => Response.ok(
   headers: {'content-type': 'application/json'},
 );
 
-Response _err(int status, String code, String message) => Response(
+Response _err(
+  int status,
+  String code,
+  String message, [
+  Map<String, Object?> extra = const {},
+]) => Response(
   status,
-  body: jsonEncode({'code': code, 'message': message}),
+  body: jsonEncode({'code': code, 'message': message, ...extra}),
   headers: {'content-type': 'application/json'},
 );

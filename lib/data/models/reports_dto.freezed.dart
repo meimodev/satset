@@ -41,6 +41,12 @@ mixin _$ReportsSnapshotDto {
   /// [sales], and no figure in [sales] is net of it.
   KasSectionDto get kas => throw _privateConstructorUsedError;
 
+  /// [[Keanggotaan (membership)]] over the same window. Its own section for
+  /// the mirror-image reason [kas] is: points are a claim on future takings,
+  /// not a channel — folding a give-away into [sales] would let it read as
+  /// revenue (ADR-0095).
+  MembersSectionDto get members => throw _privateConstructorUsedError;
+
   /// Serializes this ReportsSnapshotDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -70,6 +76,7 @@ abstract class $ReportsSnapshotDtoCopyWith<$Res> {
     OpsSectionDto ops,
     MoneyAuditSectionDto moneyAudit,
     KasSectionDto kas,
+    MembersSectionDto members,
   });
 
   $FilterOptionsDtoCopyWith<$Res> get filterOptions;
@@ -79,6 +86,7 @@ abstract class $ReportsSnapshotDtoCopyWith<$Res> {
   $OpsSectionDtoCopyWith<$Res> get ops;
   $MoneyAuditSectionDtoCopyWith<$Res> get moneyAudit;
   $KasSectionDtoCopyWith<$Res> get kas;
+  $MembersSectionDtoCopyWith<$Res> get members;
 }
 
 /// @nodoc
@@ -107,6 +115,7 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
     Object? ops = null,
     Object? moneyAudit = null,
     Object? kas = null,
+    Object? members = null,
   }) {
     return _then(
       _value.copyWith(
@@ -154,6 +163,10 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
                 ? _value.kas
                 : kas // ignore: cast_nullable_to_non_nullable
                       as KasSectionDto,
+            members: null == members
+                ? _value.members
+                : members // ignore: cast_nullable_to_non_nullable
+                      as MembersSectionDto,
           )
           as $Val,
     );
@@ -228,6 +241,16 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
       return _then(_value.copyWith(kas: value) as $Val);
     });
   }
+
+  /// Create a copy of ReportsSnapshotDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $MembersSectionDtoCopyWith<$Res> get members {
+    return $MembersSectionDtoCopyWith<$Res>(_value.members, (value) {
+      return _then(_value.copyWith(members: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -251,6 +274,7 @@ abstract class _$$ReportsSnapshotDtoImplCopyWith<$Res>
     OpsSectionDto ops,
     MoneyAuditSectionDto moneyAudit,
     KasSectionDto kas,
+    MembersSectionDto members,
   });
 
   @override
@@ -267,6 +291,8 @@ abstract class _$$ReportsSnapshotDtoImplCopyWith<$Res>
   $MoneyAuditSectionDtoCopyWith<$Res> get moneyAudit;
   @override
   $KasSectionDtoCopyWith<$Res> get kas;
+  @override
+  $MembersSectionDtoCopyWith<$Res> get members;
 }
 
 /// @nodoc
@@ -294,6 +320,7 @@ class __$$ReportsSnapshotDtoImplCopyWithImpl<$Res>
     Object? ops = null,
     Object? moneyAudit = null,
     Object? kas = null,
+    Object? members = null,
   }) {
     return _then(
       _$ReportsSnapshotDtoImpl(
@@ -341,6 +368,10 @@ class __$$ReportsSnapshotDtoImplCopyWithImpl<$Res>
             ? _value.kas
             : kas // ignore: cast_nullable_to_non_nullable
                   as KasSectionDto,
+        members: null == members
+            ? _value.members
+            : members // ignore: cast_nullable_to_non_nullable
+                  as MembersSectionDto,
       ),
     );
   }
@@ -361,6 +392,7 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
     required this.ops,
     this.moneyAudit = const MoneyAuditSectionDto(),
     this.kas = const KasSectionDto(),
+    this.members = const MembersSectionDto(),
   });
 
   factory _$ReportsSnapshotDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -399,9 +431,17 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
   @JsonKey()
   final KasSectionDto kas;
 
+  /// [[Keanggotaan (membership)]] over the same window. Its own section for
+  /// the mirror-image reason [kas] is: points are a claim on future takings,
+  /// not a channel — folding a give-away into [sales] would let it read as
+  /// revenue (ADR-0095).
+  @override
+  @JsonKey()
+  final MembersSectionDto members;
+
   @override
   String toString() {
-    return 'ReportsSnapshotDto(generatedAt: $generatedAt, rangeFrom: $rangeFrom, rangeTo: $rangeTo, range: $range, filterOptions: $filterOptions, sales: $sales, staff: $staff, menu: $menu, ops: $ops, moneyAudit: $moneyAudit, kas: $kas)';
+    return 'ReportsSnapshotDto(generatedAt: $generatedAt, rangeFrom: $rangeFrom, rangeTo: $rangeTo, range: $range, filterOptions: $filterOptions, sales: $sales, staff: $staff, menu: $menu, ops: $ops, moneyAudit: $moneyAudit, kas: $kas, members: $members)';
   }
 
   @override
@@ -423,7 +463,8 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
             (identical(other.ops, ops) || other.ops == ops) &&
             (identical(other.moneyAudit, moneyAudit) ||
                 other.moneyAudit == moneyAudit) &&
-            (identical(other.kas, kas) || other.kas == kas));
+            (identical(other.kas, kas) || other.kas == kas) &&
+            (identical(other.members, members) || other.members == members));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -441,6 +482,7 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
     ops,
     moneyAudit,
     kas,
+    members,
   );
 
   /// Create a copy of ReportsSnapshotDto
@@ -473,6 +515,7 @@ abstract class _ReportsSnapshotDto implements ReportsSnapshotDto {
     required final OpsSectionDto ops,
     final MoneyAuditSectionDto moneyAudit,
     final KasSectionDto kas,
+    final MembersSectionDto members,
   }) = _$ReportsSnapshotDtoImpl;
 
   factory _ReportsSnapshotDto.fromJson(Map<String, dynamic> json) =
@@ -508,6 +551,13 @@ abstract class _ReportsSnapshotDto implements ReportsSnapshotDto {
   /// [sales], and no figure in [sales] is net of it.
   @override
   KasSectionDto get kas;
+
+  /// [[Keanggotaan (membership)]] over the same window. Its own section for
+  /// the mirror-image reason [kas] is: points are a claim on future takings,
+  /// not a channel — folding a give-away into [sales] would let it read as
+  /// revenue (ADR-0095).
+  @override
+  MembersSectionDto get members;
 
   /// Create a copy of ReportsSnapshotDto
   /// with the given fields replaced by the non-null parameter values.
@@ -6112,6 +6162,734 @@ abstract class _KasSectionDto implements KasSectionDto {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$KasSectionDtoImplCopyWith<_$KasSectionDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+MembersSectionDto _$MembersSectionDtoFromJson(Map<String, dynamic> json) {
+  return _MembersSectionDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$MembersSectionDto {
+  /// False ⇒ the venue does not run a program, and the section is not drawn.
+  bool get enabled => throw _privateConstructorUsedError;
+  int get enrolled => throw _privateConstructorUsedError;
+  int get activeMembers => throw _privateConstructorUsedError;
+  int get memberBills => throw _privateConstructorUsedError;
+  int get memberNet => throw _privateConstructorUsedError;
+  int get guestBills => throw _privateConstructorUsedError;
+  int get guestNet => throw _privateConstructorUsedError;
+  int get avgMemberBill => throw _privateConstructorUsedError;
+  int get avgGuestBill => throw _privateConstructorUsedError;
+  int get pointsEarned => throw _privateConstructorUsedError;
+  int get pointsRedeemed => throw _privateConstructorUsedError;
+  int get pointsAdjusted => throw _privateConstructorUsedError;
+  int get pointsOutstanding => throw _privateConstructorUsedError;
+
+  /// Rupiah the outstanding points would cost at today's rate. An estimate by
+  /// construction — the rate can move before they are spent.
+  int get liabilityEstimate => throw _privateConstructorUsedError;
+  List<MemberTopRowDto> get top => throw _privateConstructorUsedError;
+
+  /// Serializes this MembersSectionDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of MembersSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $MembersSectionDtoCopyWith<MembersSectionDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $MembersSectionDtoCopyWith<$Res> {
+  factory $MembersSectionDtoCopyWith(
+    MembersSectionDto value,
+    $Res Function(MembersSectionDto) then,
+  ) = _$MembersSectionDtoCopyWithImpl<$Res, MembersSectionDto>;
+  @useResult
+  $Res call({
+    bool enabled,
+    int enrolled,
+    int activeMembers,
+    int memberBills,
+    int memberNet,
+    int guestBills,
+    int guestNet,
+    int avgMemberBill,
+    int avgGuestBill,
+    int pointsEarned,
+    int pointsRedeemed,
+    int pointsAdjusted,
+    int pointsOutstanding,
+    int liabilityEstimate,
+    List<MemberTopRowDto> top,
+  });
+}
+
+/// @nodoc
+class _$MembersSectionDtoCopyWithImpl<$Res, $Val extends MembersSectionDto>
+    implements $MembersSectionDtoCopyWith<$Res> {
+  _$MembersSectionDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of MembersSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? enabled = null,
+    Object? enrolled = null,
+    Object? activeMembers = null,
+    Object? memberBills = null,
+    Object? memberNet = null,
+    Object? guestBills = null,
+    Object? guestNet = null,
+    Object? avgMemberBill = null,
+    Object? avgGuestBill = null,
+    Object? pointsEarned = null,
+    Object? pointsRedeemed = null,
+    Object? pointsAdjusted = null,
+    Object? pointsOutstanding = null,
+    Object? liabilityEstimate = null,
+    Object? top = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            enabled: null == enabled
+                ? _value.enabled
+                : enabled // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            enrolled: null == enrolled
+                ? _value.enrolled
+                : enrolled // ignore: cast_nullable_to_non_nullable
+                      as int,
+            activeMembers: null == activeMembers
+                ? _value.activeMembers
+                : activeMembers // ignore: cast_nullable_to_non_nullable
+                      as int,
+            memberBills: null == memberBills
+                ? _value.memberBills
+                : memberBills // ignore: cast_nullable_to_non_nullable
+                      as int,
+            memberNet: null == memberNet
+                ? _value.memberNet
+                : memberNet // ignore: cast_nullable_to_non_nullable
+                      as int,
+            guestBills: null == guestBills
+                ? _value.guestBills
+                : guestBills // ignore: cast_nullable_to_non_nullable
+                      as int,
+            guestNet: null == guestNet
+                ? _value.guestNet
+                : guestNet // ignore: cast_nullable_to_non_nullable
+                      as int,
+            avgMemberBill: null == avgMemberBill
+                ? _value.avgMemberBill
+                : avgMemberBill // ignore: cast_nullable_to_non_nullable
+                      as int,
+            avgGuestBill: null == avgGuestBill
+                ? _value.avgGuestBill
+                : avgGuestBill // ignore: cast_nullable_to_non_nullable
+                      as int,
+            pointsEarned: null == pointsEarned
+                ? _value.pointsEarned
+                : pointsEarned // ignore: cast_nullable_to_non_nullable
+                      as int,
+            pointsRedeemed: null == pointsRedeemed
+                ? _value.pointsRedeemed
+                : pointsRedeemed // ignore: cast_nullable_to_non_nullable
+                      as int,
+            pointsAdjusted: null == pointsAdjusted
+                ? _value.pointsAdjusted
+                : pointsAdjusted // ignore: cast_nullable_to_non_nullable
+                      as int,
+            pointsOutstanding: null == pointsOutstanding
+                ? _value.pointsOutstanding
+                : pointsOutstanding // ignore: cast_nullable_to_non_nullable
+                      as int,
+            liabilityEstimate: null == liabilityEstimate
+                ? _value.liabilityEstimate
+                : liabilityEstimate // ignore: cast_nullable_to_non_nullable
+                      as int,
+            top: null == top
+                ? _value.top
+                : top // ignore: cast_nullable_to_non_nullable
+                      as List<MemberTopRowDto>,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$MembersSectionDtoImplCopyWith<$Res>
+    implements $MembersSectionDtoCopyWith<$Res> {
+  factory _$$MembersSectionDtoImplCopyWith(
+    _$MembersSectionDtoImpl value,
+    $Res Function(_$MembersSectionDtoImpl) then,
+  ) = __$$MembersSectionDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    bool enabled,
+    int enrolled,
+    int activeMembers,
+    int memberBills,
+    int memberNet,
+    int guestBills,
+    int guestNet,
+    int avgMemberBill,
+    int avgGuestBill,
+    int pointsEarned,
+    int pointsRedeemed,
+    int pointsAdjusted,
+    int pointsOutstanding,
+    int liabilityEstimate,
+    List<MemberTopRowDto> top,
+  });
+}
+
+/// @nodoc
+class __$$MembersSectionDtoImplCopyWithImpl<$Res>
+    extends _$MembersSectionDtoCopyWithImpl<$Res, _$MembersSectionDtoImpl>
+    implements _$$MembersSectionDtoImplCopyWith<$Res> {
+  __$$MembersSectionDtoImplCopyWithImpl(
+    _$MembersSectionDtoImpl _value,
+    $Res Function(_$MembersSectionDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of MembersSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? enabled = null,
+    Object? enrolled = null,
+    Object? activeMembers = null,
+    Object? memberBills = null,
+    Object? memberNet = null,
+    Object? guestBills = null,
+    Object? guestNet = null,
+    Object? avgMemberBill = null,
+    Object? avgGuestBill = null,
+    Object? pointsEarned = null,
+    Object? pointsRedeemed = null,
+    Object? pointsAdjusted = null,
+    Object? pointsOutstanding = null,
+    Object? liabilityEstimate = null,
+    Object? top = null,
+  }) {
+    return _then(
+      _$MembersSectionDtoImpl(
+        enabled: null == enabled
+            ? _value.enabled
+            : enabled // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        enrolled: null == enrolled
+            ? _value.enrolled
+            : enrolled // ignore: cast_nullable_to_non_nullable
+                  as int,
+        activeMembers: null == activeMembers
+            ? _value.activeMembers
+            : activeMembers // ignore: cast_nullable_to_non_nullable
+                  as int,
+        memberBills: null == memberBills
+            ? _value.memberBills
+            : memberBills // ignore: cast_nullable_to_non_nullable
+                  as int,
+        memberNet: null == memberNet
+            ? _value.memberNet
+            : memberNet // ignore: cast_nullable_to_non_nullable
+                  as int,
+        guestBills: null == guestBills
+            ? _value.guestBills
+            : guestBills // ignore: cast_nullable_to_non_nullable
+                  as int,
+        guestNet: null == guestNet
+            ? _value.guestNet
+            : guestNet // ignore: cast_nullable_to_non_nullable
+                  as int,
+        avgMemberBill: null == avgMemberBill
+            ? _value.avgMemberBill
+            : avgMemberBill // ignore: cast_nullable_to_non_nullable
+                  as int,
+        avgGuestBill: null == avgGuestBill
+            ? _value.avgGuestBill
+            : avgGuestBill // ignore: cast_nullable_to_non_nullable
+                  as int,
+        pointsEarned: null == pointsEarned
+            ? _value.pointsEarned
+            : pointsEarned // ignore: cast_nullable_to_non_nullable
+                  as int,
+        pointsRedeemed: null == pointsRedeemed
+            ? _value.pointsRedeemed
+            : pointsRedeemed // ignore: cast_nullable_to_non_nullable
+                  as int,
+        pointsAdjusted: null == pointsAdjusted
+            ? _value.pointsAdjusted
+            : pointsAdjusted // ignore: cast_nullable_to_non_nullable
+                  as int,
+        pointsOutstanding: null == pointsOutstanding
+            ? _value.pointsOutstanding
+            : pointsOutstanding // ignore: cast_nullable_to_non_nullable
+                  as int,
+        liabilityEstimate: null == liabilityEstimate
+            ? _value.liabilityEstimate
+            : liabilityEstimate // ignore: cast_nullable_to_non_nullable
+                  as int,
+        top: null == top
+            ? _value._top
+            : top // ignore: cast_nullable_to_non_nullable
+                  as List<MemberTopRowDto>,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$MembersSectionDtoImpl implements _MembersSectionDto {
+  const _$MembersSectionDtoImpl({
+    this.enabled = false,
+    this.enrolled = 0,
+    this.activeMembers = 0,
+    this.memberBills = 0,
+    this.memberNet = 0,
+    this.guestBills = 0,
+    this.guestNet = 0,
+    this.avgMemberBill = 0,
+    this.avgGuestBill = 0,
+    this.pointsEarned = 0,
+    this.pointsRedeemed = 0,
+    this.pointsAdjusted = 0,
+    this.pointsOutstanding = 0,
+    this.liabilityEstimate = 0,
+    final List<MemberTopRowDto> top = const <MemberTopRowDto>[],
+  }) : _top = top;
+
+  factory _$MembersSectionDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$MembersSectionDtoImplFromJson(json);
+
+  /// False ⇒ the venue does not run a program, and the section is not drawn.
+  @override
+  @JsonKey()
+  final bool enabled;
+  @override
+  @JsonKey()
+  final int enrolled;
+  @override
+  @JsonKey()
+  final int activeMembers;
+  @override
+  @JsonKey()
+  final int memberBills;
+  @override
+  @JsonKey()
+  final int memberNet;
+  @override
+  @JsonKey()
+  final int guestBills;
+  @override
+  @JsonKey()
+  final int guestNet;
+  @override
+  @JsonKey()
+  final int avgMemberBill;
+  @override
+  @JsonKey()
+  final int avgGuestBill;
+  @override
+  @JsonKey()
+  final int pointsEarned;
+  @override
+  @JsonKey()
+  final int pointsRedeemed;
+  @override
+  @JsonKey()
+  final int pointsAdjusted;
+  @override
+  @JsonKey()
+  final int pointsOutstanding;
+
+  /// Rupiah the outstanding points would cost at today's rate. An estimate by
+  /// construction — the rate can move before they are spent.
+  @override
+  @JsonKey()
+  final int liabilityEstimate;
+  final List<MemberTopRowDto> _top;
+  @override
+  @JsonKey()
+  List<MemberTopRowDto> get top {
+    if (_top is EqualUnmodifiableListView) return _top;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_top);
+  }
+
+  @override
+  String toString() {
+    return 'MembersSectionDto(enabled: $enabled, enrolled: $enrolled, activeMembers: $activeMembers, memberBills: $memberBills, memberNet: $memberNet, guestBills: $guestBills, guestNet: $guestNet, avgMemberBill: $avgMemberBill, avgGuestBill: $avgGuestBill, pointsEarned: $pointsEarned, pointsRedeemed: $pointsRedeemed, pointsAdjusted: $pointsAdjusted, pointsOutstanding: $pointsOutstanding, liabilityEstimate: $liabilityEstimate, top: $top)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$MembersSectionDtoImpl &&
+            (identical(other.enabled, enabled) || other.enabled == enabled) &&
+            (identical(other.enrolled, enrolled) ||
+                other.enrolled == enrolled) &&
+            (identical(other.activeMembers, activeMembers) ||
+                other.activeMembers == activeMembers) &&
+            (identical(other.memberBills, memberBills) ||
+                other.memberBills == memberBills) &&
+            (identical(other.memberNet, memberNet) ||
+                other.memberNet == memberNet) &&
+            (identical(other.guestBills, guestBills) ||
+                other.guestBills == guestBills) &&
+            (identical(other.guestNet, guestNet) ||
+                other.guestNet == guestNet) &&
+            (identical(other.avgMemberBill, avgMemberBill) ||
+                other.avgMemberBill == avgMemberBill) &&
+            (identical(other.avgGuestBill, avgGuestBill) ||
+                other.avgGuestBill == avgGuestBill) &&
+            (identical(other.pointsEarned, pointsEarned) ||
+                other.pointsEarned == pointsEarned) &&
+            (identical(other.pointsRedeemed, pointsRedeemed) ||
+                other.pointsRedeemed == pointsRedeemed) &&
+            (identical(other.pointsAdjusted, pointsAdjusted) ||
+                other.pointsAdjusted == pointsAdjusted) &&
+            (identical(other.pointsOutstanding, pointsOutstanding) ||
+                other.pointsOutstanding == pointsOutstanding) &&
+            (identical(other.liabilityEstimate, liabilityEstimate) ||
+                other.liabilityEstimate == liabilityEstimate) &&
+            const DeepCollectionEquality().equals(other._top, _top));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    enabled,
+    enrolled,
+    activeMembers,
+    memberBills,
+    memberNet,
+    guestBills,
+    guestNet,
+    avgMemberBill,
+    avgGuestBill,
+    pointsEarned,
+    pointsRedeemed,
+    pointsAdjusted,
+    pointsOutstanding,
+    liabilityEstimate,
+    const DeepCollectionEquality().hash(_top),
+  );
+
+  /// Create a copy of MembersSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$MembersSectionDtoImplCopyWith<_$MembersSectionDtoImpl> get copyWith =>
+      __$$MembersSectionDtoImplCopyWithImpl<_$MembersSectionDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$MembersSectionDtoImplToJson(this);
+  }
+}
+
+abstract class _MembersSectionDto implements MembersSectionDto {
+  const factory _MembersSectionDto({
+    final bool enabled,
+    final int enrolled,
+    final int activeMembers,
+    final int memberBills,
+    final int memberNet,
+    final int guestBills,
+    final int guestNet,
+    final int avgMemberBill,
+    final int avgGuestBill,
+    final int pointsEarned,
+    final int pointsRedeemed,
+    final int pointsAdjusted,
+    final int pointsOutstanding,
+    final int liabilityEstimate,
+    final List<MemberTopRowDto> top,
+  }) = _$MembersSectionDtoImpl;
+
+  factory _MembersSectionDto.fromJson(Map<String, dynamic> json) =
+      _$MembersSectionDtoImpl.fromJson;
+
+  /// False ⇒ the venue does not run a program, and the section is not drawn.
+  @override
+  bool get enabled;
+  @override
+  int get enrolled;
+  @override
+  int get activeMembers;
+  @override
+  int get memberBills;
+  @override
+  int get memberNet;
+  @override
+  int get guestBills;
+  @override
+  int get guestNet;
+  @override
+  int get avgMemberBill;
+  @override
+  int get avgGuestBill;
+  @override
+  int get pointsEarned;
+  @override
+  int get pointsRedeemed;
+  @override
+  int get pointsAdjusted;
+  @override
+  int get pointsOutstanding;
+
+  /// Rupiah the outstanding points would cost at today's rate. An estimate by
+  /// construction — the rate can move before they are spent.
+  @override
+  int get liabilityEstimate;
+  @override
+  List<MemberTopRowDto> get top;
+
+  /// Create a copy of MembersSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$MembersSectionDtoImplCopyWith<_$MembersSectionDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+MemberTopRowDto _$MemberTopRowDtoFromJson(Map<String, dynamic> json) {
+  return _MemberTopRowDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$MemberTopRowDto {
+  String get memberId => throw _privateConstructorUsedError;
+  String? get name => throw _privateConstructorUsedError;
+  int get visits => throw _privateConstructorUsedError;
+  int get spend => throw _privateConstructorUsedError;
+
+  /// Serializes this MemberTopRowDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of MemberTopRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $MemberTopRowDtoCopyWith<MemberTopRowDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $MemberTopRowDtoCopyWith<$Res> {
+  factory $MemberTopRowDtoCopyWith(
+    MemberTopRowDto value,
+    $Res Function(MemberTopRowDto) then,
+  ) = _$MemberTopRowDtoCopyWithImpl<$Res, MemberTopRowDto>;
+  @useResult
+  $Res call({String memberId, String? name, int visits, int spend});
+}
+
+/// @nodoc
+class _$MemberTopRowDtoCopyWithImpl<$Res, $Val extends MemberTopRowDto>
+    implements $MemberTopRowDtoCopyWith<$Res> {
+  _$MemberTopRowDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of MemberTopRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? memberId = null,
+    Object? name = freezed,
+    Object? visits = null,
+    Object? spend = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            memberId: null == memberId
+                ? _value.memberId
+                : memberId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: freezed == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            visits: null == visits
+                ? _value.visits
+                : visits // ignore: cast_nullable_to_non_nullable
+                      as int,
+            spend: null == spend
+                ? _value.spend
+                : spend // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$MemberTopRowDtoImplCopyWith<$Res>
+    implements $MemberTopRowDtoCopyWith<$Res> {
+  factory _$$MemberTopRowDtoImplCopyWith(
+    _$MemberTopRowDtoImpl value,
+    $Res Function(_$MemberTopRowDtoImpl) then,
+  ) = __$$MemberTopRowDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String memberId, String? name, int visits, int spend});
+}
+
+/// @nodoc
+class __$$MemberTopRowDtoImplCopyWithImpl<$Res>
+    extends _$MemberTopRowDtoCopyWithImpl<$Res, _$MemberTopRowDtoImpl>
+    implements _$$MemberTopRowDtoImplCopyWith<$Res> {
+  __$$MemberTopRowDtoImplCopyWithImpl(
+    _$MemberTopRowDtoImpl _value,
+    $Res Function(_$MemberTopRowDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of MemberTopRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? memberId = null,
+    Object? name = freezed,
+    Object? visits = null,
+    Object? spend = null,
+  }) {
+    return _then(
+      _$MemberTopRowDtoImpl(
+        memberId: null == memberId
+            ? _value.memberId
+            : memberId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: freezed == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        visits: null == visits
+            ? _value.visits
+            : visits // ignore: cast_nullable_to_non_nullable
+                  as int,
+        spend: null == spend
+            ? _value.spend
+            : spend // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$MemberTopRowDtoImpl implements _MemberTopRowDto {
+  const _$MemberTopRowDtoImpl({
+    this.memberId = '',
+    this.name,
+    this.visits = 0,
+    this.spend = 0,
+  });
+
+  factory _$MemberTopRowDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$MemberTopRowDtoImplFromJson(json);
+
+  @override
+  @JsonKey()
+  final String memberId;
+  @override
+  final String? name;
+  @override
+  @JsonKey()
+  final int visits;
+  @override
+  @JsonKey()
+  final int spend;
+
+  @override
+  String toString() {
+    return 'MemberTopRowDto(memberId: $memberId, name: $name, visits: $visits, spend: $spend)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$MemberTopRowDtoImpl &&
+            (identical(other.memberId, memberId) ||
+                other.memberId == memberId) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.visits, visits) || other.visits == visits) &&
+            (identical(other.spend, spend) || other.spend == spend));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, memberId, name, visits, spend);
+
+  /// Create a copy of MemberTopRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$MemberTopRowDtoImplCopyWith<_$MemberTopRowDtoImpl> get copyWith =>
+      __$$MemberTopRowDtoImplCopyWithImpl<_$MemberTopRowDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$MemberTopRowDtoImplToJson(this);
+  }
+}
+
+abstract class _MemberTopRowDto implements MemberTopRowDto {
+  const factory _MemberTopRowDto({
+    final String memberId,
+    final String? name,
+    final int visits,
+    final int spend,
+  }) = _$MemberTopRowDtoImpl;
+
+  factory _MemberTopRowDto.fromJson(Map<String, dynamic> json) =
+      _$MemberTopRowDtoImpl.fromJson;
+
+  @override
+  String get memberId;
+  @override
+  String? get name;
+  @override
+  int get visits;
+  @override
+  int get spend;
+
+  /// Create a copy of MemberTopRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$MemberTopRowDtoImplCopyWith<_$MemberTopRowDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

@@ -106,6 +106,15 @@ class Visits extends Table {
   TextColumn get reservationId => text().nullable()();
   TextColumn get lastActorId => text().nullable()();
 
+  /// The [[Pelanggan (member)]] this party belongs to, attached at the till any
+  /// time before bill close (ADR-0093). Distinct from [guestName], which is the
+  /// waiter's per-visit party label — attaching fills an empty one and never
+  /// overwrites a typed one. Nullable forever: most visits are not members.
+  ///
+  /// A weak reference. A deleted member leaves it dangling on purpose
+  /// (ADR-0092) — the visit *was* a member visit, and history does not rewrite.
+  TextColumn get memberId => text().nullable()();
+
   /// Set when the waiter frees the table (table-close / detach). Non-null ⇒
   /// the visit is detached: floor shows the table kosong, the cashier still
   /// lists this bill, flagged.
@@ -419,6 +428,44 @@ class VenueSettings extends Table {
   TextColumn get soundUngreeted =>
       text().withDefault(const Constant('chime'))();
   TextColumn get soundPickup => text().withDefault(const Constant('chime'))();
+
+  /// **Keanggotaan** — the master switch. Off by default: a venue that does not
+  /// want a guest directory must not grow one by upgrading. Off hides
+  /// `/members`, the bill overlay's member row, the receipt lines and the whole
+  /// Reports section; it never deletes anything.
+  BoolColumn get membersEnabled =>
+      boolean().withDefault(const Constant(false))();
+
+  /// The two mechanisms that nest under it, both off by default. Turning
+  /// [memberPointsEnabled] off **freezes** the [[Poin]] ledger — balances stay,
+  /// redemption hides, flipping it back on restores history (ADR-0095).
+  BoolColumn get memberPointsEnabled =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get memberPunchEnabled =>
+      boolean().withDefault(const Constant(false))();
+
+  /// The [[Preset diskon]] the owner nominates as the member discount, applied
+  /// in the `member` slot (ADR-0094). Null is a valid state — a venue can run
+  /// membership on points and stempel alone. A **pointer, not a flag on the
+  /// preset**: presets are hard-deleted, and a dangling pointer reads as "not
+  /// configured" where a stale flag on two presets has no obvious repair.
+  TextColumn get memberPresetId => text().nullable()();
+
+  /// Earn rate: poin per Rp 1.000 of the bill net of discount, excluding
+  /// service and tax, floored (ADR-0095).
+  IntColumn get memberEarnPerThousand =>
+      integer().withDefault(const Constant(1))();
+
+  /// Redemption: rupiah a single poin is worth, and the floor below which
+  /// redeeming is refused (a 3-poin redemption is not worth a cashier's tap).
+  IntColumn get memberPointValue =>
+      integer().withDefault(const Constant(1000))();
+  IntColumn get memberRedeemMin => integer().withDefault(const Constant(10))();
+
+  /// The [[Kartu stempel (punch card)]] program: one menu item, N paid units
+  /// earn one free. Null item ⇒ no program running even when the toggle is on.
+  TextColumn get memberPunchItemId => text().nullable()();
+  IntColumn get memberPunchTarget => integer().withDefault(const Constant(10))();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -558,6 +605,12 @@ class TableSessions extends Table {
   /// for pre-v42 rows. ADR-0066.
   TextColumn get channel => text().withDefault(const Constant(''))();
   BoolColumn get prepaid => boolean().withDefault(const Constant(false))();
+
+  /// The [[Pelanggan (member)]] frozen at snapshot. Every member figure in
+  /// Reports reads this, not the live directory — which is what lets a deleted
+  /// member's past trade still count in the member/non-member split while the
+  /// person themselves is gone (ADR-0092).
+  TextColumn get memberId => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -699,6 +752,16 @@ class Discounts extends Table {
   /// Null ⇒ whole-order discount. Set ⇒ line discount on this ticket's units.
   TextColumn get ticketId => text().nullable()();
 
+  /// Which authority applied a **bill** discount: `manual` (a cashier's promo),
+  /// `member` (the venue's nominated member preset), `redeem` (a
+  /// [[Tukar poin (redeem)|points redemption]]). Always `manual` on order- and
+  /// line-scope rows, which have no such contest.
+  ///
+  /// The one-per-visit rule of ADR-0070 is now **one per source** (ADR-0094):
+  /// the partial unique index covers `(visit_id, source)`, so the three stack
+  /// by design and none can be applied twice.
+  TextColumn get source => text().withDefault(const Constant('manual'))();
+
   /// Weak reference — the preset may be edited or deleted afterwards. Never
   /// read it to render or report a settled bill; use the snapshot below.
   TextColumn get presetId => text().nullable()();
@@ -792,6 +855,11 @@ class TableSessionDiscounts extends Table {
   TextColumn get kind => text()();
   IntColumn get value => integer().withDefault(const Constant(0))();
   IntColumn get amount => integer().withDefault(const Constant(0))();
+
+  /// Mirrors `Discounts.source` at close so history can still say *why* money
+  /// came off — promo, membership or redemption (ADR-0094). Pre-v51 rows are
+  /// `manual`, which is what they all were.
+  TextColumn get source => text().withDefault(const Constant('manual'))();
   TextColumn get byUserId => text().nullable()();
   TextColumn get approvedByUserId => text().nullable()();
   DateTimeColumn get at => dateTime()();
@@ -832,6 +900,13 @@ class Reservations extends Table {
   TextColumn get zoneId => text().nullable()();
   TextColumn get tableId => text().nullable()();
   TextColumn get notes => text().nullable()();
+
+  /// Set when the phone typed at booking already belongs to a
+  /// [[Pelanggan (member)]] — member lookup is the primary path in the booking
+  /// flow, manual name+phone the fallback. [name] and [phone] stay a **snapshot
+  /// of what was booked**: a later edit to the member never rewrites the
+  /// booking, the same rule `discounts` keeps against its preset.
+  TextColumn get memberId => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime().nullable()();
 
@@ -1012,6 +1087,78 @@ class CashEntries extends Table {
 
   /// Attribution frozen at write time so a later rename or deletion cannot
   /// rewrite the trail.
+  TextColumn get actorName => text().nullable()();
+  DateTimeColumn get at => dateTime()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// A [[Pelanggan (member)]] — a person the venue recognises across visits.
+///
+/// **The phone number is the identity** (ADR-0092): unique venue-wide, enforced
+/// by a real unique index rather than by route code, because the whole scheme
+/// rests on "enrolling an existing number attaches, never duplicates". There is
+/// no anonymous member and no soft delete — deleting the row is how a person is
+/// forgotten, and the [[Visit|visits]] they made keep a dangling `memberId`
+/// that renders as "Pelanggan dihapus".
+///
+/// Venue-local, never synced to the cloud (ADR-0091).
+class Members extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+
+  /// Normalised to digits at write time so `0812…`, `+62812…` and `62812…`
+  /// cannot become three members. Unique — see `_createMemberIndexes`.
+  TextColumn get phone => text()();
+
+  /// Short human-readable code printed on the receipt and read back over the
+  /// counter. **Display only** — never the lookup key, which is [phone].
+  TextColumn get code => text().withDefault(const Constant(''))();
+  TextColumn get note => text().nullable()();
+
+  /// Date only (time ignored). Feeds the directory's "ulang tahun bulan ini"
+  /// filter and nothing else: there is deliberately no birthday rules engine.
+  DateTimeColumn get birthday => dateTime().nullable()();
+  DateTimeColumn get joinedAt => dateTime()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// The [[Poin]] ledger — append-only, one row per movement.
+///
+/// **There is no balance column and there never will be**, for the reason
+/// [CashEntries] has none: the balance is `SUM(delta)`, money must never have
+/// two answers, and a stored one drifts silently. It cannot go negative
+/// (checked in `lib/server/members.dart`, the single writer).
+///
+/// Earn happens **once, at bill close** (ADR-0095) — never per payment, because
+/// a bill mints a receipt per payment and a reopen would earn twice.
+class MemberPoints extends Table {
+  TextColumn get id => text()();
+  TextColumn get memberId => text()();
+
+  /// `earn | redeem | adjust | reversal`. A reversal is what a reopened bill
+  /// writes against its own earn; a re-close then earns afresh.
+  TextColumn get kind => text()();
+
+  /// Signed points — positive earned, negative spent or reversed.
+  IntColumn get delta => integer()();
+
+  /// The [[Visit]] that produced it, on `earn`, `redeem` and `reversal`. Null on
+  /// a hand adjustment, which is the only movement with no bill behind it.
+  TextColumn get visitId => text().nullable()();
+
+  /// The bill figure the earn was computed from (net of discount, excluding
+  /// service and tax). Kept so a balance can be explained without re-deriving
+  /// it from a snapshot whose rate may since have changed.
+  IntColumn get baseAmount => integer().withDefault(const Constant(0))();
+
+  /// Required on `adjust` (enforced in the writer) — an adjustment with no
+  /// reason is a hole in the ledger, exactly as it is in the cash box.
+  TextColumn get note => text().nullable()();
+  TextColumn get actorUserId => text().nullable()();
+
+  /// Attribution frozen at write time so a later rename cannot rewrite history.
   TextColumn get actorName => text().nullable()();
   DateTimeColumn get at => dateTime()();
   @override

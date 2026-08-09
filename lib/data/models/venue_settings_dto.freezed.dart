@@ -67,7 +67,21 @@ mixin _$VenueSettingsDto {
   String get soundVoid => throw _privateConstructorUsedError;
   String get soundOverdue => throw _privateConstructorUsedError;
   String get soundUngreeted => throw _privateConstructorUsedError;
-  String get soundPickup => throw _privateConstructorUsedError;
+  String get soundPickup =>
+      throw _privateConstructorUsedError; // Membership (ADR-0091). Off by default — a venue opts in, and until it
+  // does the member row, the directory and the receipt lines do not exist.
+  bool get membersEnabled => throw _privateConstructorUsedError;
+  bool get memberPointsEnabled => throw _privateConstructorUsedError;
+  bool get memberPunchEnabled => throw _privateConstructorUsedError;
+
+  /// The [[Preset diskon]] nominated as the standing member discount, or null
+  /// for a venue running membership on points and stempel alone (ADR-0094).
+  String? get memberPresetId => throw _privateConstructorUsedError;
+  int get memberEarnPerThousand => throw _privateConstructorUsedError;
+  int get memberPointValue => throw _privateConstructorUsedError;
+  int get memberRedeemMin => throw _privateConstructorUsedError;
+  String? get memberPunchItemId => throw _privateConstructorUsedError;
+  int get memberPunchTarget => throw _privateConstructorUsedError;
 
   /// Serializes this VenueSettingsDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -123,6 +137,15 @@ abstract class $VenueSettingsDtoCopyWith<$Res> {
     String soundOverdue,
     String soundUngreeted,
     String soundPickup,
+    bool membersEnabled,
+    bool memberPointsEnabled,
+    bool memberPunchEnabled,
+    String? memberPresetId,
+    int memberEarnPerThousand,
+    int memberPointValue,
+    int memberRedeemMin,
+    String? memberPunchItemId,
+    int memberPunchTarget,
   });
 }
 
@@ -177,6 +200,15 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
     Object? soundOverdue = null,
     Object? soundUngreeted = null,
     Object? soundPickup = null,
+    Object? membersEnabled = null,
+    Object? memberPointsEnabled = null,
+    Object? memberPunchEnabled = null,
+    Object? memberPresetId = freezed,
+    Object? memberEarnPerThousand = null,
+    Object? memberPointValue = null,
+    Object? memberRedeemMin = null,
+    Object? memberPunchItemId = freezed,
+    Object? memberPunchTarget = null,
   }) {
     return _then(
       _value.copyWith(
@@ -324,6 +356,42 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
                 ? _value.soundPickup
                 : soundPickup // ignore: cast_nullable_to_non_nullable
                       as String,
+            membersEnabled: null == membersEnabled
+                ? _value.membersEnabled
+                : membersEnabled // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            memberPointsEnabled: null == memberPointsEnabled
+                ? _value.memberPointsEnabled
+                : memberPointsEnabled // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            memberPunchEnabled: null == memberPunchEnabled
+                ? _value.memberPunchEnabled
+                : memberPunchEnabled // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            memberPresetId: freezed == memberPresetId
+                ? _value.memberPresetId
+                : memberPresetId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            memberEarnPerThousand: null == memberEarnPerThousand
+                ? _value.memberEarnPerThousand
+                : memberEarnPerThousand // ignore: cast_nullable_to_non_nullable
+                      as int,
+            memberPointValue: null == memberPointValue
+                ? _value.memberPointValue
+                : memberPointValue // ignore: cast_nullable_to_non_nullable
+                      as int,
+            memberRedeemMin: null == memberRedeemMin
+                ? _value.memberRedeemMin
+                : memberRedeemMin // ignore: cast_nullable_to_non_nullable
+                      as int,
+            memberPunchItemId: freezed == memberPunchItemId
+                ? _value.memberPunchItemId
+                : memberPunchItemId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            memberPunchTarget: null == memberPunchTarget
+                ? _value.memberPunchTarget
+                : memberPunchTarget // ignore: cast_nullable_to_non_nullable
+                      as int,
           )
           as $Val,
     );
@@ -376,6 +444,15 @@ abstract class _$$VenueSettingsDtoImplCopyWith<$Res>
     String soundOverdue,
     String soundUngreeted,
     String soundPickup,
+    bool membersEnabled,
+    bool memberPointsEnabled,
+    bool memberPunchEnabled,
+    String? memberPresetId,
+    int memberEarnPerThousand,
+    int memberPointValue,
+    int memberRedeemMin,
+    String? memberPunchItemId,
+    int memberPunchTarget,
   });
 }
 
@@ -429,6 +506,15 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
     Object? soundOverdue = null,
     Object? soundUngreeted = null,
     Object? soundPickup = null,
+    Object? membersEnabled = null,
+    Object? memberPointsEnabled = null,
+    Object? memberPunchEnabled = null,
+    Object? memberPresetId = freezed,
+    Object? memberEarnPerThousand = null,
+    Object? memberPointValue = null,
+    Object? memberRedeemMin = null,
+    Object? memberPunchItemId = freezed,
+    Object? memberPunchTarget = null,
   }) {
     return _then(
       _$VenueSettingsDtoImpl(
@@ -576,6 +662,42 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
             ? _value.soundPickup
             : soundPickup // ignore: cast_nullable_to_non_nullable
                   as String,
+        membersEnabled: null == membersEnabled
+            ? _value.membersEnabled
+            : membersEnabled // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        memberPointsEnabled: null == memberPointsEnabled
+            ? _value.memberPointsEnabled
+            : memberPointsEnabled // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        memberPunchEnabled: null == memberPunchEnabled
+            ? _value.memberPunchEnabled
+            : memberPunchEnabled // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        memberPresetId: freezed == memberPresetId
+            ? _value.memberPresetId
+            : memberPresetId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        memberEarnPerThousand: null == memberEarnPerThousand
+            ? _value.memberEarnPerThousand
+            : memberEarnPerThousand // ignore: cast_nullable_to_non_nullable
+                  as int,
+        memberPointValue: null == memberPointValue
+            ? _value.memberPointValue
+            : memberPointValue // ignore: cast_nullable_to_non_nullable
+                  as int,
+        memberRedeemMin: null == memberRedeemMin
+            ? _value.memberRedeemMin
+            : memberRedeemMin // ignore: cast_nullable_to_non_nullable
+                  as int,
+        memberPunchItemId: freezed == memberPunchItemId
+            ? _value.memberPunchItemId
+            : memberPunchItemId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        memberPunchTarget: null == memberPunchTarget
+            ? _value.memberPunchTarget
+            : memberPunchTarget // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -621,6 +743,15 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     this.soundOverdue = 'alert',
     this.soundUngreeted = 'chime',
     this.soundPickup = 'chime',
+    this.membersEnabled = false,
+    this.memberPointsEnabled = true,
+    this.memberPunchEnabled = false,
+    this.memberPresetId,
+    this.memberEarnPerThousand = 1,
+    this.memberPointValue = 1000,
+    this.memberRedeemMin = 10,
+    this.memberPunchItemId,
+    this.memberPunchTarget = 10,
   });
 
   factory _$VenueSettingsDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -745,10 +876,40 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
   @override
   @JsonKey()
   final String soundPickup;
+  // Membership (ADR-0091). Off by default — a venue opts in, and until it
+  // does the member row, the directory and the receipt lines do not exist.
+  @override
+  @JsonKey()
+  final bool membersEnabled;
+  @override
+  @JsonKey()
+  final bool memberPointsEnabled;
+  @override
+  @JsonKey()
+  final bool memberPunchEnabled;
+
+  /// The [[Preset diskon]] nominated as the standing member discount, or null
+  /// for a venue running membership on points and stempel alone (ADR-0094).
+  @override
+  final String? memberPresetId;
+  @override
+  @JsonKey()
+  final int memberEarnPerThousand;
+  @override
+  @JsonKey()
+  final int memberPointValue;
+  @override
+  @JsonKey()
+  final int memberRedeemMin;
+  @override
+  final String? memberPunchItemId;
+  @override
+  @JsonKey()
+  final int memberPunchTarget;
 
   @override
   String toString() {
-    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, pickupTargetMins: $pickupTargetMins, ungreetedMins: $ungreetedMins, ungreetedEscalateMins: $ungreetedEscalateMins, longStayMins: $longStayMins, idleTableMins: $idleTableMins, reservationGraceMins: $reservationGraceMins, ungreetedAlertEnabled: $ungreetedAlertEnabled, pickupAlertEnabled: $pickupAlertEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue, soundUngreeted: $soundUngreeted, soundPickup: $soundPickup)';
+    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, pickupTargetMins: $pickupTargetMins, ungreetedMins: $ungreetedMins, ungreetedEscalateMins: $ungreetedEscalateMins, longStayMins: $longStayMins, idleTableMins: $idleTableMins, reservationGraceMins: $reservationGraceMins, ungreetedAlertEnabled: $ungreetedAlertEnabled, pickupAlertEnabled: $pickupAlertEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue, soundUngreeted: $soundUngreeted, soundPickup: $soundPickup, membersEnabled: $membersEnabled, memberPointsEnabled: $memberPointsEnabled, memberPunchEnabled: $memberPunchEnabled, memberPresetId: $memberPresetId, memberEarnPerThousand: $memberEarnPerThousand, memberPointValue: $memberPointValue, memberRedeemMin: $memberRedeemMin, memberPunchItemId: $memberPunchItemId, memberPunchTarget: $memberPunchTarget)';
   }
 
   @override
@@ -823,7 +984,25 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
             (identical(other.soundUngreeted, soundUngreeted) ||
                 other.soundUngreeted == soundUngreeted) &&
             (identical(other.soundPickup, soundPickup) ||
-                other.soundPickup == soundPickup));
+                other.soundPickup == soundPickup) &&
+            (identical(other.membersEnabled, membersEnabled) ||
+                other.membersEnabled == membersEnabled) &&
+            (identical(other.memberPointsEnabled, memberPointsEnabled) ||
+                other.memberPointsEnabled == memberPointsEnabled) &&
+            (identical(other.memberPunchEnabled, memberPunchEnabled) ||
+                other.memberPunchEnabled == memberPunchEnabled) &&
+            (identical(other.memberPresetId, memberPresetId) ||
+                other.memberPresetId == memberPresetId) &&
+            (identical(other.memberEarnPerThousand, memberEarnPerThousand) ||
+                other.memberEarnPerThousand == memberEarnPerThousand) &&
+            (identical(other.memberPointValue, memberPointValue) ||
+                other.memberPointValue == memberPointValue) &&
+            (identical(other.memberRedeemMin, memberRedeemMin) ||
+                other.memberRedeemMin == memberRedeemMin) &&
+            (identical(other.memberPunchItemId, memberPunchItemId) ||
+                other.memberPunchItemId == memberPunchItemId) &&
+            (identical(other.memberPunchTarget, memberPunchTarget) ||
+                other.memberPunchTarget == memberPunchTarget));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -866,6 +1045,15 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     soundOverdue,
     soundUngreeted,
     soundPickup,
+    membersEnabled,
+    memberPointsEnabled,
+    memberPunchEnabled,
+    memberPresetId,
+    memberEarnPerThousand,
+    memberPointValue,
+    memberRedeemMin,
+    memberPunchItemId,
+    memberPunchTarget,
   ]);
 
   /// Create a copy of VenueSettingsDto
@@ -923,6 +1111,15 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
     final String soundOverdue,
     final String soundUngreeted,
     final String soundPickup,
+    final bool membersEnabled,
+    final bool memberPointsEnabled,
+    final bool memberPunchEnabled,
+    final String? memberPresetId,
+    final int memberEarnPerThousand,
+    final int memberPointValue,
+    final int memberRedeemMin,
+    final String? memberPunchItemId,
+    final int memberPunchTarget,
   }) = _$VenueSettingsDtoImpl;
 
   factory _VenueSettingsDto.fromJson(Map<String, dynamic> json) =
@@ -1007,7 +1204,29 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
   @override
   String get soundUngreeted;
   @override
-  String get soundPickup;
+  String get soundPickup; // Membership (ADR-0091). Off by default — a venue opts in, and until it
+  // does the member row, the directory and the receipt lines do not exist.
+  @override
+  bool get membersEnabled;
+  @override
+  bool get memberPointsEnabled;
+  @override
+  bool get memberPunchEnabled;
+
+  /// The [[Preset diskon]] nominated as the standing member discount, or null
+  /// for a venue running membership on points and stempel alone (ADR-0094).
+  @override
+  String? get memberPresetId;
+  @override
+  int get memberEarnPerThousand;
+  @override
+  int get memberPointValue;
+  @override
+  int get memberRedeemMin;
+  @override
+  String? get memberPunchItemId;
+  @override
+  int get memberPunchTarget;
 
   /// Create a copy of VenueSettingsDto
   /// with the given fields replaced by the non-null parameter values.

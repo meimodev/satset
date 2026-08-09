@@ -10,7 +10,10 @@ import 'package:go_router/go_router.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/data/repositories/discount_presets_repository.dart';
+import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -301,6 +304,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
         const SizedBox(height: Sp.s3h),
         _PajakLayananCard(),
         const SizedBox(height: Sp.s3h),
+        _KeanggotaanCard(),
         const SizedBox(height: Sp.s3h),
         _ReportsHourCard(),
       ],
@@ -370,6 +374,19 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
                     context,
                     context.l10n.venueSettingsSectionTax,
                     (c, _) => _PajakLayananCard(),
+                  ),
+                ),
+                _phoneRow(
+                  context,
+                  sc,
+                  label: context.l10n.vstSectionMembers,
+                  value: s.membersEnabled
+                      ? context.l10n.memHubBadgeOn
+                      : context.l10n.memHubBadgeOff,
+                  onTap: () => _openDetail(
+                    context,
+                    context.l10n.vstSectionMembers,
+                    (c, _) => _KeanggotaanCard(),
                   ),
                 ),
                 _phoneRow(
@@ -1360,6 +1377,252 @@ class _ReportsHourCard extends ConsumerWidget {
           : context.l10n.stepperDecrease,
       size: 36,
       onTap: onTap,
+    );
+  }
+}
+
+/// "Keanggotaan" — the whole membership program's switches (ADR-0091).
+///
+/// Off by default and off for most venues. Everything below only exists once
+/// the top switch is on, because a rate the program never applies is a number
+/// an owner has to reason about for nothing.
+class _KeanggotaanCard extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    final s = ref.watch(venueSettingsProvider);
+    final n = ref.read(venueSettingsProvider.notifier);
+    final presets = ref
+        .watch(discountPresetsRepositoryProvider)
+        .where((p) => p.active && p.scope == 'bill')
+        .toList();
+    final items = ref.watch(menuItemsProvider);
+
+    return SatCard.titled(
+      title: l10n.vstSectionMembers,
+      tag: l10n.vstMembersTag,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: Sp.s3h),
+          _MemberToggle(
+            label: l10n.vstMembersEnable,
+            hint: l10n.vstMembersEnableHint,
+            on: s.membersEnabled,
+            onToggle: () => n.patch(membersEnabled: !s.membersEnabled),
+          ),
+          if (s.membersEnabled) ...[
+            Divider(height: 28, color: sc.border0),
+            _MemberToggle(
+              label: l10n.vstMembersPoints,
+              // Switching points off **freezes** the ledger rather than
+              // clearing it: a balance is a debt to a guest (ADR-0095).
+              hint: l10n.vstMembersPointsHint,
+              on: s.memberPointsEnabled,
+              onToggle: () =>
+                  n.patch(memberPointsEnabled: !s.memberPointsEnabled),
+            ),
+            if (s.memberPointsEnabled) ...[
+              const SizedBox(height: Sp.s3),
+              _MemberStepper(
+                label: l10n.vstMembersEarnRate,
+                hint: l10n.vstMembersEarnRateHint,
+                value: s.memberEarnPerThousand,
+                min: 1,
+                max: 100,
+                onChanged: (v) => n.patch(memberEarnPerThousand: v),
+              ),
+              const SizedBox(height: Sp.s2h),
+              _MemberStepper(
+                label: l10n.vstMembersPointValue,
+                hint: l10n.vstMembersPointValueHint,
+                value: s.memberPointValue,
+                min: 100,
+                max: 100000,
+                step: 100,
+                format: formatIDR,
+                onChanged: (v) => n.patch(memberPointValue: v),
+              ),
+              const SizedBox(height: Sp.s2h),
+              _MemberStepper(
+                label: l10n.vstMembersRedeemMin,
+                hint: l10n.vstMembersRedeemMinHint,
+                value: s.memberRedeemMin,
+                min: 1,
+                max: 1000,
+                step: 5,
+                onChanged: (v) => n.patch(memberRedeemMin: v),
+              ),
+            ],
+            Divider(height: 28, color: sc.border0),
+            _MemberToggle(
+              label: l10n.vstMembersPunch,
+              hint: l10n.vstMembersPunchHint,
+              on: s.memberPunchEnabled,
+              onToggle: () => n.patch(memberPunchEnabled: !s.memberPunchEnabled),
+            ),
+            if (s.memberPunchEnabled) ...[
+              const SizedBox(height: Sp.s3),
+              SatDropdown<String>(
+                value: items.any((i) => i.id == s.memberPunchItemId)
+                    ? s.memberPunchItemId
+                    : null,
+                label: l10n.vstMembersPunchItem,
+                hint: l10n.vstMembersPunchItemNone,
+                options: [for (final i in items) SatOption(i.id, i.name)],
+                onChanged: (v) => n.patch(memberPunchItemId: v ?? ''),
+              ),
+              const SizedBox(height: Sp.s2h),
+              _MemberStepper(
+                label: l10n.vstMembersPunchTarget,
+                hint: l10n.vstMembersPunchTargetHint,
+                value: s.memberPunchTarget,
+                min: 2,
+                max: 100,
+                onChanged: (v) => n.patch(memberPunchTarget: v),
+              ),
+            ],
+            Divider(height: 28, color: sc.border0),
+            // A pointer at the discount catalogue, not a rate of its own: the
+            // member discount is an ordinary bill preset the venue nominates,
+            // so it reports and audits like every other one (ADR-0094).
+            SatDropdown<String>(
+              value: presets.any((p) => p.id == s.memberPresetId)
+                  ? s.memberPresetId
+                  : null,
+              label: l10n.vstMembersPreset,
+              hint: l10n.vstMembersPresetNone,
+              options: [for (final p in presets) SatOption(p.id, p.name)],
+              onChanged: (v) => n.patch(memberPresetId: v ?? ''),
+            ),
+            const SizedBox(height: Sp.s1h),
+            Text(
+              l10n.vstMembersPresetHint,
+              style: SatType.bodyS(color: sc.textLo),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberToggle extends StatelessWidget {
+  final String label;
+  final String hint;
+  final bool on;
+  final VoidCallback onToggle;
+  const _MemberToggle({
+    required this.label,
+    required this.hint,
+    required this.on,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: SatType.bodyM(color: sc.textHi)),
+              const SizedBox(height: Sp.sHair),
+              Text(hint, style: SatType.bodyS(color: sc.textLo)),
+            ],
+          ),
+        ),
+        const SizedBox(width: Sp.s3),
+        SatToggle(
+          value: on,
+          semanticLabel: label,
+          onChanged: (_) => onToggle(),
+        ),
+      ],
+    );
+  }
+}
+
+class _MemberStepper extends StatelessWidget {
+  final String label;
+  final String hint;
+  final int value;
+  final int min;
+  final int max;
+  final int step;
+  final String Function(int)? format;
+  final ValueChanged<int> onChanged;
+  const _MemberStepper({
+    required this.label,
+    required this.hint,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+    this.step = 1,
+    this.format,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Row(
+      children: [
+        SizedBox(
+          width: 200,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: SatType.bodyM(color: sc.textMd)),
+              const SizedBox(height: Sp.sHair),
+              Text(hint, style: SatType.bodyS(color: sc.textLo)),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Row(
+            children: [
+              SatIconButton.outline(
+                icon: Icons.remove,
+                tooltip: context.l10n.stepperDecrease,
+                size: 36,
+                onTap: value > min
+                    ? () => onChanged((value - step).clamp(min, max))
+                    : null,
+              ),
+              const SizedBox(width: Sp.s2h),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Sp.s3h,
+                  vertical: Sp.s2,
+                ),
+                decoration: SatBox.d(
+                  color: sc.bg3,
+                  border: SatB.all(color: sc.border1),
+                  borderRadius: SatR.a(10),
+                ),
+                child: Text(
+                  format?.call(value) ?? '$value',
+                  style: SatType.monoM(color: sc.textHi),
+                ),
+              ),
+              const SizedBox(width: Sp.s2h),
+              SatIconButton.outline(
+                icon: Icons.add,
+                tooltip: context.l10n.stepperIncrease,
+                size: 36,
+                onTap: value < max
+                    ? () => onChanged((value + step).clamp(min, max))
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

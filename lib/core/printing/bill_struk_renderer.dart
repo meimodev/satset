@@ -158,6 +158,9 @@ class BillStrukRenderer {
     if (d.guestName.trim().isNotEmpty) {
       out.addAll(g.text(l.strukGuest(d.guestName.trim())));
     }
+    if (d.memberName.trim().isNotEmpty) {
+      out.addAll(g.text(l.strukMember(d.memberName.trim())));
+    }
     if (d.docLabel.trim().isNotEmpty && d.kind != BillDocKind.wholeBill) {
       out.addAll(
         g.text(d.docLabel.trim(), styles: const PosStyles(bold: true)),
@@ -260,6 +263,23 @@ class BillStrukRenderer {
             styles: const PosStyles(align: PosAlign.center, bold: true),
           ),
         );
+      }
+    }
+
+    // ── the member's standing (ADR-0095) ──
+    // What they hold as this printed — never an "earned today" line: points
+    // land at bill close, so a Tagihan would be promising, and a reopen would
+    // make the promise a lie.
+    // ponytail: a zero balance prints nothing, so a venue running only the
+    // punch card never prints a "0 poin" line it does not offer.
+    if (d.memberName.trim().isNotEmpty &&
+        (d.memberPoints > 0 || d.memberPunch.isNotEmpty)) {
+      out.addAll(g.hr(ch: '-'));
+      if (d.memberPoints > 0) {
+        out.addAll(g.text(l.strukMemberPoints(d.memberPoints)));
+      }
+      if (d.memberPunch.isNotEmpty) {
+        out.addAll(g.text(l.strukMemberPunch(d.memberPunch)));
       }
     }
 

@@ -27,6 +27,13 @@ enum Capability {
   adjustStock(CapabilityGroup.inventory),
   manageIngredients(CapabilityGroup.inventory),
   overrideStock(CapabilityGroup.inventory),
+  /// Edit, merge, delete a [[Pelanggan (member)]] and adjust points by hand.
+  ///
+  /// Deliberately **not** what a cashier needs: enrolling, attaching and
+  /// redeeming ride `settleBill`, because they happen at the till in the middle
+  /// of taking money. This capability is the directory-keeper's, and it is
+  /// granted to the admin role only until an owner says otherwise.
+  manageMembers(CapabilityGroup.admin),
   manageStaff(CapabilityGroup.admin),
   manageRoles(CapabilityGroup.admin),
   viewReports(CapabilityGroup.admin),

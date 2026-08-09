@@ -280,6 +280,9 @@ class AppL10nEn extends AppL10n {
   String get auditTypeCashMovement => 'Cash';
 
   @override
+  String get auditTypeMemberChanged => 'Member';
+
+  @override
   String get auditTypeMenuKilled => 'Sold out';
 
   @override
@@ -1673,6 +1676,21 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String strukMember(String name) {
+    return 'Member: $name';
+  }
+
+  @override
+  String strukMemberPoints(int points) {
+    return 'Points balance: $points';
+  }
+
+  @override
+  String strukMemberPunch(String progress) {
+    return 'Stamp card: $progress';
+  }
+
+  @override
   String strukNote(String note) {
     return 'Note: $note';
   }
@@ -1945,6 +1963,31 @@ class AppL10nEn extends AppL10n {
   @override
   String auditCashReversed(String amount) {
     return 'Reversed cash movement $amount';
+  }
+
+  @override
+  String auditMemberCreated(String name) {
+    return 'Enrolled member $name';
+  }
+
+  @override
+  String auditMemberDeleted(String name) {
+    return 'Deleted member $name';
+  }
+
+  @override
+  String auditMemberMerged(String from, String to) {
+    return 'Merged member $from into $to';
+  }
+
+  @override
+  String auditMemberPointsAdjusted(String name, String points) {
+    return 'Point correction for $name: $points';
+  }
+
+  @override
+  String auditMemberPointsRedeemed(String name, String points, String amount) {
+    return 'Redemption for $name: $amount off ($points pt)';
   }
 
   @override
@@ -6272,6 +6315,59 @@ class AppL10nEn extends AppL10n {
   String get rptSecKas => 'Petty cash';
 
   @override
+  String get rptSecMembers => 'Membership';
+
+  @override
+  String get rptMembersSub => 'Members over this range';
+
+  @override
+  String get rptMembersEmpty => 'No members enrolled in this range.';
+
+  @override
+  String get rptMembersEnrolled => 'New sign-ups';
+
+  @override
+  String get rptMembersActive => 'Active';
+
+  @override
+  String get rptMembersBills => 'Bills';
+
+  @override
+  String get rptMembersAvgBill => 'Member average';
+
+  @override
+  String get rptMembersAvgGuest => 'Walk-in average';
+
+  @override
+  String get rptMembersLift => 'Lift';
+
+  @override
+  String get rptMembersPoints => 'Points';
+
+  @override
+  String get rptMembersEarned => 'Earned';
+
+  @override
+  String get rptMembersRedeemed => 'Redeemed';
+
+  @override
+  String get rptMembersOutstanding => 'Outstanding';
+
+  @override
+  String get rptMembersLiability => 'Outstanding value';
+
+  @override
+  String get rptMembersTop => 'Top members';
+
+  @override
+  String get rptMembersGone => 'Deleted member';
+
+  @override
+  String rptMembersVisits(int count) {
+    return 'Visits: $count';
+  }
+
+  @override
   String get rptKasOpening => 'Opening';
 
   @override
@@ -6309,6 +6405,13 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get capOverrideStock => 'Sell when out of stock';
+
+  @override
+  String get capManageMembers => 'Manage members';
+
+  @override
+  String get capManageMembersDesc =>
+      'Edit, merge and delete member records, and correct points by hand. A cashier does not need this to enrol or redeem.';
 
   @override
   String get capManageStaff => 'Manage staff';
@@ -7232,4 +7335,323 @@ class AppL10nEn extends AppL10n {
   String moneyCompactPlain(String v) {
     return 'Rp $v';
   }
+
+  @override
+  String get memTitle => 'Members';
+
+  @override
+  String memCount(int count) {
+    return 'Enrolled: $count';
+  }
+
+  @override
+  String get memSearchHint => 'Search name or number';
+
+  @override
+  String get memActionAdd => 'Add';
+
+  @override
+  String get memBirthdayFilter => 'Birthdays this month';
+
+  @override
+  String get memEmptyTitle => 'No members yet';
+
+  @override
+  String get memEmptyBody =>
+      'Enrol a regular with the Add button, or from the bill screen while they pay.';
+
+  @override
+  String get memOffTitle => 'Membership is off';
+
+  @override
+  String get memOffBody =>
+      'Turn it on in Venue settings → Membership. Points and stamps already recorded stay intact.';
+
+  @override
+  String get memPhoneOnly =>
+      'Open this on a tablet. A directory is read row against row, and a phone shows one.';
+
+  @override
+  String memPoints(int points) {
+    return '$points pt';
+  }
+
+  @override
+  String memPunch(int progress, int target) {
+    return 'Stamps $progress/$target';
+  }
+
+  @override
+  String get memRewardDue => 'Reward due';
+
+  @override
+  String memVisits(int count) {
+    return 'Visits: $count';
+  }
+
+  @override
+  String get memColPoints => 'Points';
+
+  @override
+  String get memColPunch => 'Stamps';
+
+  @override
+  String get memColVisits => 'Visits';
+
+  @override
+  String get memColLifetime => 'Lifetime spend';
+
+  @override
+  String get memColJoined => 'Joined';
+
+  @override
+  String get memLedgerTitle => 'Point history';
+
+  @override
+  String get memLedgerLoading => 'Loading history…';
+
+  @override
+  String get memLedgerEmpty => 'No point movements yet.';
+
+  @override
+  String get memSheetAddTitle => 'New member';
+
+  @override
+  String get memSheetEditTitle => 'Edit member';
+
+  @override
+  String get memFieldName => 'Name';
+
+  @override
+  String get memFieldPhone => 'Phone number';
+
+  @override
+  String get memPhoneHelp =>
+      'The phone number is the identity. 0812…, +62812… and 62812… are one person.';
+
+  @override
+  String get memFieldNote => 'Note';
+
+  @override
+  String get memFieldBirthday => 'Birthday';
+
+  @override
+  String get memPickBirthday => 'Pick a birth date';
+
+  @override
+  String get memSave => 'Save';
+
+  @override
+  String get memActionEdit => 'Edit';
+
+  @override
+  String get memActionAdjust => 'Correct points';
+
+  @override
+  String get memActionMerge => 'Merge';
+
+  @override
+  String get memActionDelete => 'Delete';
+
+  @override
+  String get memAdjustTitle => 'Correct points';
+
+  @override
+  String get memAdjustAdd => 'Add';
+
+  @override
+  String get memAdjustSubtract => 'Subtract';
+
+  @override
+  String get memFieldDelta => 'Point amount';
+
+  @override
+  String get memFieldReason => 'Reason';
+
+  @override
+  String get memMergeTitle => 'Merge members';
+
+  @override
+  String memMergeBody(String name) {
+    return '$name will be folded into the member you pick. Their points and history move across, then their record is dropped.';
+  }
+
+  @override
+  String get memDeleteTitle => 'Delete member?';
+
+  @override
+  String memDeleteBody(String name) {
+    return '$name and their point history are gone for good. The trade they did still counts in reports.';
+  }
+
+  @override
+  String get memErrNameRequired => 'A name is required.';
+
+  @override
+  String get memErrPhoneRequired => 'A phone number is required.';
+
+  @override
+  String get memErrPhoneTaken => 'Another member already uses this number.';
+
+  @override
+  String get memErrNotFound => 'Member not found.';
+
+  @override
+  String get memErrSameMember => 'Pick a different member.';
+
+  @override
+  String get memErrReasonRequired => 'A reason is required.';
+
+  @override
+  String get memErrInvalidAmount => 'Invalid amount.';
+
+  @override
+  String get memErrPointsOff => 'Points are frozen.';
+
+  @override
+  String memErrBelowMin(int points) {
+    return 'Redemption starts at $points.';
+  }
+
+  @override
+  String memErrInsufficient(int points) {
+    return 'Only $points available.';
+  }
+
+  @override
+  String memErrExceedsBill(int points) {
+    return 'This bill takes at most $points pt.';
+  }
+
+  @override
+  String get memErrRedeemExists => 'This bill already has a redemption.';
+
+  @override
+  String memErrFailed(String code) {
+    return 'Failed: $code';
+  }
+
+  @override
+  String get memPointKindEarn => 'Earned';
+
+  @override
+  String get memPointKindRedeem => 'Redeemed';
+
+  @override
+  String get memPointKindAdjust => 'Correction';
+
+  @override
+  String get memPointKindReversal => 'Reversed';
+
+  @override
+  String get memHubSubtitle => 'Points, stamps and the regulars list';
+
+  @override
+  String get memHubBadgeOn => 'On';
+
+  @override
+  String get memHubBadgeOff => 'Off';
+
+  @override
+  String get vstSectionMembers => 'Membership';
+
+  @override
+  String get vstMembersTag => 'Program';
+
+  @override
+  String get vstMembersEnable => 'Enable membership';
+
+  @override
+  String get vstMembersEnableHint =>
+      'The member directory, points and stamps. Leave off if the venue runs no loyalty program.';
+
+  @override
+  String get vstMembersPoints => 'Points';
+
+  @override
+  String get vstMembersPointsHint =>
+      'Turning this off freezes points rather than clearing them — balances stay intact.';
+
+  @override
+  String get vstMembersEarnRate => 'Points per Rp 1,000';
+
+  @override
+  String get vstMembersEarnRateHint =>
+      'Computed on the net bill, before service and tax.';
+
+  @override
+  String get vstMembersPointValue => 'What 1 point is worth';
+
+  @override
+  String get vstMembersPointValueHint =>
+      'How much comes off the bill for one point redeemed.';
+
+  @override
+  String get vstMembersRedeemMin => 'Minimum redemption';
+
+  @override
+  String get vstMembersRedeemMinHint => 'The floor on a single redemption.';
+
+  @override
+  String get vstMembersPunch => 'Punch card';
+
+  @override
+  String get vstMembersPunchHint =>
+      'Buy so many, get one free. The reward is booked as a comp.';
+
+  @override
+  String get vstMembersPunchItem => 'Item being stamped';
+
+  @override
+  String get vstMembersPunchItemNone => 'Not chosen yet';
+
+  @override
+  String get vstMembersPunchTarget => 'Stamps per reward';
+
+  @override
+  String get vstMembersPunchTargetHint =>
+      'How many are bought before the next one is free.';
+
+  @override
+  String get vstMembersPreset => 'Member discount';
+
+  @override
+  String get vstMembersPresetNone => 'No standing discount';
+
+  @override
+  String get vstMembersPresetHint =>
+      'The bill discount preset applied automatically the moment a member is attached to a bill.';
+
+  @override
+  String get cshMemberNone => 'No member on this bill';
+
+  @override
+  String get cshMemberFind => 'Find member';
+
+  @override
+  String get cshMemberEnrol => 'Enrol someone new';
+
+  @override
+  String get cshMemberDetach => 'Detach';
+
+  @override
+  String get cshMemberRedeem => 'Redeem points';
+
+  @override
+  String cshMemberRedeemUndo(String amount) {
+    return 'Undo redemption ($amount)';
+  }
+
+  @override
+  String cshMemberRedeemMax(int points) {
+    return 'This bill takes at most $points pt.';
+  }
+
+  @override
+  String cshMemberRedeemWorth(String amount) {
+    return 'Takes $amount off';
+  }
+
+  @override
+  String get cshMemberRedeemAll => 'Redeem the lot';
 }

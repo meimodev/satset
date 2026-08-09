@@ -7,6 +7,7 @@ import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/server/audit_log.dart';
+import 'package:satset/server/members.dart';
 import 'package:satset/server/routes/tables_routes.dart'
     show snapshotVisitAndDelete;
 import 'package:satset/server/routes/tickets_routes.dart' show submitOrder;
@@ -127,6 +128,15 @@ Future<void> clearSampleData(AppDatabase db, {WsHub? hub}) async {
     await (db.delete(
       db.visits,
     )..where((v) => v.id.like('$samplePrefix%'))).go();
+    // The directory is invented too, so it goes with the month it belongs to.
+    // Ledger first: a member row with orphaned points would leave a balance
+    // nobody can explain, which is the one thing the ledger must never do.
+    await (db.delete(
+      db.memberPoints,
+    )..where((p) => p.id.like('$samplePrefix%'))).go();
+    await (db.delete(
+      db.members,
+    )..where((m) => m.id.like('$samplePrefix%'))).go();
   });
   await recomputeBalances(db);
   _broadcastRefetch(hub);
@@ -219,6 +229,63 @@ Future<void> seedHistory(
   final balance = {for (final i in ingredients) i.id: i.stockOnHand};
   final lowAt = {for (final i in ingredients) i.id: i.lowStockAt ?? 0};
   final costs = {for (final i in ingredients) i.id: i.costMicro};
+
+  // Enrol the roster before the month starts, spread across the year before it
+  // so `joinedAt` is not a wall of identical timestamps — the Keanggotaan
+  // report counts sign-ups per window, and forty on one day is a chart nobody
+  // learns anything from. A few join *during* the month, which is what makes
+  // that count non-zero on a `7d` range.
+  final memberIds = <String>[];
+  final cfg0 = await memberConfig(db);
+  if (cfg0.enabled) {
+    for (var i = 0; i < sampleMembers.length; i++) {
+      final (name, phone) = sampleMembers[i];
+      // The last five sign up inside the fabricated month.
+      final joined = i < sampleMembers.length - 5
+          ? today.subtract(Duration(days: historyDays + 1 + rng.nextInt(300)))
+          : today.subtract(Duration(days: 1 + rng.nextInt(historyDays)));
+      try {
+        final m = await createMember(
+          db,
+          name: name,
+          phone: phone,
+          // A quarter carry a birthday, which is all the birthday filter needs
+          // to have something to find.
+          birthday: rng.nextDouble() < 0.25
+              ? DateTime(
+                  1985 + rng.nextInt(20),
+                  1 + rng.nextInt(12),
+                  1 + rng.nextInt(28),
+                )
+              : null,
+          at: joined,
+          idPrefix: samplePrefix,
+        );
+        memberIds.add(m.id);
+      } on MemberException {
+        // A venue that already enrolled this number keeps its own member; the
+        // seed is additive and never overwrites a real one.
+      }
+    }
+  }
+
+  /// Pick a member with a long tail — the first names in the roster are the
+  /// regulars, the last ones came once. Weight `1/(i+1)` is the cheapest shape
+  /// that gives a punch card somewhere to fill.
+  String? pickMember() {
+    if (memberIds.isEmpty) return null;
+    if (rng.nextDouble() > memberAttachRate) return null;
+    var total = 0.0;
+    for (var i = 0; i < memberIds.length; i++) {
+      total += 1 / (i + 1);
+    }
+    var roll = rng.nextDouble() * total;
+    for (var i = 0; i < memberIds.length; i++) {
+      roll -= 1 / (i + 1);
+      if (roll <= 0) return memberIds[i];
+    }
+    return memberIds.last;
+  }
 
   var planned = 0;
   var landed = 0;
@@ -396,8 +463,13 @@ Future<void> seedHistory(
         );
       }
 
+      final memberId = pickMember();
       await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
-        VisitsCompanion(openedAt: Value(o.openedAt), pax: Value(o.pax)),
+        VisitsCompanion(
+          openedAt: Value(o.openedAt),
+          pax: Value(o.pax),
+          memberId: Value(memberId),
+        ),
       );
 
       final subtotal = res.createdRows.fold<int>(
@@ -405,8 +477,52 @@ Future<void> seedHistory(
         (a, t) => a + t.price * t.qty,
       );
       final cfg = await _config(db);
-      final breakdown = computeBreakdown(subtotal, cfg);
       final walkout = rng.nextDouble() < walkoutRate;
+
+      // A redemption on a few member bills. Written the way the till writes
+      // one: a ledger row and a bill-scope discount in the `redeem` slot, so
+      // the money and the points agree in history exactly as they would live.
+      var redeemAmount = 0;
+      if (memberId != null && !walkout && rng.nextDouble() < memberRedeemRate) {
+        final balance = await memberPoints(db, memberId);
+        // Never more than a third of the bill: a redemption that swallows the
+        // whole check leaves a zero-rupiah bill in the reports.
+        final ceiling = subtotal ~/ 3;
+        var points = balance - (balance % cfg0.redeemMin);
+        if (cfg0.pointValue > 0 && points * cfg0.pointValue > ceiling) {
+          points =
+              (ceiling ~/ cfg0.pointValue) -
+              ((ceiling ~/ cfg0.pointValue) % cfg0.redeemMin);
+        }
+        if (points >= cfg0.redeemMin) {
+          redeemAmount = await spendPoints(
+            db,
+            memberId: memberId,
+            visitId: visitId,
+            points: points,
+            actorUserId: actor,
+            at: closedAt.subtract(const Duration(minutes: 2)),
+            idPrefix: samplePrefix,
+          );
+          await db
+              .into(db.discounts)
+              .insert(
+                DiscountsCompanion.insert(
+                  id: nextId('dc'),
+                  visitId: Value(visitId),
+                  name: 'Tukar poin',
+                  kind: 'amount',
+                  value: Value(redeemAmount),
+                  amount: Value(redeemAmount),
+                  source: const Value('redeem'),
+                  byUserId: Value(actor),
+                  at: closedAt.subtract(const Duration(minutes: 2)),
+                ),
+              );
+        }
+      }
+
+      final breakdown = computeBreakdown(subtotal, cfg, discount: redeemAmount);
       final receiptId = nextId('rc');
       await db
           .into(db.receipts)
@@ -416,6 +532,7 @@ Future<void> seedHistory(
               tableId: table.id,
               visitId: Value(visitId),
               subtotal: Value(subtotal),
+              discountAmount: Value(redeemAmount),
               serviceAmount: Value(breakdown.serviceAmount),
               taxAmount: Value(breakdown.taxAmount),
               total: Value(breakdown.total),
@@ -492,6 +609,18 @@ Future<void> seedHistory(
         at: closedAt.add(const Duration(seconds: 30)),
         idPrefix: samplePrefix,
       );
+
+      if (memberId != null && !walkout) {
+        await earnPointsForVisit(
+          db,
+          memberId: memberId,
+          visitId: visitId,
+          base: subtotal - redeemAmount,
+          actorUserId: actor,
+          at: closedAt.add(const Duration(seconds: 45)),
+          idPrefix: samplePrefix,
+        );
+      }
 
       final visit = await (db.select(
         db.visits,

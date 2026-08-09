@@ -382,6 +382,42 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return _billFrom(raw);
   }
 
+  // ── membership at the till (ADR-0093). All four move a live bill, so they
+  //    return one, like every other settlement act. ──
+
+  /// Attach a [[Pelanggan (member)]]. The venue's standing member discount, if
+  /// it configured one, lands in its own slot server-side — nothing here has to
+  /// remember to apply it.
+  Future<Bill> attachMember(String visitId, String memberId) async {
+    final raw = await ref
+        .read(apiClientProvider)
+        .postJson('/settlement/visits/$visitId/member', {'memberId': memberId});
+    return _billFrom(raw);
+  }
+
+  Future<Bill> detachMember(String visitId) async {
+    final raw = await ref
+        .read(apiClientProvider)
+        .postJson('/settlement/visits/$visitId/member/detach', const {});
+    return _billFrom(raw);
+  }
+
+  /// Spend points as money off this bill. The ledger row and the discount land
+  /// together server-side or not at all.
+  Future<Bill> redeemPoints(String visitId, int points) async {
+    final raw = await ref
+        .read(apiClientProvider)
+        .postJson('/settlement/visits/$visitId/redeem', {'points': points});
+    return _billFrom(raw);
+  }
+
+  Future<Bill> removeRedeem(String visitId) async {
+    final raw = await ref
+        .read(apiClientProvider)
+        .postJson('/settlement/visits/$visitId/redeem/remove', const {});
+    return _billFrom(raw);
+  }
+
   // ── printing the money document (server renders to a VENUE printer; device
   //    printers render client-side via the picker). Returns null on success or
   //    a human message on failure. See ADR-0023 / ADR-0020. ──

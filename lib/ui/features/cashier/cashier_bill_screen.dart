@@ -26,6 +26,7 @@ import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/receipt_visuals.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/cashier/discount_sheet.dart';
+import 'package:satset/ui/features/cashier/member_panel.dart';
 import 'package:satset/ui/features/cashier/receipt_badge.dart';
 import 'package:satset/ui/features/cashier/widgets/settle_pane.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
@@ -472,6 +473,11 @@ class _BillBodyState extends State<_BillBody> {
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
       children: [
         if (!trim) ...[
+          // The member row sits above the money: who is paying decides what the
+          // money says (a standing member discount, a redemption), so it reads
+          // in the order it takes effect.
+          rv(MemberPanel(bill: bill, run: widget.run, repo: widget.repo)),
+          const SizedBox(height: Sp.s2),
           rv(_TotalsCard(bill)),
           const SizedBox(height: Sp.s2),
           rv(

@@ -32,6 +32,7 @@ import 'routes/reports_routes.dart';
 import 'routes/reservations_routes.dart';
 import 'routes/server_routes.dart';
 import 'routes/cash_routes.dart';
+import 'routes/members_routes.dart';
 import 'routes/settlement_routes.dart';
 import 'routes/tables_routes.dart';
 import 'routes/tickets_routes.dart';
@@ -341,6 +342,7 @@ class ServerRuntime {
     r.mount('/', reservationsRoutes(db, hub, auth).call);
     r.mount('/', settlementRoutes(db, hub, auth).call);
     r.mount('/', cashRoutes(db, hub, auth).call);
+    r.mount('/', membersRoutes(db, hub, auth).call);
 
     // LAN-trusted auto-claim: the client reached this server via mDNS and
     // verified its TLS fingerprint end-to-end, so reaching this handler at all

@@ -105,6 +105,7 @@
   "auditTypeBillReopened": "Buka",
   "auditTypeBillClosed": "Tutup",
   "auditTypeCashMovement": "Kas",
+  "auditTypeMemberChanged": "Pelanggan",
   "auditTypeMenuKilled": "Stop jual",
   "auditTypeMenuRestored": "Jual lagi",
   "auditTypeStaffCreated": "Staf +",
@@ -949,6 +950,30 @@
       }
     }
   },
+  "strukMember": "Member: {name}",
+  "@strukMember": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "strukMemberPoints": "Saldo poin: {points}",
+  "@strukMemberPoints": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "strukMemberPunch": "Kartu stempel: {progress}",
+  "@strukMemberPunch": {
+    "placeholders": {
+      "progress": {
+        "type": "String"
+      }
+    }
+  },
   "strukNote": "Catatan: {note}",
   "@strukNote": {
     "placeholders": {
@@ -1325,6 +1350,58 @@
   "auditCashReversed": "Batalkan mutasi kas {amount}",
   "@auditCashReversed": {
     "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "auditMemberCreated": "Daftar pelanggan {name}",
+  "@auditMemberCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditMemberDeleted": "Hapus pelanggan {name}",
+  "@auditMemberDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditMemberMerged": "Gabung pelanggan {from} ke {to}",
+  "@auditMemberMerged": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "auditMemberPointsAdjusted": "Koreksi poin {name} {points}",
+  "@auditMemberPointsAdjusted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "points": {
+        "type": "String"
+      }
+    }
+  },
+  "auditMemberPointsRedeemed": "Tukar {points} poin {name} — {amount}",
+  "@auditMemberPointsRedeemed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "points": {
+        "type": "String"
+      },
       "amount": {
         "type": "String"
       }
@@ -3948,7 +4025,7 @@
   },
   "ownMoneyAuditTitle": "Catatan uang",
   "ownMoneyAuditEmpty": "Tidak ada aktivitas yang menyentuh uang pada rentang ini.",
-  "ownMoneyAuditTruncated": "Menampilkan {count} terbaru \u2014 catatan lengkap ada di perangkat venue",
+  "ownMoneyAuditTruncated": "Menampilkan {count} terbaru — catatan lengkap ada di perangkat venue",
   "@ownMoneyAuditTruncated": {
     "placeholders": {
       "count": {
@@ -4687,6 +4764,30 @@
   },
   "kasPhoneOnly": "Kas kecil dibaca di tablet.",
   "rptSecKas": "Kas kecil",
+  "rptSecMembers": "Keanggotaan",
+  "rptMembersSub": "Pelanggan terdaftar di rentang ini",
+  "rptMembersEmpty": "Belum ada pelanggan terdaftar di rentang ini.",
+  "rptMembersEnrolled": "Daftar baru",
+  "rptMembersActive": "Aktif",
+  "rptMembersBills": "Tagihan",
+  "rptMembersAvgBill": "Rata-rata pelanggan",
+  "rptMembersAvgGuest": "Rata-rata tamu biasa",
+  "rptMembersLift": "Selisih",
+  "rptMembersPoints": "Poin",
+  "rptMembersEarned": "Terkumpul",
+  "rptMembersRedeemed": "Ditukar",
+  "rptMembersOutstanding": "Beredar",
+  "rptMembersLiability": "Nilai poin beredar",
+  "rptMembersTop": "Pelanggan teratas",
+  "rptMembersGone": "Pelanggan dihapus",
+  "rptMembersVisits": "Kunjungan: {count}",
+  "@rptMembersVisits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "rptKasOpening": "Saldo awal",
   "rptKasIn": "Masuk",
   "rptKasOut": "Keluar",
@@ -4700,6 +4801,8 @@
   "capAdjustStock": "Sesuaikan stok",
   "capManageIngredients": "Kelola bahan",
   "capOverrideStock": "Jual saat stok habis",
+  "capManageMembers": "Kelola pelanggan",
+  "capManageMembersDesc": "Ubah, gabung, dan hapus data pelanggan, serta koreksi poin secara manual. Kasir tidak perlu ini untuk mendaftarkan atau menukar poin.",
   "capManageStaff": "Kelola staf",
   "capManageRoles": "Kelola peran",
   "capViewReports": "Lihat laporan",
@@ -5756,5 +5859,286 @@
         "type": "String"
       }
     }
+  },
+  "memTitle": "Pelanggan",
+  "memCount": "{count} terdaftar",
+  "@memCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "memSearchHint": "Cari nama atau nomor",
+  "memActionAdd": "Tambah",
+  "memBirthdayFilter": "Ulang tahun bulan ini",
+  "memEmptyTitle": "Belum ada pelanggan",
+  "memEmptyBody": "Daftarkan tamu langganan lewat tombol Tambah, atau dari layar tagihan saat mereka bayar.",
+  "memOffTitle": "Keanggotaan tidak aktif",
+  "memOffBody": "Nyalakan di Pengaturan venue → Keanggotaan. Poin dan stempel yang sudah tercatat tetap utuh.",
+  "memPhoneOnly": "Buka di tablet. Daftar pelanggan dibaca baris per baris, dan layar telepon cuma muat satu.",
+  "memPoints": "{points} poin",
+  "@memPoints": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "memPunch": "Stempel {progress}/{target}",
+  "@memPunch": {
+    "placeholders": {
+      "progress": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "memRewardDue": "Hadiah siap",
+  "memVisits": "{count} kunjungan",
+  "@memVisits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "memColPoints": "Poin",
+  "memColPunch": "Stempel",
+  "memColVisits": "Kunjungan",
+  "memColLifetime": "Total belanja",
+  "memColJoined": "Bergabung",
+  "memLedgerTitle": "Riwayat poin",
+  "memLedgerLoading": "Memuat riwayat…",
+  "memLedgerEmpty": "Belum ada gerakan poin.",
+  "memSheetAddTitle": "Pelanggan baru",
+  "memSheetEditTitle": "Ubah pelanggan",
+  "memFieldName": "Nama",
+  "memFieldPhone": "Nomor HP",
+  "memPhoneHelp": "Nomor HP adalah identitasnya. 0812…, +62812… dan 62812… dianggap satu orang.",
+  "memFieldNote": "Catatan",
+  "memFieldBirthday": "Ulang tahun",
+  "memPickBirthday": "Pilih tanggal lahir",
+  "memSave": "Simpan",
+  "memActionEdit": "Ubah",
+  "memActionAdjust": "Koreksi poin",
+  "memActionMerge": "Gabungkan",
+  "memActionDelete": "Hapus",
+  "memAdjustTitle": "Koreksi poin",
+  "memAdjustAdd": "Tambah",
+  "memAdjustSubtract": "Kurangi",
+  "memFieldDelta": "Jumlah poin",
+  "memFieldReason": "Alasan",
+  "memMergeTitle": "Gabungkan pelanggan",
+  "memMergeBody": "{name} akan dilebur ke pelanggan yang dipilih. Poin dan riwayatnya ikut pindah, lalu catatannya dihapus.",
+  "@memMergeBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "memDeleteTitle": "Hapus pelanggan?",
+  "memDeleteBody": "{name} dan riwayat poinnya hilang permanen. Transaksi yang pernah dibuat tetap terhitung di laporan.",
+  "@memDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "memErrNameRequired": "Nama wajib diisi.",
+  "memErrPhoneRequired": "Nomor HP wajib diisi.",
+  "memErrPhoneTaken": "Nomor ini sudah dipakai pelanggan lain.",
+  "memErrNotFound": "Pelanggan tidak ditemukan.",
+  "memErrSameMember": "Pilih pelanggan yang berbeda.",
+  "memErrReasonRequired": "Alasan wajib diisi.",
+  "memErrInvalidAmount": "Jumlah tidak sah.",
+  "memErrPointsOff": "Poin sedang dibekukan.",
+  "memErrBelowMin": "Penukaran minimal {points} poin.",
+  "@memErrBelowMin": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "memErrInsufficient": "Poin tersedia cuma {points}.",
+  "@memErrInsufficient": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "memErrExceedsBill": "Maksimal {points} poin untuk tagihan ini.",
+  "@memErrExceedsBill": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "memErrRedeemExists": "Sudah ada penukaran poin di tagihan ini.",
+  "memErrFailed": "Gagal: {code}",
+  "@memErrFailed": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "memPointKindEarn": "Dapat",
+  "memPointKindRedeem": "Tukar",
+  "memPointKindAdjust": "Koreksi",
+  "memPointKindReversal": "Balik",
+  "memHubSubtitle": "Poin, stempel, dan daftar tamu langganan",
+  "@memHubSubtitle": {
+    "description": "Membership settings and hub copy."
+  },
+  "memHubBadgeOn": "Aktif",
+  "@memHubBadgeOn": {
+    "description": "Membership settings and hub copy."
+  },
+  "memHubBadgeOff": "Nonaktif",
+  "@memHubBadgeOff": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstSectionMembers": "Keanggotaan",
+  "@vstSectionMembers": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersTag": "Program",
+  "@vstMembersTag": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersEnable": "Aktifkan keanggotaan",
+  "@vstMembersEnable": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersEnableHint": "Daftar pelanggan, poin, dan stempel. Venue tanpa program langganan biarkan mati.",
+  "@vstMembersEnableHint": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersPoints": "Poin",
+  "@vstMembersPoints": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersPointsHint": "Dimatikan berarti poin dibekukan, bukan dihapus — saldo tamu tetap utuh.",
+  "@vstMembersPointsHint": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersEarnRate": "Poin per Rp 1.000",
+  "@vstMembersEarnRate": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersEarnRateHint": "Dihitung dari tagihan bersih, sebelum layanan dan pajak.",
+  "@vstMembersEarnRateHint": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersPointValue": "Nilai 1 poin",
+  "@vstMembersPointValue": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersPointValueHint": "Berapa rupiah potongan untuk satu poin yang ditukar.",
+  "@vstMembersPointValueHint": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersRedeemMin": "Tukar minimal",
+  "@vstMembersRedeemMin": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersRedeemMinHint": "Batas bawah sekali penukaran.",
+  "@vstMembersRedeemMinHint": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersPunch": "Kartu stempel",
+  "@vstMembersPunch": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersPunchHint": "Beli sekian, gratis satu. Hadiahnya dibukukan sebagai komplimen.",
+  "@vstMembersPunchHint": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersPunchItem": "Menu yang distempel",
+  "@vstMembersPunchItem": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersPunchItemNone": "Belum dipilih",
+  "@vstMembersPunchItemNone": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersPunchTarget": "Stempel per hadiah",
+  "@vstMembersPunchTarget": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersPunchTargetHint": "Berapa porsi dibeli sebelum yang berikutnya gratis.",
+  "@vstMembersPunchTargetHint": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersPreset": "Diskon anggota",
+  "@vstMembersPreset": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersPresetNone": "Tanpa diskon tetap",
+  "@vstMembersPresetNone": {
+    "description": "Membership settings and hub copy."
+  },
+  "vstMembersPresetHint": "Preset diskon tagihan yang otomatis dipasang begitu pelanggan dikaitkan ke tagihan.",
+  "@vstMembersPresetHint": {
+    "description": "Membership settings and hub copy."
+  },
+  "cshMemberNone": "Belum ada pelanggan",
+  "@cshMemberNone": {
+    "description": "The member row on a live bill."
+  },
+  "cshMemberFind": "Cari pelanggan",
+  "@cshMemberFind": {
+    "description": "The member row on a live bill."
+  },
+  "cshMemberEnrol": "Daftar baru",
+  "@cshMemberEnrol": {
+    "description": "The member row on a live bill."
+  },
+  "cshMemberDetach": "Lepas",
+  "@cshMemberDetach": {
+    "description": "The member row on a live bill."
+  },
+  "cshMemberRedeem": "Tukar poin",
+  "@cshMemberRedeem": {
+    "description": "The member row on a live bill."
+  },
+  "cshMemberRedeemUndo": "Batal tukar ({amount})",
+  "@cshMemberRedeemUndo": {
+    "description": "The member row on a live bill.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshMemberRedeemMax": "Maksimal {points} poin untuk tagihan ini.",
+  "@cshMemberRedeemMax": {
+    "description": "The member row on a live bill.",
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "cshMemberRedeemWorth": "Potongan {amount}",
+  "@cshMemberRedeemWorth": {
+    "description": "The member row on a live bill.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshMemberRedeemAll": "Tukar semua",
+  "@cshMemberRedeemAll": {
+    "description": "The member row on a live bill."
   }
 }

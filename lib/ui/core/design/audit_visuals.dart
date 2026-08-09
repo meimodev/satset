@@ -69,6 +69,11 @@ AuditTone auditTone(AuditType t, SatColors sc) => switch (t) {
     bg: sc.infoSoft,
     fg: sc.info,
   ),
+  AuditType.memberChanged => (
+    icon: Icons.badge_outlined,
+    bg: sc.violetSoft,
+    fg: sc.violet,
+  ),
   AuditType.menuKilled => (
     icon: Icons.remove_circle_outline,
     bg: sc.urgentSoft,

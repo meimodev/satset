@@ -134,3 +134,67 @@ const voidRate = 0.018;
 
 /// Share of bills that walk out unpaid (tak tertagih).
 const walkoutRate = 1 / 120;
+
+/// The seeded [[Pelanggan (member)]] roster.
+///
+/// Forty names, ordered by how often they come in: the list is walked with a
+/// long-tail weight, so the first handful are the regulars whose punch cards
+/// fill and whose points are worth redeeming, while the tail visited once and
+/// never came back. A roster where everyone visits equally teaches the owner
+/// nothing about their own directory.
+///
+/// Phones are the `0812-xxxx-xxxx` shape a cashier actually types and are
+/// deliberately unique — the number is the identity (ADR-0092), so a duplicate
+/// here would silently collapse two people into one at seed time.
+const sampleMembers = <(String, String)>[
+  ('Budi Santoso', '081233440001'),
+  ('Siti Rahayu', '081233440002'),
+  ('Agus Wijaya', '081233440003'),
+  ('Dewi Lestari', '081233440004'),
+  ('Rudi Hartono', '081233440005'),
+  ('Nurul Aini', '081233440006'),
+  ('Bambang Sutrisno', '081233440007'),
+  ('Rina Marlina', '081233440008'),
+  ('Hendra Gunawan', '081233440009'),
+  ('Fitri Handayani', '081233440010'),
+  ('Joko Susilo', '081233440011'),
+  ('Maya Puspita', '081233440012'),
+  ('Andi Pratama', '081233440013'),
+  ('Lina Kurniawati', '081233440014'),
+  ('Doni Setiawan', '081233440015'),
+  ('Ratna Sari', '081233440016'),
+  ('Eko Prasetyo', '081233440017'),
+  ('Yuni Astuti', '081233440018'),
+  ('Tono Wibowo', '081233440019'),
+  ('Sri Wahyuni', '081233440020'),
+  ('Gilang Ramadhan', '081233440021'),
+  ('Indah Permata', '081233440022'),
+  ('Faisal Rahman', '081233440023'),
+  ('Wulan Sari', '081233440024'),
+  ('Adi Nugroho', '081233440025'),
+  ('Tia Anggraini', '081233440026'),
+  ('Reza Firmansyah', '081233440027'),
+  ('Sinta Dewi', '081233440028'),
+  ('Yoga Saputra', '081233440029'),
+  ('Mega Utami', '081233440030'),
+  ('Bayu Kurnia', '081233440031'),
+  ('Nadia Safitri', '081233440032'),
+  ('Irfan Maulana', '081233440033'),
+  ('Vina Oktaviani', '081233440034'),
+  ('Surya Dharma', '081233440035'),
+  ('Anisa Rahmawati', '081233440036'),
+  ('Krisna Adi', '081233440037'),
+  ('Putri Ayu', '081233440038'),
+  ('Hasan Basri', '081233440039'),
+  ('Laras Widya', '081233440040'),
+];
+
+/// Share of seeded bills that carry a member. A third is a program running
+/// well without being the whole room — high enough that the Keanggotaan report
+/// has something to compare, low enough that the walk-in average is real.
+const memberAttachRate = 0.34;
+
+/// Share of member bills that spend points. Rare on purpose: a guest saves for
+/// several visits before a redemption is worth anything, so a ledger where
+/// every visit redeems is a ledger nobody would believe.
+const memberRedeemRate = 0.09;

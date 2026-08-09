@@ -6,6 +6,7 @@ library;
 import 'dart:convert';
 import 'package:satset/core/time/sat_clock.dart';
 
+import 'package:satset/data/models/member_dto.dart';
 import 'package:satset/domain/models/ticket_modifier.dart';
 
 int _int(Object? v) => (v as num?)?.toInt() ?? 0;
@@ -70,6 +71,9 @@ class BillSummary {
   /// amount alone would read as an unexplained cut. ADR-0070.
   final String? billDiscountLabel;
 
+  /// The [[Pelanggan (member)]] on this bill, by name — the card's member pill.
+  final String? memberName;
+
   /// Letter + paid-ness per receipt, in bill order — the `/kasir` card's
   /// progress strip. Empty on a bill nobody has paid into yet. ADR-0063.
   final List<BillSummaryReceipt> receipts;
@@ -100,6 +104,7 @@ class BillSummary {
     required this.receiptCount,
     required this.lineCount,
     required this.billDiscountLabel,
+    required this.memberName,
     required this.receipts,
     required this.mode,
     required this.fullySettled,
@@ -135,6 +140,7 @@ class BillSummary {
     receiptCount: _int(j['receiptCount']),
     lineCount: _int(j['lineCount']),
     billDiscountLabel: j['billDiscountLabel'] as String?,
+    memberName: j['memberName'] as String?,
     receipts: [
       for (final r in (j['receipts'] as List? ?? const []))
         BillSummaryReceipt.fromJson((r as Map).cast<String, dynamic>()),
@@ -355,6 +361,11 @@ class BillDiscount {
   final int amount;
   final String? approvedByUserId;
 
+  /// manual | member | redeem — which authority gave this away (ADR-0094).
+  /// Only a `manual` row is the cashier's to add and remove from the discount
+  /// button; the other two belong to the member panel.
+  final String source;
+
   const BillDiscount({
     required this.id,
     required this.ticketId,
@@ -364,6 +375,7 @@ class BillDiscount {
     required this.value,
     required this.amount,
     required this.approvedByUserId,
+    this.source = 'manual',
   });
 
   bool get isLine => ticketId != null;
@@ -381,6 +393,7 @@ class BillDiscount {
     value: _int(j['value']),
     amount: _int(j['amount']),
     approvedByUserId: j['approvedByUserId'] as String?,
+    source: j['source'] as String? ?? 'manual',
   );
 }
 
@@ -489,9 +502,13 @@ class Bill {
   /// Total give-back on this bill (line + whole-order + bill scope).
   final int discountAmount;
 
-  /// The one bill-scope discount, or null — it belongs to the visit rather
-  /// than to any receipt, so the totals ladder reads it from here. ADR-0070.
-  final BillDiscount? billDiscount;
+  /// The bill-scope discounts — they belong to the visit rather than to any
+  /// receipt, so the totals ladder reads them from here. ADR-0070, a list since
+  /// ADR-0094: one slot per [[Sumber diskon (discount source)|source]].
+  final List<BillDiscount> billDiscounts;
+
+  /// The [[Pelanggan (member)]] on this bill, or null.
+  final MemberDto? member;
   final int serviceAmount;
   final int taxAmount;
   final int total;
@@ -522,7 +539,8 @@ class Bill {
     required this.mode,
     required this.subtotal,
     required this.discountAmount,
-    required this.billDiscount,
+    required this.billDiscounts,
+    required this.member,
     required this.serviceAmount,
     required this.taxAmount,
     required this.total,
@@ -536,6 +554,23 @@ class Bill {
   });
 
   bool get isTakeaway => kind == 'takeaway';
+
+  /// The cashier's own bill discount — the one slot the discount button fills
+  /// and empties. A member discount or a redemption is the member panel's.
+  BillDiscount? get billDiscount {
+    for (final d in billDiscounts) {
+      if (d.source == 'manual') return d;
+    }
+    return null;
+  }
+
+  /// The live points redemption on this bill, or null.
+  BillDiscount? get redeemDiscount {
+    for (final d in billDiscounts) {
+      if (d.source == 'redeem') return d;
+    }
+    return null;
+  }
 
   factory Bill.fromJson(Map<String, dynamic> j) => Bill(
     visitId: j['visitId'] as String? ?? '',
@@ -553,11 +588,13 @@ class Bill {
     mode: j['mode'] as String? ?? 'itemized',
     subtotal: _int(j['subtotal']),
     discountAmount: _int(j['discountAmount']),
-    billDiscount: j['billDiscount'] == null
+    billDiscounts: [
+      for (final d in (j['billDiscounts'] as List? ?? const []))
+        BillDiscount.fromJson((d as Map).cast<String, dynamic>()),
+    ],
+    member: j['member'] == null
         ? null
-        : BillDiscount.fromJson(
-            (j['billDiscount'] as Map).cast<String, dynamic>(),
-          ),
+        : MemberDto.fromJson((j['member'] as Map).cast<String, dynamic>()),
     serviceAmount: _int(j['serviceAmount']),
     taxAmount: _int(j['taxAmount']),
     total: _int(j['total']),

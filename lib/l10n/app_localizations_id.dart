@@ -280,6 +280,9 @@ class AppL10nId extends AppL10n {
   String get auditTypeCashMovement => 'Kas';
 
   @override
+  String get auditTypeMemberChanged => 'Pelanggan';
+
+  @override
   String get auditTypeMenuKilled => 'Stop jual';
 
   @override
@@ -1667,6 +1670,21 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String strukMember(String name) {
+    return 'Member: $name';
+  }
+
+  @override
+  String strukMemberPoints(int points) {
+    return 'Saldo poin: $points';
+  }
+
+  @override
+  String strukMemberPunch(String progress) {
+    return 'Kartu stempel: $progress';
+  }
+
+  @override
   String strukNote(String note) {
     return 'Catatan: $note';
   }
@@ -1939,6 +1957,31 @@ class AppL10nId extends AppL10n {
   @override
   String auditCashReversed(String amount) {
     return 'Batalkan mutasi kas $amount';
+  }
+
+  @override
+  String auditMemberCreated(String name) {
+    return 'Daftar pelanggan $name';
+  }
+
+  @override
+  String auditMemberDeleted(String name) {
+    return 'Hapus pelanggan $name';
+  }
+
+  @override
+  String auditMemberMerged(String from, String to) {
+    return 'Gabung pelanggan $from ke $to';
+  }
+
+  @override
+  String auditMemberPointsAdjusted(String name, String points) {
+    return 'Koreksi poin $name $points';
+  }
+
+  @override
+  String auditMemberPointsRedeemed(String name, String points, String amount) {
+    return 'Tukar $points poin $name — $amount';
   }
 
   @override
@@ -6193,6 +6236,59 @@ class AppL10nId extends AppL10n {
   String get rptSecKas => 'Kas kecil';
 
   @override
+  String get rptSecMembers => 'Keanggotaan';
+
+  @override
+  String get rptMembersSub => 'Pelanggan terdaftar di rentang ini';
+
+  @override
+  String get rptMembersEmpty => 'Belum ada pelanggan terdaftar di rentang ini.';
+
+  @override
+  String get rptMembersEnrolled => 'Daftar baru';
+
+  @override
+  String get rptMembersActive => 'Aktif';
+
+  @override
+  String get rptMembersBills => 'Tagihan';
+
+  @override
+  String get rptMembersAvgBill => 'Rata-rata pelanggan';
+
+  @override
+  String get rptMembersAvgGuest => 'Rata-rata tamu biasa';
+
+  @override
+  String get rptMembersLift => 'Selisih';
+
+  @override
+  String get rptMembersPoints => 'Poin';
+
+  @override
+  String get rptMembersEarned => 'Terkumpul';
+
+  @override
+  String get rptMembersRedeemed => 'Ditukar';
+
+  @override
+  String get rptMembersOutstanding => 'Beredar';
+
+  @override
+  String get rptMembersLiability => 'Nilai poin beredar';
+
+  @override
+  String get rptMembersTop => 'Pelanggan teratas';
+
+  @override
+  String get rptMembersGone => 'Pelanggan dihapus';
+
+  @override
+  String rptMembersVisits(int count) {
+    return 'Kunjungan: $count';
+  }
+
+  @override
   String get rptKasOpening => 'Saldo awal';
 
   @override
@@ -6230,6 +6326,13 @@ class AppL10nId extends AppL10n {
 
   @override
   String get capOverrideStock => 'Jual saat stok habis';
+
+  @override
+  String get capManageMembers => 'Kelola pelanggan';
+
+  @override
+  String get capManageMembersDesc =>
+      'Ubah, gabung, dan hapus data pelanggan, serta koreksi poin secara manual. Kasir tidak perlu ini untuk mendaftarkan atau menukar poin.';
 
   @override
   String get capManageStaff => 'Kelola staf';
@@ -7144,4 +7247,323 @@ class AppL10nId extends AppL10n {
   String moneyCompactPlain(String v) {
     return 'Rp $v';
   }
+
+  @override
+  String get memTitle => 'Pelanggan';
+
+  @override
+  String memCount(int count) {
+    return '$count terdaftar';
+  }
+
+  @override
+  String get memSearchHint => 'Cari nama atau nomor';
+
+  @override
+  String get memActionAdd => 'Tambah';
+
+  @override
+  String get memBirthdayFilter => 'Ulang tahun bulan ini';
+
+  @override
+  String get memEmptyTitle => 'Belum ada pelanggan';
+
+  @override
+  String get memEmptyBody =>
+      'Daftarkan tamu langganan lewat tombol Tambah, atau dari layar tagihan saat mereka bayar.';
+
+  @override
+  String get memOffTitle => 'Keanggotaan tidak aktif';
+
+  @override
+  String get memOffBody =>
+      'Nyalakan di Pengaturan venue → Keanggotaan. Poin dan stempel yang sudah tercatat tetap utuh.';
+
+  @override
+  String get memPhoneOnly =>
+      'Buka di tablet. Daftar pelanggan dibaca baris per baris, dan layar telepon cuma muat satu.';
+
+  @override
+  String memPoints(int points) {
+    return '$points poin';
+  }
+
+  @override
+  String memPunch(int progress, int target) {
+    return 'Stempel $progress/$target';
+  }
+
+  @override
+  String get memRewardDue => 'Hadiah siap';
+
+  @override
+  String memVisits(int count) {
+    return '$count kunjungan';
+  }
+
+  @override
+  String get memColPoints => 'Poin';
+
+  @override
+  String get memColPunch => 'Stempel';
+
+  @override
+  String get memColVisits => 'Kunjungan';
+
+  @override
+  String get memColLifetime => 'Total belanja';
+
+  @override
+  String get memColJoined => 'Bergabung';
+
+  @override
+  String get memLedgerTitle => 'Riwayat poin';
+
+  @override
+  String get memLedgerLoading => 'Memuat riwayat…';
+
+  @override
+  String get memLedgerEmpty => 'Belum ada gerakan poin.';
+
+  @override
+  String get memSheetAddTitle => 'Pelanggan baru';
+
+  @override
+  String get memSheetEditTitle => 'Ubah pelanggan';
+
+  @override
+  String get memFieldName => 'Nama';
+
+  @override
+  String get memFieldPhone => 'Nomor HP';
+
+  @override
+  String get memPhoneHelp =>
+      'Nomor HP adalah identitasnya. 0812…, +62812… dan 62812… dianggap satu orang.';
+
+  @override
+  String get memFieldNote => 'Catatan';
+
+  @override
+  String get memFieldBirthday => 'Ulang tahun';
+
+  @override
+  String get memPickBirthday => 'Pilih tanggal lahir';
+
+  @override
+  String get memSave => 'Simpan';
+
+  @override
+  String get memActionEdit => 'Ubah';
+
+  @override
+  String get memActionAdjust => 'Koreksi poin';
+
+  @override
+  String get memActionMerge => 'Gabungkan';
+
+  @override
+  String get memActionDelete => 'Hapus';
+
+  @override
+  String get memAdjustTitle => 'Koreksi poin';
+
+  @override
+  String get memAdjustAdd => 'Tambah';
+
+  @override
+  String get memAdjustSubtract => 'Kurangi';
+
+  @override
+  String get memFieldDelta => 'Jumlah poin';
+
+  @override
+  String get memFieldReason => 'Alasan';
+
+  @override
+  String get memMergeTitle => 'Gabungkan pelanggan';
+
+  @override
+  String memMergeBody(String name) {
+    return '$name akan dilebur ke pelanggan yang dipilih. Poin dan riwayatnya ikut pindah, lalu catatannya dihapus.';
+  }
+
+  @override
+  String get memDeleteTitle => 'Hapus pelanggan?';
+
+  @override
+  String memDeleteBody(String name) {
+    return '$name dan riwayat poinnya hilang permanen. Transaksi yang pernah dibuat tetap terhitung di laporan.';
+  }
+
+  @override
+  String get memErrNameRequired => 'Nama wajib diisi.';
+
+  @override
+  String get memErrPhoneRequired => 'Nomor HP wajib diisi.';
+
+  @override
+  String get memErrPhoneTaken => 'Nomor ini sudah dipakai pelanggan lain.';
+
+  @override
+  String get memErrNotFound => 'Pelanggan tidak ditemukan.';
+
+  @override
+  String get memErrSameMember => 'Pilih pelanggan yang berbeda.';
+
+  @override
+  String get memErrReasonRequired => 'Alasan wajib diisi.';
+
+  @override
+  String get memErrInvalidAmount => 'Jumlah tidak sah.';
+
+  @override
+  String get memErrPointsOff => 'Poin sedang dibekukan.';
+
+  @override
+  String memErrBelowMin(int points) {
+    return 'Penukaran minimal $points poin.';
+  }
+
+  @override
+  String memErrInsufficient(int points) {
+    return 'Poin tersedia cuma $points.';
+  }
+
+  @override
+  String memErrExceedsBill(int points) {
+    return 'Maksimal $points poin untuk tagihan ini.';
+  }
+
+  @override
+  String get memErrRedeemExists => 'Sudah ada penukaran poin di tagihan ini.';
+
+  @override
+  String memErrFailed(String code) {
+    return 'Gagal: $code';
+  }
+
+  @override
+  String get memPointKindEarn => 'Dapat';
+
+  @override
+  String get memPointKindRedeem => 'Tukar';
+
+  @override
+  String get memPointKindAdjust => 'Koreksi';
+
+  @override
+  String get memPointKindReversal => 'Balik';
+
+  @override
+  String get memHubSubtitle => 'Poin, stempel, dan daftar tamu langganan';
+
+  @override
+  String get memHubBadgeOn => 'Aktif';
+
+  @override
+  String get memHubBadgeOff => 'Nonaktif';
+
+  @override
+  String get vstSectionMembers => 'Keanggotaan';
+
+  @override
+  String get vstMembersTag => 'Program';
+
+  @override
+  String get vstMembersEnable => 'Aktifkan keanggotaan';
+
+  @override
+  String get vstMembersEnableHint =>
+      'Daftar pelanggan, poin, dan stempel. Venue tanpa program langganan biarkan mati.';
+
+  @override
+  String get vstMembersPoints => 'Poin';
+
+  @override
+  String get vstMembersPointsHint =>
+      'Dimatikan berarti poin dibekukan, bukan dihapus — saldo tamu tetap utuh.';
+
+  @override
+  String get vstMembersEarnRate => 'Poin per Rp 1.000';
+
+  @override
+  String get vstMembersEarnRateHint =>
+      'Dihitung dari tagihan bersih, sebelum layanan dan pajak.';
+
+  @override
+  String get vstMembersPointValue => 'Nilai 1 poin';
+
+  @override
+  String get vstMembersPointValueHint =>
+      'Berapa rupiah potongan untuk satu poin yang ditukar.';
+
+  @override
+  String get vstMembersRedeemMin => 'Tukar minimal';
+
+  @override
+  String get vstMembersRedeemMinHint => 'Batas bawah sekali penukaran.';
+
+  @override
+  String get vstMembersPunch => 'Kartu stempel';
+
+  @override
+  String get vstMembersPunchHint =>
+      'Beli sekian, gratis satu. Hadiahnya dibukukan sebagai komplimen.';
+
+  @override
+  String get vstMembersPunchItem => 'Menu yang distempel';
+
+  @override
+  String get vstMembersPunchItemNone => 'Belum dipilih';
+
+  @override
+  String get vstMembersPunchTarget => 'Stempel per hadiah';
+
+  @override
+  String get vstMembersPunchTargetHint =>
+      'Berapa porsi dibeli sebelum yang berikutnya gratis.';
+
+  @override
+  String get vstMembersPreset => 'Diskon anggota';
+
+  @override
+  String get vstMembersPresetNone => 'Tanpa diskon tetap';
+
+  @override
+  String get vstMembersPresetHint =>
+      'Preset diskon tagihan yang otomatis dipasang begitu pelanggan dikaitkan ke tagihan.';
+
+  @override
+  String get cshMemberNone => 'Belum ada pelanggan';
+
+  @override
+  String get cshMemberFind => 'Cari pelanggan';
+
+  @override
+  String get cshMemberEnrol => 'Daftar baru';
+
+  @override
+  String get cshMemberDetach => 'Lepas';
+
+  @override
+  String get cshMemberRedeem => 'Tukar poin';
+
+  @override
+  String cshMemberRedeemUndo(String amount) {
+    return 'Batal tukar ($amount)';
+  }
+
+  @override
+  String cshMemberRedeemMax(int points) {
+    return 'Maksimal $points poin untuk tagihan ini.';
+  }
+
+  @override
+  String cshMemberRedeemWorth(String amount) {
+    return 'Potongan $amount';
+  }
+
+  @override
+  String get cshMemberRedeemAll => 'Tukar semua';
 }

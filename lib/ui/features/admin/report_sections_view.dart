@@ -48,7 +48,7 @@ class ReportSectionsView extends StatefulWidget {
   State<ReportSectionsView> createState() => _ReportSectionsViewState();
 }
 
-enum _Section { sales, staff, menu, bahan, ops, kas }
+enum _Section { sales, staff, menu, bahan, ops, kas, members }
 
 enum _StaffSort { net, covers, voidPct, avgTicket }
 
@@ -68,6 +68,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.bahan,
     _Section.ops,
     _Section.kas,
+    _Section.members,
   };
   _StaffSort _staffSort = _StaffSort.net;
 
@@ -78,6 +79,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.bahan => l10n.rptSecBahan,
     _Section.ops => l10n.rptSecOps,
     _Section.kas => l10n.rptSecKas,
+    _Section.members => l10n.rptSecMembers,
   };
 
   @override
@@ -189,6 +191,14 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           key: const ValueKey('kas'),
           index: 5,
           child: _kasSection(context, snapshot.kas),
+        ),
+      // Only drawn for a venue that runs a program — an all-zero section on a
+      // venue with no members is noise, not a report.
+      if (_on.contains(_Section.members) && snapshot.members.enabled)
+        Reveal(
+          key: const ValueKey('members'),
+          index: 6,
+          child: _membersSection(context, snapshot.members),
         ),
     ];
     final col = Column(
@@ -1895,7 +1905,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     return _card(
       context,
       context.l10n.rptVoidReasons,
-      sub: context.l10n.rptVoidSub(total, formatCompactIDR(context.l10n, totalRp)),
+      sub: context.l10n.rptVoidSub(
+        total,
+        formatCompactIDR(context.l10n, totalRp),
+      ),
       child: Column(
         children: [
           for (var i = 0; i < rows.length; i++)
@@ -1953,7 +1966,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     return _card(
       context,
       context.l10n.rptVoidPerWaiter,
-      sub: context.l10n.rptVoidSub(total, formatCompactIDR(context.l10n, totalRp)),
+      sub: context.l10n.rptVoidSub(
+        total,
+        formatCompactIDR(context.l10n, totalRp),
+      ),
       child: Column(
         children: [
           for (final r in rows)
@@ -2104,6 +2120,144 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     ];
   }
 
+  Widget _membersSection(BuildContext context, MembersSectionDto m) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    if (m.memberBills == 0 && m.enrolled == 0) {
+      return _card(
+        context,
+        l10n.rptSecMembers,
+        sub: l10n.rptMembersEmpty,
+        child: const SizedBox(height: Sp.s8),
+      );
+    }
+    // The lift is the program's whole case: what a member's bill is worth
+    // against a walk-in's. Shown as a signed percentage because the sign is
+    // the finding — a negative one says the discount outruns the spend.
+    final lift = m.avgGuestBill == 0
+        ? 0
+        : ((m.avgMemberBill - m.avgGuestBill) * 100) ~/ m.avgGuestBill;
+    return _card(
+      context,
+      l10n.rptSecMembers,
+      sub: l10n.rptMembersSub,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            spacing: Sp.s6,
+            runSpacing: Sp.s3,
+            children: [
+              _memberCount(context, l10n.rptMembersEnrolled, m.enrolled),
+              _memberCount(context, l10n.rptMembersActive, m.activeMembers),
+              _memberCount(context, l10n.rptMembersBills, m.memberBills),
+              _kasFigure(
+                context,
+                l10n.rptMembersAvgBill,
+                m.avgMemberBill,
+                sc.textHi,
+              ),
+              _kasFigure(
+                context,
+                l10n.rptMembersAvgGuest,
+                m.avgGuestBill,
+                sc.textMd,
+              ),
+              _memberFigure(
+                context,
+                l10n.rptMembersLift,
+                '${lift >= 0 ? '+' : ''}$lift%',
+                lift >= 0 ? sc.success : sc.urgent,
+              ),
+            ],
+          ),
+          const SizedBox(height: Sp.s4),
+          Text(
+            l10n.rptMembersPoints.toUpperCase(),
+            style: SatType.monoS(color: sc.textLo),
+          ),
+          const SizedBox(height: Sp.s2),
+          Wrap(
+            spacing: Sp.s6,
+            runSpacing: Sp.s3,
+            children: [
+              _memberCount(context, l10n.rptMembersEarned, m.pointsEarned),
+              _memberCount(context, l10n.rptMembersRedeemed, m.pointsRedeemed),
+              _memberCount(
+                context,
+                l10n.rptMembersOutstanding,
+                m.pointsOutstanding,
+              ),
+              // What the venue owes if every point were spent tomorrow. An
+              // estimate by construction — the rate can move first.
+              _kasFigure(
+                context,
+                l10n.rptMembersLiability,
+                m.liabilityEstimate,
+                sc.warn,
+              ),
+            ],
+          ),
+          if (m.top.isNotEmpty) ...[
+            const SizedBox(height: Sp.s4),
+            Text(
+              l10n.rptMembersTop.toUpperCase(),
+              style: SatType.monoS(color: sc.textLo),
+            ),
+            const SizedBox(height: Sp.s2),
+            for (final row in m.top)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: Sp.s1h),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        // Null name ⇒ the member was deleted; the trade stands
+                        // and is still counted (ADR-0092).
+                        row.name ?? l10n.rptMembersGone,
+                        style: SatType.bodyM(color: sc.textHi),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      l10n.rptMembersVisits(row.visits),
+                      style: SatType.monoS(color: sc.textLo),
+                    ),
+                    const SizedBox(width: Sp.s3),
+                    Text(
+                      formatCompactIDR(l10n, row.spend),
+                      style: SatType.monoM(color: sc.textHi),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _memberCount(BuildContext context, String label, int n) =>
+      _memberFigure(context, label, '$n', context.sat.textHi);
+
+  Widget _memberFigure(
+    BuildContext context,
+    String label,
+    String value,
+    Color tone,
+  ) {
+    final sc = context.sat;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label.toUpperCase(), style: SatType.monoS(color: sc.textLo)),
+        const SizedBox(height: Sp.sHair),
+        Text(value, style: SatType.monoM(color: tone)),
+      ],
+    );
+  }
+
   Widget _kasFigure(
     BuildContext context,
     String label,
@@ -2155,7 +2309,6 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
       child: Text(text, style: SatType.bodyS(color: sc.textMd)),
     );
   }
-
 }
 
 /// Compact secondary metric row: a label, its figure, and one line of context.

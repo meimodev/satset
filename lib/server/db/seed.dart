@@ -229,6 +229,26 @@ Future<void> seedSampleVenue(
   final menu = await loadSampleMenu(db);
   if (menu.isEmpty) return;
 
+  // Turn the program on before the month runs, or the seeded bills attach
+  // nobody and the Keanggotaan report is a screen of zeroes on a venue that is
+  // meant to demonstrate it. Points and the punch card only — no member
+  // discount preset, because a standing discount the seeded bills never
+  // applied would make the directory disagree with the history.
+  await (db.update(db.venueSettings)..where((s) => s.id.equals('default')))
+      .write(
+        VenueSettingsCompanion(
+          membersEnabled: const Value(true),
+          memberPointsEnabled: const Value(true),
+          memberPunchEnabled: const Value(true),
+          // The one item a regular buys every visit — which is what a punch
+          // card is for. A venue whose punch item is the wagyu burger has a
+          // card nobody ever fills.
+          memberPunchItemId: Value(
+            menu.any((m) => m.id == 'kopi-susu') ? 'kopi-susu' : menu.first.id,
+          ),
+        ),
+      );
+
   // A detached hub when none is attached (tests, headless seeding): the close
   // path broadcasts per visit, and a month of backdated sessions has no live
   // listener worth notifying anyway.

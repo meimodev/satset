@@ -162,6 +162,20 @@ List<_HubSection> _sectionsFor(AppL10n l10n) => <_HubSection>[
     phoneBadge: l10n.kasPhoneOnly,
   ),
   _HubSection(
+    label: l10n.memTitle,
+    sub: l10n.memHubSubtitle,
+    icon: Icons.badge_outlined,
+    route: '/members',
+    tint: (sc) => sc.violet,
+    // The tile stands whether or not the program runs: a venue that has not
+    // opted in still needs to find out the feature exists, and the screen
+    // behind it says how to switch it on.
+    badgeBuilder: (ref) => ref.watch(venueSettingsProvider).membersEnabled
+        ? ref.read(l10nProvider).memHubBadgeOn
+        : ref.read(l10nProvider).memHubBadgeOff,
+    phoneBadge: l10n.memPhoneOnly,
+  ),
+  _HubSection(
     label: l10n.venueHubSectionAudit,
     sub: l10n.venueHubSectionAuditSub,
     icon: Icons.history,

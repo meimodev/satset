@@ -98,6 +98,20 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     String? soundOverdue,
     String? soundUngreeted,
     String? soundPickup,
+    bool? membersEnabled,
+    bool? memberPointsEnabled,
+    bool? memberPunchEnabled,
+    int? memberEarnPerThousand,
+    int? memberPointValue,
+    int? memberRedeemMin,
+    int? memberPunchTarget,
+
+    /// The two membership pointers. `''` clears one, a null leaves it alone —
+    /// they are not optimistically applied, because "cleared" and "unchanged"
+    /// are the same value in a `copyWith`, and the returned payload settles it
+    /// a moment later anyway.
+    String? memberPresetId,
+    String? memberPunchItemId,
   }) async {
     final prev = state;
     state = state.copyWith(
@@ -137,6 +151,14 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       soundOverdue: soundOverdue ?? state.soundOverdue,
       soundUngreeted: soundUngreeted ?? state.soundUngreeted,
       soundPickup: soundPickup ?? state.soundPickup,
+      membersEnabled: membersEnabled ?? state.membersEnabled,
+      memberPointsEnabled: memberPointsEnabled ?? state.memberPointsEnabled,
+      memberPunchEnabled: memberPunchEnabled ?? state.memberPunchEnabled,
+      memberEarnPerThousand:
+          memberEarnPerThousand ?? state.memberEarnPerThousand,
+      memberPointValue: memberPointValue ?? state.memberPointValue,
+      memberRedeemMin: memberRedeemMin ?? state.memberRedeemMin,
+      memberPunchTarget: memberPunchTarget ?? state.memberPunchTarget,
     );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
@@ -176,6 +198,15 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         'soundOverdue': ?soundOverdue,
         'soundUngreeted': ?soundUngreeted,
         'soundPickup': ?soundPickup,
+        'membersEnabled': ?membersEnabled,
+        'memberPointsEnabled': ?memberPointsEnabled,
+        'memberPunchEnabled': ?memberPunchEnabled,
+        'memberEarnPerThousand': ?memberEarnPerThousand,
+        'memberPointValue': ?memberPointValue,
+        'memberRedeemMin': ?memberRedeemMin,
+        'memberPunchTarget': ?memberPunchTarget,
+        'memberPresetId': ?memberPresetId,
+        'memberPunchItemId': ?memberPunchItemId,
       };
       final raw = await ref
           .read(apiClientProvider)

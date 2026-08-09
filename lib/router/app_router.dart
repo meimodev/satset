@@ -35,6 +35,7 @@ import 'package:satset/ui/features/admin/venue_hub_screen.dart';
 import 'package:satset/ui/features/admin/alerts_screen.dart';
 import 'package:satset/ui/features/admin/audit_screen.dart';
 import 'package:satset/ui/features/admin/kas_screen.dart';
+import 'package:satset/ui/features/admin/members_screen.dart';
 import 'package:satset/ui/features/admin/venue_settings_screen.dart';
 import 'package:satset/ui/features/admin/system_screen.dart';
 import 'package:satset/ui/features/admin/staff_screen.dart';
@@ -70,6 +71,10 @@ List<Capability>? _capabilityFor(String loc) {
     return const [Capability.manageCash, Capability.editSettings];
   }
   if (loc.startsWith('/venue/diskon')) return const [Capability.editSettings];
+  // The directory-keeper's screen (ADR-0092). Reading it is open to the till
+  // server-side, but the till reaches a member through the bill overlay — this
+  // route is where records are changed, so it wants the keeper's authority.
+  if (loc.startsWith('/members')) return const [Capability.manageMembers];
   if (loc.startsWith('/menuadm') ||
       loc.startsWith('/staff') ||
       loc.startsWith('/system') ||
@@ -230,6 +235,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen()),
           GoRoute(path: '/audit', builder: (_, _) => const AuditScreen()),
           GoRoute(path: '/kas', builder: (_, _) => const KasScreen()),
+          GoRoute(path: '/members', builder: (_, _) => const MembersScreen()),
           GoRoute(path: '/system', builder: (_, _) => const SystemScreen()),
           GoRoute(path: '/staff', builder: (_, _) => const StaffScreen()),
           GoRoute(path: '/me', builder: (_, _) => const MeScreen()),

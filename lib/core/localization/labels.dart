@@ -3,6 +3,7 @@ import 'package:satset/domain/models/alert_sound.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/cash_entry.dart';
 import 'package:satset/domain/models/ingredient.dart';
+import 'package:satset/domain/models/member.dart';
 import 'package:satset/domain/models/reservation.dart';
 import 'package:satset/domain/models/receipt_label.dart';
 import 'package:satset/domain/models/stock_unit.dart';
@@ -101,6 +102,7 @@ String capabilityLabel(AppL10n l10n, Capability c) => switch (c) {
   Capability.adjustStock => l10n.capAdjustStock,
   Capability.manageIngredients => l10n.capManageIngredients,
   Capability.overrideStock => l10n.capOverrideStock,
+  Capability.manageMembers => l10n.capManageMembers,
   Capability.manageStaff => l10n.capManageStaff,
   Capability.manageRoles => l10n.capManageRoles,
   Capability.viewReports => l10n.capViewReports,
@@ -128,6 +130,7 @@ String capabilityDescription(AppL10n l10n, Capability c) => switch (c) {
   Capability.adjustStock => l10n.capAdjustStockDesc,
   Capability.manageIngredients => l10n.capManageIngredientsDesc,
   Capability.overrideStock => l10n.capOverrideStockDesc,
+  Capability.manageMembers => l10n.capManageMembersDesc,
   Capability.manageStaff => l10n.capManageStaffDesc,
   Capability.manageRoles => l10n.capManageRolesDesc,
   Capability.viewReports => l10n.capViewReportsDesc,
@@ -211,6 +214,14 @@ String cashEntryKindLabel(AppL10n l10n, CashEntryKind k) => switch (k) {
   CashEntryKind.expense => l10n.cashKindExpense,
   CashEntryKind.count => l10n.cashKindCount,
   CashEntryKind.reversal => l10n.cashKindReversal,
+};
+
+/// Which movement of a [[Poin]] ledger a row is.
+String memberPointKindLabel(AppL10n l10n, MemberPointKind k) => switch (k) {
+  MemberPointKind.earn => l10n.memPointKindEarn,
+  MemberPointKind.redeem => l10n.memPointKindRedeem,
+  MemberPointKind.adjust => l10n.memPointKindAdjust,
+  MemberPointKind.reversal => l10n.memPointKindReversal,
 };
 
 /// Display name for a bundled alert clip. Ids that are already words in both

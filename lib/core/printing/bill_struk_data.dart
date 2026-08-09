@@ -94,6 +94,19 @@ class BillStrukData {
   final String tableLabel;
   final int pax;
   final String guestName; // '' when none
+
+  /// The [[Pelanggan (member)]] on this bill, '' when none. Printed with the
+  /// balance and the punch card because a receipt is the one artefact the guest
+  /// takes home — and the only reminder they have of what they are banking.
+  ///
+  /// Deliberately **no** "points you earned today" line: points land at bill
+  /// close (ADR-0095), so a Tagihan printing an earn would be a promise, and a
+  /// reopen would make it a lie.
+  final String memberName;
+  final int memberPoints;
+
+  /// Punch progress as the card reads it — `'3/10'`, or '' when no program.
+  final String memberPunch;
   final DateTime at;
   final BillDocKind kind;
   final String
@@ -142,6 +155,9 @@ class BillStrukData {
     required this.tableLabel,
     required this.pax,
     this.guestName = '',
+    this.memberName = '',
+    this.memberPoints = 0,
+    this.memberPunch = '',
     required this.at,
     required this.kind,
     this.docLabel = '',

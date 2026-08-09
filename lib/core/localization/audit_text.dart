@@ -73,6 +73,19 @@ String auditText(AppL10n l, AuditEntry e) {
     AuditKind.cashCounted => l.auditCashCounted(s('counted'), s('variance')),
     AuditKind.cashReversed => l.auditCashReversed(s('amount')),
 
+    AuditKind.memberCreated => l.auditMemberCreated(s('name')),
+    AuditKind.memberDeleted => l.auditMemberDeleted(s('name')),
+    AuditKind.memberMerged => l.auditMemberMerged(s('from'), s('to')),
+    AuditKind.memberPointsAdjusted => l.auditMemberPointsAdjusted(
+      s('name'),
+      s('points'),
+    ),
+    AuditKind.memberPointsRedeemed => l.auditMemberPointsRedeemed(
+      s('name'),
+      s('points'),
+      s('amount'),
+    ),
+
     AuditKind.menuKilled => l.auditMenuKilled(s('name')),
     AuditKind.menuRestored => l.auditMenuRestored(s('name')),
 

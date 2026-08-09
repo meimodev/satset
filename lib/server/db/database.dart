@@ -47,6 +47,8 @@ part 'database.g.dart';
     RecipeLines,
     StockMovements,
     CashEntries,
+    Members,
+    MemberPoints,
     DemoStates,
   ],
 )
@@ -67,7 +69,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 50;
+  int get schemaVersion => 51;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -84,10 +86,33 @@ class AppDatabase extends _$AppDatabase {
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_line_uniq '
       'ON discounts (receipt_id, ticket_id) WHERE ticket_id IS NOT NULL',
     );
+    // One bill discount per *source*, not per visit (ADR-0094). A cashier's
+    // promo, the member discount and a redemption each hold their own slot;
+    // none can be applied twice. The pre-v51 index (visit_id alone) is dropped
+    // in the v51 migration — leaving it would keep the three from coexisting.
     await customStatement(
-      'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_bill_uniq '
-      'ON discounts (visit_id) WHERE receipt_id IS NULL '
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_bill_source_uniq '
+      'ON discounts (visit_id, source) WHERE receipt_id IS NULL '
       'AND visit_id IS NOT NULL',
+    );
+  }
+
+  /// The phone number **is** the member (ADR-0092), so uniqueness is a schema
+  /// fact rather than a route-code convention. Raw SQL because it is partial:
+  /// a blank phone should never collide with another blank one, though the
+  /// enroll route refuses one anyway.
+  Future<void> _createMemberIndexes() async {
+    await customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_members_phone_uniq '
+      "ON members (phone) WHERE phone <> ''",
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_member_points_member '
+      'ON member_points (member_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_table_sessions_member '
+      'ON table_sessions (member_id)',
     );
   }
 
@@ -916,6 +941,81 @@ class AppDatabase extends _$AppDatabase {
         await _safeAddColumnOn('tickets', 'captured_at', type: 'INTEGER');
         await _safeAddColumnOn('tickets', 'replayed_by_user_id', type: 'TEXT');
       }
+      if (from < 51) {
+        // Membership (ADR-0091..0095). Two new tables, so nothing to backfill:
+        // an upgrading venue starts with an empty directory, which is the
+        // honest answer — the app has never known who its regulars are.
+        await m.createTable(members);
+        await m.createTable(memberPoints);
+
+        // The member rides the visit and freezes into history with it. Both
+        // stay null for every visit ever taken, and for every non-member visit
+        // taken from here.
+        await _safeAddColumnOn('visits', 'member_id', type: 'TEXT');
+        await _safeAddColumnOn('table_sessions', 'member_id', type: 'TEXT');
+        await _safeAddColumnOn('reservations', 'member_id', type: 'TEXT');
+
+        // A bill discount gains its source (ADR-0094). Every existing row is a
+        // cashier's promo, which is exactly what `manual` means, so the column
+        // default backfills correctly with no UPDATE.
+        await _safeAddColumnOn(
+          'discounts',
+          'source',
+          type: "TEXT NOT NULL DEFAULT 'manual'",
+        );
+        await _safeAddColumnOn(
+          'table_session_discounts',
+          'source',
+          type: "TEXT NOT NULL DEFAULT 'manual'",
+        );
+
+        // The old one-per-visit index must go before the new one can mean
+        // anything — with both present a member discount could never coexist
+        // with a promo, which is the whole point of ADR-0094.
+        await customStatement('DROP INDEX IF EXISTS idx_discounts_bill_uniq');
+        await _createDiscountIndexes();
+        await _createMemberIndexes();
+
+        // Every membership setting is off or null by default, so an upgraded
+        // venue looks and behaves exactly as it did until an owner opts in.
+        await _safeAddColumnOn(
+          'venue_settings',
+          'members_enabled',
+          type: 'INTEGER NOT NULL DEFAULT 0',
+        );
+        await _safeAddColumnOn(
+          'venue_settings',
+          'member_points_enabled',
+          type: 'INTEGER NOT NULL DEFAULT 0',
+        );
+        await _safeAddColumnOn(
+          'venue_settings',
+          'member_punch_enabled',
+          type: 'INTEGER NOT NULL DEFAULT 0',
+        );
+        await _safeAddColumnOn('venue_settings', 'member_preset_id');
+        await _safeAddColumnOn(
+          'venue_settings',
+          'member_earn_per_thousand',
+          type: 'INTEGER NOT NULL DEFAULT 1',
+        );
+        await _safeAddColumnOn(
+          'venue_settings',
+          'member_point_value',
+          type: 'INTEGER NOT NULL DEFAULT 1000',
+        );
+        await _safeAddColumnOn(
+          'venue_settings',
+          'member_redeem_min',
+          type: 'INTEGER NOT NULL DEFAULT 10',
+        );
+        await _safeAddColumnOn('venue_settings', 'member_punch_item_id');
+        await _safeAddColumnOn(
+          'venue_settings',
+          'member_punch_target',
+          type: 'INTEGER NOT NULL DEFAULT 10',
+        );
+      }
     },
     onCreate: (m) async {
       await m.createAll();
@@ -929,6 +1029,7 @@ class AppDatabase extends _$AppDatabase {
         'ON users(firebase_uid) WHERE firebase_uid IS NOT NULL',
       );
       await _createDiscountIndexes();
+      await _createMemberIndexes();
       await _createLookupIndexes();
       await into(venueSettings).insertOnConflictUpdate(
         VenueSettingsCompanion.insert(

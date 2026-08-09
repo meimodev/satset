@@ -47,6 +47,16 @@ class WsEventTypes {
   /// balance rides along because the balance is derived (`SUM(delta)`) and a
   /// client holding one ledger page cannot compute it. See §Kas kecil.
   static const cashEntryCreated = 'cash.created';
+
+  /// A [[Pelanggan (member)]] changed — enrolled, edited, merged into, or their
+  /// [[Poin]] balance moved. Payload is the whole member including the derived
+  /// balance, for the reason the cash event carries one: a client cannot
+  /// recompute `SUM(delta)` from the page it happens to hold.
+  static const memberUpdated = 'member.updated';
+
+  /// Payload `{id}`. Fires on a delete and on the losing half of a merge, which
+  /// look identical from the directory's side.
+  static const memberDeleted = 'member.deleted';
   static const rolesUpdated = 'roles.updated';
 
   /// Sample-data seed job progress. Payload `{daysDone, daysTotal}` while

@@ -24,6 +24,12 @@ class ReportsSnapshotDto with _$ReportsSnapshotDto {
     /// because none of it is revenue (ADR-0089) — no figure here appears in
     /// [sales], and no figure in [sales] is net of it.
     @Default(KasSectionDto()) KasSectionDto kas,
+
+    /// [[Keanggotaan (membership)]] over the same window. Its own section for
+    /// the mirror-image reason [kas] is: points are a claim on future takings,
+    /// not a channel — folding a give-away into [sales] would let it read as
+    /// revenue (ADR-0095).
+    @Default(MembersSectionDto()) MembersSectionDto members,
   }) = _ReportsSnapshotDto;
 
   factory ReportsSnapshotDto.fromJson(Map<String, dynamic> json) =>
@@ -368,6 +374,56 @@ class KasSectionDto with _$KasSectionDto {
 
   factory KasSectionDto.fromJson(Map<String, dynamic> json) =>
       _$KasSectionDtoFromJson(json);
+}
+
+/// The [[Keanggotaan (membership)]] block.
+///
+/// The comparison is the point: [avgMemberBill] against [avgGuestBill] is the
+/// only figure that says whether the program is worth running. [pointsEarned]
+/// and [pointsRedeemed] are the window's flow; [pointsOutstanding] is the whole
+/// standing liability, because points never expire (ADR-0095) — a window's view
+/// of what the venue owes would always understate it.
+@freezed
+class MembersSectionDto with _$MembersSectionDto {
+  const factory MembersSectionDto({
+    /// False ⇒ the venue does not run a program, and the section is not drawn.
+    @Default(false) bool enabled,
+    @Default(0) int enrolled,
+    @Default(0) int activeMembers,
+    @Default(0) int memberBills,
+    @Default(0) int memberNet,
+    @Default(0) int guestBills,
+    @Default(0) int guestNet,
+    @Default(0) int avgMemberBill,
+    @Default(0) int avgGuestBill,
+    @Default(0) int pointsEarned,
+    @Default(0) int pointsRedeemed,
+    @Default(0) int pointsAdjusted,
+    @Default(0) int pointsOutstanding,
+
+    /// Rupiah the outstanding points would cost at today's rate. An estimate by
+    /// construction — the rate can move before they are spent.
+    @Default(0) int liabilityEstimate,
+    @Default(<MemberTopRowDto>[]) List<MemberTopRowDto> top,
+  }) = _MembersSectionDto;
+
+  factory MembersSectionDto.fromJson(Map<String, dynamic> json) =>
+      _$MembersSectionDtoFromJson(json);
+}
+
+/// One member on the window's spend leaderboard. [name] is null when the member
+/// has since been deleted — the trade stands, the person does not (ADR-0092).
+@freezed
+class MemberTopRowDto with _$MemberTopRowDto {
+  const factory MemberTopRowDto({
+    @Default('') String memberId,
+    String? name,
+    @Default(0) int visits,
+    @Default(0) int spend,
+  }) = _MemberTopRowDto;
+
+  factory MemberTopRowDto.fromJson(Map<String, dynamic> json) =>
+      _$MemberTopRowDtoFromJson(json);
 }
 
 /// Rows only — no proof-photo bytes. Blobs stay on the LAN (ADR-0036 §"No proof

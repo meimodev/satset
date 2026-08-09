@@ -577,6 +577,12 @@ abstract class AppL10n {
   /// **'Kas'**
   String get auditTypeCashMovement;
 
+  /// No description provided for @auditTypeMemberChanged.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan'**
+  String get auditTypeMemberChanged;
+
   /// No description provided for @auditTypeMenuKilled.
   ///
   /// In id, this message translates to:
@@ -3007,6 +3013,24 @@ abstract class AppL10n {
   /// **'Tamu: {name}'**
   String strukGuest(String name);
 
+  /// No description provided for @strukMember.
+  ///
+  /// In id, this message translates to:
+  /// **'Member: {name}'**
+  String strukMember(String name);
+
+  /// No description provided for @strukMemberPoints.
+  ///
+  /// In id, this message translates to:
+  /// **'Saldo poin: {points}'**
+  String strukMemberPoints(int points);
+
+  /// No description provided for @strukMemberPunch.
+  ///
+  /// In id, this message translates to:
+  /// **'Kartu stempel: {progress}'**
+  String strukMemberPunch(String progress);
+
   /// No description provided for @strukNote.
   ///
   /// In id, this message translates to:
@@ -3426,6 +3450,36 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Batalkan mutasi kas {amount}'**
   String auditCashReversed(String amount);
+
+  /// No description provided for @auditMemberCreated.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftar pelanggan {name}'**
+  String auditMemberCreated(String name);
+
+  /// No description provided for @auditMemberDeleted.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus pelanggan {name}'**
+  String auditMemberDeleted(String name);
+
+  /// No description provided for @auditMemberMerged.
+  ///
+  /// In id, this message translates to:
+  /// **'Gabung pelanggan {from} ke {to}'**
+  String auditMemberMerged(String from, String to);
+
+  /// No description provided for @auditMemberPointsAdjusted.
+  ///
+  /// In id, this message translates to:
+  /// **'Koreksi poin {name} {points}'**
+  String auditMemberPointsAdjusted(String name, String points);
+
+  /// No description provided for @auditMemberPointsRedeemed.
+  ///
+  /// In id, this message translates to:
+  /// **'Tukar {points} poin {name} — {amount}'**
+  String auditMemberPointsRedeemed(String name, String points, String amount);
 
   /// No description provided for @auditMenuKilled.
   ///
@@ -10015,6 +10069,108 @@ abstract class AppL10n {
   /// **'Kas kecil'**
   String get rptSecKas;
 
+  /// No description provided for @rptSecMembers.
+  ///
+  /// In id, this message translates to:
+  /// **'Keanggotaan'**
+  String get rptSecMembers;
+
+  /// No description provided for @rptMembersSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan terdaftar di rentang ini'**
+  String get rptMembersSub;
+
+  /// No description provided for @rptMembersEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada pelanggan terdaftar di rentang ini.'**
+  String get rptMembersEmpty;
+
+  /// No description provided for @rptMembersEnrolled.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftar baru'**
+  String get rptMembersEnrolled;
+
+  /// No description provided for @rptMembersActive.
+  ///
+  /// In id, this message translates to:
+  /// **'Aktif'**
+  String get rptMembersActive;
+
+  /// No description provided for @rptMembersBills.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagihan'**
+  String get rptMembersBills;
+
+  /// No description provided for @rptMembersAvgBill.
+  ///
+  /// In id, this message translates to:
+  /// **'Rata-rata pelanggan'**
+  String get rptMembersAvgBill;
+
+  /// No description provided for @rptMembersAvgGuest.
+  ///
+  /// In id, this message translates to:
+  /// **'Rata-rata tamu biasa'**
+  String get rptMembersAvgGuest;
+
+  /// No description provided for @rptMembersLift.
+  ///
+  /// In id, this message translates to:
+  /// **'Selisih'**
+  String get rptMembersLift;
+
+  /// No description provided for @rptMembersPoints.
+  ///
+  /// In id, this message translates to:
+  /// **'Poin'**
+  String get rptMembersPoints;
+
+  /// No description provided for @rptMembersEarned.
+  ///
+  /// In id, this message translates to:
+  /// **'Terkumpul'**
+  String get rptMembersEarned;
+
+  /// No description provided for @rptMembersRedeemed.
+  ///
+  /// In id, this message translates to:
+  /// **'Ditukar'**
+  String get rptMembersRedeemed;
+
+  /// No description provided for @rptMembersOutstanding.
+  ///
+  /// In id, this message translates to:
+  /// **'Beredar'**
+  String get rptMembersOutstanding;
+
+  /// No description provided for @rptMembersLiability.
+  ///
+  /// In id, this message translates to:
+  /// **'Nilai poin beredar'**
+  String get rptMembersLiability;
+
+  /// No description provided for @rptMembersTop.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan teratas'**
+  String get rptMembersTop;
+
+  /// No description provided for @rptMembersGone.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan dihapus'**
+  String get rptMembersGone;
+
+  /// No description provided for @rptMembersVisits.
+  ///
+  /// In id, this message translates to:
+  /// **'Kunjungan: {count}'**
+  String rptMembersVisits(int count);
+
   /// No description provided for @rptKasOpening.
   ///
   /// In id, this message translates to:
@@ -10092,6 +10248,18 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Jual saat stok habis'**
   String get capOverrideStock;
+
+  /// No description provided for @capManageMembers.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelola pelanggan'**
+  String get capManageMembers;
+
+  /// No description provided for @capManageMembersDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah, gabung, dan hapus data pelanggan, serta koreksi poin secara manual. Kasir tidak perlu ini untuk mendaftarkan atau menukar poin.'**
+  String get capManageMembersDesc;
 
   /// No description provided for @capManageStaff.
   ///
@@ -11550,6 +11718,570 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Rp {v}'**
   String moneyCompactPlain(String v);
+
+  /// No description provided for @memTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan'**
+  String get memTitle;
+
+  /// No description provided for @memCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} terdaftar'**
+  String memCount(int count);
+
+  /// No description provided for @memSearchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari nama atau nomor'**
+  String get memSearchHint;
+
+  /// No description provided for @memActionAdd.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah'**
+  String get memActionAdd;
+
+  /// No description provided for @memBirthdayFilter.
+  ///
+  /// In id, this message translates to:
+  /// **'Ulang tahun bulan ini'**
+  String get memBirthdayFilter;
+
+  /// No description provided for @memEmptyTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada pelanggan'**
+  String get memEmptyTitle;
+
+  /// No description provided for @memEmptyBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftarkan tamu langganan lewat tombol Tambah, atau dari layar tagihan saat mereka bayar.'**
+  String get memEmptyBody;
+
+  /// No description provided for @memOffTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Keanggotaan tidak aktif'**
+  String get memOffTitle;
+
+  /// No description provided for @memOffBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Nyalakan di Pengaturan venue → Keanggotaan. Poin dan stempel yang sudah tercatat tetap utuh.'**
+  String get memOffBody;
+
+  /// No description provided for @memPhoneOnly.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka di tablet. Daftar pelanggan dibaca baris per baris, dan layar telepon cuma muat satu.'**
+  String get memPhoneOnly;
+
+  /// No description provided for @memPoints.
+  ///
+  /// In id, this message translates to:
+  /// **'{points} poin'**
+  String memPoints(int points);
+
+  /// No description provided for @memPunch.
+  ///
+  /// In id, this message translates to:
+  /// **'Stempel {progress}/{target}'**
+  String memPunch(int progress, int target);
+
+  /// No description provided for @memRewardDue.
+  ///
+  /// In id, this message translates to:
+  /// **'Hadiah siap'**
+  String get memRewardDue;
+
+  /// No description provided for @memVisits.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} kunjungan'**
+  String memVisits(int count);
+
+  /// No description provided for @memColPoints.
+  ///
+  /// In id, this message translates to:
+  /// **'Poin'**
+  String get memColPoints;
+
+  /// No description provided for @memColPunch.
+  ///
+  /// In id, this message translates to:
+  /// **'Stempel'**
+  String get memColPunch;
+
+  /// No description provided for @memColVisits.
+  ///
+  /// In id, this message translates to:
+  /// **'Kunjungan'**
+  String get memColVisits;
+
+  /// No description provided for @memColLifetime.
+  ///
+  /// In id, this message translates to:
+  /// **'Total belanja'**
+  String get memColLifetime;
+
+  /// No description provided for @memColJoined.
+  ///
+  /// In id, this message translates to:
+  /// **'Bergabung'**
+  String get memColJoined;
+
+  /// No description provided for @memLedgerTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat poin'**
+  String get memLedgerTitle;
+
+  /// No description provided for @memLedgerLoading.
+  ///
+  /// In id, this message translates to:
+  /// **'Memuat riwayat…'**
+  String get memLedgerLoading;
+
+  /// No description provided for @memLedgerEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada gerakan poin.'**
+  String get memLedgerEmpty;
+
+  /// No description provided for @memSheetAddTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan baru'**
+  String get memSheetAddTitle;
+
+  /// No description provided for @memSheetEditTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah pelanggan'**
+  String get memSheetEditTitle;
+
+  /// No description provided for @memFieldName.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama'**
+  String get memFieldName;
+
+  /// No description provided for @memFieldPhone.
+  ///
+  /// In id, this message translates to:
+  /// **'Nomor HP'**
+  String get memFieldPhone;
+
+  /// No description provided for @memPhoneHelp.
+  ///
+  /// In id, this message translates to:
+  /// **'Nomor HP adalah identitasnya. 0812…, +62812… dan 62812… dianggap satu orang.'**
+  String get memPhoneHelp;
+
+  /// No description provided for @memFieldNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan'**
+  String get memFieldNote;
+
+  /// No description provided for @memFieldBirthday.
+  ///
+  /// In id, this message translates to:
+  /// **'Ulang tahun'**
+  String get memFieldBirthday;
+
+  /// No description provided for @memPickBirthday.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih tanggal lahir'**
+  String get memPickBirthday;
+
+  /// No description provided for @memSave.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan'**
+  String get memSave;
+
+  /// No description provided for @memActionEdit.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah'**
+  String get memActionEdit;
+
+  /// No description provided for @memActionAdjust.
+  ///
+  /// In id, this message translates to:
+  /// **'Koreksi poin'**
+  String get memActionAdjust;
+
+  /// No description provided for @memActionMerge.
+  ///
+  /// In id, this message translates to:
+  /// **'Gabungkan'**
+  String get memActionMerge;
+
+  /// No description provided for @memActionDelete.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus'**
+  String get memActionDelete;
+
+  /// No description provided for @memAdjustTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Koreksi poin'**
+  String get memAdjustTitle;
+
+  /// No description provided for @memAdjustAdd.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah'**
+  String get memAdjustAdd;
+
+  /// No description provided for @memAdjustSubtract.
+  ///
+  /// In id, this message translates to:
+  /// **'Kurangi'**
+  String get memAdjustSubtract;
+
+  /// No description provided for @memFieldDelta.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah poin'**
+  String get memFieldDelta;
+
+  /// No description provided for @memFieldReason.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan'**
+  String get memFieldReason;
+
+  /// No description provided for @memMergeTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Gabungkan pelanggan'**
+  String get memMergeTitle;
+
+  /// No description provided for @memMergeBody.
+  ///
+  /// In id, this message translates to:
+  /// **'{name} akan dilebur ke pelanggan yang dipilih. Poin dan riwayatnya ikut pindah, lalu catatannya dihapus.'**
+  String memMergeBody(String name);
+
+  /// No description provided for @memDeleteTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus pelanggan?'**
+  String get memDeleteTitle;
+
+  /// No description provided for @memDeleteBody.
+  ///
+  /// In id, this message translates to:
+  /// **'{name} dan riwayat poinnya hilang permanen. Transaksi yang pernah dibuat tetap terhitung di laporan.'**
+  String memDeleteBody(String name);
+
+  /// No description provided for @memErrNameRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama wajib diisi.'**
+  String get memErrNameRequired;
+
+  /// No description provided for @memErrPhoneRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'Nomor HP wajib diisi.'**
+  String get memErrPhoneRequired;
+
+  /// No description provided for @memErrPhoneTaken.
+  ///
+  /// In id, this message translates to:
+  /// **'Nomor ini sudah dipakai pelanggan lain.'**
+  String get memErrPhoneTaken;
+
+  /// No description provided for @memErrNotFound.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan tidak ditemukan.'**
+  String get memErrNotFound;
+
+  /// No description provided for @memErrSameMember.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih pelanggan yang berbeda.'**
+  String get memErrSameMember;
+
+  /// No description provided for @memErrReasonRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan wajib diisi.'**
+  String get memErrReasonRequired;
+
+  /// No description provided for @memErrInvalidAmount.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah tidak sah.'**
+  String get memErrInvalidAmount;
+
+  /// No description provided for @memErrPointsOff.
+  ///
+  /// In id, this message translates to:
+  /// **'Poin sedang dibekukan.'**
+  String get memErrPointsOff;
+
+  /// No description provided for @memErrBelowMin.
+  ///
+  /// In id, this message translates to:
+  /// **'Penukaran minimal {points} poin.'**
+  String memErrBelowMin(int points);
+
+  /// No description provided for @memErrInsufficient.
+  ///
+  /// In id, this message translates to:
+  /// **'Poin tersedia cuma {points}.'**
+  String memErrInsufficient(int points);
+
+  /// No description provided for @memErrExceedsBill.
+  ///
+  /// In id, this message translates to:
+  /// **'Maksimal {points} poin untuk tagihan ini.'**
+  String memErrExceedsBill(int points);
+
+  /// No description provided for @memErrRedeemExists.
+  ///
+  /// In id, this message translates to:
+  /// **'Sudah ada penukaran poin di tagihan ini.'**
+  String get memErrRedeemExists;
+
+  /// No description provided for @memErrFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal: {code}'**
+  String memErrFailed(String code);
+
+  /// No description provided for @memPointKindEarn.
+  ///
+  /// In id, this message translates to:
+  /// **'Dapat'**
+  String get memPointKindEarn;
+
+  /// No description provided for @memPointKindRedeem.
+  ///
+  /// In id, this message translates to:
+  /// **'Tukar'**
+  String get memPointKindRedeem;
+
+  /// No description provided for @memPointKindAdjust.
+  ///
+  /// In id, this message translates to:
+  /// **'Koreksi'**
+  String get memPointKindAdjust;
+
+  /// No description provided for @memPointKindReversal.
+  ///
+  /// In id, this message translates to:
+  /// **'Balik'**
+  String get memPointKindReversal;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Poin, stempel, dan daftar tamu langganan'**
+  String get memHubSubtitle;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Aktif'**
+  String get memHubBadgeOn;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Nonaktif'**
+  String get memHubBadgeOff;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Keanggotaan'**
+  String get vstSectionMembers;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Program'**
+  String get vstMembersTag;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Aktifkan keanggotaan'**
+  String get vstMembersEnable;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftar pelanggan, poin, dan stempel. Venue tanpa program langganan biarkan mati.'**
+  String get vstMembersEnableHint;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Poin'**
+  String get vstMembersPoints;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Dimatikan berarti poin dibekukan, bukan dihapus — saldo tamu tetap utuh.'**
+  String get vstMembersPointsHint;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Poin per Rp 1.000'**
+  String get vstMembersEarnRate;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Dihitung dari tagihan bersih, sebelum layanan dan pajak.'**
+  String get vstMembersEarnRateHint;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Nilai 1 poin'**
+  String get vstMembersPointValue;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Berapa rupiah potongan untuk satu poin yang ditukar.'**
+  String get vstMembersPointValueHint;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Tukar minimal'**
+  String get vstMembersRedeemMin;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Batas bawah sekali penukaran.'**
+  String get vstMembersRedeemMinHint;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Kartu stempel'**
+  String get vstMembersPunch;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Beli sekian, gratis satu. Hadiahnya dibukukan sebagai komplimen.'**
+  String get vstMembersPunchHint;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Menu yang distempel'**
+  String get vstMembersPunchItem;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum dipilih'**
+  String get vstMembersPunchItemNone;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Stempel per hadiah'**
+  String get vstMembersPunchTarget;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Berapa porsi dibeli sebelum yang berikutnya gratis.'**
+  String get vstMembersPunchTargetHint;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Diskon anggota'**
+  String get vstMembersPreset;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanpa diskon tetap'**
+  String get vstMembersPresetNone;
+
+  /// Membership settings and hub copy.
+  ///
+  /// In id, this message translates to:
+  /// **'Preset diskon tagihan yang otomatis dipasang begitu pelanggan dikaitkan ke tagihan.'**
+  String get vstMembersPresetHint;
+
+  /// The member row on a live bill.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada pelanggan'**
+  String get cshMemberNone;
+
+  /// The member row on a live bill.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari pelanggan'**
+  String get cshMemberFind;
+
+  /// The member row on a live bill.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftar baru'**
+  String get cshMemberEnrol;
+
+  /// The member row on a live bill.
+  ///
+  /// In id, this message translates to:
+  /// **'Lepas'**
+  String get cshMemberDetach;
+
+  /// The member row on a live bill.
+  ///
+  /// In id, this message translates to:
+  /// **'Tukar poin'**
+  String get cshMemberRedeem;
+
+  /// The member row on a live bill.
+  ///
+  /// In id, this message translates to:
+  /// **'Batal tukar ({amount})'**
+  String cshMemberRedeemUndo(String amount);
+
+  /// The member row on a live bill.
+  ///
+  /// In id, this message translates to:
+  /// **'Maksimal {points} poin untuk tagihan ini.'**
+  String cshMemberRedeemMax(int points);
+
+  /// The member row on a live bill.
+  ///
+  /// In id, this message translates to:
+  /// **'Potongan {amount}'**
+  String cshMemberRedeemWorth(String amount);
+
+  /// The member row on a live bill.
+  ///
+  /// In id, this message translates to:
+  /// **'Tukar semua'**
+  String get cshMemberRedeemAll;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

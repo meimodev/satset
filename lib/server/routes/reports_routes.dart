@@ -7,6 +7,7 @@ import 'package:shelf_router/shelf_router.dart';
 
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/cash.dart';
+import 'package:satset/server/members.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/service_timing.dart';
@@ -850,6 +851,10 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       // Shares the business-day window so "today" means the same thing here as
       // it does two sections up.
       'kas': await cashReportSection(db, from: from, to: to),
+      // Its own section too, and for the mirror-image reason: membership is
+      // not a sales channel, it is a claim on future takings. Reporting it
+      // inside `sales` would let a points give-away read as revenue.
+      'members': await memberReportSection(db, from: from, to: to),
     };
 
     return Response.ok(

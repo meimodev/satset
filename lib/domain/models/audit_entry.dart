@@ -25,6 +25,13 @@ enum AuditType {
   /// (`cashToppedUp` / `cashSpent` / `cashCounted` / `cashReversed`), which is
   /// the sentence axis and where that distinction belongs.
   cashMovement,
+
+  /// Any act against a [[Pelanggan (member)]] — enrolled, deleted, merged,
+  /// points adjusted by hand, points redeemed. **One** type for all five, for
+  /// the reason [cashMovement] is one: the type axis drives the log's filter
+  /// chips, and five chips reading Pelanggan say one thing five times. Which
+  /// act it was lives on the [AuditKind].
+  memberChanged,
   staffCreated,
   staffDeleted,
   staffDisabled,
@@ -72,6 +79,10 @@ bool isAdminAuditType(AuditType t) {
     // A money act, and it sits with the money acts: a supervisor reading the
     // log should see the box move without holding `manageStaff`.
     case AuditType.cashMovement:
+    // A redemption is money off a bill and an adjustment moves a balance a
+    // guest believes in — both belong beside the other money acts, readable by
+    // any `viewReports` supervisor rather than gated behind `manageStaff`.
+    case AuditType.memberChanged:
       return false;
   }
 }

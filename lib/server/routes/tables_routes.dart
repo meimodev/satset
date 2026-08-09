@@ -236,12 +236,21 @@ Future<void> snapshotVisitAndDelete(
     final visitReceipts = await (db.select(
       db.receipts,
     )..where((rc) => rc.visitId.equals(visit.id))).get();
-    final discountRows = visitReceipts.isEmpty
-        ? <Discount>[]
-        : await (db.select(
-                db.discounts,
-              )..where((x) => x.receiptId.isIn(visitReceipts.map((r) => r.id))))
-              .get();
+    // Both scopes, or history under-reports what was given away: a bill-scope
+    // discount hangs off the VISIT with a null receipt (ADR-0070), and the
+    // member discount and points redemption ADR-0094 added ride the same slot.
+    // Reading only the receipt-scoped rows leaves `settledTotal` above what was
+    // actually collected.
+    final receiptIds = visitReceipts.map((r) => r.id).toList();
+    final discountRows =
+        await (db.select(db.discounts)..where(
+              (x) =>
+                  (receiptIds.isEmpty
+                      ? const Constant(false)
+                      : x.receiptId.isIn(receiptIds)) |
+                  (x.visitId.equals(visit.id) & x.receiptId.isNull()),
+            ))
+            .get();
     final lineDiscount = discountRows
         .where((d) => d.ticketId != null)
         .fold<int>(0, (a, d) => a + d.amount);
@@ -290,6 +299,10 @@ Future<void> snapshotVisitAndDelete(
             // distinguishable from a walk-in bungkus in history. ADR-0066.
             channel: Value(visit.channel),
             prepaid: Value(visit.prepaid),
+            // Freeze the [[Pelanggan (member)]] too — visit counts, lifetime
+            // spend and the punch card are all read off settled history, so a
+            // member the snapshot drops is a member whose past disappears.
+            memberId: Value(visit.memberId),
           ),
         );
     for (final t in tickets) {
