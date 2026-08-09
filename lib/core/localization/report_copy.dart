@@ -97,3 +97,14 @@ String kpiSub(AppL10n l, KpiTileDto k) {
     _ => k.sub,
   };
 }
+
+/// Why the host refused a replayed order (ADR-0090). The queue carries the
+/// server's `code`; the sentence is composed here, like every other code that
+/// crosses the layer (ADR-0085).
+String sendFailureText(AppL10n l, String? code) => switch (code) {
+  'visit_changed' => l.sendFailVisitChanged,
+  'bill_closed' => l.sendFailBillClosed,
+  'expired' => l.sendFailExpired,
+  'blocked' => l.sendFailBlocked,
+  _ => l.sendFailOther,
+};

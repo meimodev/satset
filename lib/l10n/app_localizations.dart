@@ -9559,6 +9559,96 @@ abstract class AppL10n {
   /// **'Venue tidak aktif.'**
   String get authVenueInactive;
 
+  /// No description provided for @sendQueueFull.
+  ///
+  /// In id, this message translates to:
+  /// **'Antrean kirim penuh — sambungkan dulu ke server sebelum pesan lagi'**
+  String get sendQueueFull;
+
+  /// No description provided for @sendQueuePending.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{{count} pesanan menunggu terkirim}}'**
+  String sendQueuePending(int count);
+
+  /// No description provided for @sendQueueTertunda.
+  ///
+  /// In id, this message translates to:
+  /// **'Tertunda'**
+  String get sendQueueTertunda;
+
+  /// No description provided for @sendQueueCapturedAt.
+  ///
+  /// In id, this message translates to:
+  /// **'Diambil {time}'**
+  String sendQueueCapturedAt(String time);
+
+  /// No description provided for @sendResultTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Hasil pengiriman'**
+  String get sendResultTitle;
+
+  /// No description provided for @sendResultAllOk.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{{count} pesanan terkirim}}'**
+  String sendResultAllOk(int count);
+
+  /// No description provided for @sendResultAcknowledge.
+  ///
+  /// In id, this message translates to:
+  /// **'Mengerti'**
+  String get sendResultAcknowledge;
+
+  /// No description provided for @sendResultFailedHeading.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal terkirim'**
+  String get sendResultFailedHeading;
+
+  /// No description provided for @sendFailVisitChanged.
+  ///
+  /// In id, this message translates to:
+  /// **'Meja sudah ganti tamu — pesanan tidak dipasang'**
+  String get sendFailVisitChanged;
+
+  /// No description provided for @sendFailBillClosed.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagihan sudah ditutup'**
+  String get sendFailBillClosed;
+
+  /// No description provided for @sendFailExpired.
+  ///
+  /// In id, this message translates to:
+  /// **'Lewat hari — pesanan tidak dikirim'**
+  String get sendFailExpired;
+
+  /// No description provided for @sendFailBlocked.
+  ///
+  /// In id, this message translates to:
+  /// **'Akun ini tidak boleh mengirim pesanan — masuk sebagai pengambil pesanan'**
+  String get sendFailBlocked;
+
+  /// No description provided for @sendFailOther.
+  ///
+  /// In id, this message translates to:
+  /// **'Ditolak server'**
+  String get sendFailOther;
+
+  /// No description provided for @sendQueueBlockEndShift.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{Masih ada {count} pesanan yang belum terkirim. Sambungkan ke server dulu, atau buang pesanan itu.}}'**
+  String sendQueueBlockEndShift(int count);
+
+  /// No description provided for @sendQueueDiscardAll.
+  ///
+  /// In id, this message translates to:
+  /// **'Buang pesanan tertunda'**
+  String get sendQueueDiscardAll;
+
   /// No description provided for @tktOutOfStock.
   ///
   /// In id, this message translates to:

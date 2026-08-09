@@ -5919,6 +5919,78 @@ class AppL10nId extends AppL10n {
   String get authVenueInactive => 'Venue tidak aktif.';
 
   @override
+  String get sendQueueFull =>
+      'Antrean kirim penuh — sambungkan dulu ke server sebelum pesan lagi';
+
+  @override
+  String sendQueuePending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pesanan menunggu terkirim',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sendQueueTertunda => 'Tertunda';
+
+  @override
+  String sendQueueCapturedAt(String time) {
+    return 'Diambil $time';
+  }
+
+  @override
+  String get sendResultTitle => 'Hasil pengiriman';
+
+  @override
+  String sendResultAllOk(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pesanan terkirim',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sendResultAcknowledge => 'Mengerti';
+
+  @override
+  String get sendResultFailedHeading => 'Gagal terkirim';
+
+  @override
+  String get sendFailVisitChanged =>
+      'Meja sudah ganti tamu — pesanan tidak dipasang';
+
+  @override
+  String get sendFailBillClosed => 'Tagihan sudah ditutup';
+
+  @override
+  String get sendFailExpired => 'Lewat hari — pesanan tidak dikirim';
+
+  @override
+  String get sendFailBlocked =>
+      'Akun ini tidak boleh mengirim pesanan — masuk sebagai pengambil pesanan';
+
+  @override
+  String get sendFailOther => 'Ditolak server';
+
+  @override
+  String sendQueueBlockEndShift(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Masih ada $count pesanan yang belum terkirim. Sambungkan ke server dulu, atau buang pesanan itu.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sendQueueDiscardAll => 'Buang pesanan tertunda';
+
+  @override
   String get tktOutOfStock => 'bahan habis';
 
   @override

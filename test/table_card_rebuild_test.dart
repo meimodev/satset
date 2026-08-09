@@ -43,8 +43,15 @@ void main() {
     SatClock.clear();
   });
 
-  /// Move the app clock forward without moving the tickers.
-  void advance(Duration d) => SatClock.adopt(d);
+  /// The instant every one of these tests pretends it is. Pinned rather than
+  /// derived from the real clock: `SatClock.adopt` takes an offset from *now*,
+  /// so a card built at one real instant and read at another drifts by however
+  /// long the machine took in between — a second under load, which is exactly
+  /// the digit the seated counter is being asserted on.
+  final t0 = DateTime(2026, 1, 1, 19, 30);
+
+  /// Move the app clock to [t] without moving the tickers.
+  void advanceTo(DateTime t) => SatClock.adopt(t.difference(DateTime.now()));
 
   Future<void> pumpCard(WidgetTester tester, {required DateTime openedAt}) =>
       tester.pumpWidget(
@@ -89,15 +96,13 @@ void main() {
       .firstWhere((s) => s.contains('m ') && s.endsWith('d'), orElse: () => '');
 
   testWidgets('the counter follows seconds, the body does not', (tester) async {
-    await pumpCard(
-      tester,
-      openedAt: SatClock.now().subtract(const Duration(minutes: 12)),
-    );
+    advanceTo(t0);
+    await pumpCard(tester, openedAt: t0.subtract(const Duration(minutes: 12)));
     expect(counterText(tester), '12m 0d');
 
     final buildsAfterMount = tableCardBuilds;
 
-    advance(const Duration(seconds: 30));
+    advanceTo(t0.add(const Duration(seconds: 30)));
     seconds.add(SatClock.now());
     await tester.pump();
 
@@ -116,10 +121,8 @@ void main() {
   });
 
   testWidgets('the body rebuilds on a minute tick', (tester) async {
-    await pumpCard(
-      tester,
-      openedAt: SatClock.now().subtract(const Duration(minutes: 12)),
-    );
+    advanceTo(t0);
+    await pumpCard(tester, openedAt: t0.subtract(const Duration(minutes: 12)));
     final buildsAfterMount = tableCardBuilds;
 
     minutes.add(SatClock.now());
@@ -133,15 +136,13 @@ void main() {
   ) async {
     // Ungreeted escalates to crit past ungreetedMins + ungreetedEscalateMins,
     // 7 + 5 by default. At 12m exactly it is not yet stale.
-    await pumpCard(
-      tester,
-      openedAt: SatClock.now().subtract(const Duration(minutes: 12)),
-    );
+    advanceTo(t0);
+    await pumpCard(tester, openedAt: t0.subtract(const Duration(minutes: 12)));
     expect(find.text(_l10n.staleUngreeted(13)), findsNothing);
 
     // One minute later — no ticket arrived, no table row changed, nothing came
     // off the socket. The only input is the clock crossing a boundary.
-    advance(const Duration(minutes: 1));
+    advanceTo(t0.add(const Duration(minutes: 1)));
     minutes.add(SatClock.now());
     await tester.pump();
 

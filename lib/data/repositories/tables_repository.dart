@@ -7,7 +7,10 @@ import 'package:uuid/uuid.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/table_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/error_bus_service.dart';
+import 'package:satset/data/services/send_queue_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/venue_table.dart';
 
@@ -260,6 +263,20 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     }
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
+    // Terputus: keep the optimistic row and queue the seat. A waiter standing
+    // at a table with guests in front of them cannot be told to wait for the
+    // network, and seating is the one act every later order hangs off — queue
+    // it first and FIFO does the rest (ADR-0090).
+    if (ref.read(wsConnStateProvider) != WsConnState.open) {
+      await _enqueueSeat(
+        id,
+        pax: pax,
+        userId: userId,
+        guestName: guestName,
+        guestNotes: guestNotes,
+      );
+      return;
+    }
     try {
       final raw = await ref
           .read(apiClientProvider)
@@ -289,7 +306,47 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       }
       rethrow;
     } catch (_) {
-      if (prev != null) _replace(id, prev);
+      // The socket said open but the request never landed. Same answer as a
+      // terputus seat: hold the row, queue the intent. Rolling back here would
+      // un-seat a table with guests at it over a dropped packet.
+      await _enqueueSeat(
+        id,
+        pax: pax,
+        userId: userId,
+        guestName: guestName,
+        guestNotes: guestNotes,
+      );
+    }
+  }
+
+  /// Park a seat on the send queue. A full queue is surfaced and rethrown —
+  /// never swallowed — for the same reason an order's is: the waiter has to
+  /// know the handset stopped accepting work.
+  Future<void> _enqueueSeat(
+    String id, {
+    required int pax,
+    String? userId,
+    String? guestName,
+    String? guestNotes,
+  }) async {
+    try {
+      await ref
+          .read(sendQueueProvider.notifier)
+          .enqueue(
+            kind: SendIntentKind.seatTable,
+            tableId: id,
+            actorId: userId ?? '',
+            payload: {'pax': pax, 'guestName': ?guestName, 'guestNotes': ?guestNotes},
+          );
+    } on SendQueueFull {
+      final l = ref.read(l10nProvider);
+      ref
+          .read(errorBusServiceProvider)
+          .push(
+            l.sendQueueFull,
+            level: AppErrorLevel.error,
+            code: 'send_queue_full',
+          );
       rethrow;
     }
   }

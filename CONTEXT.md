@@ -563,6 +563,31 @@ _Avoid_: treating a shift as a scheduled shift-pattern, or as venue-wide (it is 
 
 _Avoid_: conflating sign-out with un-pairing; assuming a live pairing implies a live session (the data screens still need a session to load); assuming sign-out ends the shift.
 
+### Terputus (client disconnected)
+**ID · EN** — Terputus · Disconnected. The same word [[Local server lifecycle]] already uses ("staff akan terputus"), deliberately reused rather than minting "Offline".
+
+A client device that cannot currently reach its [[Main Device]] — the LAN dropped, the waiter walked into a dead zone, the host restarted. Distinct from the [[Offline grace period (masa tenggang offline)|masa tenggang offline]], which is the *host's* loss of **Firebase**; these are two different axes and a device can be in either without the other. _Avoid_: "Offline mode" as a mode the user enters — there is no switch, only a condition; treating a closed WebSocket as proof the host is gone (it is the badge signal, not the authority).
+
+### Antrean kirim (send queue)
+**ID · EN** — Antrean kirim · Send queue.
+
+The device-local, first-in-first-out list of **intents** a [[Terputus (client disconnected)|terputus]] handset has captured but not yet delivered — "seat this table", "send these lines" — each carrying the idempotency key it will be replayed under. Belongs to the **device**, not the session, so it survives a handset handover; each entry keeps the [[Orderer (line author)|author]] who captured it. _Avoid_: "outbox", "sinkron", "rekonsiliasi" — Latinate words a waiter mid-rush does not parse; calling the queue's contents "orders" (the venue has no order until the host accepts one).
+
+### Pesanan tertunda (pending order)
+**ID · EN** — Pesanan tertunda · Pending order.
+
+A line captured into the [[Antrean kirim]] and not yet accepted by the host. It is **provisional in every respect** — no [[KDS / Antrian Persiapan|KDS]] has seen it, no stock has moved, no [[Visit]] owns it, and it may still be refused. The waiter may edit or void their own tertunda line; once delivered it is an ordinary sent line and [[Void (item)|the freeze rule]] applies. _Avoid_: rendering it as "Terkirim"; counting it in a [[Bill (tab)|bill]] the [[Cashier|kasir]] can settle.
+
+### Hasil pengiriman (send result)
+**ID · EN** — Hasil pengiriman · Send result. The failure list within it: Gagal terkirim · Failed to send.
+
+What the host answered when the [[Antrean kirim]] drained: accepted, refused (out of stock, the [[Visit]] closed, the table changed guests), or expired past the business-day boundary. A clean drain passes silently; anything refused is shown and **acknowledged**, then survives on the [[Shift|Saya]] tab until resolved. _Avoid_: silently dropping a refusal, or retrying one automatically — a line the host refused is a fact the waiter must act on, not a transport error.
+
+### Diambil vs terkirim (capture time vs send time)
+**ID · EN** — Diambil · Captured; Terkirim · Sent.
+
+Two moments a [[Pesanan tertunda]] carries. **Terkirim** is when the host accepted the line — what the [[KDS / Antrian Persiapan|KDS]], the [[Order elapsed time|waktu berjalan]] and every [[Audio alert]] threshold measure from, because the kitchen cannot be late for food it had not received. **Diambil** is when the waiter keyed it at the table, kept for the [[Audit]] trail and for telling a guest why their food is behind. _Avoid_: aging a replayed line from diambil (it lands on the board already screaming); presenting diambil as the ordering time in [[Reports|laporan]], which bucket on terkirim.
+
 ### Generic seed (sample data)
 **ID · EN** — Contoh data · Sample data. The seeded **content itself** — zone names (Dalam / Luar / Teras / VIP), the ~42 menu items, bahan, staff names — is venue content and ships Indonesian in both locales (ADR-0083). Only the prompt and progress copy around it translate.
 

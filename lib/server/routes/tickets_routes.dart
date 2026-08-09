@@ -221,6 +221,12 @@ class SubmitOrderResult {
   final String? visitId;
   final String? storedResponse;
 
+  /// The caller asked to append to a visit the table no longer has. Nothing was
+  /// written — not a ticket, not a stock movement, not even the idempotency
+  /// claim, so the caller may re-key the order against the live visit and try
+  /// again. See ADR-0090.
+  final bool visitConflict;
+
   const SubmitOrderResult({
     required this.createdIds,
     required this.createdRows,
@@ -228,6 +234,7 @@ class SubmitOrderResult {
     this.tableRow,
     this.visitId,
     this.storedResponse,
+    this.visitConflict = false,
   });
 }
 
@@ -247,6 +254,21 @@ Future<SubmitOrderResult> submitOrder(
   String? actorId,
   bool canOverrideStock = false,
 
+  /// Dine-in only: the visit the caller believes this table is on. When it does
+  /// not match, the submit is refused whole rather than attached — a table that
+  /// changed guests while a handset was terputus would otherwise bill a
+  /// stranger for food they never ordered, and it would look correct on every
+  /// screen. Null (the normal case) skips the check. See ADR-0090.
+  String? expectedVisitId,
+
+  /// The moment the waiter keyed these lines, when that is not now. Stored per
+  /// ticket; `sentAt` still stamps delivery, so the kitchen's clocks are never
+  /// handed a head start they did not have. See ADR-0090.
+  DateTime? capturedAt,
+
+  /// Who delivered a backlog that someone else captured. See ADR-0090.
+  String? replayedByUserId,
+
   /// Write these timestamps instead of "now". The demo seed replays a month
   /// through this function and must stamp each order at its own moment —
   /// without dragging the running app's clock around while it does
@@ -265,6 +287,7 @@ Future<SubmitOrderResult> submitOrder(
   VenueTable? tableRow;
   String? storedResponse;
   String? orderVisitId;
+  var visitConflict = false;
   await db.transaction(() async {
     // Claim the idempotency key atomically; primary-key conflict means
     // a concurrent request already took it.
@@ -296,6 +319,19 @@ Future<SubmitOrderResult> submitOrder(
         visitId = v.id;
       }
     } else {
+      // Check before `ensureVisit`, not after: on a table that has been closed
+      // and reseated, ensureVisit would happily mint the *new* party's visit
+      // and the mismatch would be discovered one line too late.
+      if (expectedVisitId != null && expectedVisitId.isNotEmpty) {
+        final tbl = await (db.select(
+          db.venueTables,
+        )..where((t) => t.id.equals(tableId))).getSingleOrNull();
+        if (tbl?.currentVisitId != expectedVisitId) {
+          visitConflict = true;
+          orderVisitId = tbl?.currentVisitId;
+          return;
+        }
+      }
       visitId = await ensureVisit(db, tableId, actorId: actorId);
     }
     orderVisitId = visitId;
@@ -371,6 +407,8 @@ Future<SubmitOrderResult> submitOrder(
         price: (l['unitPrice'] as num).toInt(),
         status: 'sent',
         sentAt: stamp,
+        capturedAt: Value(capturedAt),
+        replayedByUserId: Value(replayedByUserId),
         createdByUserId: Value(actorId),
       );
       await db.into(db.tickets).insert(row);
@@ -447,6 +485,7 @@ Future<SubmitOrderResult> submitOrder(
     tableRow: tableRow,
     visitId: orderVisitId,
     storedResponse: storedResponse,
+    visitConflict: visitConflict,
   );
 }
 
@@ -486,6 +525,19 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       Capability.overrideStock,
     );
 
+    // A replayed order (ADR-0090). `capturedAt` is advisory — it only ever
+    // makes a line look *older* than it is, never fresher — but the visit
+    // guard is load-bearing, so a malformed value is dropped rather than
+    // guessed at.
+    final capturedAt = DateTime.tryParse((body['capturedAt'] as String?) ?? '');
+    final expectedVisitId = (body['expectedVisitId'] as String?)?.trim();
+    // Attribution splits from authorisation on a replay: the capability check
+    // above ran against the bearer, `actorId` keeps naming the waiter who took
+    // the order, and this names whoever carried the backlog in.
+    final replayedBy = actorId != null && actorId.isNotEmpty
+        ? (await _actor(req, db, auth))?.id
+        : null;
+
     final res = await submitOrder(
       db,
       tableId: tableId,
@@ -498,7 +550,24 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       appendVisitId: appendVisitId,
       actorId: actorId,
       canOverrideStock: canOverrideStock,
+      expectedVisitId: expectedVisitId,
+      capturedAt: capturedAt,
+      replayedByUserId: capturedAt == null || replayedBy == actorId
+          ? null
+          : replayedBy,
     );
+
+    if (res.visitConflict) {
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'visit_changed',
+          'currentVisitId': res.visitId,
+          'message': 'meja sudah ganti tamu — pesanan tidak dipasang',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
+    }
     final createdIds = res.createdIds;
     final createdRows = res.createdRows;
     final rejected = res.rejected;
@@ -914,6 +983,9 @@ Map<String, dynamic> _toJson(Ticket t) => {
   'price': t.price,
   'status': t.status,
   'sentAt': t.sentAt.toIso8601String(),
+  // Non-null only on a line a terputus handset delivered late (ADR-0090).
+  'capturedAt': t.capturedAt?.toIso8601String(),
+  'replayedByUserId': t.replayedByUserId,
   'firedAt': t.firedAt?.toIso8601String(),
   'readyAt': t.readyAt?.toIso8601String(),
   'servedAt': t.servedAt?.toIso8601String(),

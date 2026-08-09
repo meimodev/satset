@@ -5263,6 +5263,28 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _capturedAtMeta = const VerificationMeta(
+    'capturedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> capturedAt = GeneratedColumn<DateTime>(
+    'captured_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _replayedByUserIdMeta = const VerificationMeta(
+    'replayedByUserId',
+  );
+  @override
+  late final GeneratedColumn<String> replayedByUserId = GeneratedColumn<String>(
+    'replayed_by_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _firedAtMeta = const VerificationMeta(
     'firedAt',
   );
@@ -5366,6 +5388,8 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     price,
     status,
     sentAt,
+    capturedAt,
+    replayedByUserId,
     firedAt,
     readyAt,
     servedAt,
@@ -5483,6 +5507,21 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
       );
     } else if (isInserting) {
       context.missing(_sentAtMeta);
+    }
+    if (data.containsKey('captured_at')) {
+      context.handle(
+        _capturedAtMeta,
+        capturedAt.isAcceptableOrUnknown(data['captured_at']!, _capturedAtMeta),
+      );
+    }
+    if (data.containsKey('replayed_by_user_id')) {
+      context.handle(
+        _replayedByUserIdMeta,
+        replayedByUserId.isAcceptableOrUnknown(
+          data['replayed_by_user_id']!,
+          _replayedByUserIdMeta,
+        ),
+      );
     }
     if (data.containsKey('fired_at')) {
       context.handle(
@@ -5605,6 +5644,14 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}sent_at'],
       )!,
+      capturedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}captured_at'],
+      ),
+      replayedByUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}replayed_by_user_id'],
+      ),
       firedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}fired_at'],
@@ -5666,6 +5713,22 @@ class Ticket extends DataClass implements Insertable<Ticket> {
   final String status;
   final DateTime sentAt;
 
+  /// When the waiter keyed this line at the table, if that is not when the
+  /// kitchen received it. Null on every ordinary send — the two moments are the
+  /// same one. Non-null only for a line captured while the handset was terputus
+  /// and delivered later: `sentAt` stays the moment the host accepted it, so no
+  /// KDS clock, ticker or alert threshold is fooled into calling the kitchen
+  /// late for food it had not received. This column is the truth for the audit
+  /// trail and for telling a guest why their food is behind. See ADR-0090.
+  final DateTime? capturedAt;
+
+  /// Who drained the queue this line arrived on, when that is not its author.
+  /// Handsets are shared, so a backlog outlives the session that captured it
+  /// (ADR-0065); `createdByUserId` keeps naming the waiter who took the order
+  /// (ADR-0056 never backfills authorship) and this names whoever carried it
+  /// in. Null on every ordinary send. See ADR-0090.
+  final String? replayedByUserId;
+
   /// When the kitchen actually started owning this line. Null on a normal
   /// send (the clock starts at `sentAt`); stamped on the `held → sent` fire
   /// so a course held 40 minutes is not born overdue. `sentAt` keeps meaning
@@ -5705,6 +5768,8 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     required this.price,
     required this.status,
     required this.sentAt,
+    this.capturedAt,
+    this.replayedByUserId,
     this.firedAt,
     this.readyAt,
     this.servedAt,
@@ -5734,6 +5799,12 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     map['price'] = Variable<int>(price);
     map['status'] = Variable<String>(status);
     map['sent_at'] = Variable<DateTime>(sentAt);
+    if (!nullToAbsent || capturedAt != null) {
+      map['captured_at'] = Variable<DateTime>(capturedAt);
+    }
+    if (!nullToAbsent || replayedByUserId != null) {
+      map['replayed_by_user_id'] = Variable<String>(replayedByUserId);
+    }
     if (!nullToAbsent || firedAt != null) {
       map['fired_at'] = Variable<DateTime>(firedAt);
     }
@@ -5778,6 +5849,12 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       price: Value(price),
       status: Value(status),
       sentAt: Value(sentAt),
+      capturedAt: capturedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(capturedAt),
+      replayedByUserId: replayedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(replayedByUserId),
       firedAt: firedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(firedAt),
@@ -5824,6 +5901,8 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       price: serializer.fromJson<int>(json['price']),
       status: serializer.fromJson<String>(json['status']),
       sentAt: serializer.fromJson<DateTime>(json['sentAt']),
+      capturedAt: serializer.fromJson<DateTime?>(json['capturedAt']),
+      replayedByUserId: serializer.fromJson<String?>(json['replayedByUserId']),
       firedAt: serializer.fromJson<DateTime?>(json['firedAt']),
       readyAt: serializer.fromJson<DateTime?>(json['readyAt']),
       servedAt: serializer.fromJson<DateTime?>(json['servedAt']),
@@ -5851,6 +5930,8 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       'price': serializer.toJson<int>(price),
       'status': serializer.toJson<String>(status),
       'sentAt': serializer.toJson<DateTime>(sentAt),
+      'capturedAt': serializer.toJson<DateTime?>(capturedAt),
+      'replayedByUserId': serializer.toJson<String?>(replayedByUserId),
       'firedAt': serializer.toJson<DateTime?>(firedAt),
       'readyAt': serializer.toJson<DateTime?>(readyAt),
       'servedAt': serializer.toJson<DateTime?>(servedAt),
@@ -5876,6 +5957,8 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     int? price,
     String? status,
     DateTime? sentAt,
+    Value<DateTime?> capturedAt = const Value.absent(),
+    Value<String?> replayedByUserId = const Value.absent(),
     Value<DateTime?> firedAt = const Value.absent(),
     Value<DateTime?> readyAt = const Value.absent(),
     Value<DateTime?> servedAt = const Value.absent(),
@@ -5898,6 +5981,10 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     price: price ?? this.price,
     status: status ?? this.status,
     sentAt: sentAt ?? this.sentAt,
+    capturedAt: capturedAt.present ? capturedAt.value : this.capturedAt,
+    replayedByUserId: replayedByUserId.present
+        ? replayedByUserId.value
+        : this.replayedByUserId,
     firedAt: firedAt.present ? firedAt.value : this.firedAt,
     readyAt: readyAt.present ? readyAt.value : this.readyAt,
     servedAt: servedAt.present ? servedAt.value : this.servedAt,
@@ -5934,6 +6021,12 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       price: data.price.present ? data.price.value : this.price,
       status: data.status.present ? data.status.value : this.status,
       sentAt: data.sentAt.present ? data.sentAt.value : this.sentAt,
+      capturedAt: data.capturedAt.present
+          ? data.capturedAt.value
+          : this.capturedAt,
+      replayedByUserId: data.replayedByUserId.present
+          ? data.replayedByUserId.value
+          : this.replayedByUserId,
       firedAt: data.firedAt.present ? data.firedAt.value : this.firedAt,
       readyAt: data.readyAt.present ? data.readyAt.value : this.readyAt,
       servedAt: data.servedAt.present ? data.servedAt.value : this.servedAt,
@@ -5971,6 +6064,8 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           ..write('price: $price, ')
           ..write('status: $status, ')
           ..write('sentAt: $sentAt, ')
+          ..write('capturedAt: $capturedAt, ')
+          ..write('replayedByUserId: $replayedByUserId, ')
           ..write('firedAt: $firedAt, ')
           ..write('readyAt: $readyAt, ')
           ..write('servedAt: $servedAt, ')
@@ -5998,6 +6093,8 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     price,
     status,
     sentAt,
+    capturedAt,
+    replayedByUserId,
     firedAt,
     readyAt,
     servedAt,
@@ -6024,6 +6121,8 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           other.price == this.price &&
           other.status == this.status &&
           other.sentAt == this.sentAt &&
+          other.capturedAt == this.capturedAt &&
+          other.replayedByUserId == this.replayedByUserId &&
           other.firedAt == this.firedAt &&
           other.readyAt == this.readyAt &&
           other.servedAt == this.servedAt &&
@@ -6048,6 +6147,8 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
   final Value<int> price;
   final Value<String> status;
   final Value<DateTime> sentAt;
+  final Value<DateTime?> capturedAt;
+  final Value<String?> replayedByUserId;
   final Value<DateTime?> firedAt;
   final Value<DateTime?> readyAt;
   final Value<DateTime?> servedAt;
@@ -6071,6 +6172,8 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     this.price = const Value.absent(),
     this.status = const Value.absent(),
     this.sentAt = const Value.absent(),
+    this.capturedAt = const Value.absent(),
+    this.replayedByUserId = const Value.absent(),
     this.firedAt = const Value.absent(),
     this.readyAt = const Value.absent(),
     this.servedAt = const Value.absent(),
@@ -6095,6 +6198,8 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     required int price,
     required String status,
     required DateTime sentAt,
+    this.capturedAt = const Value.absent(),
+    this.replayedByUserId = const Value.absent(),
     this.firedAt = const Value.absent(),
     this.readyAt = const Value.absent(),
     this.servedAt = const Value.absent(),
@@ -6126,6 +6231,8 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Expression<int>? price,
     Expression<String>? status,
     Expression<DateTime>? sentAt,
+    Expression<DateTime>? capturedAt,
+    Expression<String>? replayedByUserId,
     Expression<DateTime>? firedAt,
     Expression<DateTime>? readyAt,
     Expression<DateTime>? servedAt,
@@ -6150,6 +6257,8 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       if (price != null) 'price': price,
       if (status != null) 'status': status,
       if (sentAt != null) 'sent_at': sentAt,
+      if (capturedAt != null) 'captured_at': capturedAt,
+      if (replayedByUserId != null) 'replayed_by_user_id': replayedByUserId,
       if (firedAt != null) 'fired_at': firedAt,
       if (readyAt != null) 'ready_at': readyAt,
       if (servedAt != null) 'served_at': servedAt,
@@ -6176,6 +6285,8 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Value<int>? price,
     Value<String>? status,
     Value<DateTime>? sentAt,
+    Value<DateTime?>? capturedAt,
+    Value<String?>? replayedByUserId,
     Value<DateTime?>? firedAt,
     Value<DateTime?>? readyAt,
     Value<DateTime?>? servedAt,
@@ -6200,6 +6311,8 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       price: price ?? this.price,
       status: status ?? this.status,
       sentAt: sentAt ?? this.sentAt,
+      capturedAt: capturedAt ?? this.capturedAt,
+      replayedByUserId: replayedByUserId ?? this.replayedByUserId,
       firedAt: firedAt ?? this.firedAt,
       readyAt: readyAt ?? this.readyAt,
       servedAt: servedAt ?? this.servedAt,
@@ -6254,6 +6367,12 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     if (sentAt.present) {
       map['sent_at'] = Variable<DateTime>(sentAt.value);
     }
+    if (capturedAt.present) {
+      map['captured_at'] = Variable<DateTime>(capturedAt.value);
+    }
+    if (replayedByUserId.present) {
+      map['replayed_by_user_id'] = Variable<String>(replayedByUserId.value);
+    }
     if (firedAt.present) {
       map['fired_at'] = Variable<DateTime>(firedAt.value);
     }
@@ -6300,6 +6419,8 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
           ..write('price: $price, ')
           ..write('status: $status, ')
           ..write('sentAt: $sentAt, ')
+          ..write('capturedAt: $capturedAt, ')
+          ..write('replayedByUserId: $replayedByUserId, ')
           ..write('firedAt: $firedAt, ')
           ..write('readyAt: $readyAt, ')
           ..write('servedAt: $servedAt, ')
@@ -24511,6 +24632,8 @@ typedef $$TicketsTableCreateCompanionBuilder =
       required int price,
       required String status,
       required DateTime sentAt,
+      Value<DateTime?> capturedAt,
+      Value<String?> replayedByUserId,
       Value<DateTime?> firedAt,
       Value<DateTime?> readyAt,
       Value<DateTime?> servedAt,
@@ -24536,6 +24659,8 @@ typedef $$TicketsTableUpdateCompanionBuilder =
       Value<int> price,
       Value<String> status,
       Value<DateTime> sentAt,
+      Value<DateTime?> capturedAt,
+      Value<String?> replayedByUserId,
       Value<DateTime?> firedAt,
       Value<DateTime?> readyAt,
       Value<DateTime?> servedAt,
@@ -24618,6 +24743,16 @@ class $$TicketsTableFilterComposer
 
   ColumnFilters<DateTime> get sentAt => $composableBuilder(
     column: $table.sentAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get capturedAt => $composableBuilder(
+    column: $table.capturedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get replayedByUserId => $composableBuilder(
+    column: $table.replayedByUserId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -24736,6 +24871,16 @@ class $$TicketsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get capturedAt => $composableBuilder(
+    column: $table.capturedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get replayedByUserId => $composableBuilder(
+    column: $table.replayedByUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get firedAt => $composableBuilder(
     column: $table.firedAt,
     builder: (column) => ColumnOrderings(column),
@@ -24829,6 +24974,16 @@ class $$TicketsTableAnnotationComposer
   GeneratedColumn<DateTime> get sentAt =>
       $composableBuilder(column: $table.sentAt, builder: (column) => column);
 
+  GeneratedColumn<DateTime> get capturedAt => $composableBuilder(
+    column: $table.capturedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get replayedByUserId => $composableBuilder(
+    column: $table.replayedByUserId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get firedAt =>
       $composableBuilder(column: $table.firedAt, builder: (column) => column);
 
@@ -24905,6 +25060,8 @@ class $$TicketsTableTableManager
                 Value<int> price = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<DateTime> sentAt = const Value.absent(),
+                Value<DateTime?> capturedAt = const Value.absent(),
+                Value<String?> replayedByUserId = const Value.absent(),
                 Value<DateTime?> firedAt = const Value.absent(),
                 Value<DateTime?> readyAt = const Value.absent(),
                 Value<DateTime?> servedAt = const Value.absent(),
@@ -24928,6 +25085,8 @@ class $$TicketsTableTableManager
                 price: price,
                 status: status,
                 sentAt: sentAt,
+                capturedAt: capturedAt,
+                replayedByUserId: replayedByUserId,
                 firedAt: firedAt,
                 readyAt: readyAt,
                 servedAt: servedAt,
@@ -24953,6 +25112,8 @@ class $$TicketsTableTableManager
                 required int price,
                 required String status,
                 required DateTime sentAt,
+                Value<DateTime?> capturedAt = const Value.absent(),
+                Value<String?> replayedByUserId = const Value.absent(),
                 Value<DateTime?> firedAt = const Value.absent(),
                 Value<DateTime?> readyAt = const Value.absent(),
                 Value<DateTime?> servedAt = const Value.absent(),
@@ -24976,6 +25137,8 @@ class $$TicketsTableTableManager
                 price: price,
                 status: status,
                 sentAt: sentAt,
+                capturedAt: capturedAt,
+                replayedByUserId: replayedByUserId,
                 firedAt: firedAt,
                 readyAt: readyAt,
                 servedAt: servedAt,

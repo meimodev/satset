@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -160,9 +161,13 @@ class AuthRepository extends StateNotifier<AuthState> {
       );
       final session = SessionDto.fromJson((raw as Map).cast<String, dynamic>());
       await storage.writeToken(session.token);
-      final me = MeDto.fromJson(
-        (await api.getJson('/auth/me') as Map).cast<String, dynamic>(),
-      );
+      final meRaw = (await api.getJson('/auth/me') as Map)
+          .cast<String, dynamic>();
+      final me = MeDto.fromJson(meRaw);
+      // Cache it now, not only on restore: this is the one moment we are
+      // certain of a live host, and the boot that needs the cache is the one
+      // that cannot reach it (ADR-0090).
+      await storage.writeMe(jsonEncode(meRaw));
       final caps = <Capability>{
         for (final k in me.capabilities)
           if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
@@ -691,6 +696,15 @@ class AuthRepository extends StateNotifier<AuthState> {
 
   /// Restore an existing token by calling `/auth/me`. No-op if no API config
   /// or no stored token.
+  ///
+  /// **A failure to reach the host is not a failure to authenticate.** Only the
+  /// host *rejecting* the token (401/403) drops the session; a timeout, a dead
+  /// LAN or a host that is simply off restores from the cached `/auth/me`
+  /// payload instead. Without that split, a waiter whose app restarts while
+  /// terputus has their JWT deleted by a network error and is stranded on the
+  /// PIN screen — the sign-in they need is the one they cannot reach. Capability
+  /// gating still runs against these cached capabilities, and every write they
+  /// unlock is an intent the host re-authorises at replay (ADR-0090).
   Future<void> restoreFromStoredToken() async {
     SatLog.repo('auth.restore');
     final cfg = ref.read(apiConfigProvider);
@@ -703,38 +717,11 @@ class AuthRepository extends StateNotifier<AuthState> {
     }
     try {
       final api = ref.read(apiClientProvider);
-      final me = MeDto.fromJson(
-        (await api.getJson('/auth/me') as Map).cast<String, dynamic>(),
-      );
-      final caps = <Capability>{
-        for (final k in me.capabilities)
-          if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
-      };
-      var loginAt = await storage.readLoginAt();
-      if (loginAt == null) {
-        loginAt = SatClock.now();
-        await storage.writeLoginAt(loginAt);
-      }
-      // A restore must not resurrect a retired shift: `/auth/me` reports the
-      // shift read-only and returns null once the business-day boundary has
-      // passed, so a token that survives overnight no longer hands us
-      // yesterday's clock. Falling back to the local stamp only when the host
-      // has no opinion at all.
-      final shiftStartedAt = me.shiftStartedAt ?? loginAt.toIso8601String();
-      state = AuthState(
-        isAuthenticated: true,
-        user: AppUser(
-          id: me.userId,
-          name: me.name,
-          initials: me.initials,
-          role: _roleFromCapabilities(caps),
-          shiftStartedAt: shiftStartedAt,
-          zoneAssigned: me.zoneAssigned ?? '',
-          roleId: me.roleId,
-          avatarColorHex: me.avatarColorHex,
-        ),
-        capabilities: caps,
-      );
+      final raw = (await api.getJson('/auth/me') as Map)
+          .cast<String, dynamic>();
+      final me = MeDto.fromJson(raw);
+      await storage.writeMe(jsonEncode(raw));
+      await _applyMe(me);
       // Admin auto-login: re-arm the two-sided kill switch + heartbeat for the
       // cached Firebase session so a console/fleet flip still tears the server
       // down. Resolve the venueId off the admin doc (cache-tolerant).
@@ -746,10 +733,77 @@ class AuthRepository extends StateNotifier<AuthState> {
           _startEligibilityWatch(fbUid, profile.venueId);
         }
       }
+    } on ApiException catch (e) {
+      // The host answered and said no. Anything else it says (500, a bad
+      // gateway, a truncated body) is the host having a bad day, not this
+      // session being invalid.
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        SatLog.repo('auth.restore rejected ${e.statusCode} — clearing session');
+        await storage.clearSession();
+        state = state.copyWith(restoring: false);
+      } else {
+        await _restoreFromCachedMe();
+      }
     } catch (_) {
-      await storage.clearSession();
+      await _restoreFromCachedMe();
+    }
+  }
+
+  /// Rebuild the session from the last `/auth/me` we stored. Leaves the state
+  /// unauthenticated when there is no cache — a first-ever sign-in genuinely
+  /// needs the host, and pretending otherwise would grant capabilities nobody
+  /// ever granted.
+  Future<void> _restoreFromCachedMe() async {
+    final cached = await storage.readMe();
+    if (cached == null || cached.isEmpty) {
+      SatLog.repo('auth.restore unreachable, no cached me — staying signed out');
+      state = state.copyWith(restoring: false);
+      return;
+    }
+    try {
+      await _applyMe(
+        MeDto.fromJson((jsonDecode(cached) as Map).cast<String, dynamic>()),
+      );
+      SatLog.repo('auth.restore unreachable — restored from cache');
+    } catch (_) {
+      // A cache we cannot parse is a cache from an older wire shape. Drop it
+      // rather than wedging every boot on it; the next reachable host refills.
+      await storage.writeMe(null);
       state = state.copyWith(restoring: false);
     }
+  }
+
+  /// Project a `/auth/me` payload — live or cached — onto [AuthState].
+  Future<void> _applyMe(MeDto me) async {
+    final caps = <Capability>{
+      for (final k in me.capabilities)
+        if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
+    };
+    var loginAt = await storage.readLoginAt();
+    if (loginAt == null) {
+      loginAt = SatClock.now();
+      await storage.writeLoginAt(loginAt);
+    }
+    // A restore must not resurrect a retired shift: `/auth/me` reports the
+    // shift read-only and returns null once the business-day boundary has
+    // passed, so a token that survives overnight no longer hands us
+    // yesterday's clock. Falling back to the local stamp only when the host
+    // has no opinion at all.
+    final shiftStartedAt = me.shiftStartedAt ?? loginAt.toIso8601String();
+    state = AuthState(
+      isAuthenticated: true,
+      user: AppUser(
+        id: me.userId,
+        name: me.name,
+        initials: me.initials,
+        role: _roleFromCapabilities(caps),
+        shiftStartedAt: shiftStartedAt,
+        zoneAssigned: me.zoneAssigned ?? '',
+        roleId: me.roleId,
+        avatarColorHex: me.avatarColorHex,
+      ),
+      capabilities: caps,
+    );
   }
 
   /// Drops the staff session. [endShift] additionally closes the shift — the

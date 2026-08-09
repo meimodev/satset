@@ -239,6 +239,22 @@ class Tickets extends Table {
   TextColumn get status => text()();
   DateTimeColumn get sentAt => dateTime()();
 
+  /// When the waiter keyed this line at the table, if that is not when the
+  /// kitchen received it. Null on every ordinary send — the two moments are the
+  /// same one. Non-null only for a line captured while the handset was terputus
+  /// and delivered later: `sentAt` stays the moment the host accepted it, so no
+  /// KDS clock, ticker or alert threshold is fooled into calling the kitchen
+  /// late for food it had not received. This column is the truth for the audit
+  /// trail and for telling a guest why their food is behind. See ADR-0090.
+  DateTimeColumn get capturedAt => dateTime().nullable()();
+
+  /// Who drained the queue this line arrived on, when that is not its author.
+  /// Handsets are shared, so a backlog outlives the session that captured it
+  /// (ADR-0065); `createdByUserId` keeps naming the waiter who took the order
+  /// (ADR-0056 never backfills authorship) and this names whoever carried it
+  /// in. Null on every ordinary send. See ADR-0090.
+  TextColumn get replayedByUserId => text().nullable()();
+
   /// When the kitchen actually started owning this line. Null on a normal
   /// send (the clock starts at `sentAt`); stamped on the `held → sent` fire
   /// so a course held 40 minutes is not born overdue. `sentAt` keeps meaning

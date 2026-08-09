@@ -3,6 +3,7 @@ import 'package:satset/core/localization/audit_text.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
@@ -33,6 +34,8 @@ import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/features/me/widgets/locale_sheet.dart';
+import 'package:satset/data/services/send_queue_service.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
 
 /// What the "Saya" tab shows: a **live snapshot** of the shift you are in, not a
 /// cumulative tally of it.
@@ -278,6 +281,36 @@ class MeScreen extends ConsumerWidget {
 
     // "Akhiri shift & keluar" — close the shift *and* sign out.
     Future<void> endShift() async {
+      // A shift cannot close over undelivered orders: the guest ordered, the
+      // kitchen never heard, and signing out is the moment that backlog stops
+      // having an owner. Either reconnect, or say out loud that they are gone.
+      final pending = ref.read(sendQueueProvider);
+      if (pending.isNotEmpty) {
+        final drop = await showSatDialog<bool>(
+          context,
+          builder: (ctx) => AlertDialog(
+            title: Text(context.l10n.sendQueueTertunda),
+            content: Text(context.l10n.sendQueueBlockEndShift(pending.length)),
+            actions: [
+              SatButton.ghost(
+                label: context.l10n.cancel,
+                onTap: () => Navigator.pop(ctx, false),
+              ),
+              SatButton.danger(
+                label: context.l10n.sendQueueDiscardAll,
+                onTap: () => Navigator.pop(ctx, true),
+              ),
+            ],
+          ),
+        );
+        if (drop != true) return;
+        // ponytail: local-only. The audit writer lives on the host and the
+        // host is exactly what is missing here; a queued audit intent would be
+        // a second thing to lose. The discard is logged on the device.
+        SatLog.repo('sendQueue.discardAll n=${pending.length} at end-shift');
+        await ref.read(sendQueueProvider.notifier).discardAll();
+        if (!context.mounted) return;
+      }
       final liveCount = tables
           .where((t) => t.status != TableStatus.available)
           .length;
@@ -390,6 +423,10 @@ class _MePhone extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
+              child: _MyPendingCard(tableNames: tableNames),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
               child: _KpiGrid(m: m),
             ),
             const SizedBox(height: Sp.s3),
@@ -480,6 +517,7 @@ class _MeTablet extends StatelessWidget {
                         onSwitchUser: onSwitchUser,
                       ),
                       const SizedBox(height: Sp.s3h),
+                      _MyPendingCard(tableNames: tableNames),
                       _KpiGrid(m: m, columns: 4),
                       const SizedBox(height: Sp.s3),
                       _PacingCard(m: m, big: true),
@@ -506,6 +544,60 @@ class _MeTablet extends StatelessWidget {
 }
 
 // ────────────────────────────────── PIECES
+
+/// What this handset is still holding, on the screen the waiter checks before
+/// walking away from a shift.
+///
+/// Device-wide, not per-user: the queue belongs to the handset (ADR-0065 lets a
+/// shift move between them), so showing only "mine" would hide a backlog from
+/// the one person looking at it. Absent entirely when there is nothing pending.
+class _MyPendingCard extends ConsumerWidget {
+  const _MyPendingCard({required this.tableNames});
+
+  final Map<String, String> tableNames;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pending = ref.watch(sendQueueProvider);
+    if (pending.isEmpty) return const SizedBox.shrink();
+    final sc = context.sat;
+    final l = context.l10n;
+
+    return SatCard.section(
+      header: l.sendQueueTertunda,
+      headerTrailing: SatChip.tag(
+        label: l.sendQueuePending(pending.length),
+        hue: SatChipHue.warn,
+        size: SatChipSize.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final i in pending)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Sp.s1),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      tableNames[i.tableId] ?? i.tableId,
+                      style: SatType.bodyM(color: sc.textHi),
+                    ),
+                  ),
+                  Text(
+                    l.sendQueueCapturedAt(formatClockId(
+                      i.capturedAt.toIso8601String(),
+                    )),
+                    style: SatType.bodyS(color: sc.textDim),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
 
 class _TopBar extends StatelessWidget {
   final SatTheme theme;

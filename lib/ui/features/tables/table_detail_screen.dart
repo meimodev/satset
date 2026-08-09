@@ -28,6 +28,7 @@ import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/domain/models/zone.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/data/services/send_queue_service.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 import 'package:satset/ui/core/widgets/ready_banner.dart';
 import 'package:satset/ui/core/widgets/order_line_card.dart';
@@ -36,6 +37,7 @@ import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
 import '../void_flow/line_item_action_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/move_table_sheet.dart';
+import 'package:satset/ui/features/tables/widgets/pending_orders_block.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
@@ -260,6 +262,9 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       }
     });
     final isKosong = table.status == TableStatus.available;
+    final hasPending = ref
+        .watch(pendingOrdersForTableProvider(table.id))
+        .isNotEmpty;
     final canSeat =
         isKosong && auth.has(Capability.takeOrder) && !lockedByOther;
     // Gate by capability, not role enum: admins also have takeOrder and need
@@ -516,6 +521,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         closeLabel: closeLabel,
         isKosong: isKosong,
         canSeat: canSeat,
+        hasPending: hasPending,
         lockBanner: lockBanner,
         onMinusPax: onMinus,
         onPlusPax: onPlus,
@@ -565,6 +571,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                               l.bottomInset + 80,
                             ),
                             children: [
+                              PendingOrdersBlock(tableId: table.id),
                               for (final (i, cid)
                                   in Courses.stationOrder
                                       .map((c) => c.id)
@@ -582,7 +589,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                                       onTicketTap: openAction,
                                     ),
                                   ),
-                              if (tickets.isEmpty)
+                              if (tickets.isEmpty && !hasPending)
                                 Padding(
                                   padding: const EdgeInsets.fromLTRB(
                                     24,
@@ -1353,6 +1360,11 @@ class _TabletSplit extends StatelessWidget {
   final String closeLabel;
   final bool isKosong;
   final bool canSeat;
+
+  /// Whether the send queue is holding lines for this table. Passed in rather
+  /// than watched here so the "no lines yet" copy and the pending block can
+  /// never both be on screen.
+  final bool hasPending;
   final Widget? lockBanner;
   final VoidCallback onMinusPax;
   final VoidCallback onPlusPax;
@@ -1378,6 +1390,7 @@ class _TabletSplit extends StatelessWidget {
     required this.closeLabel,
     required this.isKosong,
     required this.canSeat,
+    required this.hasPending,
     required this.lockBanner,
     required this.onMinusPax,
     required this.onPlusPax,
@@ -1513,7 +1526,7 @@ class _TabletSplit extends StatelessWidget {
                                 enabled: canSeat,
                                 onTap: onSeat,
                               )
-                            : tickets.isEmpty
+                            : tickets.isEmpty && !hasPending
                             ? Center(
                                 child: Padding(
                                   padding: const EdgeInsets.all(Sp.s7),
@@ -1532,6 +1545,7 @@ class _TabletSplit extends StatelessWidget {
                                   16,
                                 ),
                                 children: [
+                                  PendingOrdersBlock(tableId: table.id),
                                   for (final (i, cid)
                                       in Courses.stationOrder
                                           .map((c) => c.id)

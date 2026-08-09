@@ -19,6 +19,13 @@ class PrefsService {
   static const _kMutedAlerts = 'satset.muted_alerts';
   static const _kDevicePrinters = 'satset.device_printers';
 
+  /// The **Antrean kirim** — orders a terputus handset captured and has not
+  /// delivered (ADR-0090). Device-scoped like the printers above and for the
+  /// same reason: handsets are shared, and a backlog must outlive the session
+  /// that captured it. Survives a restart on purpose — a dead battery must not
+  /// cost the venue a bill.
+  static const _kSendQueue = 'satset.send_queue';
+
   /// Bumped from `satset.theme` when Neon Terang became the shipped default
   /// (ADR-0057). A device carrying the old key finds nothing under the new one,
   /// so `SatTheme.fromKey(null)` hands it the fallback exactly once. Another
@@ -106,6 +113,16 @@ class PrefsService {
       _kDevicePrinters,
       jsonEncode([for (final p in printers) p.toJson()]),
     );
+  }
+
+  /// Raw JSON array of undelivered intents. Kept opaque here — the queue owns
+  /// its own shape, and prefs is only the shelf it sits on. See ADR-0090.
+  String? sendQueueJson() => _p.getString(_kSendQueue);
+
+  Future<void> setSendQueueJson(String? v) async {
+    v == null
+        ? await _p.remove(_kSendQueue)
+        : await _p.setString(_kSendQueue, v);
   }
 
   /// Device-local look (ADR-0045). Deliberately not per-user and not per-venue:

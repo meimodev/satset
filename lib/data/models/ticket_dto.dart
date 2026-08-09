@@ -38,6 +38,15 @@ class TicketDto with _$TicketDto {
     required String status,
     required DateTime sentAt,
 
+    /// When the waiter keyed the line, when that is not when the host received
+    /// it. Null on every ordinary send; non-null only for a line delivered off
+    /// a terputus handset's queue. Never age a line from this — `sentAt` is
+    /// what the kitchen's clocks mean. See ADR-0090.
+    DateTime? capturedAt,
+
+    /// Who delivered a backlog someone else captured. ADR-0090.
+    String? replayedByUserId,
+
     /// Stamped on the `held → sent` fire. Null on a normal send. ADR-0043.
     DateTime? firedAt,
     DateTime? readyAt,

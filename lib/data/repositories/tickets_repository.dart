@@ -10,6 +10,7 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/error_bus_service.dart';
+import 'package:satset/data/services/send_queue_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/course.dart';
@@ -113,6 +114,10 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       'tickets.loaded tables=${grouped.length} tickets=${grouped.values.fold<int>(0, (s, l) => s + l.length)}',
     );
   }
+
+  /// Re-pull after something outside this repository changed the server's
+  /// tickets — today, a drained send queue (ADR-0090).
+  Future<void> resyncNow() => _resync();
 
   /// Guarded so overlapping connects don't stampede; never throws — a
   /// transient failure simply waits for the next connect.
@@ -259,16 +264,38 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         actorId: actorId,
       ).map((t) => t.id).toList();
     }
+    // Terputus: capture the order instead of attempting it (ADR-0090). The
+    // socket being closed is checked *before* the POST rather than after it
+    // fails, because the failure costs 8s of `requestTimeout` and a waiter
+    // mid-rush pays that on every tap.
+    if (ref.read(wsConnStateProvider) != WsConnState.open) {
+      await _enqueueOrder(tableId: tableId, lines: lines, actorId: actorId);
+      return const [];
+    }
     final api = ref.read(apiClientProvider);
-    final raw = await api.postJson(
-      '/orders',
-      SubmitOrderRequestDto(
-        tableId: tableId,
-        idempotencyKey: idempotencyKey,
-        lines: lines,
-        actorId: actorId,
-      ).toJson(),
-    );
+    final Object raw;
+    try {
+      raw = await api.postJson(
+        '/orders',
+        SubmitOrderRequestDto(
+          tableId: tableId,
+          idempotencyKey: idempotencyKey,
+          lines: lines,
+          actorId: actorId,
+        ).toJson(),
+      );
+    } on ApiException {
+      // The host answered. Whatever it said — out of stock, no capability, a
+      // closed bill — is a real answer the caller must surface, not a gap to
+      // queue over.
+      rethrow;
+    } catch (_) {
+      // The socket said open and the request still did not land. This is the
+      // gap between the two signals, and it is the reason there is no global
+      // offline flag to disagree with.
+      await _enqueueOrder(tableId: tableId, lines: lines, actorId: actorId);
+      return const [];
+    }
     final res = SubmitOrderResponseDto.fromJson(
       (raw as Map).cast<String, dynamic>(),
     );
@@ -277,6 +304,47 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     ref.read(tablesProvider.notifier).seedCurrentVisit(tableId, res.visitId);
     _reportRejected(res.rejected);
     return res.ticketIds;
+  }
+
+  /// Park an order on the device's [SendQueue] as a **pesanan tertunda**.
+  ///
+  /// Carries the table's current visit when this device knows one, so the host
+  /// can refuse rather than attach if the table has changed guests by the time
+  /// the queue drains (ADR-0090). A full queue is surfaced, never swallowed —
+  /// the waiter must know the handset stopped accepting orders.
+  Future<void> _enqueueOrder({
+    required String tableId,
+    required List<CartLineDto> lines,
+    String? actorId,
+  }) async {
+    final visitId = ref
+        .read(tablesProvider)
+        .where((t) => t.id == tableId)
+        .firstOrNull
+        ?.currentVisitId;
+    try {
+      await ref
+          .read(sendQueueProvider.notifier)
+          .enqueue(
+            kind: SendIntentKind.submitOrder,
+            tableId: tableId,
+            actorId: actorId ?? '',
+            expectedVisitId: (visitId != null && visitId.isNotEmpty)
+                ? visitId
+                : null,
+            payload: {'lines': [for (final l in lines) l.toJson()]},
+          );
+    } on SendQueueFull {
+      final l = ref.read(l10nProvider);
+      ref
+          .read(errorBusServiceProvider)
+          .push(
+            l.sendQueueFull,
+            level: AppErrorLevel.error,
+            code: 'send_queue_full',
+          );
+      rethrow;
+    }
   }
 
   /// Tell the waiter which lines the kitchen has no ingredients for.

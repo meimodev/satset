@@ -5992,6 +5992,83 @@ class AppL10nEn extends AppL10n {
   String get authVenueInactive => 'This venue is inactive.';
 
   @override
+  String get sendQueueFull =>
+      'Send queue is full — reconnect to the server before taking more orders';
+
+  @override
+  String sendQueuePending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count orders waiting to send',
+      one: '1 order waiting to send',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sendQueueTertunda => 'Pending';
+
+  @override
+  String sendQueueCapturedAt(String time) {
+    return 'Captured $time';
+  }
+
+  @override
+  String get sendResultTitle => 'Send result';
+
+  @override
+  String sendResultAllOk(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count orders sent',
+      one: '1 order sent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sendResultAcknowledge => 'Got it';
+
+  @override
+  String get sendResultFailedHeading => 'Failed to send';
+
+  @override
+  String get sendFailVisitChanged =>
+      'Table has changed guests — the order was not attached';
+
+  @override
+  String get sendFailBillClosed => 'The bill had already closed';
+
+  @override
+  String get sendFailExpired =>
+      'Past the business day — the order was not sent';
+
+  @override
+  String get sendFailBlocked =>
+      'This account may not send orders — sign in as the order taker';
+
+  @override
+  String get sendFailOther => 'Refused by the server';
+
+  @override
+  String sendQueueBlockEndShift(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count orders still haven\'t been sent. Reconnect to the server, or discard them.',
+      one:
+          '1 order still hasn\'t been sent. Reconnect to the server, or discard it.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sendQueueDiscardAll => 'Discard pending orders';
+
+  @override
   String get tktOutOfStock => 'out of stock';
 
   @override

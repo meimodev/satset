@@ -261,6 +261,15 @@ mixin _$TicketDto {
   String get status => throw _privateConstructorUsedError;
   DateTime get sentAt => throw _privateConstructorUsedError;
 
+  /// When the waiter keyed the line, when that is not when the host received
+  /// it. Null on every ordinary send; non-null only for a line delivered off
+  /// a terputus handset's queue. Never age a line from this — `sentAt` is
+  /// what the kitchen's clocks mean. See ADR-0090.
+  DateTime? get capturedAt => throw _privateConstructorUsedError;
+
+  /// Who delivered a backlog someone else captured. ADR-0090.
+  String? get replayedByUserId => throw _privateConstructorUsedError;
+
   /// Stamped on the `held → sent` fire. Null on a normal send. ADR-0043.
   DateTime? get firedAt => throw _privateConstructorUsedError;
   DateTime? get readyAt => throw _privateConstructorUsedError;
@@ -300,6 +309,8 @@ abstract class $TicketDtoCopyWith<$Res> {
     int price,
     String status,
     DateTime sentAt,
+    DateTime? capturedAt,
+    String? replayedByUserId,
     DateTime? firedAt,
     DateTime? readyAt,
     DateTime? servedAt,
@@ -339,6 +350,8 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
     Object? price = null,
     Object? status = null,
     Object? sentAt = null,
+    Object? capturedAt = freezed,
+    Object? replayedByUserId = freezed,
     Object? firedAt = freezed,
     Object? readyAt = freezed,
     Object? servedAt = freezed,
@@ -402,6 +415,14 @@ class _$TicketDtoCopyWithImpl<$Res, $Val extends TicketDto>
                 ? _value.sentAt
                 : sentAt // ignore: cast_nullable_to_non_nullable
                       as DateTime,
+            capturedAt: freezed == capturedAt
+                ? _value.capturedAt
+                : capturedAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            replayedByUserId: freezed == replayedByUserId
+                ? _value.replayedByUserId
+                : replayedByUserId // ignore: cast_nullable_to_non_nullable
+                      as String?,
             firedAt: freezed == firedAt
                 ? _value.firedAt
                 : firedAt // ignore: cast_nullable_to_non_nullable
@@ -463,6 +484,8 @@ abstract class _$$TicketDtoImplCopyWith<$Res>
     int price,
     String status,
     DateTime sentAt,
+    DateTime? capturedAt,
+    String? replayedByUserId,
     DateTime? firedAt,
     DateTime? readyAt,
     DateTime? servedAt,
@@ -501,6 +524,8 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
     Object? price = null,
     Object? status = null,
     Object? sentAt = null,
+    Object? capturedAt = freezed,
+    Object? replayedByUserId = freezed,
     Object? firedAt = freezed,
     Object? readyAt = freezed,
     Object? servedAt = freezed,
@@ -564,6 +589,14 @@ class __$$TicketDtoImplCopyWithImpl<$Res>
             ? _value.sentAt
             : sentAt // ignore: cast_nullable_to_non_nullable
                   as DateTime,
+        capturedAt: freezed == capturedAt
+            ? _value.capturedAt
+            : capturedAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        replayedByUserId: freezed == replayedByUserId
+            ? _value.replayedByUserId
+            : replayedByUserId // ignore: cast_nullable_to_non_nullable
+                  as String?,
         firedAt: freezed == firedAt
             ? _value.firedAt
             : firedAt // ignore: cast_nullable_to_non_nullable
@@ -618,6 +651,8 @@ class _$TicketDtoImpl implements _TicketDto {
     required this.price,
     required this.status,
     required this.sentAt,
+    this.capturedAt,
+    this.replayedByUserId,
     this.firedAt,
     this.readyAt,
     this.servedAt,
@@ -670,6 +705,17 @@ class _$TicketDtoImpl implements _TicketDto {
   @override
   final DateTime sentAt;
 
+  /// When the waiter keyed the line, when that is not when the host received
+  /// it. Null on every ordinary send; non-null only for a line delivered off
+  /// a terputus handset's queue. Never age a line from this — `sentAt` is
+  /// what the kitchen's clocks mean. See ADR-0090.
+  @override
+  final DateTime? capturedAt;
+
+  /// Who delivered a backlog someone else captured. ADR-0090.
+  @override
+  final String? replayedByUserId;
+
   /// Stamped on the `held → sent` fire. Null on a normal send. ADR-0043.
   @override
   final DateTime? firedAt;
@@ -690,7 +736,7 @@ class _$TicketDtoImpl implements _TicketDto {
 
   @override
   String toString() {
-    return 'TicketDto(id: $id, tableId: $tableId, visitId: $visitId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, firedAt: $firedAt, readyAt: $readyAt, servedAt: $servedAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
+    return 'TicketDto(id: $id, tableId: $tableId, visitId: $visitId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, capturedAt: $capturedAt, replayedByUserId: $replayedByUserId, firedAt: $firedAt, readyAt: $readyAt, servedAt: $servedAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
   }
 
   @override
@@ -715,6 +761,10 @@ class _$TicketDtoImpl implements _TicketDto {
             (identical(other.price, price) || other.price == price) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.sentAt, sentAt) || other.sentAt == sentAt) &&
+            (identical(other.capturedAt, capturedAt) ||
+                other.capturedAt == capturedAt) &&
+            (identical(other.replayedByUserId, replayedByUserId) ||
+                other.replayedByUserId == replayedByUserId) &&
             (identical(other.firedAt, firedAt) || other.firedAt == firedAt) &&
             (identical(other.readyAt, readyAt) || other.readyAt == readyAt) &&
             (identical(other.servedAt, servedAt) ||
@@ -748,6 +798,8 @@ class _$TicketDtoImpl implements _TicketDto {
     price,
     status,
     sentAt,
+    capturedAt,
+    replayedByUserId,
     firedAt,
     readyAt,
     servedAt,
@@ -787,6 +839,8 @@ abstract class _TicketDto implements TicketDto {
     required final int price,
     required final String status,
     required final DateTime sentAt,
+    final DateTime? capturedAt,
+    final String? replayedByUserId,
     final DateTime? firedAt,
     final DateTime? readyAt,
     final DateTime? servedAt,
@@ -829,6 +883,17 @@ abstract class _TicketDto implements TicketDto {
   String get status;
   @override
   DateTime get sentAt;
+
+  /// When the waiter keyed the line, when that is not when the host received
+  /// it. Null on every ordinary send; non-null only for a line delivered off
+  /// a terputus handset's queue. Never age a line from this — `sentAt` is
+  /// what the kitchen's clocks mean. See ADR-0090.
+  @override
+  DateTime? get capturedAt;
+
+  /// Who delivered a backlog someone else captured. ADR-0090.
+  @override
+  String? get replayedByUserId;
 
   /// Stamped on the `held → sent` fire. Null on a normal send. ADR-0043.
   @override

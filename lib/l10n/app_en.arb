@@ -1657,6 +1657,49 @@
   "authVenueNotFound": "Venue not found. Contact your operator.",
   "authVenueSuspended": "This venue is suspended. Contact your operator.",
   "authVenueInactive": "This venue is inactive.",
+  "sendQueueFull": "Send queue is full — reconnect to the server before taking more orders",
+  "sendQueuePending": "{count, plural, =1{1 order waiting to send} other{{count} orders waiting to send}}",
+  "@sendQueuePending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sendQueueTertunda": "Pending",
+  "sendQueueCapturedAt": "Captured {time}",
+  "@sendQueueCapturedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sendResultTitle": "Send result",
+  "sendResultAllOk": "{count, plural, =1{1 order sent} other{{count} orders sent}}",
+  "@sendResultAllOk": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sendResultAcknowledge": "Got it",
+  "sendResultFailedHeading": "Failed to send",
+  "sendFailVisitChanged": "Table has changed guests — the order was not attached",
+  "sendFailBillClosed": "The bill had already closed",
+  "sendFailExpired": "Past the business day — the order was not sent",
+  "sendFailBlocked": "This account may not send orders — sign in as the order taker",
+  "sendFailOther": "Refused by the server",
+  "sendQueueBlockEndShift": "{count, plural, =1{1 order still hasn't been sent. Reconnect to the server, or discard it.} other{{count} orders still haven't been sent. Reconnect to the server, or discard them.}}",
+  "@sendQueueBlockEndShift": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sendQueueDiscardAll": "Discard pending orders",
   "tktOutOfStock": "out of stock",
   "tktOutOfStockNamed": "out of stock: {names}",
   "tktNotSent": "{what} wasn't sent — {why}",

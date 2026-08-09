@@ -3,6 +3,9 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:satset/data/services/send_queue_drain.dart';
+import 'package:satset/data/services/send_queue_service.dart';
+import 'package:satset/ui/features/shell/send_result_dialog.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -101,6 +104,17 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
+    // Nobody else holds it, and a drain trigger nobody holds never subscribes.
+    // The shell outlives every tab, which is the lifetime a backlog needs.
+    ref.watch(sendQueueDrainProvider);
+    // A clean drain stays silent — the lines landing on the table say it. Only
+    // a refusal, a stock drop or a stalled drain is worth a blocking overlay.
+    ref.listen<SendReport?>(sendReportProvider, (_, r) {
+      if (r == null) return;
+      ref.read(sendReportProvider.notifier).state = null;
+      if (r.failures.isEmpty && !r.interrupted) return;
+      showSendResultDialog(context, r);
+    });
     final ready = ref.watch(totalReadyCountProvider);
     final kitchenCount = ref.watch(kitchenNewOrderCountProvider);
     final loc = GoRouterState.of(context).uri.path;

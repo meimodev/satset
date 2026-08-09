@@ -67,7 +67,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 49;
+  int get schemaVersion => 50;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -906,6 +906,15 @@ class AppDatabase extends _$AppDatabase {
         // zero, which is the honest answer — the app has never known what was
         // in the box.
         await m.createTable(cashEntries);
+      }
+      if (from < 50) {
+        // An offline order is an intent, not a row (ADR-0090). Both columns
+        // stay null for every line the venue has ever taken, and for every
+        // ordinary line it takes from here — they are written only when a
+        // terputus handset delivers a backlog, which is exactly why no backfill
+        // is possible or wanted: before this version, no such line existed.
+        await _safeAddColumnOn('tickets', 'captured_at', type: 'INTEGER');
+        await _safeAddColumnOn('tickets', 'replayed_by_user_id', type: 'TEXT');
       }
     },
     onCreate: (m) async {

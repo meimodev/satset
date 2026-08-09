@@ -11,6 +11,7 @@ class SecureStorageService {
 
   static const _kToken = 'satset.session.jwt';
   static const _kLoginAt = 'satset.session.loginAt';
+  static const _kMe = 'satset.session.me';
   static const _kAdminConfirmedAt = 'satset.admin.confirmedAt';
   static const _kDeviceId = 'satset.device.id';
   static const _kDeviceCert = 'satset.device.cert.pem';
@@ -31,6 +32,15 @@ class SecureStorageService {
   Future<void> writeLoginAt(DateTime? v) => v == null
       ? _s.delete(key: _kLoginAt)
       : _s.write(key: _kLoginAt, value: v.toIso8601String());
+
+  /// Last `/auth/me` payload, verbatim JSON. Restores the session when the
+  /// host is unreachable at boot: without it a terputus handset that
+  /// restarts has no capabilities and lands on the PIN screen it cannot pass.
+  /// Cleared with the token, so it can never outlive the session it describes.
+  /// See ADR-0090.
+  Future<String?> readMe() => _s.read(key: _kMe);
+  Future<void> writeMe(String? v) =>
+      v == null ? _s.delete(key: _kMe) : _s.write(key: _kMe, value: v);
 
   /// Last time the Firebase admin eligibility listener confirmed `active`
   /// *from the server* (not cache). Drives the offline staleness guard.
@@ -69,6 +79,7 @@ class SecureStorageService {
   Future<void> clearSession() async {
     await _s.delete(key: _kToken);
     await _s.delete(key: _kLoginAt);
+    await _s.delete(key: _kMe);
   }
 
   Future<void> clearPairing() async {

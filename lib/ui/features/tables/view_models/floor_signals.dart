@@ -5,6 +5,10 @@ import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/l10n/app_localizations.dart';
 
+// Moved to core/time so the send queue can share it (ADR-0090). Re-exported so
+// the floor's existing callers keep importing it from where it has always been.
+export 'package:satset/core/time/business_day.dart' show businessDayStart;
+
 /// Everything the floor card reads that is *derived* rather than stored.
 ///
 /// Nothing here is persisted, and deliberately so (ADR-0048): a reservation
@@ -76,16 +80,6 @@ class TableStale {
   final StaleSeverity severity;
   final String label;
   const TableStale(this.severity, this.label);
-}
-
-/// Start of the current business day — the floor's "today". Service that runs
-/// past midnight belongs to the night it started, so a 00:30 booking is still
-/// part of the 27th's service when the day starts at 04:00.
-DateTime businessDayStart(DateTime now, int startHour) {
-  final todayStart = DateTime(now.year, now.month, now.day, startHour);
-  return now.isBefore(todayStart)
-      ? todayStart.subtract(const Duration(days: 1))
-      : todayStart;
 }
 
 /// The booking currently holding a table, if any. A table is *reserved* when it

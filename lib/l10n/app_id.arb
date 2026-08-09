@@ -4517,6 +4517,49 @@
   "authVenueNotFound": "Venue tidak ditemukan. Hubungi pengelola.",
   "authVenueSuspended": "Venue ditangguhkan. Hubungi pengelola.",
   "authVenueInactive": "Venue tidak aktif.",
+  "sendQueueFull": "Antrean kirim penuh — sambungkan dulu ke server sebelum pesan lagi",
+  "sendQueuePending": "{count, plural, other{{count} pesanan menunggu terkirim}}",
+  "@sendQueuePending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sendQueueTertunda": "Tertunda",
+  "sendQueueCapturedAt": "Diambil {time}",
+  "@sendQueueCapturedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sendResultTitle": "Hasil pengiriman",
+  "sendResultAllOk": "{count, plural, other{{count} pesanan terkirim}}",
+  "@sendResultAllOk": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sendResultAcknowledge": "Mengerti",
+  "sendResultFailedHeading": "Gagal terkirim",
+  "sendFailVisitChanged": "Meja sudah ganti tamu — pesanan tidak dipasang",
+  "sendFailBillClosed": "Tagihan sudah ditutup",
+  "sendFailExpired": "Lewat hari — pesanan tidak dikirim",
+  "sendFailBlocked": "Akun ini tidak boleh mengirim pesanan — masuk sebagai pengambil pesanan",
+  "sendFailOther": "Ditolak server",
+  "sendQueueBlockEndShift": "{count, plural, other{Masih ada {count} pesanan yang belum terkirim. Sambungkan ke server dulu, atau buang pesanan itu.}}",
+  "@sendQueueBlockEndShift": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sendQueueDiscardAll": "Buang pesanan tertunda",
   "tktOutOfStock": "bahan habis",
   "tktOutOfStockNamed": "bahan habis: {names}",
   "@tktOutOfStockNamed": {
