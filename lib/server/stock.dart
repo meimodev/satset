@@ -296,6 +296,10 @@ Future<void> writeMovement(
   String? userId,
   String? note,
   String? batchId,
+
+  /// The opname this `adjust` was closed out of (ADR-0096). Null on every other
+  /// reason.
+  String? countId,
   int? costMicro,
   // Backdating + id injection exist for the demo seed (ADR-0052), which
   // replays a month of service through this path: `at` places the row in the
@@ -321,6 +325,7 @@ Future<void> writeMovement(
           userId: Value(userId),
           note: Value(note),
           batchId: Value(batchId),
+          countId: Value(countId),
           costMicro: Value(costMicro ?? ing.costMicro),
           at: at ?? SatClock.now(),
         ),
@@ -373,33 +378,11 @@ Future<void> receiveStock(
   );
 }
 
-/// Stok opname: the counter enters an **absolute** count and the system writes
-/// the difference. That difference *is* the variance between what recipes said
-/// should be there and what was actually found (ADR-0041).
-Future<int> recordCount(
-  AppDatabase db, {
-  required String ingredientId,
-  required int counted,
-  String? userId,
-  String? note,
-}) async {
-  final ing = await (db.select(
-    db.ingredients,
-  )..where((i) => i.id.equals(ingredientId))).getSingleOrNull();
-  if (ing == null) return 0;
-  final delta = counted - ing.stockOnHand;
-  if (delta == 0) return 0;
-  await writeMovement(
-    db,
-    ingredientId: ingredientId,
-    delta: delta,
-    reason: StockReason.adjust,
-    userId: userId,
-    sourceLabel: 'Opname',
-    note: note,
-  );
-  return delta;
-}
+// Stok opname does not live here. A count is a session with its own header and
+// lines, and it writes through `server/stock_counts.dart` — the one place that
+// holds the freeze-at-entry and zero-variance-still-counts rules (ADR-0096).
+// The old `recordCount` was deleted rather than kept beside it: two writers for
+// one act is how an invariant reaches three call sites out of four.
 
 /// Produce `batches` of a made-in-house ingredient: deduct its inputs, credit
 /// its yield, and price the output from what went in. One level only — a

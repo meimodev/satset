@@ -283,6 +283,9 @@ class AppL10nEn extends AppL10n {
   String get auditTypeMemberChanged => 'Member';
 
   @override
+  String get auditTypeStockCounted => 'Stocktake';
+
+  @override
   String get auditTypeMenuKilled => 'Sold out';
 
   @override
@@ -1966,6 +1969,22 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String auditStockCountClosed(num lines, String variance) {
+    final intl.NumberFormat linesNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String linesString = linesNumberFormat.format(lines);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      lines,
+      locale: localeName,
+      other: '$linesString ingredients',
+      one: '1 ingredient',
+    );
+    return 'Stocktake closed — $_temp0, variance $variance';
+  }
+
+  @override
   String auditMemberCreated(String name) {
     return 'Enrolled member $name';
   }
@@ -2950,6 +2969,259 @@ class AppL10nEn extends AppL10n {
     );
     return 'of $_temp0';
   }
+
+  @override
+  String get stkCounted => 'Counted';
+
+  @override
+  String get stkOpnameStartTitle => 'Start stocktake';
+
+  @override
+  String get stkOpnameStartSub =>
+      'The session is saved as you go, so your counts survive the screen sleeping.';
+
+  @override
+  String get stkOpnameStart => 'Start';
+
+  @override
+  String get stkOpnameScope => 'Scope';
+
+  @override
+  String get stkOpnameScopeFull => 'Full';
+
+  @override
+  String get stkOpnameScopePartial => 'Partial';
+
+  @override
+  String get stkOpnameBlind => 'Blind count';
+
+  @override
+  String get stkOpnameBlindHint =>
+      'Hide the recorded stock while counting. Variance appears once the stocktake closes.';
+
+  @override
+  String get stkOpnameDiscardTitle => 'Discard this stocktake?';
+
+  @override
+  String stkOpnameDiscardBody(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString ingredients',
+      one: '1 ingredient',
+    );
+    return 'The $_temp0 already counted go with it. An unclosed stocktake never moved any stock.';
+  }
+
+  @override
+  String get stkOpnameDiscard => 'Discard';
+
+  @override
+  String get stkOpnameIncompleteTitle => 'Not every ingredient was counted';
+
+  @override
+  String stkOpnameIncompleteBody(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString ingredients are',
+      one: '1 ingredient is',
+    );
+    return 'This is a full stocktake, but $_temp0 still uncounted. Close it as full anyway?';
+  }
+
+  @override
+  String get stkOpnameCloseAnyway => 'Close anyway';
+
+  @override
+  String get opnTitle => 'Stocktake';
+
+  @override
+  String get opnSub =>
+      'The stocktake archive — who counted, when, and every line of it';
+
+  @override
+  String opnRangeDays(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get opnEmptyTitle => 'No stocktakes yet';
+
+  @override
+  String get opnEmptyBody =>
+      'A stocktake starts on the Stock screen. Once closed, its document lands here.';
+
+  @override
+  String get opnPickTitle => 'Pick a stocktake';
+
+  @override
+  String get opnPickBody => 'Its full document opens here.';
+
+  @override
+  String get opnOpenTitle => 'A stocktake is under way';
+
+  @override
+  String opnOpenBody(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString ingredients',
+      one: '1 ingredient',
+    );
+    return '$_temp0 counted so far. No stock moves until it closes.';
+  }
+
+  @override
+  String get opnTagBlind => 'Blind';
+
+  @override
+  String get opnTagSighted => 'Sighted';
+
+  @override
+  String opnLineCount(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString lines',
+      one: '1 line',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String opnDocSub(Object scope, Object blind) {
+    return '$scope · $blind';
+  }
+
+  @override
+  String get opnKpiLines => 'Lines';
+
+  @override
+  String get opnKpiExact => 'Exact';
+
+  @override
+  String get opnKpiVariance => 'Variance';
+
+  @override
+  String get opnColItem => 'Ingredient';
+
+  @override
+  String get opnColExpected => 'Expected';
+
+  @override
+  String get opnColCounted => 'Counted';
+
+  @override
+  String get opnColVariance => 'Variance';
+
+  @override
+  String get opnColValue => 'Value';
+
+  @override
+  String get opnExact => 'Exact';
+
+  @override
+  String get opnPhoneOnly =>
+      'A stocktake document is read by comparing its lines. Open it on a tablet.';
+
+  @override
+  String get opnHubSubtitle => 'Past stocktakes and what they found';
+
+  @override
+  String get opnCsvTitle => 'Stocktake';
+
+  @override
+  String get opnCsvStarted => 'Started';
+
+  @override
+  String get opnCsvClosed => 'Closed';
+
+  @override
+  String get opnCsvMode => 'Method';
+
+  @override
+  String get opnCsvNote => 'Note';
+
+  @override
+  String opnPdfHeader(Object stamp) {
+    return 'Stocktake $stamp';
+  }
+
+  @override
+  String get opnPdfLines => 'Line by line';
+
+  @override
+  String opnMetaStarted(Object stamp) {
+    return 'Started: $stamp';
+  }
+
+  @override
+  String opnMetaClosed(Object stamp) {
+    return 'Closed: $stamp';
+  }
+
+  @override
+  String opnMetaTally(num lines, num exact) {
+    final intl.NumberFormat linesNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String linesString = linesNumberFormat.format(lines);
+    final intl.NumberFormat exactNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String exactString = exactNumberFormat.format(exact);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      lines,
+      locale: localeName,
+      other: '$linesString lines',
+      one: '1 line',
+    );
+    return '$_temp0, $exactString exact';
+  }
+
+  @override
+  String opnMetaVariance(Object value) {
+    return 'Variance: $value';
+  }
+
+  @override
+  String get opnExport => 'Export';
+
+  @override
+  String get opnExportSubject => 'SatSet stocktake';
 
   @override
   String get stkOpnameMode => 'STOCKTAKE MODE';
@@ -7674,4 +7946,24 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get cshMemberRedeemAll => 'Redeem the lot';
+
+  @override
+  String get pinManualConnectBtn => 'Connect manually';
+
+  @override
+  String get pinManualEntryTitle => 'Connect Manually';
+
+  @override
+  String get pinManualEntryDescription =>
+      'Enter the server\'s IP address and port to connect manually if not auto-detected.';
+
+  @override
+  String get pinManualEntryLabel => 'SERVER IP ADDRESS';
+
+  @override
+  String get pinManualEntryEmpty => 'IP address cannot be empty';
+
+  @override
+  String get pinManualEntryNotFound =>
+      'Cannot connect to server. Check IP address and Wi-Fi.';
 }

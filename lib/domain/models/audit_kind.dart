@@ -89,6 +89,16 @@ enum AuditKind {
   /// `{amount}` — the magnitude of the movement being undone.
   cashReversed,
 
+  // ---------- inventory ----------
+  /// A stok opname was closed (ADR-0096). `{lines}` (how many bahan were
+  /// counted), `{variance}` (signed, pre-formatted rupiah). The session's scope
+  /// and whether it was blind live on the document, not in the sentence — the
+  /// log's job is that something material happened and who did it.
+  ///
+  /// One row per session, never per line: the per-bahan detail is already the
+  /// opname document, and a flooded log is a log nobody reads.
+  stockCountClosed,
+
   // ---------- membership ----------
   /// `{name}` — the member's own name, guest-authored and never translated.
   memberCreated,

@@ -176,6 +176,14 @@ List<_HubSection> _sectionsFor(AppL10n l10n) => <_HubSection>[
     phoneBadge: l10n.memPhoneOnly,
   ),
   _HubSection(
+    label: l10n.opnTitle,
+    sub: l10n.opnHubSubtitle,
+    icon: Icons.inventory_2_outlined,
+    route: '/opname',
+    tint: (sc) => sc.warn,
+    phoneBadge: l10n.opnPhoneOnly,
+  ),
+  _HubSection(
     label: l10n.venueHubSectionAudit,
     sub: l10n.venueHubSectionAuditSub,
     icon: Icons.history,

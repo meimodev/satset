@@ -14,6 +14,7 @@ import 'package:satset/domain/models/stock_unit.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/routes/tickets_routes.dart';
 import 'package:satset/server/stock.dart';
+import 'package:satset/server/stock_counts.dart';
 import 'package:satset/server/ws_hub.dart';
 import 'package:shelf/shelf.dart';
 
@@ -351,14 +352,20 @@ void main() {
 
       // Opname finds 19 kg where the app expected 20 — the adjust delta IS the
       // variance.
-      final delta = await db.transaction(
-        () => recordCount(
-          db,
-          ingredientId: 'beras',
-          counted: StockUnit.kg.toBase(19),
-        ),
+      final countId = await openCount(db);
+      await recordCountLine(
+        db,
+        countId: countId,
+        ingredientId: 'beras',
+        counted: StockUnit.kg.toBase(19),
       );
-      expect(delta, StockUnit.kg.toBase(-1));
+      // Nothing moves until close: the walk is a draft (ADR-0096).
+      expect(await onHand('beras'), StockUnit.kg.toBase(20));
+
+      final result = await db.transaction(
+        () => closeCount(db, countId: countId),
+      );
+      expect(result!.deltas['beras'], StockUnit.kg.toBase(-1));
       expect(await onHand('beras'), StockUnit.kg.toBase(19));
     },
   );

@@ -180,6 +180,7 @@ class ApiClient {
       final r = await (switch (method) {
         'GET' => _inner.get(uri, headers: headers),
         'POST' => _inner.post(uri, headers: headers, body: encoded),
+        'PUT' => _inner.put(uri, headers: headers, body: encoded),
         'PATCH' => _inner.patch(uri, headers: headers, body: encoded),
         'DELETE' => _inner.delete(uri, headers: headers),
         _ => throw StateError('Unsupported method $method'),

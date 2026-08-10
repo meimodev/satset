@@ -1033,6 +1033,74 @@ class StockMovements extends Table {
 
   /// Groups the input rows and the output row of one `produce` batch.
   TextColumn get batchId => text().nullable()();
+
+  /// The [StockCounts] session this `adjust` was closed out of. Null on every
+  /// other reason, and on `adjust` rows written before v52 — those predate the
+  /// session concept and are deliberately not backfilled (ADR-0096).
+  TextColumn get countId => text().nullable()();
+  DateTimeColumn get at => dateTime()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// One stok opname — a counting session, and the document an inventory manager
+/// files. See §Opname (Stocktake) in CONTEXT.md and ADR-0096.
+///
+/// A session is opened, walked, and closed. It writes no [StockMovements] until
+/// close, so a forty-minute walk of the pantry survives the tablet sleeping.
+@DataClassName('StockCountRow')
+class StockCounts extends Table {
+  TextColumn get id => text()();
+
+  /// Who opened it. `closedBy` may differ — a manager may finish a walk.
+  TextColumn get userId => text().nullable()();
+  TextColumn get closedBy => text().nullable()();
+
+  /// `full | partial` — whether this session claims to have seen *every* active
+  /// [Ingredients] row. Without the claim, "did we count everything in March?"
+  /// has no answer.
+  TextColumn get scope => text().withDefault(const Constant('partial'))();
+
+  /// Whether the expected quantity was hidden from the counter while counting.
+  /// Recorded because it decides how much the variance is worth: a stocktake
+  /// shown the answer is weaker evidence than one that was not.
+  BoolColumn get blind => boolean().withDefault(const Constant(true))();
+  TextColumn get note => text().nullable()();
+  DateTimeColumn get startedAt => dateTime()();
+
+  /// Null while the session is open. Stamped once, at close — a closed session
+  /// is never reopened, because its movements are already in the ledger.
+  DateTimeColumn get closedAt => dateTime().nullable()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// One counted [Ingredients] row inside a [StockCounts] session.
+///
+/// **Every counted bahan gets a line, including one found correct** — a zero
+/// variance is a fact somebody established, not an absence. Only a non-zero
+/// variance also writes a movement: the count is the evidence, the movement is
+/// the consequence (ADR-0096).
+///
+/// [expectedQty] and [costMicro] are frozen **when the line is entered**, not at
+/// close. Sales keep deducting while the pantry is walked, and folding those
+/// into the variance would blame the counter for them.
+@DataClassName('StockCountLineRow')
+class StockCountLines extends Table {
+  TextColumn get id => text()();
+  TextColumn get countId => text()();
+  TextColumn get ingredientId => text()();
+
+  /// `stockOnHand` at the moment this line was entered, in milli-base units.
+  IntColumn get expectedQty => integer()();
+
+  /// What the counter found, absolute, in milli-base units.
+  IntColumn get countedQty => integer()();
+
+  /// Unit cost frozen at entry, micro-money per milli-base unit — so a session
+  /// read a year later reports the rupiah it reported at close.
+  IntColumn get costMicro => integer().withDefault(const Constant(0))();
+  TextColumn get note => text().nullable()();
   DateTimeColumn get at => dateTime()();
   @override
   Set<Column> get primaryKey => {id};

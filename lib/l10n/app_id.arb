@@ -106,6 +106,7 @@
   "auditTypeBillClosed": "Tutup",
   "auditTypeCashMovement": "Kas",
   "auditTypeMemberChanged": "Pelanggan",
+  "auditTypeStockCounted": "Opname",
   "auditTypeMenuKilled": "Stop jual",
   "auditTypeMenuRestored": "Jual lagi",
   "auditTypeStaffCreated": "Staf +",
@@ -1355,6 +1356,18 @@
       }
     }
   },
+  "auditStockCountClosed": "Tutup stok opname — {lines, plural, other{{lines} bahan}}, selisih {variance}",
+  "@auditStockCountClosed": {
+    "placeholders": {
+      "lines": {
+        "type": "num",
+        "format": "compact"
+      },
+      "variance": {
+        "type": "String"
+      }
+    }
+  },
   "auditMemberCreated": "Daftar pelanggan {name}",
   "@auditMemberCreated": {
     "placeholders": {
@@ -2241,7 +2254,7 @@
   "stkDimVolume": "Volume",
   "stkDimCount": "Jumlah",
   "stkTitle": "Stok",
-  "stkSubOpname": "Stok opname physical audit",
+  "stkSubOpname": "Stok opname — hitung fisik",
   "stkSub": "Bahan, penerimaan & mutasi",
   "stkAddIngredient": "Tambah bahan",
   "stkOpname": "Opname",
@@ -2286,6 +2299,136 @@
     "placeholders": {
       "n": {
         "type": "int"
+      }
+    }
+  },
+  "stkCounted": "Terhitung",
+  "stkOpnameStartTitle": "Mulai stok opname",
+  "stkOpnameStartSub": "Sesi ini akan tersimpan, jadi hitungan Anda tidak hilang kalau layar mati.",
+  "stkOpnameStart": "Mulai",
+  "stkOpnameScope": "Cakupan",
+  "stkOpnameScopeFull": "Menyeluruh",
+  "stkOpnameScopePartial": "Sebagian",
+  "stkOpnameBlind": "Hitung buta",
+  "stkOpnameBlindHint": "Sembunyikan stok tercatat selama menghitung. Selisih muncul setelah opname ditutup.",
+  "stkOpnameDiscardTitle": "Buang opname ini?",
+  "stkOpnameDiscardBody": "{n, plural, other{{n} bahan}} yang sudah dihitung akan ikut terbuang. Opname yang belum ditutup tidak mengubah stok.",
+  "stkOpnameDiscard": "Buang",
+  "stkOpnameIncompleteTitle": "Belum semua bahan dihitung",
+  "stkOpnameIncompleteBody": "Opname menyeluruh, tapi {n, plural, other{{n} bahan}} belum dihitung. Tutup tetap sebagai menyeluruh?",
+  "stkOpnameCloseAnyway": "Tutup tetap",
+  "opnTitle": "Opname",
+  "opnSub": "Riwayat stok opname — siapa menghitung, kapan, dan setiap barisnya",
+  "opnRangeDays": "{n, plural, other{{n} hari}}",
+  "opnEmptyTitle": "Belum ada opname",
+  "opnEmptyBody": "Opname dimulai dari layar Stok. Setelah ditutup, dokumennya muncul di sini.",
+  "opnPickTitle": "Pilih satu opname",
+  "opnPickBody": "Dokumen lengkapnya muncul di sini.",
+  "opnOpenTitle": "Opname sedang berjalan",
+  "opnOpenBody": "{n, plural, other{{n} bahan}} sudah dihitung. Belum ada stok yang bergerak sampai ditutup.",
+  "opnTagBlind": "Buta",
+  "opnTagSighted": "Terbuka",
+  "opnLineCount": "{n, plural, other{{n} baris}}",
+  "opnDocSub": "{scope} · {blind}",
+  "opnKpiLines": "Baris",
+  "opnKpiExact": "Cocok",
+  "opnKpiVariance": "Selisih",
+  "opnColItem": "Bahan",
+  "opnColExpected": "Tercatat",
+  "opnColCounted": "Dihitung",
+  "opnColVariance": "Selisih",
+  "opnColValue": "Nilai",
+  "opnExact": "Cocok",
+  "opnPhoneOnly": "Dokumen opname dibaca dengan membandingkan barisnya. Buka di tablet.",
+  "opnHubSubtitle": "Riwayat opname dan selisihnya",
+  "opnCsvTitle": "Stok opname",
+  "opnCsvStarted": "Mulai",
+  "opnCsvClosed": "Ditutup",
+  "opnCsvMode": "Cara hitung",
+  "opnCsvNote": "Catatan",
+  "opnPdfHeader": "Opname {stamp}",
+  "opnPdfLines": "Rincian per bahan",
+  "opnMetaStarted": "Mulai: {stamp}",
+  "opnMetaClosed": "Ditutup: {stamp}",
+  "opnMetaTally": "{lines, plural, other{{lines} baris}}, {exact} cocok",
+  "opnMetaVariance": "Selisih: {value}",
+  "opnExport": "Ekspor",
+  "opnExportSubject": "Stok opname SatSet",
+  "@opnPdfHeader": {
+    "placeholders": {
+      "stamp": {}
+    }
+  },
+  "@opnMetaStarted": {
+    "placeholders": {
+      "stamp": {}
+    }
+  },
+  "@opnMetaClosed": {
+    "placeholders": {
+      "stamp": {}
+    }
+  },
+  "@opnMetaTally": {
+    "placeholders": {
+      "lines": {
+        "type": "num",
+        "format": "compact"
+      },
+      "exact": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "@opnMetaVariance": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "@opnRangeDays": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "@opnOpenBody": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "@opnLineCount": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "@opnDocSub": {
+    "placeholders": {
+      "scope": {},
+      "blind": {}
+    }
+  },
+  "@stkOpnameDiscardBody": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "@stkOpnameIncompleteBody": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
       }
     }
   },
@@ -6153,5 +6296,11 @@
   "cshMemberRedeemAll": "Tukar semua",
   "@cshMemberRedeemAll": {
     "description": "The member row on a live bill."
-  }
+  },
+  "pinManualConnectBtn": "Hubungkan manual",
+  "pinManualEntryTitle": "Hubungkan Manual",
+  "pinManualEntryDescription": "Masukkan alamat IP dan port server untuk terhubung secara manual jika tidak terdeteksi otomatis.",
+  "pinManualEntryLabel": "ALAMAT IP SERVER",
+  "pinManualEntryEmpty": "Alamat IP tidak boleh kosong",
+  "pinManualEntryNotFound": "Tidak dapat terhubung ke server. Periksa alamat IP dan Wi-Fi."
 }

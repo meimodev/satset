@@ -3,6 +3,7 @@ import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:satset/data/repositories/stock_repository.dart';
 import 'package:satset/domain/models/ingredient.dart';
+import 'package:satset/domain/models/stock_count.dart';
 import 'package:satset/domain/models/stock_unit.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
@@ -35,20 +37,66 @@ class StockScreen extends ConsumerStatefulWidget {
 }
 
 class _StockScreenState extends ConsumerState<StockScreen> {
+  /// Local echo of the lines already sent, so a row can render its own badge
+  /// without a round trip. The server holds the truth.
   final _counts = <String, int>{};
+
+  /// What the shelf claimed when each line was **entered** — read back from the
+  /// line the server froze, never from today's `stockOnHand`. Sales keep
+  /// deducting while the pantry is walked (ADR-0096).
+  final _expected = <String, int>{};
+
+  /// One count field per bahan, kept so a resumed walk shows its own numbers.
+  final _countCtrls = <String, TextEditingController>{};
   final _searchCtrl = TextEditingController();
 
   /// Ingredient ids whose recipe chips the user unclipped past the 2-line cap.
   final _expandedLinks = <String>{};
 
-  bool _opname = false;
+  /// The open opname, or null when nobody is counting. Server-backed, so a
+  /// forty-minute walk survives the tablet sleeping.
+  StockCount? _session;
+  bool get _opname => _session != null;
+
   _StockFilter _activeFilter = _StockFilter.all;
   String _searchQuery = '';
 
   @override
+  void initState() {
+    super.initState();
+    // Resume a walk somebody left open — the whole point of the session being
+    // a row rather than a screen mode.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _resumeOpname());
+  }
+
+  @override
   void dispose() {
     _searchCtrl.dispose();
+    for (final c in _countCtrls.values) {
+      c.dispose();
+    }
     super.dispose();
+  }
+
+  Future<void> _resumeOpname() async {
+    try {
+      final open = (await ref.read(stockApiProvider).counts()).open;
+      if (open == null || !mounted) return;
+      setState(() => _adoptSession(open));
+    } catch (_) {
+      // A stock screen that cannot reach the server has bigger problems than a
+      // missing resume, and the ingredient list will already be saying so.
+    }
+  }
+
+  void _adoptSession(StockCount s) {
+    _session = s;
+    _counts
+      ..clear()
+      ..addEntries(s.lines.map((l) => MapEntry(l.ingredientId, l.countedQty)));
+    _expected
+      ..clear()
+      ..addEntries(s.lines.map((l) => MapEntry(l.ingredientId, l.expectedQty)));
   }
 
   @override
@@ -86,18 +134,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                     ? SatButton.danger(
                         label: context.l10n.cancel,
                         icon: Icons.close,
-                        onTap: () => setState(() {
-                          _opname = false;
-                          _counts.clear();
-                        }),
+                        onTap: _discardOpname,
                       )
                     : SatButton.outline(
                         label: context.l10n.stkOpname,
                         icon: Icons.inventory_2_outlined,
-                        onTap: () => setState(() {
-                          _opname = true;
-                          _counts.clear();
-                        }),
+                        onTap: _startOpname,
                       ),
               ),
               if (_opname) ...[
@@ -106,7 +148,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                   child: SatButton.primary(
                     label: context.l10n.stkSaveCount(_counts.length),
                     icon: Icons.check_circle_outline,
-                    onTap: _counts.isEmpty ? null : _submitOpname,
+                    onTap: _counts.isEmpty ? null : _closeOpname,
                   ),
                 ),
               ],
@@ -573,7 +615,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 icon: Icons.blender_outlined,
                               ),
                             ],
-                            if (i.isLow && !negative) ...[
+                            // The low / negative badges are the on-hand figure
+                            // in another costume — they stay hidden for the
+                            // length of a blind walk too.
+                            if (i.isLow && !negative && !_blindWalk) ...[
                               const SizedBox(width: Sp.s1h),
                               _badge(
                                 sc,
@@ -582,7 +627,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 icon: Icons.warning_amber_rounded,
                               ),
                             ],
-                            if (negative) ...[
+                            if (negative && !_blindWalk) ...[
                               const SizedBox(width: Sp.s1h),
                               _badge(
                                 sc,
@@ -608,9 +653,17 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                     style: SatType.monoS(color: sc.textLo),
                                   ),
                                   const SizedBox(height: Sp.sHair),
+                                  // Hidden for the length of a blind walk: a
+                                  // count shown the answer tends to agree with
+                                  // it, and the variance is then worth nothing
+                                  // (ADR-0096). Revealed the moment it closes.
                                   Text(
-                                    i.onHandLabel,
-                                    style: SatType.monoM(color: statusColor),
+                                    _blindWalk
+                                        ? '••••'
+                                        : i.onHandLabel,
+                                    style: SatType.monoM(
+                                      color: _blindWalk ? sc.textLo : statusColor,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -670,8 +723,11 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           ],
                         ),
 
-                        // Low stock threshold progress line
-                        if (i.lowStockAt != null && i.lowStockAt! > 0) ...[
+                        // Low stock threshold progress line — a picture of the
+                        // on-hand figure, so blind hides it with the number.
+                        if (i.lowStockAt != null &&
+                            i.lowStockAt! > 0 &&
+                            !_blindWalk) ...[
                           const SizedBox(height: Sp.s2),
                           _stockLevelMeter(sc, i),
                         ],
@@ -703,25 +759,33 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              SatField.decimal(
-                                hint: i.unit.label,
-                                textAlign: TextAlign.right,
-                                onChanged: (t) {
-                                  final v = double.tryParse(
-                                    t.replaceAll(',', '.'),
-                                  );
-                                  setState(() {
-                                    if (v == null) {
-                                      _counts.remove(i.id);
-                                    } else {
-                                      _counts[i.id] = i.unit.toBase(v);
-                                    }
-                                  });
+                              // Committed on blur as well as on submit: a
+                              // counter walking a shelf taps the next row, they
+                              // do not press enter. The commit is what freezes
+                              // the expectation, so it must not wait for a
+                              // gesture nobody makes.
+                              Focus(
+                                onFocusChange: (has) {
+                                  if (!has) _commitLine(i);
                                 },
+                                child: SatField.decimal(
+                                  hint: i.unit.label,
+                                  textAlign: TextAlign.right,
+                                  controller: _countCtrl(i),
+                                  onSubmitted: (_) => _commitLine(i),
+                                ),
                               ),
+                              // The variance is the expected figure by
+                              // arithmetic, so a blind walk withholds it until
+                              // close and shows only that the line landed.
                               if (physicalCount != null) ...[
                                 const SizedBox(height: Sp.s1),
-                                _varianceDeltaBadge(sc, i, physicalCount),
+                                _blindWalk
+                                    ? Text(
+                                        context.l10n.stkCounted,
+                                        style: SatType.caption(color: sc.textLo),
+                                      )
+                                    : _varianceDeltaBadge(sc, i, physicalCount),
                               ],
                             ],
                           ),
@@ -889,7 +953,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   }
 
   Widget _varianceDeltaBadge(SatColors sc, Ingredient i, int physicalCount) {
-    final delta = physicalCount - i.stockOnHand;
+    // Against the expectation frozen when the line was entered, not against
+    // what the shelf says now — the kitchen has been selling all along.
+    final delta = physicalCount - (_expected[i.id] ?? i.stockOnHand);
     final positive = delta > 0;
     final color = delta == 0
         ? sc.success
@@ -914,13 +980,228 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   }
 
   // ---------------------------------------------------------------- Actions
-  Future<void> _submitOpname() async {
+
+  /// True while a session that hid its numbers is still open. Everything the
+  /// on-hand figure can be read off — the badge, the meter, the variance — is
+  /// gated on this.
+  bool get _blindWalk => _session?.blind ?? false;
+
+  /// One controller per bahan, so a resumed walk shows what was already
+  /// entered rather than an empty field over a line that exists.
+  TextEditingController _countCtrl(Ingredient i) =>
+      _countCtrls.putIfAbsent(i.id, () {
+        final counted = _counts[i.id];
+        return TextEditingController(
+          text: counted == null ? '' : _trim(i.unit.fromBase(counted)),
+        );
+      });
+
+  void _clearCountCtrls() {
+    for (final c in _countCtrls.values) {
+      c.dispose();
+    }
+    _countCtrls.clear();
+  }
+
+  /// A yes/no on a sheet, because this screen has no dialog vocabulary and one
+  /// more widget for two questions is not worth the file.
+  Future<bool> _confirm({
+    required String title,
+    required String message,
+    required String confirmLabel,
+    bool danger = false,
+  }) async {
+    final ok = await showSatSheet<bool>(
+      context,
+      bare: true,
+      builder: (ctx) => _Sheet(
+        title: title,
+        subtitle: message,
+        confirmLabel: confirmLabel,
+        danger: danger,
+        children: const [],
+        onConfirm: () => Navigator.pop(ctx, true),
+      ),
+    );
+    return ok == true;
+  }
+
+  /// Send one line. This is the moment the server freezes the expectation, so
+  /// it happens per bahan as the walk goes — not in a lump at the end.
+  Future<void> _commitLine(Ingredient i) async {
+    final session = _session;
+    if (session == null) return;
+    final text = _countCtrls[i.id]?.text ?? '';
+    final v = double.tryParse(text.replaceAll(',', '.'));
     final api = ref.read(stockApiProvider);
+
+    if (v == null) {
+      if (!_counts.containsKey(i.id)) return;
+      await api.removeCountLine(session.id, i.id);
+      if (!mounted) return;
+      setState(() {
+        _counts.remove(i.id);
+        _expected.remove(i.id);
+      });
+      return;
+    }
+
+    final counted = i.unit.toBase(v);
+    if (_counts[i.id] == counted) return;
+    try {
+      final line = await api.countLine(
+        session.id,
+        ingredientId: i.id,
+        counted: counted,
+      );
+      if (!mounted) return;
+      setState(() {
+        _counts[i.id] = line.countedQty;
+        _expected[i.id] = line.expectedQty;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.stkSaveFailed('$e'))));
+    }
+  }
+
+  /// Ask what kind of count this is before opening it. Both answers are
+  /// recorded on the session, because a variance that cannot say how it was
+  /// produced cannot be argued with (ADR-0096).
+  Future<void> _startOpname() async {
+    var scope = StockCountScopeKind.full;
+    var blind = true;
+
+    final ok = await showSatSheet<bool>(
+      context,
+      bare: true,
+      builder: (ctx) => _Sheet(
+        title: ctx.l10n.stkOpnameStartTitle,
+        subtitle: ctx.l10n.stkOpnameStartSub,
+        confirmLabel: ctx.l10n.stkOpnameStart,
+        onConfirm: () => Navigator.pop(ctx, true),
+        children: [
+          StatefulBuilder(
+            builder: (ctx, setSheet) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SatDropdown<StockCountScopeKind>(
+                  label: ctx.l10n.stkOpnameScope,
+                  value: scope,
+                  options: [
+                    for (final s in StockCountScopeKind.values)
+                      SatOption(s, stockCountScopeLabel(ctx.l10n, s)),
+                  ],
+                  onChanged: (v) => setSheet(() => scope = v ?? scope),
+                ),
+                const SizedBox(height: Sp.s3),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            ctx.l10n.stkOpnameBlind,
+                            style: SatType.bodyM(color: ctx.sat.textHi),
+                          ),
+                          const SizedBox(height: Sp.sHair),
+                          Text(
+                            ctx.l10n.stkOpnameBlindHint,
+                            style: SatType.bodyS(color: ctx.sat.textLo),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SatToggle(
+                      value: blind,
+                      semanticLabel: ctx.l10n.stkOpnameBlind,
+                      onChanged: (v) => setSheet(() => blind = v),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
     final messenger = ScaffoldMessenger.of(context);
     final l10n = context.l10n;
     try {
-      final deltas = await api.recordCounts(Map.of(_counts));
-      final changed = deltas.values.where((d) => d != 0).length;
+      final session = await ref
+          .read(stockApiProvider)
+          .openCount(scope: scope, blind: blind);
+      if (!mounted) return;
+      setState(() {
+        _clearCountCtrls();
+        _adoptSession(session);
+      });
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.stkSaveFailed('$e'))));
+    }
+  }
+
+  /// Abandon the walk. Confirmed, because the lines already entered go with it
+  /// — a count that was never finished is not evidence of anything.
+  Future<void> _discardOpname() async {
+    final session = _session;
+    if (session == null) return;
+    if (_counts.isNotEmpty) {
+      final ok = await _confirm(
+        title: context.l10n.stkOpnameDiscardTitle,
+        message: context.l10n.stkOpnameDiscardBody(_counts.length),
+        confirmLabel: context.l10n.stkOpnameDiscard,
+        danger: true,
+      );
+      if (!ok) return;
+    }
+    try {
+      await ref.read(stockApiProvider).discardCount(session.id);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _session = null;
+          _counts.clear();
+          _expected.clear();
+          _clearCountCtrls();
+        });
+      }
+    }
+  }
+
+  /// Close the walk: the server writes the movements, stamps the header and
+  /// posts the single audit row.
+  Future<void> _closeOpname() async {
+    final session = _session;
+    if (session == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
+
+    // A session that claims to have seen everything says so out loud when it
+    // has not. The claim is the whole value of `full`, so it is worth one
+    // confirmation rather than a silent lie.
+    if (session.scope == StockCountScopeKind.full) {
+      final total = ref.read(ingredientsProvider).valueOrNull?.length ?? 0;
+      final missed = total - _counts.length;
+      if (missed > 0) {
+        final ok = await _confirm(
+          title: l10n.stkOpnameIncompleteTitle,
+          message: l10n.stkOpnameIncompleteBody(missed),
+          confirmLabel: l10n.stkOpnameCloseAnyway,
+        );
+        if (!ok) return;
+      }
+    }
+
+    try {
+      final closed = await ref.read(stockApiProvider).closeCount(session.id);
+      final changed = closed.lines.where((l) => l.variance != 0).length;
+      if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
           content: Text(
@@ -931,8 +1212,10 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         ),
       );
       setState(() {
-        _opname = false;
+        _session = null;
         _counts.clear();
+        _expected.clear();
+        _clearCountCtrls();
       });
       ref.invalidate(ingredientsProvider);
     } catch (e) {
@@ -1207,12 +1490,19 @@ class _Sheet extends StatelessWidget {
     required this.children,
     required this.onConfirm,
     this.subtitle,
+    this.confirmLabel,
+    this.danger = false,
   });
 
   final String title;
   final String? subtitle;
   final List<Widget> children;
   final VoidCallback onConfirm;
+
+  /// Defaults to "Simpan". Named when the act is not a save — starting a walk,
+  /// throwing one away.
+  final String? confirmLabel;
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
@@ -1282,10 +1572,15 @@ class _Sheet extends StatelessWidget {
 
             // Primary Action Button
             PressScale(
-              child: SatButton.primary(
-                label: context.l10n.save,
-                onTap: onConfirm,
-              ),
+              child: danger
+                  ? SatButton.danger(
+                      label: confirmLabel ?? context.l10n.save,
+                      onTap: onConfirm,
+                    )
+                  : SatButton.primary(
+                      label: confirmLabel ?? context.l10n.save,
+                      onTap: onConfirm,
+                    ),
             ),
           ],
         ),

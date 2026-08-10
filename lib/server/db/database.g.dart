@@ -21190,6 +21190,17 @@ class $StockMovementsTable extends StockMovements
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _countIdMeta = const VerificationMeta(
+    'countId',
+  );
+  @override
+  late final GeneratedColumn<String> countId = GeneratedColumn<String>(
+    'count_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _atMeta = const VerificationMeta('at');
   @override
   late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
@@ -21211,6 +21222,7 @@ class $StockMovementsTable extends StockMovements
     note,
     costMicro,
     batchId,
+    countId,
     at,
   ];
   @override
@@ -21296,6 +21308,12 @@ class $StockMovementsTable extends StockMovements
         batchId.isAcceptableOrUnknown(data['batch_id']!, _batchIdMeta),
       );
     }
+    if (data.containsKey('count_id')) {
+      context.handle(
+        _countIdMeta,
+        countId.isAcceptableOrUnknown(data['count_id']!, _countIdMeta),
+      );
+    }
     if (data.containsKey('at')) {
       context.handle(_atMeta, at.isAcceptableOrUnknown(data['at']!, _atMeta));
     } else if (isInserting) {
@@ -21350,6 +21368,10 @@ class $StockMovementsTable extends StockMovements
         DriftSqlType.string,
         data['${effectivePrefix}batch_id'],
       ),
+      countId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}count_id'],
+      ),
       at: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}at'],
@@ -21390,6 +21412,11 @@ class StockMovementRow extends DataClass
 
   /// Groups the input rows and the output row of one `produce` batch.
   final String? batchId;
+
+  /// The [StockCounts] session this `adjust` was closed out of. Null on every
+  /// other reason, and on `adjust` rows written before v52 — those predate the
+  /// session concept and are deliberately not backfilled (ADR-0096).
+  final String? countId;
   final DateTime at;
   const StockMovementRow({
     required this.id,
@@ -21402,6 +21429,7 @@ class StockMovementRow extends DataClass
     this.note,
     required this.costMicro,
     this.batchId,
+    this.countId,
     required this.at,
   });
   @override
@@ -21425,6 +21453,9 @@ class StockMovementRow extends DataClass
     if (!nullToAbsent || batchId != null) {
       map['batch_id'] = Variable<String>(batchId);
     }
+    if (!nullToAbsent || countId != null) {
+      map['count_id'] = Variable<String>(countId);
+    }
     map['at'] = Variable<DateTime>(at);
     return map;
   }
@@ -21447,6 +21478,9 @@ class StockMovementRow extends DataClass
       batchId: batchId == null && nullToAbsent
           ? const Value.absent()
           : Value(batchId),
+      countId: countId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(countId),
       at: Value(at),
     );
   }
@@ -21467,6 +21501,7 @@ class StockMovementRow extends DataClass
       note: serializer.fromJson<String?>(json['note']),
       costMicro: serializer.fromJson<int>(json['costMicro']),
       batchId: serializer.fromJson<String?>(json['batchId']),
+      countId: serializer.fromJson<String?>(json['countId']),
       at: serializer.fromJson<DateTime>(json['at']),
     );
   }
@@ -21484,6 +21519,7 @@ class StockMovementRow extends DataClass
       'note': serializer.toJson<String?>(note),
       'costMicro': serializer.toJson<int>(costMicro),
       'batchId': serializer.toJson<String?>(batchId),
+      'countId': serializer.toJson<String?>(countId),
       'at': serializer.toJson<DateTime>(at),
     };
   }
@@ -21499,6 +21535,7 @@ class StockMovementRow extends DataClass
     Value<String?> note = const Value.absent(),
     int? costMicro,
     Value<String?> batchId = const Value.absent(),
+    Value<String?> countId = const Value.absent(),
     DateTime? at,
   }) => StockMovementRow(
     id: id ?? this.id,
@@ -21511,6 +21548,7 @@ class StockMovementRow extends DataClass
     note: note.present ? note.value : this.note,
     costMicro: costMicro ?? this.costMicro,
     batchId: batchId.present ? batchId.value : this.batchId,
+    countId: countId.present ? countId.value : this.countId,
     at: at ?? this.at,
   );
   StockMovementRow copyWithCompanion(StockMovementsCompanion data) {
@@ -21529,6 +21567,7 @@ class StockMovementRow extends DataClass
       note: data.note.present ? data.note.value : this.note,
       costMicro: data.costMicro.present ? data.costMicro.value : this.costMicro,
       batchId: data.batchId.present ? data.batchId.value : this.batchId,
+      countId: data.countId.present ? data.countId.value : this.countId,
       at: data.at.present ? data.at.value : this.at,
     );
   }
@@ -21546,6 +21585,7 @@ class StockMovementRow extends DataClass
           ..write('note: $note, ')
           ..write('costMicro: $costMicro, ')
           ..write('batchId: $batchId, ')
+          ..write('countId: $countId, ')
           ..write('at: $at')
           ..write(')'))
         .toString();
@@ -21563,6 +21603,7 @@ class StockMovementRow extends DataClass
     note,
     costMicro,
     batchId,
+    countId,
     at,
   );
   @override
@@ -21579,6 +21620,7 @@ class StockMovementRow extends DataClass
           other.note == this.note &&
           other.costMicro == this.costMicro &&
           other.batchId == this.batchId &&
+          other.countId == this.countId &&
           other.at == this.at);
 }
 
@@ -21593,6 +21635,7 @@ class StockMovementsCompanion extends UpdateCompanion<StockMovementRow> {
   final Value<String?> note;
   final Value<int> costMicro;
   final Value<String?> batchId;
+  final Value<String?> countId;
   final Value<DateTime> at;
   final Value<int> rowid;
   const StockMovementsCompanion({
@@ -21606,6 +21649,7 @@ class StockMovementsCompanion extends UpdateCompanion<StockMovementRow> {
     this.note = const Value.absent(),
     this.costMicro = const Value.absent(),
     this.batchId = const Value.absent(),
+    this.countId = const Value.absent(),
     this.at = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -21620,6 +21664,7 @@ class StockMovementsCompanion extends UpdateCompanion<StockMovementRow> {
     this.note = const Value.absent(),
     this.costMicro = const Value.absent(),
     this.batchId = const Value.absent(),
+    this.countId = const Value.absent(),
     required DateTime at,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -21638,6 +21683,7 @@ class StockMovementsCompanion extends UpdateCompanion<StockMovementRow> {
     Expression<String>? note,
     Expression<int>? costMicro,
     Expression<String>? batchId,
+    Expression<String>? countId,
     Expression<DateTime>? at,
     Expression<int>? rowid,
   }) {
@@ -21652,6 +21698,7 @@ class StockMovementsCompanion extends UpdateCompanion<StockMovementRow> {
       if (note != null) 'note': note,
       if (costMicro != null) 'cost_micro': costMicro,
       if (batchId != null) 'batch_id': batchId,
+      if (countId != null) 'count_id': countId,
       if (at != null) 'at': at,
       if (rowid != null) 'rowid': rowid,
     });
@@ -21668,6 +21715,7 @@ class StockMovementsCompanion extends UpdateCompanion<StockMovementRow> {
     Value<String?>? note,
     Value<int>? costMicro,
     Value<String?>? batchId,
+    Value<String?>? countId,
     Value<DateTime>? at,
     Value<int>? rowid,
   }) {
@@ -21682,6 +21730,7 @@ class StockMovementsCompanion extends UpdateCompanion<StockMovementRow> {
       note: note ?? this.note,
       costMicro: costMicro ?? this.costMicro,
       batchId: batchId ?? this.batchId,
+      countId: countId ?? this.countId,
       at: at ?? this.at,
       rowid: rowid ?? this.rowid,
     );
@@ -21720,6 +21769,9 @@ class StockMovementsCompanion extends UpdateCompanion<StockMovementRow> {
     if (batchId.present) {
       map['batch_id'] = Variable<String>(batchId.value);
     }
+    if (countId.present) {
+      map['count_id'] = Variable<String>(countId.value);
+    }
     if (at.present) {
       map['at'] = Variable<DateTime>(at.value);
     }
@@ -21742,6 +21794,1047 @@ class StockMovementsCompanion extends UpdateCompanion<StockMovementRow> {
           ..write('note: $note, ')
           ..write('costMicro: $costMicro, ')
           ..write('batchId: $batchId, ')
+          ..write('countId: $countId, ')
+          ..write('at: $at, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $StockCountsTable extends StockCounts
+    with TableInfo<$StockCountsTable, StockCountRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StockCountsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _closedByMeta = const VerificationMeta(
+    'closedBy',
+  );
+  @override
+  late final GeneratedColumn<String> closedBy = GeneratedColumn<String>(
+    'closed_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _scopeMeta = const VerificationMeta('scope');
+  @override
+  late final GeneratedColumn<String> scope = GeneratedColumn<String>(
+    'scope',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('partial'),
+  );
+  static const VerificationMeta _blindMeta = const VerificationMeta('blind');
+  @override
+  late final GeneratedColumn<bool> blind = GeneratedColumn<bool>(
+    'blind',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("blind" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _closedAtMeta = const VerificationMeta(
+    'closedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> closedAt = GeneratedColumn<DateTime>(
+    'closed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    closedBy,
+    scope,
+    blind,
+    note,
+    startedAt,
+    closedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'stock_counts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StockCountRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    }
+    if (data.containsKey('closed_by')) {
+      context.handle(
+        _closedByMeta,
+        closedBy.isAcceptableOrUnknown(data['closed_by']!, _closedByMeta),
+      );
+    }
+    if (data.containsKey('scope')) {
+      context.handle(
+        _scopeMeta,
+        scope.isAcceptableOrUnknown(data['scope']!, _scopeMeta),
+      );
+    }
+    if (data.containsKey('blind')) {
+      context.handle(
+        _blindMeta,
+        blind.isAcceptableOrUnknown(data['blind']!, _blindMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('closed_at')) {
+      context.handle(
+        _closedAtMeta,
+        closedAt.isAcceptableOrUnknown(data['closed_at']!, _closedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  StockCountRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StockCountRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      ),
+      closedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}closed_by'],
+      ),
+      scope: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}scope'],
+      )!,
+      blind: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}blind'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      closedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}closed_at'],
+      ),
+    );
+  }
+
+  @override
+  $StockCountsTable createAlias(String alias) {
+    return $StockCountsTable(attachedDatabase, alias);
+  }
+}
+
+class StockCountRow extends DataClass implements Insertable<StockCountRow> {
+  final String id;
+
+  /// Who opened it. `closedBy` may differ — a manager may finish a walk.
+  final String? userId;
+  final String? closedBy;
+
+  /// `full | partial` — whether this session claims to have seen *every* active
+  /// [Ingredients] row. Without the claim, "did we count everything in March?"
+  /// has no answer.
+  final String scope;
+
+  /// Whether the expected quantity was hidden from the counter while counting.
+  /// Recorded because it decides how much the variance is worth: a stocktake
+  /// shown the answer is weaker evidence than one that was not.
+  final bool blind;
+  final String? note;
+  final DateTime startedAt;
+
+  /// Null while the session is open. Stamped once, at close — a closed session
+  /// is never reopened, because its movements are already in the ledger.
+  final DateTime? closedAt;
+  const StockCountRow({
+    required this.id,
+    this.userId,
+    this.closedBy,
+    required this.scope,
+    required this.blind,
+    this.note,
+    required this.startedAt,
+    this.closedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<String>(userId);
+    }
+    if (!nullToAbsent || closedBy != null) {
+      map['closed_by'] = Variable<String>(closedBy);
+    }
+    map['scope'] = Variable<String>(scope);
+    map['blind'] = Variable<bool>(blind);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['started_at'] = Variable<DateTime>(startedAt);
+    if (!nullToAbsent || closedAt != null) {
+      map['closed_at'] = Variable<DateTime>(closedAt);
+    }
+    return map;
+  }
+
+  StockCountsCompanion toCompanion(bool nullToAbsent) {
+    return StockCountsCompanion(
+      id: Value(id),
+      userId: userId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userId),
+      closedBy: closedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(closedBy),
+      scope: Value(scope),
+      blind: Value(blind),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      startedAt: Value(startedAt),
+      closedAt: closedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(closedAt),
+    );
+  }
+
+  factory StockCountRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StockCountRow(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String?>(json['userId']),
+      closedBy: serializer.fromJson<String?>(json['closedBy']),
+      scope: serializer.fromJson<String>(json['scope']),
+      blind: serializer.fromJson<bool>(json['blind']),
+      note: serializer.fromJson<String?>(json['note']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      closedAt: serializer.fromJson<DateTime?>(json['closedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String?>(userId),
+      'closedBy': serializer.toJson<String?>(closedBy),
+      'scope': serializer.toJson<String>(scope),
+      'blind': serializer.toJson<bool>(blind),
+      'note': serializer.toJson<String?>(note),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'closedAt': serializer.toJson<DateTime?>(closedAt),
+    };
+  }
+
+  StockCountRow copyWith({
+    String? id,
+    Value<String?> userId = const Value.absent(),
+    Value<String?> closedBy = const Value.absent(),
+    String? scope,
+    bool? blind,
+    Value<String?> note = const Value.absent(),
+    DateTime? startedAt,
+    Value<DateTime?> closedAt = const Value.absent(),
+  }) => StockCountRow(
+    id: id ?? this.id,
+    userId: userId.present ? userId.value : this.userId,
+    closedBy: closedBy.present ? closedBy.value : this.closedBy,
+    scope: scope ?? this.scope,
+    blind: blind ?? this.blind,
+    note: note.present ? note.value : this.note,
+    startedAt: startedAt ?? this.startedAt,
+    closedAt: closedAt.present ? closedAt.value : this.closedAt,
+  );
+  StockCountRow copyWithCompanion(StockCountsCompanion data) {
+    return StockCountRow(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      closedBy: data.closedBy.present ? data.closedBy.value : this.closedBy,
+      scope: data.scope.present ? data.scope.value : this.scope,
+      blind: data.blind.present ? data.blind.value : this.blind,
+      note: data.note.present ? data.note.value : this.note,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      closedAt: data.closedAt.present ? data.closedAt.value : this.closedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StockCountRow(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('closedBy: $closedBy, ')
+          ..write('scope: $scope, ')
+          ..write('blind: $blind, ')
+          ..write('note: $note, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('closedAt: $closedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    closedBy,
+    scope,
+    blind,
+    note,
+    startedAt,
+    closedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StockCountRow &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.closedBy == this.closedBy &&
+          other.scope == this.scope &&
+          other.blind == this.blind &&
+          other.note == this.note &&
+          other.startedAt == this.startedAt &&
+          other.closedAt == this.closedAt);
+}
+
+class StockCountsCompanion extends UpdateCompanion<StockCountRow> {
+  final Value<String> id;
+  final Value<String?> userId;
+  final Value<String?> closedBy;
+  final Value<String> scope;
+  final Value<bool> blind;
+  final Value<String?> note;
+  final Value<DateTime> startedAt;
+  final Value<DateTime?> closedAt;
+  final Value<int> rowid;
+  const StockCountsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.closedBy = const Value.absent(),
+    this.scope = const Value.absent(),
+    this.blind = const Value.absent(),
+    this.note = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.closedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  StockCountsCompanion.insert({
+    required String id,
+    this.userId = const Value.absent(),
+    this.closedBy = const Value.absent(),
+    this.scope = const Value.absent(),
+    this.blind = const Value.absent(),
+    this.note = const Value.absent(),
+    required DateTime startedAt,
+    this.closedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       startedAt = Value(startedAt);
+  static Insertable<StockCountRow> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? closedBy,
+    Expression<String>? scope,
+    Expression<bool>? blind,
+    Expression<String>? note,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? closedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (closedBy != null) 'closed_by': closedBy,
+      if (scope != null) 'scope': scope,
+      if (blind != null) 'blind': blind,
+      if (note != null) 'note': note,
+      if (startedAt != null) 'started_at': startedAt,
+      if (closedAt != null) 'closed_at': closedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  StockCountsCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? userId,
+    Value<String?>? closedBy,
+    Value<String>? scope,
+    Value<bool>? blind,
+    Value<String?>? note,
+    Value<DateTime>? startedAt,
+    Value<DateTime?>? closedAt,
+    Value<int>? rowid,
+  }) {
+    return StockCountsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      closedBy: closedBy ?? this.closedBy,
+      scope: scope ?? this.scope,
+      blind: blind ?? this.blind,
+      note: note ?? this.note,
+      startedAt: startedAt ?? this.startedAt,
+      closedAt: closedAt ?? this.closedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (closedBy.present) {
+      map['closed_by'] = Variable<String>(closedBy.value);
+    }
+    if (scope.present) {
+      map['scope'] = Variable<String>(scope.value);
+    }
+    if (blind.present) {
+      map['blind'] = Variable<bool>(blind.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (closedAt.present) {
+      map['closed_at'] = Variable<DateTime>(closedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StockCountsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('closedBy: $closedBy, ')
+          ..write('scope: $scope, ')
+          ..write('blind: $blind, ')
+          ..write('note: $note, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('closedAt: $closedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $StockCountLinesTable extends StockCountLines
+    with TableInfo<$StockCountLinesTable, StockCountLineRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StockCountLinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _countIdMeta = const VerificationMeta(
+    'countId',
+  );
+  @override
+  late final GeneratedColumn<String> countId = GeneratedColumn<String>(
+    'count_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ingredientIdMeta = const VerificationMeta(
+    'ingredientId',
+  );
+  @override
+  late final GeneratedColumn<String> ingredientId = GeneratedColumn<String>(
+    'ingredient_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _expectedQtyMeta = const VerificationMeta(
+    'expectedQty',
+  );
+  @override
+  late final GeneratedColumn<int> expectedQty = GeneratedColumn<int>(
+    'expected_qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _countedQtyMeta = const VerificationMeta(
+    'countedQty',
+  );
+  @override
+  late final GeneratedColumn<int> countedQty = GeneratedColumn<int>(
+    'counted_qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _costMicroMeta = const VerificationMeta(
+    'costMicro',
+  );
+  @override
+  late final GeneratedColumn<int> costMicro = GeneratedColumn<int>(
+    'cost_micro',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _atMeta = const VerificationMeta('at');
+  @override
+  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+    'at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    countId,
+    ingredientId,
+    expectedQty,
+    countedQty,
+    costMicro,
+    note,
+    at,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'stock_count_lines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StockCountLineRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('count_id')) {
+      context.handle(
+        _countIdMeta,
+        countId.isAcceptableOrUnknown(data['count_id']!, _countIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_countIdMeta);
+    }
+    if (data.containsKey('ingredient_id')) {
+      context.handle(
+        _ingredientIdMeta,
+        ingredientId.isAcceptableOrUnknown(
+          data['ingredient_id']!,
+          _ingredientIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_ingredientIdMeta);
+    }
+    if (data.containsKey('expected_qty')) {
+      context.handle(
+        _expectedQtyMeta,
+        expectedQty.isAcceptableOrUnknown(
+          data['expected_qty']!,
+          _expectedQtyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_expectedQtyMeta);
+    }
+    if (data.containsKey('counted_qty')) {
+      context.handle(
+        _countedQtyMeta,
+        countedQty.isAcceptableOrUnknown(data['counted_qty']!, _countedQtyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_countedQtyMeta);
+    }
+    if (data.containsKey('cost_micro')) {
+      context.handle(
+        _costMicroMeta,
+        costMicro.isAcceptableOrUnknown(data['cost_micro']!, _costMicroMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('at')) {
+      context.handle(_atMeta, at.isAcceptableOrUnknown(data['at']!, _atMeta));
+    } else if (isInserting) {
+      context.missing(_atMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  StockCountLineRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StockCountLineRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      countId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}count_id'],
+      )!,
+      ingredientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ingredient_id'],
+      )!,
+      expectedQty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}expected_qty'],
+      )!,
+      countedQty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}counted_qty'],
+      )!,
+      costMicro: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cost_micro'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      at: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}at'],
+      )!,
+    );
+  }
+
+  @override
+  $StockCountLinesTable createAlias(String alias) {
+    return $StockCountLinesTable(attachedDatabase, alias);
+  }
+}
+
+class StockCountLineRow extends DataClass
+    implements Insertable<StockCountLineRow> {
+  final String id;
+  final String countId;
+  final String ingredientId;
+
+  /// `stockOnHand` at the moment this line was entered, in milli-base units.
+  final int expectedQty;
+
+  /// What the counter found, absolute, in milli-base units.
+  final int countedQty;
+
+  /// Unit cost frozen at entry, micro-money per milli-base unit — so a session
+  /// read a year later reports the rupiah it reported at close.
+  final int costMicro;
+  final String? note;
+  final DateTime at;
+  const StockCountLineRow({
+    required this.id,
+    required this.countId,
+    required this.ingredientId,
+    required this.expectedQty,
+    required this.countedQty,
+    required this.costMicro,
+    this.note,
+    required this.at,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['count_id'] = Variable<String>(countId);
+    map['ingredient_id'] = Variable<String>(ingredientId);
+    map['expected_qty'] = Variable<int>(expectedQty);
+    map['counted_qty'] = Variable<int>(countedQty);
+    map['cost_micro'] = Variable<int>(costMicro);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['at'] = Variable<DateTime>(at);
+    return map;
+  }
+
+  StockCountLinesCompanion toCompanion(bool nullToAbsent) {
+    return StockCountLinesCompanion(
+      id: Value(id),
+      countId: Value(countId),
+      ingredientId: Value(ingredientId),
+      expectedQty: Value(expectedQty),
+      countedQty: Value(countedQty),
+      costMicro: Value(costMicro),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      at: Value(at),
+    );
+  }
+
+  factory StockCountLineRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StockCountLineRow(
+      id: serializer.fromJson<String>(json['id']),
+      countId: serializer.fromJson<String>(json['countId']),
+      ingredientId: serializer.fromJson<String>(json['ingredientId']),
+      expectedQty: serializer.fromJson<int>(json['expectedQty']),
+      countedQty: serializer.fromJson<int>(json['countedQty']),
+      costMicro: serializer.fromJson<int>(json['costMicro']),
+      note: serializer.fromJson<String?>(json['note']),
+      at: serializer.fromJson<DateTime>(json['at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'countId': serializer.toJson<String>(countId),
+      'ingredientId': serializer.toJson<String>(ingredientId),
+      'expectedQty': serializer.toJson<int>(expectedQty),
+      'countedQty': serializer.toJson<int>(countedQty),
+      'costMicro': serializer.toJson<int>(costMicro),
+      'note': serializer.toJson<String?>(note),
+      'at': serializer.toJson<DateTime>(at),
+    };
+  }
+
+  StockCountLineRow copyWith({
+    String? id,
+    String? countId,
+    String? ingredientId,
+    int? expectedQty,
+    int? countedQty,
+    int? costMicro,
+    Value<String?> note = const Value.absent(),
+    DateTime? at,
+  }) => StockCountLineRow(
+    id: id ?? this.id,
+    countId: countId ?? this.countId,
+    ingredientId: ingredientId ?? this.ingredientId,
+    expectedQty: expectedQty ?? this.expectedQty,
+    countedQty: countedQty ?? this.countedQty,
+    costMicro: costMicro ?? this.costMicro,
+    note: note.present ? note.value : this.note,
+    at: at ?? this.at,
+  );
+  StockCountLineRow copyWithCompanion(StockCountLinesCompanion data) {
+    return StockCountLineRow(
+      id: data.id.present ? data.id.value : this.id,
+      countId: data.countId.present ? data.countId.value : this.countId,
+      ingredientId: data.ingredientId.present
+          ? data.ingredientId.value
+          : this.ingredientId,
+      expectedQty: data.expectedQty.present
+          ? data.expectedQty.value
+          : this.expectedQty,
+      countedQty: data.countedQty.present
+          ? data.countedQty.value
+          : this.countedQty,
+      costMicro: data.costMicro.present ? data.costMicro.value : this.costMicro,
+      note: data.note.present ? data.note.value : this.note,
+      at: data.at.present ? data.at.value : this.at,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StockCountLineRow(')
+          ..write('id: $id, ')
+          ..write('countId: $countId, ')
+          ..write('ingredientId: $ingredientId, ')
+          ..write('expectedQty: $expectedQty, ')
+          ..write('countedQty: $countedQty, ')
+          ..write('costMicro: $costMicro, ')
+          ..write('note: $note, ')
+          ..write('at: $at')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    countId,
+    ingredientId,
+    expectedQty,
+    countedQty,
+    costMicro,
+    note,
+    at,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StockCountLineRow &&
+          other.id == this.id &&
+          other.countId == this.countId &&
+          other.ingredientId == this.ingredientId &&
+          other.expectedQty == this.expectedQty &&
+          other.countedQty == this.countedQty &&
+          other.costMicro == this.costMicro &&
+          other.note == this.note &&
+          other.at == this.at);
+}
+
+class StockCountLinesCompanion extends UpdateCompanion<StockCountLineRow> {
+  final Value<String> id;
+  final Value<String> countId;
+  final Value<String> ingredientId;
+  final Value<int> expectedQty;
+  final Value<int> countedQty;
+  final Value<int> costMicro;
+  final Value<String?> note;
+  final Value<DateTime> at;
+  final Value<int> rowid;
+  const StockCountLinesCompanion({
+    this.id = const Value.absent(),
+    this.countId = const Value.absent(),
+    this.ingredientId = const Value.absent(),
+    this.expectedQty = const Value.absent(),
+    this.countedQty = const Value.absent(),
+    this.costMicro = const Value.absent(),
+    this.note = const Value.absent(),
+    this.at = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  StockCountLinesCompanion.insert({
+    required String id,
+    required String countId,
+    required String ingredientId,
+    required int expectedQty,
+    required int countedQty,
+    this.costMicro = const Value.absent(),
+    this.note = const Value.absent(),
+    required DateTime at,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       countId = Value(countId),
+       ingredientId = Value(ingredientId),
+       expectedQty = Value(expectedQty),
+       countedQty = Value(countedQty),
+       at = Value(at);
+  static Insertable<StockCountLineRow> custom({
+    Expression<String>? id,
+    Expression<String>? countId,
+    Expression<String>? ingredientId,
+    Expression<int>? expectedQty,
+    Expression<int>? countedQty,
+    Expression<int>? costMicro,
+    Expression<String>? note,
+    Expression<DateTime>? at,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (countId != null) 'count_id': countId,
+      if (ingredientId != null) 'ingredient_id': ingredientId,
+      if (expectedQty != null) 'expected_qty': expectedQty,
+      if (countedQty != null) 'counted_qty': countedQty,
+      if (costMicro != null) 'cost_micro': costMicro,
+      if (note != null) 'note': note,
+      if (at != null) 'at': at,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  StockCountLinesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? countId,
+    Value<String>? ingredientId,
+    Value<int>? expectedQty,
+    Value<int>? countedQty,
+    Value<int>? costMicro,
+    Value<String?>? note,
+    Value<DateTime>? at,
+    Value<int>? rowid,
+  }) {
+    return StockCountLinesCompanion(
+      id: id ?? this.id,
+      countId: countId ?? this.countId,
+      ingredientId: ingredientId ?? this.ingredientId,
+      expectedQty: expectedQty ?? this.expectedQty,
+      countedQty: countedQty ?? this.countedQty,
+      costMicro: costMicro ?? this.costMicro,
+      note: note ?? this.note,
+      at: at ?? this.at,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (countId.present) {
+      map['count_id'] = Variable<String>(countId.value);
+    }
+    if (ingredientId.present) {
+      map['ingredient_id'] = Variable<String>(ingredientId.value);
+    }
+    if (expectedQty.present) {
+      map['expected_qty'] = Variable<int>(expectedQty.value);
+    }
+    if (countedQty.present) {
+      map['counted_qty'] = Variable<int>(countedQty.value);
+    }
+    if (costMicro.present) {
+      map['cost_micro'] = Variable<int>(costMicro.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (at.present) {
+      map['at'] = Variable<DateTime>(at.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StockCountLinesCompanion(')
+          ..write('id: $id, ')
+          ..write('countId: $countId, ')
+          ..write('ingredientId: $ingredientId, ')
+          ..write('expectedQty: $expectedQty, ')
+          ..write('countedQty: $countedQty, ')
+          ..write('costMicro: $costMicro, ')
+          ..write('note: $note, ')
           ..write('at: $at, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -23987,6 +25080,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $IngredientsTable ingredients = $IngredientsTable(this);
   late final $RecipeLinesTable recipeLines = $RecipeLinesTable(this);
   late final $StockMovementsTable stockMovements = $StockMovementsTable(this);
+  late final $StockCountsTable stockCounts = $StockCountsTable(this);
+  late final $StockCountLinesTable stockCountLines = $StockCountLinesTable(
+    this,
+  );
   late final $CashEntriesTable cashEntries = $CashEntriesTable(this);
   late final $MembersTable members = $MembersTable(this);
   late final $MemberPointsTable memberPoints = $MemberPointsTable(this);
@@ -24027,6 +25124,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ingredients,
     recipeLines,
     stockMovements,
+    stockCounts,
+    stockCountLines,
     cashEntries,
     members,
     memberPoints,
@@ -34039,6 +35138,7 @@ typedef $$StockMovementsTableCreateCompanionBuilder =
       Value<String?> note,
       Value<int> costMicro,
       Value<String?> batchId,
+      Value<String?> countId,
       required DateTime at,
       Value<int> rowid,
     });
@@ -34054,6 +35154,7 @@ typedef $$StockMovementsTableUpdateCompanionBuilder =
       Value<String?> note,
       Value<int> costMicro,
       Value<String?> batchId,
+      Value<String?> countId,
       Value<DateTime> at,
       Value<int> rowid,
     });
@@ -34114,6 +35215,11 @@ class $$StockMovementsTableFilterComposer
 
   ColumnFilters<String> get batchId => $composableBuilder(
     column: $table.batchId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get countId => $composableBuilder(
+    column: $table.countId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -34182,6 +35288,11 @@ class $$StockMovementsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get countId => $composableBuilder(
+    column: $table.countId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get at => $composableBuilder(
     column: $table.at,
     builder: (column) => ColumnOrderings(column),
@@ -34230,6 +35341,9 @@ class $$StockMovementsTableAnnotationComposer
 
   GeneratedColumn<String> get batchId =>
       $composableBuilder(column: $table.batchId, builder: (column) => column);
+
+  GeneratedColumn<String> get countId =>
+      $composableBuilder(column: $table.countId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get at =>
       $composableBuilder(column: $table.at, builder: (column) => column);
@@ -34282,6 +35396,7 @@ class $$StockMovementsTableTableManager
                 Value<String?> note = const Value.absent(),
                 Value<int> costMicro = const Value.absent(),
                 Value<String?> batchId = const Value.absent(),
+                Value<String?> countId = const Value.absent(),
                 Value<DateTime> at = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => StockMovementsCompanion(
@@ -34295,6 +35410,7 @@ class $$StockMovementsTableTableManager
                 note: note,
                 costMicro: costMicro,
                 batchId: batchId,
+                countId: countId,
                 at: at,
                 rowid: rowid,
               ),
@@ -34310,6 +35426,7 @@ class $$StockMovementsTableTableManager
                 Value<String?> note = const Value.absent(),
                 Value<int> costMicro = const Value.absent(),
                 Value<String?> batchId = const Value.absent(),
+                Value<String?> countId = const Value.absent(),
                 required DateTime at,
                 Value<int> rowid = const Value.absent(),
               }) => StockMovementsCompanion.insert(
@@ -34323,6 +35440,7 @@ class $$StockMovementsTableTableManager
                 note: note,
                 costMicro: costMicro,
                 batchId: batchId,
+                countId: countId,
                 at: at,
                 rowid: rowid,
               ),
@@ -34349,6 +35467,532 @@ typedef $$StockMovementsTableProcessedTableManager =
         BaseReferences<_$AppDatabase, $StockMovementsTable, StockMovementRow>,
       ),
       StockMovementRow,
+      PrefetchHooks Function()
+    >;
+typedef $$StockCountsTableCreateCompanionBuilder =
+    StockCountsCompanion Function({
+      required String id,
+      Value<String?> userId,
+      Value<String?> closedBy,
+      Value<String> scope,
+      Value<bool> blind,
+      Value<String?> note,
+      required DateTime startedAt,
+      Value<DateTime?> closedAt,
+      Value<int> rowid,
+    });
+typedef $$StockCountsTableUpdateCompanionBuilder =
+    StockCountsCompanion Function({
+      Value<String> id,
+      Value<String?> userId,
+      Value<String?> closedBy,
+      Value<String> scope,
+      Value<bool> blind,
+      Value<String?> note,
+      Value<DateTime> startedAt,
+      Value<DateTime?> closedAt,
+      Value<int> rowid,
+    });
+
+class $$StockCountsTableFilterComposer
+    extends Composer<_$AppDatabase, $StockCountsTable> {
+  $$StockCountsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get closedBy => $composableBuilder(
+    column: $table.closedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get scope => $composableBuilder(
+    column: $table.scope,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get blind => $composableBuilder(
+    column: $table.blind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get closedAt => $composableBuilder(
+    column: $table.closedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$StockCountsTableOrderingComposer
+    extends Composer<_$AppDatabase, $StockCountsTable> {
+  $$StockCountsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get closedBy => $composableBuilder(
+    column: $table.closedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get scope => $composableBuilder(
+    column: $table.scope,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get blind => $composableBuilder(
+    column: $table.blind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get closedAt => $composableBuilder(
+    column: $table.closedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$StockCountsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $StockCountsTable> {
+  $$StockCountsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get closedBy =>
+      $composableBuilder(column: $table.closedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get scope =>
+      $composableBuilder(column: $table.scope, builder: (column) => column);
+
+  GeneratedColumn<bool> get blind =>
+      $composableBuilder(column: $table.blind, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get closedAt =>
+      $composableBuilder(column: $table.closedAt, builder: (column) => column);
+}
+
+class $$StockCountsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $StockCountsTable,
+          StockCountRow,
+          $$StockCountsTableFilterComposer,
+          $$StockCountsTableOrderingComposer,
+          $$StockCountsTableAnnotationComposer,
+          $$StockCountsTableCreateCompanionBuilder,
+          $$StockCountsTableUpdateCompanionBuilder,
+          (
+            StockCountRow,
+            BaseReferences<_$AppDatabase, $StockCountsTable, StockCountRow>,
+          ),
+          StockCountRow,
+          PrefetchHooks Function()
+        > {
+  $$StockCountsTableTableManager(_$AppDatabase db, $StockCountsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$StockCountsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$StockCountsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$StockCountsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
+                Value<String?> closedBy = const Value.absent(),
+                Value<String> scope = const Value.absent(),
+                Value<bool> blind = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<DateTime?> closedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => StockCountsCompanion(
+                id: id,
+                userId: userId,
+                closedBy: closedBy,
+                scope: scope,
+                blind: blind,
+                note: note,
+                startedAt: startedAt,
+                closedAt: closedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> userId = const Value.absent(),
+                Value<String?> closedBy = const Value.absent(),
+                Value<String> scope = const Value.absent(),
+                Value<bool> blind = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                required DateTime startedAt,
+                Value<DateTime?> closedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => StockCountsCompanion.insert(
+                id: id,
+                userId: userId,
+                closedBy: closedBy,
+                scope: scope,
+                blind: blind,
+                note: note,
+                startedAt: startedAt,
+                closedAt: closedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$StockCountsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $StockCountsTable,
+      StockCountRow,
+      $$StockCountsTableFilterComposer,
+      $$StockCountsTableOrderingComposer,
+      $$StockCountsTableAnnotationComposer,
+      $$StockCountsTableCreateCompanionBuilder,
+      $$StockCountsTableUpdateCompanionBuilder,
+      (
+        StockCountRow,
+        BaseReferences<_$AppDatabase, $StockCountsTable, StockCountRow>,
+      ),
+      StockCountRow,
+      PrefetchHooks Function()
+    >;
+typedef $$StockCountLinesTableCreateCompanionBuilder =
+    StockCountLinesCompanion Function({
+      required String id,
+      required String countId,
+      required String ingredientId,
+      required int expectedQty,
+      required int countedQty,
+      Value<int> costMicro,
+      Value<String?> note,
+      required DateTime at,
+      Value<int> rowid,
+    });
+typedef $$StockCountLinesTableUpdateCompanionBuilder =
+    StockCountLinesCompanion Function({
+      Value<String> id,
+      Value<String> countId,
+      Value<String> ingredientId,
+      Value<int> expectedQty,
+      Value<int> countedQty,
+      Value<int> costMicro,
+      Value<String?> note,
+      Value<DateTime> at,
+      Value<int> rowid,
+    });
+
+class $$StockCountLinesTableFilterComposer
+    extends Composer<_$AppDatabase, $StockCountLinesTable> {
+  $$StockCountLinesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get countId => $composableBuilder(
+    column: $table.countId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ingredientId => $composableBuilder(
+    column: $table.ingredientId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get expectedQty => $composableBuilder(
+    column: $table.expectedQty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get countedQty => $composableBuilder(
+    column: $table.countedQty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get costMicro => $composableBuilder(
+    column: $table.costMicro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$StockCountLinesTableOrderingComposer
+    extends Composer<_$AppDatabase, $StockCountLinesTable> {
+  $$StockCountLinesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get countId => $composableBuilder(
+    column: $table.countId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ingredientId => $composableBuilder(
+    column: $table.ingredientId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get expectedQty => $composableBuilder(
+    column: $table.expectedQty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get countedQty => $composableBuilder(
+    column: $table.countedQty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get costMicro => $composableBuilder(
+    column: $table.costMicro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$StockCountLinesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $StockCountLinesTable> {
+  $$StockCountLinesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get countId =>
+      $composableBuilder(column: $table.countId, builder: (column) => column);
+
+  GeneratedColumn<String> get ingredientId => $composableBuilder(
+    column: $table.ingredientId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get expectedQty => $composableBuilder(
+    column: $table.expectedQty,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get countedQty => $composableBuilder(
+    column: $table.countedQty,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get costMicro =>
+      $composableBuilder(column: $table.costMicro, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get at =>
+      $composableBuilder(column: $table.at, builder: (column) => column);
+}
+
+class $$StockCountLinesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $StockCountLinesTable,
+          StockCountLineRow,
+          $$StockCountLinesTableFilterComposer,
+          $$StockCountLinesTableOrderingComposer,
+          $$StockCountLinesTableAnnotationComposer,
+          $$StockCountLinesTableCreateCompanionBuilder,
+          $$StockCountLinesTableUpdateCompanionBuilder,
+          (
+            StockCountLineRow,
+            BaseReferences<
+              _$AppDatabase,
+              $StockCountLinesTable,
+              StockCountLineRow
+            >,
+          ),
+          StockCountLineRow,
+          PrefetchHooks Function()
+        > {
+  $$StockCountLinesTableTableManager(
+    _$AppDatabase db,
+    $StockCountLinesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$StockCountLinesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$StockCountLinesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$StockCountLinesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> countId = const Value.absent(),
+                Value<String> ingredientId = const Value.absent(),
+                Value<int> expectedQty = const Value.absent(),
+                Value<int> countedQty = const Value.absent(),
+                Value<int> costMicro = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<DateTime> at = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => StockCountLinesCompanion(
+                id: id,
+                countId: countId,
+                ingredientId: ingredientId,
+                expectedQty: expectedQty,
+                countedQty: countedQty,
+                costMicro: costMicro,
+                note: note,
+                at: at,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String countId,
+                required String ingredientId,
+                required int expectedQty,
+                required int countedQty,
+                Value<int> costMicro = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                required DateTime at,
+                Value<int> rowid = const Value.absent(),
+              }) => StockCountLinesCompanion.insert(
+                id: id,
+                countId: countId,
+                ingredientId: ingredientId,
+                expectedQty: expectedQty,
+                countedQty: countedQty,
+                costMicro: costMicro,
+                note: note,
+                at: at,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$StockCountLinesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $StockCountLinesTable,
+      StockCountLineRow,
+      $$StockCountLinesTableFilterComposer,
+      $$StockCountLinesTableOrderingComposer,
+      $$StockCountLinesTableAnnotationComposer,
+      $$StockCountLinesTableCreateCompanionBuilder,
+      $$StockCountLinesTableUpdateCompanionBuilder,
+      (
+        StockCountLineRow,
+        BaseReferences<_$AppDatabase, $StockCountLinesTable, StockCountLineRow>,
+      ),
+      StockCountLineRow,
       PrefetchHooks Function()
     >;
 typedef $$CashEntriesTableCreateCompanionBuilder =
@@ -35485,6 +37129,10 @@ class $AppDatabaseManager {
       $$RecipeLinesTableTableManager(_db, _db.recipeLines);
   $$StockMovementsTableTableManager get stockMovements =>
       $$StockMovementsTableTableManager(_db, _db.stockMovements);
+  $$StockCountsTableTableManager get stockCounts =>
+      $$StockCountsTableTableManager(_db, _db.stockCounts);
+  $$StockCountLinesTableTableManager get stockCountLines =>
+      $$StockCountLinesTableTableManager(_db, _db.stockCountLines);
   $$CashEntriesTableTableManager get cashEntries =>
       $$CashEntriesTableTableManager(_db, _db.cashEntries);
   $$MembersTableTableManager get members =>

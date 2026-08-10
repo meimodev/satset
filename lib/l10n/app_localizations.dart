@@ -583,6 +583,12 @@ abstract class AppL10n {
   /// **'Pelanggan'**
   String get auditTypeMemberChanged;
 
+  /// No description provided for @auditTypeStockCounted.
+  ///
+  /// In id, this message translates to:
+  /// **'Opname'**
+  String get auditTypeStockCounted;
+
   /// No description provided for @auditTypeMenuKilled.
   ///
   /// In id, this message translates to:
@@ -3451,6 +3457,12 @@ abstract class AppL10n {
   /// **'Batalkan mutasi kas {amount}'**
   String auditCashReversed(String amount);
 
+  /// No description provided for @auditStockCountClosed.
+  ///
+  /// In id, this message translates to:
+  /// **'Tutup stok opname — {lines, plural, other{{lines} bahan}}, selisih {variance}'**
+  String auditStockCountClosed(num lines, String variance);
+
   /// No description provided for @auditMemberCreated.
   ///
   /// In id, this message translates to:
@@ -4834,7 +4846,7 @@ abstract class AppL10n {
   /// No description provided for @stkSubOpname.
   ///
   /// In id, this message translates to:
-  /// **'Stok opname physical audit'**
+  /// **'Stok opname — hitung fisik'**
   String get stkSubOpname;
 
   /// No description provided for @stkSub.
@@ -4932,6 +4944,318 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'dari {n, plural, other{{n} bahan terdaftar}}'**
   String stkOfRegistered(int n);
+
+  /// No description provided for @stkCounted.
+  ///
+  /// In id, this message translates to:
+  /// **'Terhitung'**
+  String get stkCounted;
+
+  /// No description provided for @stkOpnameStartTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Mulai stok opname'**
+  String get stkOpnameStartTitle;
+
+  /// No description provided for @stkOpnameStartSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Sesi ini akan tersimpan, jadi hitungan Anda tidak hilang kalau layar mati.'**
+  String get stkOpnameStartSub;
+
+  /// No description provided for @stkOpnameStart.
+  ///
+  /// In id, this message translates to:
+  /// **'Mulai'**
+  String get stkOpnameStart;
+
+  /// No description provided for @stkOpnameScope.
+  ///
+  /// In id, this message translates to:
+  /// **'Cakupan'**
+  String get stkOpnameScope;
+
+  /// No description provided for @stkOpnameScopeFull.
+  ///
+  /// In id, this message translates to:
+  /// **'Menyeluruh'**
+  String get stkOpnameScopeFull;
+
+  /// No description provided for @stkOpnameScopePartial.
+  ///
+  /// In id, this message translates to:
+  /// **'Sebagian'**
+  String get stkOpnameScopePartial;
+
+  /// No description provided for @stkOpnameBlind.
+  ///
+  /// In id, this message translates to:
+  /// **'Hitung buta'**
+  String get stkOpnameBlind;
+
+  /// No description provided for @stkOpnameBlindHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Sembunyikan stok tercatat selama menghitung. Selisih muncul setelah opname ditutup.'**
+  String get stkOpnameBlindHint;
+
+  /// No description provided for @stkOpnameDiscardTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Buang opname ini?'**
+  String get stkOpnameDiscardTitle;
+
+  /// No description provided for @stkOpnameDiscardBody.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} bahan}} yang sudah dihitung akan ikut terbuang. Opname yang belum ditutup tidak mengubah stok.'**
+  String stkOpnameDiscardBody(num n);
+
+  /// No description provided for @stkOpnameDiscard.
+  ///
+  /// In id, this message translates to:
+  /// **'Buang'**
+  String get stkOpnameDiscard;
+
+  /// No description provided for @stkOpnameIncompleteTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum semua bahan dihitung'**
+  String get stkOpnameIncompleteTitle;
+
+  /// No description provided for @stkOpnameIncompleteBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Opname menyeluruh, tapi {n, plural, other{{n} bahan}} belum dihitung. Tutup tetap sebagai menyeluruh?'**
+  String stkOpnameIncompleteBody(num n);
+
+  /// No description provided for @stkOpnameCloseAnyway.
+  ///
+  /// In id, this message translates to:
+  /// **'Tutup tetap'**
+  String get stkOpnameCloseAnyway;
+
+  /// No description provided for @opnTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Opname'**
+  String get opnTitle;
+
+  /// No description provided for @opnSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat stok opname — siapa menghitung, kapan, dan setiap barisnya'**
+  String get opnSub;
+
+  /// No description provided for @opnRangeDays.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} hari}}'**
+  String opnRangeDays(num n);
+
+  /// No description provided for @opnEmptyTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada opname'**
+  String get opnEmptyTitle;
+
+  /// No description provided for @opnEmptyBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Opname dimulai dari layar Stok. Setelah ditutup, dokumennya muncul di sini.'**
+  String get opnEmptyBody;
+
+  /// No description provided for @opnPickTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih satu opname'**
+  String get opnPickTitle;
+
+  /// No description provided for @opnPickBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Dokumen lengkapnya muncul di sini.'**
+  String get opnPickBody;
+
+  /// No description provided for @opnOpenTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Opname sedang berjalan'**
+  String get opnOpenTitle;
+
+  /// No description provided for @opnOpenBody.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} bahan}} sudah dihitung. Belum ada stok yang bergerak sampai ditutup.'**
+  String opnOpenBody(num n);
+
+  /// No description provided for @opnTagBlind.
+  ///
+  /// In id, this message translates to:
+  /// **'Buta'**
+  String get opnTagBlind;
+
+  /// No description provided for @opnTagSighted.
+  ///
+  /// In id, this message translates to:
+  /// **'Terbuka'**
+  String get opnTagSighted;
+
+  /// No description provided for @opnLineCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} baris}}'**
+  String opnLineCount(num n);
+
+  /// No description provided for @opnDocSub.
+  ///
+  /// In id, this message translates to:
+  /// **'{scope} · {blind}'**
+  String opnDocSub(Object scope, Object blind);
+
+  /// No description provided for @opnKpiLines.
+  ///
+  /// In id, this message translates to:
+  /// **'Baris'**
+  String get opnKpiLines;
+
+  /// No description provided for @opnKpiExact.
+  ///
+  /// In id, this message translates to:
+  /// **'Cocok'**
+  String get opnKpiExact;
+
+  /// No description provided for @opnKpiVariance.
+  ///
+  /// In id, this message translates to:
+  /// **'Selisih'**
+  String get opnKpiVariance;
+
+  /// No description provided for @opnColItem.
+  ///
+  /// In id, this message translates to:
+  /// **'Bahan'**
+  String get opnColItem;
+
+  /// No description provided for @opnColExpected.
+  ///
+  /// In id, this message translates to:
+  /// **'Tercatat'**
+  String get opnColExpected;
+
+  /// No description provided for @opnColCounted.
+  ///
+  /// In id, this message translates to:
+  /// **'Dihitung'**
+  String get opnColCounted;
+
+  /// No description provided for @opnColVariance.
+  ///
+  /// In id, this message translates to:
+  /// **'Selisih'**
+  String get opnColVariance;
+
+  /// No description provided for @opnColValue.
+  ///
+  /// In id, this message translates to:
+  /// **'Nilai'**
+  String get opnColValue;
+
+  /// No description provided for @opnExact.
+  ///
+  /// In id, this message translates to:
+  /// **'Cocok'**
+  String get opnExact;
+
+  /// No description provided for @opnPhoneOnly.
+  ///
+  /// In id, this message translates to:
+  /// **'Dokumen opname dibaca dengan membandingkan barisnya. Buka di tablet.'**
+  String get opnPhoneOnly;
+
+  /// No description provided for @opnHubSubtitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat opname dan selisihnya'**
+  String get opnHubSubtitle;
+
+  /// No description provided for @opnCsvTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Stok opname'**
+  String get opnCsvTitle;
+
+  /// No description provided for @opnCsvStarted.
+  ///
+  /// In id, this message translates to:
+  /// **'Mulai'**
+  String get opnCsvStarted;
+
+  /// No description provided for @opnCsvClosed.
+  ///
+  /// In id, this message translates to:
+  /// **'Ditutup'**
+  String get opnCsvClosed;
+
+  /// No description provided for @opnCsvMode.
+  ///
+  /// In id, this message translates to:
+  /// **'Cara hitung'**
+  String get opnCsvMode;
+
+  /// No description provided for @opnCsvNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan'**
+  String get opnCsvNote;
+
+  /// No description provided for @opnPdfHeader.
+  ///
+  /// In id, this message translates to:
+  /// **'Opname {stamp}'**
+  String opnPdfHeader(Object stamp);
+
+  /// No description provided for @opnPdfLines.
+  ///
+  /// In id, this message translates to:
+  /// **'Rincian per bahan'**
+  String get opnPdfLines;
+
+  /// No description provided for @opnMetaStarted.
+  ///
+  /// In id, this message translates to:
+  /// **'Mulai: {stamp}'**
+  String opnMetaStarted(Object stamp);
+
+  /// No description provided for @opnMetaClosed.
+  ///
+  /// In id, this message translates to:
+  /// **'Ditutup: {stamp}'**
+  String opnMetaClosed(Object stamp);
+
+  /// No description provided for @opnMetaTally.
+  ///
+  /// In id, this message translates to:
+  /// **'{lines, plural, other{{lines} baris}}, {exact} cocok'**
+  String opnMetaTally(num lines, num exact);
+
+  /// No description provided for @opnMetaVariance.
+  ///
+  /// In id, this message translates to:
+  /// **'Selisih: {value}'**
+  String opnMetaVariance(Object value);
+
+  /// No description provided for @opnExport.
+  ///
+  /// In id, this message translates to:
+  /// **'Ekspor'**
+  String get opnExport;
+
+  /// No description provided for @opnExportSubject.
+  ///
+  /// In id, this message translates to:
+  /// **'Stok opname SatSet'**
+  String get opnExportSubject;
 
   /// No description provided for @stkOpnameMode.
   ///
@@ -12318,6 +12642,42 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Tukar semua'**
   String get cshMemberRedeemAll;
+
+  /// No description provided for @pinManualConnectBtn.
+  ///
+  /// In id, this message translates to:
+  /// **'Hubungkan manual'**
+  String get pinManualConnectBtn;
+
+  /// No description provided for @pinManualEntryTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Hubungkan Manual'**
+  String get pinManualEntryTitle;
+
+  /// No description provided for @pinManualEntryDescription.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan alamat IP dan port server untuk terhubung secara manual jika tidak terdeteksi otomatis.'**
+  String get pinManualEntryDescription;
+
+  /// No description provided for @pinManualEntryLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'ALAMAT IP SERVER'**
+  String get pinManualEntryLabel;
+
+  /// No description provided for @pinManualEntryEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Alamat IP tidak boleh kosong'**
+  String get pinManualEntryEmpty;
+
+  /// No description provided for @pinManualEntryNotFound.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak dapat terhubung ke server. Periksa alamat IP dan Wi-Fi.'**
+  String get pinManualEntryNotFound;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

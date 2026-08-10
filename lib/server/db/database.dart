@@ -46,6 +46,8 @@ part 'database.g.dart';
     Ingredients,
     RecipeLines,
     StockMovements,
+    StockCounts,
+    StockCountLines,
     CashEntries,
     Members,
     MemberPoints,
@@ -69,7 +71,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 51;
+  int get schemaVersion => 52;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -1016,6 +1018,18 @@ class AppDatabase extends _$AppDatabase {
           type: 'INTEGER NOT NULL DEFAULT 10',
         );
       }
+      if (from < 52) {
+        // An opname becomes a document (ADR-0096). Two new tables, and
+        // deliberately **no backfill**: every existing `adjust` row keeps a
+        // null `count_id`. Grouping historic rows into fabricated sessions
+        // would put a claim nobody made into an integrity-adjacent surface,
+        // so `/opname` starts empty on an upgraded venue and fills from the
+        // next count.
+        await m.createTable(stockCounts);
+        await m.createTable(stockCountLines);
+        await _safeAddColumnOn('stock_movements', 'count_id', type: 'TEXT');
+        await _createStockIndexes();
+      }
     },
     onCreate: (m) async {
       await m.createAll();
@@ -1169,6 +1183,21 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS stock_movements_ingredient_at '
       'ON stock_movements(ingredient_id, at)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS stock_count_lines_count '
+      'ON stock_count_lines(count_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS stock_counts_started '
+      'ON stock_counts(started_at)',
+    );
+    // A session may hold at most one line per bahan — a second count of the
+    // same shelf overwrites the first rather than producing two expectations
+    // that disagree.
+    await customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS stock_count_lines_uniq '
+      'ON stock_count_lines(count_id, ingredient_id)',
     );
   }
 

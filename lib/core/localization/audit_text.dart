@@ -73,6 +73,11 @@ String auditText(AppL10n l, AuditEntry e) {
     AuditKind.cashCounted => l.auditCashCounted(s('counted'), s('variance')),
     AuditKind.cashReversed => l.auditCashReversed(s('amount')),
 
+    AuditKind.stockCountClosed => l.auditStockCountClosed(
+      int.tryParse(s('lines')) ?? 0,
+      s('variance'),
+    ),
+
     AuditKind.memberCreated => l.auditMemberCreated(s('name')),
     AuditKind.memberDeleted => l.auditMemberDeleted(s('name')),
     AuditKind.memberMerged => l.auditMemberMerged(s('from'), s('to')),

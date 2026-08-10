@@ -35,6 +35,10 @@ const auditSummaryTypes = <AuditType>[
 const auditFilterTypes = <AuditType>[
   ...auditSummaryTypes,
   AuditType.cashMovement,
+  // Filterable, not tiled, for the reason petty cash is: the variance total
+  // belongs to the opname document and the stock report section, and a tile
+  // here would be a third place for one number to disagree with itself.
+  AuditType.stockCounted,
 ];
 
 typedef AuditTally = ({int count, int amount});

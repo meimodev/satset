@@ -6,6 +6,7 @@ import 'package:satset/domain/models/ingredient.dart';
 import 'package:satset/domain/models/member.dart';
 import 'package:satset/domain/models/reservation.dart';
 import 'package:satset/domain/models/receipt_label.dart';
+import 'package:satset/domain/models/stock_count.dart';
 import 'package:satset/domain/models/stock_unit.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/user.dart';
@@ -207,6 +208,15 @@ String cashCategoryKeyLabel(AppL10n l10n, String key) {
   final c = cashCategoryFromName(key);
   return c == null ? key : cashCategoryLabel(l10n, c);
 }
+
+/// Whether an opname claims to have seen every bahan (ADR-0096). The claim is
+/// the difference between "we counted March" and "we counted some things in
+/// March", so it is rendered wherever a session is.
+String stockCountScopeLabel(AppL10n l10n, StockCountScopeKind s) =>
+    switch (s) {
+      StockCountScopeKind.full => l10n.stkOpnameScopeFull,
+      StockCountScopeKind.partial => l10n.stkOpnameScopePartial,
+    };
 
 /// Which movement of the petty cash box a row is.
 String cashEntryKindLabel(AppL10n l10n, CashEntryKind k) => switch (k) {

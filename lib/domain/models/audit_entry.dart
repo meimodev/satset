@@ -32,6 +32,13 @@ enum AuditType {
   /// chips, and five chips reading Pelanggan say one thing five times. Which
   /// act it was lives on the [AuditKind].
   memberChanged,
+
+  /// A stok opname was closed (ADR-0096). **One row per session, not per
+  /// counted bahan** — the per-line detail is the opname document, and the log
+  /// records that the pantry was rewritten and by whom. Receiving and
+  /// production do not audit: they are ordinary stock movements with their own
+  /// ledger, whereas a count overrides what that ledger says.
+  stockCounted,
   staffCreated,
   staffDeleted,
   staffDisabled,
@@ -83,6 +90,10 @@ bool isAdminAuditType(AuditType t) {
     // guest believes in — both belong beside the other money acts, readable by
     // any `viewReports` supervisor rather than gated behind `manageStaff`.
     case AuditType.memberChanged:
+    // A count rewrites stock, not staff. The people who most need to read it
+    // are the ones who run the pantry, and they hold `viewReports` long before
+    // they hold `manageStaff`.
+    case AuditType.stockCounted:
       return false;
   }
 }

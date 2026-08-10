@@ -902,9 +902,23 @@ Every movement writes its row **and** updates the bahan's denormalised `stockOnH
 - **`voidReturn`** (positive, ticket-linked) — a [[Void (item)|void]] the kitchen had not started; the stock is genuinely still there.
 - **`waste`** (negative) — a void the kitchen *had* started (the ingredients are gone), or standalone spoilage.
 - **`receive`** (positive) — goods arrived.
-- **`adjust`** (either sign) — a stok opname correction. Requires a reason text.
+- **`adjust`** (either sign) — a correction closed out of an [[Opname (Stocktake)|opname]]. Carries that opname's id; a bare `adjust` with no session is a pre-v52 row.
 
-_Avoid_: a bare mutable balance with no history (an unauditable number is worse than none — staff stop trusting the sold-out flags and route around them); recomputing balances by aggregating the ledger on every menu render.
+_Avoid_: a bare mutable balance with no history (an unauditable number is worse than none — staff stop trusting the sold-out flags and route around them); recomputing balances by aggregating the ledger on every menu render; reconstructing an opname by grouping `adjust` rows on timestamp (see [[Opname (Stocktake)]]).
+
+### Opname (Stocktake)
+**ID · EN** — Stok opname · Stocktake; Buka opname · Open stocktake; Tutup opname · Close stocktake; Ekspektasi · Expected; Ditemukan · Found; Selisih · Variance; Buta · Blind; Menyeluruh · Full; Sebagian · Partial. **Never "Inspection"** — the machine-translation trap. _Not_ "Audit": [[Audit (venue audit log)|audit]] records acts against money, an opname counts things on a shelf.
+
+A **counting session**: one person, one walk of the pantry, a set of counted [[Bahan (Ingredient)|bahan]], closed as a single document. It is the unit an inventory manager files, argues with, and is held to — not a loose burst of corrections. Distinct from the [[Mutasi stok (Stock movement)|movements]] it produces: **the count is the evidence, the movement is the consequence**, and only the count always exists.
+
+A session is **opened, walked, and closed**. Each line freezes what it was told at the moment it was entered — expected quantity and unit cost — so a session read a year later reports the same rupiah it reported at close. Counting a bahan and finding it **correct records a line and no movement**: a zero variance is a fact somebody established, not an absence.
+
+A session declares two things about itself, and both are recorded because both decide whether its variance figure can be believed:
+
+- **Blind or sighted** — whether the counter could see the expected number while counting. Blind is the default; a sighted count is a spot-check, and a stocktake that agreed with itself because it was shown the answer is a different kind of evidence.
+- **Menyeluruh or sebagian** — whether the session claims to have seen *every* active bahan, or only some. Without the claim, "did we count everything in March?" has no answer.
+
+Closing writes the movements, stamps who closed it, and posts **one** row to the [[Audit (venue audit log)|audit log]] — the session, not its lines. _Avoid_: an opname as a transient screen mode (a 40-minute count dies with the tablet's screen); dropping the zero-variance line; valuing a historic session at today's cost (the archive would rewrite itself); a sighted count presented as equal evidence to a blind one.
 
 ### Pengurangan stok saat kirim (Deduct at send)
 Stock moves **when a line is sent to the kitchen**, not when it is cooked, served, or paid for. Send is the one point that is already atomic and server-side, and the last point at which refusing a line is still cheap — by `cooked` the ingredients are gone and an "insufficient stock" answer is useless. It is also the only point at which two waiters racing for the last portion can be resolved consistently.

@@ -283,6 +283,9 @@ class AppL10nId extends AppL10n {
   String get auditTypeMemberChanged => 'Pelanggan';
 
   @override
+  String get auditTypeStockCounted => 'Opname';
+
+  @override
   String get auditTypeMenuKilled => 'Stop jual';
 
   @override
@@ -1960,6 +1963,21 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String auditStockCountClosed(num lines, String variance) {
+    final intl.NumberFormat linesNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String linesString = linesNumberFormat.format(lines);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      lines,
+      locale: localeName,
+      other: '$linesString bahan',
+    );
+    return 'Tutup stok opname — $_temp0, selisih $variance';
+  }
+
+  @override
   String auditMemberCreated(String name) {
     return 'Daftar pelanggan $name';
   }
@@ -2864,7 +2882,7 @@ class AppL10nId extends AppL10n {
   String get stkTitle => 'Stok';
 
   @override
-  String get stkSubOpname => 'Stok opname physical audit';
+  String get stkSubOpname => 'Stok opname — hitung fisik';
 
   @override
   String get stkSub => 'Bahan, penerimaan & mutasi';
@@ -2933,6 +2951,253 @@ class AppL10nId extends AppL10n {
     );
     return 'dari $_temp0';
   }
+
+  @override
+  String get stkCounted => 'Terhitung';
+
+  @override
+  String get stkOpnameStartTitle => 'Mulai stok opname';
+
+  @override
+  String get stkOpnameStartSub =>
+      'Sesi ini akan tersimpan, jadi hitungan Anda tidak hilang kalau layar mati.';
+
+  @override
+  String get stkOpnameStart => 'Mulai';
+
+  @override
+  String get stkOpnameScope => 'Cakupan';
+
+  @override
+  String get stkOpnameScopeFull => 'Menyeluruh';
+
+  @override
+  String get stkOpnameScopePartial => 'Sebagian';
+
+  @override
+  String get stkOpnameBlind => 'Hitung buta';
+
+  @override
+  String get stkOpnameBlindHint =>
+      'Sembunyikan stok tercatat selama menghitung. Selisih muncul setelah opname ditutup.';
+
+  @override
+  String get stkOpnameDiscardTitle => 'Buang opname ini?';
+
+  @override
+  String stkOpnameDiscardBody(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString bahan',
+    );
+    return '$_temp0 yang sudah dihitung akan ikut terbuang. Opname yang belum ditutup tidak mengubah stok.';
+  }
+
+  @override
+  String get stkOpnameDiscard => 'Buang';
+
+  @override
+  String get stkOpnameIncompleteTitle => 'Belum semua bahan dihitung';
+
+  @override
+  String stkOpnameIncompleteBody(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString bahan',
+    );
+    return 'Opname menyeluruh, tapi $_temp0 belum dihitung. Tutup tetap sebagai menyeluruh?';
+  }
+
+  @override
+  String get stkOpnameCloseAnyway => 'Tutup tetap';
+
+  @override
+  String get opnTitle => 'Opname';
+
+  @override
+  String get opnSub =>
+      'Riwayat stok opname — siapa menghitung, kapan, dan setiap barisnya';
+
+  @override
+  String opnRangeDays(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString hari',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get opnEmptyTitle => 'Belum ada opname';
+
+  @override
+  String get opnEmptyBody =>
+      'Opname dimulai dari layar Stok. Setelah ditutup, dokumennya muncul di sini.';
+
+  @override
+  String get opnPickTitle => 'Pilih satu opname';
+
+  @override
+  String get opnPickBody => 'Dokumen lengkapnya muncul di sini.';
+
+  @override
+  String get opnOpenTitle => 'Opname sedang berjalan';
+
+  @override
+  String opnOpenBody(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString bahan',
+    );
+    return '$_temp0 sudah dihitung. Belum ada stok yang bergerak sampai ditutup.';
+  }
+
+  @override
+  String get opnTagBlind => 'Buta';
+
+  @override
+  String get opnTagSighted => 'Terbuka';
+
+  @override
+  String opnLineCount(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString baris',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String opnDocSub(Object scope, Object blind) {
+    return '$scope · $blind';
+  }
+
+  @override
+  String get opnKpiLines => 'Baris';
+
+  @override
+  String get opnKpiExact => 'Cocok';
+
+  @override
+  String get opnKpiVariance => 'Selisih';
+
+  @override
+  String get opnColItem => 'Bahan';
+
+  @override
+  String get opnColExpected => 'Tercatat';
+
+  @override
+  String get opnColCounted => 'Dihitung';
+
+  @override
+  String get opnColVariance => 'Selisih';
+
+  @override
+  String get opnColValue => 'Nilai';
+
+  @override
+  String get opnExact => 'Cocok';
+
+  @override
+  String get opnPhoneOnly =>
+      'Dokumen opname dibaca dengan membandingkan barisnya. Buka di tablet.';
+
+  @override
+  String get opnHubSubtitle => 'Riwayat opname dan selisihnya';
+
+  @override
+  String get opnCsvTitle => 'Stok opname';
+
+  @override
+  String get opnCsvStarted => 'Mulai';
+
+  @override
+  String get opnCsvClosed => 'Ditutup';
+
+  @override
+  String get opnCsvMode => 'Cara hitung';
+
+  @override
+  String get opnCsvNote => 'Catatan';
+
+  @override
+  String opnPdfHeader(Object stamp) {
+    return 'Opname $stamp';
+  }
+
+  @override
+  String get opnPdfLines => 'Rincian per bahan';
+
+  @override
+  String opnMetaStarted(Object stamp) {
+    return 'Mulai: $stamp';
+  }
+
+  @override
+  String opnMetaClosed(Object stamp) {
+    return 'Ditutup: $stamp';
+  }
+
+  @override
+  String opnMetaTally(num lines, num exact) {
+    final intl.NumberFormat linesNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String linesString = linesNumberFormat.format(lines);
+    final intl.NumberFormat exactNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String exactString = exactNumberFormat.format(exact);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      lines,
+      locale: localeName,
+      other: '$linesString baris',
+    );
+    return '$_temp0, $exactString cocok';
+  }
+
+  @override
+  String opnMetaVariance(Object value) {
+    return 'Selisih: $value';
+  }
+
+  @override
+  String get opnExport => 'Ekspor';
+
+  @override
+  String get opnExportSubject => 'Stok opname SatSet';
 
   @override
   String get stkOpnameMode => 'MODE STOK OPNAME';
@@ -7587,4 +7852,24 @@ class AppL10nId extends AppL10n {
 
   @override
   String get cshMemberRedeemAll => 'Tukar semua';
+
+  @override
+  String get pinManualConnectBtn => 'Hubungkan manual';
+
+  @override
+  String get pinManualEntryTitle => 'Hubungkan Manual';
+
+  @override
+  String get pinManualEntryDescription =>
+      'Masukkan alamat IP dan port server untuk terhubung secara manual jika tidak terdeteksi otomatis.';
+
+  @override
+  String get pinManualEntryLabel => 'ALAMAT IP SERVER';
+
+  @override
+  String get pinManualEntryEmpty => 'Alamat IP tidak boleh kosong';
+
+  @override
+  String get pinManualEntryNotFound =>
+      'Tidak dapat terhubung ke server. Periksa alamat IP dan Wi-Fi.';
 }

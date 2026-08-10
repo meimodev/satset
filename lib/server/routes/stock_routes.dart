@@ -13,6 +13,7 @@ import 'package:satset/domain/models/stock_unit.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/stock.dart';
+import 'package:satset/server/stock_counts.dart';
 import 'package:satset/server/ws_hub.dart';
 
 const _uuid = Uuid();
@@ -229,8 +230,181 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     return _json({'ok': true});
   });
 
-  // Stok opname. Body carries the **absolute** counted quantity; the written
-  // `adjust` delta is the variance (ADR-0041).
+  // ------------------------------------------------------------ stok opname
+  //
+  // An opname is a session, not a burst of adjustments (ADR-0096). It opens,
+  // takes lines one at a time, and writes its movements only at close — so a
+  // forty-minute walk of the pantry survives the tablet sleeping.
+
+  /// The archive plus whatever is open right now. Readable by a supervisor who
+  /// will never count anything: `viewReports` **or** `manageIngredients`, the
+  /// list-of-capabilities shape `/kas` uses.
+  r.get('/stock/counts', (Request req) async {
+    final actor = await _actor(req, db, auth);
+    if (actor == null) return Response(401);
+    if (!actor.$2.contains(Capability.viewReports.name) &&
+        !actor.$2.contains(Capability.manageIngredients.name)) {
+      return _forbidden(Capability.viewReports);
+    }
+    final q = req.url.queryParameters;
+    final rows = await listCounts(
+      db,
+      from: DateTime.tryParse(q['from'] ?? ''),
+      to: DateTime.tryParse(q['to'] ?? ''),
+      limit: int.tryParse(q['limit'] ?? '') ?? 100,
+    );
+    // The list carries each session's totals, because a list of opnames with
+    // no variance figures is a list of dates.
+    final counts = <Map<String, dynamic>>[];
+    for (final c in rows) {
+      counts.add(countRowToJson(c, lines: await countLines(db, c.id)));
+    }
+    final open = await openCountSession(db);
+    return _json({
+      'counts': counts,
+      'open': open == null
+          ? null
+          : countRowToJson(open, lines: await countLines(db, open.id)),
+    });
+  });
+
+  /// One session as a document — header plus every line, including the ones
+  /// found correct.
+  r.get('/stock/counts/<id>', (Request req, String id) async {
+    final actor = await _actor(req, db, auth);
+    if (actor == null) return Response(401);
+    if (!actor.$2.contains(Capability.viewReports.name) &&
+        !actor.$2.contains(Capability.manageIngredients.name)) {
+      return _forbidden(Capability.viewReports);
+    }
+    final row = await countById(db, id);
+    if (row == null) return Response.notFound('count not found');
+    final lines = await countLines(db, id);
+    final ings = await db.select(db.ingredients).get();
+    return _json(
+      countRowToJson(
+        row,
+        lines: lines,
+        names: {for (final i in ings) i.id: i.name},
+        units: {for (final i in ings) i.id: i.unit},
+      ),
+    );
+  });
+
+  /// Open a session. 409 if one is already open — two overlapping walks each
+  /// freeze expectations the other is moving, and neither figure would mean
+  /// anything.
+  r.post('/stock/counts', (Request req) async {
+    final actor = await _actor(req, db, auth);
+    if (actor == null) return Response(401);
+    if (!actor.$2.contains(Capability.manageIngredients.name)) {
+      return _forbidden(Capability.manageIngredients);
+    }
+    final existing = await openCountSession(db);
+    if (existing != null) {
+      return Response(
+        409,
+        body: jsonEncode({
+          'code': 'countAlreadyOpen',
+          'countId': existing.id,
+        }),
+        headers: {'content-type': 'application/json'},
+      );
+    }
+    final body =
+        jsonDecode(await req.readAsString()) as Map<String, dynamic>? ??
+        const {};
+    final id = await openCount(
+      db,
+      userId: actor.$1,
+      scope: stockCountScopeFromKey(body['scope'] as String?),
+      blind: body['blind'] as bool? ?? true,
+      note: body['note'] as String?,
+    );
+    final row = await countById(db, id);
+    return _json(countRowToJson(row!, lines: const []));
+  });
+
+  /// Enter one counted bahan. Absolute quantity, as it always was — the server
+  /// derives the variance, and freezes the expectation at this moment.
+  r.put('/stock/counts/<id>/lines', (Request req, String id) async {
+    final actor = await _actor(req, db, auth);
+    if (actor == null) return Response(401);
+    if (!actor.$2.contains(Capability.manageIngredients.name)) {
+      return _forbidden(Capability.manageIngredients);
+    }
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final line = await recordCountLine(
+      db,
+      countId: id,
+      ingredientId: body['ingredientId'] as String,
+      counted: (body['counted'] as num).toInt(),
+      note: body['note'] as String?,
+    );
+    if (line == null) {
+      return Response.notFound('count closed or ingredient not found');
+    }
+    return _json(countLineRowToJson(line));
+  });
+
+  r.delete('/stock/counts/<id>/lines/<ingredientId>', (
+    Request req,
+    String id,
+    String ingredientId,
+  ) async {
+    final actor = await _actor(req, db, auth);
+    if (actor == null) return Response(401);
+    if (!actor.$2.contains(Capability.manageIngredients.name)) {
+      return _forbidden(Capability.manageIngredients);
+    }
+    await removeCountLine(db, countId: id, ingredientId: ingredientId);
+    return _json({'ok': true});
+  });
+
+  /// Abandon an open session. A walk that was never finished is not evidence,
+  /// so it leaves no document — unlike a close, which is permanent.
+  r.delete('/stock/counts/<id>', (Request req, String id) async {
+    final actor = await _actor(req, db, auth);
+    if (actor == null) return Response(401);
+    if (!actor.$2.contains(Capability.manageIngredients.name)) {
+      return _forbidden(Capability.manageIngredients);
+    }
+    await discardCount(db, id);
+    return _json({'ok': true});
+  });
+
+  /// Close: movements, header stamp and the single audit row, in one
+  /// transaction. 409 on an already-closed session — the ledger already holds
+  /// its movements and a second close would double them.
+  r.post('/stock/counts/<id>/close', (Request req, String id) async {
+    final actor = await _actor(req, db, auth);
+    if (actor == null) return Response(401);
+    if (!actor.$2.contains(Capability.manageIngredients.name)) {
+      return _forbidden(Capability.manageIngredients);
+    }
+    CloseCountResult? result;
+    await db.transaction(() async {
+      result = await closeCount(db, countId: id, closedBy: actor.$1, hub: hub);
+    });
+    if (result == null) {
+      return Response(
+        409,
+        body: jsonEncode({'code': 'countClosed'}),
+        headers: {'content-type': 'application/json'},
+      );
+    }
+    await broadcastIfFlipped();
+    final row = await countById(db, id);
+    return _json({
+      ...countRowToJson(row!, lines: await countLines(db, id)),
+      'movements': result!.movements,
+      'deltas': result!.deltas,
+    });
+  });
+
+  /// The one-shot opname the pre-v52 client sends: open, line, close, in one
+  /// transaction. Kept so an un-upgraded handset keeps working, and routed
+  /// through the same writer so the invariants have exactly one home.
   r.post('/stock/count', (Request req) async {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
@@ -239,19 +413,32 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     }
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final counts = (body['counts'] as List?) ?? const [];
-    final deltas = <String, int>{};
+    var deltas = <String, int>{};
     await db.transaction(() async {
+      final countId = await openCount(
+        db,
+        userId: actor.$1,
+        note: body['note'] as String?,
+        // A one-shot submission saw the numbers on the list it was typed over.
+        blind: false,
+      );
       for (final raw in counts) {
         final c = raw as Map<String, dynamic>;
-        final id = c['ingredientId'] as String;
-        deltas[id] = await recordCount(
+        await recordCountLine(
           db,
-          ingredientId: id,
+          countId: countId,
+          ingredientId: c['ingredientId'] as String,
           counted: (c['counted'] as num).toInt(),
-          userId: actor.$1,
           note: c['note'] as String? ?? body['note'] as String?,
         );
       }
+      final result = await closeCount(
+        db,
+        countId: countId,
+        closedBy: actor.$1,
+        hub: hub,
+      );
+      deltas = result?.deltas ?? {};
     });
     await broadcastIfFlipped();
     return _json({'deltas': deltas});

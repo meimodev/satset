@@ -362,6 +362,40 @@ void main() {
   );
 
   test(
+    'the month leaves closed opname sessions behind',
+    () async {
+      await seedSampleVenue(db);
+      final counts = await db.select(db.stockCounts).get();
+      expect(counts, isNotEmpty, reason: 'a seeded venue counts weekly');
+      expect(
+        counts.every((c) => c.closedAt != null),
+        isTrue,
+        reason: 'the seed never leaves a walk half-finished',
+      );
+      final lines = await db.select(db.stockCountLines).get();
+      expect(lines, isNotEmpty);
+      // A document keeps the shelves it found correct — that is the half a
+      // ledger of `adjust` rows cannot show (ADR-0096).
+      expect(
+        lines.any((l) => l.countedQty == l.expectedQty),
+        isTrue,
+        reason: 'zero-variance lines must survive the close',
+      );
+      // …and every movement it did produce points back at its session.
+      final adjustments = (await db.select(
+        db.stockMovements,
+      ).get()).where((m) => m.reason == 'adjust');
+      expect(adjustments, isNotEmpty);
+      expect(
+        adjustments.every((m) => m.countId != null),
+        isTrue,
+        reason: 'a seeded adjustment is always closed out of a count',
+      );
+    },
+    timeout: const Timeout(Duration(minutes: 10)),
+  );
+
+  test(
     'seeding never drags the running app clock',
     () async {
       // Backdating a month by moving the global clock swings the live UI's

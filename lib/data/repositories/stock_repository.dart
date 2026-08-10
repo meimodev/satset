@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/domain/models/ingredient.dart';
+import 'package:satset/domain/models/stock_count.dart';
 
 /// Client access to ingredient stock.
 ///
@@ -71,22 +72,84 @@ class StockApi {
     });
   }
 
-  /// Stok opname. Counts are **absolute** — the server writes the difference,
-  /// and that difference is the variance (ADR-0041).
-  Future<Map<String, int>> recordCounts(
-    Map<String, int> counted, {
+  // ------------------------------------------------------------ stok opname
+  //
+  // A session, not a burst of adjustments (ADR-0096). Counts are **absolute**
+  // at every step — the server derives the variance and freezes the
+  // expectation at the moment a line is entered.
+
+  /// The archive plus whatever session is open right now.
+  Future<({List<StockCount> counts, StockCount? open})> counts({
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    if (!_paired) return (counts: const <StockCount>[], open: null);
+    final q = <String>[
+      if (from != null) 'from=${from.toIso8601String()}',
+      if (to != null) 'to=${to.toIso8601String()}',
+    ].join('&');
+    final raw =
+        await _api.getJson('/stock/counts${q.isEmpty ? '' : '?$q'}') as Map;
+    final open = raw['open'];
+    return (
+      counts: [
+        for (final c in (raw['counts'] as List? ?? const []))
+          StockCount.fromJson((c as Map).cast<String, dynamic>()),
+      ],
+      open: open == null
+          ? null
+          : StockCount.fromJson((open as Map).cast<String, dynamic>()),
+    );
+  }
+
+  /// One session as a document — every line, including the ones found correct.
+  Future<StockCount> count(String id) async {
+    final raw = await _api.getJson('/stock/counts/$id');
+    return StockCount.fromJson((raw as Map).cast<String, dynamic>());
+  }
+
+  Future<StockCount> openCount({
+    StockCountScopeKind scope = StockCountScopeKind.partial,
+    bool blind = true,
     String? note,
   }) async {
-    SatLog.repo('stock.opname ${counted.length} bahan');
-    final raw = await _api.postJson('/stock/count', {
-      'counts': [
-        for (final e in counted.entries)
-          {'ingredientId': e.key, 'counted': e.value},
-      ],
+    SatLog.repo('stock.opname.open ${scope.name}${blind ? ' blind' : ''}');
+    final raw = await _api.postJson('/stock/counts', {
+      'scope': scope.name,
+      'blind': blind,
       'note': ?note,
     });
-    final deltas = ((raw as Map)['deltas'] as Map).cast<String, dynamic>();
-    return {for (final e in deltas.entries) e.key: (e.value as num).toInt()};
+    return StockCount.fromJson((raw as Map).cast<String, dynamic>());
+  }
+
+  Future<StockCountLine> countLine(
+    String countId, {
+    required String ingredientId,
+    required int counted,
+    String? note,
+  }) async {
+    final raw = await _api.putJson('/stock/counts/$countId/lines', {
+      'ingredientId': ingredientId,
+      'counted': counted,
+      'note': ?note,
+    });
+    return StockCountLine.fromJson((raw as Map).cast<String, dynamic>());
+  }
+
+  Future<void> removeCountLine(String countId, String ingredientId) =>
+      _api.deleteJson('/stock/counts/$countId/lines/$ingredientId');
+
+  /// Abandon an open walk. Leaves no document — an unfinished count is not
+  /// evidence of anything.
+  Future<void> discardCount(String countId) async {
+    SatLog.repo('stock.opname.discard $countId');
+    await _api.deleteJson('/stock/counts/$countId');
+  }
+
+  Future<StockCount> closeCount(String countId) async {
+    SatLog.repo('stock.opname.close $countId');
+    final raw = await _api.postJson('/stock/counts/$countId/close', const {});
+    return StockCount.fromJson((raw as Map).cast<String, dynamic>());
   }
 
   Future<void> produce(String ingredientId, int batches, {String? note}) async {
@@ -141,3 +204,21 @@ final stockMovementsProvider = FutureProvider.autoDispose
     .family<List<StockMovement>, String>(
       (ref, id) => ref.read(stockApiProvider).movements(id),
     );
+
+/// The opname archive, keyed by the screen's ISO range so it re-fetches with
+/// the range chip rather than carrying a second, drifting picker — the shape
+/// `stockReportProvider` already uses.
+final stockCountsProvider = FutureProvider.autoDispose
+    .family<({List<StockCount> counts, StockCount? open}), (String, String)>(
+      (ref, range) => ref
+          .read(stockApiProvider)
+          .counts(
+            from: DateTime.tryParse(range.$1),
+            to: DateTime.tryParse(range.$2),
+          ),
+    );
+
+/// One session's document.
+final stockCountProvider = FutureProvider.autoDispose.family<StockCount, String>(
+  (ref, id) => ref.read(stockApiProvider).count(id),
+);

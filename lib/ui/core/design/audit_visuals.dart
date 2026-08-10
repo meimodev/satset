@@ -74,6 +74,13 @@ AuditTone auditTone(AuditType t, SatColors sc) => switch (t) {
     bg: sc.violetSoft,
     fg: sc.violet,
   ),
+  // `warn`, not `urgent`: a variance is a discrepancy to look at, not an
+  // emergency, and `urgent` stays scarce.
+  AuditType.stockCounted => (
+    icon: Icons.inventory_2_outlined,
+    bg: sc.warnSoft,
+    fg: sc.warn,
+  ),
   AuditType.menuKilled => (
     icon: Icons.remove_circle_outline,
     bg: sc.urgentSoft,

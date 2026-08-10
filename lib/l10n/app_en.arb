@@ -84,6 +84,7 @@
   "auditTypeBillClosed": "Close",
   "auditTypeCashMovement": "Cash",
   "auditTypeMemberChanged": "Member",
+  "auditTypeStockCounted": "Stocktake",
   "auditTypeMenuKilled": "Sold out",
   "auditTypeMenuRestored": "On sale",
   "auditTypeStaffCreated": "Staff +",
@@ -632,6 +633,18 @@
       }
     }
   },
+  "auditStockCountClosed": "Stocktake closed — {lines, plural, =1{1 ingredient} other{{lines} ingredients}}, variance {variance}",
+  "@auditStockCountClosed": {
+    "placeholders": {
+      "lines": {
+        "type": "num",
+        "format": "compact"
+      },
+      "variance": {
+        "type": "String"
+      }
+    }
+  },
   "auditMemberCreated": "Enrolled member {name}",
   "@auditMemberCreated": {
     "placeholders": {
@@ -926,6 +939,136 @@
   "stkNeedOpname": "Needs a stocktake now",
   "stkKpiProduced": "MADE IN HOUSE",
   "stkOfRegistered": "of {n, plural, =1{1 registered ingredient} other{{n} registered ingredients}}",
+  "stkCounted": "Counted",
+  "stkOpnameStartTitle": "Start stocktake",
+  "stkOpnameStartSub": "The session is saved as you go, so your counts survive the screen sleeping.",
+  "stkOpnameStart": "Start",
+  "stkOpnameScope": "Scope",
+  "stkOpnameScopeFull": "Full",
+  "stkOpnameScopePartial": "Partial",
+  "stkOpnameBlind": "Blind count",
+  "stkOpnameBlindHint": "Hide the recorded stock while counting. Variance appears once the stocktake closes.",
+  "stkOpnameDiscardTitle": "Discard this stocktake?",
+  "stkOpnameDiscardBody": "The {n, plural, =1{1 ingredient} other{{n} ingredients}} already counted go with it. An unclosed stocktake never moved any stock.",
+  "stkOpnameDiscard": "Discard",
+  "stkOpnameIncompleteTitle": "Not every ingredient was counted",
+  "stkOpnameIncompleteBody": "This is a full stocktake, but {n, plural, =1{1 ingredient is} other{{n} ingredients are}} still uncounted. Close it as full anyway?",
+  "stkOpnameCloseAnyway": "Close anyway",
+  "opnTitle": "Stocktake",
+  "opnSub": "The stocktake archive — who counted, when, and every line of it",
+  "opnRangeDays": "{n, plural, =1{1 day} other{{n} days}}",
+  "opnEmptyTitle": "No stocktakes yet",
+  "opnEmptyBody": "A stocktake starts on the Stock screen. Once closed, its document lands here.",
+  "opnPickTitle": "Pick a stocktake",
+  "opnPickBody": "Its full document opens here.",
+  "opnOpenTitle": "A stocktake is under way",
+  "opnOpenBody": "{n, plural, =1{1 ingredient} other{{n} ingredients}} counted so far. No stock moves until it closes.",
+  "opnTagBlind": "Blind",
+  "opnTagSighted": "Sighted",
+  "opnLineCount": "{n, plural, =1{1 line} other{{n} lines}}",
+  "opnDocSub": "{scope} · {blind}",
+  "opnKpiLines": "Lines",
+  "opnKpiExact": "Exact",
+  "opnKpiVariance": "Variance",
+  "opnColItem": "Ingredient",
+  "opnColExpected": "Expected",
+  "opnColCounted": "Counted",
+  "opnColVariance": "Variance",
+  "opnColValue": "Value",
+  "opnExact": "Exact",
+  "opnPhoneOnly": "A stocktake document is read by comparing its lines. Open it on a tablet.",
+  "opnHubSubtitle": "Past stocktakes and what they found",
+  "opnCsvTitle": "Stocktake",
+  "opnCsvStarted": "Started",
+  "opnCsvClosed": "Closed",
+  "opnCsvMode": "Method",
+  "opnCsvNote": "Note",
+  "opnPdfHeader": "Stocktake {stamp}",
+  "opnPdfLines": "Line by line",
+  "opnMetaStarted": "Started: {stamp}",
+  "opnMetaClosed": "Closed: {stamp}",
+  "opnMetaTally": "{lines, plural, =1{1 line} other{{lines} lines}}, {exact} exact",
+  "opnMetaVariance": "Variance: {value}",
+  "opnExport": "Export",
+  "opnExportSubject": "SatSet stocktake",
+  "@opnPdfHeader": {
+    "placeholders": {
+      "stamp": {}
+    }
+  },
+  "@opnMetaStarted": {
+    "placeholders": {
+      "stamp": {}
+    }
+  },
+  "@opnMetaClosed": {
+    "placeholders": {
+      "stamp": {}
+    }
+  },
+  "@opnMetaTally": {
+    "placeholders": {
+      "lines": {
+        "type": "num",
+        "format": "compact"
+      },
+      "exact": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "@opnMetaVariance": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "@opnRangeDays": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "@opnOpenBody": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "@opnLineCount": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "@opnDocSub": {
+    "placeholders": {
+      "scope": {},
+      "blind": {}
+    }
+  },
+  "@stkOpnameDiscardBody": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "@stkOpnameIncompleteBody": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
   "stkOpnameMode": "STOCKTAKE MODE",
   "stkOpnameHint": "Type the physical count in the store right now. The variance posts itself as an adjustment movement.",
   "stkFilled": "{n} filled",
@@ -2348,5 +2491,11 @@
       }
     }
   },
-  "cshMemberRedeemAll": "Redeem the lot"
+  "cshMemberRedeemAll": "Redeem the lot",
+  "pinManualConnectBtn": "Connect manually",
+  "pinManualEntryTitle": "Connect Manually",
+  "pinManualEntryDescription": "Enter the server's IP address and port to connect manually if not auto-detected.",
+  "pinManualEntryLabel": "SERVER IP ADDRESS",
+  "pinManualEntryEmpty": "IP address cannot be empty",
+  "pinManualEntryNotFound": "Cannot connect to server. Check IP address and Wi-Fi."
 }
