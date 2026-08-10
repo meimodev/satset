@@ -46,7 +46,7 @@ _$VenueSettingsDtoImpl _$$VenueSettingsDtoImplFromJson(
   soundUngreeted: json['soundUngreeted'] as String? ?? 'chime',
   soundPickup: json['soundPickup'] as String? ?? 'chime',
   membersEnabled: json['membersEnabled'] as bool? ?? false,
-  memberPointsEnabled: json['memberPointsEnabled'] as bool? ?? true,
+  memberPointsEnabled: json['memberPointsEnabled'] as bool? ?? false,
   memberPunchEnabled: json['memberPunchEnabled'] as bool? ?? false,
   memberPresetId: json['memberPresetId'] as String?,
   memberEarnPerThousand: (json['memberEarnPerThousand'] as num?)?.toInt() ?? 1,

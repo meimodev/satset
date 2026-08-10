@@ -59,7 +59,7 @@ class VenueSettingsDto with _$VenueSettingsDto {
     // Membership (ADR-0091). Off by default — a venue opts in, and until it
     // does the member row, the directory and the receipt lines do not exist.
     @Default(false) bool membersEnabled,
-    @Default(true) bool memberPointsEnabled,
+    @Default(false) bool memberPointsEnabled,
     @Default(false) bool memberPunchEnabled,
 
     /// The [[Preset diskon]] nominated as the standing member discount, or null

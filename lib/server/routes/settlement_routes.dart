@@ -1050,7 +1050,10 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             // No preset behind it — the guest's own points are the authority,
             // and the amount is what the venue's own rate makes them worth.
             name: 'Tukar poin',
-            kind: 'amount',
+            // 'fixed' = rupiah off. `resolveDiscountAmount` reads every OTHER
+            // kind as basis points, so a rupiah figure in a mislabelled row
+            // clamps to 10000 bps and takes the whole bill.
+            kind: 'fixed',
             value: Value(amount),
             amount: Value(amount),
             source: const Value('redeem'),
@@ -1854,6 +1857,10 @@ Map<String, dynamic> _discountJson(Discount d) => {
   'kind': d.kind,
   'value': d.value,
   'amount': d.amount,
+  // Which slot this fills (ADR-0094). Without it every row reads as `manual`
+  // on the client: the member panel loses its undo and the printed Diskon
+  // label can name a redemption the cashier never applied.
+  'source': d.source,
   'byUserId': d.byUserId,
   'approvedByUserId': d.approvedByUserId,
   'at': d.at.toIso8601String(),

@@ -511,7 +511,8 @@ Future<void> seedHistory(
                   id: nextId('dc'),
                   visitId: Value(visitId),
                   name: 'Tukar poin',
-                  kind: 'amount',
+                  kind: 'fixed', // rupiah off — anything else reads as bps
+
                   value: Value(redeemAmount),
                   amount: Value(redeemAmount),
                   source: const Value('redeem'),

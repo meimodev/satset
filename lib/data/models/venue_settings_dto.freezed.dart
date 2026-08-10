@@ -744,7 +744,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     this.soundUngreeted = 'chime',
     this.soundPickup = 'chime',
     this.membersEnabled = false,
-    this.memberPointsEnabled = true,
+    this.memberPointsEnabled = false,
     this.memberPunchEnabled = false,
     this.memberPresetId,
     this.memberEarnPerThousand = 1,
