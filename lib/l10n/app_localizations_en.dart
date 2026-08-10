@@ -5692,6 +5692,26 @@ class AppL10nEn extends AppL10n {
   String get resSaveBooking => 'Save booking';
 
   @override
+  String get resMemberEnrol => 'Enrol as a customer';
+
+  @override
+  String get resMemberEnrolFailed => 'Booking saved, customer not created';
+
+  @override
+  String get resMemberNoMatch => 'No match';
+
+  @override
+  String get resMemberTakenTitle => 'Number already registered';
+
+  @override
+  String resMemberTakenBody(String name) {
+    return 'This number belongs to $name. Use that customer for this booking?';
+  }
+
+  @override
+  String get resMemberUse => 'Use';
+
+  @override
   String get stfRoleActive => 'on';
 
   @override

@@ -30,6 +30,10 @@ mixin _$ReservationDto {
   String? get zoneId => throw _privateConstructorUsedError;
   String? get tableId => throw _privateConstructorUsedError;
   String? get notes => throw _privateConstructorUsedError;
+
+  /// The [[Pelanggan (member)]] the booking was made against, if the phone
+  /// matched one. [name] and [phone] stay the snapshot of what was booked.
+  String? get memberId => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime? get updatedAt => throw _privateConstructorUsedError;
 
@@ -60,6 +64,7 @@ abstract class $ReservationDtoCopyWith<$Res> {
     String? zoneId,
     String? tableId,
     String? notes,
+    String? memberId,
     DateTime createdAt,
     DateTime? updatedAt,
   });
@@ -89,6 +94,7 @@ class _$ReservationDtoCopyWithImpl<$Res, $Val extends ReservationDto>
     Object? zoneId = freezed,
     Object? tableId = freezed,
     Object? notes = freezed,
+    Object? memberId = freezed,
     Object? createdAt = null,
     Object? updatedAt = freezed,
   }) {
@@ -130,6 +136,10 @@ class _$ReservationDtoCopyWithImpl<$Res, $Val extends ReservationDto>
                 ? _value.notes
                 : notes // ignore: cast_nullable_to_non_nullable
                       as String?,
+            memberId: freezed == memberId
+                ? _value.memberId
+                : memberId // ignore: cast_nullable_to_non_nullable
+                      as String?,
             createdAt: null == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
@@ -163,6 +173,7 @@ abstract class _$$ReservationDtoImplCopyWith<$Res>
     String? zoneId,
     String? tableId,
     String? notes,
+    String? memberId,
     DateTime createdAt,
     DateTime? updatedAt,
   });
@@ -191,6 +202,7 @@ class __$$ReservationDtoImplCopyWithImpl<$Res>
     Object? zoneId = freezed,
     Object? tableId = freezed,
     Object? notes = freezed,
+    Object? memberId = freezed,
     Object? createdAt = null,
     Object? updatedAt = freezed,
   }) {
@@ -232,6 +244,10 @@ class __$$ReservationDtoImplCopyWithImpl<$Res>
             ? _value.notes
             : notes // ignore: cast_nullable_to_non_nullable
                   as String?,
+        memberId: freezed == memberId
+            ? _value.memberId
+            : memberId // ignore: cast_nullable_to_non_nullable
+                  as String?,
         createdAt: null == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
@@ -258,6 +274,7 @@ class _$ReservationDtoImpl implements _ReservationDto {
     this.zoneId,
     this.tableId,
     this.notes,
+    this.memberId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -285,6 +302,11 @@ class _$ReservationDtoImpl implements _ReservationDto {
   final String? tableId;
   @override
   final String? notes;
+
+  /// The [[Pelanggan (member)]] the booking was made against, if the phone
+  /// matched one. [name] and [phone] stay the snapshot of what was booked.
+  @override
+  final String? memberId;
   @override
   final DateTime createdAt;
   @override
@@ -292,7 +314,7 @@ class _$ReservationDtoImpl implements _ReservationDto {
 
   @override
   String toString() {
-    return 'ReservationDto(id: $id, name: $name, phone: $phone, partySize: $partySize, expectedAt: $expectedAt, status: $status, zoneId: $zoneId, tableId: $tableId, notes: $notes, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'ReservationDto(id: $id, name: $name, phone: $phone, partySize: $partySize, expectedAt: $expectedAt, status: $status, zoneId: $zoneId, tableId: $tableId, notes: $notes, memberId: $memberId, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -311,6 +333,8 @@ class _$ReservationDtoImpl implements _ReservationDto {
             (identical(other.zoneId, zoneId) || other.zoneId == zoneId) &&
             (identical(other.tableId, tableId) || other.tableId == tableId) &&
             (identical(other.notes, notes) || other.notes == notes) &&
+            (identical(other.memberId, memberId) ||
+                other.memberId == memberId) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -330,6 +354,7 @@ class _$ReservationDtoImpl implements _ReservationDto {
     zoneId,
     tableId,
     notes,
+    memberId,
     createdAt,
     updatedAt,
   );
@@ -362,6 +387,7 @@ abstract class _ReservationDto implements ReservationDto {
     final String? zoneId,
     final String? tableId,
     final String? notes,
+    final String? memberId,
     required final DateTime createdAt,
     final DateTime? updatedAt,
   }) = _$ReservationDtoImpl;
@@ -387,6 +413,11 @@ abstract class _ReservationDto implements ReservationDto {
   String? get tableId;
   @override
   String? get notes;
+
+  /// The [[Pelanggan (member)]] the booking was made against, if the phone
+  /// matched one. [name] and [phone] stay the snapshot of what was booked.
+  @override
+  String? get memberId;
   @override
   DateTime get createdAt;
   @override
@@ -413,6 +444,7 @@ mixin _$CreateReservationDto {
   String? get zoneId => throw _privateConstructorUsedError;
   String? get tableId => throw _privateConstructorUsedError;
   String? get notes => throw _privateConstructorUsedError;
+  String? get memberId => throw _privateConstructorUsedError;
 
   /// Serializes this CreateReservationDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -439,6 +471,7 @@ abstract class $CreateReservationDtoCopyWith<$Res> {
     String? zoneId,
     String? tableId,
     String? notes,
+    String? memberId,
   });
 }
 
@@ -467,6 +500,7 @@ class _$CreateReservationDtoCopyWithImpl<
     Object? zoneId = freezed,
     Object? tableId = freezed,
     Object? notes = freezed,
+    Object? memberId = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -498,6 +532,10 @@ class _$CreateReservationDtoCopyWithImpl<
                 ? _value.notes
                 : notes // ignore: cast_nullable_to_non_nullable
                       as String?,
+            memberId: freezed == memberId
+                ? _value.memberId
+                : memberId // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -521,6 +559,7 @@ abstract class _$$CreateReservationDtoImplCopyWith<$Res>
     String? zoneId,
     String? tableId,
     String? notes,
+    String? memberId,
   });
 }
 
@@ -545,6 +584,7 @@ class __$$CreateReservationDtoImplCopyWithImpl<$Res>
     Object? zoneId = freezed,
     Object? tableId = freezed,
     Object? notes = freezed,
+    Object? memberId = freezed,
   }) {
     return _then(
       _$CreateReservationDtoImpl(
@@ -576,6 +616,10 @@ class __$$CreateReservationDtoImplCopyWithImpl<$Res>
             ? _value.notes
             : notes // ignore: cast_nullable_to_non_nullable
                   as String?,
+        memberId: freezed == memberId
+            ? _value.memberId
+            : memberId // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -592,6 +636,7 @@ class _$CreateReservationDtoImpl implements _CreateReservationDto {
     this.zoneId,
     this.tableId,
     this.notes,
+    this.memberId,
   });
 
   factory _$CreateReservationDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -612,10 +657,12 @@ class _$CreateReservationDtoImpl implements _CreateReservationDto {
   final String? tableId;
   @override
   final String? notes;
+  @override
+  final String? memberId;
 
   @override
   String toString() {
-    return 'CreateReservationDto(name: $name, phone: $phone, partySize: $partySize, expectedAt: $expectedAt, zoneId: $zoneId, tableId: $tableId, notes: $notes)';
+    return 'CreateReservationDto(name: $name, phone: $phone, partySize: $partySize, expectedAt: $expectedAt, zoneId: $zoneId, tableId: $tableId, notes: $notes, memberId: $memberId)';
   }
 
   @override
@@ -631,7 +678,9 @@ class _$CreateReservationDtoImpl implements _CreateReservationDto {
                 other.expectedAt == expectedAt) &&
             (identical(other.zoneId, zoneId) || other.zoneId == zoneId) &&
             (identical(other.tableId, tableId) || other.tableId == tableId) &&
-            (identical(other.notes, notes) || other.notes == notes));
+            (identical(other.notes, notes) || other.notes == notes) &&
+            (identical(other.memberId, memberId) ||
+                other.memberId == memberId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -645,6 +694,7 @@ class _$CreateReservationDtoImpl implements _CreateReservationDto {
     zoneId,
     tableId,
     notes,
+    memberId,
   );
 
   /// Create a copy of CreateReservationDto
@@ -674,6 +724,7 @@ abstract class _CreateReservationDto implements CreateReservationDto {
     final String? zoneId,
     final String? tableId,
     final String? notes,
+    final String? memberId,
   }) = _$CreateReservationDtoImpl;
 
   factory _CreateReservationDto.fromJson(Map<String, dynamic> json) =
@@ -693,6 +744,8 @@ abstract class _CreateReservationDto implements CreateReservationDto {
   String? get tableId;
   @override
   String? get notes;
+  @override
+  String? get memberId;
 
   /// Create a copy of CreateReservationDto
   /// with the given fields replaced by the non-null parameter values.
@@ -716,6 +769,7 @@ mixin _$PatchReservationDto {
   String? get zoneId => throw _privateConstructorUsedError;
   String? get tableId => throw _privateConstructorUsedError;
   String? get notes => throw _privateConstructorUsedError;
+  String? get memberId => throw _privateConstructorUsedError;
 
   /// Serializes this PatchReservationDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -743,6 +797,7 @@ abstract class $PatchReservationDtoCopyWith<$Res> {
     String? zoneId,
     String? tableId,
     String? notes,
+    String? memberId,
   });
 }
 
@@ -769,6 +824,7 @@ class _$PatchReservationDtoCopyWithImpl<$Res, $Val extends PatchReservationDto>
     Object? zoneId = freezed,
     Object? tableId = freezed,
     Object? notes = freezed,
+    Object? memberId = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -804,6 +860,10 @@ class _$PatchReservationDtoCopyWithImpl<$Res, $Val extends PatchReservationDto>
                 ? _value.notes
                 : notes // ignore: cast_nullable_to_non_nullable
                       as String?,
+            memberId: freezed == memberId
+                ? _value.memberId
+                : memberId // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -828,6 +888,7 @@ abstract class _$$PatchReservationDtoImplCopyWith<$Res>
     String? zoneId,
     String? tableId,
     String? notes,
+    String? memberId,
   });
 }
 
@@ -853,6 +914,7 @@ class __$$PatchReservationDtoImplCopyWithImpl<$Res>
     Object? zoneId = freezed,
     Object? tableId = freezed,
     Object? notes = freezed,
+    Object? memberId = freezed,
   }) {
     return _then(
       _$PatchReservationDtoImpl(
@@ -888,6 +950,10 @@ class __$$PatchReservationDtoImplCopyWithImpl<$Res>
             ? _value.notes
             : notes // ignore: cast_nullable_to_non_nullable
                   as String?,
+        memberId: freezed == memberId
+            ? _value.memberId
+            : memberId // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -905,6 +971,7 @@ class _$PatchReservationDtoImpl implements _PatchReservationDto {
     this.zoneId,
     this.tableId,
     this.notes,
+    this.memberId,
   });
 
   factory _$PatchReservationDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -926,10 +993,12 @@ class _$PatchReservationDtoImpl implements _PatchReservationDto {
   final String? tableId;
   @override
   final String? notes;
+  @override
+  final String? memberId;
 
   @override
   String toString() {
-    return 'PatchReservationDto(name: $name, phone: $phone, partySize: $partySize, expectedAt: $expectedAt, status: $status, zoneId: $zoneId, tableId: $tableId, notes: $notes)';
+    return 'PatchReservationDto(name: $name, phone: $phone, partySize: $partySize, expectedAt: $expectedAt, status: $status, zoneId: $zoneId, tableId: $tableId, notes: $notes, memberId: $memberId)';
   }
 
   @override
@@ -946,7 +1015,9 @@ class _$PatchReservationDtoImpl implements _PatchReservationDto {
             (identical(other.status, status) || other.status == status) &&
             (identical(other.zoneId, zoneId) || other.zoneId == zoneId) &&
             (identical(other.tableId, tableId) || other.tableId == tableId) &&
-            (identical(other.notes, notes) || other.notes == notes));
+            (identical(other.notes, notes) || other.notes == notes) &&
+            (identical(other.memberId, memberId) ||
+                other.memberId == memberId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -961,6 +1032,7 @@ class _$PatchReservationDtoImpl implements _PatchReservationDto {
     zoneId,
     tableId,
     notes,
+    memberId,
   );
 
   /// Create a copy of PatchReservationDto
@@ -990,6 +1062,7 @@ abstract class _PatchReservationDto implements PatchReservationDto {
     final String? zoneId,
     final String? tableId,
     final String? notes,
+    final String? memberId,
   }) = _$PatchReservationDtoImpl;
 
   factory _PatchReservationDto.fromJson(Map<String, dynamic> json) =
@@ -1011,6 +1084,8 @@ abstract class _PatchReservationDto implements PatchReservationDto {
   String? get tableId;
   @override
   String? get notes;
+  @override
+  String? get memberId;
 
   /// Create a copy of PatchReservationDto
   /// with the given fields replaced by the non-null parameter values.

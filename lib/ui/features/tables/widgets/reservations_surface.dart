@@ -1,13 +1,18 @@
+import 'dart:async';
+
 import 'package:satset/core/localization/labels.dart';
 import 'package:flutter/material.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/data/models/member_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/repositories/members_repository.dart';
 import 'package:satset/data/repositories/reservations_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
@@ -346,7 +351,28 @@ class _ReservationRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(r.name, style: SatType.labelM(color: sc.textHi)),
+                    Row(
+                      children: [
+                        // A regular is arriving and the till already knows
+                        // them. The glyph and nothing else — points or tier
+                        // here would be a number the host cannot act on.
+                        if (r.memberId != null) ...[
+                          Icon(
+                            Icons.person_rounded,
+                            size: 16,
+                            color: sc.accent,
+                          ),
+                          const SizedBox(width: Sp.s1),
+                        ],
+                        Flexible(
+                          child: Text(
+                            r.name,
+                            overflow: TextOverflow.ellipsis,
+                            style: SatType.labelM(color: sc.textHi),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: Sp.s1),
                     Text(
                       [
@@ -649,6 +675,12 @@ Future<void> openCreateReservationSheet(
   var expected = DateTime(now.year, now.month, now.day, 19, 0);
   String? zoneId;
   String? tableId;
+  // The [[Pelanggan (member)]] this booking is for, if the host found one.
+  // Finding beats typing: a regular booked by hand for the fourth time is a
+  // fourth record, and the directory is keyed on a phone number nobody
+  // re-reads carefully at 19:00.
+  MemberDto? linked;
+  var enrol = true;
 
   await showSatSheet<void>(
     context,
@@ -683,6 +715,18 @@ Future<void> openCreateReservationSheet(
                     style: SatType.h3(color: sc.textHi),
                   ),
                   const SizedBox(height: Sp.s4),
+                  _MemberPicker(
+                    linked: linked,
+                    onPick: (m) => setLocal(() {
+                      linked = m;
+                      // Pre-fill, do not lock: the two fields below are the
+                      // snapshot of what was booked, and a booking under
+                      // "Budi (istri)" against Budi's record is legitimate.
+                      nameCtl.text = m.name;
+                      phoneCtl.text = m.phone;
+                    }),
+                    onClear: () => setLocal(() => linked = null),
+                  ),
                   SatField.text(
                     controller: nameCtl,
                     label: ctx.l10n.resGuestName,
@@ -694,6 +738,25 @@ Future<void> openCreateReservationSheet(
                     label: ctx.l10n.resPhone,
                     hint: ctx.l10n.resOptional,
                   ),
+                  if (linked == null &&
+                      ref.watch(membersProvider).enabled) ...[
+                    const SizedBox(height: Sp.s1),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            ctx.l10n.resMemberEnrol,
+                            style: SatType.bodyM(color: sc.textMd),
+                          ),
+                        ),
+                        SatToggle(
+                          value: enrol,
+                          semanticLabel: ctx.l10n.resMemberEnrol,
+                          onChanged: (v) => setLocal(() => enrol = v),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: Sp.s2h),
                   Row(
                     children: [
@@ -809,14 +872,25 @@ Future<void> openCreateReservationSheet(
                     onTap: () async {
                       final name = nameCtl.text.trim();
                       if (name.isEmpty) return;
+                      final phone = phoneCtl.text.trim();
+                      // Best effort, and deliberately so: a booking is what
+                      // the guest is waiting on, the directory row is
+                      // bookkeeping. Losing a table because a number was six
+                      // digits is the worst trade on this screen.
+                      final (memberId, enrolFailed) = await _resolveMember(
+                        ctx,
+                        ref,
+                        linked: linked,
+                        enrol: enrol,
+                        name: name,
+                        phone: phone,
+                      );
                       try {
                         await ref
                             .read(reservationsRepositoryProvider.notifier)
                             .create(
                               name: name,
-                              phone: phoneCtl.text.trim().isEmpty
-                                  ? null
-                                  : phoneCtl.text.trim(),
+                              phone: phone.isEmpty ? null : phone,
                               partySize: party,
                               expectedAt: expected,
                               zoneId: zoneId,
@@ -824,8 +898,18 @@ Future<void> openCreateReservationSheet(
                               notes: notesCtl.text.trim().isEmpty
                                   ? null
                                   : notesCtl.text.trim(),
+                              memberId: memberId,
                             );
-                        if (ctx.mounted) Navigator.of(ctx).pop();
+                        if (ctx.mounted) {
+                          Navigator.of(ctx).pop();
+                          if (enrolFailed) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(context.l10n.resMemberEnrolFailed),
+                              ),
+                            );
+                          }
+                        }
                       } catch (e) {
                         if (ctx.mounted) {
                           ScaffoldMessenger.of(ctx).showSnackBar(
@@ -845,6 +929,207 @@ Future<void> openCreateReservationSheet(
       );
     },
   );
+}
+
+/// Settle who this booking belongs to, before the reservation is written.
+///
+/// Returns the member id to link and whether an enrolment was attempted and
+/// failed — never throws, because the booking must save either way. A number
+/// that already belongs to someone comes back from the server as `phone_taken`
+/// carrying its owner, and the host is asked rather than silently attached: the
+/// whole point of this flow is that they can see whose record they just joined.
+Future<(String?, bool)> _resolveMember(
+  BuildContext ctx,
+  WidgetRef ref, {
+  required MemberDto? linked,
+  required bool enrol,
+  required String name,
+  required String phone,
+}) async {
+  if (linked != null) return (linked.id, false);
+  if (!enrol || phone.isEmpty) return (null, false);
+  if (!ref.read(membersProvider).enabled) return (null, false);
+  final members = ref.read(membersProvider.notifier);
+  try {
+    final made = await members.enrol(name: name, phone: phone);
+    return (made.id, false);
+  } catch (e) {
+    final err = memberErrorOf(e);
+    final ownerId = err?.code == 'phone_taken' ? err?.memberId : null;
+    if (ownerId == null) return (null, true);
+    try {
+      final owner = await members.detail(ownerId);
+      if (!ctx.mounted) return (null, false);
+      final use = await showSatSheet<bool>(
+        ctx,
+        builder: (c) => _ConfirmUseMember(name: owner.member.name),
+      );
+      return (use == true ? ownerId : null, false);
+    } catch (_) {
+      // Could not read the owner — linking to a name nobody saw is exactly
+      // what this confirmation exists to prevent.
+      return (null, true);
+    }
+  }
+}
+
+/// "This number belongs to X — use them?" Two buttons, no third option: the
+/// host either joins the existing record or books a plain guest.
+class _ConfirmUseMember extends StatelessWidget {
+  final String name;
+  const _ConfirmUseMember({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(Sp.s5, Sp.s3, Sp.s5, Sp.s5),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              context.l10n.resMemberTakenTitle,
+              style: SatType.labelL(color: sc.textHi),
+            ),
+            const SizedBox(height: Sp.s2),
+            Text(
+              context.l10n.resMemberTakenBody(name),
+              style: SatType.bodyM(color: sc.textMd),
+            ),
+            const SizedBox(height: Sp.s4h),
+            Row(
+              children: [
+                Expanded(
+                  child: SatButton.outline(
+                    label: context.l10n.cancel,
+                    onTap: () => Navigator.pop(context, false),
+                  ),
+                ),
+                const SizedBox(width: Sp.s2h),
+                Expanded(
+                  child: SatButton.primary(
+                    label: context.l10n.resMemberUse,
+                    onTap: () => Navigator.pop(context, true),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Find the guest in the directory before typing them in again. Renders
+/// nothing at all when the venue never switched membership on (ADR-0091) — a
+/// booking form is not where a venue should learn the feature exists.
+class _MemberPicker extends ConsumerStatefulWidget {
+  final MemberDto? linked;
+  final ValueChanged<MemberDto> onPick;
+  final VoidCallback onClear;
+  const _MemberPicker({
+    required this.linked,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  @override
+  ConsumerState<_MemberPicker> createState() => _MemberPickerState();
+}
+
+class _MemberPickerState extends ConsumerState<_MemberPicker> {
+  final _q = TextEditingController();
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _q.dispose();
+    super.dispose();
+  }
+
+  void _onQuery(String q) {
+    setState(() {});
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 250), () {
+      if (mounted) ref.read(membersProvider.notifier).search(q);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final state = ref.watch(membersProvider);
+    if (!state.enabled) return const SizedBox.shrink();
+
+    final picked = widget.linked;
+    if (picked != null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: Sp.s2h),
+        child: Row(
+          children: [
+            Icon(Icons.person_rounded, size: 18, color: sc.accent),
+            const SizedBox(width: Sp.s1h),
+            Expanded(
+              child: Text(
+                '${picked.name} · ${picked.phone}',
+                overflow: TextOverflow.ellipsis,
+                style: SatType.labelM(color: sc.textHi),
+              ),
+            ),
+            SatButton.outline(
+              label: context.l10n.cshMemberDetach,
+              onTap: () {
+                _q.clear();
+                widget.onClear();
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
+    final q = _q.text.trim();
+    final results = q.isEmpty
+        ? const <MemberDto>[]
+        : state.members.take(4).toList();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Sp.s2h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SatField.search(
+            controller: _q,
+            hint: context.l10n.memSearchHint,
+            onChanged: _onQuery,
+          ),
+          if (q.isNotEmpty) ...[
+            const SizedBox(height: Sp.s1h),
+            if (results.isEmpty)
+              Text(
+                context.l10n.resMemberNoMatch,
+                style: SatType.bodyS(color: sc.textLo),
+              )
+            else
+              for (final m in results)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Sp.s1),
+                  child: SatButton.outline(
+                    label: '${m.name} · ${m.phone}',
+                    onTap: () {
+                      _q.clear();
+                      widget.onPick(m);
+                    },
+                  ),
+                ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 /// Optional zone + table for a booking. "Tanpa meja" is the default and stays

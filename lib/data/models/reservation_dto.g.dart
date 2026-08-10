@@ -17,6 +17,7 @@ _$ReservationDtoImpl _$$ReservationDtoImplFromJson(Map<String, dynamic> json) =>
       zoneId: json['zoneId'] as String?,
       tableId: json['tableId'] as String?,
       notes: json['notes'] as String?,
+      memberId: json['memberId'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] == null
           ? null
@@ -35,6 +36,7 @@ Map<String, dynamic> _$$ReservationDtoImplToJson(
   'zoneId': instance.zoneId,
   'tableId': instance.tableId,
   'notes': instance.notes,
+  'memberId': instance.memberId,
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt?.toIso8601String(),
 };
@@ -49,6 +51,7 @@ _$CreateReservationDtoImpl _$$CreateReservationDtoImplFromJson(
   zoneId: json['zoneId'] as String?,
   tableId: json['tableId'] as String?,
   notes: json['notes'] as String?,
+  memberId: json['memberId'] as String?,
 );
 
 Map<String, dynamic> _$$CreateReservationDtoImplToJson(
@@ -61,6 +64,7 @@ Map<String, dynamic> _$$CreateReservationDtoImplToJson(
   'zoneId': instance.zoneId,
   'tableId': instance.tableId,
   'notes': instance.notes,
+  'memberId': instance.memberId,
 };
 
 _$PatchReservationDtoImpl _$$PatchReservationDtoImplFromJson(
@@ -76,6 +80,7 @@ _$PatchReservationDtoImpl _$$PatchReservationDtoImplFromJson(
   zoneId: json['zoneId'] as String?,
   tableId: json['tableId'] as String?,
   notes: json['notes'] as String?,
+  memberId: json['memberId'] as String?,
 );
 
 Map<String, dynamic> _$$PatchReservationDtoImplToJson(
@@ -89,4 +94,5 @@ Map<String, dynamic> _$$PatchReservationDtoImplToJson(
   'zoneId': instance.zoneId,
   'tableId': instance.tableId,
   'notes': instance.notes,
+  'memberId': instance.memberId,
 };

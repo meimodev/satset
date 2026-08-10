@@ -4374,6 +4374,19 @@
     }
   },
   "resSaveBooking": "Simpan reservasi",
+  "resMemberEnrol": "Daftarkan sebagai pelanggan",
+  "resMemberEnrolFailed": "Reservasi tersimpan, pelanggan tidak dibuat",
+  "resMemberNoMatch": "Tidak ada yang cocok",
+  "resMemberTakenTitle": "Nomor sudah terdaftar",
+  "resMemberTakenBody": "Nomor ini milik {name}. Pakai data pelanggan itu untuk reservasi ini?",
+  "@resMemberTakenBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "resMemberUse": "Pakai",
   "stfRoleActive": "aktif",
   "stfRoleLockedSemantics": "{role}, {cap}, {state}, terkunci",
   "@stfRoleLockedSemantics": {

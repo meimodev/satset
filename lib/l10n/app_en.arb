@@ -1642,6 +1642,19 @@
   "fltKicker": "FLEET",
   "fltOnlineOf": "{live} OF {total} ONLINE",
   "resSaveBooking": "Save booking",
+  "resMemberEnrol": "Enrol as a customer",
+  "resMemberEnrolFailed": "Booking saved, customer not created",
+  "resMemberNoMatch": "No match",
+  "resMemberTakenTitle": "Number already registered",
+  "resMemberTakenBody": "This number belongs to {name}. Use that customer for this booking?",
+  "@resMemberTakenBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "resMemberUse": "Use",
   "stfRoleActive": "on",
   "stfRoleLockedSemantics": "{role}, {cap}, {state}, locked",
   "stfRoleSemantics": "{role}, {cap}",

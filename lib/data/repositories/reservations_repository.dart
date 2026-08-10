@@ -103,6 +103,7 @@ class ReservationsRepository extends StateNotifier<List<Reservation>> {
     zoneId: d.zoneId,
     tableId: d.tableId,
     notes: d.notes,
+    memberId: d.memberId,
     createdAt: d.createdAt,
     updatedAt: d.updatedAt,
   );
@@ -115,6 +116,7 @@ class ReservationsRepository extends StateNotifier<List<Reservation>> {
     String? zoneId,
     String? tableId,
     String? notes,
+    String? memberId,
   }) async {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
@@ -126,6 +128,7 @@ class ReservationsRepository extends StateNotifier<List<Reservation>> {
       'zoneId': ?zoneId,
       'tableId': ?tableId,
       'notes': ?notes,
+      'memberId': ?memberId,
     };
     final raw = await ref
         .read(apiClientProvider)

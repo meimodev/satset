@@ -56,6 +56,10 @@ Map<String, dynamic> _toJson(Reservation r) => {
   'zoneId': r.zoneId,
   'tableId': r.tableId,
   'notes': r.notes,
+  // The [[Pelanggan (member)]] this booking was made against, if any. `name`
+  // and `phone` above stay the snapshot of what was booked — a later rename in
+  // the directory never rewrites a booking.
+  'memberId': r.memberId,
   'createdAt': r.createdAt.toIso8601String(),
   'updatedAt': r.updatedAt?.toIso8601String(),
 };
@@ -120,6 +124,7 @@ Router reservationsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             zoneId: Value((body['zoneId'] as String?)?.trim()),
             tableId: Value((body['tableId'] as String?)?.trim()),
             notes: Value((body['notes'] as String?)?.trim()),
+            memberId: Value((body['memberId'] as String?)?.trim()),
             createdAt: now,
           ),
         );
@@ -178,6 +183,11 @@ Router reservationsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
             : const Value.absent(),
         notes: body.containsKey('notes')
             ? Value((body['notes'] as String?)?.trim())
+            : const Value.absent(),
+        // Set or clear — an explicit null unlinks the booking and never touches
+        // the member record. Hosts fix mis-taps.
+        memberId: body.containsKey('memberId')
+            ? Value((body['memberId'] as String?)?.trim())
             : const Value.absent(),
         updatedAt: Value(SatClock.now()),
       ),

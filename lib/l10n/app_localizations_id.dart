@@ -5633,6 +5633,27 @@ class AppL10nId extends AppL10n {
   String get resSaveBooking => 'Simpan reservasi';
 
   @override
+  String get resMemberEnrol => 'Daftarkan sebagai pelanggan';
+
+  @override
+  String get resMemberEnrolFailed =>
+      'Reservasi tersimpan, pelanggan tidak dibuat';
+
+  @override
+  String get resMemberNoMatch => 'Tidak ada yang cocok';
+
+  @override
+  String get resMemberTakenTitle => 'Nomor sudah terdaftar';
+
+  @override
+  String resMemberTakenBody(String name) {
+    return 'Nomor ini milik $name. Pakai data pelanggan itu untuk reservasi ini?';
+  }
+
+  @override
+  String get resMemberUse => 'Pakai';
+
+  @override
   String get stfRoleActive => 'aktif';
 
   @override

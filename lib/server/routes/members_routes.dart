@@ -80,9 +80,14 @@ Router membersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (off != null) return off;
     final a = await actor(req);
     if (a == null) return Response(401);
+    // `takeOrder` reads but never writes: the booking form searches here to
+    // avoid enrolling a guest who is already in the directory, which is the
+    // whole point of the picker. Enrolment stays at the till and the admin
+    // sheet — creating a customer record is a data-quality act.
     if (!a.$2.contains(Capability.settleBill.name) &&
         !a.$2.contains(Capability.manageMembers.name) &&
-        !a.$2.contains(Capability.viewReports.name)) {
+        !a.$2.contains(Capability.viewReports.name) &&
+        !a.$2.contains(Capability.takeOrder.name)) {
       return forbidden(Capability.manageMembers);
     }
     final q = req.url.queryParameters;

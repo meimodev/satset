@@ -73,6 +73,8 @@ Per-user advisory lease on a table's detail screen. Prevents two waiters editing
 
 A planned future visit: name, phone, party size, expected time, optional zone hint, optional pre-assigned table, optional notes. Status lifecycle: `pending` → (`seated` | `noShow` | `cancelled`). Created and seated from the **buku reservasi** — the floor head's "Reservasi" trigger, a right-side drawer on tablet and a bottom sheet on a phone (ADR-0048).
 
+A booking may be **made against a [[Pelanggan (member)]]**. Finding the guest in the directory is the primary path and typing them in is the fallback — a regular booked by hand for the fourth time is a fourth record, and the directory is keyed on a phone number nobody re-reads carefully at 19:00. The fallback doubles as **enrolment**: name + phone with the tick on creates the member alongside the booking, so the meals that follow accrue to somebody. Enrolment is **best effort** — a booking always saves, with or without the member, because the booking is what the guest is waiting on. `name` and `phone` stay a **snapshot of what was booked**; a later rename in the directory never rewrites a past booking, the same rule [[Diskon (discount)]] keeps against its preset. Seating a linked booking hands the member to the [[Visit]] it opens, so the till starts with the standing discount live and the points earned at close without anyone looking the guest up twice. A booking is **not** a [[Visit]]: only a closed session counts toward the member's visits, spend and stempel card.
+
 ### Terlambat (reservation late)
 **ID · EN** — Terlambat · Late. `N telat` · `N late`. _Not_ "Overdue" — that word belongs to [[Audio alert|Lewat waktu]], a kitchen state.
 

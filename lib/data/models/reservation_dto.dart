@@ -25,6 +25,10 @@ class ReservationDto with _$ReservationDto {
     String? zoneId,
     String? tableId,
     String? notes,
+
+    /// The [[Pelanggan (member)]] the booking was made against, if the phone
+    /// matched one. [name] and [phone] stay the snapshot of what was booked.
+    String? memberId,
     required DateTime createdAt,
     DateTime? updatedAt,
   }) = _ReservationDto;
@@ -43,6 +47,7 @@ class CreateReservationDto with _$CreateReservationDto {
     String? zoneId,
     String? tableId,
     String? notes,
+    String? memberId,
   }) = _CreateReservationDto;
 
   factory CreateReservationDto.fromJson(Map<String, dynamic> json) =>
@@ -60,6 +65,7 @@ class PatchReservationDto with _$PatchReservationDto {
     String? zoneId,
     String? tableId,
     String? notes,
+    String? memberId,
   }) = _PatchReservationDto;
 
   factory PatchReservationDto.fromJson(Map<String, dynamic> json) =>

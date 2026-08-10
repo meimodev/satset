@@ -24,6 +24,10 @@ class Reservation {
   final String? zoneId;
   final String? tableId;
   final String? notes;
+
+  /// The [[Pelanggan (member)]] this booking was made against, or null for a
+  /// walk-in name. [name] and [phone] remain the snapshot of what was booked.
+  final String? memberId;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -37,6 +41,7 @@ class Reservation {
     this.zoneId,
     this.tableId,
     this.notes,
+    this.memberId,
     required this.createdAt,
     this.updatedAt,
   });
@@ -51,6 +56,7 @@ class Reservation {
     Object? zoneId = _unset,
     Object? tableId = _unset,
     Object? notes = _unset,
+    Object? memberId = _unset,
     DateTime? createdAt,
     Object? updatedAt = _unset,
   }) => Reservation(
@@ -63,6 +69,7 @@ class Reservation {
     zoneId: identical(zoneId, _unset) ? this.zoneId : zoneId as String?,
     tableId: identical(tableId, _unset) ? this.tableId : tableId as String?,
     notes: identical(notes, _unset) ? this.notes : notes as String?,
+    memberId: identical(memberId, _unset) ? this.memberId : memberId as String?,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: identical(updatedAt, _unset)
         ? this.updatedAt

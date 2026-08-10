@@ -9187,6 +9187,42 @@ abstract class AppL10n {
   /// **'Simpan reservasi'**
   String get resSaveBooking;
 
+  /// No description provided for @resMemberEnrol.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftarkan sebagai pelanggan'**
+  String get resMemberEnrol;
+
+  /// No description provided for @resMemberEnrolFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Reservasi tersimpan, pelanggan tidak dibuat'**
+  String get resMemberEnrolFailed;
+
+  /// No description provided for @resMemberNoMatch.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada yang cocok'**
+  String get resMemberNoMatch;
+
+  /// No description provided for @resMemberTakenTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Nomor sudah terdaftar'**
+  String get resMemberTakenTitle;
+
+  /// No description provided for @resMemberTakenBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Nomor ini milik {name}. Pakai data pelanggan itu untuk reservasi ini?'**
+  String resMemberTakenBody(String name);
+
+  /// No description provided for @resMemberUse.
+  ///
+  /// In id, this message translates to:
+  /// **'Pakai'**
+  String get resMemberUse;
+
   /// No description provided for @stfRoleActive.
   ///
   /// In id, this message translates to:

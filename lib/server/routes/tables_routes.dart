@@ -76,6 +76,20 @@ Future<String> ensureVisit(
   }
   final id = _uuid.v4();
   final now = SatClock.now().toUtc();
+  // A booking made against a [[Pelanggan (member)]] hands the member to the
+  // visit, so the till opens with them already attached — standing discount
+  // live, points earned at close, nobody looking anyone up mid-service. Read
+  // here rather than in the seat route because a visit also opens from the
+  // first-order path and from a transfer, and threading it through each one is
+  // how the link goes missing on the path nobody remembered.
+  String? reservationMemberId;
+  final resId = t?.reservationId;
+  if (resId != null && resId.isNotEmpty) {
+    final res = await (db.select(
+      db.reservations,
+    )..where((x) => x.id.equals(resId))).getSingleOrNull();
+    reservationMemberId = res?.memberId;
+  }
   // Tolerant of a missing table row (synthetic/test order paths) — fall back
   // to a bare visit so order submission never fails on table lookup.
   await db
@@ -91,6 +105,7 @@ Future<String> ensureVisit(
           guestName: Value(t?.guestName),
           guestNotes: Value(t?.guestNotes),
           reservationId: Value(t?.reservationId),
+          memberId: Value(reservationMemberId),
           lastActorId: Value(actorId ?? t?.lastActorId),
           createdAt: now,
         ),
