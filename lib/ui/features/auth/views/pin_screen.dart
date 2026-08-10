@@ -15,6 +15,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/pin_sheet.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/ping_repository.dart';
 import 'package:satset/data/services/prefs_service.dart';
@@ -765,9 +766,20 @@ class _ServerList extends ConsumerWidget {
           child: servers.isEmpty
               ? Padding(
                   padding: const EdgeInsets.all(Sp.s4h),
-                  child: Text(
-                    context.l10n.pinSearchingServers,
-                    style: SatType.bodyM(color: sc.textMd),
+                  child: Column(
+                    children: [
+                      Text(
+                        context.l10n.pinSearchingServers,
+                        style: SatType.bodyM(color: sc.textMd),
+                      ),
+                      const SizedBox(height: Sp.s3),
+                      SatButton.ghost(
+                        label: context.l10n.pinManualConnectBtn,
+                        icon: Icons.settings_ethernet,
+                        size: SatButtonSize.sm,
+                        onTap: () => _showManualAddressDialog(context),
+                      ),
+                    ],
                   ),
                 )
               : Column(
@@ -787,6 +799,18 @@ class _ServerList extends ConsumerWidget {
                   ],
                 ),
         ),
+        if (servers.isNotEmpty) ...[
+          const SizedBox(height: Sp.s2),
+          Align(
+            alignment: Alignment.centerRight,
+            child: SatButton.ghost(
+              label: context.l10n.pinManualConnectBtn,
+              icon: Icons.settings_ethernet,
+              size: SatButtonSize.sm,
+              onTap: () => _showManualAddressDialog(context),
+            ),
+          ),
+        ],
         if (pairingError != null) ...[
           const SizedBox(height: Sp.s2),
           Row(
@@ -803,6 +827,13 @@ class _ServerList extends ConsumerWidget {
           ),
         ],
       ],
+    );
+  }
+
+  void _showManualAddressDialog(BuildContext context) {
+    showSatDialog<bool>(
+      context,
+      builder: (ctx) => const _ManualAddressDialog(),
     );
   }
 }
@@ -1303,3 +1334,87 @@ class _SwapBody extends StatelessWidget {
     );
   }
 }
+
+class _ManualAddressDialog extends ConsumerStatefulWidget {
+  const _ManualAddressDialog();
+
+  @override
+  ConsumerState<_ManualAddressDialog> createState() =>
+      _ManualAddressDialogState();
+}
+
+class _ManualAddressDialogState extends ConsumerState<_ManualAddressDialog> {
+  final _controller = TextEditingController();
+  String? _error;
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.l10n.pinManualEntryTitle),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(context.l10n.pinManualEntryDescription),
+          const SizedBox(height: Sp.s4),
+          SatField.text(
+            controller: _controller,
+            hint: '192.168.1.100:7443',
+            label: context.l10n.pinManualEntryLabel,
+            errorText: _error,
+            enabled: !_busy,
+            autofocus: true,
+            onSubmitted: (_) => _onSubmit(),
+          ),
+        ],
+      ),
+      actions: [
+        SatButton.ghost(
+          label: context.l10n.cancel,
+          onTap: _busy ? null : () => Navigator.of(context).pop(false),
+        ),
+        SatButton.primary(
+          label: _busy ? context.l10n.loading : context.l10n.pinManualConnectBtn,
+          busy: _busy,
+          onTap: _busy ? null : _onSubmit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _onSubmit() async {
+    final address = _controller.text.trim();
+    if (address.isEmpty) {
+      setState(() => _error = context.l10n.pinManualEntryEmpty);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+
+    final ok = await ref
+        .read(pinViewModelProvider.notifier)
+        .connectManualAddress(address);
+
+    if (!mounted) return;
+
+    if (ok) {
+      Navigator.of(context).pop(true);
+    } else {
+      final state = ref.read(pinViewModelProvider);
+      setState(() {
+        _busy = false;
+        _error = state.pairingError ?? context.l10n.pinManualEntryNotFound;
+      });
+    }
+  }
+}
+

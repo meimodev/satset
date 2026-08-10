@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:crypto/crypto.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/io_client.dart' as http_io;
@@ -491,6 +494,84 @@ class PinViewModel extends StateNotifier<PinState> {
       );
       return false;
     }
+  }
+
+  Future<bool> connectManualAddress(String address) async {
+    final cleanAddr = address.trim();
+    if (cleanAddr.isEmpty) {
+      state = state.copyWith(
+        pairingError: _ref.read(l10nProvider).pinManualEntryEmpty,
+      );
+      return false;
+    }
+
+    state = state.copyWith(pairingBusy: true, pairingError: null);
+
+    String host = cleanAddr;
+    int port = 7443;
+    if (cleanAddr.contains(':')) {
+      final parts = cleanAddr.split(':');
+      host = parts[0].trim();
+      if (parts.length > 1) {
+        port = int.tryParse(parts[1].trim()) ?? 7443;
+      }
+    } else {
+      final parts = cleanAddr.split('.');
+      if (parts.length == 5) {
+        final allNumbers = parts.every((p) => int.tryParse(p.trim()) != null);
+        if (allNumbers) {
+          host = parts.sublist(0, 4).map((p) => p.trim()).join('.');
+          port = int.tryParse(parts[4].trim()) ?? 7443;
+        }
+      }
+    }
+
+    if (host.isEmpty) {
+      state = state.copyWith(
+        pairingBusy: false,
+        pairingError: _ref.read(l10nProvider).pinManualEntryEmpty,
+      );
+      return false;
+    }
+
+    String? fingerprint;
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 4)
+      ..badCertificateCallback = (cert, h, p) {
+        fingerprint = sha256.convert(cert.der).toString().toLowerCase();
+        return true;
+      };
+
+    try {
+      final uri = Uri.parse('https://$host:$port/healthz');
+      final request = await client.getUrl(uri);
+      final response = await request.close();
+      await response.drain();
+    } catch (e) {
+      SatLog.vm('Manual connection fingerprint probe error to $host:$port: $e');
+    } finally {
+      client.close();
+    }
+
+    if (fingerprint == null || fingerprint!.isEmpty) {
+      state = state.copyWith(
+        pairingBusy: false,
+        pairingError: _ref.read(l10nProvider).pinManualEntryNotFound,
+      );
+      return false;
+    }
+
+    final s = PairedServerInfo(
+      host: host,
+      port: port,
+      fingerprint: fingerprint!,
+      label: host,
+      paired: false,
+    );
+
+    state = state.copyWith(pairingBusy: false);
+    final ok = await selectDiscovered(s);
+    return ok;
   }
 
   @override
