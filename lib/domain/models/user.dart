@@ -5,7 +5,13 @@ class AppUser {
   final String name;
   final String initials;
   final UserRole role;
-  final String shiftStartedAt;
+
+  /// Start of the signed-in shift, or null when there is none — after a
+  /// sign-out, or once the business-day rollover retired a forgotten one
+  /// (ADR-0097). Null is a state the UI must render, not a missing value to
+  /// paper over: a stale stamp here is a clock that counts up against a shift
+  /// the server has already closed.
+  final String? shiftStartedAt;
   final String zoneAssigned;
   final String? roleId;
   final String pin;
@@ -21,7 +27,7 @@ class AppUser {
     required this.name,
     required this.initials,
     required this.role,
-    required this.shiftStartedAt,
+    this.shiftStartedAt,
     required this.zoneAssigned,
     this.roleId,
     this.pin = '000000',

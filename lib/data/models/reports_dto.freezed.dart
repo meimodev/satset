@@ -47,6 +47,11 @@ mixin _$ReportsSnapshotDto {
   /// revenue (ADR-0095).
   MembersSectionDto get members => throw _privateConstructorUsedError;
 
+  /// Attendance over the same window. Deliberately not part of [staff]: that
+  /// section is what someone sold, this one is whether they were here, and a
+  /// slow Tuesday must not read as a slack one.
+  JamKerjaSectionDto get jamKerja => throw _privateConstructorUsedError;
+
   /// Serializes this ReportsSnapshotDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -77,6 +82,7 @@ abstract class $ReportsSnapshotDtoCopyWith<$Res> {
     MoneyAuditSectionDto moneyAudit,
     KasSectionDto kas,
     MembersSectionDto members,
+    JamKerjaSectionDto jamKerja,
   });
 
   $FilterOptionsDtoCopyWith<$Res> get filterOptions;
@@ -87,6 +93,7 @@ abstract class $ReportsSnapshotDtoCopyWith<$Res> {
   $MoneyAuditSectionDtoCopyWith<$Res> get moneyAudit;
   $KasSectionDtoCopyWith<$Res> get kas;
   $MembersSectionDtoCopyWith<$Res> get members;
+  $JamKerjaSectionDtoCopyWith<$Res> get jamKerja;
 }
 
 /// @nodoc
@@ -116,6 +123,7 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
     Object? moneyAudit = null,
     Object? kas = null,
     Object? members = null,
+    Object? jamKerja = null,
   }) {
     return _then(
       _value.copyWith(
@@ -167,6 +175,10 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
                 ? _value.members
                 : members // ignore: cast_nullable_to_non_nullable
                       as MembersSectionDto,
+            jamKerja: null == jamKerja
+                ? _value.jamKerja
+                : jamKerja // ignore: cast_nullable_to_non_nullable
+                      as JamKerjaSectionDto,
           )
           as $Val,
     );
@@ -251,6 +263,16 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
       return _then(_value.copyWith(members: value) as $Val);
     });
   }
+
+  /// Create a copy of ReportsSnapshotDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $JamKerjaSectionDtoCopyWith<$Res> get jamKerja {
+    return $JamKerjaSectionDtoCopyWith<$Res>(_value.jamKerja, (value) {
+      return _then(_value.copyWith(jamKerja: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -275,6 +297,7 @@ abstract class _$$ReportsSnapshotDtoImplCopyWith<$Res>
     MoneyAuditSectionDto moneyAudit,
     KasSectionDto kas,
     MembersSectionDto members,
+    JamKerjaSectionDto jamKerja,
   });
 
   @override
@@ -293,6 +316,8 @@ abstract class _$$ReportsSnapshotDtoImplCopyWith<$Res>
   $KasSectionDtoCopyWith<$Res> get kas;
   @override
   $MembersSectionDtoCopyWith<$Res> get members;
+  @override
+  $JamKerjaSectionDtoCopyWith<$Res> get jamKerja;
 }
 
 /// @nodoc
@@ -321,6 +346,7 @@ class __$$ReportsSnapshotDtoImplCopyWithImpl<$Res>
     Object? moneyAudit = null,
     Object? kas = null,
     Object? members = null,
+    Object? jamKerja = null,
   }) {
     return _then(
       _$ReportsSnapshotDtoImpl(
@@ -372,6 +398,10 @@ class __$$ReportsSnapshotDtoImplCopyWithImpl<$Res>
             ? _value.members
             : members // ignore: cast_nullable_to_non_nullable
                   as MembersSectionDto,
+        jamKerja: null == jamKerja
+            ? _value.jamKerja
+            : jamKerja // ignore: cast_nullable_to_non_nullable
+                  as JamKerjaSectionDto,
       ),
     );
   }
@@ -393,6 +423,7 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
     this.moneyAudit = const MoneyAuditSectionDto(),
     this.kas = const KasSectionDto(),
     this.members = const MembersSectionDto(),
+    this.jamKerja = const JamKerjaSectionDto(),
   });
 
   factory _$ReportsSnapshotDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -439,9 +470,16 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
   @JsonKey()
   final MembersSectionDto members;
 
+  /// Attendance over the same window. Deliberately not part of [staff]: that
+  /// section is what someone sold, this one is whether they were here, and a
+  /// slow Tuesday must not read as a slack one.
+  @override
+  @JsonKey()
+  final JamKerjaSectionDto jamKerja;
+
   @override
   String toString() {
-    return 'ReportsSnapshotDto(generatedAt: $generatedAt, rangeFrom: $rangeFrom, rangeTo: $rangeTo, range: $range, filterOptions: $filterOptions, sales: $sales, staff: $staff, menu: $menu, ops: $ops, moneyAudit: $moneyAudit, kas: $kas, members: $members)';
+    return 'ReportsSnapshotDto(generatedAt: $generatedAt, rangeFrom: $rangeFrom, rangeTo: $rangeTo, range: $range, filterOptions: $filterOptions, sales: $sales, staff: $staff, menu: $menu, ops: $ops, moneyAudit: $moneyAudit, kas: $kas, members: $members, jamKerja: $jamKerja)';
   }
 
   @override
@@ -464,7 +502,9 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
             (identical(other.moneyAudit, moneyAudit) ||
                 other.moneyAudit == moneyAudit) &&
             (identical(other.kas, kas) || other.kas == kas) &&
-            (identical(other.members, members) || other.members == members));
+            (identical(other.members, members) || other.members == members) &&
+            (identical(other.jamKerja, jamKerja) ||
+                other.jamKerja == jamKerja));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -483,6 +523,7 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
     moneyAudit,
     kas,
     members,
+    jamKerja,
   );
 
   /// Create a copy of ReportsSnapshotDto
@@ -516,6 +557,7 @@ abstract class _ReportsSnapshotDto implements ReportsSnapshotDto {
     final MoneyAuditSectionDto moneyAudit,
     final KasSectionDto kas,
     final MembersSectionDto members,
+    final JamKerjaSectionDto jamKerja,
   }) = _$ReportsSnapshotDtoImpl;
 
   factory _ReportsSnapshotDto.fromJson(Map<String, dynamic> json) =
@@ -558,6 +600,12 @@ abstract class _ReportsSnapshotDto implements ReportsSnapshotDto {
   /// revenue (ADR-0095).
   @override
   MembersSectionDto get members;
+
+  /// Attendance over the same window. Deliberately not part of [staff]: that
+  /// section is what someone sold, this one is whether they were here, and a
+  /// slow Tuesday must not read as a slack one.
+  @override
+  JamKerjaSectionDto get jamKerja;
 
   /// Create a copy of ReportsSnapshotDto
   /// with the given fields replaced by the non-null parameter values.
@@ -6162,6 +6210,599 @@ abstract class _KasSectionDto implements KasSectionDto {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$KasSectionDtoImplCopyWith<_$KasSectionDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+JamKerjaSectionDto _$JamKerjaSectionDtoFromJson(Map<String, dynamic> json) {
+  return _JamKerjaSectionDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$JamKerjaSectionDto {
+  List<JamKerjaRowDto> get staff => throw _privateConstructorUsedError;
+
+  /// The venue's rollover hour, so the screen can turn [
+  /// JamKerjaRowDto.medianFirstIn] back into a clock time.
+  int get dayStartHour => throw _privateConstructorUsedError;
+
+  /// Shifts nobody signed out of, across everyone. The section's headline
+  /// caveat: a venue with a high number here is not reading real hours.
+  int get unclosed => throw _privateConstructorUsedError;
+
+  /// Serializes this JamKerjaSectionDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of JamKerjaSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $JamKerjaSectionDtoCopyWith<JamKerjaSectionDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $JamKerjaSectionDtoCopyWith<$Res> {
+  factory $JamKerjaSectionDtoCopyWith(
+    JamKerjaSectionDto value,
+    $Res Function(JamKerjaSectionDto) then,
+  ) = _$JamKerjaSectionDtoCopyWithImpl<$Res, JamKerjaSectionDto>;
+  @useResult
+  $Res call({List<JamKerjaRowDto> staff, int dayStartHour, int unclosed});
+}
+
+/// @nodoc
+class _$JamKerjaSectionDtoCopyWithImpl<$Res, $Val extends JamKerjaSectionDto>
+    implements $JamKerjaSectionDtoCopyWith<$Res> {
+  _$JamKerjaSectionDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of JamKerjaSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? staff = null,
+    Object? dayStartHour = null,
+    Object? unclosed = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            staff: null == staff
+                ? _value.staff
+                : staff // ignore: cast_nullable_to_non_nullable
+                      as List<JamKerjaRowDto>,
+            dayStartHour: null == dayStartHour
+                ? _value.dayStartHour
+                : dayStartHour // ignore: cast_nullable_to_non_nullable
+                      as int,
+            unclosed: null == unclosed
+                ? _value.unclosed
+                : unclosed // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$JamKerjaSectionDtoImplCopyWith<$Res>
+    implements $JamKerjaSectionDtoCopyWith<$Res> {
+  factory _$$JamKerjaSectionDtoImplCopyWith(
+    _$JamKerjaSectionDtoImpl value,
+    $Res Function(_$JamKerjaSectionDtoImpl) then,
+  ) = __$$JamKerjaSectionDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({List<JamKerjaRowDto> staff, int dayStartHour, int unclosed});
+}
+
+/// @nodoc
+class __$$JamKerjaSectionDtoImplCopyWithImpl<$Res>
+    extends _$JamKerjaSectionDtoCopyWithImpl<$Res, _$JamKerjaSectionDtoImpl>
+    implements _$$JamKerjaSectionDtoImplCopyWith<$Res> {
+  __$$JamKerjaSectionDtoImplCopyWithImpl(
+    _$JamKerjaSectionDtoImpl _value,
+    $Res Function(_$JamKerjaSectionDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of JamKerjaSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? staff = null,
+    Object? dayStartHour = null,
+    Object? unclosed = null,
+  }) {
+    return _then(
+      _$JamKerjaSectionDtoImpl(
+        staff: null == staff
+            ? _value._staff
+            : staff // ignore: cast_nullable_to_non_nullable
+                  as List<JamKerjaRowDto>,
+        dayStartHour: null == dayStartHour
+            ? _value.dayStartHour
+            : dayStartHour // ignore: cast_nullable_to_non_nullable
+                  as int,
+        unclosed: null == unclosed
+            ? _value.unclosed
+            : unclosed // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$JamKerjaSectionDtoImpl implements _JamKerjaSectionDto {
+  const _$JamKerjaSectionDtoImpl({
+    final List<JamKerjaRowDto> staff = const <JamKerjaRowDto>[],
+    this.dayStartHour = 4,
+    this.unclosed = 0,
+  }) : _staff = staff;
+
+  factory _$JamKerjaSectionDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$JamKerjaSectionDtoImplFromJson(json);
+
+  final List<JamKerjaRowDto> _staff;
+  @override
+  @JsonKey()
+  List<JamKerjaRowDto> get staff {
+    if (_staff is EqualUnmodifiableListView) return _staff;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_staff);
+  }
+
+  /// The venue's rollover hour, so the screen can turn [
+  /// JamKerjaRowDto.medianFirstIn] back into a clock time.
+  @override
+  @JsonKey()
+  final int dayStartHour;
+
+  /// Shifts nobody signed out of, across everyone. The section's headline
+  /// caveat: a venue with a high number here is not reading real hours.
+  @override
+  @JsonKey()
+  final int unclosed;
+
+  @override
+  String toString() {
+    return 'JamKerjaSectionDto(staff: $staff, dayStartHour: $dayStartHour, unclosed: $unclosed)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$JamKerjaSectionDtoImpl &&
+            const DeepCollectionEquality().equals(other._staff, _staff) &&
+            (identical(other.dayStartHour, dayStartHour) ||
+                other.dayStartHour == dayStartHour) &&
+            (identical(other.unclosed, unclosed) ||
+                other.unclosed == unclosed));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    const DeepCollectionEquality().hash(_staff),
+    dayStartHour,
+    unclosed,
+  );
+
+  /// Create a copy of JamKerjaSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$JamKerjaSectionDtoImplCopyWith<_$JamKerjaSectionDtoImpl> get copyWith =>
+      __$$JamKerjaSectionDtoImplCopyWithImpl<_$JamKerjaSectionDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$JamKerjaSectionDtoImplToJson(this);
+  }
+}
+
+abstract class _JamKerjaSectionDto implements JamKerjaSectionDto {
+  const factory _JamKerjaSectionDto({
+    final List<JamKerjaRowDto> staff,
+    final int dayStartHour,
+    final int unclosed,
+  }) = _$JamKerjaSectionDtoImpl;
+
+  factory _JamKerjaSectionDto.fromJson(Map<String, dynamic> json) =
+      _$JamKerjaSectionDtoImpl.fromJson;
+
+  @override
+  List<JamKerjaRowDto> get staff;
+
+  /// The venue's rollover hour, so the screen can turn [
+  /// JamKerjaRowDto.medianFirstIn] back into a clock time.
+  @override
+  int get dayStartHour;
+
+  /// Shifts nobody signed out of, across everyone. The section's headline
+  /// caveat: a venue with a high number here is not reading real hours.
+  @override
+  int get unclosed;
+
+  /// Create a copy of JamKerjaSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$JamKerjaSectionDtoImplCopyWith<_$JamKerjaSectionDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+JamKerjaRowDto _$JamKerjaRowDtoFromJson(Map<String, dynamic> json) {
+  return _JamKerjaRowDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$JamKerjaRowDto {
+  String get id => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+
+  /// Minutes actually worked — closed shifts only.
+  int get minutes => throw _privateConstructorUsedError;
+  int get shifts => throw _privateConstructorUsedError;
+
+  /// Distinct business days with at least one shift. Lower than [shifts]
+  /// whenever a day was split by a handover.
+  int get days => throw _privateConstructorUsedError;
+  int get unclosed => throw _privateConstructorUsedError;
+
+  /// Median minutes **after the venue's rollover** that this person clocked
+  /// in — not a wall clock, so it compares across venues with different
+  /// business-day starts. Null when they never clocked in.
+  int? get medianFirstIn => throw _privateConstructorUsedError;
+
+  /// The last thing an unclosed shift of theirs actually did. The honest
+  /// answer to "when did they really stop"; null when nothing they did in it
+  /// was auditable.
+  String? get lastSeen => throw _privateConstructorUsedError;
+
+  /// Serializes this JamKerjaRowDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of JamKerjaRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $JamKerjaRowDtoCopyWith<JamKerjaRowDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $JamKerjaRowDtoCopyWith<$Res> {
+  factory $JamKerjaRowDtoCopyWith(
+    JamKerjaRowDto value,
+    $Res Function(JamKerjaRowDto) then,
+  ) = _$JamKerjaRowDtoCopyWithImpl<$Res, JamKerjaRowDto>;
+  @useResult
+  $Res call({
+    String id,
+    String name,
+    int minutes,
+    int shifts,
+    int days,
+    int unclosed,
+    int? medianFirstIn,
+    String? lastSeen,
+  });
+}
+
+/// @nodoc
+class _$JamKerjaRowDtoCopyWithImpl<$Res, $Val extends JamKerjaRowDto>
+    implements $JamKerjaRowDtoCopyWith<$Res> {
+  _$JamKerjaRowDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of JamKerjaRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? minutes = null,
+    Object? shifts = null,
+    Object? days = null,
+    Object? unclosed = null,
+    Object? medianFirstIn = freezed,
+    Object? lastSeen = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            minutes: null == minutes
+                ? _value.minutes
+                : minutes // ignore: cast_nullable_to_non_nullable
+                      as int,
+            shifts: null == shifts
+                ? _value.shifts
+                : shifts // ignore: cast_nullable_to_non_nullable
+                      as int,
+            days: null == days
+                ? _value.days
+                : days // ignore: cast_nullable_to_non_nullable
+                      as int,
+            unclosed: null == unclosed
+                ? _value.unclosed
+                : unclosed // ignore: cast_nullable_to_non_nullable
+                      as int,
+            medianFirstIn: freezed == medianFirstIn
+                ? _value.medianFirstIn
+                : medianFirstIn // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            lastSeen: freezed == lastSeen
+                ? _value.lastSeen
+                : lastSeen // ignore: cast_nullable_to_non_nullable
+                      as String?,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$JamKerjaRowDtoImplCopyWith<$Res>
+    implements $JamKerjaRowDtoCopyWith<$Res> {
+  factory _$$JamKerjaRowDtoImplCopyWith(
+    _$JamKerjaRowDtoImpl value,
+    $Res Function(_$JamKerjaRowDtoImpl) then,
+  ) = __$$JamKerjaRowDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String id,
+    String name,
+    int minutes,
+    int shifts,
+    int days,
+    int unclosed,
+    int? medianFirstIn,
+    String? lastSeen,
+  });
+}
+
+/// @nodoc
+class __$$JamKerjaRowDtoImplCopyWithImpl<$Res>
+    extends _$JamKerjaRowDtoCopyWithImpl<$Res, _$JamKerjaRowDtoImpl>
+    implements _$$JamKerjaRowDtoImplCopyWith<$Res> {
+  __$$JamKerjaRowDtoImplCopyWithImpl(
+    _$JamKerjaRowDtoImpl _value,
+    $Res Function(_$JamKerjaRowDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of JamKerjaRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? minutes = null,
+    Object? shifts = null,
+    Object? days = null,
+    Object? unclosed = null,
+    Object? medianFirstIn = freezed,
+    Object? lastSeen = freezed,
+  }) {
+    return _then(
+      _$JamKerjaRowDtoImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        minutes: null == minutes
+            ? _value.minutes
+            : minutes // ignore: cast_nullable_to_non_nullable
+                  as int,
+        shifts: null == shifts
+            ? _value.shifts
+            : shifts // ignore: cast_nullable_to_non_nullable
+                  as int,
+        days: null == days
+            ? _value.days
+            : days // ignore: cast_nullable_to_non_nullable
+                  as int,
+        unclosed: null == unclosed
+            ? _value.unclosed
+            : unclosed // ignore: cast_nullable_to_non_nullable
+                  as int,
+        medianFirstIn: freezed == medianFirstIn
+            ? _value.medianFirstIn
+            : medianFirstIn // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        lastSeen: freezed == lastSeen
+            ? _value.lastSeen
+            : lastSeen // ignore: cast_nullable_to_non_nullable
+                  as String?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$JamKerjaRowDtoImpl implements _JamKerjaRowDto {
+  const _$JamKerjaRowDtoImpl({
+    required this.id,
+    required this.name,
+    this.minutes = 0,
+    this.shifts = 0,
+    this.days = 0,
+    this.unclosed = 0,
+    this.medianFirstIn,
+    this.lastSeen,
+  });
+
+  factory _$JamKerjaRowDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$JamKerjaRowDtoImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String name;
+
+  /// Minutes actually worked — closed shifts only.
+  @override
+  @JsonKey()
+  final int minutes;
+  @override
+  @JsonKey()
+  final int shifts;
+
+  /// Distinct business days with at least one shift. Lower than [shifts]
+  /// whenever a day was split by a handover.
+  @override
+  @JsonKey()
+  final int days;
+  @override
+  @JsonKey()
+  final int unclosed;
+
+  /// Median minutes **after the venue's rollover** that this person clocked
+  /// in — not a wall clock, so it compares across venues with different
+  /// business-day starts. Null when they never clocked in.
+  @override
+  final int? medianFirstIn;
+
+  /// The last thing an unclosed shift of theirs actually did. The honest
+  /// answer to "when did they really stop"; null when nothing they did in it
+  /// was auditable.
+  @override
+  final String? lastSeen;
+
+  @override
+  String toString() {
+    return 'JamKerjaRowDto(id: $id, name: $name, minutes: $minutes, shifts: $shifts, days: $days, unclosed: $unclosed, medianFirstIn: $medianFirstIn, lastSeen: $lastSeen)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$JamKerjaRowDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.minutes, minutes) || other.minutes == minutes) &&
+            (identical(other.shifts, shifts) || other.shifts == shifts) &&
+            (identical(other.days, days) || other.days == days) &&
+            (identical(other.unclosed, unclosed) ||
+                other.unclosed == unclosed) &&
+            (identical(other.medianFirstIn, medianFirstIn) ||
+                other.medianFirstIn == medianFirstIn) &&
+            (identical(other.lastSeen, lastSeen) ||
+                other.lastSeen == lastSeen));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    name,
+    minutes,
+    shifts,
+    days,
+    unclosed,
+    medianFirstIn,
+    lastSeen,
+  );
+
+  /// Create a copy of JamKerjaRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$JamKerjaRowDtoImplCopyWith<_$JamKerjaRowDtoImpl> get copyWith =>
+      __$$JamKerjaRowDtoImplCopyWithImpl<_$JamKerjaRowDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$JamKerjaRowDtoImplToJson(this);
+  }
+}
+
+abstract class _JamKerjaRowDto implements JamKerjaRowDto {
+  const factory _JamKerjaRowDto({
+    required final String id,
+    required final String name,
+    final int minutes,
+    final int shifts,
+    final int days,
+    final int unclosed,
+    final int? medianFirstIn,
+    final String? lastSeen,
+  }) = _$JamKerjaRowDtoImpl;
+
+  factory _JamKerjaRowDto.fromJson(Map<String, dynamic> json) =
+      _$JamKerjaRowDtoImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get name;
+
+  /// Minutes actually worked — closed shifts only.
+  @override
+  int get minutes;
+  @override
+  int get shifts;
+
+  /// Distinct business days with at least one shift. Lower than [shifts]
+  /// whenever a day was split by a handover.
+  @override
+  int get days;
+  @override
+  int get unclosed;
+
+  /// Median minutes **after the venue's rollover** that this person clocked
+  /// in — not a wall clock, so it compares across venues with different
+  /// business-day starts. Null when they never clocked in.
+  @override
+  int? get medianFirstIn;
+
+  /// The last thing an unclosed shift of theirs actually did. The honest
+  /// answer to "when did they really stop"; null when nothing they did in it
+  /// was auditable.
+  @override
+  String? get lastSeen;
+
+  /// Create a copy of JamKerjaRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$JamKerjaRowDtoImplCopyWith<_$JamKerjaRowDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

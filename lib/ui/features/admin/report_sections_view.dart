@@ -11,6 +11,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
 import '_common.dart';
 import 'report_stock_section.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -48,7 +49,7 @@ class ReportSectionsView extends StatefulWidget {
   State<ReportSectionsView> createState() => _ReportSectionsViewState();
 }
 
-enum _Section { sales, staff, menu, bahan, ops, kas, members }
+enum _Section { sales, staff, menu, bahan, ops, kas, members, jamKerja }
 
 enum _StaffSort { net, covers, voidPct, avgTicket }
 
@@ -69,6 +70,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.ops,
     _Section.kas,
     _Section.members,
+    _Section.jamKerja,
   };
   _StaffSort _staffSort = _StaffSort.net;
 
@@ -80,6 +82,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.ops => l10n.rptSecOps,
     _Section.kas => l10n.rptSecKas,
     _Section.members => l10n.rptSecMembers,
+    _Section.jamKerja => l10n.rptSecJamKerja,
   };
 
   @override
@@ -199,6 +202,12 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           key: const ValueKey('members'),
           index: 6,
           child: _membersSection(context, snapshot.members),
+        ),
+      if (_on.contains(_Section.jamKerja))
+        Reveal(
+          key: const ValueKey('jamKerja'),
+          index: 7,
+          child: _jamKerjaSection(context, snapshot.jamKerja),
         ),
     ];
     final col = Column(
@@ -2296,6 +2305,95 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           Text(
             context.l10n.rptNoSectionBody,
             style: SatType.bodyS(color: sc.textMd),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Attendance. Deliberately plain: hours, days, when they turned up, and how
+  /// often nobody signed out. There is no target to compare against and no
+  /// "on time" verdict — the venue has never had a roster, so a bar drawn here
+  /// would be invented rather than measured (ADR-0097).
+  Widget _jamKerjaSection(BuildContext context, JamKerjaSectionDto j) {
+    final l10n = context.l10n;
+    if (j.staff.isEmpty) {
+      return _card(
+        context,
+        l10n.rptSecJamKerja,
+        sub: l10n.rptJamEmpty,
+        child: const SizedBox(height: Sp.s8),
+      );
+    }
+    return _card(
+      context,
+      l10n.rptSecJamKerja,
+      sub: j.unclosed > 0
+          ? l10n.rptJamUnclosedNote
+          : l10n.rptJamKerjaSub(j.staff.length),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final r in j.staff) _jamKerjaRow(context, r, j.dayStartHour),
+        ],
+      ),
+    );
+  }
+
+  Widget _jamKerjaRow(BuildContext context, JamKerjaRowDto r, int dayStart) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    // `medianFirstIn` is minutes past the venue's rollover, not a wall clock —
+    // wind it forward from the rollover hour to read it back as one.
+    final firstIn = r.medianFirstIn == null
+        ? null
+        : (dayStart * 60 + r.medianFirstIn!) % (24 * 60);
+    final sub = <String>[
+      l10n.rptJamDaysShifts(r.days, r.shifts),
+      if (firstIn != null)
+        l10n.rptJamFirstIn(
+          '${(firstIn ~/ 60).toString().padLeft(2, '0')}:'
+          '${(firstIn % 60).toString().padLeft(2, '0')}',
+        ),
+      if (r.lastSeen != null) l10n.rptJamLastSeen(formatClockId(r.lastSeen!)),
+    ];
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: Sp.s2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(r.name, style: SatType.bodyM(color: sc.textHi)),
+                const SizedBox(height: Sp.s1),
+                Text(
+                  sub.join(' · '),
+                  style: SatType.bodyS(color: sc.textLo),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: Sp.s3),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                l10n.rptJamHours(r.minutes ~/ 60, r.minutes % 60),
+                style: SatType.monoM(color: sc.textHi),
+              ),
+              // Scarce by construction: a venue where everyone signs out never
+              // draws this, which is what makes it worth reading in red.
+              if (r.unclosed > 0) ...[
+                const SizedBox(height: Sp.s1),
+                SatChip.tag(
+                  label: l10n.rptJamUnclosed(r.unclosed),
+                  hue: SatChipHue.urgent,
+                  size: SatChipSize.sm,
+                ),
+              ],
+            ],
           ),
         ],
       ),

@@ -51,6 +51,7 @@ part 'database.g.dart';
     CashEntries,
     Members,
     MemberPoints,
+    Shifts,
     DemoStates,
   ],
 )
@@ -71,7 +72,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 52;
+  int get schemaVersion => 54;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -1018,17 +1019,18 @@ class AppDatabase extends _$AppDatabase {
           type: 'INTEGER NOT NULL DEFAULT 10',
         );
       }
-      if (from < 52) {
-        // An opname becomes a document (ADR-0096). Two new tables, and
-        // deliberately **no backfill**: every existing `adjust` row keeps a
-        // null `count_id`. Grouping historic rows into fabricated sessions
-        // would put a claim nobody made into an integrity-adjacent surface,
-        // so `/opname` starts empty on an upgraded venue and fills from the
-        // next count.
-        await m.createTable(stockCounts);
-        await m.createTable(stockCountLines);
-        await _safeAddColumnOn('stock_movements', 'count_id', type: 'TEXT');
-        await _createStockIndexes();
+      // One arm at 54 for two shapes that were developed in parallel, and it
+      // is deliberately not two arms at 52 and 53. Both numbers were handed
+      // out twice — the opname document took 52 on one branch while the shifts
+      // table took 52 and then 53 on another — so a device that ran either
+      // lineage now sits at a version whose arms it has not all seen, with no
+      // arm left to run and every read of the missing table 500ing forever.
+      // 54 re-checks both. The checks inside are what make re-running them
+      // harmless, which is also why a version number is never trusted as
+      // evidence that a table exists.
+      if (from < 54) {
+        await _ensureStockCountTables(m);
+        await _ensureShiftsTable(m);
       }
     },
     onCreate: (m) async {
@@ -1044,6 +1046,7 @@ class AppDatabase extends _$AppDatabase {
       );
       await _createDiscountIndexes();
       await _createMemberIndexes();
+      await _createShiftIndexes();
       await _createLookupIndexes();
       await into(venueSettings).insertOnConflictUpdate(
         VenueSettingsCompanion.insert(
@@ -1175,6 +1178,65 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
+  /// Create the opname document's two tables if they are missing (ADR-0096).
+  ///
+  /// Deliberately **no backfill**: every existing `adjust` row keeps a null
+  /// `count_id`. Grouping historic rows into fabricated sessions would put a
+  /// claim nobody made into an integrity-adjacent surface, so `/opname` starts
+  /// empty on an upgraded venue and fills from the next count.
+  ///
+  /// Guarded rather than plain `createTable` for the same reason as
+  /// [_ensureShiftsTable] — see the caller.
+  Future<void> _ensureStockCountTables(Migrator m) async {
+    if (!await _hasTable('stock_counts')) await m.createTable(stockCounts);
+    if (!await _hasTable('stock_count_lines')) {
+      await m.createTable(stockCountLines);
+    }
+    await _safeAddColumnOn('stock_movements', 'count_id', type: 'TEXT');
+    await _createStockIndexes();
+  }
+
+  /// Create `shifts` if it is missing, and move any surviving `shiftStartedAt`
+  /// stamp into it (ADR-0097).
+  ///
+  /// A shift becomes a row rather than a stamp, so the hours report has a
+  /// history to read. Backfill first, drop second: whoever is mid-shift at the
+  /// moment of the upgrade keeps their clock, as an open row.
+  ///
+  /// Written to be safe to run on a database that already has the table,
+  /// because a version arm is a promise about what ran once and this one has
+  /// already been broken — see the caller.
+  Future<void> _ensureShiftsTable(Migrator m) async {
+    if (!await _hasTable('shifts')) {
+      await m.createTable(shifts);
+    }
+    await _createShiftIndexes();
+    // Guarded: a database old enough to predate the stamp has no column to
+    // read, and an unguarded SELECT would abort the whole upgrade on it.
+    if (await _hasColumn('users', 'shift_started_at')) {
+      await customStatement(
+        "INSERT INTO shifts (id, user_id, started_at) "
+        "SELECT 'mig-' || id, id, shift_started_at FROM users "
+        'WHERE shift_started_at IS NOT NULL',
+      );
+      // Two places that can hold the same clock are two places that can
+      // disagree. Tolerated if it fails: on a sqlite too old for DROP COLUMN
+      // the column lingers, unreferenced by any Dart in the app.
+      try {
+        await customStatement('ALTER TABLE users DROP COLUMN shift_started_at');
+      } catch (_) {}
+    }
+  }
+
+  /// The open-shift lookup filters `user_id` then `ended_at IS NULL`; the hours
+  /// report scans a date range and groups by user. One composite serves both.
+  Future<void> _createShiftIndexes() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS shifts_user_started '
+      'ON shifts(user_id, started_at)',
+    );
+  }
+
   Future<void> _createStockIndexes() async {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS recipe_lines_owner '
@@ -1273,6 +1335,19 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> _safeAddColumn(String column, {String type = 'TEXT'}) =>
       _safeAddColumnOn('users', column, type: type);
+
+  Future<bool> _hasColumn(String table, String column) async {
+    final cols = await customSelect("PRAGMA table_info('$table')").get();
+    return cols.any((r) => r.read<String>('name') == column);
+  }
+
+  Future<bool> _hasTable(String table) async {
+    final rows = await customSelect(
+      "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+      variables: [Variable<String>(table)],
+    ).get();
+    return rows.isNotEmpty;
+  }
 
   Future<void> _safeAddColumnOn(
     String table,

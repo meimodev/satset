@@ -19,7 +19,40 @@ class Users extends Table {
   TextColumn get firebaseUid => text().nullable()();
   BoolColumn get disabled => boolean().withDefault(const Constant(false))();
   IntColumn get avatarColorHex => integer().nullable()();
-  DateTimeColumn get shiftStartedAt => dateTime().nullable()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// One staff member's signed-in stretch of work — a [[Shift]].
+///
+/// The open shift is the row with a null [endedAt], which is why `Users` no
+/// longer carries a `shiftStartedAt` stamp: two places that can hold the same
+/// clock are two places that can disagree, and the history has to exist here
+/// anyway for the hours report to have anything to read.
+///
+/// Rows are written only by `lib/server/shift.dart` — the same
+/// one-writer rule `writeAudit`, `cash.dart` and `members.dart` hold, and for
+/// the same reason.
+class Shifts extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  DateTimeColumn get startedAt => dateTime()();
+
+  /// Null while the shift is open.
+  DateTimeColumn get endedAt => dateTime().nullable()();
+
+  /// `manual` (the staff member signed out) or `rollover` (the business-day
+  /// boundary retired a shift nobody closed). **The name is persisted** — a
+  /// rename orphans every row already written under the old spelling, exactly
+  /// as with `AuditKind` and `CashEntryKind`.
+  TextColumn get endedBy => text().nullable()();
+
+  /// When this shift last did something auditable, read at close time rather
+  /// than tracked live — stamping it per request would be a write on every
+  /// authenticated call. Meaningful mainly on a `rollover` row, where it is the
+  /// difference between "16 hours" and "stopped around 21:40, never confirmed".
+  /// Null when the shift did nothing the audit log records, which is honest.
+  DateTimeColumn get lastActivityAt => dateTime().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }

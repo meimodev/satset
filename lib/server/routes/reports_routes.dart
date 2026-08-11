@@ -8,6 +8,7 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/cash.dart';
 import 'package:satset/server/members.dart';
+import 'package:satset/server/shift.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/service_timing.dart';
@@ -71,7 +72,13 @@ const int _moneyAuditCap = 500;
   String? toStr,
 }) {
   DateTime bod(DateTime d) => DateTime(d.year, d.month, d.day, hour);
-  final today = bod(now);
+  // "Today" is the business day *containing* now, which before the rollover is
+  // yesterday's. Anchoring on the calendar date instead opened a window three
+  // hours in the future at 01:00 — last night's trade read as "Kemarin" and
+  // everything since midnight belonged to no range at all. `bod` keeps the
+  // calendar reading for `custom`, whose dates arrive at midnight already
+  // meaning "that day's service".
+  final today = businessDayStart(now, hour);
   final tomorrow = today.add(const Duration(days: 1));
   switch (range) {
     case 'yesterday':
@@ -855,6 +862,10 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       // not a sales channel, it is a claim on future takings. Reporting it
       // inside `sales` would let a points give-away read as revenue.
       'members': await memberReportSection(db, from: from, to: to),
+      // Attendance, kept apart from `staff` above on purpose. That block is
+      // what someone sold; this one is whether they were here. Fusing them
+      // invites reading a slow Tuesday as a slack one.
+      'jamKerja': await shiftReportSection(db, from: from, to: to),
     };
 
     return Response.ok(
@@ -1131,10 +1142,24 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       agg.reasonCounts[code] = (agg.reasonCounts[code] ?? 0) + 1;
     }
 
-    // Union of everyone who ran a session OR voided a line, so a manager who
-    // only voids still shows up.
-    final staffIds = <String>{...byStaff.keys, ...voidByStaff.keys}
-      ..removeWhere((id) => id == 'unknown');
+    // Attendance rides the same row (ADR-0032: one combined row per staff
+    // member), so a second export feed never has to be kept in sync with this
+    // one.
+    final attendance = {
+      for (final r
+          in (await shiftReportSection(db, from: from, to: to))['staff']
+              as List)
+        (r as Map)['id'] as String: r,
+    };
+
+    // Union of everyone who ran a session, voided a line, OR clocked in — a
+    // manager who only voids still shows up, and so does a cook who sold
+    // nothing but was here for eight hours.
+    final staffIds = <String>{
+      ...byStaff.keys,
+      ...voidByStaff.keys,
+      ...attendance.keys,
+    }..removeWhere((id) => id == 'unknown');
 
     final rows = <Map<String, dynamic>>[];
     for (final id in staffIds) {
@@ -1180,6 +1205,9 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
         'voidPct': voidPct,
         'lostRupiah': v?.lostRupiah ?? 0,
         'topReasonCode': topReason,
+        'minutes': attendance[id]?['minutes'] ?? 0,
+        'daysWorked': attendance[id]?['days'] ?? 0,
+        'unclosedShifts': attendance[id]?['unclosed'] ?? 0,
       });
     }
     rows.sort((a, b) => (b['net'] as int).compareTo(a['net'] as int));

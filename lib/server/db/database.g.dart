@@ -125,18 +125,6 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _shiftStartedAtMeta = const VerificationMeta(
-    'shiftStartedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> shiftStartedAt =
-      GeneratedColumn<DateTime>(
-        'shift_started_at',
-        aliasedName,
-        true,
-        type: DriftSqlType.dateTime,
-        requiredDuringInsert: false,
-      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -150,7 +138,6 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     firebaseUid,
     disabled,
     avatarColorHex,
-    shiftStartedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -249,15 +236,6 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
         ),
       );
     }
-    if (data.containsKey('shift_started_at')) {
-      context.handle(
-        _shiftStartedAtMeta,
-        shiftStartedAt.isAcceptableOrUnknown(
-          data['shift_started_at']!,
-          _shiftStartedAtMeta,
-        ),
-      );
-    }
     return context;
   }
 
@@ -311,10 +289,6 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
         DriftSqlType.int,
         data['${effectivePrefix}avatar_color_hex'],
       ),
-      shiftStartedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}shift_started_at'],
-      ),
     );
   }
 
@@ -340,7 +314,6 @@ class User extends DataClass implements Insertable<User> {
   final String? firebaseUid;
   final bool disabled;
   final int? avatarColorHex;
-  final DateTime? shiftStartedAt;
   const User({
     required this.id,
     required this.name,
@@ -353,7 +326,6 @@ class User extends DataClass implements Insertable<User> {
     this.firebaseUid,
     required this.disabled,
     this.avatarColorHex,
-    this.shiftStartedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -378,9 +350,6 @@ class User extends DataClass implements Insertable<User> {
     map['disabled'] = Variable<bool>(disabled);
     if (!nullToAbsent || avatarColorHex != null) {
       map['avatar_color_hex'] = Variable<int>(avatarColorHex);
-    }
-    if (!nullToAbsent || shiftStartedAt != null) {
-      map['shift_started_at'] = Variable<DateTime>(shiftStartedAt);
     }
     return map;
   }
@@ -408,9 +377,6 @@ class User extends DataClass implements Insertable<User> {
       avatarColorHex: avatarColorHex == null && nullToAbsent
           ? const Value.absent()
           : Value(avatarColorHex),
-      shiftStartedAt: shiftStartedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(shiftStartedAt),
     );
   }
 
@@ -431,7 +397,6 @@ class User extends DataClass implements Insertable<User> {
       firebaseUid: serializer.fromJson<String?>(json['firebaseUid']),
       disabled: serializer.fromJson<bool>(json['disabled']),
       avatarColorHex: serializer.fromJson<int?>(json['avatarColorHex']),
-      shiftStartedAt: serializer.fromJson<DateTime?>(json['shiftStartedAt']),
     );
   }
   @override
@@ -449,7 +414,6 @@ class User extends DataClass implements Insertable<User> {
       'firebaseUid': serializer.toJson<String?>(firebaseUid),
       'disabled': serializer.toJson<bool>(disabled),
       'avatarColorHex': serializer.toJson<int?>(avatarColorHex),
-      'shiftStartedAt': serializer.toJson<DateTime?>(shiftStartedAt),
     };
   }
 
@@ -465,7 +429,6 @@ class User extends DataClass implements Insertable<User> {
     Value<String?> firebaseUid = const Value.absent(),
     bool? disabled,
     Value<int?> avatarColorHex = const Value.absent(),
-    Value<DateTime?> shiftStartedAt = const Value.absent(),
   }) => User(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -480,9 +443,6 @@ class User extends DataClass implements Insertable<User> {
     avatarColorHex: avatarColorHex.present
         ? avatarColorHex.value
         : this.avatarColorHex,
-    shiftStartedAt: shiftStartedAt.present
-        ? shiftStartedAt.value
-        : this.shiftStartedAt,
   );
   User copyWithCompanion(UsersCompanion data) {
     return User(
@@ -505,9 +465,6 @@ class User extends DataClass implements Insertable<User> {
       avatarColorHex: data.avatarColorHex.present
           ? data.avatarColorHex.value
           : this.avatarColorHex,
-      shiftStartedAt: data.shiftStartedAt.present
-          ? data.shiftStartedAt.value
-          : this.shiftStartedAt,
     );
   }
 
@@ -524,8 +481,7 @@ class User extends DataClass implements Insertable<User> {
           ..write('passwordHash: $passwordHash, ')
           ..write('firebaseUid: $firebaseUid, ')
           ..write('disabled: $disabled, ')
-          ..write('avatarColorHex: $avatarColorHex, ')
-          ..write('shiftStartedAt: $shiftStartedAt')
+          ..write('avatarColorHex: $avatarColorHex')
           ..write(')'))
         .toString();
   }
@@ -543,7 +499,6 @@ class User extends DataClass implements Insertable<User> {
     firebaseUid,
     disabled,
     avatarColorHex,
-    shiftStartedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -559,8 +514,7 @@ class User extends DataClass implements Insertable<User> {
           other.passwordHash == this.passwordHash &&
           other.firebaseUid == this.firebaseUid &&
           other.disabled == this.disabled &&
-          other.avatarColorHex == this.avatarColorHex &&
-          other.shiftStartedAt == this.shiftStartedAt);
+          other.avatarColorHex == this.avatarColorHex);
 }
 
 class UsersCompanion extends UpdateCompanion<User> {
@@ -575,7 +529,6 @@ class UsersCompanion extends UpdateCompanion<User> {
   final Value<String?> firebaseUid;
   final Value<bool> disabled;
   final Value<int?> avatarColorHex;
-  final Value<DateTime?> shiftStartedAt;
   final Value<int> rowid;
   const UsersCompanion({
     this.id = const Value.absent(),
@@ -589,7 +542,6 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.firebaseUid = const Value.absent(),
     this.disabled = const Value.absent(),
     this.avatarColorHex = const Value.absent(),
-    this.shiftStartedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   UsersCompanion.insert({
@@ -604,7 +556,6 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.firebaseUid = const Value.absent(),
     this.disabled = const Value.absent(),
     this.avatarColorHex = const Value.absent(),
-    this.shiftStartedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -623,7 +574,6 @@ class UsersCompanion extends UpdateCompanion<User> {
     Expression<String>? firebaseUid,
     Expression<bool>? disabled,
     Expression<int>? avatarColorHex,
-    Expression<DateTime>? shiftStartedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -638,7 +588,6 @@ class UsersCompanion extends UpdateCompanion<User> {
       if (firebaseUid != null) 'firebase_uid': firebaseUid,
       if (disabled != null) 'disabled': disabled,
       if (avatarColorHex != null) 'avatar_color_hex': avatarColorHex,
-      if (shiftStartedAt != null) 'shift_started_at': shiftStartedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -655,7 +604,6 @@ class UsersCompanion extends UpdateCompanion<User> {
     Value<String?>? firebaseUid,
     Value<bool>? disabled,
     Value<int?>? avatarColorHex,
-    Value<DateTime?>? shiftStartedAt,
     Value<int>? rowid,
   }) {
     return UsersCompanion(
@@ -670,7 +618,6 @@ class UsersCompanion extends UpdateCompanion<User> {
       firebaseUid: firebaseUid ?? this.firebaseUid,
       disabled: disabled ?? this.disabled,
       avatarColorHex: avatarColorHex ?? this.avatarColorHex,
-      shiftStartedAt: shiftStartedAt ?? this.shiftStartedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -711,9 +658,6 @@ class UsersCompanion extends UpdateCompanion<User> {
     if (avatarColorHex.present) {
       map['avatar_color_hex'] = Variable<int>(avatarColorHex.value);
     }
-    if (shiftStartedAt.present) {
-      map['shift_started_at'] = Variable<DateTime>(shiftStartedAt.value);
-    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -734,7 +678,6 @@ class UsersCompanion extends UpdateCompanion<User> {
           ..write('firebaseUid: $firebaseUid, ')
           ..write('disabled: $disabled, ')
           ..write('avatarColorHex: $avatarColorHex, ')
-          ..write('shiftStartedAt: $shiftStartedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -24661,6 +24604,437 @@ class MemberPointsCompanion extends UpdateCompanion<MemberPoint> {
   }
 }
 
+class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, Shift> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ShiftsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endedAtMeta = const VerificationMeta(
+    'endedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endedAt = GeneratedColumn<DateTime>(
+    'ended_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _endedByMeta = const VerificationMeta(
+    'endedBy',
+  );
+  @override
+  late final GeneratedColumn<String> endedBy = GeneratedColumn<String>(
+    'ended_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastActivityAtMeta = const VerificationMeta(
+    'lastActivityAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastActivityAt =
+      GeneratedColumn<DateTime>(
+        'last_activity_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    startedAt,
+    endedAt,
+    endedBy,
+    lastActivityAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'shifts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Shift> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('ended_at')) {
+      context.handle(
+        _endedAtMeta,
+        endedAt.isAcceptableOrUnknown(data['ended_at']!, _endedAtMeta),
+      );
+    }
+    if (data.containsKey('ended_by')) {
+      context.handle(
+        _endedByMeta,
+        endedBy.isAcceptableOrUnknown(data['ended_by']!, _endedByMeta),
+      );
+    }
+    if (data.containsKey('last_activity_at')) {
+      context.handle(
+        _lastActivityAtMeta,
+        lastActivityAt.isAcceptableOrUnknown(
+          data['last_activity_at']!,
+          _lastActivityAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Shift map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Shift(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      endedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}ended_at'],
+      ),
+      endedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ended_by'],
+      ),
+      lastActivityAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_activity_at'],
+      ),
+    );
+  }
+
+  @override
+  $ShiftsTable createAlias(String alias) {
+    return $ShiftsTable(attachedDatabase, alias);
+  }
+}
+
+class Shift extends DataClass implements Insertable<Shift> {
+  final String id;
+  final String userId;
+  final DateTime startedAt;
+
+  /// Null while the shift is open.
+  final DateTime? endedAt;
+
+  /// `manual` (the staff member signed out) or `rollover` (the business-day
+  /// boundary retired a shift nobody closed). **The name is persisted** — a
+  /// rename orphans every row already written under the old spelling, exactly
+  /// as with `AuditKind` and `CashEntryKind`.
+  final String? endedBy;
+
+  /// When this shift last did something auditable, read at close time rather
+  /// than tracked live — stamping it per request would be a write on every
+  /// authenticated call. Meaningful mainly on a `rollover` row, where it is the
+  /// difference between "16 hours" and "stopped around 21:40, never confirmed".
+  /// Null when the shift did nothing the audit log records, which is honest.
+  final DateTime? lastActivityAt;
+  const Shift({
+    required this.id,
+    required this.userId,
+    required this.startedAt,
+    this.endedAt,
+    this.endedBy,
+    this.lastActivityAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['started_at'] = Variable<DateTime>(startedAt);
+    if (!nullToAbsent || endedAt != null) {
+      map['ended_at'] = Variable<DateTime>(endedAt);
+    }
+    if (!nullToAbsent || endedBy != null) {
+      map['ended_by'] = Variable<String>(endedBy);
+    }
+    if (!nullToAbsent || lastActivityAt != null) {
+      map['last_activity_at'] = Variable<DateTime>(lastActivityAt);
+    }
+    return map;
+  }
+
+  ShiftsCompanion toCompanion(bool nullToAbsent) {
+    return ShiftsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      startedAt: Value(startedAt),
+      endedAt: endedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endedAt),
+      endedBy: endedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endedBy),
+      lastActivityAt: lastActivityAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastActivityAt),
+    );
+  }
+
+  factory Shift.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Shift(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      endedAt: serializer.fromJson<DateTime?>(json['endedAt']),
+      endedBy: serializer.fromJson<String?>(json['endedBy']),
+      lastActivityAt: serializer.fromJson<DateTime?>(json['lastActivityAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'endedAt': serializer.toJson<DateTime?>(endedAt),
+      'endedBy': serializer.toJson<String?>(endedBy),
+      'lastActivityAt': serializer.toJson<DateTime?>(lastActivityAt),
+    };
+  }
+
+  Shift copyWith({
+    String? id,
+    String? userId,
+    DateTime? startedAt,
+    Value<DateTime?> endedAt = const Value.absent(),
+    Value<String?> endedBy = const Value.absent(),
+    Value<DateTime?> lastActivityAt = const Value.absent(),
+  }) => Shift(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    startedAt: startedAt ?? this.startedAt,
+    endedAt: endedAt.present ? endedAt.value : this.endedAt,
+    endedBy: endedBy.present ? endedBy.value : this.endedBy,
+    lastActivityAt: lastActivityAt.present
+        ? lastActivityAt.value
+        : this.lastActivityAt,
+  );
+  Shift copyWithCompanion(ShiftsCompanion data) {
+    return Shift(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      endedAt: data.endedAt.present ? data.endedAt.value : this.endedAt,
+      endedBy: data.endedBy.present ? data.endedBy.value : this.endedBy,
+      lastActivityAt: data.lastActivityAt.present
+          ? data.lastActivityAt.value
+          : this.lastActivityAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Shift(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('endedBy: $endedBy, ')
+          ..write('lastActivityAt: $lastActivityAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, userId, startedAt, endedAt, endedBy, lastActivityAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Shift &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.startedAt == this.startedAt &&
+          other.endedAt == this.endedAt &&
+          other.endedBy == this.endedBy &&
+          other.lastActivityAt == this.lastActivityAt);
+}
+
+class ShiftsCompanion extends UpdateCompanion<Shift> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<DateTime> startedAt;
+  final Value<DateTime?> endedAt;
+  final Value<String?> endedBy;
+  final Value<DateTime?> lastActivityAt;
+  final Value<int> rowid;
+  const ShiftsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.endedAt = const Value.absent(),
+    this.endedBy = const Value.absent(),
+    this.lastActivityAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ShiftsCompanion.insert({
+    required String id,
+    required String userId,
+    required DateTime startedAt,
+    this.endedAt = const Value.absent(),
+    this.endedBy = const Value.absent(),
+    this.lastActivityAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       startedAt = Value(startedAt);
+  static Insertable<Shift> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? endedAt,
+    Expression<String>? endedBy,
+    Expression<DateTime>? lastActivityAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (startedAt != null) 'started_at': startedAt,
+      if (endedAt != null) 'ended_at': endedAt,
+      if (endedBy != null) 'ended_by': endedBy,
+      if (lastActivityAt != null) 'last_activity_at': lastActivityAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ShiftsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<DateTime>? startedAt,
+    Value<DateTime?>? endedAt,
+    Value<String?>? endedBy,
+    Value<DateTime?>? lastActivityAt,
+    Value<int>? rowid,
+  }) {
+    return ShiftsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      startedAt: startedAt ?? this.startedAt,
+      endedAt: endedAt ?? this.endedAt,
+      endedBy: endedBy ?? this.endedBy,
+      lastActivityAt: lastActivityAt ?? this.lastActivityAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (endedAt.present) {
+      map['ended_at'] = Variable<DateTime>(endedAt.value);
+    }
+    if (endedBy.present) {
+      map['ended_by'] = Variable<String>(endedBy.value);
+    }
+    if (lastActivityAt.present) {
+      map['last_activity_at'] = Variable<DateTime>(lastActivityAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShiftsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('endedBy: $endedBy, ')
+          ..write('lastActivityAt: $lastActivityAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $DemoStatesTable extends DemoStates
     with TableInfo<$DemoStatesTable, DemoState> {
   @override
@@ -25087,6 +25461,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CashEntriesTable cashEntries = $CashEntriesTable(this);
   late final $MembersTable members = $MembersTable(this);
   late final $MemberPointsTable memberPoints = $MemberPointsTable(this);
+  late final $ShiftsTable shifts = $ShiftsTable(this);
   late final $DemoStatesTable demoStates = $DemoStatesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -25129,6 +25504,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     cashEntries,
     members,
     memberPoints,
+    shifts,
     demoStates,
   ];
 }
@@ -25146,7 +25522,6 @@ typedef $$UsersTableCreateCompanionBuilder =
       Value<String?> firebaseUid,
       Value<bool> disabled,
       Value<int?> avatarColorHex,
-      Value<DateTime?> shiftStartedAt,
       Value<int> rowid,
     });
 typedef $$UsersTableUpdateCompanionBuilder =
@@ -25162,7 +25537,6 @@ typedef $$UsersTableUpdateCompanionBuilder =
       Value<String?> firebaseUid,
       Value<bool> disabled,
       Value<int?> avatarColorHex,
-      Value<DateTime?> shiftStartedAt,
       Value<int> rowid,
     });
 
@@ -25226,11 +25600,6 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
 
   ColumnFilters<int> get avatarColorHex => $composableBuilder(
     column: $table.avatarColorHex,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get shiftStartedAt => $composableBuilder(
-    column: $table.shiftStartedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -25298,11 +25667,6 @@ class $$UsersTableOrderingComposer
     column: $table.avatarColorHex,
     builder: (column) => ColumnOrderings(column),
   );
-
-  ColumnOrderings<DateTime> get shiftStartedAt => $composableBuilder(
-    column: $table.shiftStartedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
 }
 
 class $$UsersTableAnnotationComposer
@@ -25354,11 +25718,6 @@ class $$UsersTableAnnotationComposer
     column: $table.avatarColorHex,
     builder: (column) => column,
   );
-
-  GeneratedColumn<DateTime> get shiftStartedAt => $composableBuilder(
-    column: $table.shiftStartedAt,
-    builder: (column) => column,
-  );
 }
 
 class $$UsersTableTableManager
@@ -25400,7 +25759,6 @@ class $$UsersTableTableManager
                 Value<String?> firebaseUid = const Value.absent(),
                 Value<bool> disabled = const Value.absent(),
                 Value<int?> avatarColorHex = const Value.absent(),
-                Value<DateTime?> shiftStartedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UsersCompanion(
                 id: id,
@@ -25414,7 +25772,6 @@ class $$UsersTableTableManager
                 firebaseUid: firebaseUid,
                 disabled: disabled,
                 avatarColorHex: avatarColorHex,
-                shiftStartedAt: shiftStartedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -25430,7 +25787,6 @@ class $$UsersTableTableManager
                 Value<String?> firebaseUid = const Value.absent(),
                 Value<bool> disabled = const Value.absent(),
                 Value<int?> avatarColorHex = const Value.absent(),
-                Value<DateTime?> shiftStartedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UsersCompanion.insert(
                 id: id,
@@ -25444,7 +25800,6 @@ class $$UsersTableTableManager
                 firebaseUid: firebaseUid,
                 disabled: disabled,
                 avatarColorHex: avatarColorHex,
-                shiftStartedAt: shiftStartedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -36864,6 +37219,221 @@ typedef $$MemberPointsTableProcessedTableManager =
       MemberPoint,
       PrefetchHooks Function()
     >;
+typedef $$ShiftsTableCreateCompanionBuilder =
+    ShiftsCompanion Function({
+      required String id,
+      required String userId,
+      required DateTime startedAt,
+      Value<DateTime?> endedAt,
+      Value<String?> endedBy,
+      Value<DateTime?> lastActivityAt,
+      Value<int> rowid,
+    });
+typedef $$ShiftsTableUpdateCompanionBuilder =
+    ShiftsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<DateTime> startedAt,
+      Value<DateTime?> endedAt,
+      Value<String?> endedBy,
+      Value<DateTime?> lastActivityAt,
+      Value<int> rowid,
+    });
+
+class $$ShiftsTableFilterComposer
+    extends Composer<_$AppDatabase, $ShiftsTable> {
+  $$ShiftsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endedAt => $composableBuilder(
+    column: $table.endedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get endedBy => $composableBuilder(
+    column: $table.endedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastActivityAt => $composableBuilder(
+    column: $table.lastActivityAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ShiftsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ShiftsTable> {
+  $$ShiftsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endedAt => $composableBuilder(
+    column: $table.endedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get endedBy => $composableBuilder(
+    column: $table.endedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastActivityAt => $composableBuilder(
+    column: $table.lastActivityAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ShiftsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ShiftsTable> {
+  $$ShiftsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endedAt =>
+      $composableBuilder(column: $table.endedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get endedBy =>
+      $composableBuilder(column: $table.endedBy, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastActivityAt => $composableBuilder(
+    column: $table.lastActivityAt,
+    builder: (column) => column,
+  );
+}
+
+class $$ShiftsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ShiftsTable,
+          Shift,
+          $$ShiftsTableFilterComposer,
+          $$ShiftsTableOrderingComposer,
+          $$ShiftsTableAnnotationComposer,
+          $$ShiftsTableCreateCompanionBuilder,
+          $$ShiftsTableUpdateCompanionBuilder,
+          (Shift, BaseReferences<_$AppDatabase, $ShiftsTable, Shift>),
+          Shift,
+          PrefetchHooks Function()
+        > {
+  $$ShiftsTableTableManager(_$AppDatabase db, $ShiftsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ShiftsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ShiftsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ShiftsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<DateTime?> endedAt = const Value.absent(),
+                Value<String?> endedBy = const Value.absent(),
+                Value<DateTime?> lastActivityAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ShiftsCompanion(
+                id: id,
+                userId: userId,
+                startedAt: startedAt,
+                endedAt: endedAt,
+                endedBy: endedBy,
+                lastActivityAt: lastActivityAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required DateTime startedAt,
+                Value<DateTime?> endedAt = const Value.absent(),
+                Value<String?> endedBy = const Value.absent(),
+                Value<DateTime?> lastActivityAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ShiftsCompanion.insert(
+                id: id,
+                userId: userId,
+                startedAt: startedAt,
+                endedAt: endedAt,
+                endedBy: endedBy,
+                lastActivityAt: lastActivityAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ShiftsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ShiftsTable,
+      Shift,
+      $$ShiftsTableFilterComposer,
+      $$ShiftsTableOrderingComposer,
+      $$ShiftsTableAnnotationComposer,
+      $$ShiftsTableCreateCompanionBuilder,
+      $$ShiftsTableUpdateCompanionBuilder,
+      (Shift, BaseReferences<_$AppDatabase, $ShiftsTable, Shift>),
+      Shift,
+      PrefetchHooks Function()
+    >;
 typedef $$DemoStatesTableCreateCompanionBuilder =
     DemoStatesCompanion Function({
       Value<String> id,
@@ -37139,6 +37709,8 @@ class $AppDatabaseManager {
       $$MembersTableTableManager(_db, _db.members);
   $$MemberPointsTableTableManager get memberPoints =>
       $$MemberPointsTableTableManager(_db, _db.memberPoints);
+  $$ShiftsTableTableManager get shifts =>
+      $$ShiftsTableTableManager(_db, _db.shifts);
   $$DemoStatesTableTableManager get demoStates =>
       $$DemoStatesTableTableManager(_db, _db.demoStates);
 }

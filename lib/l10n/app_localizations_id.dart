@@ -5518,6 +5518,9 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String get meNoShift => 'Tidak ada shift berjalan';
+
+  @override
   String get meAuditEmpty =>
       'Belum ada entri audit. Pembatalan, comp, dan perubahan pasca-kirim muncul di sini.';
 
@@ -5841,7 +5844,7 @@ class AppL10nId extends AppL10n {
   String get meKpiCovers => 'Cover dilayani';
 
   @override
-  String get meEndShiftAndLogout => 'Akhiri shift & keluar';
+  String get meSignOut => 'Keluar';
 
   @override
   String get liaFireNow => 'Bakar sekarang';
@@ -6931,9 +6934,6 @@ class AppL10nId extends AppL10n {
   String get meEndAdminTitle => 'Akhiri sesi admin?';
 
   @override
-  String get meEndShiftTitle => 'Akhiri shift?';
-
-  @override
   String meEndServerBodyLive(int n) {
     String _temp0 = intl.Intl.pluralLogic(
       n,
@@ -6948,14 +6948,7 @@ class AppL10nId extends AppL10n {
       'Keluar akan mematikan server. Staff tidak bisa menyambung sampai admin masuk lagi.';
 
   @override
-  String get meEndShiftBody =>
-      'Shift ditutup dan hitungannya berhenti. Masuk lagi akan memulai shift baru. Untuk menyerahkan perangkat tanpa menutup shift, pakai \"Keluar\".';
-
-  @override
   String get meEndAndShutdown => 'Keluar & matikan';
-
-  @override
-  String get meEndShiftConfirm => 'Akhiri shift';
 
   @override
   String get meNoOpenTickets => 'Tidak ada tiket terbuka';
@@ -7872,4 +7865,64 @@ class AppL10nId extends AppL10n {
   @override
   String get pinManualEntryNotFound =>
       'Tidak dapat terhubung ke server. Periksa alamat IP dan Wi-Fi.';
+
+  @override
+  String get rptSecJamKerja => 'Jam kerja';
+
+  @override
+  String rptJamKerjaSub(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n staf',
+    );
+    return '$_temp0 · dari shift yang ditutup';
+  }
+
+  @override
+  String get rptJamEmpty => 'Belum ada shift tercatat di rentang ini.';
+
+  @override
+  String rptJamHours(int h, int m) {
+    return '${h}j ${m}m';
+  }
+
+  @override
+  String rptJamDaysShifts(int d, int s) {
+    String _temp0 = intl.Intl.pluralLogic(
+      d,
+      locale: localeName,
+      other: '$d hari',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      s,
+      locale: localeName,
+      other: '$s shift',
+    );
+    return '$_temp0 · $_temp1';
+  }
+
+  @override
+  String rptJamFirstIn(String clock) {
+    return 'masuk ±$clock';
+  }
+
+  @override
+  String rptJamUnclosed(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n shift tak ditutup',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String rptJamLastSeen(String clock) {
+    return 'aktivitas terakhir $clock';
+  }
+
+  @override
+  String get rptJamUnclosedNote =>
+      'Shift yang tak ditutup tidak dihitung sebagai jam kerja.';
 }

@@ -39,6 +39,18 @@ UserRole _roleFromCapabilities(Set<Capability> caps) {
   return UserRole.waiter;
 }
 
+/// The shift clock to show, from what the host said and when we signed in.
+///
+/// The host is authoritative (ADR-0097) — a shift lives in its `shifts` table
+/// and is retired there at the business-day rollover. `loginAt` is a fallback
+/// for a **legacy host that cannot answer at all**, and telling that apart from
+/// a host answering "no open shift" is the whole job of [MeDto.shiftTracked]:
+/// falling back on a tracked null resurrects a shift the server closed, and the
+/// app bar counts up all day against a row that ended at 04:00.
+String? _shiftStartedAt(MeDto me, DateTime loginAt) => me.shiftTracked
+    ? me.shiftStartedAt
+    : me.shiftStartedAt ?? loginAt.toIso8601String();
+
 class AuthState {
   final bool isAuthenticated;
   final AppUser? user;
@@ -174,10 +186,7 @@ class AuthRepository extends StateNotifier<AuthState> {
       };
       final loginAt = SatClock.now();
       await storage.writeLoginAt(loginAt);
-      // The server opens/resumes the shift and is authoritative (ADR-0065) —
-      // that is what lets a shift survive onto a different handset. The local
-      // stamp stays as the fallback for a legacy host with no such field.
-      final shiftStartedAt = me.shiftStartedAt ?? loginAt.toIso8601String();
+      final shiftStartedAt = _shiftStartedAt(me, loginAt);
       state = AuthState(
         isAuthenticated: true,
         user: AppUser(
@@ -425,8 +434,7 @@ class AuthRepository extends StateNotifier<AuthState> {
     };
     final loginAt = SatClock.now();
     await storage.writeLoginAt(loginAt);
-    // Server-authoritative shift; local stamp is the legacy-host fallback.
-    final shiftStartedAt = me.shiftStartedAt ?? loginAt.toIso8601String();
+    final shiftStartedAt = _shiftStartedAt(me, loginAt);
     state = AuthState(
       isAuthenticated: true,
       user: AppUser(
@@ -784,12 +792,10 @@ class AuthRepository extends StateNotifier<AuthState> {
       loginAt = SatClock.now();
       await storage.writeLoginAt(loginAt);
     }
-    // A restore must not resurrect a retired shift: `/auth/me` reports the
-    // shift read-only and returns null once the business-day boundary has
-    // passed, so a token that survives overnight no longer hands us
-    // yesterday's clock. Falling back to the local stamp only when the host
-    // has no opinion at all.
-    final shiftStartedAt = me.shiftStartedAt ?? loginAt.toIso8601String();
+    // A restore must not resurrect a retired shift: a token that survives
+    // overnight comes back to a host that has already closed the row, and
+    // `_shiftStartedAt` is what stops the local stamp filling the gap.
+    final shiftStartedAt = _shiftStartedAt(me, loginAt);
     state = AuthState(
       isAuthenticated: true,
       user: AppUser(
@@ -806,16 +812,11 @@ class AuthRepository extends StateNotifier<AuthState> {
     );
   }
 
-  /// Drops the staff session. [endShift] additionally closes the shift — the
-  /// difference between "Keluar" (hand the handset over; your shift keeps
-  /// running and the next sign-in resumes it) and "Akhiri shift & keluar".
-  /// See ADR-0065.
-  ///
-  /// Server-mode admins only ever reach this with [endShift] true: their
-  /// sign-out kills the venue's server either way (ADR-0015), so a
-  /// shift-preserving exit would be a lie.
-  Future<void> signOut({bool endShift = false}) async {
-    SatLog.repo('auth.signOut endShift=$endShift');
+  /// Drops the staff session **and closes the shift** — one act since ADR-0097.
+  /// There is no shift-preserving exit: handing a shared handset over ends your
+  /// shift, and the gap that leaves is what the hours report is for.
+  Future<void> signOut() async {
+    SatLog.repo('auth.signOut');
     // Fleet operator / report owner: no local server, just drop the Firebase
     // session. See ADR-0016, ADR-0036.
     if (state.isSuperAdmin || state.isOwner) {
@@ -830,16 +831,12 @@ class AuthRepository extends StateNotifier<AuthState> {
       // Admin / Server mode: killing the server is the venue's off switch.
       // Connected staff drop and cannot reconnect until an admin re-signs-in.
       //
-      // Close the shift first, over loopback while our own server is still up —
-      // a Server-mode admin has no shift-preserving exit (ADR-0065 §admin), so
-      // leaving the stamp set would silently resume this shift on the next
-      // sign-in. Best-effort: a failure here must not block the teardown, and
-      // the business-day boundary retires the stamp regardless.
+      // Close the shift first, over loopback while our own server is still up.
+      // Best-effort: a failure here must not block the teardown, and the
+      // business-day rollover retires the row regardless.
       if (ref.read(apiConfigProvider) != null) {
         try {
-          await ref.read(apiClientProvider).postJson('/auth/logout', {
-            'endShift': true,
-          });
+          await ref.read(apiClientProvider).postJson('/auth/logout', const {});
         } catch (_) {}
       }
       await _killAdminSession();
@@ -849,9 +846,7 @@ class AuthRepository extends StateNotifier<AuthState> {
     final cfg = ref.read(apiConfigProvider);
     if (cfg != null) {
       try {
-        await ref.read(apiClientProvider).postJson('/auth/logout', {
-          'endShift': endShift,
-        });
+        await ref.read(apiClientProvider).postJson('/auth/logout', const {});
       } catch (_) {}
     }
     await storage.clearSession();

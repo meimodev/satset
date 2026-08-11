@@ -174,9 +174,15 @@ class _ShiftLine extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(secondTickerProvider);
     final started = startedAt;
-    var elapsed = started == null
-        ? Duration.zero
-        : SatClock.now().difference(started);
+    // "MULAI — · 0J 0M BERJALAN" reads as a shift that began at an unknown
+    // time and is running; the truth is that none is (ADR-0097). Say that.
+    if (started == null) {
+      return Text(
+        context.l10n.meNoShift.toUpperCase(),
+        style: SatType.monoS(color: context.sat.textLo),
+      );
+    }
+    var elapsed = SatClock.now().difference(started);
     if (elapsed.isNegative) elapsed = Duration.zero;
     return Text(
       context.l10n
@@ -262,24 +268,17 @@ class MeScreen extends ConsumerWidget {
 
     final l = context.layout;
 
-    // A Server-mode admin has exactly one exit. Their sign-out kills the
-    // embedded server either way (ADR-0015), so an exit promising to preserve
-    // their shift while taking the venue offline would be a lie — for this one
-    // user the "lightweight" action is the most destructive in the app.
-    // Everyone else — staff on this handset — gets both.
+    // A Server-mode admin's sign-out kills the embedded server too (ADR-0015),
+    // which is why they alone still confirm: for that one user this is the most
+    // destructive action in the app, and it takes the venue offline with it.
     final isServer = ref.read(serverRuntimeProvider) != null;
 
-    // "Keluar" — drop the session, leave the shift running. The next PIN
-    // sign-in resumes it, on this handset or another (ADR-0065). No confirm:
-    // it is the frequent action and nothing is lost.
+    // The one exit: close the shift *and* sign out (ADR-0097).
     //
     // No `context.go` afterwards: `signOut` clears the auth state (and, for an
     // admin, `apiConfigProvider`), each of which bumps the router's refresh
     // listener, and the redirect sends `/me` → `/pin` on its own. An explicit
     // go here raced those two async redirects. See ADR-0078.
-    Future<void> switchUser() => ref.read(authStateProvider.notifier).signOut();
-
-    // "Akhiri shift & keluar" — close the shift *and* sign out.
     Future<void> endShift() async {
       // A shift cannot close over undelivered orders: the guest ordered, the
       // kitchen never heard, and signing out is the moment that backlog stops
@@ -311,43 +310,39 @@ class MeScreen extends ConsumerWidget {
         await ref.read(sendQueueProvider.notifier).discardAll();
         if (!context.mounted) return;
       }
-      final liveCount = tables
-          .where((t) => t.status != TableStatus.available)
-          .length;
-      final ok = await showSatDialog<bool>(
-        context,
-        builder: (ctx) => AlertDialog(
-          title: Text(
-            isServer
-                ? context.l10n.meEndAdminTitle
-                : context.l10n.meEndShiftTitle,
-          ),
-          content: Text(
-            isServer
-                ? (liveCount > 0
-                      ? context.l10n.meEndServerBodyLive(liveCount)
-                      : context.l10n.meEndServerBody)
-                // Spell out the one thing that separates this from "Keluar":
-                // the shift closes, so signing back in starts a new one.
-                : context.l10n.meEndShiftBody,
-          ),
-          actions: [
-            SatButton.ghost(
-              label: context.l10n.cancel,
-              onTap: () => Navigator.pop(ctx, false),
+      // Staff sign out without a confirm. It is the frequent action now that
+      // handing a handset over goes through it, and the thing it costs — the
+      // shift — is recoverable by signing back in. The admin's is not: it takes
+      // the venue's server down with it.
+      if (isServer) {
+        final liveCount = tables
+            .where((t) => t.status != TableStatus.available)
+            .length;
+        final ok = await showSatDialog<bool>(
+          context,
+          builder: (ctx) => AlertDialog(
+            title: Text(context.l10n.meEndAdminTitle),
+            content: Text(
+              liveCount > 0
+                  ? context.l10n.meEndServerBodyLive(liveCount)
+                  : context.l10n.meEndServerBody,
             ),
-            SatButton.danger(
-              label: isServer
-                  ? context.l10n.meEndAndShutdown
-                  : context.l10n.meEndShiftConfirm,
-              onTap: () => Navigator.pop(ctx, true),
-            ),
-          ],
-        ),
-      );
-      if (ok != true) return;
-      // As in [switchUser]: the redirect owns the navigation. See ADR-0078.
-      await ref.read(authStateProvider.notifier).signOut(endShift: true);
+            actions: [
+              SatButton.ghost(
+                label: context.l10n.cancel,
+                onTap: () => Navigator.pop(ctx, false),
+              ),
+              SatButton.danger(
+                label: context.l10n.meEndAndShutdown,
+                onTap: () => Navigator.pop(ctx, true),
+              ),
+            ],
+          ),
+        );
+        if (ok != true) return;
+      }
+      // The redirect owns the navigation. See ADR-0078.
+      await ref.read(authStateProvider.notifier).signOut();
     }
 
     if (l.useTabletShell) {
@@ -358,7 +353,6 @@ class MeScreen extends ConsumerWidget {
         theme: theme,
         onPickTheme: pickTheme,
         onEndShift: endShift,
-        onSwitchUser: isServer ? null : switchUser,
       );
     }
     return _MePhone(
@@ -368,7 +362,6 @@ class MeScreen extends ConsumerWidget {
       theme: theme,
       onPickTheme: pickTheme,
       onEndShift: endShift,
-      onSwitchUser: isServer ? null : switchUser,
     );
   }
 }
@@ -384,7 +377,6 @@ class _MePhone extends StatelessWidget {
   final VoidCallback onEndShift;
 
   /// Null for a Server-mode admin, who has no shift-preserving exit.
-  final VoidCallback? onSwitchUser;
 
   const _MePhone({
     required this.m,
@@ -393,7 +385,6 @@ class _MePhone extends StatelessWidget {
     required this.theme,
     required this.onPickTheme,
     required this.onEndShift,
-    required this.onSwitchUser,
   });
 
   @override
@@ -418,7 +409,6 @@ class _MePhone extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
               child: _EndShiftButton(
                 onPressed: onEndShift,
-                onSwitchUser: onSwitchUser,
               ),
             ),
             Padding(
@@ -465,7 +455,6 @@ class _MeTablet extends StatelessWidget {
   final VoidCallback onEndShift;
 
   /// Null for a Server-mode admin, who has no shift-preserving exit.
-  final VoidCallback? onSwitchUser;
 
   const _MeTablet({
     required this.m,
@@ -474,7 +463,6 @@ class _MeTablet extends StatelessWidget {
     required this.theme,
     required this.onPickTheme,
     required this.onEndShift,
-    required this.onSwitchUser,
   });
 
   @override
@@ -514,8 +502,7 @@ class _MeTablet extends StatelessWidget {
                       const SizedBox(height: Sp.s3h),
                       _EndShiftButton(
                         onPressed: onEndShift,
-                        onSwitchUser: onSwitchUser,
-                      ),
+                              ),
                       const SizedBox(height: Sp.s3h),
                       _MyPendingCard(tableNames: tableNames),
                       _KpiGrid(m: m, columns: 4),
@@ -1036,54 +1023,27 @@ class _AuditRow extends StatelessWidget {
   }
 }
 
-/// The shift's two exits (ADR-0065).
+/// The shift's one exit (ADR-0097).
 ///
-/// Hierarchy follows frequency, not severity of name: handing a shared handset
-/// to a colleague happens many times a service and gets the prominent control,
-/// while ending a shift happens once and is deliberately quieter so it takes
-/// aim. [onSwitchUser] is null for a Server-mode admin, who has only one exit
-/// because their sign-out takes the venue offline regardless (ADR-0015).
+/// There were two until handing a shared handset over stopped being free: the
+/// prominent control dropped the session and left the shift running, and the
+/// quieter one ended it. Now every sign-out ends the shift, so there is one
+/// control. It is labelled plainly "Keluar": there is no longer another exit to
+/// tell it apart from, and the elapsed shift clock sits directly above it.
 class _EndShiftButton extends StatelessWidget {
   final VoidCallback onPressed;
-  final VoidCallback? onSwitchUser;
-  const _EndShiftButton({required this.onPressed, this.onSwitchUser});
+  const _EndShiftButton({required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
-    final endShift = SizedBox(
+    return SizedBox(
       width: double.infinity,
-      child: SatButton.ghost(
-        label: context.l10n.meEndShiftAndLogout,
+      child: SatButton.outline(
+        label: context.l10n.meSignOut,
         icon: Icons.logout_rounded,
         size: SatButtonSize.lg,
         onTap: onPressed,
       ),
-    );
-    if (onSwitchUser == null) {
-      // Sole exit for a Server-mode admin — carries the weight, so it keeps the
-      // stronger outline treatment rather than reading as a footnote.
-      return SizedBox(
-        width: double.infinity,
-        child: SatButton.outline(
-          label: context.l10n.meEndShiftAndLogout,
-          icon: Icons.logout_rounded,
-          size: SatButtonSize.lg,
-          onTap: onPressed,
-        ),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SatButton.outline(
-          label: context.l10n.logout,
-          icon: Icons.swap_horiz_rounded,
-          size: SatButtonSize.lg,
-          onTap: onSwitchUser!,
-        ),
-        const SizedBox(height: Sp.s2),
-        endShift,
-      ],
     );
   }
 }

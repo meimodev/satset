@@ -12,6 +12,7 @@ import 'package:satset/server/db/database.dart';
 import 'package:satset/server/db/seed.dart';
 import 'package:satset/server/db/seed_data.dart';
 import 'package:satset/server/db/seed_history.dart';
+import 'package:satset/server/shift.dart';
 
 void main() {
   late AppDatabase db;
@@ -244,6 +245,58 @@ void main() {
 
       // A cleared venue can take the sample data again.
       expect(await canSeedSample(db), isTrue);
+    },
+    timeout: const Timeout(Duration(minutes: 10)),
+  );
+
+  test(
+    'the fabricated month comes with a fabricated attendance shape',
+    () async {
+      // A hours report that opens empty teaches nobody what "unclosed" means
+      // (ADR-0097), so the seed writes shifts through `openShift`/`endShift`
+      // with deliberate variance: different totals per person, at least one
+      // split day, and at least one forgotten sign-out.
+      await seedSampleVenue(db);
+      final shifts = await db.select(db.shifts).get();
+      expect(shifts, isNotEmpty);
+
+      final byUser = <String, List<Shift>>{};
+      for (final s in shifts) {
+        (byUser[s.userId] ??= []).add(s);
+      }
+      expect(
+        byUser.length,
+        greaterThan(1),
+        reason: 'one staff member makes every column read the same',
+      );
+      expect(
+        byUser.values.map((v) => v.length).toSet().length,
+        greaterThan(1),
+        reason: 'identical shift counts are not an attendance shape',
+      );
+
+      // A day someone signed in twice — the gap the report exists to show.
+      final days = <String, int>{};
+      for (final s in shifts) {
+        final d = '${s.userId}|${s.startedAt.year}-${s.startedAt.month}-${s.startedAt.day}';
+        days[d] = (days[d] ?? 0) + 1;
+      }
+      expect(days.values.any((n) => n > 1), isTrue, reason: 'no split day seeded');
+
+      // A forgotten sign-out, retired by the next day's rollover, not invented.
+      expect(
+        shifts.any((s) => s.endedBy == ShiftEnd.rollover.name),
+        isTrue,
+        reason: 'the flag needs to have been seen once before it appears for real',
+      );
+      expect(
+        shifts.every((s) => s.endedAt == null || !s.endedAt!.isBefore(s.startedAt)),
+        isTrue,
+      );
+
+      // Attendance is transactional: it goes with the month it belongs to.
+      await clearSampleData(db);
+      expect(await db.select(db.shifts).get(), isEmpty);
     },
     timeout: const Timeout(Duration(minutes: 10)),
   );

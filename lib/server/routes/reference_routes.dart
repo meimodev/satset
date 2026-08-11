@@ -16,6 +16,7 @@ import 'package:satset/core/localization/audit_text.dart';
 import 'package:satset/data/repositories/audit_repository.dart'
     show auditEntryFromJson;
 import 'package:satset/domain/models/audit_kind.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/server/shift.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/domain/models/capability.dart';
@@ -767,18 +768,23 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
 
   // ---------- audit ----------
 
-  /// **Your own** audit rows for **this shift** — the feed and the integrity
-  /// counters behind the "Saya" tab (ADR-0065).
+  /// **Your own** audit rows for **this business day** — the feed and the
+  /// integrity counters behind the "Saya" tab.
   ///
   /// Scoped from the bearer, never from a query parameter: the caller cannot
   /// name a user, so there is no way to read a colleague's log. Bounded by the
-  /// shift window rather than a row limit, so the counters can never be
+  /// business day rather than a row limit, so the counters can never be
   /// silently truncated — "3 pembatalan" means three, not three among the rows
   /// that fit in the page.
   ///
-  /// Fails **closed**. No session, or no open shift, yields an empty list: a
-  /// user with no shift has no shift activity, and defaulting to the venue-wide
-  /// log would leak every colleague's voids onto a personal screen.
+  /// The window was the *shift* until ADR-0097 made every sign-out end one. A
+  /// waiter handing a shared handset over now starts a fresh shift several times
+  /// a night, and scoping to it would blank this list on each handover. The
+  /// question the screen answers — "what have I done tonight" — is a business-day
+  /// question; the shift is the attendance unit, and it lives in Laporan.
+  ///
+  /// Fails **closed**. No session yields an empty list: defaulting to the
+  /// venue-wide log would leak every colleague's voids onto a personal screen.
   ///
   /// There is deliberately no `POST /audit`. Audit rows are written only by the
   /// server paths that perform the audited act, which stamp `actorUserId` from
@@ -787,8 +793,13 @@ Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
   r.get('/audit', (Request req) async {
     final me = await _actor(req, db, auth);
     if (me == null) return _ok(const []);
-    final since = await openShiftOf(db, me.id);
-    if (since == null) return _ok(const []);
+    final settings = await (db.select(
+      db.venueSettings,
+    )..where((x) => x.id.equals('default'))).getSingleOrNull();
+    final since = businessDayStart(
+      SatClock.now(),
+      settings?.businessDayStartHour ?? 4,
+    );
     final rows =
         await (db.select(db.auditEntries)
               ..where((a) => a.actorUserId.equals(me.id))

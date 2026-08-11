@@ -135,6 +135,87 @@ const voidRate = 0.018;
 /// Share of bills that walk out unpaid (tak tertagih).
 const walkoutRate = 1 / 120;
 
+/// How one seeded staff member turns up (ADR-0097) — the shape behind the Jam
+/// kerja block.
+///
+/// A flat month is the tell here in the same way a flat arrival curve is one on
+/// the sales side: four people with near-identical hours teach an owner nothing,
+/// and the whole reason the block exists is to tell a diligent shift apart from
+/// a slack one. So the roster is deliberately uneven, and it deliberately
+/// contains forgotten sign-outs — a flag nobody has ever seen is a flag nobody
+/// will understand the first time it appears for real.
+class StaffAttendance {
+  /// Share of days this person does not turn up at all. They take no orders on
+  /// those days either: a waiter with bills and no shift is a contradiction the
+  /// report would surface as a mystery.
+  final double absentRate;
+
+  /// Minutes on shift before their first order of the day — prep, setup,
+  /// standing about. Low means they clocked in barely in time.
+  final int earlyMin;
+  final int earlyMax;
+
+  /// Share of days they never sign out. The row is left open; the next day's
+  /// sign-in retires it at its own rollover, exactly as the live path does.
+  final double forgetRate;
+
+  /// Share of days split in two by a handover — one stretch, a gap, another.
+  /// Only worth giving to somebody: with none, "hari" and "shift" are the same
+  /// number on every row and the distinction never shows itself.
+  final double splitRate;
+
+  const StaffAttendance({
+    required this.absentRate,
+    required this.earlyMin,
+    required this.earlyMax,
+    required this.forgetRate,
+    required this.splitRate,
+  });
+}
+
+/// Keyed by seeded user id. A staff row absent from this map takes the default
+/// below, which is the unremarkable middle of the four.
+const staffAttendance = <String, StaffAttendance>{
+  // Reliable. Early, present, signs out, and hands the handset over mid-shift
+  // often enough that their days and shifts read as different numbers.
+  'seed-waiter': StaffAttendance(
+    absentRate: 0.0,
+    earlyMin: 38,
+    earlyMax: 55,
+    forgetRate: 0.03,
+    splitRate: 0.32,
+  ),
+  // The contrast: turns up as service starts, misses roughly a day a week, and
+  // forgets to sign out often enough to make the flag worth reading.
+  'seed-waiter-2': StaffAttendance(
+    absentRate: 0.14,
+    earlyMin: 2,
+    earlyMax: 12,
+    forgetRate: 0.12,
+    splitRate: 0.0,
+  ),
+  // Opens the kitchen — on well before the first order lands.
+  'seed-kitchen': StaffAttendance(
+    absentRate: 0.02,
+    earlyMin: 55,
+    earlyMax: 80,
+    forgetRate: 0.04,
+    splitRate: 0.0,
+  ),
+};
+
+const defaultAttendance = StaffAttendance(
+  absentRate: 0.05,
+  earlyMin: 15,
+  earlyMax: 30,
+  forgetRate: 0.05,
+  splitRate: 0.0,
+);
+
+/// Minutes on shift after the last order of the day — closing down, cashing up.
+const closingDownMin = 20;
+const closingDownMax = 45;
+
 /// The seeded [[Pelanggan (member)]] roster.
 ///
 /// Forty names, ordered by how often they come in: the list is walked with a

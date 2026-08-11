@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import 'db/database.dart';
+import 'shift.dart';
 
 /// Server-side auth helpers. Verifies PINs, issues HS256 JWTs, validates
 /// bearer tokens, persists sessions for revocation.
@@ -119,6 +120,12 @@ class ServerAuth {
   /// Mint a session + JWT for an already-resolved local [userId]. Used by the
   /// in-process admin sign-in (no HTTP, no token round-trip — same process,
   /// same device, loopback only). See ADR-0015.
+  ///
+  /// **Opens the shift too**, because a shift *is* a signed-in session
+  /// (ADR-0097) and this path never touches `POST /auth/login`, where the other
+  /// one is opened. Without it the host's own attendance is the only attendance
+  /// the report cannot see — and the app bar still counted up, off a local
+  /// fallback stamp, so nothing on screen said the row was missing.
   Future<Session> mintSession({
     required String userId,
     required String deviceId,
@@ -147,6 +154,7 @@ class ServerAuth {
             expiresAt: expiry,
           ),
         );
+    await openShift(db, user.id);
     return Session(
       token: token,
       userId: user.id,
