@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_inline_error.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/domain/models/admission.dart';
 
 /// Where an admin holding a dictated temporary password sets a real one.
 ///
-/// Opened by the PIN screen the moment [pendingPasswordChangeProvider] fills,
-/// which happens inside the sign-in gauntlet *before* eligibility is read and
-/// before any server boots (ADR-0075). So this screen sits on a Firebase session
+/// Opened by the PIN screen on an [AdmissionNeedsNewPassword], which the
+/// admission returns *before* eligibility is read and before any server boots
+/// (ADR-0075). So this screen sits on a Firebase session
 /// that has proved the credential and bought nothing else — the only two ways
 /// out are setting a new password or signing out.
 ///
@@ -30,7 +32,7 @@ class ChangePasswordScreen extends ConsumerStatefulWidget {
     required this.tempPassword,
   });
 
-  final PendingPasswordChange pending;
+  final AdmissionNeedsNewPassword pending;
 
   /// The code they just signed in with, held only to refuse it as the new
   /// password. Never stored, never sent anywhere.
@@ -99,15 +101,13 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       return;
     }
 
-    // Clear the pending marker before re-entering sign-in: the gauntlet is about
-    // to read a doc whose flag is now false, and a stale marker would bounce the
-    // admin straight back onto this screen.
-    ref.read(pendingPasswordChangeProvider.notifier).state = null;
+    // The caller re-enters the admission with a `serverOnly` profile read, so
+    // the flag it sees is the one this call just cleared rather than a Firestore
+    // cache still reporting the old value.
     if (mounted) Navigator.of(context).pop(password);
   }
 
   Future<void> _cancel() async {
-    ref.read(pendingPasswordChangeProvider.notifier).state = null;
     await ref.read(firebaseAdminServiceProvider).signOut();
     if (mounted) Navigator.of(context).pop();
   }
@@ -126,7 +126,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(Sp.s4),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
+                constraints: const BoxConstraints(
+                  maxWidth: SatSize.authPanelNarrow,
+                ),
                 child: SatCard.plain(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -171,7 +173,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       ),
                       if (_error case final e?) ...[
                         const SizedBox(height: Sp.s3),
-                        Text(e, style: SatType.bodyS(color: sc.urgent)),
+                        SatInlineError(e),
                       ],
                       const SizedBox(height: Sp.s5),
                       SatButton.primary(

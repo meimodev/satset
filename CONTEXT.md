@@ -835,6 +835,13 @@ Which authority put a bill-scope [[Diskon (discount)]] on a [[Visit]]. Three thi
 ### Admin is Firebase-only (no PIN admin)
 Admin privilege is granted **only** through a Firebase admin account created by the [[Super admin]] in the [[Fleet console]] — never minted locally as a PIN user. The admin-mode **staff screen** therefore cannot assign any role that carries **`manageStaff`** (the seeded admin role *or* any custom role granting it), and the roles editor cannot grant `manageStaff` to a role; both are enforced server-side, not just in the UI. This closes the loophole where a local admin mints another admin (directly or via a custom elevated role). The old seeded PIN admin (full admin behind a 6-digit PIN) is removed; on upgrade, existing demo seed data is wiped. _Avoid_: a local break-glass PIN admin; gating the restriction in the UI only.
 
+### Gerbang masuk (Admission)
+**ID · EN** — Gerbang masuk · Admission.
+
+One attempt to get a person past the sign-in screen, taken as a whole. It runs as an ordered gauntlet — credential, profile, eligibility, venue status, host decision, server boot, local session — and produces exactly **one** outcome from a closed set: admitted (as host, as [[Super admin]], as owner), a password change that must happen first, a named refusal (wrong credentials, expired temporary password, not registered, account blocked, no venue, venue blocked, [[Local server lifecycle (tied to admin session)|host]] occupied, boot failed, local session failed), unreachable, or cancelled. Every stage is deadlined and the attempt has its own wall clock; cancelling abandons the wait, never the account state. ADR-0098.
+
+An admission is **not** a session restore. A device already admitted comes back from its stored token, and from cache when the [[Local server lifecycle (tied to admin session)|host]] is unreachable; an admission itself requires the WAN and says so rather than guessing (ADR-0099). The [[Waiter]]'s PIN sign-in never runs one — that half of the screen talks only to the local server, which is the whole reason the two halves are separate. _Avoid_: "login" for this concept (it names the form, not the verdict); reporting an unreachable network as bad credentials; a cached admission verdict — see [[Admin is Firebase-only (no PIN admin)]].
+
 ### Pesanan baru (table-less draft order)
 **ID · EN** — Pesanan baru · New order.
 

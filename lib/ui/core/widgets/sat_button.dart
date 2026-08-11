@@ -109,7 +109,14 @@ class SatButton extends StatelessWidget {
     required this.onTap,
   }) : _kind = _SatButtonKind.danger;
 
-  bool get _enabled => onTap != null && !busy;
+  /// Can this be pressed *right now*. Busy and disabled both say no.
+  bool get _tappable => onTap != null && !busy;
+
+  /// Should this be *painted* as unavailable. Busy is deliberately excluded:
+  /// a working button is not a dead one, and dropping it to the neutral ramp
+  /// mid-flight told an admin their sign-in had been refused when it was still
+  /// running. Busy keeps its fill and says so with the spinner instead.
+  bool get _dimmed => onTap == null && !busy;
 
   double get _height => switch (size) {
     SatButtonSize.sm => 32,
@@ -154,13 +161,13 @@ class SatButton extends StatelessWidget {
     // Disabled reads from the neutral ramp on every variant. A dimmed accent
     // still looks like an accent, and "is this tappable?" must never be a
     // colour-discrimination task on a phone held at arm's length.
-    final fill = _enabled
-        ? palette.fill
-        : (palette.fill == null ? null : sc.bg3);
-    final ink = _enabled ? palette.ink : sc.textLo;
+    final fill = _dimmed
+        ? (palette.fill == null ? null : sc.bg3)
+        : palette.fill;
+    final ink = _dimmed ? sc.textLo : palette.ink;
     final borderColor = palette.border == null
         ? null
-        : (_enabled ? palette.border : sc.border0);
+        : (_dimmed ? sc.border0 : palette.border);
 
     final content = Row(
       mainAxisSize: MainAxisSize.min,
@@ -206,13 +213,13 @@ class SatButton extends StatelessWidget {
       ),
       child: Semantics(
         button: true,
-        enabled: _enabled,
+        enabled: _tappable,
         label: label,
         child: Material(
           color: Colors.transparent,
           borderRadius: _radius,
           child: InkWell(
-            onTap: _enabled ? onTap : null,
+            onTap: _tappable ? onTap : null,
             borderRadius: _radius,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: _padX),

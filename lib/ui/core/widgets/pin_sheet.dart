@@ -147,22 +147,27 @@ class _PinSheetState extends State<_PinSheet>
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxW),
             child: Container(
-              margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              margin: const EdgeInsets.fromLTRB(Sp.s3, 0, Sp.s3, Sp.s3),
               decoration: SatBox.d(
                 color: sc.bg1,
                 borderRadius: SatR.a(22),
                 border: SatB.all(color: sc.border0),
               ),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(22, 14, 22, 22),
+                padding: const EdgeInsets.fromLTRB(
+                  Sp.s6,
+                  Sp.s3h,
+                  Sp.s6,
+                  Sp.s6,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Center(
                       child: Container(
-                        width: 36,
-                        height: 4,
+                        width: Sp.s9,
+                        height: Sp.s1,
                         decoration: SatBox.d(
                           color: sc.border2,
                           borderRadius: SatR.a(2),
@@ -383,7 +388,10 @@ class _DebugCredsHint extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Sp.s3h,
+        vertical: Sp.s3,
+      ),
       decoration: SatBox.d(
         color: sc.warnSoft,
         border: SatB.all(color: sc.warn.withValues(alpha: 0.4)),

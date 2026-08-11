@@ -1795,6 +1795,12 @@ abstract class AppL10n {
   /// **'Akses admin dicabut. Hubungi pengelola.'**
   String get bootBlockIneligible;
 
+  /// No description provided for @bootBlockFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Server tidak bisa dijalankan di perangkat ini. Tutup aplikasi lalu buka lagi.'**
+  String get bootBlockFailed;
+
   /// No description provided for @tempPasswordTitle.
   ///
   /// In id, this message translates to:
@@ -9979,6 +9985,18 @@ abstract class AppL10n {
   /// **'Venue tidak aktif.'**
   String get authVenueInactive;
 
+  /// No description provided for @admissionUnreachable.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak bisa menghubungi server identitas. Periksa koneksi internet lalu coba lagi.'**
+  String get admissionUnreachable;
+
+  /// No description provided for @admissionCancel.
+  ///
+  /// In id, this message translates to:
+  /// **'Batal'**
+  String get admissionCancel;
+
   /// No description provided for @sendQueueFull.
   ///
   /// In id, this message translates to:
@@ -10908,6 +10926,30 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Gagal menjalankan server di HP ini. Coba lagi.'**
   String get pinServerBootFailed;
+
+  /// No description provided for @pinResetPairing.
+  ///
+  /// In id, this message translates to:
+  /// **'Lupakan server ini'**
+  String get pinResetPairing;
+
+  /// No description provided for @pinResetPairingTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Lupakan server ini?'**
+  String get pinResetPairingTitle;
+
+  /// No description provided for @pinResetPairingBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Perangkat ini akan berhenti tersambung ke server tersebut. Untuk menyambung lagi, server harus aktif dan berada di jaringan yang sama.'**
+  String get pinResetPairingBody;
+
+  /// No description provided for @pinResetPairingConfirm.
+  ///
+  /// In id, this message translates to:
+  /// **'Lupakan'**
+  String get pinResetPairingConfirm;
 
   /// No description provided for @pinAutoClaimFailed.
   ///

@@ -947,6 +947,10 @@ class AppL10nEn extends AppL10n {
       'Admin access has been revoked. Contact the operator.';
 
   @override
+  String get bootBlockFailed =>
+      'The server could not start on this device. Close the app and open it again.';
+
+  @override
   String get tempPasswordTitle => 'Change password';
 
   @override
@@ -6330,6 +6334,13 @@ class AppL10nEn extends AppL10n {
   String get authVenueInactive => 'This venue is inactive.';
 
   @override
+  String get admissionUnreachable =>
+      'Could not reach the identity server. Check the internet connection and try again.';
+
+  @override
+  String get admissionCancel => 'Cancel';
+
+  @override
   String get sendQueueFull =>
       'Send queue is full — reconnect to the server before taking more orders';
 
@@ -6893,6 +6904,19 @@ class AppL10nEn extends AppL10n {
   @override
   String get pinServerBootFailed =>
       'Couldn\'t start the server on this phone. Try again.';
+
+  @override
+  String get pinResetPairing => 'Forget this server';
+
+  @override
+  String get pinResetPairingTitle => 'Forget this server?';
+
+  @override
+  String get pinResetPairingBody =>
+      'This device will stop connecting to that server. To connect again, the server must be running and on the same network.';
+
+  @override
+  String get pinResetPairingConfirm => 'Forget';
 
   @override
   String pinAutoClaimFailed(String error) {

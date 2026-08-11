@@ -124,8 +124,10 @@ class SatField extends StatelessWidget {
   final TextAlign textAlign;
   final TextCapitalization capitalization;
 
-  /// Inline only. A phone or URL keyboard where the row asks for one — the
-  /// other kinds derive their keyboard from what they accept.
+  /// Text and inline only. A phone, URL or email keyboard where the field asks
+  /// for one — the other kinds derive their keyboard from what they accept, and
+  /// free text cannot. The sign-in screen's email field went years on the plain
+  /// text keyboard because this was reachable from `.inline` alone.
   final TextInputType? keyboard;
 
   /// Inline only. Receipt lines are set in mono so what the owner types lines
@@ -169,9 +171,9 @@ class SatField extends StatelessWidget {
     this.hasError = false,
     this.textAlign = TextAlign.start,
     this.capitalization = TextCapitalization.sentences,
+    this.keyboard,
   }) : signed = false,
        mono = false,
-       keyboard = null,
        visible = false,
        onToggle = null,
        _kind = _Kind.text;

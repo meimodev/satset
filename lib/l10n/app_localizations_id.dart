@@ -947,6 +947,10 @@ class AppL10nId extends AppL10n {
   String get bootBlockIneligible => 'Akses admin dicabut. Hubungi pengelola.';
 
   @override
+  String get bootBlockFailed =>
+      'Server tidak bisa dijalankan di perangkat ini. Tutup aplikasi lalu buka lagi.';
+
+  @override
   String get tempPasswordTitle => 'Ganti sandi';
 
   @override
@@ -6251,6 +6255,13 @@ class AppL10nId extends AppL10n {
   String get authVenueInactive => 'Venue tidak aktif.';
 
   @override
+  String get admissionUnreachable =>
+      'Tidak bisa menghubungi server identitas. Periksa koneksi internet lalu coba lagi.';
+
+  @override
+  String get admissionCancel => 'Batal';
+
+  @override
   String get sendQueueFull =>
       'Antrean kirim penuh — sambungkan dulu ke server sebelum pesan lagi';
 
@@ -6805,6 +6816,19 @@ class AppL10nId extends AppL10n {
   @override
   String get pinServerBootFailed =>
       'Gagal menjalankan server di HP ini. Coba lagi.';
+
+  @override
+  String get pinResetPairing => 'Lupakan server ini';
+
+  @override
+  String get pinResetPairingTitle => 'Lupakan server ini?';
+
+  @override
+  String get pinResetPairingBody =>
+      'Perangkat ini akan berhenti tersambung ke server tersebut. Untuk menyambung lagi, server harus aktif dan berada di jaringan yang sama.';
+
+  @override
+  String get pinResetPairingConfirm => 'Lupakan';
 
   @override
   String pinAutoClaimFailed(String error) {

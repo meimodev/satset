@@ -425,6 +425,7 @@
   "fltReleaseGateInvalid": "Format harus 1.2.3, dan min <= disarankan <= terbaru.",
   "bootBlockStale": "Perlu koneksi internet untuk verifikasi admin. Sambungkan internet lalu masuk lagi.",
   "bootBlockIneligible": "Akses admin dicabut. Hubungi pengelola.",
+  "bootBlockFailed": "Server tidak bisa dijalankan di perangkat ini. Tutup aplikasi lalu buka lagi.",
   "tempPasswordTitle": "Ganti sandi",
   "logout": "Keluar",
   "tempPasswordReason": "Anda masuk dengan sandi sementara. Buat sandi baru untuk melanjutkan.",
@@ -4751,6 +4752,8 @@
   "authVenueNotFound": "Venue tidak ditemukan. Hubungi pengelola.",
   "authVenueSuspended": "Venue ditangguhkan. Hubungi pengelola.",
   "authVenueInactive": "Venue tidak aktif.",
+  "admissionUnreachable": "Tidak bisa menghubungi server identitas. Periksa koneksi internet lalu coba lagi.",
+  "admissionCancel": "Batal",
   "sendQueueFull": "Antrean kirim penuh — sambungkan dulu ke server sebelum pesan lagi",
   "sendQueuePending": "{count, plural, other{{count} pesanan menunggu terkirim}}",
   "@sendQueuePending": {
@@ -5035,6 +5038,10 @@
   "pinDeviceNotPaired": "HP belum tersambung. Scan QR lagi untuk pasangkan.",
   "pinSetupFailed": "Gagal menyiapkan aplikasi. Coba lagi.",
   "pinServerBootFailed": "Gagal menjalankan server di HP ini. Coba lagi.",
+  "pinResetPairing": "Lupakan server ini",
+  "pinResetPairingTitle": "Lupakan server ini?",
+  "pinResetPairingBody": "Perangkat ini akan berhenti tersambung ke server tersebut. Untuk menyambung lagi, server harus aktif dan berada di jaringan yang sama.",
+  "pinResetPairingConfirm": "Lupakan",
   "pinAutoClaimFailed": "Sambung otomatis gagal: {error}",
   "@pinAutoClaimFailed": {
     "placeholders": {
