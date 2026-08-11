@@ -33,6 +33,12 @@ import '_common.dart';
 ///
 /// Tablet only, like the venue log and the cash box: the value of a directory
 /// is reading rows against each other, and a phone shows one row.
+///
+// ponytail: three thresholds, no venue setting. A setting means a column, a DTO
+// field and a form for a number the owner picks by tapping a chip; add one when
+// a venue insists on 45.
+const _lapsedCuts = [30, 60, 90];
+
 class MembersScreen extends ConsumerStatefulWidget {
   const MembersScreen({super.key});
 
@@ -73,6 +79,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     final l10n = context.l10n;
     final state = ref.watch(membersProvider);
     final month = state.birthdayMonth;
+    final lapsed = state.lapsedDays;
 
     if (!state.enabled) {
       return Padding(
@@ -87,12 +94,19 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       );
     }
 
+    // A filtered list is not the directory: saying "1 terdaftar" under a cut
+    // that hides everyone else reads as if the venue had one member.
+    final filtered =
+        state.query.trim().isNotEmpty || month != null || lapsed != null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AdminEmbeddedStrip(
           title: l10n.memTitle,
-          sub: l10n.memCount(state.members.length),
+          sub: filtered
+              ? l10n.memMatchCount(state.members.length)
+              : l10n.memCount(state.members.length),
           trailing: SatButton.primary(
             label: l10n.memActionAdd,
             icon: Icons.person_add_alt_1_rounded,
@@ -124,6 +138,31 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
             ],
           ),
         ),
+        // The "belum kembali" cut. Chips rather than a setting: the owner
+        // changes their mind about the threshold by tapping a different one,
+        // and nothing about lapse is stored to go stale.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Sp.s7, 0, Sp.s7, Sp.s3),
+          child: Row(
+            children: [
+              Text(
+                l10n.memLapsedLabel.toUpperCase(),
+                style: SatType.monoS(color: context.sat.textLo),
+              ),
+              const SizedBox(width: Sp.s3),
+              for (final days in _lapsedCuts) ...[
+                SatChip.select(
+                  label: l10n.memLapsedDays(days),
+                  selected: lapsed == days,
+                  onTap: () => ref
+                      .read(membersProvider.notifier)
+                      .filterByLapsedDays(lapsed == days ? null : days),
+                ),
+                const SizedBox(width: Sp.s2),
+              ],
+            ],
+          ),
+        ),
         Expanded(
           child: RefreshIndicator(
             onRefresh: ref.read(membersProvider.notifier).refresh,
@@ -134,8 +173,12 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                         padding: const EdgeInsets.all(Sp.s7),
                         child: SatEmpty(
                           icon: Icons.badge_outlined,
-                          title: l10n.memEmptyTitle,
-                          body: l10n.memEmptyBody,
+                          title: filtered
+                              ? l10n.memFilterEmptyTitle
+                              : l10n.memEmptyTitle,
+                          body: filtered
+                              ? l10n.memFilterEmptyBody
+                              : l10n.memEmptyBody,
                         ),
                       ),
                     ],
@@ -444,6 +487,8 @@ class _MemberDetailSheetState extends ConsumerState<_MemberDetailSheet> {
                       for (final e in detail.ledger)
                         _LedgerRow(entry: e.entry),
                   ],
+                  const SizedBox(height: Sp.s5),
+                  _VisitsSection(memberId: m.id),
                 ],
               ),
             );
@@ -470,6 +515,148 @@ class _MemberDetailSheetState extends ConsumerState<_MemberDetailSheet> {
     if (ok != true || !mounted) return;
     await ref.read(membersProvider.notifier).remove(widget.member.id);
     if (mounted) Navigator.of(context).pop();
+  }
+}
+
+/// What this person has actually eaten here: their settled bills, newest first.
+///
+/// **Lifetime**, deliberately — the report's date range belongs to the report;
+/// a person's file has no window. Paged by growing limit (ADR-0079) rather than
+/// a cursor, because the reader stops as soon as they have seen enough.
+class _VisitsSection extends ConsumerStatefulWidget {
+  final String memberId;
+  const _VisitsSection({required this.memberId});
+
+  @override
+  ConsumerState<_VisitsSection> createState() => _VisitsSectionState();
+}
+
+class _VisitsSectionState extends ConsumerState<_VisitsSection> {
+  static const _page = 20;
+  int _limit = _page;
+  late Future<List<MemberVisitDto>> _load = _fetch();
+
+  Future<List<MemberVisitDto>> _fetch() =>
+      ref.read(membersProvider.notifier).visits(widget.memberId, limit: _limit);
+
+  void _more() => setState(() {
+    _limit += _page;
+    _load = _fetch();
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.memVisitsTitle.toUpperCase(),
+          style: SatType.monoS(color: sc.textLo),
+        ),
+        const SizedBox(height: Sp.s2),
+        FutureBuilder<List<MemberVisitDto>>(
+          future: _load,
+          builder: (context, snap) {
+            if (snap.hasError) {
+              return Text(
+                l10n.memVisitsFailed,
+                style: SatType.bodyS(color: sc.urgent),
+              );
+            }
+            final rows = snap.data;
+            if (rows == null) {
+              return Text(
+                l10n.memVisitsLoading,
+                style: SatType.bodyS(color: sc.textLo),
+              );
+            }
+            if (rows.isEmpty) {
+              return Text(
+                l10n.memVisitsEmpty,
+                style: SatType.bodyS(color: sc.textLo),
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final v in rows) _VisitRow(visit: v),
+                // Only offered while the page came back full — a short page is
+                // the end of the history, and a button that fetches the same
+                // rows again reads as a broken one.
+                if (rows.length >= _limit)
+                  Padding(
+                    padding: const EdgeInsets.only(top: Sp.s2),
+                    child: SatButton.outline(
+                      label: l10n.memVisitsMore,
+                      size: SatButtonSize.sm,
+                      onTap: _more,
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _VisitRow extends StatelessWidget {
+  final MemberVisitDto visit;
+  const _VisitRow({required this.visit});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Sp.s1h),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 96,
+            child: Text(
+              formatShortDateId(visit.closedAt),
+              style: SatType.monoS(color: sc.textMd),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              visit.isTakeaway
+                  ? l10n.memVisitTakeaway
+                  : (visit.tableLabel ?? l10n.memVisitNoTable),
+              style: SatType.bodyS(color: sc.textHi),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (visit.discountAmount > 0) ...[
+            SatChip.tag(
+              label: '-${formatIDR(visit.discountAmount)}',
+              hue: SatChipHue.accent,
+              size: SatChipSize.sm,
+            ),
+            const SizedBox(width: Sp.s2),
+          ],
+          // A walkout is not a small spend. Marked, or the row quietly claims
+          // this guest paid what they in fact walked out on.
+          if (visit.isWalkout) ...[
+            SatChip.tag(
+              label: l10n.memVisitWalkout,
+              hue: SatChipHue.urgent,
+              size: SatChipSize.sm,
+            ),
+            const SizedBox(width: Sp.s2),
+          ],
+          Text(
+            formatIDR(visit.settledTotal),
+            style: SatType.monoS(color: sc.textHi),
+          ),
+        ],
+      ),
+    );
   }
 }
 

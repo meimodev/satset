@@ -93,15 +93,33 @@ Router membersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final q = req.url.queryParameters;
     final limit = int.tryParse(q['limit'] ?? '') ?? 50;
     final month = int.tryParse(q['birthdayMonth'] ?? '');
+    final lapsed = int.tryParse(q['lapsedDays'] ?? '');
     final list = await listMembers(
       db,
       query: q['q'] ?? '',
       birthdayMonth: (month != null && month >= 1 && month <= 12)
           ? month
           : null,
+      lapsedDays: (lapsed != null && lapsed > 0) ? lapsed : null,
       limit: limit.clamp(1, 500),
     );
     return json([for (final m in list) memberJson(m)]);
+  });
+
+  /// A member's settled bills, newest first. The keeper's surface only —
+  /// reading one guest's spending history back is an admin act, not something
+  /// the till does across the counter mid-settlement.
+  r.get('/members/<id>/visits', (Request req, String id) async {
+    final off = await enabledGuard();
+    if (off != null) return off;
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!a.$2.contains(Capability.manageMembers.name)) {
+      return forbidden(Capability.manageMembers);
+    }
+    final limit = int.tryParse(req.url.queryParameters['limit'] ?? '') ?? 30;
+    final rows = await memberVisits(db, id, limit: limit.clamp(1, 500));
+    return json([for (final v in rows) memberVisitJson(v)]);
   });
 
   /// One member with everything a detail screen needs — the record, the derived

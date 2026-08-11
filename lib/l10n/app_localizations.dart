@@ -10537,6 +10537,60 @@ abstract class AppL10n {
   /// **'Kunjungan: {count}'**
   String rptMembersVisits(int count);
 
+  /// No description provided for @rptMembersMore.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{+ {count} pelanggan lainnya}}'**
+  String rptMembersMore(int count);
+
+  /// No description provided for @rptMembersColName.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan'**
+  String get rptMembersColName;
+
+  /// No description provided for @rptMembersColVisits.
+  ///
+  /// In id, this message translates to:
+  /// **'Kunjungan'**
+  String get rptMembersColVisits;
+
+  /// No description provided for @rptMembersColAvg.
+  ///
+  /// In id, this message translates to:
+  /// **'Rata-rata'**
+  String get rptMembersColAvg;
+
+  /// No description provided for @rptMembersColPoints.
+  ///
+  /// In id, this message translates to:
+  /// **'Poin'**
+  String get rptMembersColPoints;
+
+  /// No description provided for @rptMembersColSpend.
+  ///
+  /// In id, this message translates to:
+  /// **'Belanja'**
+  String get rptMembersColSpend;
+
+  /// No description provided for @rptMembersSortSpend.
+  ///
+  /// In id, this message translates to:
+  /// **'Belanja terbesar'**
+  String get rptMembersSortSpend;
+
+  /// No description provided for @rptMembersSortVisits.
+  ///
+  /// In id, this message translates to:
+  /// **'Paling sering datang'**
+  String get rptMembersSortVisits;
+
+  /// No description provided for @rptMembersSortPoints.
+  ///
+  /// In id, this message translates to:
+  /// **'Poin terbanyak'**
+  String get rptMembersSortPoints;
+
   /// No description provided for @rptKasOpening.
   ///
   /// In id, this message translates to:
@@ -12109,6 +12163,24 @@ abstract class AppL10n {
   /// **'Daftarkan tamu langganan lewat tombol Tambah, atau dari layar tagihan saat mereka bayar.'**
   String get memEmptyBody;
 
+  /// No description provided for @memFilterEmptyTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada yang cocok'**
+  String get memFilterEmptyTitle;
+
+  /// No description provided for @memFilterEmptyBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah pencarian atau lepas filternya untuk melihat semua pelanggan.'**
+  String get memFilterEmptyBody;
+
+  /// No description provided for @memMatchCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{{count} cocok}}'**
+  String memMatchCount(int count);
+
   /// No description provided for @memOffTitle.
   ///
   /// In id, this message translates to:
@@ -12198,6 +12270,66 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Belum ada gerakan poin.'**
   String get memLedgerEmpty;
+
+  /// No description provided for @memLapsedLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum kembali'**
+  String get memLapsedLabel;
+
+  /// No description provided for @memLapsedDays.
+  ///
+  /// In id, this message translates to:
+  /// **'{days, plural, other{{days} hari}}'**
+  String memLapsedDays(int days);
+
+  /// No description provided for @memVisitsTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat kunjungan'**
+  String get memVisitsTitle;
+
+  /// No description provided for @memVisitsLoading.
+  ///
+  /// In id, this message translates to:
+  /// **'Memuat kunjungan…'**
+  String get memVisitsLoading;
+
+  /// No description provided for @memVisitsEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada kunjungan yang selesai.'**
+  String get memVisitsEmpty;
+
+  /// No description provided for @memVisitsFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat kunjungan gagal dimuat.'**
+  String get memVisitsFailed;
+
+  /// No description provided for @memVisitsMore.
+  ///
+  /// In id, this message translates to:
+  /// **'Muat lebih banyak'**
+  String get memVisitsMore;
+
+  /// No description provided for @memVisitTakeaway.
+  ///
+  /// In id, this message translates to:
+  /// **'Bawa pulang'**
+  String get memVisitTakeaway;
+
+  /// No description provided for @memVisitNoTable.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanpa meja'**
+  String get memVisitNoTable;
+
+  /// No description provided for @memVisitWalkout.
+  ///
+  /// In id, this message translates to:
+  /// **'Tak tertagih'**
+  String get memVisitWalkout;
 
   /// No description provided for @memSheetAddTitle.
   ///

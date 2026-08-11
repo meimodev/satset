@@ -53,6 +53,10 @@ enum _Section { sales, staff, menu, bahan, ops, kas, members, jamKerja }
 
 enum _StaffSort { net, covers, voidPct, avgTicket }
 
+/// How the ranked member list is read. Spend first, because "who is worth
+/// keeping" is the question the section already answers.
+enum _MemberSort { spend, visits, points }
+
 class _BucketSpec {
   const _BucketSpec(this.key, this.label, this.action, this.color);
   final String key;
@@ -73,6 +77,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.jamKerja,
   };
   _StaffSort _staffSort = _StaffSort.net;
+  _MemberSort _memberSort = _MemberSort.spend;
 
   String _sectionLabel(AppL10n l10n, _Section s) => switch (s) {
     _Section.sales => l10n.rptSecSales,
@@ -2180,46 +2185,64 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
               ),
             ],
           ),
-          const SizedBox(height: Sp.s4),
-          Text(
-            l10n.rptMembersPoints.toUpperCase(),
-            style: SatType.monoS(color: sc.textLo),
-          ),
-          const SizedBox(height: Sp.s2),
-          Wrap(
-            spacing: Sp.s6,
-            runSpacing: Sp.s3,
-            children: [
-              _memberCount(context, l10n.rptMembersEarned, m.pointsEarned),
-              _memberCount(context, l10n.rptMembersRedeemed, m.pointsRedeemed),
-              _memberCount(
-                context,
-                l10n.rptMembersOutstanding,
-                m.pointsOutstanding,
-              ),
-              // What the venue owes if every point were spent tomorrow. An
-              // estimate by construction — the rate can move first.
-              _kasFigure(
-                context,
-                l10n.rptMembersLiability,
-                m.liabilityEstimate,
-                sc.warn,
-              ),
-            ],
-          ),
-          if (m.top.isNotEmpty) ...[
+          // Membership can run without points. When it does, the block is
+          // absent rather than a row of zeros claiming nothing was earned.
+          if (m.pointsEnabled) ...[
             const SizedBox(height: Sp.s4),
             Text(
-              l10n.rptMembersTop.toUpperCase(),
+              l10n.rptMembersPoints.toUpperCase(),
               style: SatType.monoS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s2),
-            for (final row in m.top)
+            Wrap(
+              spacing: Sp.s6,
+              runSpacing: Sp.s3,
+              children: [
+                _memberCount(context, l10n.rptMembersEarned, m.pointsEarned),
+                _memberCount(
+                  context,
+                  l10n.rptMembersRedeemed,
+                  m.pointsRedeemed,
+                ),
+                _memberCount(
+                  context,
+                  l10n.rptMembersOutstanding,
+                  m.pointsOutstanding,
+                ),
+                // What the venue owes if every point were spent tomorrow. An
+                // estimate by construction — the rate can move first.
+                _kasFigure(
+                  context,
+                  l10n.rptMembersLiability,
+                  m.liabilityEstimate,
+                  sc.warn,
+                ),
+              ],
+            ),
+          ],
+          if (m.top.isNotEmpty) ...[
+            const SizedBox(height: Sp.s4),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.rptMembersTop.toUpperCase(),
+                    style: SatType.monoS(color: sc.textLo),
+                  ),
+                ),
+                _memberSortMenu(context, m.pointsEnabled),
+              ],
+            ),
+            const SizedBox(height: Sp.s2),
+            _memberRankHead(context, m.pointsEnabled),
+            Divider(color: sc.border0, height: 1),
+            for (final row in _rankedMembers(m))
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: Sp.s1h),
                 child: Row(
                   children: [
                     Expanded(
+                      flex: 4,
                       child: Text(
                         // Null name ⇒ the member was deleted; the trade stands
                         // and is still counted (ADR-0092).
@@ -2229,19 +2252,172 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Text(
-                      l10n.rptMembersVisits(row.visits),
-                      style: SatType.monoS(color: sc.textLo),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        // Bare count: the column header already says what it is.
+                        '${row.visits}',
+                        style: SatType.monoS(color: sc.textLo),
+                        textAlign: TextAlign.end,
+                      ),
                     ),
-                    const SizedBox(width: Sp.s3),
-                    Text(
-                      formatCompactIDR(l10n, row.spend),
-                      style: SatType.monoM(color: sc.textHi),
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        formatCompactIDR(l10n, row.avgSpend),
+                        style: SatType.monoS(color: sc.textMd),
+                        textAlign: TextAlign.end,
+                      ),
+                    ),
+                    // Hidden, never zeroed: a zero would say "earned nothing"
+                    // where the truth is "this venue does not run points".
+                    if (m.pointsEnabled)
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          '${row.points}',
+                          style: SatType.monoS(color: sc.textLo),
+                          textAlign: TextAlign.end,
+                        ),
+                      ),
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        formatCompactIDR(l10n, row.spend),
+                        style: SatType.monoM(color: sc.textHi),
+                        textAlign: TextAlign.end,
+                      ),
                     ),
                   ],
                 ),
               ),
+            // The list is capped server-side, so the last row on screen is not
+            // the last member who traded. Say so rather than imply it.
+            if (m.topTruncated > 0) ...[
+              const SizedBox(height: Sp.s2),
+              Text(
+                l10n.rptMembersMore(m.topTruncated),
+                style: SatType.bodyS(color: sc.textLo),
+              ),
+            ],
           ],
+        ],
+      ),
+    );
+  }
+
+  /// Sorted client-side: the whole list is already in the snapshot, so a sort is
+  /// a comparison, not a round trip.
+  List<MemberTopRowDto> _rankedMembers(MembersSectionDto m) {
+    final rows = [...m.top];
+    // A venue can switch points off while the sort is still set to it, which
+    // would leave the list ordered by a column nobody can see.
+    final sort = (_memberSort == _MemberSort.points && !m.pointsEnabled)
+        ? _MemberSort.spend
+        : _memberSort;
+    final key = switch (sort) {
+      _MemberSort.spend => (MemberTopRowDto r) => r.spend,
+      _MemberSort.visits => (MemberTopRowDto r) => r.visits,
+      _MemberSort.points => (MemberTopRowDto r) => r.points,
+    };
+    rows.sort((a, b) => key(b).compareTo(key(a)));
+    return rows;
+  }
+
+  Widget _memberSortMenu(BuildContext context, bool pointsEnabled) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    String label(_MemberSort s) => switch (s) {
+      _MemberSort.spend => l10n.rptMembersSortSpend,
+      _MemberSort.visits => l10n.rptMembersSortVisits,
+      _MemberSort.points => l10n.rptMembersSortPoints,
+    };
+    final options = [
+      for (final s in _MemberSort.values)
+        if (s != _MemberSort.points || pointsEnabled) s,
+    ];
+    return PopupMenuButton<_MemberSort>(
+      tooltip: l10n.rptSort,
+      color: sc.bg1,
+      onSelected: (v) => setState(() => _memberSort = v),
+      itemBuilder: (c) => [
+        for (final s in options)
+          PopupMenuItem(
+            value: s,
+            child: Text(label(s), style: SatType.bodyM(color: sc.textHi)),
+          ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Sp.s2h,
+          vertical: Sp.s1h,
+        ),
+        decoration: SatBox.d(
+          color: sc.bg3,
+          border: SatB.all(color: sc.border1),
+          borderRadius: SatR.a(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.swap_vert, size: 14, color: sc.textMd),
+            const SizedBox(width: Sp.s1h),
+            Text(
+              label(
+                (_memberSort == _MemberSort.points && !pointsEnabled)
+                    ? _MemberSort.spend
+                    : _memberSort,
+              ),
+              style: SatType.bodyS(color: sc.textHi),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _memberRankHead(BuildContext context, bool pointsEnabled) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    TextStyle s() => SatType.caption(color: sc.textLo);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Sp.s1h),
+      child: Row(
+        children: [
+          Expanded(flex: 4, child: Text(l10n.rptMembersColName, style: s())),
+          Expanded(
+            flex: 2,
+            child: Text(
+              l10n.rptMembersColVisits,
+              style: s(),
+              textAlign: TextAlign.end,
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              l10n.rptMembersColAvg,
+              style: s(),
+              textAlign: TextAlign.end,
+            ),
+          ),
+          if (pointsEnabled)
+            Expanded(
+              flex: 2,
+              child: Text(
+                l10n.rptMembersColPoints,
+                style: s(),
+                textAlign: TextAlign.end,
+              ),
+            ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              l10n.rptMembersColSpend,
+              style: s(),
+              textAlign: TextAlign.end,
+            ),
+          ),
         ],
       ),
     );
