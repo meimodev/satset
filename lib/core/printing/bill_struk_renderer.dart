@@ -139,147 +139,184 @@ class BillStrukRenderer {
       );
     }
 
-    // ── document title: Tagihan vs Struk pembayaran ──
-    out.addAll(g.hr());
-    out.addAll(
-      g.text(
-        d.isTagihan ? l.strukBillTitle : l.strukReceiptTitle,
-        styles: const PosStyles(align: PosAlign.center, bold: true),
-      ),
-    );
-
-    // ── meta: table / party / time / which receipt ──
-    out.addAll(
-      g.text(
-        l.strukTableLine(d.tableLabel, d.pax, _clock(d.at)),
-        styles: const PosStyles(bold: true),
-      ),
-    );
-    if (d.guestName.trim().isNotEmpty) {
-      out.addAll(g.text(l.strukGuest(d.guestName.trim())));
-    }
-    if (d.memberName.trim().isNotEmpty) {
-      out.addAll(g.text(l.strukMember(d.memberName.trim())));
-    }
-    if (d.docLabel.trim().isNotEmpty && d.kind != BillDocKind.wholeBill) {
+    // ── piutang collection slip (ADR-0098) ──
+    // No lines, no totals, no table: nothing was ordered here. Three facts
+    // only — what was taken, how, and what is still owed after it.
+    if (d.isDebtSlip) {
+      out.addAll(g.hr());
       out.addAll(
-        g.text(d.docLabel.trim(), styles: const PosStyles(bold: true)),
+        g.text(
+          l.strukDebtTitle,
+          styles: const PosStyles(align: PosAlign.center, bold: true),
+        ),
       );
-    }
-    out.addAll(g.hr());
-
-    // ── body lines ──
-    if (d.isEven) {
-      out.addAll(
-        g.text(l.strukEvenHeading, styles: const PosStyles(bold: true)),
-      );
-      for (final l in d.lines) {
+      if (d.memberName.trim().isNotEmpty) {
         out.addAll(
           g.text(
-            '  ${l.qty}x ${l.name}${l.variant.isEmpty ? '' : ' (${l.variant})'}',
+            l.strukMember(d.memberName.trim()),
+            styles: const PosStyles(bold: true),
           ),
         );
-        out.addAll(_lineExtras(g, l));
       }
-    } else {
-      for (final l in d.lines) {
-        out.addAll(
-          g.row([
-            PosColumn(
-              text:
-                  '${l.qty}x ${l.name}'
-                  '${l.variant.isEmpty ? '' : ' (${l.variant})'}',
-              width: 8,
-            ),
-            PosColumn(
-              text: l.showPrice ? _money(l.lineTotal) : '',
-              width: 4,
-              styles: const PosStyles(align: PosAlign.right),
-            ),
-          ]),
-        );
-        out.addAll(_lineExtras(g, l));
+      out.addAll(g.text(_clock(d.at)));
+      if (d.cashierName.trim().isNotEmpty) {
+        out.addAll(g.text(l.strukDebtCashier(d.cashierName.trim())));
       }
-    }
-    out.addAll(g.hr());
-
-    // ── totals ──
-    if (d.isEven) {
-      out.addAll(_kv(g, l.strukBillTotal, d.billTotal));
+      out.addAll(g.hr(ch: '-'));
       out.addAll(
         _kv(
           g,
-          d.docLabel.isEmpty ? l.strukPart : d.docLabel,
+          d.payments.isEmpty
+              ? l.strukDebtPaid
+              : l.strukPaid(d.payments.first.methodLabel),
           d.total,
           bold: true,
         ),
       );
+      out.addAll(_kv(g, l.strukDebtBalance, d.debtBalanceAfter, bold: true));
     } else {
-      out.addAll(_kv(g, l.strukSubtotal, d.subtotal));
-      // The Diskon row's position follows the actual pipeline (ADR-0038):
-      // above Layanan when the discount reduced the base service and tax were
-      // computed on, below Pajak when they were computed gross. Printing it in
-      // a fixed slot would show a guest arithmetic that does not add up.
-      List<int> discountRow() => _kv(
-        g,
-        d.discountLabel.isEmpty ? l.strukDiscount : d.discountLabel,
-        -d.discountAmount,
+      // ── document title: Tagihan vs Struk pembayaran ──
+      out.addAll(g.hr());
+      out.addAll(
+        g.text(
+          d.isTagihan ? l.strukBillTitle : l.strukReceiptTitle,
+          styles: const PosStyles(align: PosAlign.center, bold: true),
+        ),
       );
-      final hasDiscount = d.discountAmount > 0;
-      if (hasDiscount && d.taxAfterDiscount) out.addAll(discountRow());
-      if (d.serviceAmount > 0) {
-        out.addAll(_kv(g, l.strukService, d.serviceAmount));
-      }
-      if (d.taxAmount > 0) out.addAll(_kv(g, l.strukTax, d.taxAmount));
-      if (hasDiscount && !d.taxAfterDiscount) out.addAll(discountRow());
-      out.addAll(_kv(g, l.strukTotal, d.total, bold: true));
-    }
 
-    // ── payment block (only when paid ⇒ Struk pembayaran) ──
-    if (!d.isTagihan) {
-      out.addAll(g.hr(ch: '-'));
-      for (final p in d.payments) {
+      // ── meta: table / party / time / which receipt ──
+      out.addAll(
+        g.text(
+          l.strukTableLine(d.tableLabel, d.pax, _clock(d.at)),
+          styles: const PosStyles(bold: true),
+        ),
+      );
+      if (d.guestName.trim().isNotEmpty) {
+        out.addAll(g.text(l.strukGuest(d.guestName.trim())));
+      }
+      if (d.memberName.trim().isNotEmpty) {
+        out.addAll(g.text(l.strukMember(d.memberName.trim())));
+      }
+      if (d.docLabel.trim().isNotEmpty && d.kind != BillDocKind.wholeBill) {
+        out.addAll(
+          g.text(d.docLabel.trim(), styles: const PosStyles(bold: true)),
+        );
+      }
+      out.addAll(g.hr());
+
+      // ── body lines ──
+      if (d.isEven) {
+        out.addAll(
+          g.text(l.strukEvenHeading, styles: const PosStyles(bold: true)),
+        );
+        for (final l in d.lines) {
+          out.addAll(
+            g.text(
+              '  ${l.qty}x ${l.name}${l.variant.isEmpty ? '' : ' (${l.variant})'}',
+            ),
+          );
+          out.addAll(_lineExtras(g, l));
+        }
+      } else {
+        for (final l in d.lines) {
+          out.addAll(
+            g.row([
+              PosColumn(
+                text:
+                    '${l.qty}x ${l.name}'
+                    '${l.variant.isEmpty ? '' : ' (${l.variant})'}',
+                width: 8,
+              ),
+              PosColumn(
+                text: l.showPrice ? _money(l.lineTotal) : '',
+                width: 4,
+                styles: const PosStyles(align: PosAlign.right),
+              ),
+            ]),
+          );
+          out.addAll(_lineExtras(g, l));
+        }
+      }
+      out.addAll(g.hr());
+
+      // ── totals ──
+      if (d.isEven) {
+        out.addAll(_kv(g, l.strukBillTotal, d.billTotal));
         out.addAll(
           _kv(
             g,
-            p.isRefund
-                ? l.strukRefunded(p.methodLabel)
-                : l.strukPaid(p.methodLabel),
-            p.amount,
+            d.docLabel.isEmpty ? l.strukPart : d.docLabel,
+            d.total,
+            bold: true,
           ),
         );
-      }
-      if (d.tenderedTotal != null && d.tenderedTotal! > 0) {
-        out.addAll(_kv(g, l.strukCashReceived, d.tenderedTotal!));
-        final change = d.tenderedTotal! - d.paidNet;
-        if (change > 0) out.addAll(_kv(g, l.strukChange, change));
-      }
-      if (d.outstanding > 0) {
-        out.addAll(_kv(g, l.strukOutstanding, d.outstanding, bold: true));
       } else {
-        out.addAll(
-          g.text(
-            l.strukSettled,
-            styles: const PosStyles(align: PosAlign.center, bold: true),
-          ),
+        out.addAll(_kv(g, l.strukSubtotal, d.subtotal));
+        // The Diskon row's position follows the actual pipeline (ADR-0038):
+        // above Layanan when the discount reduced the base service and tax were
+        // computed on, below Pajak when they were computed gross. Printing it in
+        // a fixed slot would show a guest arithmetic that does not add up.
+        List<int> discountRow() => _kv(
+          g,
+          d.discountLabel.isEmpty ? l.strukDiscount : d.discountLabel,
+          -d.discountAmount,
         );
+        final hasDiscount = d.discountAmount > 0;
+        if (hasDiscount && d.taxAfterDiscount) out.addAll(discountRow());
+        if (d.serviceAmount > 0) {
+          out.addAll(_kv(g, l.strukService, d.serviceAmount));
+        }
+        if (d.taxAmount > 0) out.addAll(_kv(g, l.strukTax, d.taxAmount));
+        if (hasDiscount && !d.taxAfterDiscount) out.addAll(discountRow());
+        out.addAll(_kv(g, l.strukTotal, d.total, bold: true));
       }
-    }
 
-    // ── the member's standing (ADR-0095) ──
-    // What they hold as this printed — never an "earned today" line: points
-    // land at bill close, so a Tagihan would be promising, and a reopen would
-    // make the promise a lie.
-    // ponytail: a zero balance prints nothing, so a venue running only the
-    // punch card never prints a "0 poin" line it does not offer.
-    if (d.memberName.trim().isNotEmpty &&
-        (d.memberPoints > 0 || d.memberPunch.isNotEmpty)) {
-      out.addAll(g.hr(ch: '-'));
-      if (d.memberPoints > 0) {
-        out.addAll(g.text(l.strukMemberPoints(d.memberPoints)));
+      // ── payment block (only when paid ⇒ Struk pembayaran) ──
+      if (!d.isTagihan) {
+        out.addAll(g.hr(ch: '-'));
+        for (final p in d.payments) {
+          out.addAll(
+            _kv(
+              g,
+              p.isRefund
+                  ? l.strukRefunded(p.methodLabel)
+                  : l.strukPaid(p.methodLabel),
+              p.amount,
+            ),
+          );
+        }
+        if (d.tenderedTotal != null && d.tenderedTotal! > 0) {
+          out.addAll(_kv(g, l.strukCashReceived, d.tenderedTotal!));
+          final change = d.tenderedTotal! - d.paidNet;
+          if (change > 0) out.addAll(_kv(g, l.strukChange, change));
+        }
+        if (d.outstanding > 0) {
+          out.addAll(_kv(g, l.strukOutstanding, d.outstanding, bold: true));
+        } else {
+          out.addAll(
+            g.text(
+              l.strukSettled,
+              styles: const PosStyles(align: PosAlign.center, bold: true),
+            ),
+          );
+        }
       }
-      if (d.memberPunch.isNotEmpty) {
-        out.addAll(g.text(l.strukMemberPunch(d.memberPunch)));
+
+      // ── the member's standing (ADR-0095) ──
+      // What they hold as this printed — never an "earned today" line: points
+      // land at bill close, so a Tagihan would be promising, and a reopen would
+      // make the promise a lie.
+      // ponytail: a zero balance prints nothing, so a venue running only the
+      // punch card never prints a "0 poin" line it does not offer.
+      if (d.memberName.trim().isNotEmpty &&
+          (d.memberPoints > 0 || d.memberPunch.isNotEmpty)) {
+        out.addAll(g.hr(ch: '-'));
+        if (d.memberPoints > 0) {
+          out.addAll(g.text(l.strukMemberPoints(d.memberPoints)));
+        }
+        if (d.memberPunch.isNotEmpty) {
+          out.addAll(g.text(l.strukMemberPunch(d.memberPunch)));
+        }
       }
     }
 

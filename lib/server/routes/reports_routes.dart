@@ -7,6 +7,7 @@ import 'package:shelf_router/shelf_router.dart';
 
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/cash.dart';
+import 'package:satset/server/debts.dart';
 import 'package:satset/server/members.dart';
 import 'package:satset/server/shift.dart';
 import 'package:satset/server/db/database.dart';
@@ -816,13 +817,23 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
     final dineInCount = dineInSessions.length;
     final dineInNet = dineInSessions.fold<int>(0, (a, s) => a + s.settledTotal);
 
+    // Computed before the body so `sales` can read one figure back off it.
+    final piutang = await debtReportSection(db, from: from, to: to);
+
     final body = {
       'generatedAt': now.toIso8601String(),
       'rangeFrom': from.toIso8601String(),
       'rangeTo': to.toIso8601String(),
       'range': range,
       'filterOptions': filterOptions,
+      // `badDebt` is the one Piutang figure that crosses into Sales (ADR-0098).
+      // ADR-0089's isolation is right for the petty cash box — a top-up is not
+      // income — but a tab written off weeks after close is a genuine loss
+      // against revenue already booked, and hiding it in its own section means
+      // an owner reads `net` as money they got. Read-only: nothing here
+      // recomputes `net`, which keeps its frozen meaning.
       'sales': {
+        'badDebt': piutang['writtenOff'],
         'kpis': salesKpis,
         'coverTrend': coverTrend,
         'hourly': hourlyNorm,
@@ -862,6 +873,13 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       // not a sales channel, it is a claim on future takings. Reporting it
       // inside `sales` would let a points give-away read as revenue.
       'members': await memberReportSection(db, from: from, to: to),
+      // And its own again (ADR-0098). A collection is not revenue — the sale
+      // was booked the night it was eaten — so it cannot sit in `sales`. But
+      // `opening` and `closing` are venue-wide outstanding rather than window
+      // sums, because a receivable does not reset at midnight the way takings
+      // do. The one figure that *does* cross over is `writtenOff`, which the
+      // Sales block reads back as a loss against revenue already counted.
+      'piutang': piutang,
       // Attendance, kept apart from `staff` above on purpose. That block is
       // what someone sold; this one is whether they were here. Fusing them
       // invites reading a slow Tuesday as a slack one.

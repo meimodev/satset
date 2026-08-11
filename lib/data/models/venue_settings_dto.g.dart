@@ -54,6 +54,9 @@ _$VenueSettingsDtoImpl _$$VenueSettingsDtoImplFromJson(
   memberRedeemMin: (json['memberRedeemMin'] as num?)?.toInt() ?? 10,
   memberPunchItemId: json['memberPunchItemId'] as String?,
   memberPunchTarget: (json['memberPunchTarget'] as num?)?.toInt() ?? 10,
+  memberDebtEnabled: json['memberDebtEnabled'] as bool? ?? false,
+  memberDebtLimit: (json['memberDebtLimit'] as num?)?.toInt() ?? 0,
+  memberDebtOverdueDays: (json['memberDebtOverdueDays'] as num?)?.toInt() ?? 30,
 );
 
 Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
@@ -104,4 +107,7 @@ Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
   'memberRedeemMin': instance.memberRedeemMin,
   'memberPunchItemId': instance.memberPunchItemId,
   'memberPunchTarget': instance.memberPunchTarget,
+  'memberDebtEnabled': instance.memberDebtEnabled,
+  'memberDebtLimit': instance.memberDebtLimit,
+  'memberDebtOverdueDays': instance.memberDebtOverdueDays,
 };

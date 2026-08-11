@@ -51,6 +51,7 @@ part 'database.g.dart';
     CashEntries,
     Members,
     MemberPoints,
+    MemberDebts,
     Shifts,
     DemoStates,
   ],
@@ -72,7 +73,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 54;
+  int get schemaVersion => 55;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -116,6 +117,18 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_table_sessions_member '
       'ON table_sessions (member_id)',
+    );
+    // Every [[Piutang]] read is "this member's ledger, oldest first" — the
+    // balance sums it and the FIFO ageing walk needs it ordered. ADR-0098.
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_member_debts_member '
+      'ON member_debts (member_id, at)',
+    );
+    // Reversal looks a charge up by the payment that raised it, which is the
+    // only join that survives bill close.
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_member_debts_payment '
+      'ON member_debts (payment_id)',
     );
   }
 
@@ -1031,6 +1044,34 @@ class AppDatabase extends _$AppDatabase {
       if (from < 54) {
         await _ensureStockCountTables(m);
         await _ensureShiftsTable(m);
+      }
+      // [[Piutang]] — the member debt ledger (ADR-0098). Guarded the same way
+      // 54 is: a version number is evidence of nothing, so the table check and
+      // every column add are re-runnable.
+      if (from < 55) {
+        if (!await _hasTable('member_debts')) {
+          await m.createTable(memberDebts);
+        }
+        await _createMemberIndexes();
+        await _safeAddColumnOn('members', 'debt_limit', type: 'INTEGER');
+        await _safeAddColumnOn(
+          'venue_settings',
+          'member_debt_enabled',
+          type: 'INTEGER NOT NULL DEFAULT 0',
+        );
+        // Both limits land at 0 on an upgrade, which means "no tab" — an
+        // existing venue must not wake up having extended credit to everyone
+        // already enrolled.
+        await _safeAddColumnOn(
+          'venue_settings',
+          'member_debt_limit',
+          type: 'INTEGER NOT NULL DEFAULT 0',
+        );
+        await _safeAddColumnOn(
+          'venue_settings',
+          'member_debt_overdue_days',
+          type: 'INTEGER NOT NULL DEFAULT 30',
+        );
       }
     },
     onCreate: (m) async {

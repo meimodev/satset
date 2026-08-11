@@ -8,6 +8,7 @@ import 'package:satset/data/models/member_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/ws_client.dart';
+import 'package:satset/domain/models/member.dart';
 
 /// How many members one read carries. The directory is a venue's regulars, not
 /// a mailing list — a single page covers most, and the till reaches the rest by
@@ -179,6 +180,8 @@ class MembersRepository extends StateNotifier<MembersState> {
     String? note,
     DateTime? birthday,
     bool clearBirthday = false,
+    int? debtLimit,
+    bool clearDebtLimit = false,
   }) => _write(
     () async =>
         await _ref.read(apiClientProvider).patchJson('/members/$id', {
@@ -188,6 +191,9 @@ class MembersRepository extends StateNotifier<MembersState> {
               // An explicit null clears the date; an absent key leaves it be.
               if (clearBirthday || birthday != null)
                 'birthday': birthday?.toIso8601String(),
+              // Same shape, and it carries more weight here: a null puts them
+              // back on the venue default, which is not the same as a 0 limit.
+              if (clearDebtLimit || debtLimit != null) 'debtLimit': debtLimit,
             })
             as Map<String, dynamic>,
   );
@@ -232,6 +238,77 @@ class MembersRepository extends StateNotifier<MembersState> {
               'note': note,
             })
             as Map<String, dynamic>,
+  );
+
+  // ---------------------------------------------------------------- piutang
+  //
+  // Every write here answers with the member's new standing rather than the
+  // member, so the caller can render a balance without a second round trip. The
+  // socket carries the member itself, which is what keeps the directory row in
+  // step — hence no `_upsert` on this side.
+
+  /// One member's [[Piutang]] standing: balance, resolved limit, ledger.
+  Future<MemberDebt> debt(String id) async {
+    final raw =
+        await _ref.read(apiClientProvider).getJson('/members/$id/debt')
+            as Map<String, dynamic>;
+    return MemberDebt.fromJson(raw);
+  }
+
+  /// Everyone who owes, largest first. Read by the directory's Berutang filter
+  /// and nothing else — the report builds its own from the same server-side
+  /// walk.
+  Future<List<Debtor>> debtors() async {
+    final raw =
+        await _ref.read(apiClientProvider).getJson('/members/debtors') as List;
+    return [
+      for (final d in raw) Debtor.fromJson((d as Map).cast<String, dynamic>()),
+    ];
+  }
+
+  /// Collect against a tab. [photoBase64] is mandatory server-side for any
+  /// method but `tunai` (ADR-0025).
+  Future<MemberDebt> payDebt({
+    required String id,
+    required int amount,
+    required String method,
+    String? photoBase64,
+    String? note,
+  }) async => MemberDebt.fromJson(
+    await _ref.read(apiClientProvider).postJson('/members/$id/debt/payments', {
+          'amount': amount,
+          'method': method,
+          'photoBase64': ?photoBase64,
+          'note': ?note,
+        })
+        as Map<String, dynamic>,
+  );
+
+  /// Give up collecting. Mandatory reason, always audited.
+  Future<MemberDebt> writeOffDebt({
+    required String id,
+    required int amount,
+    required String note,
+  }) async => MemberDebt.fromJson(
+    await _ref.read(apiClientProvider).postJson('/members/$id/debt/write-off', {
+          'amount': amount,
+          'note': note,
+        })
+        as Map<String, dynamic>,
+  );
+
+  /// A hand correction, signed. Kept apart from a write-off so the bad-debt
+  /// figure stays "money we lost" (ADR-0098).
+  Future<MemberDebt> adjustDebt({
+    required String id,
+    required int delta,
+    required String note,
+  }) async => MemberDebt.fromJson(
+    await _ref.read(apiClientProvider).postJson('/members/$id/debt/adjust', {
+          'delta': delta,
+          'note': note,
+        })
+        as Map<String, dynamic>,
   );
 
   /// Applies the response directly rather than waiting for the socket to loop

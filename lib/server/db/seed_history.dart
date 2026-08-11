@@ -7,6 +7,7 @@ import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/server/audit_log.dart';
+import 'package:satset/server/debts.dart';
 import 'package:satset/server/members.dart';
 import 'package:satset/server/routes/tables_routes.dart'
     show snapshotVisitAndDelete;
@@ -266,6 +267,7 @@ Future<void> seedHistory(
   // that count non-zero on a `7d` range.
   final memberIds = <String>[];
   final cfg0 = await memberConfig(db);
+  final debtCfg = await debtConfig(db);
   if (cfg0.enabled) {
     for (var i = 0; i < sampleMembers.length; i++) {
       final (name, phone) = sampleMembers[i];
@@ -333,7 +335,10 @@ Future<void> seedHistory(
       for (final id in shiftStaff)
         if (rng.nextDouble() >= _attendanceOf(id).absentRate) id,
     };
-    final dayActors = [for (final id in actors) if (present.contains(id)) id];
+    final dayActors = [
+      for (final id in actors)
+        if (present.contains(id)) id,
+    ];
     final todayActors = dayActors.isEmpty ? actors : dayActors;
     // First and last order per person, which is what each shift is bracketed
     // around — a clock-out at 18:00 with a bill at 21:00 is the kind of thing
@@ -611,12 +616,29 @@ Future<void> seedHistory(
         );
       }
 
+      // A few member bills leave on the tab instead of being paid (ADR-0098).
+      // Written through the production writer, so the ledger, the audit row
+      // and the payment agree exactly as they would live.
+      final onTab =
+          memberId != null &&
+          !walkout &&
+          debtCfg.enabled &&
+          rng.nextDouble() < memberTabRate &&
+          await memberDebt(db, memberId) + breakdown.total <=
+              debtCfg.venueLimit;
+
       if (!walkout) {
-        final method = const ['cash', 'qris', 'card'][rng.nextInt(3)];
+        final method = onTab
+            ? 'piutang'
+            : const ['cash', 'qris', 'card'][rng.nextInt(3)];
         final paymentId = nextId('pm');
         // A stand-in slip on a few recent non-cash tenders, so the venue log
         // has something to open out of the box. Cash never carries one.
-        final withProof = method != 'cash' && d <= 7 && proofBudget > 0;
+        final withProof =
+            method != 'cash' &&
+            method != 'piutang' &&
+            d <= 7 &&
+            proofBudget > 0;
         if (withProof) proofBudget--;
         await db
             .into(db.payments)
@@ -631,6 +653,20 @@ Future<void> seedHistory(
                 photo: Value(withProof ? placeholderProofJpeg : null),
               ),
             );
+        if (onTab) {
+          await chargeDebt(
+            db,
+            memberId: memberId,
+            amount: breakdown.total,
+            paymentId: paymentId,
+            visitId: visitId,
+            billLabel: table.id,
+            config: debtCfg,
+            actorUserId: actor,
+            at: closedAt,
+            idPrefix: samplePrefix,
+          );
+        }
         await writeAudit(
           db,
           type: AuditType.paymentRecorded,
@@ -748,7 +784,8 @@ Future<void> seedHistory(
       // The session moved stock; the planner's running balance has to follow
       // it, or the next day's delivery is sized against a quantity that no
       // longer exists and the production path rejects lines for want of it.
-      for (final e in closed?.deltas.entries ?? const <MapEntry<String, int>>[]) {
+      for (final e
+          in closed?.deltas.entries ?? const <MapEntry<String, int>>[]) {
         balance[e.key] = (balance[e.key] ?? 0) + e.value;
       }
     }
@@ -766,6 +803,62 @@ Future<void> seedHistory(
       orders: orders,
     );
     onDay?.call(historyDays - d + 1, historyDays);
+  }
+
+  // ── settle most of the tabs (ADR-0098) ──
+  //
+  // Runs after the month rather than inside it: a collection has to land after
+  // the charge it pays down, and the day loop walks *backwards*. Most tabs are
+  // collected, a few are still owing on the last day, and exactly one is
+  // written off — a Piutang section where every state is zero teaches nothing.
+  if (debtCfg.enabled && memberIds.isNotEmpty) {
+    final owing = await listDebtors(db);
+    var wroteOff = false;
+    for (final d in owing) {
+      if (rng.nextDouble() < tabStillOwingRate) continue;
+      // A collection lands somewhere between the oldest charge and today, so
+      // the ageing walk has spread rather than one settlement day.
+      final from =
+          d.oldestUnpaidAt ?? today.subtract(Duration(days: historyDays));
+      final span = today.difference(from).inDays;
+      final at = from.add(Duration(days: span <= 1 ? 0 : rng.nextInt(span)));
+      if (!wroteOff && rng.nextDouble() < 0.25) {
+        wroteOff = true;
+        await writeOffDebt(
+          db,
+          memberId: d.memberId,
+          amount: d.balance,
+          note: 'Nomor tidak aktif',
+          actorUserId: approver,
+          at: at,
+          idPrefix: samplePrefix,
+        );
+        continue;
+      }
+      // Part payments on some, so the ledger shows a tab being worked down
+      // rather than only ever clearing in one go.
+      final amount = rng.nextDouble() < 0.3
+          ? (d.balance * 0.5).round().clamp(1, d.balance)
+          : d.balance;
+      final method = const [
+        'tunai',
+        'tunai',
+        'qris',
+        'transfer',
+      ][rng.nextInt(4)];
+      await payDebt(
+        db,
+        memberId: d.memberId,
+        amount: amount,
+        method: method,
+        // The photo rule is the live one (ADR-0025), so a seeded non-cash
+        // collection has to carry a slip or the writer refuses it.
+        photo: method == 'tunai' ? null : placeholderProofJpeg,
+        actorUserId: approver,
+        at: at,
+        idPrefix: samplePrefix,
+      );
+    }
   }
 
   // Under-buying makes the production path reject lines, which would shrink
@@ -828,7 +921,9 @@ Future<void> _seedShifts(
       // rows, one day — which is the whole reason "hari" and "shift" are
       // different columns.
       final total = end.difference(start).inMinutes;
-      final gapStart = start.add(Duration(minutes: between(total ~/ 3, total ~/ 2)));
+      final gapStart = start.add(
+        Duration(minutes: between(total ~/ 3, total ~/ 2)),
+      );
       final gap = between(35, 70);
       await openShift(db, id, at: start, idPrefix: samplePrefix);
       await endShift(db, id, at: gapStart);

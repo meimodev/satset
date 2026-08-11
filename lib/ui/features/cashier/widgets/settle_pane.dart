@@ -42,12 +42,16 @@ enum PayMethod {
   qris('qris'),
   kartu('kartu'),
   transfer('transfer'),
-  lainnya('lainnya');
+  lainnya('lainnya'),
+
+  /// Not money — the receipt's claim moves to the member's [[Piutang]] ledger
+  /// (ADR-0098). No proof photo exists for a promise, and nothing is tendered.
+  piutang('piutang');
 
   final String id;
   const PayMethod(this.id);
 
-  bool get needsProof => this != PayMethod.tunai;
+  bool get needsProof => this != PayMethod.tunai && this != PayMethod.piutang;
 
   String label(AppL10n l10n) => switch (this) {
     PayMethod.tunai => l10n.stlPayTunai,
@@ -55,6 +59,7 @@ enum PayMethod {
     PayMethod.kartu => l10n.stlPayKartu,
     PayMethod.transfer => l10n.stlPayTransfer,
     PayMethod.lainnya => l10n.stlPayLainnya,
+    PayMethod.piutang => l10n.payMethodOnAccount,
   };
 
   /// What the cashier has to produce for this method. It earns its line: it
@@ -65,7 +70,44 @@ enum PayMethod {
     PayMethod.kartu => l10n.stlProofKartu,
     PayMethod.transfer => l10n.stlProofTransfer,
     PayMethod.lainnya => l10n.stlProofLainnya,
+    PayMethod.piutang => l10n.stlPiutangHint,
   };
+}
+
+/// The method every later payment on this bill is bound to, or null while
+/// nobody has paid. The first tender sets the rule for the rest of the bill:
+/// a guest who pays half in cash and half by card can't be settled at this
+/// till, which is the point — a split-tender bill reconciles against neither
+/// drawer nor statement cleanly.
+///
+/// Read across every receipt, not just one: each mode mints its own receipt
+/// (ADR-0067), so a per-receipt reading would almost never fire. Refunds carry
+/// a method too and are skipped — giving money back doesn't decide how the next
+/// lot comes in.
+///
+/// Piutang sits outside the rule entirely — it is not money and reconciles
+/// against no drawer and no statement, so it neither sets the lock nor is
+/// stopped by one. Part cash, part tab is the case the feature exists for.
+///
+/// Top-level because the per-receipt pay sheet on the bill screen has to answer
+/// the same question: a lock the settle pane enforces and the sheet ignores is
+/// no lock, just a longer way round it.
+PayMethod? lockedMethodFor(Bill bill) {
+  BillPayment? latest;
+  for (final r in bill.receipts) {
+    for (final p in r.payments) {
+      if (p.isRefund || p.method == PayMethod.piutang.id) continue;
+      if (latest == null || p.at.isAfter(latest.at)) latest = p;
+    }
+  }
+  if (latest == null) return null;
+  for (final m in PayMethod.values) {
+    if (m.id == latest.method) return m;
+  }
+  // A string the enum doesn't know can only come from a server that has moved
+  // on. Fail open rather than lock the cashier out of a method that isn't even
+  // on screen.
+  return null;
 }
 
 /// The right-hand pane of the bill (ADR-0066): pick how much, pick how it was
@@ -87,6 +129,10 @@ class SettlePane extends StatefulWidget {
   final ValueChanged<SettleMode> onMode;
   final VoidCallback onClearSelection;
 
+  /// Whether the venue runs tabs at all (ADR-0098). Passed rather than watched
+  /// because this pane holds no `WidgetRef`, and the parent already has one.
+  final bool debtEnabled;
+
   const SettlePane({
     super.key,
     required this.bill,
@@ -96,6 +142,7 @@ class SettlePane extends StatefulWidget {
     required this.mode,
     required this.onMode,
     required this.onClearSelection,
+    this.debtEnabled = false,
   });
 
   @override
@@ -118,37 +165,12 @@ class _SettlePaneState extends State<SettlePane> {
 
   Bill get _bill => widget.bill;
 
-  /// The method every later payment on this bill is bound to, or null while
-  /// nobody has paid. The first tender sets the rule for the rest of the bill:
-  /// a guest who pays half in cash and half by card can't be settled at this
-  /// till, which is the point — a split-tender bill reconciles against neither
-  /// drawer nor statement cleanly.
-  ///
-  /// Read across every receipt, not just the one this payment will land on:
-  /// each mode mints its own receipt (ADR-0067), so a per-receipt reading would
-  /// almost never fire. Refunds carry a method too and are skipped — giving
-  /// money back doesn't decide how the next lot comes in.
-  PayMethod? get _lockedMethod {
-    BillPayment? latest;
-    for (final r in _bill.receipts) {
-      for (final p in r.payments) {
-        if (p.isRefund) continue;
-        if (latest == null || p.at.isAfter(latest.at)) latest = p;
-      }
-    }
-    if (latest == null) return null;
-    for (final m in PayMethod.values) {
-      if (m.id == latest.method) return m;
-    }
-    // A string the enum doesn't know can only come from a server that has
-    // moved on. Fail open rather than lock the cashier out of a method that
-    // isn't even on screen.
-    return null;
-  }
+  PayMethod? get _lockedMethod => lockedMethodFor(_bill);
 
   /// What this payment will actually be recorded as — the lock if there is one,
   /// otherwise whatever the cashier tapped.
-  PayMethod get _pay => _lockedMethod ?? _method;
+  PayMethod get _pay =>
+      _method == PayMethod.piutang ? _method : (_lockedMethod ?? _method);
 
   /// Amount receipts already minted and still owing — Bagi rata pays the next
   /// one rather than re-splitting.
@@ -156,6 +178,23 @@ class _SettlePaneState extends State<SettlePane> {
     for (final r in _bill.receipts)
       if (r.mode == 'even' && r.paidNet < r.total) r,
   ];
+
+  /// The already-minted receipt **Penuh** will pay instead of minting a new
+  /// one, or null when it mints.
+  ///
+  /// A reopened receipt still claims every line, so there is nothing left to
+  /// mint from and `Penuh` used to sit at "nothing to charge" while the bill
+  /// plainly owed money — the only way through was the struk row's own Bayar.
+  /// One open receipt is an unambiguous target; two or more is a split, and a
+  /// split is settled per struk by design.
+  BillReceipt? get _penuhTarget {
+    if (_remainder > 0) return null;
+    final open = [
+      for (final r in _bill.receipts)
+        if (r.outstanding > 0) r,
+    ];
+    return open.length == 1 ? open.first : null;
+  }
 
   /// What no receipt has claimed yet. Amount receipts are cut from this, never
   /// from the whole bill (ADR-0068).
@@ -177,9 +216,11 @@ class _SettlePaneState extends State<SettlePane> {
 
   /// The number the confirm button is about to take.
   int get _amount => switch (widget.mode) {
-    // The whole remainder, capped by what is actually still owed.
+    // The whole remainder, capped by what is actually still owed — or the one
+    // open receipt's own outstanding when nothing is left to mint from.
     SettleMode.penuh =>
-      _bill.outstanding < _remainder ? _bill.outstanding : _remainder,
+      _penuhTarget?.outstanding ??
+          (_bill.outstanding < _remainder ? _bill.outstanding : _remainder),
     // Priced at confirm by the server; this is the honest preview — the tapped
     // units plus their proportional share of service and tax.
     SettleMode.perItem => _grossUp(_selectionSubtotal),
@@ -216,6 +257,21 @@ class _SettlePaneState extends State<SettlePane> {
     if (_pay.needsProof && _proof == null) {
       return l10n.stlBlkAttachProof;
     }
+    if (_pay == PayMethod.piutang && _amount > _headroom) {
+      return l10n.stlBlkOverCredit;
+    }
+    return null;
+  }
+
+  /// What may still go on this member's tab, resolved server-side and carried
+  /// on the bill. Zero when there is no member, or no credit left.
+  int get _headroom => _bill.member?.debtHeadroom ?? 0;
+
+  /// Why the Piutang chip is off, or null when it is live. A reason on screen
+  /// beats a greyed-out chip — Principle 3.
+  String? _piutangOff(AppL10n l10n) {
+    if (_bill.member == null) return l10n.stlPiutangNoMember;
+    if (_headroom <= 0) return l10n.stlPiutangNoRoom;
     return null;
   }
 
@@ -251,10 +307,12 @@ class _SettlePaneState extends State<SettlePane> {
     try {
       await widget.run(() async {
         final receiptId = switch (widget.mode) {
-          SettleMode.penuh => (await widget.repo.mintReceipt(
-            _bill.visitId,
-            assignAll: true,
-          )).receiptId,
+          SettleMode.penuh =>
+            _penuhTarget?.id ??
+                (await widget.repo.mintReceipt(
+                  _bill.visitId,
+                  assignAll: true,
+                )).receiptId,
           SettleMode.perItem => (await widget.repo.mintReceipt(
             _bill.visitId,
             lines: [
@@ -319,6 +377,8 @@ class _SettlePaneState extends State<SettlePane> {
                   tender: _tender,
                   onTender: (v) => setState(() => _tender = v),
                 )
+              else if (_pay == PayMethod.piutang)
+                _piutangBlock(sc)
               else
                 _proofBlock(sc),
             ],
@@ -477,40 +537,83 @@ class _SettlePaneState extends State<SettlePane> {
   /// tappable and swallows the tap is how a cashier mid-rush decides the app
   /// has frozen; a row with one chip in it explains itself.
   Widget _methodRow(SatColors sc) {
+    final l10n = context.l10n;
     final locked = _lockedMethod;
+    final offReason = _piutangOff(l10n);
+    // The money methods, then the tab. A lock hides the money ones it excludes;
+    // Piutang stands apart from the lock, and shows disabled with its reason
+    // rather than vanishing — a cashier who cannot find the chip cannot learn
+    // why it is unavailable.
+    final money = [
+      for (final m in PayMethod.values)
+        if (m != PayMethod.piutang && (locked == null || m == locked)) m,
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(context.l10n.stlMethod, style: SatType.labelS(color: sc.textLo)),
+        Text(l10n.stlMethod, style: SatType.labelS(color: sc.textLo)),
         const SizedBox(height: Sp.s2),
         Wrap(
           spacing: Sp.s2,
           runSpacing: Sp.s2,
           children: [
-            for (final m in locked == null ? PayMethod.values : [locked])
+            for (final m in money)
               SatChip.select(
-                label: m.label(context.l10n),
+                label: m.label(l10n),
                 selected: _pay == m,
-                onTap: locked != null
+                onTap: locked != null ? null : () => _pick(m),
+              ),
+            if (widget.debtEnabled)
+              SatChip.select(
+                label: PayMethod.piutang.label(l10n),
+                selected: _pay == PayMethod.piutang,
+                onTap: offReason != null
                     ? null
-                    : () => setState(() {
-                        _method = m;
-                        _tender = 0;
-                        _proof = null;
-                      }),
+                    : () => _pick(PayMethod.piutang),
               ),
           ],
         ),
         if (locked != null) ...[
           const SizedBox(height: Sp.s2),
           Text(
-            context.l10n.stlLockedTo(locked.label(context.l10n)),
+            l10n.stlLockedTo(locked.label(l10n)),
             style: SatType.bodyS(color: sc.textLo),
           ),
+        ],
+        if (widget.debtEnabled && offReason != null) ...[
+          const SizedBox(height: Sp.s2),
+          Text(offReason, style: SatType.bodyS(color: sc.textLo)),
         ],
       ],
     );
   }
+
+  void _pick(PayMethod m) => setState(() {
+    _method = m;
+    _tender = 0;
+    _proof = null;
+  });
+
+  /// No pad, no camera — a tab takes neither. The credit left is the one number
+  /// that decides whether this goes through, so it is the one on screen.
+  Widget _piutangBlock(SatColors sc) => Container(
+    padding: const EdgeInsets.all(Sp.s3),
+    decoration: SatBox.d(color: sc.bg2, borderRadius: SatR.a(12)),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.l10n.stlPiutangHint,
+          style: SatType.bodyS(color: sc.textLo),
+        ),
+        const SizedBox(height: Sp.s2),
+        Text(
+          context.l10n.stlPiutangLeft(formatIDR(_headroom)),
+          style: SatType.mono(color: _amount > _headroom ? sc.warn : sc.textHi),
+        ),
+      ],
+    ),
+  );
 
   Widget _proofBlock(SatColors sc) => Container(
     padding: const EdgeInsets.all(Sp.s3),

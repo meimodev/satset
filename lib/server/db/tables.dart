@@ -499,6 +499,22 @@ class VenueSettings extends Table {
   /// earn one free. Null item ⇒ no program running even when the toggle is on.
   TextColumn get memberPunchItemId => text().nullable()();
   IntColumn get memberPunchTarget => integer().withDefault(const Constant(10))();
+
+  /// **[[Piutang]]** — the third mechanism nesting under [membersEnabled], off
+  /// by default (ADR-0098). Off hides the `piutang` payment method, the till's
+  /// collection sheet and the Reports section; balances stay put.
+  BoolColumn get memberDebtEnabled =>
+      boolean().withDefault(const Constant(false))();
+
+  /// Venue-wide fallback credit limit for a member whose own `debtLimit` is
+  /// null. **`0` means no tab** — the deliberate default, so switching the
+  /// feature on extends credit to nobody until an owner names a number.
+  IntColumn get memberDebtLimit => integer().withDefault(const Constant(0))();
+
+  /// How old an unsettled charge must be before the Piutang section counts it
+  /// overdue. A credit policy, not a fact, which is why it is not hardcoded.
+  IntColumn get memberDebtOverdueDays =>
+      integer().withDefault(const Constant(30))();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -1221,6 +1237,13 @@ class Members extends Table {
   /// filter and nothing else: there is deliberately no birthday rules engine.
   DateTimeColumn get birthday => dateTime().nullable()();
   DateTimeColumn get joinedAt => dateTime()();
+
+  /// How much [[Piutang]] this member may carry, in rupiah. **Null means fall
+  /// back to `venueSettings.memberDebtLimit`** — not "unlimited". `0` (either
+  /// here or on the venue default) means no tab at all, which is what both
+  /// ship at: turning the feature on must not silently extend credit to
+  /// everybody already enrolled. See ADR-0098.
+  IntColumn get debtLimit => integer().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -1257,6 +1280,65 @@ class MemberPoints extends Table {
   /// Required on `adjust` (enforced in the writer) — an adjustment with no
   /// reason is a hole in the ledger, exactly as it is in the cash box.
   TextColumn get note => text().nullable()();
+  TextColumn get actorUserId => text().nullable()();
+
+  /// Attribution frozen at write time so a later rename cannot rewrite history.
+  TextColumn get actorName => text().nullable()();
+  DateTimeColumn get at => dateTime()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// The [[Piutang]] ledger — append-only, one row per movement (ADR-0098).
+///
+/// **No balance column**, for the third time and the same reason [CashEntries]
+/// and [MemberPoints] have none: the balance is `SUM(delta)`, money must never
+/// have two answers. It cannot go negative and it cannot exceed the member's
+/// credit limit — both checked in `lib/server/debts.dart`, the single writer.
+///
+/// A charge is written **with the payment that discharged the receipt**, not at
+/// bill close: a bill can go part-cash part-tab, so the tab is one payment
+/// among several rather than a property of the close.
+class MemberDebts extends Table {
+  TextColumn get id => text()();
+  TextColumn get memberId => text()();
+
+  /// `charge | payment | reversal | writeOff | adjust`. `reversal` is automatic
+  /// (a reopened receipt undoing its own charge); `adjust` is the hand
+  /// correction that exists because a snapshotted visit has no receipt left to
+  /// reopen, and without it a typo could only be fixed by a `writeOff` — which
+  /// would make the bad-debt figure meaningless.
+  TextColumn get kind => text()();
+
+  /// Signed rupiah — positive charged, negative collected, reversed, written
+  /// off or corrected down.
+  IntColumn get delta => integer()();
+
+  /// The [[Payment (manual confirmation)]] that raised this charge. **The join
+  /// that survives bill close**: `snapshotVisitAndDelete` copies a payment
+  /// under its live id but mints a fresh `table_sessions.id`, so this is the
+  /// only stable way back to the bill. Null on every kind but `charge`.
+  TextColumn get paymentId => text().nullable()();
+
+  /// The [[Visit]] behind a `charge`, for as long as one exists. Goes dangling
+  /// at snapshot **by design** — read [paymentId] to reach history.
+  TextColumn get visitId => text().nullable()();
+
+  /// Table label frozen at write time, so a ledger row can name its bill after
+  /// the visit is gone without joining anything.
+  TextColumn get billLabel => text().withDefault(const Constant(''))();
+
+  /// Collection method on `payment` (`tunai` | `kartu` | `qris` | `transfer` |
+  /// `lainnya` — never `piutang`, which would be circular). Null otherwise.
+  TextColumn get method => text().nullable()();
+
+  /// Required on `writeOff` and `adjust` (enforced in the writer) — the same
+  /// rule the cash box and the points ledger keep.
+  TextColumn get note => text().nullable()();
+
+  /// Proof photo for a non-cash collection (ADR-0025). A `charge` never has
+  /// one: there is no slip for a promise.
+  BlobColumn get photo => blob().nullable()();
   TextColumn get actorUserId => text().nullable()();
 
   /// Attribution frozen at write time so a later rename cannot rewrite history.

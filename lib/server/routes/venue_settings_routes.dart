@@ -216,6 +216,22 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         memberPunchTarget: body.containsKey('memberPunchTarget')
             ? Value(((body['memberPunchTarget'] as num).toInt()).clamp(2, 100))
             : const Value.absent(),
+        // [[Piutang]] (ADR-0098). The venue limit is deliberately clamped from
+        // **0**, unlike the rates above: zero is the meaningful default here —
+        // switching tabs on grants nobody one until an owner names a number.
+        memberDebtEnabled: body.containsKey('memberDebtEnabled')
+            ? Value(body['memberDebtEnabled'] == true)
+            : const Value.absent(),
+        memberDebtLimit: body.containsKey('memberDebtLimit')
+            ? Value(
+                ((body['memberDebtLimit'] as num).toInt()).clamp(0, 1000000000),
+              )
+            : const Value.absent(),
+        memberDebtOverdueDays: body.containsKey('memberDebtOverdueDays')
+            ? Value(
+                ((body['memberDebtOverdueDays'] as num).toInt()).clamp(1, 365),
+              )
+            : const Value.absent(),
       ),
     );
     final row = await _readOrSeed(db);
@@ -365,4 +381,7 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
   'memberRedeemMin': s.memberRedeemMin,
   'memberPunchItemId': s.memberPunchItemId,
   'memberPunchTarget': s.memberPunchTarget,
+  'memberDebtEnabled': s.memberDebtEnabled,
+  'memberDebtLimit': s.memberDebtLimit,
+  'memberDebtOverdueDays': s.memberDebtOverdueDays,
 };

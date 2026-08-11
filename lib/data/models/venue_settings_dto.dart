@@ -70,6 +70,19 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default(10) int memberRedeemMin,
     String? memberPunchItemId,
     @Default(10) int memberPunchTarget,
+
+    // Piutang (ADR-0098). Nested under [membersEnabled] — a venue that keeps no
+    // guest directory cannot run tabs against guests it does not keep.
+    @Default(false) bool memberDebtEnabled,
+
+    /// The venue-wide credit limit a member falls back to when they have none
+    /// of their own. **0 is the shipped default and means "no tab"** — turning
+    /// the feature on trusts nobody until an owner names a number.
+    @Default(0) int memberDebtLimit,
+
+    /// How long a tab may stand before the report calls it overdue. A credit
+    /// policy, not a fact, which is why it is a setting.
+    @Default(30) int memberDebtOverdueDays,
   }) = _VenueSettingsDto;
 
   factory VenueSettingsDto.fromJson(Map<String, dynamic> json) =>

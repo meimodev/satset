@@ -102,6 +102,17 @@ class MemberPanel extends ConsumerWidget {
                         hue: SatChipHue.accent,
                         size: SatChipSize.sm,
                       ),
+                    // On screen from the moment the member is attached, not
+                    // discovered at settlement (ADR-0098): a cashier who finds
+                    // out at the till has already told the guest yes.
+                    if (cfg.memberDebtEnabled && member.debt > 0) ...[
+                      const SizedBox(width: Sp.s2),
+                      SatChip.tag(
+                        label: l10n.cshMemberDebt(formatIDR(member.debt)),
+                        hue: SatChipHue.warn,
+                        size: SatChipSize.sm,
+                      ),
+                    ],
                     if (member.punchRewardDue) ...[
                       const SizedBox(width: Sp.s2),
                       // The reward is a comp through the ordinary void-with-comp
@@ -115,6 +126,17 @@ class MemberPanel extends ConsumerWidget {
                     ],
                   ],
                 ),
+                if (cfg.memberDebtEnabled) ...[
+                  const SizedBox(height: Sp.s1h),
+                  Text(
+                    member.debtHeadroom > 0
+                        ? l10n.cshMemberCredit(formatIDR(member.debtHeadroom))
+                        : l10n.cshMemberCreditNone,
+                    style: SatType.mono(
+                      color: member.debtHeadroom > 0 ? sc.textLo : sc.warn,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: Sp.s2h),
                 Row(
                   children: [

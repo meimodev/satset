@@ -577,6 +577,12 @@ abstract class AppL10n {
   /// **'Kas'**
   String get auditTypeCashMovement;
 
+  /// No description provided for @auditTypeDebtMovement.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang'**
+  String get auditTypeDebtMovement;
+
   /// No description provided for @auditTypeMemberChanged.
   ///
   /// In id, this message translates to:
@@ -2209,6 +2215,12 @@ abstract class AppL10n {
   /// **'Lainnya'**
   String get payMethodOther;
 
+  /// No description provided for @payMethodOnAccount.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang'**
+  String get payMethodOnAccount;
+
   /// No description provided for @rangeToday.
   ///
   /// In id, this message translates to:
@@ -3493,6 +3505,36 @@ abstract class AppL10n {
   /// **'Tukar {points} poin {name} — {amount}'**
   String auditMemberPointsRedeemed(String name, String points, String amount);
 
+  /// No description provided for @auditDebtCharged.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang {member} — {amount} ({bill})'**
+  String auditDebtCharged(String member, String amount, String bill);
+
+  /// No description provided for @auditDebtPaid.
+  ///
+  /// In id, this message translates to:
+  /// **'Terima piutang {member} — {amount} ({method})'**
+  String auditDebtPaid(String member, String amount, String method);
+
+  /// No description provided for @auditDebtReversed.
+  ///
+  /// In id, this message translates to:
+  /// **'Batal piutang {member} — {amount} ({bill})'**
+  String auditDebtReversed(String member, String amount, String bill);
+
+  /// No description provided for @auditDebtWrittenOff.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus buku piutang {member} — {amount}'**
+  String auditDebtWrittenOff(String member, String amount);
+
+  /// No description provided for @auditDebtAdjusted.
+  ///
+  /// In id, this message translates to:
+  /// **'Koreksi piutang {member} — {amount}'**
+  String auditDebtAdjusted(String member, String amount);
+
   /// No description provided for @auditMenuKilled.
   ///
   /// In id, this message translates to:
@@ -3690,6 +3732,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Buka ulang struk sebelum mengubahnya.'**
   String get cshErrReceiptPaid;
+
+  /// No description provided for @cshErrOverRefund.
+  ///
+  /// In id, this message translates to:
+  /// **'Melebihi uang yang diterima pada struk ini.'**
+  String get cshErrOverRefund;
 
   /// No description provided for @cshErrNotSettled.
   ///
@@ -3892,7 +3940,7 @@ abstract class AppL10n {
   /// No description provided for @cshReopenBody.
   ///
   /// In id, this message translates to:
-  /// **'Batalkan status lunas \"{receipt}\" agar bisa diubah? Pembayaran tercatat tetap ada.'**
+  /// **'Batalkan status lunas \"{receipt}\" agar bisa diubah? Semua pembayaran pada struk ini dihapus dan harus dicatat ulang; piutang yang tercatat ikut dibatalkan.'**
   String cshReopenBody(String receipt);
 
   /// No description provided for @cshReopenConfirm.
@@ -3948,6 +3996,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Gagal mengambil foto: {error}'**
   String cshPhotoFailed(String error);
+
+  /// No description provided for @cshRefundCap.
+  ///
+  /// In id, this message translates to:
+  /// **'Maksimum {amount} — hanya uang yang benar-benar diterima yang bisa dikembalikan.'**
+  String cshRefundCap(String amount);
 
   /// No description provided for @cshRefundTitle.
   ///
@@ -10435,6 +10489,90 @@ abstract class AppL10n {
   /// **'Kas kecil'**
   String get rptSecKas;
 
+  /// No description provided for @rptSecPiutang.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang'**
+  String get rptSecPiutang;
+
+  /// No description provided for @rptPiutangSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagihan pelanggan yang belum dibayar'**
+  String get rptPiutangSub;
+
+  /// No description provided for @rptPiutangEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada piutang di rentang ini.'**
+  String get rptPiutangEmpty;
+
+  /// No description provided for @rptPiutangOpening.
+  ///
+  /// In id, this message translates to:
+  /// **'Saldo awal'**
+  String get rptPiutangOpening;
+
+  /// No description provided for @rptPiutangCharged.
+  ///
+  /// In id, this message translates to:
+  /// **'Ditagihkan'**
+  String get rptPiutangCharged;
+
+  /// No description provided for @rptPiutangCollected.
+  ///
+  /// In id, this message translates to:
+  /// **'Diterima'**
+  String get rptPiutangCollected;
+
+  /// No description provided for @rptPiutangWrittenOff.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus buku'**
+  String get rptPiutangWrittenOff;
+
+  /// No description provided for @rptPiutangClosing.
+  ///
+  /// In id, this message translates to:
+  /// **'Saldo akhir'**
+  String get rptPiutangClosing;
+
+  /// No description provided for @rptPiutangByMethod.
+  ///
+  /// In id, this message translates to:
+  /// **'Penerimaan per metode'**
+  String get rptPiutangByMethod;
+
+  /// No description provided for @rptPiutangMore.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftar lengkap ada di Pelanggan.'**
+  String get rptPiutangMore;
+
+  /// No description provided for @rptSalesBadDebt.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang tak tertagih'**
+  String get rptSalesBadDebt;
+
+  /// No description provided for @rptPiutangOverdue.
+  ///
+  /// In id, this message translates to:
+  /// **'{days, plural, other{Lewat {days} hari}}'**
+  String rptPiutangOverdue(int days);
+
+  /// No description provided for @rptPiutangDebtors.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{{count} penunggak}}'**
+  String rptPiutangDebtors(int count);
+
+  /// No description provided for @rptPiutangAge.
+  ///
+  /// In id, this message translates to:
+  /// **'{days} hr'**
+  String rptPiutangAge(int days);
+
   /// No description provided for @rptSecMembers.
   ///
   /// In id, this message translates to:
@@ -12523,6 +12661,42 @@ abstract class AppL10n {
   /// **'Batas bawah sekali penukaran.'**
   String get vstMembersRedeemMinHint;
 
+  /// No description provided for @vstMembersDebt.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang'**
+  String get vstMembersDebt;
+
+  /// No description provided for @vstMembersDebtHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan boleh menutup tagihan dulu, bayar belakangan.'**
+  String get vstMembersDebtHint;
+
+  /// No description provided for @vstMembersDebtLimit.
+  ///
+  /// In id, this message translates to:
+  /// **'Batas piutang'**
+  String get vstMembersDebtLimit;
+
+  /// No description provided for @vstMembersDebtLimitHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Batas bawaan tiap pelanggan. Nol berarti tidak ada yang boleh berutang.'**
+  String get vstMembersDebtLimitHint;
+
+  /// No description provided for @vstMembersDebtOverdue.
+  ///
+  /// In id, this message translates to:
+  /// **'Batas jatuh tempo'**
+  String get vstMembersDebtOverdue;
+
+  /// No description provided for @vstMembersDebtOverdueHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Setelah sekian hari, piutang dihitung menunggak di laporan.'**
+  String get vstMembersDebtOverdueHint;
+
   /// Membership settings and hub copy.
   ///
   /// In id, this message translates to:
@@ -12631,6 +12805,246 @@ abstract class AppL10n {
   /// **'Tukar semua'**
   String get cshMemberRedeemAll;
 
+  /// The member row on a live bill.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang {amount}'**
+  String cshMemberDebt(String amount);
+
+  /// The member row on a live bill.
+  ///
+  /// In id, this message translates to:
+  /// **'Sisa kredit {amount}'**
+  String cshMemberCredit(String amount);
+
+  /// The member row on a live bill.
+  ///
+  /// In id, this message translates to:
+  /// **'Kredit habis'**
+  String get cshMemberCreditNone;
+
+  /// The settle pane's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Masuk ke piutang pelanggan. Tidak ada uang berpindah sekarang.'**
+  String get stlPiutangHint;
+
+  /// The settle pane's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Sisa kredit {amount}'**
+  String stlPiutangLeft(String amount);
+
+  /// Why the piutang chip is off.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang butuh pelanggan terdaftar pada tagihan ini.'**
+  String get stlPiutangNoMember;
+
+  /// Why the piutang chip is off.
+  ///
+  /// In id, this message translates to:
+  /// **'Kredit pelanggan ini sudah habis.'**
+  String get stlPiutangNoRoom;
+
+  /// Why the confirm button is blocked.
+  ///
+  /// In id, this message translates to:
+  /// **'Melebihi sisa kredit'**
+  String get stlBlkOverCredit;
+
+  /// The piutang collection slip.
+  ///
+  /// In id, this message translates to:
+  /// **'TERIMA PIUTANG'**
+  String get strukDebtTitle;
+
+  /// The piutang collection slip.
+  ///
+  /// In id, this message translates to:
+  /// **'Diterima'**
+  String get strukDebtPaid;
+
+  /// The piutang collection slip.
+  ///
+  /// In id, this message translates to:
+  /// **'Sisa piutang'**
+  String get strukDebtBalance;
+
+  /// The piutang collection slip.
+  ///
+  /// In id, this message translates to:
+  /// **'Kasir: {name}'**
+  String strukDebtCashier(String name);
+
+  /// The piutang collection sheet.
+  ///
+  /// In id, this message translates to:
+  /// **'Terima piutang'**
+  String get cshDebtCollect;
+
+  /// The piutang collection sheet.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada yang berutang'**
+  String get cshDebtNobody;
+
+  /// The piutang collection sheet.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah diterima'**
+  String get cshDebtAmount;
+
+  /// The piutang collection sheet.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan (opsional)'**
+  String get cshDebtNote;
+
+  /// The piutang collection sheet.
+  ///
+  /// In id, this message translates to:
+  /// **'Melebihi piutang'**
+  String get cshDebtOver;
+
+  /// The piutang collection sheet.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang {amount}'**
+  String cshDebtOwes(String amount);
+
+  /// The piutang collection sheet.
+  ///
+  /// In id, this message translates to:
+  /// **'Terima {amount}'**
+  String cshDebtTake(String amount);
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Berutang'**
+  String get memDebtFilter;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang'**
+  String get memColDebt;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Batas kredit'**
+  String get memColDebtLimit;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang'**
+  String get memDebtTitle;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada catatan piutang.'**
+  String get memDebtLedgerEmpty;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagih'**
+  String get memDebtKindCharge;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Bayar'**
+  String get memDebtKindPayment;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Batal'**
+  String get memDebtKindReversal;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus buku'**
+  String get memDebtKindWriteOff;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Koreksi'**
+  String get memDebtKindAdjust;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus buku'**
+  String get memActionWriteOff;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Koreksi piutang'**
+  String get memActionDebtAdjust;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Menyerah menagih. Jumlah ini jadi kerugian dan muncul di laporan Penjualan.'**
+  String get memWriteOffBody;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Perbaiki salah catat. Bukan kerugian — angka piutang tak tertagih tidak berubah.'**
+  String get memDebtAdjustBody;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah'**
+  String get memDebtAdjustUp;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Kurangi'**
+  String get memDebtAdjustDown;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah'**
+  String get memDebtAmount;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan'**
+  String get memDebtReason;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Batas kredit'**
+  String get memFieldDebtLimit;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'Kosongkan untuk ikut batas venue.'**
+  String get memFieldDebtLimitHelp;
+
+  /// The member directory's piutang block.
+  ///
+  /// In id, this message translates to:
+  /// **'{amount} (ikut venue)'**
+  String memDebtLimitVenue(String amount);
+
   /// No description provided for @pinManualConnectBtn.
   ///
   /// In id, this message translates to:
@@ -12720,6 +13134,42 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Shift yang tak ditutup tidak dihitung sebagai jam kerja.'**
   String get rptJamUnclosedNote;
+
+  /// Delete refused while the member still owes.
+  ///
+  /// In id, this message translates to:
+  /// **'Masih ada piutang. Terima atau hapus buku dulu, baru hapus pelanggan.'**
+  String get memErrHasDebt;
+
+  /// A piutang charge over the credit limit.
+  ///
+  /// In id, this message translates to:
+  /// **'Melebihi batas kredit pelanggan.'**
+  String get memErrDebtLimit;
+
+  /// A collection larger than the outstanding balance.
+  ///
+  /// In id, this message translates to:
+  /// **'Lebih besar dari sisa piutang.'**
+  String get memErrOverpayment;
+
+  /// A debt act while the venue has piutang off.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang belum diaktifkan di venue ini.'**
+  String get memErrDebtOff;
+
+  /// A piutang charge whose bill carried no table label.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang {member} — {amount}'**
+  String auditDebtChargedNoBill(String member, String amount);
+
+  /// A piutang reversal whose bill carried no table label.
+  ///
+  /// In id, this message translates to:
+  /// **'Batal piutang {member} — {amount}'**
+  String auditDebtReversedNoBill(String member, String amount);
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

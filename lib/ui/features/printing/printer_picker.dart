@@ -18,6 +18,7 @@ import 'package:satset/core/printing/struk_builder.dart';
 import 'package:satset/core/printing/struk_renderer.dart';
 import 'package:satset/core/printing/struk_socket.dart';
 import 'package:satset/data/models/bill_dto.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/models/device_printer.dart';
 import 'package:satset/data/models/printer_dto.dart';
 import 'package:satset/data/repositories/printers_repository.dart';
@@ -48,12 +49,18 @@ const _venueOnlineWindow = Duration(seconds: 30);
 class PrintJob {
   final String subtitle; // shown under "Pilih printer"
   final Future<List<int>> Function() renderBytes;
-  final Future<String?> Function(String venuePrinterId) printVenue;
+
+  ///
+  /// Null when no such route exists — the [[Piutang]] collection slip is not a
+  /// bill, so nothing server-side can re-render it. The picker then sends the
+  /// venue printer the bytes this device rendered, over the same socket it uses
+  /// for a discovered one.
+  final Future<String?> Function(String venuePrinterId)? printVenue;
 
   const PrintJob({
     required this.subtitle,
     required this.renderBytes,
-    required this.printVenue,
+    this.printVenue,
   });
 }
 
@@ -163,6 +170,46 @@ Future<void> printBillStruk({
       printVenue: (pid) => receipt == null
           ? ref.read(settlementProvider.notifier).printBill(bill.visitId, pid)
           : ref.read(settlementProvider.notifier).printReceipt(receipt.id, pid),
+    ),
+  );
+}
+
+/// The [[Piutang]] collection slip (ADR-0098). Same preview-then-pick flow as
+/// the bill doc, and the same renderer — this is a money document, and the one
+/// where the guest holds no other evidence that they paid.
+Future<void> printDebtSlip({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String memberName,
+  required int amount,
+  required String method,
+  required int balanceAfter,
+}) async {
+  final l = context.l10n;
+  final venue = ref.read(venueSettingsProvider);
+  final logo = await ref.read(venueLogoBytesProvider(venue.logoRev).future);
+  final data = BillStrukBuilder.debtCollection(
+    l: l,
+    venue: venue,
+    memberName: memberName,
+    amount: amount,
+    method: method,
+    balanceAfter: balanceAfter,
+    cashierName: ref.read(authStateProvider).user?.name ?? '',
+    logoBytes: logo,
+  );
+  if (!context.mounted) return;
+  final subtitle = l.strukDebtTitle;
+  final go = await showSatSheet<bool>(
+    context,
+    builder: (c) => _PreviewSheet(data: data, subtitle: subtitle),
+  );
+  if (go != true || !context.mounted) return;
+  await _openPicker(
+    context,
+    PrintJob(
+      subtitle: subtitle,
+      renderBytes: () async => BillStrukRenderer.render(l, data),
     ),
   );
 }
@@ -696,8 +743,21 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
   }
 
   Future<void> _printVenue(PrinterDto p) async {
+    final send = widget.job.printVenue;
+    if (send == null) {
+      await _printDevice(
+        DevicePrinter(
+          id: _uuid.v4(),
+          label: p.label,
+          transport: PrinterTransport.wifi,
+          host: p.host,
+          port: p.port,
+        ),
+      );
+      return;
+    }
     setState(() => _busy = true);
-    final err = await widget.job.printVenue(p.id);
+    final err = await send(p.id);
     if (!mounted) return;
     Navigator.of(context).pop();
     _toast(context, err ?? context.l10n.prnReceiptPrinted);

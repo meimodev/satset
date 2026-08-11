@@ -22,6 +22,11 @@ enum BillDocKind {
   /// One even-split share — a flat amount plus a compact reference list of the
   /// whole bill's items (the share owns no specific items). See ADR-0023.
   evenReceipt,
+
+  /// A [[Piutang]] collection slip (ADR-0098) — no lines, no totals, no table.
+  /// The one money act where the guest holds no other evidence: there is no
+  /// bill open and nothing on a table, so this slip is the receipt.
+  debtCollection,
 }
 
 /// One priced line on a money document. Carries the chosen [modifiers] (signed
@@ -140,6 +145,15 @@ class BillStrukData {
   final int? tenderedTotal; // cash tendered across cash payments, when any
   final int outstanding;
 
+  // ── piutang collection only ──
+
+  /// What the member still owes *after* this collection. The number the guest
+  /// came to hear, and the only figure on the slip nothing else can restate.
+  final int debtBalanceAfter;
+
+  /// Who took the money, frozen at print time.
+  final String cashierName;
+
   const BillStrukData({
     required this.venueName,
     this.header = '',
@@ -174,9 +188,12 @@ class BillStrukData {
     this.paidNet = 0,
     this.tenderedTotal,
     this.outstanding = 0,
+    this.debtBalanceAfter = 0,
+    this.cashierName = '',
   });
 
   /// Tagihan (pre-payment) when no payment has been recorded yet.
   bool get isTagihan => payments.isEmpty;
   bool get isEven => kind == BillDocKind.evenReceipt;
+  bool get isDebtSlip => kind == BillDocKind.debtCollection;
 }

@@ -431,6 +431,19 @@ class BillReceipt {
   bool get isPaid => status == 'paid';
   int get outstanding => (total - paidNet).clamp(0, 1 << 31);
 
+  /// Money actually taken on this receipt, and therefore the most that can be
+  /// handed back. A `piutang` payment cleared the claim without a rupiah moving
+  /// (ADR-0098), so it is not refundable — the tab is reduced by collecting it
+  /// or writing it off, both of which live on the member. Refunds are negative
+  /// rows carrying their own money method and net out here on their own.
+  int get refundable {
+    var sum = 0;
+    for (final p in payments) {
+      if (p.method != 'piutang') sum += p.amount;
+    }
+    return sum < 0 ? 0 : sum;
+  }
+
   /// The whole-order discount, if any. At most one (ADR-0037, no stacking).
   BillDiscount? get orderDiscount {
     for (final d in discounts) {

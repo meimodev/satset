@@ -47,6 +47,14 @@ mixin _$ReportsSnapshotDto {
   /// revenue (ADR-0095).
   MembersSectionDto get members => throw _privateConstructorUsedError;
 
+  /// [[Piutang]] over the same window (ADR-0098). Its own section again: a
+  /// collection is not revenue — the sale was booked the night it was eaten —
+  /// so nothing here may be added to [sales]. The exception runs the other
+  /// way: [PiutangSectionDto.writtenOff] is republished as
+  /// [SalesSectionDto.badDebt], because a loss belongs beside what it was
+  /// lost against.
+  PiutangSectionDto get piutang => throw _privateConstructorUsedError;
+
   /// Attendance over the same window. Deliberately not part of [staff]: that
   /// section is what someone sold, this one is whether they were here, and a
   /// slow Tuesday must not read as a slack one.
@@ -82,6 +90,7 @@ abstract class $ReportsSnapshotDtoCopyWith<$Res> {
     MoneyAuditSectionDto moneyAudit,
     KasSectionDto kas,
     MembersSectionDto members,
+    PiutangSectionDto piutang,
     JamKerjaSectionDto jamKerja,
   });
 
@@ -93,6 +102,7 @@ abstract class $ReportsSnapshotDtoCopyWith<$Res> {
   $MoneyAuditSectionDtoCopyWith<$Res> get moneyAudit;
   $KasSectionDtoCopyWith<$Res> get kas;
   $MembersSectionDtoCopyWith<$Res> get members;
+  $PiutangSectionDtoCopyWith<$Res> get piutang;
   $JamKerjaSectionDtoCopyWith<$Res> get jamKerja;
 }
 
@@ -123,6 +133,7 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
     Object? moneyAudit = null,
     Object? kas = null,
     Object? members = null,
+    Object? piutang = null,
     Object? jamKerja = null,
   }) {
     return _then(
@@ -175,6 +186,10 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
                 ? _value.members
                 : members // ignore: cast_nullable_to_non_nullable
                       as MembersSectionDto,
+            piutang: null == piutang
+                ? _value.piutang
+                : piutang // ignore: cast_nullable_to_non_nullable
+                      as PiutangSectionDto,
             jamKerja: null == jamKerja
                 ? _value.jamKerja
                 : jamKerja // ignore: cast_nullable_to_non_nullable
@@ -268,6 +283,16 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res, $Val extends ReportsSnapshotDto>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
+  $PiutangSectionDtoCopyWith<$Res> get piutang {
+    return $PiutangSectionDtoCopyWith<$Res>(_value.piutang, (value) {
+      return _then(_value.copyWith(piutang: value) as $Val);
+    });
+  }
+
+  /// Create a copy of ReportsSnapshotDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
   $JamKerjaSectionDtoCopyWith<$Res> get jamKerja {
     return $JamKerjaSectionDtoCopyWith<$Res>(_value.jamKerja, (value) {
       return _then(_value.copyWith(jamKerja: value) as $Val);
@@ -297,6 +322,7 @@ abstract class _$$ReportsSnapshotDtoImplCopyWith<$Res>
     MoneyAuditSectionDto moneyAudit,
     KasSectionDto kas,
     MembersSectionDto members,
+    PiutangSectionDto piutang,
     JamKerjaSectionDto jamKerja,
   });
 
@@ -316,6 +342,8 @@ abstract class _$$ReportsSnapshotDtoImplCopyWith<$Res>
   $KasSectionDtoCopyWith<$Res> get kas;
   @override
   $MembersSectionDtoCopyWith<$Res> get members;
+  @override
+  $PiutangSectionDtoCopyWith<$Res> get piutang;
   @override
   $JamKerjaSectionDtoCopyWith<$Res> get jamKerja;
 }
@@ -346,6 +374,7 @@ class __$$ReportsSnapshotDtoImplCopyWithImpl<$Res>
     Object? moneyAudit = null,
     Object? kas = null,
     Object? members = null,
+    Object? piutang = null,
     Object? jamKerja = null,
   }) {
     return _then(
@@ -398,6 +427,10 @@ class __$$ReportsSnapshotDtoImplCopyWithImpl<$Res>
             ? _value.members
             : members // ignore: cast_nullable_to_non_nullable
                   as MembersSectionDto,
+        piutang: null == piutang
+            ? _value.piutang
+            : piutang // ignore: cast_nullable_to_non_nullable
+                  as PiutangSectionDto,
         jamKerja: null == jamKerja
             ? _value.jamKerja
             : jamKerja // ignore: cast_nullable_to_non_nullable
@@ -423,6 +456,7 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
     this.moneyAudit = const MoneyAuditSectionDto(),
     this.kas = const KasSectionDto(),
     this.members = const MembersSectionDto(),
+    this.piutang = const PiutangSectionDto(),
     this.jamKerja = const JamKerjaSectionDto(),
   });
 
@@ -470,6 +504,16 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
   @JsonKey()
   final MembersSectionDto members;
 
+  /// [[Piutang]] over the same window (ADR-0098). Its own section again: a
+  /// collection is not revenue — the sale was booked the night it was eaten —
+  /// so nothing here may be added to [sales]. The exception runs the other
+  /// way: [PiutangSectionDto.writtenOff] is republished as
+  /// [SalesSectionDto.badDebt], because a loss belongs beside what it was
+  /// lost against.
+  @override
+  @JsonKey()
+  final PiutangSectionDto piutang;
+
   /// Attendance over the same window. Deliberately not part of [staff]: that
   /// section is what someone sold, this one is whether they were here, and a
   /// slow Tuesday must not read as a slack one.
@@ -479,7 +523,7 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
 
   @override
   String toString() {
-    return 'ReportsSnapshotDto(generatedAt: $generatedAt, rangeFrom: $rangeFrom, rangeTo: $rangeTo, range: $range, filterOptions: $filterOptions, sales: $sales, staff: $staff, menu: $menu, ops: $ops, moneyAudit: $moneyAudit, kas: $kas, members: $members, jamKerja: $jamKerja)';
+    return 'ReportsSnapshotDto(generatedAt: $generatedAt, rangeFrom: $rangeFrom, rangeTo: $rangeTo, range: $range, filterOptions: $filterOptions, sales: $sales, staff: $staff, menu: $menu, ops: $ops, moneyAudit: $moneyAudit, kas: $kas, members: $members, piutang: $piutang, jamKerja: $jamKerja)';
   }
 
   @override
@@ -503,6 +547,7 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
                 other.moneyAudit == moneyAudit) &&
             (identical(other.kas, kas) || other.kas == kas) &&
             (identical(other.members, members) || other.members == members) &&
+            (identical(other.piutang, piutang) || other.piutang == piutang) &&
             (identical(other.jamKerja, jamKerja) ||
                 other.jamKerja == jamKerja));
   }
@@ -523,6 +568,7 @@ class _$ReportsSnapshotDtoImpl implements _ReportsSnapshotDto {
     moneyAudit,
     kas,
     members,
+    piutang,
     jamKerja,
   );
 
@@ -557,6 +603,7 @@ abstract class _ReportsSnapshotDto implements ReportsSnapshotDto {
     final MoneyAuditSectionDto moneyAudit,
     final KasSectionDto kas,
     final MembersSectionDto members,
+    final PiutangSectionDto piutang,
     final JamKerjaSectionDto jamKerja,
   }) = _$ReportsSnapshotDtoImpl;
 
@@ -600,6 +647,15 @@ abstract class _ReportsSnapshotDto implements ReportsSnapshotDto {
   /// revenue (ADR-0095).
   @override
   MembersSectionDto get members;
+
+  /// [[Piutang]] over the same window (ADR-0098). Its own section again: a
+  /// collection is not revenue — the sale was booked the night it was eaten —
+  /// so nothing here may be added to [sales]. The exception runs the other
+  /// way: [PiutangSectionDto.writtenOff] is republished as
+  /// [SalesSectionDto.badDebt], because a loss belongs beside what it was
+  /// lost against.
+  @override
+  PiutangSectionDto get piutang;
 
   /// Attendance over the same window. Deliberately not part of [staff]: that
   /// section is what someone sold, this one is whether they were here, and a
@@ -1341,6 +1397,13 @@ mixin _$SalesSectionDto {
   List<double> get hourly => throw _privateConstructorUsedError;
   TakeawaySplitDto? get takeaway => throw _privateConstructorUsedError;
 
+  /// [[Piutang]] given up on in this window — the one figure that crosses in
+  /// from [ReportsSnapshotDto.piutang] (ADR-0098). A tab written off weeks
+  /// after close is a real loss against revenue already booked, so it is
+  /// shown here rather than left in its own section where an owner reading
+  /// [kpis] would never meet it. Read-only: no KPI is net of it.
+  int get badDebt => throw _privateConstructorUsedError;
+
   /// Serializes this SalesSectionDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -1363,6 +1426,7 @@ abstract class $SalesSectionDtoCopyWith<$Res> {
     List<CoverDayDto> coverTrend,
     List<double> hourly,
     TakeawaySplitDto? takeaway,
+    int badDebt,
   });
 
   $TakeawaySplitDtoCopyWith<$Res>? get takeaway;
@@ -1387,6 +1451,7 @@ class _$SalesSectionDtoCopyWithImpl<$Res, $Val extends SalesSectionDto>
     Object? coverTrend = null,
     Object? hourly = null,
     Object? takeaway = freezed,
+    Object? badDebt = null,
   }) {
     return _then(
       _value.copyWith(
@@ -1406,6 +1471,10 @@ class _$SalesSectionDtoCopyWithImpl<$Res, $Val extends SalesSectionDto>
                 ? _value.takeaway
                 : takeaway // ignore: cast_nullable_to_non_nullable
                       as TakeawaySplitDto?,
+            badDebt: null == badDebt
+                ? _value.badDebt
+                : badDebt // ignore: cast_nullable_to_non_nullable
+                      as int,
           )
           as $Val,
     );
@@ -1440,6 +1509,7 @@ abstract class _$$SalesSectionDtoImplCopyWith<$Res>
     List<CoverDayDto> coverTrend,
     List<double> hourly,
     TakeawaySplitDto? takeaway,
+    int badDebt,
   });
 
   @override
@@ -1464,6 +1534,7 @@ class __$$SalesSectionDtoImplCopyWithImpl<$Res>
     Object? coverTrend = null,
     Object? hourly = null,
     Object? takeaway = freezed,
+    Object? badDebt = null,
   }) {
     return _then(
       _$SalesSectionDtoImpl(
@@ -1483,6 +1554,10 @@ class __$$SalesSectionDtoImplCopyWithImpl<$Res>
             ? _value.takeaway
             : takeaway // ignore: cast_nullable_to_non_nullable
                   as TakeawaySplitDto?,
+        badDebt: null == badDebt
+            ? _value.badDebt
+            : badDebt // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -1496,6 +1571,7 @@ class _$SalesSectionDtoImpl implements _SalesSectionDto {
     final List<CoverDayDto> coverTrend = const <CoverDayDto>[],
     final List<double> hourly = const <double>[],
     this.takeaway,
+    this.badDebt = 0,
   }) : _kpis = kpis,
        _coverTrend = coverTrend,
        _hourly = hourly;
@@ -1533,9 +1609,18 @@ class _$SalesSectionDtoImpl implements _SalesSectionDto {
   @override
   final TakeawaySplitDto? takeaway;
 
+  /// [[Piutang]] given up on in this window — the one figure that crosses in
+  /// from [ReportsSnapshotDto.piutang] (ADR-0098). A tab written off weeks
+  /// after close is a real loss against revenue already booked, so it is
+  /// shown here rather than left in its own section where an owner reading
+  /// [kpis] would never meet it. Read-only: no KPI is net of it.
+  @override
+  @JsonKey()
+  final int badDebt;
+
   @override
   String toString() {
-    return 'SalesSectionDto(kpis: $kpis, coverTrend: $coverTrend, hourly: $hourly, takeaway: $takeaway)';
+    return 'SalesSectionDto(kpis: $kpis, coverTrend: $coverTrend, hourly: $hourly, takeaway: $takeaway, badDebt: $badDebt)';
   }
 
   @override
@@ -1550,7 +1635,8 @@ class _$SalesSectionDtoImpl implements _SalesSectionDto {
             ) &&
             const DeepCollectionEquality().equals(other._hourly, _hourly) &&
             (identical(other.takeaway, takeaway) ||
-                other.takeaway == takeaway));
+                other.takeaway == takeaway) &&
+            (identical(other.badDebt, badDebt) || other.badDebt == badDebt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1561,6 +1647,7 @@ class _$SalesSectionDtoImpl implements _SalesSectionDto {
     const DeepCollectionEquality().hash(_coverTrend),
     const DeepCollectionEquality().hash(_hourly),
     takeaway,
+    badDebt,
   );
 
   /// Create a copy of SalesSectionDto
@@ -1586,6 +1673,7 @@ abstract class _SalesSectionDto implements SalesSectionDto {
     final List<CoverDayDto> coverTrend,
     final List<double> hourly,
     final TakeawaySplitDto? takeaway,
+    final int badDebt,
   }) = _$SalesSectionDtoImpl;
 
   factory _SalesSectionDto.fromJson(Map<String, dynamic> json) =
@@ -1599,6 +1687,14 @@ abstract class _SalesSectionDto implements SalesSectionDto {
   List<double> get hourly;
   @override
   TakeawaySplitDto? get takeaway;
+
+  /// [[Piutang]] given up on in this window — the one figure that crosses in
+  /// from [ReportsSnapshotDto.piutang] (ADR-0098). A tab written off weeks
+  /// after close is a real loss against revenue already booked, so it is
+  /// shown here rather than left in its own section where an owner reading
+  /// [kpis] would never meet it. Read-only: no KPI is net of it.
+  @override
+  int get badDebt;
 
   /// Create a copy of SalesSectionDto
   /// with the given fields replaced by the non-null parameter values.
@@ -7311,6 +7407,760 @@ abstract class _MembersSectionDto implements MembersSectionDto {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$MembersSectionDtoImplCopyWith<_$MembersSectionDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+PiutangSectionDto _$PiutangSectionDtoFromJson(Map<String, dynamic> json) {
+  return _PiutangSectionDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$PiutangSectionDto {
+  /// False ⇒ the venue runs no tabs, and the section is not drawn.
+  bool get enabled => throw _privateConstructorUsedError;
+  int get opening => throw _privateConstructorUsedError;
+  int get charged => throw _privateConstructorUsedError;
+  int get collected => throw _privateConstructorUsedError;
+  int get writtenOff => throw _privateConstructorUsedError;
+
+  /// Signed: which way a hand correction went is the finding.
+  int get adjusted => throw _privateConstructorUsedError;
+  int get closing => throw _privateConstructorUsedError;
+  Map<String, int> get byMethod => throw _privateConstructorUsedError;
+
+  /// The venue's credit policy, not a fact — what counts as late is a setting.
+  int get overdueDays => throw _privateConstructorUsedError;
+  int get overdueTotal => throw _privateConstructorUsedError;
+  int get debtorCount => throw _privateConstructorUsedError;
+  List<DebtorRowDto> get debtors => throw _privateConstructorUsedError;
+
+  /// True when [debtors] is a capped page and the full list lives on
+  /// `/members`. A report is read on a tablet; a hundred-row table is not.
+  bool get debtorsTruncated => throw _privateConstructorUsedError;
+
+  /// Serializes this PiutangSectionDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of PiutangSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $PiutangSectionDtoCopyWith<PiutangSectionDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $PiutangSectionDtoCopyWith<$Res> {
+  factory $PiutangSectionDtoCopyWith(
+    PiutangSectionDto value,
+    $Res Function(PiutangSectionDto) then,
+  ) = _$PiutangSectionDtoCopyWithImpl<$Res, PiutangSectionDto>;
+  @useResult
+  $Res call({
+    bool enabled,
+    int opening,
+    int charged,
+    int collected,
+    int writtenOff,
+    int adjusted,
+    int closing,
+    Map<String, int> byMethod,
+    int overdueDays,
+    int overdueTotal,
+    int debtorCount,
+    List<DebtorRowDto> debtors,
+    bool debtorsTruncated,
+  });
+}
+
+/// @nodoc
+class _$PiutangSectionDtoCopyWithImpl<$Res, $Val extends PiutangSectionDto>
+    implements $PiutangSectionDtoCopyWith<$Res> {
+  _$PiutangSectionDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of PiutangSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? enabled = null,
+    Object? opening = null,
+    Object? charged = null,
+    Object? collected = null,
+    Object? writtenOff = null,
+    Object? adjusted = null,
+    Object? closing = null,
+    Object? byMethod = null,
+    Object? overdueDays = null,
+    Object? overdueTotal = null,
+    Object? debtorCount = null,
+    Object? debtors = null,
+    Object? debtorsTruncated = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            enabled: null == enabled
+                ? _value.enabled
+                : enabled // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            opening: null == opening
+                ? _value.opening
+                : opening // ignore: cast_nullable_to_non_nullable
+                      as int,
+            charged: null == charged
+                ? _value.charged
+                : charged // ignore: cast_nullable_to_non_nullable
+                      as int,
+            collected: null == collected
+                ? _value.collected
+                : collected // ignore: cast_nullable_to_non_nullable
+                      as int,
+            writtenOff: null == writtenOff
+                ? _value.writtenOff
+                : writtenOff // ignore: cast_nullable_to_non_nullable
+                      as int,
+            adjusted: null == adjusted
+                ? _value.adjusted
+                : adjusted // ignore: cast_nullable_to_non_nullable
+                      as int,
+            closing: null == closing
+                ? _value.closing
+                : closing // ignore: cast_nullable_to_non_nullable
+                      as int,
+            byMethod: null == byMethod
+                ? _value.byMethod
+                : byMethod // ignore: cast_nullable_to_non_nullable
+                      as Map<String, int>,
+            overdueDays: null == overdueDays
+                ? _value.overdueDays
+                : overdueDays // ignore: cast_nullable_to_non_nullable
+                      as int,
+            overdueTotal: null == overdueTotal
+                ? _value.overdueTotal
+                : overdueTotal // ignore: cast_nullable_to_non_nullable
+                      as int,
+            debtorCount: null == debtorCount
+                ? _value.debtorCount
+                : debtorCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            debtors: null == debtors
+                ? _value.debtors
+                : debtors // ignore: cast_nullable_to_non_nullable
+                      as List<DebtorRowDto>,
+            debtorsTruncated: null == debtorsTruncated
+                ? _value.debtorsTruncated
+                : debtorsTruncated // ignore: cast_nullable_to_non_nullable
+                      as bool,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$PiutangSectionDtoImplCopyWith<$Res>
+    implements $PiutangSectionDtoCopyWith<$Res> {
+  factory _$$PiutangSectionDtoImplCopyWith(
+    _$PiutangSectionDtoImpl value,
+    $Res Function(_$PiutangSectionDtoImpl) then,
+  ) = __$$PiutangSectionDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    bool enabled,
+    int opening,
+    int charged,
+    int collected,
+    int writtenOff,
+    int adjusted,
+    int closing,
+    Map<String, int> byMethod,
+    int overdueDays,
+    int overdueTotal,
+    int debtorCount,
+    List<DebtorRowDto> debtors,
+    bool debtorsTruncated,
+  });
+}
+
+/// @nodoc
+class __$$PiutangSectionDtoImplCopyWithImpl<$Res>
+    extends _$PiutangSectionDtoCopyWithImpl<$Res, _$PiutangSectionDtoImpl>
+    implements _$$PiutangSectionDtoImplCopyWith<$Res> {
+  __$$PiutangSectionDtoImplCopyWithImpl(
+    _$PiutangSectionDtoImpl _value,
+    $Res Function(_$PiutangSectionDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of PiutangSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? enabled = null,
+    Object? opening = null,
+    Object? charged = null,
+    Object? collected = null,
+    Object? writtenOff = null,
+    Object? adjusted = null,
+    Object? closing = null,
+    Object? byMethod = null,
+    Object? overdueDays = null,
+    Object? overdueTotal = null,
+    Object? debtorCount = null,
+    Object? debtors = null,
+    Object? debtorsTruncated = null,
+  }) {
+    return _then(
+      _$PiutangSectionDtoImpl(
+        enabled: null == enabled
+            ? _value.enabled
+            : enabled // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        opening: null == opening
+            ? _value.opening
+            : opening // ignore: cast_nullable_to_non_nullable
+                  as int,
+        charged: null == charged
+            ? _value.charged
+            : charged // ignore: cast_nullable_to_non_nullable
+                  as int,
+        collected: null == collected
+            ? _value.collected
+            : collected // ignore: cast_nullable_to_non_nullable
+                  as int,
+        writtenOff: null == writtenOff
+            ? _value.writtenOff
+            : writtenOff // ignore: cast_nullable_to_non_nullable
+                  as int,
+        adjusted: null == adjusted
+            ? _value.adjusted
+            : adjusted // ignore: cast_nullable_to_non_nullable
+                  as int,
+        closing: null == closing
+            ? _value.closing
+            : closing // ignore: cast_nullable_to_non_nullable
+                  as int,
+        byMethod: null == byMethod
+            ? _value._byMethod
+            : byMethod // ignore: cast_nullable_to_non_nullable
+                  as Map<String, int>,
+        overdueDays: null == overdueDays
+            ? _value.overdueDays
+            : overdueDays // ignore: cast_nullable_to_non_nullable
+                  as int,
+        overdueTotal: null == overdueTotal
+            ? _value.overdueTotal
+            : overdueTotal // ignore: cast_nullable_to_non_nullable
+                  as int,
+        debtorCount: null == debtorCount
+            ? _value.debtorCount
+            : debtorCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        debtors: null == debtors
+            ? _value._debtors
+            : debtors // ignore: cast_nullable_to_non_nullable
+                  as List<DebtorRowDto>,
+        debtorsTruncated: null == debtorsTruncated
+            ? _value.debtorsTruncated
+            : debtorsTruncated // ignore: cast_nullable_to_non_nullable
+                  as bool,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$PiutangSectionDtoImpl implements _PiutangSectionDto {
+  const _$PiutangSectionDtoImpl({
+    this.enabled = false,
+    this.opening = 0,
+    this.charged = 0,
+    this.collected = 0,
+    this.writtenOff = 0,
+    this.adjusted = 0,
+    this.closing = 0,
+    final Map<String, int> byMethod = const <String, int>{},
+    this.overdueDays = 30,
+    this.overdueTotal = 0,
+    this.debtorCount = 0,
+    final List<DebtorRowDto> debtors = const <DebtorRowDto>[],
+    this.debtorsTruncated = false,
+  }) : _byMethod = byMethod,
+       _debtors = debtors;
+
+  factory _$PiutangSectionDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$PiutangSectionDtoImplFromJson(json);
+
+  /// False ⇒ the venue runs no tabs, and the section is not drawn.
+  @override
+  @JsonKey()
+  final bool enabled;
+  @override
+  @JsonKey()
+  final int opening;
+  @override
+  @JsonKey()
+  final int charged;
+  @override
+  @JsonKey()
+  final int collected;
+  @override
+  @JsonKey()
+  final int writtenOff;
+
+  /// Signed: which way a hand correction went is the finding.
+  @override
+  @JsonKey()
+  final int adjusted;
+  @override
+  @JsonKey()
+  final int closing;
+  final Map<String, int> _byMethod;
+  @override
+  @JsonKey()
+  Map<String, int> get byMethod {
+    if (_byMethod is EqualUnmodifiableMapView) return _byMethod;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_byMethod);
+  }
+
+  /// The venue's credit policy, not a fact — what counts as late is a setting.
+  @override
+  @JsonKey()
+  final int overdueDays;
+  @override
+  @JsonKey()
+  final int overdueTotal;
+  @override
+  @JsonKey()
+  final int debtorCount;
+  final List<DebtorRowDto> _debtors;
+  @override
+  @JsonKey()
+  List<DebtorRowDto> get debtors {
+    if (_debtors is EqualUnmodifiableListView) return _debtors;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_debtors);
+  }
+
+  /// True when [debtors] is a capped page and the full list lives on
+  /// `/members`. A report is read on a tablet; a hundred-row table is not.
+  @override
+  @JsonKey()
+  final bool debtorsTruncated;
+
+  @override
+  String toString() {
+    return 'PiutangSectionDto(enabled: $enabled, opening: $opening, charged: $charged, collected: $collected, writtenOff: $writtenOff, adjusted: $adjusted, closing: $closing, byMethod: $byMethod, overdueDays: $overdueDays, overdueTotal: $overdueTotal, debtorCount: $debtorCount, debtors: $debtors, debtorsTruncated: $debtorsTruncated)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$PiutangSectionDtoImpl &&
+            (identical(other.enabled, enabled) || other.enabled == enabled) &&
+            (identical(other.opening, opening) || other.opening == opening) &&
+            (identical(other.charged, charged) || other.charged == charged) &&
+            (identical(other.collected, collected) ||
+                other.collected == collected) &&
+            (identical(other.writtenOff, writtenOff) ||
+                other.writtenOff == writtenOff) &&
+            (identical(other.adjusted, adjusted) ||
+                other.adjusted == adjusted) &&
+            (identical(other.closing, closing) || other.closing == closing) &&
+            const DeepCollectionEquality().equals(other._byMethod, _byMethod) &&
+            (identical(other.overdueDays, overdueDays) ||
+                other.overdueDays == overdueDays) &&
+            (identical(other.overdueTotal, overdueTotal) ||
+                other.overdueTotal == overdueTotal) &&
+            (identical(other.debtorCount, debtorCount) ||
+                other.debtorCount == debtorCount) &&
+            const DeepCollectionEquality().equals(other._debtors, _debtors) &&
+            (identical(other.debtorsTruncated, debtorsTruncated) ||
+                other.debtorsTruncated == debtorsTruncated));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    enabled,
+    opening,
+    charged,
+    collected,
+    writtenOff,
+    adjusted,
+    closing,
+    const DeepCollectionEquality().hash(_byMethod),
+    overdueDays,
+    overdueTotal,
+    debtorCount,
+    const DeepCollectionEquality().hash(_debtors),
+    debtorsTruncated,
+  );
+
+  /// Create a copy of PiutangSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$PiutangSectionDtoImplCopyWith<_$PiutangSectionDtoImpl> get copyWith =>
+      __$$PiutangSectionDtoImplCopyWithImpl<_$PiutangSectionDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$PiutangSectionDtoImplToJson(this);
+  }
+}
+
+abstract class _PiutangSectionDto implements PiutangSectionDto {
+  const factory _PiutangSectionDto({
+    final bool enabled,
+    final int opening,
+    final int charged,
+    final int collected,
+    final int writtenOff,
+    final int adjusted,
+    final int closing,
+    final Map<String, int> byMethod,
+    final int overdueDays,
+    final int overdueTotal,
+    final int debtorCount,
+    final List<DebtorRowDto> debtors,
+    final bool debtorsTruncated,
+  }) = _$PiutangSectionDtoImpl;
+
+  factory _PiutangSectionDto.fromJson(Map<String, dynamic> json) =
+      _$PiutangSectionDtoImpl.fromJson;
+
+  /// False ⇒ the venue runs no tabs, and the section is not drawn.
+  @override
+  bool get enabled;
+  @override
+  int get opening;
+  @override
+  int get charged;
+  @override
+  int get collected;
+  @override
+  int get writtenOff;
+
+  /// Signed: which way a hand correction went is the finding.
+  @override
+  int get adjusted;
+  @override
+  int get closing;
+  @override
+  Map<String, int> get byMethod;
+
+  /// The venue's credit policy, not a fact — what counts as late is a setting.
+  @override
+  int get overdueDays;
+  @override
+  int get overdueTotal;
+  @override
+  int get debtorCount;
+  @override
+  List<DebtorRowDto> get debtors;
+
+  /// True when [debtors] is a capped page and the full list lives on
+  /// `/members`. A report is read on a tablet; a hundred-row table is not.
+  @override
+  bool get debtorsTruncated;
+
+  /// Create a copy of PiutangSectionDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$PiutangSectionDtoImplCopyWith<_$PiutangSectionDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+DebtorRowDto _$DebtorRowDtoFromJson(Map<String, dynamic> json) {
+  return _DebtorRowDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$DebtorRowDto {
+  String get memberId => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  String get phone => throw _privateConstructorUsedError;
+  int get balance => throw _privateConstructorUsedError;
+  DateTime? get oldestUnpaidAt => throw _privateConstructorUsedError;
+  DateTime? get lastPaymentAt => throw _privateConstructorUsedError;
+
+  /// Serializes this DebtorRowDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of DebtorRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $DebtorRowDtoCopyWith<DebtorRowDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $DebtorRowDtoCopyWith<$Res> {
+  factory $DebtorRowDtoCopyWith(
+    DebtorRowDto value,
+    $Res Function(DebtorRowDto) then,
+  ) = _$DebtorRowDtoCopyWithImpl<$Res, DebtorRowDto>;
+  @useResult
+  $Res call({
+    String memberId,
+    String name,
+    String phone,
+    int balance,
+    DateTime? oldestUnpaidAt,
+    DateTime? lastPaymentAt,
+  });
+}
+
+/// @nodoc
+class _$DebtorRowDtoCopyWithImpl<$Res, $Val extends DebtorRowDto>
+    implements $DebtorRowDtoCopyWith<$Res> {
+  _$DebtorRowDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of DebtorRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? memberId = null,
+    Object? name = null,
+    Object? phone = null,
+    Object? balance = null,
+    Object? oldestUnpaidAt = freezed,
+    Object? lastPaymentAt = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            memberId: null == memberId
+                ? _value.memberId
+                : memberId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            phone: null == phone
+                ? _value.phone
+                : phone // ignore: cast_nullable_to_non_nullable
+                      as String,
+            balance: null == balance
+                ? _value.balance
+                : balance // ignore: cast_nullable_to_non_nullable
+                      as int,
+            oldestUnpaidAt: freezed == oldestUnpaidAt
+                ? _value.oldestUnpaidAt
+                : oldestUnpaidAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            lastPaymentAt: freezed == lastPaymentAt
+                ? _value.lastPaymentAt
+                : lastPaymentAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$DebtorRowDtoImplCopyWith<$Res>
+    implements $DebtorRowDtoCopyWith<$Res> {
+  factory _$$DebtorRowDtoImplCopyWith(
+    _$DebtorRowDtoImpl value,
+    $Res Function(_$DebtorRowDtoImpl) then,
+  ) = __$$DebtorRowDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String memberId,
+    String name,
+    String phone,
+    int balance,
+    DateTime? oldestUnpaidAt,
+    DateTime? lastPaymentAt,
+  });
+}
+
+/// @nodoc
+class __$$DebtorRowDtoImplCopyWithImpl<$Res>
+    extends _$DebtorRowDtoCopyWithImpl<$Res, _$DebtorRowDtoImpl>
+    implements _$$DebtorRowDtoImplCopyWith<$Res> {
+  __$$DebtorRowDtoImplCopyWithImpl(
+    _$DebtorRowDtoImpl _value,
+    $Res Function(_$DebtorRowDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of DebtorRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? memberId = null,
+    Object? name = null,
+    Object? phone = null,
+    Object? balance = null,
+    Object? oldestUnpaidAt = freezed,
+    Object? lastPaymentAt = freezed,
+  }) {
+    return _then(
+      _$DebtorRowDtoImpl(
+        memberId: null == memberId
+            ? _value.memberId
+            : memberId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        phone: null == phone
+            ? _value.phone
+            : phone // ignore: cast_nullable_to_non_nullable
+                  as String,
+        balance: null == balance
+            ? _value.balance
+            : balance // ignore: cast_nullable_to_non_nullable
+                  as int,
+        oldestUnpaidAt: freezed == oldestUnpaidAt
+            ? _value.oldestUnpaidAt
+            : oldestUnpaidAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        lastPaymentAt: freezed == lastPaymentAt
+            ? _value.lastPaymentAt
+            : lastPaymentAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$DebtorRowDtoImpl implements _DebtorRowDto {
+  const _$DebtorRowDtoImpl({
+    this.memberId = '',
+    this.name = '',
+    this.phone = '',
+    this.balance = 0,
+    this.oldestUnpaidAt,
+    this.lastPaymentAt,
+  });
+
+  factory _$DebtorRowDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DebtorRowDtoImplFromJson(json);
+
+  @override
+  @JsonKey()
+  final String memberId;
+  @override
+  @JsonKey()
+  final String name;
+  @override
+  @JsonKey()
+  final String phone;
+  @override
+  @JsonKey()
+  final int balance;
+  @override
+  final DateTime? oldestUnpaidAt;
+  @override
+  final DateTime? lastPaymentAt;
+
+  @override
+  String toString() {
+    return 'DebtorRowDto(memberId: $memberId, name: $name, phone: $phone, balance: $balance, oldestUnpaidAt: $oldestUnpaidAt, lastPaymentAt: $lastPaymentAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$DebtorRowDtoImpl &&
+            (identical(other.memberId, memberId) ||
+                other.memberId == memberId) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.phone, phone) || other.phone == phone) &&
+            (identical(other.balance, balance) || other.balance == balance) &&
+            (identical(other.oldestUnpaidAt, oldestUnpaidAt) ||
+                other.oldestUnpaidAt == oldestUnpaidAt) &&
+            (identical(other.lastPaymentAt, lastPaymentAt) ||
+                other.lastPaymentAt == lastPaymentAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    memberId,
+    name,
+    phone,
+    balance,
+    oldestUnpaidAt,
+    lastPaymentAt,
+  );
+
+  /// Create a copy of DebtorRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$DebtorRowDtoImplCopyWith<_$DebtorRowDtoImpl> get copyWith =>
+      __$$DebtorRowDtoImplCopyWithImpl<_$DebtorRowDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$DebtorRowDtoImplToJson(this);
+  }
+}
+
+abstract class _DebtorRowDto implements DebtorRowDto {
+  const factory _DebtorRowDto({
+    final String memberId,
+    final String name,
+    final String phone,
+    final int balance,
+    final DateTime? oldestUnpaidAt,
+    final DateTime? lastPaymentAt,
+  }) = _$DebtorRowDtoImpl;
+
+  factory _DebtorRowDto.fromJson(Map<String, dynamic> json) =
+      _$DebtorRowDtoImpl.fromJson;
+
+  @override
+  String get memberId;
+  @override
+  String get name;
+  @override
+  String get phone;
+  @override
+  int get balance;
+  @override
+  DateTime? get oldestUnpaidAt;
+  @override
+  DateTime? get lastPaymentAt;
+
+  /// Create a copy of DebtorRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$DebtorRowDtoImplCopyWith<_$DebtorRowDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

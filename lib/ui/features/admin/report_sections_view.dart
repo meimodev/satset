@@ -49,7 +49,7 @@ class ReportSectionsView extends StatefulWidget {
   State<ReportSectionsView> createState() => _ReportSectionsViewState();
 }
 
-enum _Section { sales, staff, menu, bahan, ops, kas, members, jamKerja }
+enum _Section { sales, staff, menu, bahan, ops, kas, members, piutang, jamKerja }
 
 enum _StaffSort { net, covers, voidPct, avgTicket }
 
@@ -70,6 +70,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.ops,
     _Section.kas,
     _Section.members,
+    _Section.piutang,
     _Section.jamKerja,
   };
   _StaffSort _staffSort = _StaffSort.net;
@@ -82,6 +83,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.ops => l10n.rptSecOps,
     _Section.kas => l10n.rptSecKas,
     _Section.members => l10n.rptSecMembers,
+    _Section.piutang => l10n.rptSecPiutang,
     _Section.jamKerja => l10n.rptSecJamKerja,
   };
 
@@ -203,10 +205,17 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           index: 6,
           child: _membersSection(context, snapshot.members),
         ),
+      // Same rule as members: a venue that runs no tabs gets no section.
+      if (_on.contains(_Section.piutang) && snapshot.piutang.enabled)
+        Reveal(
+          key: const ValueKey('piutang'),
+          index: 7,
+          child: _piutangSection(context, snapshot.piutang),
+        ),
       if (_on.contains(_Section.jamKerja))
         Reveal(
           key: const ValueKey('jamKerja'),
-          index: 7,
+          index: 8,
           child: _jamKerjaSection(context, snapshot.jamKerja),
         ),
     ];
@@ -333,6 +342,26 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _salesKpis(context, sales.kpis),
+        // One read-only line, drawn only when there is one (ADR-0098). A tab
+        // given up on is a loss against revenue already booked, and leaving it
+        // in its own section means an owner reading the KPIs never meets it.
+        // Nothing above is net of it — `net` keeps its frozen meaning.
+        if (sales.badDebt > 0) ...[
+          const SizedBox(height: Sp.s3),
+          Row(
+            children: [
+              Text(
+                context.l10n.rptSalesBadDebt.toUpperCase(),
+                style: SatType.monoS(color: context.sat.textLo),
+              ),
+              const SizedBox(width: Sp.s3),
+              Text(
+                formatIDR(sales.badDebt),
+                style: SatType.monoM(color: context.sat.urgent),
+              ),
+            ],
+          ),
+        ],
         if (sales.takeaway != null &&
             (sales.takeaway!.count > 0 || sales.takeaway!.dineInCount > 0)) ...[
           const SizedBox(height: Sp.s3h),
@@ -2241,6 +2270,146 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   ],
                 ),
               ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _piutangSection(BuildContext context, PiutangSectionDto p) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    // Opening and closing are venue-wide standing, so a quiet window still has
+    // something to say — the empty test is "nobody owes anything and nothing
+    // moved", not "no movements".
+    if (p.closing == 0 && p.opening == 0 && p.charged == 0) {
+      return _card(
+        context,
+        l10n.rptSecPiutang,
+        sub: l10n.rptPiutangEmpty,
+        child: const SizedBox(height: Sp.s8),
+      );
+    }
+    return _card(
+      context,
+      l10n.rptSecPiutang,
+      sub: l10n.rptPiutangSub,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            spacing: Sp.s6,
+            runSpacing: Sp.s3,
+            children: [
+              _kasFigure(context, l10n.rptPiutangOpening, p.opening, sc.textMd),
+              _kasFigure(context, l10n.rptPiutangCharged, p.charged, sc.warn),
+              _kasFigure(
+                context,
+                l10n.rptPiutangCollected,
+                p.collected,
+                sc.success,
+              ),
+              _kasFigure(
+                context,
+                l10n.rptPiutangWrittenOff,
+                p.writtenOff,
+                p.writtenOff == 0 ? sc.textMd : sc.urgent,
+              ),
+              _kasFigure(context, l10n.rptPiutangClosing, p.closing, sc.textHi),
+            ],
+          ),
+          if (p.overdueTotal > 0) ...[
+            const SizedBox(height: Sp.s4),
+            _kasFigure(
+              context,
+              l10n.rptPiutangOverdue(p.overdueDays),
+              p.overdueTotal,
+              sc.urgent,
+            ),
+          ],
+          if (p.byMethod.isNotEmpty) ...[
+            const SizedBox(height: Sp.s4),
+            Text(
+              l10n.rptPiutangByMethod.toUpperCase(),
+              style: SatType.monoS(color: sc.textLo),
+            ),
+            const SizedBox(height: Sp.s2),
+            for (final e
+                in p.byMethod.entries.toList()
+                  ..sort((a, b) => b.value.compareTo(a.value)))
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: Sp.s1h),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        // A code off the wire, worded here (ADR-0085).
+                        paymentMethodLabel(l10n, e.key),
+                        style: SatType.bodyM(color: sc.textHi),
+                      ),
+                    ),
+                    Text(
+                      formatCompactIDR(l10n, e.value),
+                      style: SatType.monoM(color: sc.textHi),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+          if (p.debtors.isNotEmpty) ...[
+            const SizedBox(height: Sp.s4),
+            Text(
+              l10n.rptPiutangDebtors(p.debtorCount).toUpperCase(),
+              style: SatType.monoS(color: sc.textLo),
+            ),
+            const SizedBox(height: Sp.s2),
+            for (final d in p.debtors)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: Sp.s1h),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        d.name.isEmpty ? l10n.rptMembersGone : d.name,
+                        style: SatType.bodyM(color: sc.textHi),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (d.oldestUnpaidAt != null) ...[
+                      Text(
+                        l10n.rptPiutangAge(
+                          DateTime.now()
+                              .difference(d.oldestUnpaidAt!)
+                              .inDays
+                              .clamp(0, 9999),
+                        ),
+                        style: SatType.monoS(
+                          color:
+                              DateTime.now()
+                                      .difference(d.oldestUnpaidAt!)
+                                      .inDays >
+                                  p.overdueDays
+                              ? sc.urgent
+                              : sc.textLo,
+                        ),
+                      ),
+                      const SizedBox(width: Sp.s3),
+                    ],
+                    Text(
+                      formatCompactIDR(l10n, d.balance),
+                      style: SatType.monoM(color: sc.textHi),
+                    ),
+                  ],
+                ),
+              ),
+            if (p.debtorsTruncated) ...[
+              const SizedBox(height: Sp.s2),
+              Text(
+                l10n.rptPiutangMore,
+                style: SatType.monoS(color: sc.textLo),
+              ),
+            ],
           ],
         ],
       ),

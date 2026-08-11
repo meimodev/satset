@@ -81,7 +81,19 @@ mixin _$VenueSettingsDto {
   int get memberPointValue => throw _privateConstructorUsedError;
   int get memberRedeemMin => throw _privateConstructorUsedError;
   String? get memberPunchItemId => throw _privateConstructorUsedError;
-  int get memberPunchTarget => throw _privateConstructorUsedError;
+  int get memberPunchTarget =>
+      throw _privateConstructorUsedError; // Piutang (ADR-0098). Nested under [membersEnabled] — a venue that keeps no
+  // guest directory cannot run tabs against guests it does not keep.
+  bool get memberDebtEnabled => throw _privateConstructorUsedError;
+
+  /// The venue-wide credit limit a member falls back to when they have none
+  /// of their own. **0 is the shipped default and means "no tab"** — turning
+  /// the feature on trusts nobody until an owner names a number.
+  int get memberDebtLimit => throw _privateConstructorUsedError;
+
+  /// How long a tab may stand before the report calls it overdue. A credit
+  /// policy, not a fact, which is why it is a setting.
+  int get memberDebtOverdueDays => throw _privateConstructorUsedError;
 
   /// Serializes this VenueSettingsDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -146,6 +158,9 @@ abstract class $VenueSettingsDtoCopyWith<$Res> {
     int memberRedeemMin,
     String? memberPunchItemId,
     int memberPunchTarget,
+    bool memberDebtEnabled,
+    int memberDebtLimit,
+    int memberDebtOverdueDays,
   });
 }
 
@@ -209,6 +224,9 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
     Object? memberRedeemMin = null,
     Object? memberPunchItemId = freezed,
     Object? memberPunchTarget = null,
+    Object? memberDebtEnabled = null,
+    Object? memberDebtLimit = null,
+    Object? memberDebtOverdueDays = null,
   }) {
     return _then(
       _value.copyWith(
@@ -392,6 +410,18 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
                 ? _value.memberPunchTarget
                 : memberPunchTarget // ignore: cast_nullable_to_non_nullable
                       as int,
+            memberDebtEnabled: null == memberDebtEnabled
+                ? _value.memberDebtEnabled
+                : memberDebtEnabled // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            memberDebtLimit: null == memberDebtLimit
+                ? _value.memberDebtLimit
+                : memberDebtLimit // ignore: cast_nullable_to_non_nullable
+                      as int,
+            memberDebtOverdueDays: null == memberDebtOverdueDays
+                ? _value.memberDebtOverdueDays
+                : memberDebtOverdueDays // ignore: cast_nullable_to_non_nullable
+                      as int,
           )
           as $Val,
     );
@@ -453,6 +483,9 @@ abstract class _$$VenueSettingsDtoImplCopyWith<$Res>
     int memberRedeemMin,
     String? memberPunchItemId,
     int memberPunchTarget,
+    bool memberDebtEnabled,
+    int memberDebtLimit,
+    int memberDebtOverdueDays,
   });
 }
 
@@ -515,6 +548,9 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
     Object? memberRedeemMin = null,
     Object? memberPunchItemId = freezed,
     Object? memberPunchTarget = null,
+    Object? memberDebtEnabled = null,
+    Object? memberDebtLimit = null,
+    Object? memberDebtOverdueDays = null,
   }) {
     return _then(
       _$VenueSettingsDtoImpl(
@@ -698,6 +734,18 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
             ? _value.memberPunchTarget
             : memberPunchTarget // ignore: cast_nullable_to_non_nullable
                   as int,
+        memberDebtEnabled: null == memberDebtEnabled
+            ? _value.memberDebtEnabled
+            : memberDebtEnabled // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        memberDebtLimit: null == memberDebtLimit
+            ? _value.memberDebtLimit
+            : memberDebtLimit // ignore: cast_nullable_to_non_nullable
+                  as int,
+        memberDebtOverdueDays: null == memberDebtOverdueDays
+            ? _value.memberDebtOverdueDays
+            : memberDebtOverdueDays // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -752,6 +800,9 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     this.memberRedeemMin = 10,
     this.memberPunchItemId,
     this.memberPunchTarget = 10,
+    this.memberDebtEnabled = false,
+    this.memberDebtLimit = 0,
+    this.memberDebtOverdueDays = 30,
   });
 
   factory _$VenueSettingsDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -906,10 +957,28 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
   @override
   @JsonKey()
   final int memberPunchTarget;
+  // Piutang (ADR-0098). Nested under [membersEnabled] — a venue that keeps no
+  // guest directory cannot run tabs against guests it does not keep.
+  @override
+  @JsonKey()
+  final bool memberDebtEnabled;
+
+  /// The venue-wide credit limit a member falls back to when they have none
+  /// of their own. **0 is the shipped default and means "no tab"** — turning
+  /// the feature on trusts nobody until an owner names a number.
+  @override
+  @JsonKey()
+  final int memberDebtLimit;
+
+  /// How long a tab may stand before the report calls it overdue. A credit
+  /// policy, not a fact, which is why it is a setting.
+  @override
+  @JsonKey()
+  final int memberDebtOverdueDays;
 
   @override
   String toString() {
-    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, pickupTargetMins: $pickupTargetMins, ungreetedMins: $ungreetedMins, ungreetedEscalateMins: $ungreetedEscalateMins, longStayMins: $longStayMins, idleTableMins: $idleTableMins, reservationGraceMins: $reservationGraceMins, ungreetedAlertEnabled: $ungreetedAlertEnabled, pickupAlertEnabled: $pickupAlertEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue, soundUngreeted: $soundUngreeted, soundPickup: $soundPickup, membersEnabled: $membersEnabled, memberPointsEnabled: $memberPointsEnabled, memberPunchEnabled: $memberPunchEnabled, memberPresetId: $memberPresetId, memberEarnPerThousand: $memberEarnPerThousand, memberPointValue: $memberPointValue, memberRedeemMin: $memberRedeemMin, memberPunchItemId: $memberPunchItemId, memberPunchTarget: $memberPunchTarget)';
+    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, pickupTargetMins: $pickupTargetMins, ungreetedMins: $ungreetedMins, ungreetedEscalateMins: $ungreetedEscalateMins, longStayMins: $longStayMins, idleTableMins: $idleTableMins, reservationGraceMins: $reservationGraceMins, ungreetedAlertEnabled: $ungreetedAlertEnabled, pickupAlertEnabled: $pickupAlertEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue, soundUngreeted: $soundUngreeted, soundPickup: $soundPickup, membersEnabled: $membersEnabled, memberPointsEnabled: $memberPointsEnabled, memberPunchEnabled: $memberPunchEnabled, memberPresetId: $memberPresetId, memberEarnPerThousand: $memberEarnPerThousand, memberPointValue: $memberPointValue, memberRedeemMin: $memberRedeemMin, memberPunchItemId: $memberPunchItemId, memberPunchTarget: $memberPunchTarget, memberDebtEnabled: $memberDebtEnabled, memberDebtLimit: $memberDebtLimit, memberDebtOverdueDays: $memberDebtOverdueDays)';
   }
 
   @override
@@ -1002,7 +1071,13 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
             (identical(other.memberPunchItemId, memberPunchItemId) ||
                 other.memberPunchItemId == memberPunchItemId) &&
             (identical(other.memberPunchTarget, memberPunchTarget) ||
-                other.memberPunchTarget == memberPunchTarget));
+                other.memberPunchTarget == memberPunchTarget) &&
+            (identical(other.memberDebtEnabled, memberDebtEnabled) ||
+                other.memberDebtEnabled == memberDebtEnabled) &&
+            (identical(other.memberDebtLimit, memberDebtLimit) ||
+                other.memberDebtLimit == memberDebtLimit) &&
+            (identical(other.memberDebtOverdueDays, memberDebtOverdueDays) ||
+                other.memberDebtOverdueDays == memberDebtOverdueDays));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1054,6 +1129,9 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     memberRedeemMin,
     memberPunchItemId,
     memberPunchTarget,
+    memberDebtEnabled,
+    memberDebtLimit,
+    memberDebtOverdueDays,
   ]);
 
   /// Create a copy of VenueSettingsDto
@@ -1120,6 +1198,9 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
     final int memberRedeemMin,
     final String? memberPunchItemId,
     final int memberPunchTarget,
+    final bool memberDebtEnabled,
+    final int memberDebtLimit,
+    final int memberDebtOverdueDays,
   }) = _$VenueSettingsDtoImpl;
 
   factory _VenueSettingsDto.fromJson(Map<String, dynamic> json) =
@@ -1226,7 +1307,21 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
   @override
   String? get memberPunchItemId;
   @override
-  int get memberPunchTarget;
+  int get memberPunchTarget; // Piutang (ADR-0098). Nested under [membersEnabled] — a venue that keeps no
+  // guest directory cannot run tabs against guests it does not keep.
+  @override
+  bool get memberDebtEnabled;
+
+  /// The venue-wide credit limit a member falls back to when they have none
+  /// of their own. **0 is the shipped default and means "no tab"** — turning
+  /// the feature on trusts nobody until an owner names a number.
+  @override
+  int get memberDebtLimit;
+
+  /// How long a tab may stand before the report calls it overdue. A credit
+  /// policy, not a fact, which is why it is a setting.
+  @override
+  int get memberDebtOverdueDays;
 
   /// Create a copy of VenueSettingsDto
   /// with the given fields replaced by the non-null parameter values.

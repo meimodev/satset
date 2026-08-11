@@ -91,6 +91,24 @@ String auditText(AppL10n l, AuditEntry e) {
       s('amount'),
     ),
 
+    // A row written before the label was frozen, or a bill with no table, would
+    // otherwise render a bare "( )" where the table should be.
+    AuditKind.debtCharged =>
+      s('bill').isEmpty
+          ? l.auditDebtChargedNoBill(s('member'), s('amount'))
+          : l.auditDebtCharged(s('member'), s('amount'), s('bill')),
+    AuditKind.debtPaid => l.auditDebtPaid(
+      s('member'),
+      s('amount'),
+      paymentMethodLabel(l, s('method')),
+    ),
+    AuditKind.debtReversed =>
+      s('bill').isEmpty
+          ? l.auditDebtReversedNoBill(s('member'), s('amount'))
+          : l.auditDebtReversed(s('member'), s('amount'), s('bill')),
+    AuditKind.debtWrittenOff => l.auditDebtWrittenOff(s('member'), s('amount')),
+    AuditKind.debtAdjusted => l.auditDebtAdjusted(s('member'), s('amount')),
+
     AuditKind.menuKilled => l.auditMenuKilled(s('name')),
     AuditKind.menuRestored => l.auditMenuRestored(s('name')),
 

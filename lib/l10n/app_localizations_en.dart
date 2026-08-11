@@ -280,6 +280,9 @@ class AppL10nEn extends AppL10n {
   String get auditTypeCashMovement => 'Cash';
 
   @override
+  String get auditTypeDebtMovement => 'Tab';
+
+  @override
   String get auditTypeMemberChanged => 'Member';
 
   @override
@@ -1231,6 +1234,9 @@ class AppL10nEn extends AppL10n {
   String get payMethodOther => 'Other';
 
   @override
+  String get payMethodOnAccount => 'On account';
+
+  @override
   String get rangeToday => 'Today';
 
   @override
@@ -2010,6 +2016,31 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String auditDebtCharged(String member, String amount, String bill) {
+    return 'On account for $member: $amount ($bill)';
+  }
+
+  @override
+  String auditDebtPaid(String member, String amount, String method) {
+    return 'Tab collected from $member: $amount ($method)';
+  }
+
+  @override
+  String auditDebtReversed(String member, String amount, String bill) {
+    return 'Tab charge reversed for $member: $amount ($bill)';
+  }
+
+  @override
+  String auditDebtWrittenOff(String member, String amount) {
+    return 'Tab written off for $member: $amount';
+  }
+
+  @override
+  String auditDebtAdjusted(String member, String amount) {
+    return 'Tab corrected for $member: $amount';
+  }
+
+  @override
   String auditMenuKilled(String name) {
     return 'Marked $name sold out';
   }
@@ -2149,6 +2180,9 @@ class AppL10nEn extends AppL10n {
   String get cshErrReceiptPaid => 'Reopen the receipt before changing it.';
 
   @override
+  String get cshErrOverRefund => 'More than the money taken on this receipt.';
+
+  @override
   String get cshErrNotSettled => 'The bill isn\'t settled.';
 
   @override
@@ -2275,7 +2309,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String cshReopenBody(String receipt) {
-    return 'Undo \"$receipt\"\'s settled status so it can be changed? Recorded payments stay.';
+    return 'Undo \"$receipt\"\'s settled status so it can be changed? Every payment on this receipt is deleted and must be recorded again; any tab charge is reversed.';
   }
 
   @override
@@ -2309,6 +2343,11 @@ class AppL10nEn extends AppL10n {
   @override
   String cshPhotoFailed(String error) {
     return 'Couldn\'t take the photo: $error';
+  }
+
+  @override
+  String cshRefundCap(String amount) {
+    return 'At most $amount — only money actually received can be handed back.';
   }
 
   @override
@@ -6610,6 +6649,66 @@ class AppL10nEn extends AppL10n {
   String get rptSecKas => 'Petty cash';
 
   @override
+  String get rptSecPiutang => 'Tabs';
+
+  @override
+  String get rptPiutangSub => 'Member bills not yet paid';
+
+  @override
+  String get rptPiutangEmpty => 'No tabs in this range.';
+
+  @override
+  String get rptPiutangOpening => 'Opening';
+
+  @override
+  String get rptPiutangCharged => 'Charged';
+
+  @override
+  String get rptPiutangCollected => 'Collected';
+
+  @override
+  String get rptPiutangWrittenOff => 'Written off';
+
+  @override
+  String get rptPiutangClosing => 'Closing';
+
+  @override
+  String get rptPiutangByMethod => 'Collections by method';
+
+  @override
+  String get rptPiutangMore => 'The full list lives under Members.';
+
+  @override
+  String get rptSalesBadDebt => 'Bad debt';
+
+  @override
+  String rptPiutangOverdue(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Over $days days',
+      one: 'Over 1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String rptPiutangDebtors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count debtors',
+      one: '1 debtor',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String rptPiutangAge(int days) {
+    return '${days}d';
+  }
+
+  @override
   String get rptSecMembers => 'Membership';
 
   @override
@@ -7878,6 +7977,27 @@ class AppL10nEn extends AppL10n {
   String get vstMembersRedeemMinHint => 'The floor on a single redemption.';
 
   @override
+  String get vstMembersDebt => 'Tabs';
+
+  @override
+  String get vstMembersDebtHint =>
+      'Members may close a bill now and pay later.';
+
+  @override
+  String get vstMembersDebtLimit => 'Credit limit';
+
+  @override
+  String get vstMembersDebtLimitHint =>
+      'Default limit per member. Zero means nobody may run a tab.';
+
+  @override
+  String get vstMembersDebtOverdue => 'Overdue after';
+
+  @override
+  String get vstMembersDebtOverdueHint =>
+      'Past this many days a tab counts as overdue in reports.';
+
+  @override
   String get vstMembersPunch => 'Punch card';
 
   @override
@@ -7939,6 +8059,144 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get cshMemberRedeemAll => 'Redeem the lot';
+
+  @override
+  String cshMemberDebt(String amount) {
+    return 'Owes $amount';
+  }
+
+  @override
+  String cshMemberCredit(String amount) {
+    return '$amount credit left';
+  }
+
+  @override
+  String get cshMemberCreditNone => 'No credit left';
+
+  @override
+  String get stlPiutangHint =>
+      'Goes on the member\'s tab. No money changes hands now.';
+
+  @override
+  String stlPiutangLeft(String amount) {
+    return '$amount credit left';
+  }
+
+  @override
+  String get stlPiutangNoMember => 'A tab needs a member on this bill.';
+
+  @override
+  String get stlPiutangNoRoom => 'This member\'s credit is used up.';
+
+  @override
+  String get stlBlkOverCredit => 'More than the credit left';
+
+  @override
+  String get strukDebtTitle => 'TAB PAYMENT';
+
+  @override
+  String get strukDebtPaid => 'Received';
+
+  @override
+  String get strukDebtBalance => 'Still owed';
+
+  @override
+  String strukDebtCashier(String name) {
+    return 'Cashier: $name';
+  }
+
+  @override
+  String get cshDebtCollect => 'Take a tab payment';
+
+  @override
+  String get cshDebtNobody => 'Nobody owes anything';
+
+  @override
+  String get cshDebtAmount => 'Amount received';
+
+  @override
+  String get cshDebtNote => 'Note (optional)';
+
+  @override
+  String get cshDebtOver => 'More than they owe';
+
+  @override
+  String cshDebtOwes(String amount) {
+    return 'Owes $amount';
+  }
+
+  @override
+  String cshDebtTake(String amount) {
+    return 'Take $amount';
+  }
+
+  @override
+  String get memDebtFilter => 'Owing';
+
+  @override
+  String get memColDebt => 'Owed';
+
+  @override
+  String get memColDebtLimit => 'Credit limit';
+
+  @override
+  String get memDebtTitle => 'Tab';
+
+  @override
+  String get memDebtLedgerEmpty => 'No tab activity yet.';
+
+  @override
+  String get memDebtKindCharge => 'Charged';
+
+  @override
+  String get memDebtKindPayment => 'Paid';
+
+  @override
+  String get memDebtKindReversal => 'Reversed';
+
+  @override
+  String get memDebtKindWriteOff => 'Written off';
+
+  @override
+  String get memDebtKindAdjust => 'Correction';
+
+  @override
+  String get memActionWriteOff => 'Write off';
+
+  @override
+  String get memActionDebtAdjust => 'Correct tab';
+
+  @override
+  String get memWriteOffBody =>
+      'Giving up on collecting. This becomes a loss and shows on the Sales report.';
+
+  @override
+  String get memDebtAdjustBody =>
+      'Fixing a mis-entry. Not a loss — the bad-debt figure does not move.';
+
+  @override
+  String get memDebtAdjustUp => 'Add';
+
+  @override
+  String get memDebtAdjustDown => 'Reduce';
+
+  @override
+  String get memDebtAmount => 'Amount';
+
+  @override
+  String get memDebtReason => 'Reason';
+
+  @override
+  String get memFieldDebtLimit => 'Credit limit';
+
+  @override
+  String get memFieldDebtLimitHelp =>
+      'Leave empty to follow the venue default.';
+
+  @override
+  String memDebtLimitVenue(String amount) {
+    return '$amount (venue default)';
+  }
 
   @override
   String get pinManualConnectBtn => 'Connect manually';
@@ -8022,4 +8280,27 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get rptJamUnclosedNote => 'Unclosed shifts count no hours.';
+
+  @override
+  String get memErrHasDebt =>
+      'Still owes. Collect or write off first, then delete.';
+
+  @override
+  String get memErrDebtLimit => 'Over the member\'s credit limit.';
+
+  @override
+  String get memErrOverpayment => 'More than the outstanding balance.';
+
+  @override
+  String get memErrDebtOff => 'Receivables are not enabled at this venue.';
+
+  @override
+  String auditDebtChargedNoBill(String member, String amount) {
+    return 'On account for $member: $amount';
+  }
+
+  @override
+  String auditDebtReversedNoBill(String member, String amount) {
+    return 'Tab charge reversed for $member: $amount';
+  }
 }

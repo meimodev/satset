@@ -83,6 +83,7 @@
   "auditTypeBillReopened": "Reopen",
   "auditTypeBillClosed": "Close",
   "auditTypeCashMovement": "Cash",
+  "auditTypeDebtMovement": "Tab",
   "auditTypeMemberChanged": "Member",
   "auditTypeStockCounted": "Stocktake",
   "auditTypeMenuKilled": "Sold out",
@@ -392,6 +393,7 @@
   "payMethodQris": "QRIS",
   "payMethodTransfer": "Transfer",
   "payMethodOther": "Other",
+  "payMethodOnAccount": "On account",
   "rangeToday": "Today",
   "rangeYesterday": "Yesterday",
   "rangeD7": "7 days",
@@ -697,6 +699,11 @@
       }
     }
   },
+  "auditDebtCharged": "On account for {member}: {amount} ({bill})",
+  "auditDebtPaid": "Tab collected from {member}: {amount} ({method})",
+  "auditDebtReversed": "Tab charge reversed for {member}: {amount} ({bill})",
+  "auditDebtWrittenOff": "Tab written off for {member}: {amount}",
+  "auditDebtAdjusted": "Tab corrected for {member}: {amount}",
   "auditMenuKilled": "Marked {name} sold out",
   "auditMenuRestored": "{name} back on sale",
   "auditStaffCreated": "Created {name}",
@@ -730,6 +737,7 @@
   "cshWriteOffConfirm": "Record the loss",
   "cshErrOverAssign": "More units than are available.",
   "cshErrReceiptPaid": "Reopen the receipt before changing it.",
+  "cshErrOverRefund": "More than the money taken on this receipt.",
   "cshErrNotSettled": "The bill isn't settled.",
   "cshErrBillLocked": "The bill is closed — reopen it first.",
   "cshErrForbidden": "Needs manager approval (write-off).",
@@ -763,7 +771,7 @@
   "cshRefund": "Refund",
   "cshReopen": "Reopen",
   "cshReopenTitle": "Reopen receipt",
-  "cshReopenBody": "Undo \"{receipt}\"'s settled status so it can be changed? Recorded payments stay.",
+  "cshReopenBody": "Undo \"{receipt}\"'s settled status so it can be changed? Every payment on this receipt is deleted and must be recorded again; any tab charge is reversed.",
   "cshReopenConfirm": "Yes, reopen",
   "cshRemoveDiscount": "Remove discount",
   "cshRemoveDiscountBody": "Remove \"{label}\" ({amount}) from this receipt?",
@@ -773,6 +781,7 @@
   "cshDeleteReceiptTitle": "Delete receipt",
   "cshDeleteReceiptBody": "Delete \"{receipt}\"? Items assigned to it go back to unassigned.",
   "cshPhotoFailed": "Couldn't take the photo: {error}",
+  "cshRefundCap": "At most {amount} — only money actually received can be handed back.",
   "cshRefundTitle": "Refund {receipt}",
   "cshPayTitle": "Pay {receipt}",
   "cshTendered": "Cash received",
@@ -2023,6 +2032,20 @@
   },
   "kasPhoneOnly": "Petty cash is read on a tablet.",
   "rptSecKas": "Petty cash",
+  "rptSecPiutang": "Tabs",
+  "rptPiutangSub": "Member bills not yet paid",
+  "rptPiutangEmpty": "No tabs in this range.",
+  "rptPiutangOpening": "Opening",
+  "rptPiutangCharged": "Charged",
+  "rptPiutangCollected": "Collected",
+  "rptPiutangWrittenOff": "Written off",
+  "rptPiutangClosing": "Closing",
+  "rptPiutangByMethod": "Collections by method",
+  "rptPiutangMore": "The full list lives under Members.",
+  "rptSalesBadDebt": "Bad debt",
+  "rptPiutangOverdue": "{days, plural, =1{Over 1 day} other{Over {days} days}}",
+  "rptPiutangDebtors": "{count, plural, =1{1 debtor} other{{count} debtors}}",
+  "rptPiutangAge": "{days}d",
   "rptSecMembers": "Membership",
   "rptMembersSub": "Members over this range",
   "rptMembersEmpty": "No members enrolled in this range.",
@@ -2451,6 +2474,12 @@
   "vstMembersPointValueHint": "How much comes off the bill for one point redeemed.",
   "vstMembersRedeemMin": "Minimum redemption",
   "vstMembersRedeemMinHint": "The floor on a single redemption.",
+  "vstMembersDebt": "Tabs",
+  "vstMembersDebtHint": "Members may close a bill now and pay later.",
+  "vstMembersDebtLimit": "Credit limit",
+  "vstMembersDebtLimitHint": "Default limit per member. Zero means nobody may run a tab.",
+  "vstMembersDebtOverdue": "Overdue after",
+  "vstMembersDebtOverdueHint": "Past this many days a tab counts as overdue in reports.",
   "vstMembersPunch": "Punch card",
   "vstMembersPunchHint": "Buy so many, get one free. The reward is booked as a comp.",
   "vstMembersPunchItem": "Item being stamped",
@@ -2490,6 +2519,95 @@
     }
   },
   "cshMemberRedeemAll": "Redeem the lot",
+  "cshMemberDebt": "Owes {amount}",
+  "@cshMemberDebt": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshMemberCredit": "{amount} credit left",
+  "@cshMemberCredit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshMemberCreditNone": "No credit left",
+  "stlPiutangHint": "Goes on the member's tab. No money changes hands now.",
+  "stlPiutangLeft": "{amount} credit left",
+  "@stlPiutangLeft": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "stlPiutangNoMember": "A tab needs a member on this bill.",
+  "stlPiutangNoRoom": "This member's credit is used up.",
+  "stlBlkOverCredit": "More than the credit left",
+  "strukDebtTitle": "TAB PAYMENT",
+  "strukDebtPaid": "Received",
+  "strukDebtBalance": "Still owed",
+  "strukDebtCashier": "Cashier: {name}",
+  "@strukDebtCashier": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cshDebtCollect": "Take a tab payment",
+  "cshDebtNobody": "Nobody owes anything",
+  "cshDebtAmount": "Amount received",
+  "cshDebtNote": "Note (optional)",
+  "cshDebtOver": "More than they owe",
+  "cshDebtOwes": "Owes {amount}",
+  "@cshDebtOwes": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshDebtTake": "Take {amount}",
+  "@cshDebtTake": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "memDebtFilter": "Owing",
+  "memColDebt": "Owed",
+  "memColDebtLimit": "Credit limit",
+  "memDebtTitle": "Tab",
+  "memDebtLedgerEmpty": "No tab activity yet.",
+  "memDebtKindCharge": "Charged",
+  "memDebtKindPayment": "Paid",
+  "memDebtKindReversal": "Reversed",
+  "memDebtKindWriteOff": "Written off",
+  "memDebtKindAdjust": "Correction",
+  "memActionWriteOff": "Write off",
+  "memActionDebtAdjust": "Correct tab",
+  "memWriteOffBody": "Giving up on collecting. This becomes a loss and shows on the Sales report.",
+  "memDebtAdjustBody": "Fixing a mis-entry. Not a loss — the bad-debt figure does not move.",
+  "memDebtAdjustUp": "Add",
+  "memDebtAdjustDown": "Reduce",
+  "memDebtAmount": "Amount",
+  "memDebtReason": "Reason",
+  "memFieldDebtLimit": "Credit limit",
+  "memFieldDebtLimitHelp": "Leave empty to follow the venue default.",
+  "memDebtLimitVenue": "{amount} (venue default)",
+  "@memDebtLimitVenue": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "pinManualConnectBtn": "Connect manually",
   "pinManualEntryTitle": "Connect Manually",
   "pinManualEntryDescription": "Enter the server's IP address and port to connect manually if not auto-detected.",
@@ -2504,5 +2622,11 @@
   "rptJamFirstIn": "in ±{clock}",
   "rptJamUnclosed": "{n, plural, =1{1 shift not closed} other{{n} shifts not closed}}",
   "rptJamLastSeen": "last activity {clock}",
-  "rptJamUnclosedNote": "Unclosed shifts count no hours."
+  "rptJamUnclosedNote": "Unclosed shifts count no hours.",
+  "memErrHasDebt": "Still owes. Collect or write off first, then delete.",
+  "memErrDebtLimit": "Over the member's credit limit.",
+  "memErrOverpayment": "More than the outstanding balance.",
+  "memErrDebtOff": "Receivables are not enabled at this venue.",
+  "auditDebtChargedNoBill": "On account for {member}: {amount}",
+  "auditDebtReversedNoBill": "Tab charge reversed for {member}: {amount}"
 }

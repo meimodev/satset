@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/zone.dart';
@@ -13,10 +14,12 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/tablet_chrome.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
+import 'package:satset/ui/features/cashier/debt_collect_sheet.dart';
 import 'package:satset/ui/features/cashier/widgets/bill_card.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 
@@ -113,6 +116,21 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                             if (_detachedOnly) _seg = _Segment.perluDitagih;
                           }),
                         ),
+                        // A member may walk in only to settle a tab, with
+                        // nothing seated and no bill open — so the way in
+                        // cannot hang off a card (ADR-0098).
+                        if (ref.watch(
+                          venueSettingsProvider.select(
+                            (v) => v.membersEnabled && v.memberDebtEnabled,
+                          ),
+                        )) ...[
+                          const SizedBox(height: Sp.s3),
+                          SatButton.outline(
+                            label: context.l10n.cshDebtCollect,
+                            icon: Icons.account_balance_wallet_outlined,
+                            onTap: () => showDebtCollectSheet(context),
+                          ),
+                        ],
                         const SizedBox(height: Sp.s4),
                         _SegmentRow(
                           selected: _seg,

@@ -33,6 +33,14 @@ enum AuditType {
   /// act it was lives on the [AuditKind].
   memberChanged,
 
+  /// Any movement of a member's [[Piutang]] — charged to the tab, collected,
+  /// reversed, written off, corrected. **One** type for all five, for the
+  /// reason [cashMovement] is one. Deliberately *not* folded into
+  /// [memberChanged]: that one is the directory keeper's axis (enrolled,
+  /// merged, deleted), and this one is money. A reader chasing an unpaid tab
+  /// and a reader chasing a mistyped phone number are not the same reader.
+  debtMovement,
+
   /// A stok opname was closed (ADR-0096). **One row per session, not per
   /// counted bahan** — the per-line detail is the opname document, and the log
   /// records that the pantry was rewritten and by whom. Receiving and
@@ -90,6 +98,9 @@ bool isAdminAuditType(AuditType t) {
     // guest believes in — both belong beside the other money acts, readable by
     // any `viewReports` supervisor rather than gated behind `manageStaff`.
     case AuditType.memberChanged:
+    // Money owed is money, and it belongs beside the other money acts — the
+    // supervisor chasing an unpaid tab holds `viewReports`, not `manageStaff`.
+    case AuditType.debtMovement:
     // A count rewrites stock, not staff. The people who most need to read it
     // are the ones who run the pantry, and they hold `viewReports` long before
     // they hold `manageStaff`.

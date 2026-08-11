@@ -6,8 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/core/localization/labels.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/data/models/member_dto.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/members_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/member.dart';
 import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -44,6 +46,11 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
   final _search = TextEditingController();
   Timer? _debounce;
 
+  /// ponytail: filters the loaded page rather than asking the server, because
+  /// the authoritative "who owes" list is the collection sheet's `/debtors`.
+  /// A venue past 100 members needs a server-side flag here.
+  bool _debtOnly = false;
+
   @override
   void initState() {
     super.initState();
@@ -73,6 +80,15 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     final l10n = context.l10n;
     final state = ref.watch(membersProvider);
     final month = state.birthdayMonth;
+    final debtOn = ref.watch(
+      venueSettingsProvider.select((v) => v.memberDebtEnabled),
+    );
+    final rows = _debtOnly
+        ? [
+            for (final m in state.members)
+              if (m.debt > 0) m,
+          ]
+        : state.members;
 
     if (!state.enabled) {
       return Padding(
@@ -121,13 +137,21 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                       month == null ? DateTime.now().month : null,
                     ),
               ),
+              if (debtOn) ...[
+                const SizedBox(width: Sp.s2),
+                SatChip.select(
+                  label: l10n.memDebtFilter,
+                  selected: _debtOnly,
+                  onTap: () => setState(() => _debtOnly = !_debtOnly),
+                ),
+              ],
             ],
           ),
         ),
         Expanded(
           child: RefreshIndicator(
             onRefresh: ref.read(membersProvider.notifier).refresh,
-            child: state.members.isEmpty && !state.loading
+            child: rows.isEmpty && !state.loading
                 ? ListView(
                     children: [
                       Padding(
@@ -141,17 +165,12 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                     ],
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(
-                      Sp.s7,
-                      0,
-                      Sp.s7,
-                      Sp.s7,
-                    ),
-                    itemCount: state.members.length,
+                    padding: const EdgeInsets.fromLTRB(Sp.s7, 0, Sp.s7, Sp.s7),
+                    itemCount: rows.length,
                     separatorBuilder: (_, _) => const SizedBox(height: Sp.s1h),
                     itemBuilder: (_, i) => _MemberRow(
-                      member: state.members[i],
-                      onTap: () => _detail(state.members[i]),
+                      member: rows[i],
+                      onTap: () => _detail(rows[i]),
                     ),
                   ),
           ),
@@ -253,6 +272,22 @@ class _MemberRow extends ConsumerWidget {
                   ),
                 ),
               ],
+              if (cfg.memberDebtEnabled) ...[
+                const SizedBox(width: Sp.s2),
+                SizedBox(
+                  width: 128,
+                  child: member.debt > 0
+                      ? Align(
+                          alignment: Alignment.centerLeft,
+                          child: SatChip.tag(
+                            label: formatIDR(member.debt),
+                            hue: SatChipHue.warn,
+                            size: SatChipSize.sm,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ],
               const SizedBox(width: Sp.s3),
               SizedBox(
                 width: 116,
@@ -289,14 +324,28 @@ class _MemberDetailSheet extends ConsumerStatefulWidget {
 class _MemberDetailSheetState extends ConsumerState<_MemberDetailSheet> {
   late Future<MemberDetail> _load;
 
+  /// The [[Piutang]] standing, read separately because it is a separate ledger
+  /// with its own gate — a venue running points but no tabs asks for nothing.
+  Future<MemberDebt>? _debt;
+
+  String? _deleteError;
+
   @override
   void initState() {
     super.initState();
     _load = ref.read(membersProvider.notifier).detail(widget.member.id);
+    if (ref.read(venueSettingsProvider).memberDebtEnabled) _loadDebt();
   }
 
+  void _loadDebt() =>
+      _debt = ref.read(membersProvider.notifier).debt(widget.member.id);
+
   void _reload() => setState(() {
+    // A collection or a write-off is exactly what clears `has_outstanding_debt`,
+    // so the old refusal must not outlive the balance it was about.
+    _deleteError = null;
     _load = ref.read(membersProvider.notifier).detail(widget.member.id);
+    if (ref.read(venueSettingsProvider).memberDebtEnabled) _loadDebt();
   });
 
   @override
@@ -304,6 +353,7 @@ class _MemberDetailSheetState extends ConsumerState<_MemberDetailSheet> {
     final sc = context.sat;
     final l10n = context.l10n;
     final cfg = ref.watch(venueSettingsProvider);
+    final canRefund = ref.watch(authStateProvider).has(Capability.refund);
 
     return SafeArea(
       child: Padding(
@@ -415,6 +465,20 @@ class _MemberDetailSheetState extends ConsumerState<_MemberDetailSheet> {
                           }
                         },
                       ),
+                      if (cfg.memberDebtEnabled && canRefund) ...[
+                        SatButton.outline(
+                          label: l10n.memActionDebtAdjust,
+                          icon: Icons.rule_rounded,
+                          size: SatButtonSize.sm,
+                          onTap: () => _debtSheet(m, writeOff: false),
+                        ),
+                        SatButton.outline(
+                          label: l10n.memActionWriteOff,
+                          icon: Icons.money_off_rounded,
+                          size: SatButtonSize.sm,
+                          onTap: () => _debtSheet(m, writeOff: true),
+                        ),
+                      ],
                       SatButton.danger(
                         label: l10n.memActionDelete,
                         icon: Icons.person_remove_outlined,
@@ -423,6 +487,11 @@ class _MemberDetailSheetState extends ConsumerState<_MemberDetailSheet> {
                       ),
                     ],
                   ),
+                  if (_deleteError != null) ...[
+                    const SizedBox(height: Sp.s2),
+                    Text(_deleteError!, style: SatType.bodyS(color: sc.urgent)),
+                  ],
+                  if (cfg.memberDebtEnabled) _debtBlock(sc, l10n),
                   if (cfg.memberPointsEnabled) ...[
                     const SizedBox(height: Sp.s5),
                     Text(
@@ -441,8 +510,7 @@ class _MemberDetailSheetState extends ConsumerState<_MemberDetailSheet> {
                         style: SatType.bodyS(color: sc.textLo),
                       )
                     else
-                      for (final e in detail.ledger)
-                        _LedgerRow(entry: e.entry),
+                      for (final e in detail.ledger) _LedgerRow(entry: e.entry),
                   ],
                 ],
               ),
@@ -451,6 +519,53 @@ class _MemberDetailSheetState extends ConsumerState<_MemberDetailSheet> {
         ),
       ),
     );
+  }
+
+  /// Balance, resolved limit, then the ledger. The limit is shown even at zero:
+  /// "no tab" is a standing decision about this person, not a missing value.
+  Widget _debtBlock(SatColors sc, AppL10n l10n) => FutureBuilder<MemberDebt>(
+    future: _debt,
+    builder: (_, snap) {
+      final d = snap.data;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: Sp.s5),
+          Text(
+            l10n.memDebtTitle.toUpperCase(),
+            style: SatType.monoS(color: sc.textLo),
+          ),
+          const SizedBox(height: Sp.s2),
+          if (d == null)
+            Text(l10n.memLedgerLoading, style: SatType.bodyS(color: sc.textLo))
+          else ...[
+            _FactLine(label: l10n.memColDebt, value: formatIDR(d.balance)),
+            _FactLine(
+              label: l10n.memColDebtLimit,
+              value: d.ownLimit == null
+                  ? l10n.memDebtLimitVenue(formatIDR(d.limit))
+                  : formatIDR(d.limit),
+            ),
+            const SizedBox(height: Sp.s2),
+            if (d.entries.isEmpty)
+              Text(
+                l10n.memDebtLedgerEmpty,
+                style: SatType.bodyS(color: sc.textLo),
+              )
+            else
+              for (final e in d.entries) _DebtLedgerRow(entry: e),
+          ],
+        ],
+      );
+    },
+  );
+
+  Future<void> _debtSheet(MemberDto m, {required bool writeOff}) async {
+    await showSatSheet<void>(
+      context,
+      builder: (_) => _DebtActionSheet(member: m, writeOff: writeOff),
+    );
+    if (mounted) _reload();
   }
 
   /// Deleting a member **anonymises** them — the person and their ledger go,
@@ -468,8 +583,14 @@ class _MemberDetailSheetState extends ConsumerState<_MemberDetailSheet> {
       ),
     );
     if (ok != true || !mounted) return;
-    await ref.read(membersProvider.notifier).remove(widget.member.id);
-    if (mounted) Navigator.of(context).pop();
+    try {
+      await ref.read(membersProvider.notifier).remove(widget.member.id);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      // A delete can be refused — `has_outstanding_debt` while the member still
+      // owes (ADR-0098). Swallowing it left the sheet open with no reason.
+      if (mounted) setState(() => _deleteError = memberErrorText(l10n, e));
+    }
   }
 }
 
@@ -525,6 +646,218 @@ class _LedgerRow extends StatelessWidget {
   }
 }
 
+/// One [[Piutang]] movement. Money, so the delta is rupiah and signed — a
+/// charge reads `+`, a collection reads `−`, and the direction is the point.
+class _DebtLedgerRow extends StatelessWidget {
+  final MemberDebtEntry entry;
+  const _DebtLedgerRow({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    final detail = entry.method != null
+        ? paymentMethodLabel(l10n, entry.method!)
+        : (entry.note ?? entry.billLabel);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Sp.s1h),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 116,
+            child: Text(
+              formatShortDateId(entry.at),
+              style: SatType.mono(color: sc.textLo),
+            ),
+          ),
+          SizedBox(
+            width: 116,
+            child: SatChip.tag(
+              label: memberDebtKindLabel(l10n, entry.kind),
+              hue: _debtKindHue(entry.kind),
+              size: SatChipSize.sm,
+            ),
+          ),
+          const SizedBox(width: Sp.s2),
+          SizedBox(
+            width: 132,
+            child: Text(
+              '${entry.delta > 0 ? '+' : '−'}${formatIDR(entry.delta.abs())}',
+              style: SatType.mono(
+                color: entry.delta > 0 ? sc.warn : sc.success,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              detail.isEmpty ? (entry.actorName ?? '—') : detail,
+              style: SatType.bodyS(color: sc.textMd),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+SatChipHue _debtKindHue(MemberDebtKind kind) => switch (kind) {
+  MemberDebtKind.charge => SatChipHue.warn,
+  MemberDebtKind.payment => SatChipHue.success,
+  MemberDebtKind.reversal => SatChipHue.neutral,
+  MemberDebtKind.writeOff => SatChipHue.urgent,
+  MemberDebtKind.adjust => SatChipHue.accent,
+};
+
+/// Write off what will not be collected, or correct what was mistyped. One
+/// sheet, two verbs, because they differ only in sign and in what the bad-debt
+/// figure is allowed to mean (ADR-0098) — a correction is not a loss.
+class _DebtActionSheet extends ConsumerStatefulWidget {
+  final MemberDto member;
+  final bool writeOff;
+  const _DebtActionSheet({required this.member, required this.writeOff});
+
+  @override
+  ConsumerState<_DebtActionSheet> createState() => _DebtActionSheetState();
+}
+
+class _DebtActionSheetState extends ConsumerState<_DebtActionSheet> {
+  final _amount = TextEditingController();
+  final _note = TextEditingController();
+  bool _negative = false;
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _note.dispose();
+    super.dispose();
+  }
+
+  int get _value =>
+      int.tryParse(_amount.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+
+  Future<void> _submit() async {
+    if (_value <= 0 || _note.text.trim().isEmpty || _busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final repo = ref.read(membersProvider.notifier);
+    try {
+      if (widget.writeOff) {
+        await repo.writeOffDebt(
+          id: widget.member.id,
+          amount: _value,
+          note: _note.text.trim(),
+        );
+      } else {
+        await repo.adjustDebt(
+          id: widget.member.id,
+          delta: _negative ? -_value : _value,
+          note: _note.text.trim(),
+        );
+      }
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = memberErrorText(context.l10n, e);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          Sp.s5,
+          0,
+          Sp.s5,
+          MediaQuery.of(context).viewInsets.bottom + Sp.s5,
+        ),
+        // Scrolls: the money field autofocuses, and the number pad leaves a
+        // tablet ~180pt — the confirm button fell off the bottom without it.
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SatSheetHeader(
+                padding: const EdgeInsets.fromLTRB(0, Sp.s3, 0, Sp.s2),
+                onClose: () => Navigator.of(context).pop(),
+                child: Text(
+                  widget.writeOff
+                      ? l10n.memActionWriteOff
+                      : l10n.memActionDebtAdjust,
+                  style: SatType.h3(color: sc.textHi),
+                ),
+              ),
+              Text(
+                widget.writeOff ? l10n.memWriteOffBody : l10n.memDebtAdjustBody,
+                style: SatType.bodyS(color: sc.textLo),
+              ),
+              const SizedBox(height: Sp.s4),
+              if (!widget.writeOff) ...[
+                Wrap(
+                  spacing: Sp.s2,
+                  children: [
+                    SatChip.select(
+                      label: l10n.memDebtAdjustUp,
+                      selected: !_negative,
+                      onTap: () => setState(() => _negative = false),
+                    ),
+                    SatChip.select(
+                      label: l10n.memDebtAdjustDown,
+                      selected: _negative,
+                      onTap: () => setState(() => _negative = true),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: Sp.s3),
+              ],
+              SatField.money(
+                controller: _amount,
+                label: l10n.memDebtAmount,
+                hint: '0',
+                autofocus: true,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: Sp.s3),
+              SatField.text(
+                controller: _note,
+                label: l10n.memDebtReason,
+                hint: '',
+                onChanged: (_) => setState(() {}),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: Sp.s3),
+                Text(_error!, style: SatType.bodyS(color: sc.urgent)),
+              ],
+              const SizedBox(height: Sp.s4),
+              SatButton.primary(
+                label: widget.writeOff
+                    ? l10n.memActionWriteOff
+                    : l10n.memActionDebtAdjust,
+                onTap: _value > 0 && _note.text.trim().isNotEmpty && !_busy
+                    ? _submit
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 SatChipHue _kindHue(MemberPointKind kind) => switch (kind) {
   MemberPointKind.earn => SatChipHue.success,
   MemberPointKind.redeem => SatChipHue.accent,
@@ -553,6 +886,11 @@ class _MemberFormSheetState extends ConsumerState<MemberFormSheet> {
   late final TextEditingController _name;
   late final TextEditingController _phone;
   late final TextEditingController _note;
+
+  /// Empty means "whatever the venue allows", which is not the same as a zero
+  /// limit — so it is seeded from the member's *own* limit, never the resolved
+  /// one (ADR-0098).
+  late final TextEditingController _limit;
   DateTime? _birthday;
   bool _busy = false;
   String? _error;
@@ -564,6 +902,8 @@ class _MemberFormSheetState extends ConsumerState<MemberFormSheet> {
     _name = TextEditingController(text: e?.name ?? '');
     _phone = TextEditingController(text: e?.phone ?? widget.initialPhone ?? '');
     _note = TextEditingController(text: e?.member.note ?? '');
+    final own = e?.member.ownDebtLimit;
+    _limit = TextEditingController(text: own == null ? '' : groupRupiah(own));
     _birthday = e?.member.birthday;
   }
 
@@ -572,7 +912,14 @@ class _MemberFormSheetState extends ConsumerState<MemberFormSheet> {
     _name.dispose();
     _phone.dispose();
     _note.dispose();
+    _limit.dispose();
     super.dispose();
+  }
+
+  /// Null when the field is empty — the member falls back to the venue default.
+  int? get _limitValue {
+    final digits = _limit.text.replaceAll(RegExp(r'[^0-9]'), '');
+    return digits.isEmpty ? null : int.tryParse(digits);
   }
 
   bool get _ready =>
@@ -613,6 +960,8 @@ class _MemberFormSheetState extends ConsumerState<MemberFormSheet> {
               note: _note.text.trim(),
               birthday: _birthday,
               clearBirthday: _birthday == null,
+              debtLimit: _limitValue,
+              clearDebtLimit: _limitValue == null,
             );
       if (mounted) Navigator.of(context).pop(saved);
     } catch (e) {
@@ -684,6 +1033,18 @@ class _MemberFormSheetState extends ConsumerState<MemberFormSheet> {
                 label: l10n.memFieldNote,
                 hint: '',
               ),
+              // Enrolment cannot set a limit: the PATCH route owns it, and a
+              // tab is a decision about someone you already know.
+              if (widget.existing != null &&
+                  ref.watch(venueSettingsProvider).memberDebtEnabled) ...[
+                const SizedBox(height: Sp.s3),
+                SatField.money(
+                  controller: _limit,
+                  label: l10n.memFieldDebtLimit,
+                  hint: '',
+                  helperText: l10n.memFieldDebtLimitHelp,
+                ),
+              ],
               if (_error != null) ...[
                 const SizedBox(height: Sp.s3),
                 Text(_error!, style: SatType.bodyS(color: sc.urgent)),
@@ -932,31 +1293,40 @@ class _ConfirmDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    return Padding(
-      padding: const EdgeInsets.all(Sp.s5),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(title, style: SatType.h3(color: sc.textHi)),
-          const SizedBox(height: Sp.s2),
-          Text(body, style: SatType.bodyS(color: sc.textMd)),
-          const SizedBox(height: Sp.s4),
-          Row(
+    // `showSatDialog` hands the builder's widget straight to `showDialog`, so a
+    // bare body has no surface and no width: it painted full-bleed over the
+    // member sheet underneath, title across the app bar and buttons adrift.
+    // `Dialog` is what supplies both, from `dialogTheme`.
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Padding(
+          padding: const EdgeInsets.all(Sp.s5),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: SatButton.ghost(
-                  label: context.l10n.cancel,
-                  onTap: () => Navigator.of(context).pop(false),
-                ),
-              ),
-              const SizedBox(width: Sp.s2),
-              Expanded(
-                child: SatButton.danger(label: confirm, onTap: onConfirm),
+              Text(title, style: SatType.h3(color: sc.textHi)),
+              const SizedBox(height: Sp.s2),
+              Text(body, style: SatType.bodyS(color: sc.textMd)),
+              const SizedBox(height: Sp.s4),
+              Row(
+                children: [
+                  Expanded(
+                    child: SatButton.ghost(
+                      label: context.l10n.cancel,
+                      onTap: () => Navigator.of(context).pop(false),
+                    ),
+                  ),
+                  const SizedBox(width: Sp.s2),
+                  Expanded(
+                    child: SatButton.danger(label: confirm, onTap: onConfirm),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -979,7 +1349,9 @@ class _FactLine extends StatelessWidget {
             width: 148,
             child: Text(label, style: SatType.bodyS(color: sc.textLo)),
           ),
-          Expanded(child: Text(value, style: SatType.bodyS(color: sc.textHi))),
+          Expanded(
+            child: Text(value, style: SatType.bodyS(color: sc.textHi)),
+          ),
         ],
       ),
     );
@@ -1004,6 +1376,10 @@ String memberErrorText(AppL10n l10n, Object error) {
     'insufficient_points' => l10n.memErrInsufficient(err?.points ?? 0),
     'exceeds_bill' => l10n.memErrExceedsBill(err?.points ?? 0),
     'redeem_exists' => l10n.memErrRedeemExists,
+    'has_outstanding_debt' => l10n.memErrHasDebt,
+    'debt_limit_exceeded' => l10n.memErrDebtLimit,
+    'overpayment' => l10n.memErrOverpayment,
+    'debt_disabled' => l10n.memErrDebtOff,
     final code? => l10n.memErrFailed(code),
     null => l10n.memErrFailed('$error'),
   };

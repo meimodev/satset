@@ -105,6 +105,7 @@
   "auditTypeBillReopened": "Buka",
   "auditTypeBillClosed": "Tutup",
   "auditTypeCashMovement": "Kas",
+  "auditTypeDebtMovement": "Piutang",
   "auditTypeMemberChanged": "Pelanggan",
   "auditTypeStockCounted": "Opname",
   "auditTypeMenuKilled": "Stop jual",
@@ -604,6 +605,7 @@
   "payMethodQris": "QRIS",
   "payMethodTransfer": "Transfer",
   "payMethodOther": "Lainnya",
+  "payMethodOnAccount": "Piutang",
   "rangeToday": "Hari ini",
   "rangeYesterday": "Kemarin",
   "rangeD7": "7 hari",
@@ -1420,6 +1422,70 @@
       }
     }
   },
+  "auditDebtCharged": "Piutang {member} — {amount} ({bill})",
+  "@auditDebtCharged": {
+    "placeholders": {
+      "member": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "bill": {
+        "type": "String"
+      }
+    }
+  },
+  "auditDebtPaid": "Terima piutang {member} — {amount} ({method})",
+  "@auditDebtPaid": {
+    "placeholders": {
+      "member": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "auditDebtReversed": "Batal piutang {member} — {amount} ({bill})",
+  "@auditDebtReversed": {
+    "placeholders": {
+      "member": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "bill": {
+        "type": "String"
+      }
+    }
+  },
+  "auditDebtWrittenOff": "Hapus buku piutang {member} — {amount}",
+  "@auditDebtWrittenOff": {
+    "placeholders": {
+      "member": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "auditDebtAdjusted": "Koreksi piutang {member} — {amount}",
+  "@auditDebtAdjusted": {
+    "placeholders": {
+      "member": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "auditMenuKilled": "Stop jual {name}",
   "@auditMenuKilled": {
     "placeholders": {
@@ -1619,6 +1685,7 @@
   "cshWriteOffConfirm": "Catat kerugian",
   "cshErrOverAssign": "Unit melebihi yang tersedia.",
   "cshErrReceiptPaid": "Buka ulang struk sebelum mengubahnya.",
+  "cshErrOverRefund": "Melebihi uang yang diterima pada struk ini.",
   "cshErrNotSettled": "Tagihan belum lunas.",
   "cshErrBillLocked": "Tagihan sudah ditutup — buka ulang dulu.",
   "cshErrForbidden": "Perlu persetujuan manajer (tak tertagih).",
@@ -1719,7 +1786,7 @@
   "cshRefund": "Refund",
   "cshReopen": "Buka ulang",
   "cshReopenTitle": "Buka ulang struk",
-  "cshReopenBody": "Batalkan status lunas \"{receipt}\" agar bisa diubah? Pembayaran tercatat tetap ada.",
+  "cshReopenBody": "Batalkan status lunas \"{receipt}\" agar bisa diubah? Semua pembayaran pada struk ini dihapus dan harus dicatat ulang; piutang yang tercatat ikut dibatalkan.",
   "@cshReopenBody": {
     "placeholders": {
       "receipt": {
@@ -1756,6 +1823,14 @@
   "@cshPhotoFailed": {
     "placeholders": {
       "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cshRefundCap": "Maksimum {amount} — hanya uang yang benar-benar diterima yang bisa dikembalikan.",
+  "@cshRefundCap": {
+    "placeholders": {
+      "amount": {
         "type": "String"
       }
     }
@@ -4921,6 +4996,41 @@
   },
   "kasPhoneOnly": "Kas kecil dibaca di tablet.",
   "rptSecKas": "Kas kecil",
+  "rptSecPiutang": "Piutang",
+  "rptPiutangSub": "Tagihan pelanggan yang belum dibayar",
+  "rptPiutangEmpty": "Tidak ada piutang di rentang ini.",
+  "rptPiutangOpening": "Saldo awal",
+  "rptPiutangCharged": "Ditagihkan",
+  "rptPiutangCollected": "Diterima",
+  "rptPiutangWrittenOff": "Hapus buku",
+  "rptPiutangClosing": "Saldo akhir",
+  "rptPiutangByMethod": "Penerimaan per metode",
+  "rptPiutangMore": "Daftar lengkap ada di Pelanggan.",
+  "rptSalesBadDebt": "Piutang tak tertagih",
+  "rptPiutangOverdue": "{days, plural, other{Lewat {days} hari}}",
+  "@rptPiutangOverdue": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "rptPiutangDebtors": "{count, plural, other{{count} penunggak}}",
+  "@rptPiutangDebtors": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rptPiutangAge": "{days} hr",
+  "@rptPiutangAge": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "rptSecMembers": "Keanggotaan",
   "rptMembersSub": "Pelanggan terdaftar di rentang ini",
   "rptMembersEmpty": "Belum ada pelanggan terdaftar di rentang ini.",
@@ -6199,6 +6309,12 @@
   "@vstMembersRedeemMinHint": {
     "description": "Membership settings and hub copy."
   },
+  "vstMembersDebt": "Piutang",
+  "vstMembersDebtHint": "Pelanggan boleh menutup tagihan dulu, bayar belakangan.",
+  "vstMembersDebtLimit": "Batas piutang",
+  "vstMembersDebtLimitHint": "Batas bawaan tiap pelanggan. Nol berarti tidak ada yang boleh berutang.",
+  "vstMembersDebtOverdue": "Batas jatuh tempo",
+  "vstMembersDebtOverdueHint": "Setelah sekian hari, piutang dihitung menunggak di laporan.",
   "vstMembersPunch": "Kartu stempel",
   "@vstMembersPunch": {
     "description": "Membership settings and hub copy."
@@ -6286,6 +6402,201 @@
   "@cshMemberRedeemAll": {
     "description": "The member row on a live bill."
   },
+  "cshMemberDebt": "Piutang {amount}",
+  "@cshMemberDebt": {
+    "description": "The member row on a live bill.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshMemberCredit": "Sisa kredit {amount}",
+  "@cshMemberCredit": {
+    "description": "The member row on a live bill.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshMemberCreditNone": "Kredit habis",
+  "@cshMemberCreditNone": {
+    "description": "The member row on a live bill."
+  },
+  "stlPiutangHint": "Masuk ke piutang pelanggan. Tidak ada uang berpindah sekarang.",
+  "@stlPiutangHint": {
+    "description": "The settle pane's piutang block."
+  },
+  "stlPiutangLeft": "Sisa kredit {amount}",
+  "@stlPiutangLeft": {
+    "description": "The settle pane's piutang block.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "stlPiutangNoMember": "Piutang butuh pelanggan terdaftar pada tagihan ini.",
+  "@stlPiutangNoMember": {
+    "description": "Why the piutang chip is off."
+  },
+  "stlPiutangNoRoom": "Kredit pelanggan ini sudah habis.",
+  "@stlPiutangNoRoom": {
+    "description": "Why the piutang chip is off."
+  },
+  "stlBlkOverCredit": "Melebihi sisa kredit",
+  "@stlBlkOverCredit": {
+    "description": "Why the confirm button is blocked."
+  },
+  "strukDebtTitle": "TERIMA PIUTANG",
+  "@strukDebtTitle": {
+    "description": "The piutang collection slip."
+  },
+  "strukDebtPaid": "Diterima",
+  "@strukDebtPaid": {
+    "description": "The piutang collection slip."
+  },
+  "strukDebtBalance": "Sisa piutang",
+  "@strukDebtBalance": {
+    "description": "The piutang collection slip."
+  },
+  "strukDebtCashier": "Kasir: {name}",
+  "@strukDebtCashier": {
+    "description": "The piutang collection slip.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cshDebtCollect": "Terima piutang",
+  "@cshDebtCollect": {
+    "description": "The piutang collection sheet."
+  },
+  "cshDebtNobody": "Tidak ada yang berutang",
+  "@cshDebtNobody": {
+    "description": "The piutang collection sheet."
+  },
+  "cshDebtAmount": "Jumlah diterima",
+  "@cshDebtAmount": {
+    "description": "The piutang collection sheet."
+  },
+  "cshDebtNote": "Catatan (opsional)",
+  "@cshDebtNote": {
+    "description": "The piutang collection sheet."
+  },
+  "cshDebtOver": "Melebihi piutang",
+  "@cshDebtOver": {
+    "description": "The piutang collection sheet."
+  },
+  "cshDebtOwes": "Piutang {amount}",
+  "@cshDebtOwes": {
+    "description": "The piutang collection sheet.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshDebtTake": "Terima {amount}",
+  "@cshDebtTake": {
+    "description": "The piutang collection sheet.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "memDebtFilter": "Berutang",
+  "@memDebtFilter": {
+    "description": "The member directory's piutang block."
+  },
+  "memColDebt": "Piutang",
+  "@memColDebt": {
+    "description": "The member directory's piutang block."
+  },
+  "memColDebtLimit": "Batas kredit",
+  "@memColDebtLimit": {
+    "description": "The member directory's piutang block."
+  },
+  "memDebtTitle": "Piutang",
+  "@memDebtTitle": {
+    "description": "The member directory's piutang block."
+  },
+  "memDebtLedgerEmpty": "Belum ada catatan piutang.",
+  "@memDebtLedgerEmpty": {
+    "description": "The member directory's piutang block."
+  },
+  "memDebtKindCharge": "Tagih",
+  "@memDebtKindCharge": {
+    "description": "The member directory's piutang block."
+  },
+  "memDebtKindPayment": "Bayar",
+  "@memDebtKindPayment": {
+    "description": "The member directory's piutang block."
+  },
+  "memDebtKindReversal": "Batal",
+  "@memDebtKindReversal": {
+    "description": "The member directory's piutang block."
+  },
+  "memDebtKindWriteOff": "Hapus buku",
+  "@memDebtKindWriteOff": {
+    "description": "The member directory's piutang block."
+  },
+  "memDebtKindAdjust": "Koreksi",
+  "@memDebtKindAdjust": {
+    "description": "The member directory's piutang block."
+  },
+  "memActionWriteOff": "Hapus buku",
+  "@memActionWriteOff": {
+    "description": "The member directory's piutang block."
+  },
+  "memActionDebtAdjust": "Koreksi piutang",
+  "@memActionDebtAdjust": {
+    "description": "The member directory's piutang block."
+  },
+  "memWriteOffBody": "Menyerah menagih. Jumlah ini jadi kerugian dan muncul di laporan Penjualan.",
+  "@memWriteOffBody": {
+    "description": "The member directory's piutang block."
+  },
+  "memDebtAdjustBody": "Perbaiki salah catat. Bukan kerugian — angka piutang tak tertagih tidak berubah.",
+  "@memDebtAdjustBody": {
+    "description": "The member directory's piutang block."
+  },
+  "memDebtAdjustUp": "Tambah",
+  "@memDebtAdjustUp": {
+    "description": "The member directory's piutang block."
+  },
+  "memDebtAdjustDown": "Kurangi",
+  "@memDebtAdjustDown": {
+    "description": "The member directory's piutang block."
+  },
+  "memDebtAmount": "Jumlah",
+  "@memDebtAmount": {
+    "description": "The member directory's piutang block."
+  },
+  "memDebtReason": "Alasan",
+  "@memDebtReason": {
+    "description": "The member directory's piutang block."
+  },
+  "memFieldDebtLimit": "Batas kredit",
+  "@memFieldDebtLimit": {
+    "description": "The member directory's piutang block."
+  },
+  "memFieldDebtLimitHelp": "Kosongkan untuk ikut batas venue.",
+  "@memFieldDebtLimitHelp": {
+    "description": "The member directory's piutang block."
+  },
+  "memDebtLimitVenue": "{amount} (ikut venue)",
+  "@memDebtLimitVenue": {
+    "description": "The member directory's piutang block.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "pinManualConnectBtn": "Hubungkan manual",
   "pinManualEntryTitle": "Hubungkan Manual",
   "pinManualEntryDescription": "Masukkan alamat IP dan port server untuk terhubung secara manual jika tidak terdeteksi otomatis.",
@@ -6363,5 +6674,37 @@
   "rptJamUnclosedNote": "Shift yang tak ditutup tidak dihitung sebagai jam kerja.",
   "@rptJamUnclosedNote": {
       "description": "Caveat under the section title when unclosed shifts exist."
+  },
+  "memErrHasDebt": "Masih ada piutang. Terima atau hapus buku dulu, baru hapus pelanggan.",
+  "@memErrHasDebt": {
+    "description": "Delete refused while the member still owes."
+  },
+  "memErrDebtLimit": "Melebihi batas kredit pelanggan.",
+  "@memErrDebtLimit": {
+    "description": "A piutang charge over the credit limit."
+  },
+  "memErrOverpayment": "Lebih besar dari sisa piutang.",
+  "@memErrOverpayment": {
+    "description": "A collection larger than the outstanding balance."
+  },
+  "memErrDebtOff": "Piutang belum diaktifkan di venue ini.",
+  "@memErrDebtOff": {
+    "description": "A debt act while the venue has piutang off."
+  },
+  "auditDebtChargedNoBill": "Piutang {member} — {amount}",
+  "@auditDebtChargedNoBill": {
+    "description": "A piutang charge whose bill carried no table label.",
+    "placeholders": {
+      "member": { "type": "String" },
+      "amount": { "type": "String" }
+    }
+  },
+  "auditDebtReversedNoBill": "Batal piutang {member} — {amount}",
+  "@auditDebtReversedNoBill": {
+    "description": "A piutang reversal whose bill carried no table label.",
+    "placeholders": {
+      "member": { "type": "String" },
+      "amount": { "type": "String" }
+    }
   }
 }

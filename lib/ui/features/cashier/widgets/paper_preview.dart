@@ -44,58 +44,79 @@ class PaperPreview extends StatelessWidget {
           if (d.header.isNotEmpty) _centre(d.header, faint: true),
           _rule(),
           _row(_title(l10n), d.docLabel.isEmpty ? '' : d.docLabel, bold: true),
-          _row(
-            d.guestName.isEmpty
-                ? l10n.tableNamed(d.tableLabel)
-                : '${d.tableLabel} · ${d.guestName}',
-            formatClockId(d.at.toIso8601String()),
-            faint: true,
-          ),
-          if (d.pax > 0) _row(l10n.rcpPaxCount(d.pax), '', faint: true),
-          _rule(dashed: true),
-          for (final l in d.lines) ..._line(l),
-          _rule(dashed: true),
-          _row(l10n.strukSubtotal, _money(d.subtotal)),
-          // The Diskon row's position is the arithmetic, not decoration —
-          // above Layanan when it reduced their base, below Pajak otherwise
-          // (ADR-0038). Printing it in a fixed slot prints a sum that fails.
-          if (d.discountAmount > 0 && d.taxAfterDiscount)
-            _row(d.discountLabel, '−${_money(d.discountAmount)}'),
-          if (d.serviceAmount > 0)
-            _row(l10n.strukService, _money(d.serviceAmount)),
-          if (d.taxAmount > 0) _row(l10n.strukTax, _money(d.taxAmount)),
-          if (d.discountAmount > 0 && !d.taxAfterDiscount)
-            _row(d.discountLabel, '−${_money(d.discountAmount)}'),
-          _rule(),
-          _row(l10n.strukTotal, _money(d.total), bold: true),
-          if (d.kind == BillDocKind.evenReceipt && d.billTotal != d.total)
-            _row(l10n.strukBillTotal, _money(d.billTotal), faint: true),
-          if (d.payments.isNotEmpty) ...[
-            _rule(dashed: true),
-            for (final p in d.payments)
-              _row(
-                p.isRefund ? l10n.rcpRefundLine(p.methodLabel) : p.methodLabel,
-                _money(p.amount),
-              ),
-            if (d.tenderedTotal != null) ...[
-              _row(
-                l10n.strukCashReceived,
-                _money(d.tenderedTotal!),
-                faint: true,
-              ),
-              _row(
-                l10n.cpdChange,
-                _money(d.tenderedTotal! - d.paidNet),
-                faint: true,
-              ),
-            ],
+          if (d.isDebtSlip) ...[
             _row(
-              d.outstanding > 0 ? l10n.strukOutstanding : l10n.strukSettled,
-              d.outstanding > 0 ? _money(d.outstanding) : '0',
+              d.memberName,
+              formatClockId(d.at.toIso8601String()),
               bold: true,
             ),
-          ] else if (d.outstanding > 0)
-            _row(l10n.strukOutstanding, _money(d.outstanding), bold: true),
+            if (d.cashierName.isNotEmpty)
+              _row(l10n.strukDebtCashier(d.cashierName), '', faint: true),
+            _rule(dashed: true),
+            _row(
+              d.payments.isEmpty
+                  ? l10n.strukDebtPaid
+                  : d.payments.first.methodLabel,
+              _money(d.total),
+              bold: true,
+            ),
+            _row(l10n.strukDebtBalance, _money(d.debtBalanceAfter), bold: true),
+          ] else ...[
+            _row(
+              d.guestName.isEmpty
+                  ? l10n.tableNamed(d.tableLabel)
+                  : '${d.tableLabel} · ${d.guestName}',
+              formatClockId(d.at.toIso8601String()),
+              faint: true,
+            ),
+            if (d.pax > 0) _row(l10n.rcpPaxCount(d.pax), '', faint: true),
+            _rule(dashed: true),
+            for (final l in d.lines) ..._line(l),
+            _rule(dashed: true),
+            _row(l10n.strukSubtotal, _money(d.subtotal)),
+            // The Diskon row's position is the arithmetic, not decoration —
+            // above Layanan when it reduced their base, below Pajak otherwise
+            // (ADR-0038). Printing it in a fixed slot prints a sum that fails.
+            if (d.discountAmount > 0 && d.taxAfterDiscount)
+              _row(d.discountLabel, '−${_money(d.discountAmount)}'),
+            if (d.serviceAmount > 0)
+              _row(l10n.strukService, _money(d.serviceAmount)),
+            if (d.taxAmount > 0) _row(l10n.strukTax, _money(d.taxAmount)),
+            if (d.discountAmount > 0 && !d.taxAfterDiscount)
+              _row(d.discountLabel, '−${_money(d.discountAmount)}'),
+            _rule(),
+            _row(l10n.strukTotal, _money(d.total), bold: true),
+            if (d.kind == BillDocKind.evenReceipt && d.billTotal != d.total)
+              _row(l10n.strukBillTotal, _money(d.billTotal), faint: true),
+            if (d.payments.isNotEmpty) ...[
+              _rule(dashed: true),
+              for (final p in d.payments)
+                _row(
+                  p.isRefund
+                      ? l10n.rcpRefundLine(p.methodLabel)
+                      : p.methodLabel,
+                  _money(p.amount),
+                ),
+              if (d.tenderedTotal != null) ...[
+                _row(
+                  l10n.strukCashReceived,
+                  _money(d.tenderedTotal!),
+                  faint: true,
+                ),
+                _row(
+                  l10n.cpdChange,
+                  _money(d.tenderedTotal! - d.paidNet),
+                  faint: true,
+                ),
+              ],
+              _row(
+                d.outstanding > 0 ? l10n.strukOutstanding : l10n.strukSettled,
+                d.outstanding > 0 ? _money(d.outstanding) : '0',
+                bold: true,
+              ),
+            ] else if (d.outstanding > 0)
+              _row(l10n.strukOutstanding, _money(d.outstanding), bold: true),
+          ],
           _rule(),
           if (d.footer.isNotEmpty) _centre(d.footer, faint: true),
           _centre(
@@ -113,6 +134,7 @@ class PaperPreview extends StatelessWidget {
       d.payments.isEmpty ? l10n.strukBillTitle : l10n.strukReceiptTitle,
     BillDocKind.itemizedReceipt => l10n.rcpItemizedReceipt,
     BillDocKind.evenReceipt => l10n.rcpSplitReceipt,
+    BillDocKind.debtCollection => l10n.strukDebtTitle,
   };
 
   /// The roll prints no currency symbol — the grouping alone is the number.

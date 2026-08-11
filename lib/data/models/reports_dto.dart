@@ -31,6 +31,14 @@ class ReportsSnapshotDto with _$ReportsSnapshotDto {
     /// revenue (ADR-0095).
     @Default(MembersSectionDto()) MembersSectionDto members,
 
+    /// [[Piutang]] over the same window (ADR-0098). Its own section again: a
+    /// collection is not revenue — the sale was booked the night it was eaten —
+    /// so nothing here may be added to [sales]. The exception runs the other
+    /// way: [PiutangSectionDto.writtenOff] is republished as
+    /// [SalesSectionDto.badDebt], because a loss belongs beside what it was
+    /// lost against.
+    @Default(PiutangSectionDto()) PiutangSectionDto piutang,
+
     /// Attendance over the same window. Deliberately not part of [staff]: that
     /// section is what someone sold, this one is whether they were here, and a
     /// slow Tuesday must not read as a slack one.
@@ -93,6 +101,13 @@ class SalesSectionDto with _$SalesSectionDto {
     @Default(<CoverDayDto>[]) List<CoverDayDto> coverTrend,
     @Default(<double>[]) List<double> hourly,
     TakeawaySplitDto? takeaway,
+
+    /// [[Piutang]] given up on in this window — the one figure that crosses in
+    /// from [ReportsSnapshotDto.piutang] (ADR-0098). A tab written off weeks
+    /// after close is a real loss against revenue already booked, so it is
+    /// shown here rather than left in its own section where an owner reading
+    /// [kpis] would never meet it. Read-only: no KPI is net of it.
+    @Default(0) int badDebt,
   }) = _SalesSectionDto;
 
   factory SalesSectionDto.fromJson(Map<String, dynamic> json) =>
@@ -469,6 +484,60 @@ class MembersSectionDto with _$MembersSectionDto {
 
   factory MembersSectionDto.fromJson(Map<String, dynamic> json) =>
       _$MembersSectionDtoFromJson(json);
+}
+
+/// The [[Piutang]] block — what the venue is owed, and what moved (ADR-0098).
+///
+/// [opening] and [closing] are **venue-wide outstanding**, not window sums: a
+/// receivable does not reset at midnight the way takings do.
+/// `opening + charged − collected − writtenOff − adjusted = closing`.
+///
+/// [byMethod] is keyed by payment-method code, resolved at read time (ADR-0085).
+@freezed
+class PiutangSectionDto with _$PiutangSectionDto {
+  const factory PiutangSectionDto({
+    /// False ⇒ the venue runs no tabs, and the section is not drawn.
+    @Default(false) bool enabled,
+    @Default(0) int opening,
+    @Default(0) int charged,
+    @Default(0) int collected,
+    @Default(0) int writtenOff,
+
+    /// Signed: which way a hand correction went is the finding.
+    @Default(0) int adjusted,
+    @Default(0) int closing,
+    @Default(<String, int>{}) Map<String, int> byMethod,
+
+    /// The venue's credit policy, not a fact — what counts as late is a setting.
+    @Default(30) int overdueDays,
+    @Default(0) int overdueTotal,
+    @Default(0) int debtorCount,
+    @Default(<DebtorRowDto>[]) List<DebtorRowDto> debtors,
+
+    /// True when [debtors] is a capped page and the full list lives on
+    /// `/members`. A report is read on a tablet; a hundred-row table is not.
+    @Default(false) bool debtorsTruncated,
+  }) = _PiutangSectionDto;
+
+  factory PiutangSectionDto.fromJson(Map<String, dynamic> json) =>
+      _$PiutangSectionDtoFromJson(json);
+}
+
+/// One member who owes. [oldestUnpaidAt] is derived FIFO at read time — there
+/// is no due-date column and no invoice allocation (ADR-0098).
+@freezed
+class DebtorRowDto with _$DebtorRowDto {
+  const factory DebtorRowDto({
+    @Default('') String memberId,
+    @Default('') String name,
+    @Default('') String phone,
+    @Default(0) int balance,
+    DateTime? oldestUnpaidAt,
+    DateTime? lastPaymentAt,
+  }) = _DebtorRowDto;
+
+  factory DebtorRowDto.fromJson(Map<String, dynamic> json) =>
+      _$DebtorRowDtoFromJson(json);
 }
 
 /// One member on the window's spend leaderboard. [name] is null when the member

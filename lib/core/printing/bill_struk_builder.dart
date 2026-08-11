@@ -17,6 +17,54 @@ import 'package:satset/l10n/app_localizations.dart';
 class BillStrukBuilder {
   // ── client: from the typed Bill ──
 
+  /// The [[Piutang]] collection slip (ADR-0098). No bill, no lines, no table —
+  /// a member walked in and paid down a tab, and this is the only evidence they
+  /// leave with. Built here rather than at the call site so the venue identity
+  /// block stays one shape across every money document.
+  static BillStrukData debtCollection({
+    required AppL10n l,
+    required VenueSettingsDto venue,
+    required String memberName,
+    required int amount,
+    required String method,
+    required int balanceAfter,
+    required String cashierName,
+    List<int>? logoBytes,
+    DateTime? at,
+  }) => BillStrukData(
+    venueName: venue.displayName,
+    header: venue.receiptHeader,
+    footer: venue.receiptFooter,
+    tagline: venue.receiptTagline,
+    social: venue.receiptSocial,
+    thankYou: venue.receiptThankYou,
+    address: venue.address,
+    phone: venue.phone,
+    logoBytes: logoBytes,
+    qrUrl: venue.receiptQrUrl,
+    qrCaption: venue.receiptQrCaption,
+    tableLabel: '',
+    pax: 0,
+    memberName: memberName,
+    at: at ?? DateTime.now(),
+    kind: BillDocKind.debtCollection,
+    lines: const [],
+    subtotal: amount,
+    serviceAmount: 0,
+    taxAmount: 0,
+    total: amount,
+    billTotal: amount,
+    payments: [
+      BillStrukPayment(
+        methodLabel: paymentMethodLabel(l, method),
+        amount: amount,
+      ),
+    ],
+    paidNet: amount,
+    debtBalanceAfter: balanceAfter,
+    cashierName: cashierName,
+  );
+
   static BillStrukData fromBill({
     required AppL10n l,
     required Bill bill,

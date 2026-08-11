@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -8,6 +9,7 @@ import 'package:satset/server/auth.dart';
 // Hidden for the reason `members.dart` gives: Drift's row class shares the
 // domain model's name and this file means the domain one.
 import 'package:satset/server/db/database.dart' hide Member;
+import 'package:satset/server/debts.dart';
 import 'package:satset/server/members.dart';
 import 'package:satset/server/ws_hub.dart';
 
@@ -49,16 +51,24 @@ Router membersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     headers: {'content-type': 'application/json'},
   );
 
-  Response err(int status, String code, {int? points, String? memberId}) =>
-      Response(
-        status,
-        body: jsonEncode({
-          'code': code,
-          'points': ?points,
-          'memberId': ?memberId,
-        }),
-        headers: {'content-type': 'application/json'},
-      );
+  Response err(
+    int status,
+    String code, {
+    int? points,
+    String? memberId,
+    int? balance,
+    int? limit,
+  }) => Response(
+    status,
+    body: jsonEncode({
+      'code': code,
+      'points': ?points,
+      'memberId': ?memberId,
+      'balance': ?balance,
+      'limit': ?limit,
+    }),
+    headers: {'content-type': 'application/json'},
+  );
 
   Response forbidden(Capability c) => Response(
     403,
@@ -72,6 +82,157 @@ Router membersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final cfg = await memberConfig(db);
     return cfg.enabled ? null : err(404, 'members_disabled');
   }
+
+  /// [[Piutang]] off ⇒ 404 as well, and for the same reason: a venue that runs
+  /// no tabs should be indistinguishable from a server that never had them.
+  Future<Response?> debtGuard() async {
+    final off = await enabledGuard();
+    if (off != null) return off;
+    final cfg = await debtConfig(db);
+    return cfg.enabled ? null : err(404, 'debt_disabled');
+  }
+
+  /// Reading a balance is open to whoever settles, keeps the directory, or
+  /// reports on it — the same three that already read a member.
+  bool canRead(Set<String> caps) =>
+      caps.contains(Capability.settleBill.name) ||
+      caps.contains(Capability.manageMembers.name) ||
+      caps.contains(Capability.viewReports.name);
+
+  Response debtErr(DebtException e) => err(
+    e.code == 'not_found' ? 404 : 409,
+    e.code,
+    balance: e.balance,
+    limit: e.limit,
+  );
+
+  // ---------------------------------------------------------------- piutang
+  //
+  // **Registered before `/members/<id>`**: shelf_router matches in declaration
+  // order, so a literal segment placed after the parameterised one is read as a
+  // member whose id happens to be "debtors".
+
+  /// Everyone who owes something, largest first, with FIFO-derived ageing.
+  r.get('/members/debtors', (Request req) async {
+    final off = await debtGuard();
+    if (off != null) return off;
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!canRead(a.$2)) return forbidden(Capability.manageMembers);
+    final list = await listDebtors(db);
+    return json([for (final d in list) d.toJson()]);
+  });
+
+  /// One member's standing: balance, resolved limit, and a page of the ledger.
+  r.get('/members/<id>/debt', (Request req, String id) async {
+    final off = await debtGuard();
+    if (off != null) return off;
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!canRead(a.$2)) return forbidden(Capability.manageMembers);
+    if (await getMember(db, id) == null) return err(404, 'not_found');
+    final limit = int.tryParse(req.url.queryParameters['limit'] ?? '') ?? 50;
+    return json(
+      debtJson(await debtFor(db, id, ledgerLimit: limit.clamp(1, 500))),
+    );
+  });
+
+  /// Proof photo for one collection. Its own route for the reason a payment's
+  /// is: the blob never rides the ledger page.
+  r.get('/members/debt/<entryId>/photo', (Request req, String entryId) async {
+    final off = await debtGuard();
+    if (off != null) return off;
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!canRead(a.$2)) return forbidden(Capability.manageMembers);
+    final row = await (db.select(
+      db.memberDebts,
+    )..where((x) => x.id.equals(entryId))).getSingleOrNull();
+    if (row?.photo == null) return Response.notFound('no photo');
+    return Response.ok(
+      row!.photo,
+      headers: {'content-type': 'image/jpeg', 'cache-control': 'no-cache'},
+    );
+  });
+
+  /// Collect. A till act — `settleBill`, same as taking any other money.
+  r.post('/members/<id>/debt/payments', (Request req, String id) async {
+    final off = await debtGuard();
+    if (off != null) return off;
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!a.$2.contains(Capability.settleBill.name)) {
+      return forbidden(Capability.settleBill);
+    }
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    try {
+      await payDebt(
+        db,
+        memberId: id,
+        amount: (body['amount'] as num?)?.toInt() ?? 0,
+        method: (body['method'] as String?) ?? 'tunai',
+        photo: _photo(body['photoBase64']),
+        note: _text(body['note']),
+        actorUserId: a.$1,
+        hub: hub,
+      );
+      return json(debtJson(await debtFor(db, id)));
+    } on DebtException catch (e) {
+      return debtErr(e);
+    }
+  });
+
+  /// Give up collecting. `refund` — the capability that already means a manager
+  /// is accepting money is gone.
+  r.post('/members/<id>/debt/write-off', (Request req, String id) async {
+    final off = await debtGuard();
+    if (off != null) return off;
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!a.$2.contains(Capability.refund.name)) {
+      return forbidden(Capability.refund);
+    }
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    try {
+      await writeOffDebt(
+        db,
+        memberId: id,
+        amount: (body['amount'] as num?)?.toInt() ?? 0,
+        note: _text(body['note']) ?? '',
+        actorUserId: a.$1,
+        hub: hub,
+      );
+      return json(debtJson(await debtFor(db, id)));
+    } on DebtException catch (e) {
+      return debtErr(e);
+    }
+  });
+
+  /// A hand correction, signed. Kept apart from write-off so the bad-debt
+  /// figure stays "money we lost" rather than "money we lost, plus typos".
+  r.post('/members/<id>/debt/adjust', (Request req, String id) async {
+    final off = await debtGuard();
+    if (off != null) return off;
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!a.$2.contains(Capability.refund.name)) {
+      return forbidden(Capability.refund);
+    }
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    try {
+      await adjustDebt(
+        db,
+        memberId: id,
+        delta: (body['delta'] as num?)?.toInt() ?? 0,
+        note: _text(body['note']) ?? '',
+        actorUserId: a.$1,
+        hub: hub,
+      );
+      return json(debtJson(await debtFor(db, id)));
+    } on DebtException catch (e) {
+      return debtErr(e);
+    }
+  });
 
   // The directory, and the till's prefix search. Readable by anyone who can
   // settle, keep the directory, or report on it.
@@ -181,6 +342,11 @@ Router membersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         birthday: _date(body['birthday']),
         // An explicit null clears the date; an absent key leaves it alone.
         clearBirthday: body.containsKey('birthday') && body['birthday'] == null,
+        debtLimit: (body['debtLimit'] as num?)?.toInt(),
+        // Same distinction, and it matters more here: an explicit null puts
+        // them back on the venue default, which is not the same as 0.
+        clearDebtLimit:
+            body.containsKey('debtLimit') && body['debtLimit'] == null,
         hub: hub,
       );
       return json(memberJson(member));
@@ -267,6 +433,15 @@ String? _text(Object? raw) {
   if (raw is! String) return null;
   final t = raw.trim();
   return t.isEmpty ? null : t;
+}
+
+Uint8List? _photo(Object? raw) {
+  if (raw is! String || raw.isEmpty) return null;
+  try {
+    return base64Decode(raw);
+  } catch (_) {
+    return null;
+  }
 }
 
 DateTime? _date(Object? raw) {

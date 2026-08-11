@@ -19,6 +19,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -190,6 +191,11 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
               run: _run,
               repo: _repo,
               canRefund: ref.watch(authStateProvider).has(Capability.refund),
+              debtEnabled: ref.watch(
+                venueSettingsProvider.select(
+                  (v) => v.membersEnabled && v.memberDebtEnabled,
+                ),
+              ),
               onCloseBill: () => _closeBill(context, ref, bill),
               onReopenBill: () => _reopenBill(bill),
               printDoc: (r) => printBillStruk(
@@ -302,6 +308,7 @@ String _msg(AppL10n l10n, ApiException e) => switch (e.code) {
   'over_assign' => l10n.cshErrOverAssign,
   'receipt_paid' => l10n.cshErrReceiptPaid,
   'not_settled' => l10n.cshErrNotSettled,
+  'over_refund' => l10n.cshErrOverRefund,
   'bill_locked' => l10n.cshErrBillLocked,
   'forbidden' => l10n.cshErrForbidden,
   'reason_required' => l10n.cshErrReasonRequired,
@@ -351,6 +358,7 @@ class _BillBody extends StatefulWidget {
   final Future<void> Function(Future<Bill> Function()) run;
   final SettlementRepository repo;
   final bool canRefund;
+  final bool debtEnabled;
   final VoidCallback onCloseBill;
   final VoidCallback onReopenBill;
   final Future<void> Function(BillReceipt?) printDoc;
@@ -360,6 +368,7 @@ class _BillBody extends StatefulWidget {
     required this.run,
     required this.repo,
     required this.canRefund,
+    required this.debtEnabled,
     required this.onCloseBill,
     required this.onReopenBill,
     required this.printDoc,
@@ -435,10 +444,16 @@ class _BillBodyState extends State<_BillBody> {
     );
   }
 
+  /// `done` fires on a settled bill as well as a closed one, so the unlock is
+  /// offered only when there is a lock to take off. A settled-but-open bill has
+  /// nothing for `visits/reopen` to clear, so the button used to sit there
+  /// re-firing a 200 that changed nothing on screen — the way a cashier decides
+  /// the app is stuck. Undoing a settlement is the per-struk `Buka ulang` in the
+  /// lines pane, which is on screen either way.
   Widget _donePane() => _DonePane(
     bill: bill,
     onPrint: () => widget.printDoc(null),
-    onReopen: widget.onReopenBill,
+    onReopen: bill.billClosedAt != null ? widget.onReopenBill : null,
   );
 
   Widget _settle(BuildContext context, bool done) {
@@ -454,6 +469,7 @@ class _BillBodyState extends State<_BillBody> {
         _clearSelection();
       },
       onClearSelection: _clearSelection,
+      debtEnabled: widget.debtEnabled,
     );
   }
 
@@ -1165,7 +1181,15 @@ class _ReceiptCard extends ConsumerWidget {
                 SatButton.primary(
                   size: SatButtonSize.sm,
                   label: context.l10n.cshPay,
-                  onTap: () => _paySheet(context, r),
+                  onTap: () => _paySheet(
+                    context,
+                    r,
+                    debtEnabled: ref.read(
+                      venueSettingsProvider.select(
+                        (v) => v.membersEnabled && v.memberDebtEnabled,
+                      ),
+                    ),
+                  ),
                 ),
               if (paid)
                 SatButton.neutral(
@@ -1184,7 +1208,7 @@ class _ReceiptCard extends ConsumerWidget {
                     }
                   },
                 ),
-              if (canRefund && r.paidNet > 0)
+              if (canRefund && r.refundable > 0)
                 SatButton.neutral(
                   size: SatButtonSize.sm,
                   label: context.l10n.cshRefund,
@@ -1269,23 +1293,33 @@ class _ReceiptCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _paySheet(BuildContext context, BillReceipt r) =>
-      _moneySheet(context, r, refund: false);
+  Future<void> _paySheet(
+    BuildContext context,
+    BillReceipt r, {
+    required bool debtEnabled,
+  }) => _moneySheet(context, r, refund: false, debtEnabled: debtEnabled);
 
   Future<void> _refundSheet(BuildContext context, BillReceipt r) =>
-      _moneySheet(context, r, refund: true);
+      _moneySheet(context, r, refund: true, debtEnabled: false);
 
   Future<void> _moneySheet(
     BuildContext context,
     BillReceipt r, {
     required bool refund,
+    required bool debtEnabled,
   }) async {
     final sc = context.sat;
     final amountCtl = TextEditingController(
-      text: groupRupiah(refund ? r.paidNet : r.outstanding),
+      text: groupRupiah(refund ? r.refundable : r.outstanding),
     );
     final tenderedCtl = TextEditingController();
-    var method = 'tunai';
+    // Same freeze the settle pane applies (ADR-0068): once money has landed,
+    // the bill is bound to that method. This sheet used to offer all five, so a
+    // cashier blocked in the pane could take a card payment on a cash bill just
+    // by opening the struk. A refund is exempt for the same reason the lock
+    // skips refund rows — handing money back doesn't decide how it came in.
+    final locked = refund ? null : lockedMethodFor(bill);
+    var method = locked?.id ?? 'tunai';
     Uint8List? photoBytes; // proof shot for a non-cash payment (ADR-0025)
     await showSatSheet<void>(
       context,
@@ -1296,8 +1330,22 @@ class _ReceiptCard extends ConsumerWidget {
           final amount = parse(amountCtl);
           final tendered = parse(tenderedCtl);
           final change = tendered - amount;
+          // Piutang on a single receipt is what makes part-cash-part-tab
+          // reachable: pay one share in cash, put the sibling on the member's
+          // ledger. Same gate as the settle pane — enabled, a member on the
+          // bill, and headroom left — and the same rule that a disabled chip
+          // says why (Principle 3).
+          final headroom = bill.member?.debtHeadroom ?? 0;
+          final piutangOff = bill.member == null
+              ? context.l10n.stlPiutangNoMember
+              : headroom <= 0
+              ? context.l10n.stlPiutangNoRoom
+              : null;
+          final onAccount = method == PayMethod.piutang.id;
           // Non-cash payments (not refunds) require a live proof photo.
-          final needsPhoto = !refund && method != 'tunai';
+          // Piutang is exempt: no money moves, so there is nothing to shoot.
+          final needsPhoto =
+              !refund && method != 'tunai' && method != PayMethod.piutang.id;
           final photoMissing = needsPhoto && photoBytes == null;
           Future<void> shootPhoto() async {
             try {
@@ -1326,143 +1374,208 @@ class _ReceiptCard extends ConsumerWidget {
               right: Sp.s4,
               top: Sp.s4,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  refund
-                      ? context.l10n.cshRefundTitle(
-                          receiptTitle(context.l10n, r.label),
-                        )
-                      : context.l10n.cshPayTitle(
-                          receiptTitle(context.l10n, r.label),
+            // Scrolls: with the number pad up, a phone has ~200pt left and the
+            // Piutang row pushed the confirm button off the bottom.
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    refund
+                        ? context.l10n.cshRefundTitle(
+                            receiptTitle(context.l10n, r.label),
+                          )
+                        : context.l10n.cshPayTitle(
+                            receiptTitle(context.l10n, r.label),
+                          ),
+                    style: SatType.labelL(color: sc.textHi),
+                  ),
+                  const SizedBox(height: Sp.s3),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final m in paymentMethods)
+                        if (locked == null || m == locked.id)
+                          SatChip.select(
+                            label: paymentMethodLabel(context.l10n, m),
+                            selected: method == m,
+                            onTap: locked != null
+                                ? null
+                                : () => setState(() => method = m),
+                          ),
+                      if (debtEnabled)
+                        SatChip.select(
+                          label: paymentMethodLabel(
+                            context.l10n,
+                            PayMethod.piutang.id,
+                          ),
+                          selected: onAccount,
+                          onTap: piutangOff != null
+                              ? null
+                              : () => setState(
+                                  () => method = PayMethod.piutang.id,
+                                ),
                         ),
-                  style: SatType.labelL(color: sc.textHi),
-                ),
-                const SizedBox(height: Sp.s3),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final m in paymentMethods)
-                      SatChip.select(
-                        label: paymentMethodLabel(context.l10n, m),
-                        selected: method == m,
-                        onTap: () => setState(() => method = m),
-                      ),
+                    ],
+                  ),
+                  if (locked != null) ...[
+                    const SizedBox(height: Sp.s2),
+                    Text(
+                      context.l10n.stlLockedTo(locked.label(context.l10n)),
+                      style: SatType.bodyS(color: sc.textLo),
+                    ),
                   ],
-                ),
-                const SizedBox(height: Sp.s3),
-                SatField.money(
-                  controller: amountCtl,
-                  label: context.l10n.cshAmount,
-                  hint: '',
-                  onChanged: (_) => setState(() {}),
-                ),
-                if (!refund && method == 'tunai') ...[
-                  const SizedBox(height: Sp.s2),
+                  if (debtEnabled && piutangOff != null) ...[
+                    const SizedBox(height: Sp.s2),
+                    Text(piutangOff, style: SatType.bodyS(color: sc.textLo)),
+                  ],
+                  if (onAccount) ...[
+                    const SizedBox(height: Sp.s2),
+                    Text(
+                      context.l10n.stlPiutangHint,
+                      style: SatType.bodyS(color: sc.textLo),
+                    ),
+                    const SizedBox(height: Sp.s1),
+                    Text(
+                      context.l10n.stlPiutangLeft(formatIDR(headroom)),
+                      style: SatType.mono(
+                        color: amount > headroom ? sc.warn : sc.textHi,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: Sp.s3),
                   SatField.money(
-                    controller: tenderedCtl,
-                    label: context.l10n.cshTendered,
+                    controller: amountCtl,
+                    label: context.l10n.cshAmount,
                     hint: '',
                     onChanged: (_) => setState(() {}),
                   ),
-                  AnimatedSwitcher(
-                    duration: satMotion(context, 200),
-                    switchInCurve: satEaseOut,
-                    switchOutCurve: satEaseOut,
-                    transitionBuilder: (c, a) => FadeTransition(
-                      opacity: a,
-                      child: SizeTransition(
-                        sizeFactor: a,
-                        axisAlignment: -1,
-                        child: c,
-                      ),
+                  // The cap earns a line rather than a dead button: a receipt
+                  // settled on the tab shows a total the cashier can see and a
+                  // refundable figure they cannot work out.
+                  if (refund && amount > r.refundable) ...[
+                    const SizedBox(height: Sp.s2),
+                    Text(
+                      context.l10n.cshRefundCap(formatIDR(r.refundable)),
+                      style: SatType.labelM(color: sc.warn),
                     ),
-                    child: tendered > 0
-                        ? Padding(
-                            key: ValueKey(change >= 0),
-                            padding: const EdgeInsets.only(top: Sp.s2),
-                            child: Text(
-                              change >= 0
-                                  ? context.l10n.cshChangeDue(formatIDR(change))
-                                  : context.l10n.cshShortBy(formatIDR(-change)),
-                              style: SatType.labelM(
-                                color: change >= 0 ? sc.success : sc.warn,
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ],
-                if (needsPhoto) ...[
-                  const SizedBox(height: Sp.s3),
-                  Text(
-                    context.l10n.cshProofPhoto,
-                    style: SatType.labelS(color: sc.textLo),
-                  ),
-                  const SizedBox(height: Sp.s2),
-                  Row(
-                    children: [
-                      // Tappable like every other proof: pre-submit is the one
-                      // moment a blurry shot is still fixable, and `Ambil ulang`
-                      // is right there. ADR-0082.
-                      if (photoBytes != null)
-                        PaymentProofThumb(
-                          paymentId: null,
-                          previewBytes: photoBytes,
-                        ),
-                      if (photoBytes != null) const SizedBox(width: Sp.s3),
-                      Expanded(
-                        child: SatButton.outline(
-                          label: photoBytes == null
-                              ? context.l10n.cshTakePhoto
-                              : context.l10n.cshRetakePhoto,
-                          icon: Icons.photo_camera_rounded,
-                          onTap: shootPhoto,
+                  ],
+                  if (!refund && method == 'tunai') ...[
+                    const SizedBox(height: Sp.s2),
+                    SatField.money(
+                      controller: tenderedCtl,
+                      label: context.l10n.cshTendered,
+                      hint: '',
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    AnimatedSwitcher(
+                      duration: satMotion(context, 200),
+                      switchInCurve: satEaseOut,
+                      switchOutCurve: satEaseOut,
+                      transitionBuilder: (c, a) => FadeTransition(
+                        opacity: a,
+                        child: SizeTransition(
+                          sizeFactor: a,
+                          axisAlignment: -1,
+                          child: c,
                         ),
                       ),
-                    ],
+                      child: tendered > 0
+                          ? Padding(
+                              key: ValueKey(change >= 0),
+                              padding: const EdgeInsets.only(top: Sp.s2),
+                              child: Text(
+                                change >= 0
+                                    ? context.l10n.cshChangeDue(
+                                        formatIDR(change),
+                                      )
+                                    : context.l10n.cshShortBy(
+                                        formatIDR(-change),
+                                      ),
+                                style: SatType.labelM(
+                                  color: change >= 0 ? sc.success : sc.warn,
+                                ),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                  if (needsPhoto) ...[
+                    const SizedBox(height: Sp.s3),
+                    Text(
+                      context.l10n.cshProofPhoto,
+                      style: SatType.labelS(color: sc.textLo),
+                    ),
+                    const SizedBox(height: Sp.s2),
+                    Row(
+                      children: [
+                        // Tappable like every other proof: pre-submit is the one
+                        // moment a blurry shot is still fixable, and `Ambil ulang`
+                        // is right there. ADR-0082.
+                        if (photoBytes != null)
+                          PaymentProofThumb(
+                            paymentId: null,
+                            previewBytes: photoBytes,
+                          ),
+                        if (photoBytes != null) const SizedBox(width: Sp.s3),
+                        Expanded(
+                          child: SatButton.outline(
+                            label: photoBytes == null
+                                ? context.l10n.cshTakePhoto
+                                : context.l10n.cshRetakePhoto,
+                            icon: Icons.photo_camera_rounded,
+                            onTap: shootPhoto,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: Sp.s4),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SatButton.primary(
+                      label: refund
+                          ? context.l10n.cshRecordRefund
+                          : context.l10n.cshRecordPayment,
+                      onTap:
+                          amount <= 0 ||
+                              photoMissing ||
+                              (onAccount && amount > headroom) ||
+                              (refund && amount > r.refundable)
+                          ? null
+                          : () async {
+                              Navigator.of(ctx).pop();
+                              if (refund) {
+                                await run(
+                                  () => repo.refund(
+                                    r.id,
+                                    method: method,
+                                    amount: amount,
+                                  ),
+                                );
+                              } else {
+                                await run(
+                                  () => repo.recordPayment(
+                                    r.id,
+                                    method: method,
+                                    amount: amount,
+                                    tendered: method == 'tunai' && tendered > 0
+                                        ? tendered
+                                        : null,
+                                    photoBase64:
+                                        needsPhoto && photoBytes != null
+                                        ? base64Encode(photoBytes!)
+                                        : null,
+                                  ),
+                                );
+                              }
+                            },
+                    ),
                   ),
                 ],
-                const SizedBox(height: Sp.s4),
-                SizedBox(
-                  width: double.infinity,
-                  child: SatButton.primary(
-                    label: refund
-                        ? context.l10n.cshRecordRefund
-                        : context.l10n.cshRecordPayment,
-                    onTap: amount <= 0 || photoMissing
-                        ? null
-                        : () async {
-                            Navigator.of(ctx).pop();
-                            if (refund) {
-                              await run(
-                                () => repo.refund(
-                                  r.id,
-                                  method: method,
-                                  amount: amount,
-                                ),
-                              );
-                            } else {
-                              await run(
-                                () => repo.recordPayment(
-                                  r.id,
-                                  method: method,
-                                  amount: amount,
-                                  tendered: method == 'tunai' && tendered > 0
-                                      ? tendered
-                                      : null,
-                                  photoBase64: needsPhoto && photoBytes != null
-                                      ? base64Encode(photoBytes!)
-                                      : null,
-                                ),
-                              );
-                            }
-                          },
-                  ),
-                ),
-              ],
+              ),
             ),
           );
         },
@@ -1886,7 +1999,9 @@ class _AddReceiptButton extends StatelessWidget {
 class _DonePane extends StatelessWidget {
   final Bill bill;
   final VoidCallback onPrint;
-  final VoidCallback onReopen;
+
+  /// Null when the bill carries no close stamp — there is no lock to remove.
+  final VoidCallback? onReopen;
   const _DonePane({
     required this.bill,
     required this.onPrint,
@@ -1957,12 +2072,14 @@ class _DonePane extends StatelessWidget {
             icon: Icons.print_rounded,
             onTap: onPrint,
           ),
-          const SizedBox(height: Sp.s2),
-          SatButton.outline(
-            label: context.l10n.cshReopen,
-            icon: Icons.lock_open_rounded,
-            onTap: onReopen,
-          ),
+          if (onReopen != null) ...[
+            const SizedBox(height: Sp.s2),
+            SatButton.outline(
+              label: context.l10n.cshReopen,
+              icon: Icons.lock_open_rounded,
+              onTap: onReopen,
+            ),
+          ],
         ],
       ),
     );

@@ -1484,6 +1484,39 @@ class _KeanggotaanCard extends ConsumerWidget {
               ),
             ],
             Divider(height: 28, color: sc.border0),
+            _MemberToggle(
+              label: l10n.vstMembersDebt,
+              hint: l10n.vstMembersDebtHint,
+              on: s.memberDebtEnabled,
+              onToggle: () => n.patch(memberDebtEnabled: !s.memberDebtEnabled),
+            ),
+            if (s.memberDebtEnabled) ...[
+              const SizedBox(height: Sp.s3),
+              // Minimum **0**, unlike every stepper above: zero is the shipped
+              // default and it means "nobody gets a tab" (ADR-0098). Turning
+              // the feature on must not quietly extend credit.
+              _MemberStepper(
+                label: l10n.vstMembersDebtLimit,
+                hint: l10n.vstMembersDebtLimitHint,
+                value: s.memberDebtLimit,
+                min: 0,
+                max: 50000000,
+                step: 50000,
+                format: formatIDR,
+                onChanged: (v) => n.patch(memberDebtLimit: v),
+              ),
+              const SizedBox(height: Sp.s2h),
+              _MemberStepper(
+                label: l10n.vstMembersDebtOverdue,
+                hint: l10n.vstMembersDebtOverdueHint,
+                value: s.memberDebtOverdueDays,
+                min: 1,
+                max: 365,
+                step: 5,
+                onChanged: (v) => n.patch(memberDebtOverdueDays: v),
+              ),
+            ],
+            Divider(height: 28, color: sc.border0),
             // A pointer at the discount catalogue, not a rate of its own: the
             // member discount is an ordinary bill preset the venue nominates,
             // so it reports and audits like every other one (ADR-0094).

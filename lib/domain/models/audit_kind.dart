@@ -115,6 +115,27 @@ enum AuditKind {
   /// taken off the bill).
   memberPointsRedeemed,
 
+  // ---------- piutang (ADR-0098) ----------
+  /// `{member}`, `{amount}` (pre-formatted rupiah), `{bill}` — the table label
+  /// frozen at write time, because the visit is gone by the time anyone reads
+  /// this back.
+  debtCharged,
+
+  /// `{member}`, `{amount}`, `{method}` — the method travels as its **key** and
+  /// is rendered through `paymentMethodLabel`, same as `paymentRecorded`.
+  debtPaid,
+
+  /// `{member}`, `{amount}`, `{bill}` — a charge undone because its receipt was
+  /// reopened. Automatic; nobody chose it, which is why it has no reason.
+  debtReversed,
+
+  /// `{member}`, `{amount}`. The reason rides `reason` and is mandatory.
+  debtWrittenOff,
+
+  /// `{member}`, `{amount}` — **signed** (`+`/`-`), because which way a hand
+  /// correction went is the whole finding. Reason mandatory.
+  debtAdjusted,
+
   // ---------- menu ----------
   /// `{name}`.
   menuKilled,

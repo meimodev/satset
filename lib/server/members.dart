@@ -21,6 +21,7 @@ import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/domain/models/member.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/server/audit_log.dart';
+import 'package:satset/server/debts.dart' show creditLimitFor, debtConfig, memberDebt;
 // Hidden: Drift generates its own `Member` for the row, and the two are
 // different things — one is the table, one is what a reader sees. Same
 // collision `cash.dart` resolves the same way.
@@ -240,6 +241,18 @@ Future<List<Member>> _decorate(
     for (final r in pRows) r.read(db.memberPoints.memberId)!: r.read(pSum) ?? 0,
   };
 
+  final dSum = db.memberDebts.delta.sum();
+  final dRows =
+      await (db.selectOnly(db.memberDebts)
+            ..addColumns([db.memberDebts.memberId, dSum])
+            ..where(db.memberDebts.memberId.isIn(ids))
+            ..groupBy([db.memberDebts.memberId]))
+          .get();
+  final debts = {
+    for (final r in dRows) r.read(db.memberDebts.memberId)!: r.read(dSum) ?? 0,
+  };
+  final dCfg = await debtConfig(db);
+
   final s = db.tableSessions;
   final cnt = s.id.count();
   final spend = s.settledTotal.sum();
@@ -273,6 +286,9 @@ Future<List<Member>> _decorate(
         visitCount: visits[r.id] ?? 0,
         lifetimeSpend: spent[r.id] ?? 0,
         lastVisitAt: lastAt[r.id],
+        debt: debts[r.id] ?? 0,
+        debtLimit: creditLimitFor(r.debtLimit, dCfg),
+        ownDebtLimit: r.debtLimit,
       ),
     );
   }
@@ -349,6 +365,12 @@ Future<Member> updateMember(
   String? note,
   DateTime? birthday,
   bool clearBirthday = false,
+
+  /// This member's own credit limit. Absent leaves it alone; [clearDebtLimit]
+  /// puts them back on the venue default — the two are different, which is why
+  /// a null here cannot mean both.
+  int? debtLimit,
+  bool clearDebtLimit = false,
   WsHub? hub,
 }) async {
   final row = await (db.select(
@@ -377,6 +399,9 @@ Future<Member> updateMember(
       birthday: clearBirthday
           ? const Value(null)
           : (birthday == null ? const Value.absent() : Value(birthday)),
+      debtLimit: clearDebtLimit
+          ? const Value(null)
+          : (debtLimit == null ? const Value.absent() : Value(debtLimit)),
     ),
   );
   final member = (await getMember(db, id))!;
@@ -399,7 +424,16 @@ Future<void> deleteMember(
     db.members,
   )..where((m) => m.id.equals(id))).getSingleOrNull();
   if (row == null) throw const MemberException('not_found');
+  // ...but a live [[Piutang]] balance IS money, and deleting it would erase a
+  // receivable with no record of the amount (ADR-0098). Refuse, so the owner
+  // has to say which it was — collected, or given up on. Both are routes.
+  final owed = await memberDebt(db, id);
+  if (owed != 0) throw const MemberException('has_outstanding_debt');
   await (db.delete(db.memberPoints)..where((p) => p.memberId.equals(id))).go();
+  // The debt ledger stays. The balance is zero, so nothing is owed to anyone —
+  // but a `charge` or a `writeOff` is money that moved, and dropping the rows
+  // would rewrite last month's bad-debt total from a delete button. Same rule
+  // as the bills: the person goes, the trade stays counted.
   await (db.delete(db.members)..where((m) => m.id.equals(id))).go();
   await writeAudit(
     db,
@@ -435,6 +469,10 @@ Future<Member> mergeMembers(
   if (from == null || to == null) throw const MemberException('not_found');
   await (db.update(db.memberPoints)..where((p) => p.memberId.equals(fromId)))
       .write(MemberPointsCompanion(memberId: Value(toId)));
+  // The [[Piutang]] ledger repoints for the same reason the points one does:
+  // the balance is `SUM(delta)`, so a fold needs nothing reconciled (ADR-0098).
+  await (db.update(db.memberDebts)..where((p) => p.memberId.equals(fromId)))
+      .write(MemberDebtsCompanion(memberId: Value(toId)));
   await (db.update(db.tableSessions)..where((s) => s.memberId.equals(fromId)))
       .write(TableSessionsCompanion(memberId: Value(toId)));
   await (db.update(db.visits)..where((v) => v.memberId.equals(fromId))).write(
@@ -777,6 +815,9 @@ Map<String, dynamic> memberJson(Member m) => {
   'visitCount': m.visitCount,
   'lifetimeSpend': m.lifetimeSpend,
   'lastVisitAt': m.lastVisitAt?.toIso8601String(),
+  'debt': m.debt,
+  'debtLimit': m.debtLimit,
+  'ownDebtLimit': m.ownDebtLimit,
 };
 
 Map<String, dynamic> memberPointEntryJson(MemberPointEntry e) => {

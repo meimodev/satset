@@ -275,6 +275,17 @@ const sampleMembers = <(String, String)>[
 /// has something to compare, low enough that the walk-in average is real.
 const memberAttachRate = 0.34;
 
+/// Share of member bills that go on the tab rather than being paid (ADR-0098).
+/// Low on purpose: a venue where a twentieth of member bills runs a tab has a
+/// Piutang section worth reading, and one where a third does has a cash-flow
+/// problem the seed should not be teaching.
+const memberTabRate = 0.05;
+
+/// Share of tabs that are still outstanding when the fabricated month ends.
+/// The rest are collected, and exactly one is written off — a Piutang report
+/// where everything settled shows none of the states an owner has to act on.
+const tabStillOwingRate = 0.3;
+
 /// Share of member bills that spend points. Rare on purpose: a guest saves for
 /// several visits before a redemption is worth anything, so a ledger where
 /// every visit redeems is a ledger nobody would believe.

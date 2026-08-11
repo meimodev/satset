@@ -280,6 +280,9 @@ class AppL10nId extends AppL10n {
   String get auditTypeCashMovement => 'Kas';
 
   @override
+  String get auditTypeDebtMovement => 'Piutang';
+
+  @override
   String get auditTypeMemberChanged => 'Pelanggan';
 
   @override
@@ -1225,6 +1228,9 @@ class AppL10nId extends AppL10n {
   String get payMethodOther => 'Lainnya';
 
   @override
+  String get payMethodOnAccount => 'Piutang';
+
+  @override
   String get rangeToday => 'Hari ini';
 
   @override
@@ -2003,6 +2009,31 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String auditDebtCharged(String member, String amount, String bill) {
+    return 'Piutang $member — $amount ($bill)';
+  }
+
+  @override
+  String auditDebtPaid(String member, String amount, String method) {
+    return 'Terima piutang $member — $amount ($method)';
+  }
+
+  @override
+  String auditDebtReversed(String member, String amount, String bill) {
+    return 'Batal piutang $member — $amount ($bill)';
+  }
+
+  @override
+  String auditDebtWrittenOff(String member, String amount) {
+    return 'Hapus buku piutang $member — $amount';
+  }
+
+  @override
+  String auditDebtAdjusted(String member, String amount) {
+    return 'Koreksi piutang $member — $amount';
+  }
+
+  @override
   String auditMenuKilled(String name) {
     return 'Stop jual $name';
   }
@@ -2142,6 +2173,9 @@ class AppL10nId extends AppL10n {
   String get cshErrReceiptPaid => 'Buka ulang struk sebelum mengubahnya.';
 
   @override
+  String get cshErrOverRefund => 'Melebihi uang yang diterima pada struk ini.';
+
+  @override
   String get cshErrNotSettled => 'Tagihan belum lunas.';
 
   @override
@@ -2266,7 +2300,7 @@ class AppL10nId extends AppL10n {
 
   @override
   String cshReopenBody(String receipt) {
-    return 'Batalkan status lunas \"$receipt\" agar bisa diubah? Pembayaran tercatat tetap ada.';
+    return 'Batalkan status lunas \"$receipt\" agar bisa diubah? Semua pembayaran pada struk ini dihapus dan harus dicatat ulang; piutang yang tercatat ikut dibatalkan.';
   }
 
   @override
@@ -2300,6 +2334,11 @@ class AppL10nId extends AppL10n {
   @override
   String cshPhotoFailed(String error) {
     return 'Gagal mengambil foto: $error';
+  }
+
+  @override
+  String cshRefundCap(String amount) {
+    return 'Maksimum $amount — hanya uang yang benar-benar diterima yang bisa dikembalikan.';
   }
 
   @override
@@ -6525,6 +6564,64 @@ class AppL10nId extends AppL10n {
   String get rptSecKas => 'Kas kecil';
 
   @override
+  String get rptSecPiutang => 'Piutang';
+
+  @override
+  String get rptPiutangSub => 'Tagihan pelanggan yang belum dibayar';
+
+  @override
+  String get rptPiutangEmpty => 'Tidak ada piutang di rentang ini.';
+
+  @override
+  String get rptPiutangOpening => 'Saldo awal';
+
+  @override
+  String get rptPiutangCharged => 'Ditagihkan';
+
+  @override
+  String get rptPiutangCollected => 'Diterima';
+
+  @override
+  String get rptPiutangWrittenOff => 'Hapus buku';
+
+  @override
+  String get rptPiutangClosing => 'Saldo akhir';
+
+  @override
+  String get rptPiutangByMethod => 'Penerimaan per metode';
+
+  @override
+  String get rptPiutangMore => 'Daftar lengkap ada di Pelanggan.';
+
+  @override
+  String get rptSalesBadDebt => 'Piutang tak tertagih';
+
+  @override
+  String rptPiutangOverdue(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Lewat $days hari',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String rptPiutangDebtors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count penunggak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String rptPiutangAge(int days) {
+    return '$days hr';
+  }
+
+  @override
   String get rptSecMembers => 'Keanggotaan';
 
   @override
@@ -7784,6 +7881,27 @@ class AppL10nId extends AppL10n {
   String get vstMembersRedeemMinHint => 'Batas bawah sekali penukaran.';
 
   @override
+  String get vstMembersDebt => 'Piutang';
+
+  @override
+  String get vstMembersDebtHint =>
+      'Pelanggan boleh menutup tagihan dulu, bayar belakangan.';
+
+  @override
+  String get vstMembersDebtLimit => 'Batas piutang';
+
+  @override
+  String get vstMembersDebtLimitHint =>
+      'Batas bawaan tiap pelanggan. Nol berarti tidak ada yang boleh berutang.';
+
+  @override
+  String get vstMembersDebtOverdue => 'Batas jatuh tempo';
+
+  @override
+  String get vstMembersDebtOverdueHint =>
+      'Setelah sekian hari, piutang dihitung menunggak di laporan.';
+
+  @override
   String get vstMembersPunch => 'Kartu stempel';
 
   @override
@@ -7845,6 +7963,144 @@ class AppL10nId extends AppL10n {
 
   @override
   String get cshMemberRedeemAll => 'Tukar semua';
+
+  @override
+  String cshMemberDebt(String amount) {
+    return 'Piutang $amount';
+  }
+
+  @override
+  String cshMemberCredit(String amount) {
+    return 'Sisa kredit $amount';
+  }
+
+  @override
+  String get cshMemberCreditNone => 'Kredit habis';
+
+  @override
+  String get stlPiutangHint =>
+      'Masuk ke piutang pelanggan. Tidak ada uang berpindah sekarang.';
+
+  @override
+  String stlPiutangLeft(String amount) {
+    return 'Sisa kredit $amount';
+  }
+
+  @override
+  String get stlPiutangNoMember =>
+      'Piutang butuh pelanggan terdaftar pada tagihan ini.';
+
+  @override
+  String get stlPiutangNoRoom => 'Kredit pelanggan ini sudah habis.';
+
+  @override
+  String get stlBlkOverCredit => 'Melebihi sisa kredit';
+
+  @override
+  String get strukDebtTitle => 'TERIMA PIUTANG';
+
+  @override
+  String get strukDebtPaid => 'Diterima';
+
+  @override
+  String get strukDebtBalance => 'Sisa piutang';
+
+  @override
+  String strukDebtCashier(String name) {
+    return 'Kasir: $name';
+  }
+
+  @override
+  String get cshDebtCollect => 'Terima piutang';
+
+  @override
+  String get cshDebtNobody => 'Tidak ada yang berutang';
+
+  @override
+  String get cshDebtAmount => 'Jumlah diterima';
+
+  @override
+  String get cshDebtNote => 'Catatan (opsional)';
+
+  @override
+  String get cshDebtOver => 'Melebihi piutang';
+
+  @override
+  String cshDebtOwes(String amount) {
+    return 'Piutang $amount';
+  }
+
+  @override
+  String cshDebtTake(String amount) {
+    return 'Terima $amount';
+  }
+
+  @override
+  String get memDebtFilter => 'Berutang';
+
+  @override
+  String get memColDebt => 'Piutang';
+
+  @override
+  String get memColDebtLimit => 'Batas kredit';
+
+  @override
+  String get memDebtTitle => 'Piutang';
+
+  @override
+  String get memDebtLedgerEmpty => 'Belum ada catatan piutang.';
+
+  @override
+  String get memDebtKindCharge => 'Tagih';
+
+  @override
+  String get memDebtKindPayment => 'Bayar';
+
+  @override
+  String get memDebtKindReversal => 'Batal';
+
+  @override
+  String get memDebtKindWriteOff => 'Hapus buku';
+
+  @override
+  String get memDebtKindAdjust => 'Koreksi';
+
+  @override
+  String get memActionWriteOff => 'Hapus buku';
+
+  @override
+  String get memActionDebtAdjust => 'Koreksi piutang';
+
+  @override
+  String get memWriteOffBody =>
+      'Menyerah menagih. Jumlah ini jadi kerugian dan muncul di laporan Penjualan.';
+
+  @override
+  String get memDebtAdjustBody =>
+      'Perbaiki salah catat. Bukan kerugian — angka piutang tak tertagih tidak berubah.';
+
+  @override
+  String get memDebtAdjustUp => 'Tambah';
+
+  @override
+  String get memDebtAdjustDown => 'Kurangi';
+
+  @override
+  String get memDebtAmount => 'Jumlah';
+
+  @override
+  String get memDebtReason => 'Alasan';
+
+  @override
+  String get memFieldDebtLimit => 'Batas kredit';
+
+  @override
+  String get memFieldDebtLimitHelp => 'Kosongkan untuk ikut batas venue.';
+
+  @override
+  String memDebtLimitVenue(String amount) {
+    return '$amount (ikut venue)';
+  }
 
   @override
   String get pinManualConnectBtn => 'Hubungkan manual';
@@ -7925,4 +8181,27 @@ class AppL10nId extends AppL10n {
   @override
   String get rptJamUnclosedNote =>
       'Shift yang tak ditutup tidak dihitung sebagai jam kerja.';
+
+  @override
+  String get memErrHasDebt =>
+      'Masih ada piutang. Terima atau hapus buku dulu, baru hapus pelanggan.';
+
+  @override
+  String get memErrDebtLimit => 'Melebihi batas kredit pelanggan.';
+
+  @override
+  String get memErrOverpayment => 'Lebih besar dari sisa piutang.';
+
+  @override
+  String get memErrDebtOff => 'Piutang belum diaktifkan di venue ini.';
+
+  @override
+  String auditDebtChargedNoBill(String member, String amount) {
+    return 'Piutang $member — $amount';
+  }
+
+  @override
+  String auditDebtReversedNoBill(String member, String amount) {
+    return 'Batal piutang $member — $amount';
+  }
 }

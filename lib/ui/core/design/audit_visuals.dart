@@ -74,6 +74,13 @@ AuditTone auditTone(AuditType t, SatColors sc) => switch (t) {
     bg: sc.violetSoft,
     fg: sc.violet,
   ),
+  // `warn`, not `success`: money on a tab is money not yet in the drawer, and
+  // it should not read like a settled payment does.
+  AuditType.debtMovement => (
+    icon: Icons.account_balance_wallet_outlined,
+    bg: sc.warnSoft,
+    fg: sc.warn,
+  ),
   // `warn`, not `urgent`: a variance is a discrepancy to look at, not an
   // emergency, and `urgent` stays scarce.
   AuditType.stockCounted => (

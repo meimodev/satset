@@ -21,13 +21,20 @@ import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
+import 'package:satset/server/debts.dart';
 import 'package:satset/server/members.dart';
 import 'package:satset/server/routes/tables_routes.dart'
     show snapshotVisitAndDelete, tableJson, syncVisitMoney;
 import 'package:satset/server/ws_hub.dart';
 
 const _uuid = Uuid();
-const _methods = {'tunai', 'kartu', 'qris', 'transfer', 'lainnya'};
+
+/// `piutang` is a payment method because it *discharges the receipt's claim*,
+/// not because money arrived (ADR-0098). It is the one method that carries no
+/// tendered/change and no proof photo — there is no slip for a promise — and it
+/// is refused at the refund route below, where the shared set would otherwise
+/// legalise "refund by piutang".
+const _methods = {'tunai', 'kartu', 'qris', 'transfer', 'lainnya', 'piutang'};
 
 /// Two-phase settlement + split bills, keyed off the [[Visit]] (not the table)
 /// so a detached unpaid bill survives the table being freed. See
@@ -1118,53 +1125,97 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     }
     final amount = (body['amount'] as num?)?.toInt() ?? 0;
     if (amount <= 0) return _err(400, 'bad_amount', 'amount must be positive');
+    final onAccount = method == 'piutang';
     // Mandatory proof photo for any non-cash method (ADR-0025). The bytes ride
     // in this same request (base64), so payment + photo land atomically.
+    // `piutang` is exempt: nothing was tendered, so there is nothing to shoot.
     final photo = _decodePhoto(body['photoBase64']);
-    if (method != 'tunai' && (photo == null || photo.isEmpty)) {
+    if (method != 'tunai' && !onAccount && (photo == null || photo.isEmpty)) {
       return _err(
         400,
         'photo_required',
         'foto bukti wajib untuk pembayaran non-tunai',
       );
     }
+    // Everything a tab needs is checked before the row is written, so a refusal
+    // never leaves a payment standing with no ledger entry behind it.
+    final visit = onAccount ? await _visit(db, visitId) : null;
+    if (onAccount) {
+      final cfg = await debtConfig(db);
+      if (!cfg.enabled) return _err(404, 'debt_disabled', 'piutang mati');
+      final memberId = visit?.memberId;
+      if (memberId == null) {
+        return _err(409, 'no_member', 'tagihan belum punya pelanggan');
+      }
+    }
     // Minted up front so the audit row can point at it (ADR-0086).
     final paymentId = _uuid.v4();
-    final storedPhoto = method == 'tunai' ? null : photo;
-    await db.transaction(() async {
-      await db
-          .into(db.payments)
-          .insert(
-            PaymentsCompanion.insert(
-              id: paymentId,
-              receiptId: receiptId,
-              method: method,
-              amount: amount,
-              tenderedAmount: Value((body['tendered'] as num?)?.toInt()),
-              cashierUserId: Value(user?.id),
-              note: Value((body['note'] as String?)?.trim()),
-              at: SatClock.now().toUtc(),
-              photo: Value(storedPhoto),
-            ),
+    final storedPhoto = (method == 'tunai' || onAccount) ? null : photo;
+    try {
+      await db.transaction(() async {
+        await db
+            .into(db.payments)
+            .insert(
+              PaymentsCompanion.insert(
+                id: paymentId,
+                receiptId: receiptId,
+                method: method,
+                amount: amount,
+                // A tab tenders nothing, so nothing is stored — a change figure
+                // on a promise is a lie the receipt would print.
+                tenderedAmount: Value(
+                  onAccount ? null : (body['tendered'] as num?)?.toInt(),
+                ),
+                cashierUserId: Value(user?.id),
+                note: Value((body['note'] as String?)?.trim()),
+                at: SatClock.now().toUtc(),
+                photo: Value(storedPhoto),
+              ),
+            );
+        // Inside the same transaction as the payment it belongs to: a charge
+        // without its payment is a debt nobody incurred, and a payment without
+        // its charge is money nobody owes.
+        if (onAccount) {
+          await chargeDebt(
+            db,
+            memberId: visit!.memberId!,
+            amount: amount,
+            paymentId: paymentId,
+            visitId: visitId,
+            // The table, not the receipt: `rec.label` is empty on a bill nobody
+            // split, and "which table" is how a tab is recognised weeks later.
+            billLabel: visit.tableLabel ?? rec.label,
+            actorUserId: user?.id,
+            hub: hub,
           );
-      await _recompute(db, visitId);
-      await _audit(
-        db,
-        AuditType.paymentRecorded,
-        AuditKind.paymentRecorded,
-        params: {
-          'amount': auditRupiah(amount),
-          'method': method,
-          'label': rec.label,
-        },
-        tableId: rec.tableId,
-        actor: user?.id,
-        amountCents: amount,
-        // Only when there is genuinely an image behind it — a cash tender
-        // leaves this null so the venue log shows no indicator to tap.
-        paymentId: storedPhoto == null ? null : paymentId,
-      );
-    });
+        }
+        await _recompute(db, visitId);
+        await _audit(
+          db,
+          AuditType.paymentRecorded,
+          AuditKind.paymentRecorded,
+          params: {
+            'amount': auditRupiah(amount),
+            'method': method,
+            'label': rec.label,
+          },
+          tableId: rec.tableId,
+          actor: user?.id,
+          amountCents: amount,
+          // Only when there is genuinely an image behind it — a cash tender
+          // leaves this null so the venue log shows no indicator to tap.
+          paymentId: storedPhoto == null ? null : paymentId,
+        );
+      });
+    } on DebtException catch (e) {
+      // 409, not 400: the request is well-formed and the cashier did nothing
+      // wrong — the member simply has no room. The numbers ride along so the
+      // till can say how much is left instead of just refusing.
+      return _err(409, e.code, 'piutang ditolak', {
+        'balance': e.balance,
+        'limit': e.limit,
+      });
+    }
     await settleOrBroadcast(visitId, user?.id);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
@@ -1233,11 +1284,37 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final visitId = rec.visitId ?? rec.tableId;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final method = (body['method'] as String?) ?? 'tunai';
-    if (!_methods.contains(method)) {
+    // `piutang` shares [_methods] with the payment route above, so it has to be
+    // refused here explicitly: a "refund by piutang" would be a negative
+    // payment with no ledger counterpart — money handed back that nobody's tab
+    // ever recorded. Money owed is reduced by collecting or writing off, both
+    // of which live on the member (ADR-0098).
+    if (!_methods.contains(method) || method == 'piutang') {
       return _err(400, 'bad_method', 'unknown refund method');
     }
     final amount = (body['amount'] as num?)?.toInt() ?? 0;
     if (amount <= 0) return _err(400, 'bad_amount', 'amount must be positive');
+    // You can only hand back money you took. A `piutang` payment discharged the
+    // receipt's claim without a rupiah moving (ADR-0098), so counting it as
+    // refundable would pay a guest out of the drawer for a bill they still owe
+    // — and leave the tab standing, since a refund touches no ledger. Prior
+    // refunds are negative rows carrying their own money method, so they net
+    // out of this sum on their own.
+    final refundable =
+        (await (db.select(db.payments)..where(
+                  (x) =>
+                      x.receiptId.equals(receiptId) &
+                      x.method.equals('piutang').not(),
+                ))
+                .get())
+            .fold<int>(0, (a, p) => a + p.amount);
+    if (amount > refundable) {
+      return _err(
+        409,
+        'over_refund',
+        'melebihi uang yang diterima pada struk ini',
+      );
+    }
     await db.transaction(() async {
       await db
           .into(db.payments)
@@ -1378,10 +1455,27 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final rec = await _receipt(db, receiptId);
     if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
     final visitId = rec.visitId ?? rec.tableId;
+    // Read the piutang payments BEFORE the delete: this route clears them in
+    // bulk and there is no per-payment removal route to hang a hook on, so the
+    // reversals have to fan out over whatever is about to disappear. A receipt
+    // can carry more than one, so this is a loop, not a lookup.
+    final onAccount =
+        await (db.select(db.payments)..where(
+              (x) => x.receiptId.equals(receiptId) & x.method.equals('piutang'),
+            ))
+            .get();
     await db.transaction(() async {
       await (db.delete(
         db.payments,
       )..where((x) => x.receiptId.equals(receiptId))).go();
+      for (final p in onAccount) {
+        await reverseChargeForPayment(
+          db,
+          paymentId: p.id,
+          actorUserId: user?.id,
+          hub: hub,
+        );
+      }
       await _recompute(db, visitId);
       await _audit(
         db,

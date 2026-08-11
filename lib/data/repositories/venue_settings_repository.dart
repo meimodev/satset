@@ -105,6 +105,9 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     int? memberPointValue,
     int? memberRedeemMin,
     int? memberPunchTarget,
+    bool? memberDebtEnabled,
+    int? memberDebtLimit,
+    int? memberDebtOverdueDays,
 
     /// The two membership pointers. `''` clears one, a null leaves it alone —
     /// they are not optimistically applied, because "cleared" and "unchanged"
@@ -159,6 +162,10 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       memberPointValue: memberPointValue ?? state.memberPointValue,
       memberRedeemMin: memberRedeemMin ?? state.memberRedeemMin,
       memberPunchTarget: memberPunchTarget ?? state.memberPunchTarget,
+      memberDebtEnabled: memberDebtEnabled ?? state.memberDebtEnabled,
+      memberDebtLimit: memberDebtLimit ?? state.memberDebtLimit,
+      memberDebtOverdueDays:
+          memberDebtOverdueDays ?? state.memberDebtOverdueDays,
     );
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
@@ -205,6 +212,9 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         'memberPointValue': ?memberPointValue,
         'memberRedeemMin': ?memberRedeemMin,
         'memberPunchTarget': ?memberPunchTarget,
+        'memberDebtEnabled': ?memberDebtEnabled,
+        'memberDebtLimit': ?memberDebtLimit,
+        'memberDebtOverdueDays': ?memberDebtOverdueDays,
         'memberPresetId': ?memberPresetId,
         'memberPunchItemId': ?memberPunchItemId,
       };

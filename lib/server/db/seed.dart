@@ -246,6 +246,11 @@ Future<void> seedSampleVenue(
           memberPunchItemId: Value(
             menu.any((m) => m.id == 'kopi-susu') ? 'kopi-susu' : menu.first.id,
           ),
+          // Tabs on too, with a limit a regular can actually reach (ADR-0098).
+          // The Piutang section is otherwise a block of zeroes on the one
+          // venue meant to show what a tab looks like once it has run a month.
+          memberDebtEnabled: const Value(true),
+          memberDebtLimit: const Value(500000),
         ),
       );
 

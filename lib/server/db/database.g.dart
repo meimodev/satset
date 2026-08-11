@@ -8853,6 +8853,44 @@ class $VenueSettingsTable extends VenueSettings
     requiredDuringInsert: false,
     defaultValue: const Constant(10),
   );
+  static const VerificationMeta _memberDebtEnabledMeta = const VerificationMeta(
+    'memberDebtEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> memberDebtEnabled = GeneratedColumn<bool>(
+    'member_debt_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("member_debt_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _memberDebtLimitMeta = const VerificationMeta(
+    'memberDebtLimit',
+  );
+  @override
+  late final GeneratedColumn<int> memberDebtLimit = GeneratedColumn<int>(
+    'member_debt_limit',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _memberDebtOverdueDaysMeta =
+      const VerificationMeta('memberDebtOverdueDays');
+  @override
+  late final GeneratedColumn<int> memberDebtOverdueDays = GeneratedColumn<int>(
+    'member_debt_overdue_days',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(30),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -8901,6 +8939,9 @@ class $VenueSettingsTable extends VenueSettings
     memberRedeemMin,
     memberPunchItemId,
     memberPunchTarget,
+    memberDebtEnabled,
+    memberDebtLimit,
+    memberDebtOverdueDays,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9300,6 +9341,33 @@ class $VenueSettingsTable extends VenueSettings
         ),
       );
     }
+    if (data.containsKey('member_debt_enabled')) {
+      context.handle(
+        _memberDebtEnabledMeta,
+        memberDebtEnabled.isAcceptableOrUnknown(
+          data['member_debt_enabled']!,
+          _memberDebtEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('member_debt_limit')) {
+      context.handle(
+        _memberDebtLimitMeta,
+        memberDebtLimit.isAcceptableOrUnknown(
+          data['member_debt_limit']!,
+          _memberDebtLimitMeta,
+        ),
+      );
+    }
+    if (data.containsKey('member_debt_overdue_days')) {
+      context.handle(
+        _memberDebtOverdueDaysMeta,
+        memberDebtOverdueDays.isAcceptableOrUnknown(
+          data['member_debt_overdue_days']!,
+          _memberDebtOverdueDaysMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -9493,6 +9561,18 @@ class $VenueSettingsTable extends VenueSettings
         DriftSqlType.int,
         data['${effectivePrefix}member_punch_target'],
       )!,
+      memberDebtEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}member_debt_enabled'],
+      )!,
+      memberDebtLimit: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}member_debt_limit'],
+      )!,
+      memberDebtOverdueDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}member_debt_overdue_days'],
+      )!,
     );
   }
 
@@ -9628,6 +9708,20 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   /// earn one free. Null item ⇒ no program running even when the toggle is on.
   final String? memberPunchItemId;
   final int memberPunchTarget;
+
+  /// **[[Piutang]]** — the third mechanism nesting under [membersEnabled], off
+  /// by default (ADR-0098). Off hides the `piutang` payment method, the till's
+  /// collection sheet and the Reports section; balances stay put.
+  final bool memberDebtEnabled;
+
+  /// Venue-wide fallback credit limit for a member whose own `debtLimit` is
+  /// null. **`0` means no tab** — the deliberate default, so switching the
+  /// feature on extends credit to nobody until an owner names a number.
+  final int memberDebtLimit;
+
+  /// How old an unsettled charge must be before the Piutang section counts it
+  /// overdue. A credit policy, not a fact, which is why it is not hardcoded.
+  final int memberDebtOverdueDays;
   const VenueSetting({
     required this.id,
     required this.displayName,
@@ -9675,6 +9769,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     required this.memberRedeemMin,
     this.memberPunchItemId,
     required this.memberPunchTarget,
+    required this.memberDebtEnabled,
+    required this.memberDebtLimit,
+    required this.memberDebtOverdueDays,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -9731,6 +9828,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       map['member_punch_item_id'] = Variable<String>(memberPunchItemId);
     }
     map['member_punch_target'] = Variable<int>(memberPunchTarget);
+    map['member_debt_enabled'] = Variable<bool>(memberDebtEnabled);
+    map['member_debt_limit'] = Variable<int>(memberDebtLimit);
+    map['member_debt_overdue_days'] = Variable<int>(memberDebtOverdueDays);
     return map;
   }
 
@@ -9786,6 +9886,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           ? const Value.absent()
           : Value(memberPunchItemId),
       memberPunchTarget: Value(memberPunchTarget),
+      memberDebtEnabled: Value(memberDebtEnabled),
+      memberDebtLimit: Value(memberDebtLimit),
+      memberDebtOverdueDays: Value(memberDebtOverdueDays),
     );
   }
 
@@ -9855,6 +9958,11 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
         json['memberPunchItemId'],
       ),
       memberPunchTarget: serializer.fromJson<int>(json['memberPunchTarget']),
+      memberDebtEnabled: serializer.fromJson<bool>(json['memberDebtEnabled']),
+      memberDebtLimit: serializer.fromJson<int>(json['memberDebtLimit']),
+      memberDebtOverdueDays: serializer.fromJson<int>(
+        json['memberDebtOverdueDays'],
+      ),
     );
   }
   @override
@@ -9907,6 +10015,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       'memberRedeemMin': serializer.toJson<int>(memberRedeemMin),
       'memberPunchItemId': serializer.toJson<String?>(memberPunchItemId),
       'memberPunchTarget': serializer.toJson<int>(memberPunchTarget),
+      'memberDebtEnabled': serializer.toJson<bool>(memberDebtEnabled),
+      'memberDebtLimit': serializer.toJson<int>(memberDebtLimit),
+      'memberDebtOverdueDays': serializer.toJson<int>(memberDebtOverdueDays),
     };
   }
 
@@ -9957,6 +10068,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     int? memberRedeemMin,
     Value<String?> memberPunchItemId = const Value.absent(),
     int? memberPunchTarget,
+    bool? memberDebtEnabled,
+    int? memberDebtLimit,
+    int? memberDebtOverdueDays,
   }) => VenueSetting(
     id: id ?? this.id,
     displayName: displayName ?? this.displayName,
@@ -10008,6 +10122,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
         ? memberPunchItemId.value
         : this.memberPunchItemId,
     memberPunchTarget: memberPunchTarget ?? this.memberPunchTarget,
+    memberDebtEnabled: memberDebtEnabled ?? this.memberDebtEnabled,
+    memberDebtLimit: memberDebtLimit ?? this.memberDebtLimit,
+    memberDebtOverdueDays: memberDebtOverdueDays ?? this.memberDebtOverdueDays,
   );
   VenueSetting copyWithCompanion(VenueSettingsCompanion data) {
     return VenueSetting(
@@ -10135,6 +10252,15 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       memberPunchTarget: data.memberPunchTarget.present
           ? data.memberPunchTarget.value
           : this.memberPunchTarget,
+      memberDebtEnabled: data.memberDebtEnabled.present
+          ? data.memberDebtEnabled.value
+          : this.memberDebtEnabled,
+      memberDebtLimit: data.memberDebtLimit.present
+          ? data.memberDebtLimit.value
+          : this.memberDebtLimit,
+      memberDebtOverdueDays: data.memberDebtOverdueDays.present
+          ? data.memberDebtOverdueDays.value
+          : this.memberDebtOverdueDays,
     );
   }
 
@@ -10186,7 +10312,10 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           ..write('memberPointValue: $memberPointValue, ')
           ..write('memberRedeemMin: $memberRedeemMin, ')
           ..write('memberPunchItemId: $memberPunchItemId, ')
-          ..write('memberPunchTarget: $memberPunchTarget')
+          ..write('memberPunchTarget: $memberPunchTarget, ')
+          ..write('memberDebtEnabled: $memberDebtEnabled, ')
+          ..write('memberDebtLimit: $memberDebtLimit, ')
+          ..write('memberDebtOverdueDays: $memberDebtOverdueDays')
           ..write(')'))
         .toString();
   }
@@ -10239,6 +10368,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     memberRedeemMin,
     memberPunchItemId,
     memberPunchTarget,
+    memberDebtEnabled,
+    memberDebtLimit,
+    memberDebtOverdueDays,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -10289,7 +10421,10 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           other.memberPointValue == this.memberPointValue &&
           other.memberRedeemMin == this.memberRedeemMin &&
           other.memberPunchItemId == this.memberPunchItemId &&
-          other.memberPunchTarget == this.memberPunchTarget);
+          other.memberPunchTarget == this.memberPunchTarget &&
+          other.memberDebtEnabled == this.memberDebtEnabled &&
+          other.memberDebtLimit == this.memberDebtLimit &&
+          other.memberDebtOverdueDays == this.memberDebtOverdueDays);
 }
 
 class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
@@ -10339,6 +10474,9 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
   final Value<int> memberRedeemMin;
   final Value<String?> memberPunchItemId;
   final Value<int> memberPunchTarget;
+  final Value<bool> memberDebtEnabled;
+  final Value<int> memberDebtLimit;
+  final Value<int> memberDebtOverdueDays;
   final Value<int> rowid;
   const VenueSettingsCompanion({
     this.id = const Value.absent(),
@@ -10387,6 +10525,9 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.memberRedeemMin = const Value.absent(),
     this.memberPunchItemId = const Value.absent(),
     this.memberPunchTarget = const Value.absent(),
+    this.memberDebtEnabled = const Value.absent(),
+    this.memberDebtLimit = const Value.absent(),
+    this.memberDebtOverdueDays = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueSettingsCompanion.insert({
@@ -10436,6 +10577,9 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.memberRedeemMin = const Value.absent(),
     this.memberPunchItemId = const Value.absent(),
     this.memberPunchTarget = const Value.absent(),
+    this.memberDebtEnabled = const Value.absent(),
+    this.memberDebtLimit = const Value.absent(),
+    this.memberDebtOverdueDays = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id);
   static Insertable<VenueSetting> custom({
@@ -10485,6 +10629,9 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Expression<int>? memberRedeemMin,
     Expression<String>? memberPunchItemId,
     Expression<int>? memberPunchTarget,
+    Expression<bool>? memberDebtEnabled,
+    Expression<int>? memberDebtLimit,
+    Expression<int>? memberDebtOverdueDays,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -10543,6 +10690,10 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       if (memberRedeemMin != null) 'member_redeem_min': memberRedeemMin,
       if (memberPunchItemId != null) 'member_punch_item_id': memberPunchItemId,
       if (memberPunchTarget != null) 'member_punch_target': memberPunchTarget,
+      if (memberDebtEnabled != null) 'member_debt_enabled': memberDebtEnabled,
+      if (memberDebtLimit != null) 'member_debt_limit': memberDebtLimit,
+      if (memberDebtOverdueDays != null)
+        'member_debt_overdue_days': memberDebtOverdueDays,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -10594,6 +10745,9 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Value<int>? memberRedeemMin,
     Value<String?>? memberPunchItemId,
     Value<int>? memberPunchTarget,
+    Value<bool>? memberDebtEnabled,
+    Value<int>? memberDebtLimit,
+    Value<int>? memberDebtOverdueDays,
     Value<int>? rowid,
   }) {
     return VenueSettingsCompanion(
@@ -10646,6 +10800,10 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       memberRedeemMin: memberRedeemMin ?? this.memberRedeemMin,
       memberPunchItemId: memberPunchItemId ?? this.memberPunchItemId,
       memberPunchTarget: memberPunchTarget ?? this.memberPunchTarget,
+      memberDebtEnabled: memberDebtEnabled ?? this.memberDebtEnabled,
+      memberDebtLimit: memberDebtLimit ?? this.memberDebtLimit,
+      memberDebtOverdueDays:
+          memberDebtOverdueDays ?? this.memberDebtOverdueDays,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -10799,6 +10957,17 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     if (memberPunchTarget.present) {
       map['member_punch_target'] = Variable<int>(memberPunchTarget.value);
     }
+    if (memberDebtEnabled.present) {
+      map['member_debt_enabled'] = Variable<bool>(memberDebtEnabled.value);
+    }
+    if (memberDebtLimit.present) {
+      map['member_debt_limit'] = Variable<int>(memberDebtLimit.value);
+    }
+    if (memberDebtOverdueDays.present) {
+      map['member_debt_overdue_days'] = Variable<int>(
+        memberDebtOverdueDays.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -10854,6 +11023,9 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
           ..write('memberRedeemMin: $memberRedeemMin, ')
           ..write('memberPunchItemId: $memberPunchItemId, ')
           ..write('memberPunchTarget: $memberPunchTarget, ')
+          ..write('memberDebtEnabled: $memberDebtEnabled, ')
+          ..write('memberDebtLimit: $memberDebtLimit, ')
+          ..write('memberDebtOverdueDays: $memberDebtOverdueDays, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -23601,6 +23773,17 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _debtLimitMeta = const VerificationMeta(
+    'debtLimit',
+  );
+  @override
+  late final GeneratedColumn<int> debtLimit = GeneratedColumn<int>(
+    'debt_limit',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -23610,6 +23793,7 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     note,
     birthday,
     joinedAt,
+    debtLimit,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -23670,6 +23854,12 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     } else if (isInserting) {
       context.missing(_joinedAtMeta);
     }
+    if (data.containsKey('debt_limit')) {
+      context.handle(
+        _debtLimitMeta,
+        debtLimit.isAcceptableOrUnknown(data['debt_limit']!, _debtLimitMeta),
+      );
+    }
     return context;
   }
 
@@ -23707,6 +23897,10 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}joined_at'],
       )!,
+      debtLimit: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}debt_limit'],
+      ),
     );
   }
 
@@ -23733,6 +23927,13 @@ class Member extends DataClass implements Insertable<Member> {
   /// filter and nothing else: there is deliberately no birthday rules engine.
   final DateTime? birthday;
   final DateTime joinedAt;
+
+  /// How much [[Piutang]] this member may carry, in rupiah. **Null means fall
+  /// back to `venueSettings.memberDebtLimit`** — not "unlimited". `0` (either
+  /// here or on the venue default) means no tab at all, which is what both
+  /// ship at: turning the feature on must not silently extend credit to
+  /// everybody already enrolled. See ADR-0098.
+  final int? debtLimit;
   const Member({
     required this.id,
     required this.name,
@@ -23741,6 +23942,7 @@ class Member extends DataClass implements Insertable<Member> {
     this.note,
     this.birthday,
     required this.joinedAt,
+    this.debtLimit,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -23756,6 +23958,9 @@ class Member extends DataClass implements Insertable<Member> {
       map['birthday'] = Variable<DateTime>(birthday);
     }
     map['joined_at'] = Variable<DateTime>(joinedAt);
+    if (!nullToAbsent || debtLimit != null) {
+      map['debt_limit'] = Variable<int>(debtLimit);
+    }
     return map;
   }
 
@@ -23770,6 +23975,9 @@ class Member extends DataClass implements Insertable<Member> {
           ? const Value.absent()
           : Value(birthday),
       joinedAt: Value(joinedAt),
+      debtLimit: debtLimit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(debtLimit),
     );
   }
 
@@ -23786,6 +23994,7 @@ class Member extends DataClass implements Insertable<Member> {
       note: serializer.fromJson<String?>(json['note']),
       birthday: serializer.fromJson<DateTime?>(json['birthday']),
       joinedAt: serializer.fromJson<DateTime>(json['joinedAt']),
+      debtLimit: serializer.fromJson<int?>(json['debtLimit']),
     );
   }
   @override
@@ -23799,6 +24008,7 @@ class Member extends DataClass implements Insertable<Member> {
       'note': serializer.toJson<String?>(note),
       'birthday': serializer.toJson<DateTime?>(birthday),
       'joinedAt': serializer.toJson<DateTime>(joinedAt),
+      'debtLimit': serializer.toJson<int?>(debtLimit),
     };
   }
 
@@ -23810,6 +24020,7 @@ class Member extends DataClass implements Insertable<Member> {
     Value<String?> note = const Value.absent(),
     Value<DateTime?> birthday = const Value.absent(),
     DateTime? joinedAt,
+    Value<int?> debtLimit = const Value.absent(),
   }) => Member(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -23818,6 +24029,7 @@ class Member extends DataClass implements Insertable<Member> {
     note: note.present ? note.value : this.note,
     birthday: birthday.present ? birthday.value : this.birthday,
     joinedAt: joinedAt ?? this.joinedAt,
+    debtLimit: debtLimit.present ? debtLimit.value : this.debtLimit,
   );
   Member copyWithCompanion(MembersCompanion data) {
     return Member(
@@ -23828,6 +24040,7 @@ class Member extends DataClass implements Insertable<Member> {
       note: data.note.present ? data.note.value : this.note,
       birthday: data.birthday.present ? data.birthday.value : this.birthday,
       joinedAt: data.joinedAt.present ? data.joinedAt.value : this.joinedAt,
+      debtLimit: data.debtLimit.present ? data.debtLimit.value : this.debtLimit,
     );
   }
 
@@ -23840,14 +24053,15 @@ class Member extends DataClass implements Insertable<Member> {
           ..write('code: $code, ')
           ..write('note: $note, ')
           ..write('birthday: $birthday, ')
-          ..write('joinedAt: $joinedAt')
+          ..write('joinedAt: $joinedAt, ')
+          ..write('debtLimit: $debtLimit')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, name, phone, code, note, birthday, joinedAt);
+      Object.hash(id, name, phone, code, note, birthday, joinedAt, debtLimit);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -23858,7 +24072,8 @@ class Member extends DataClass implements Insertable<Member> {
           other.code == this.code &&
           other.note == this.note &&
           other.birthday == this.birthday &&
-          other.joinedAt == this.joinedAt);
+          other.joinedAt == this.joinedAt &&
+          other.debtLimit == this.debtLimit);
 }
 
 class MembersCompanion extends UpdateCompanion<Member> {
@@ -23869,6 +24084,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
   final Value<String?> note;
   final Value<DateTime?> birthday;
   final Value<DateTime> joinedAt;
+  final Value<int?> debtLimit;
   final Value<int> rowid;
   const MembersCompanion({
     this.id = const Value.absent(),
@@ -23878,6 +24094,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     this.note = const Value.absent(),
     this.birthday = const Value.absent(),
     this.joinedAt = const Value.absent(),
+    this.debtLimit = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MembersCompanion.insert({
@@ -23888,6 +24105,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     this.note = const Value.absent(),
     this.birthday = const Value.absent(),
     required DateTime joinedAt,
+    this.debtLimit = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -23901,6 +24119,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     Expression<String>? note,
     Expression<DateTime>? birthday,
     Expression<DateTime>? joinedAt,
+    Expression<int>? debtLimit,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -23911,6 +24130,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
       if (note != null) 'note': note,
       if (birthday != null) 'birthday': birthday,
       if (joinedAt != null) 'joined_at': joinedAt,
+      if (debtLimit != null) 'debt_limit': debtLimit,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -23923,6 +24143,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     Value<String?>? note,
     Value<DateTime?>? birthday,
     Value<DateTime>? joinedAt,
+    Value<int?>? debtLimit,
     Value<int>? rowid,
   }) {
     return MembersCompanion(
@@ -23933,6 +24154,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
       note: note ?? this.note,
       birthday: birthday ?? this.birthday,
       joinedAt: joinedAt ?? this.joinedAt,
+      debtLimit: debtLimit ?? this.debtLimit,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -23961,6 +24183,9 @@ class MembersCompanion extends UpdateCompanion<Member> {
     if (joinedAt.present) {
       map['joined_at'] = Variable<DateTime>(joinedAt.value);
     }
+    if (debtLimit.present) {
+      map['debt_limit'] = Variable<int>(debtLimit.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -23977,6 +24202,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
           ..write('note: $note, ')
           ..write('birthday: $birthday, ')
           ..write('joinedAt: $joinedAt, ')
+          ..write('debtLimit: $debtLimit, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -24595,6 +24821,782 @@ class MemberPointsCompanion extends UpdateCompanion<MemberPoint> {
           ..write('visitId: $visitId, ')
           ..write('baseAmount: $baseAmount, ')
           ..write('note: $note, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('actorName: $actorName, ')
+          ..write('at: $at, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MemberDebtsTable extends MemberDebts
+    with TableInfo<$MemberDebtsTable, MemberDebt> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MemberDebtsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deltaMeta = const VerificationMeta('delta');
+  @override
+  late final GeneratedColumn<int> delta = GeneratedColumn<int>(
+    'delta',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _paymentIdMeta = const VerificationMeta(
+    'paymentId',
+  );
+  @override
+  late final GeneratedColumn<String> paymentId = GeneratedColumn<String>(
+    'payment_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _visitIdMeta = const VerificationMeta(
+    'visitId',
+  );
+  @override
+  late final GeneratedColumn<String> visitId = GeneratedColumn<String>(
+    'visit_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _billLabelMeta = const VerificationMeta(
+    'billLabel',
+  );
+  @override
+  late final GeneratedColumn<String> billLabel = GeneratedColumn<String>(
+    'bill_label',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _methodMeta = const VerificationMeta('method');
+  @override
+  late final GeneratedColumn<String> method = GeneratedColumn<String>(
+    'method',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _photoMeta = const VerificationMeta('photo');
+  @override
+  late final GeneratedColumn<Uint8List> photo = GeneratedColumn<Uint8List>(
+    'photo',
+    aliasedName,
+    true,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorUserIdMeta = const VerificationMeta(
+    'actorUserId',
+  );
+  @override
+  late final GeneratedColumn<String> actorUserId = GeneratedColumn<String>(
+    'actor_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actorNameMeta = const VerificationMeta(
+    'actorName',
+  );
+  @override
+  late final GeneratedColumn<String> actorName = GeneratedColumn<String>(
+    'actor_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _atMeta = const VerificationMeta('at');
+  @override
+  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+    'at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    memberId,
+    kind,
+    delta,
+    paymentId,
+    visitId,
+    billLabel,
+    method,
+    note,
+    photo,
+    actorUserId,
+    actorName,
+    at,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'member_debts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MemberDebt> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_memberIdMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('delta')) {
+      context.handle(
+        _deltaMeta,
+        delta.isAcceptableOrUnknown(data['delta']!, _deltaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deltaMeta);
+    }
+    if (data.containsKey('payment_id')) {
+      context.handle(
+        _paymentIdMeta,
+        paymentId.isAcceptableOrUnknown(data['payment_id']!, _paymentIdMeta),
+      );
+    }
+    if (data.containsKey('visit_id')) {
+      context.handle(
+        _visitIdMeta,
+        visitId.isAcceptableOrUnknown(data['visit_id']!, _visitIdMeta),
+      );
+    }
+    if (data.containsKey('bill_label')) {
+      context.handle(
+        _billLabelMeta,
+        billLabel.isAcceptableOrUnknown(data['bill_label']!, _billLabelMeta),
+      );
+    }
+    if (data.containsKey('method')) {
+      context.handle(
+        _methodMeta,
+        method.isAcceptableOrUnknown(data['method']!, _methodMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('photo')) {
+      context.handle(
+        _photoMeta,
+        photo.isAcceptableOrUnknown(data['photo']!, _photoMeta),
+      );
+    }
+    if (data.containsKey('actor_user_id')) {
+      context.handle(
+        _actorUserIdMeta,
+        actorUserId.isAcceptableOrUnknown(
+          data['actor_user_id']!,
+          _actorUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actor_name')) {
+      context.handle(
+        _actorNameMeta,
+        actorName.isAcceptableOrUnknown(data['actor_name']!, _actorNameMeta),
+      );
+    }
+    if (data.containsKey('at')) {
+      context.handle(_atMeta, at.isAcceptableOrUnknown(data['at']!, _atMeta));
+    } else if (isInserting) {
+      context.missing(_atMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MemberDebt map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MemberDebt(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      delta: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}delta'],
+      )!,
+      paymentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payment_id'],
+      ),
+      visitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}visit_id'],
+      ),
+      billLabel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bill_label'],
+      )!,
+      method: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}method'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      photo: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}photo'],
+      ),
+      actorUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_user_id'],
+      ),
+      actorName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_name'],
+      ),
+      at: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}at'],
+      )!,
+    );
+  }
+
+  @override
+  $MemberDebtsTable createAlias(String alias) {
+    return $MemberDebtsTable(attachedDatabase, alias);
+  }
+}
+
+class MemberDebt extends DataClass implements Insertable<MemberDebt> {
+  final String id;
+  final String memberId;
+
+  /// `charge | payment | reversal | writeOff | adjust`. `reversal` is automatic
+  /// (a reopened receipt undoing its own charge); `adjust` is the hand
+  /// correction that exists because a snapshotted visit has no receipt left to
+  /// reopen, and without it a typo could only be fixed by a `writeOff` — which
+  /// would make the bad-debt figure meaningless.
+  final String kind;
+
+  /// Signed rupiah — positive charged, negative collected, reversed, written
+  /// off or corrected down.
+  final int delta;
+
+  /// The [[Payment (manual confirmation)]] that raised this charge. **The join
+  /// that survives bill close**: `snapshotVisitAndDelete` copies a payment
+  /// under its live id but mints a fresh `table_sessions.id`, so this is the
+  /// only stable way back to the bill. Null on every kind but `charge`.
+  final String? paymentId;
+
+  /// The [[Visit]] behind a `charge`, for as long as one exists. Goes dangling
+  /// at snapshot **by design** — read [paymentId] to reach history.
+  final String? visitId;
+
+  /// Table label frozen at write time, so a ledger row can name its bill after
+  /// the visit is gone without joining anything.
+  final String billLabel;
+
+  /// Collection method on `payment` (`tunai` | `kartu` | `qris` | `transfer` |
+  /// `lainnya` — never `piutang`, which would be circular). Null otherwise.
+  final String? method;
+
+  /// Required on `writeOff` and `adjust` (enforced in the writer) — the same
+  /// rule the cash box and the points ledger keep.
+  final String? note;
+
+  /// Proof photo for a non-cash collection (ADR-0025). A `charge` never has
+  /// one: there is no slip for a promise.
+  final Uint8List? photo;
+  final String? actorUserId;
+
+  /// Attribution frozen at write time so a later rename cannot rewrite history.
+  final String? actorName;
+  final DateTime at;
+  const MemberDebt({
+    required this.id,
+    required this.memberId,
+    required this.kind,
+    required this.delta,
+    this.paymentId,
+    this.visitId,
+    required this.billLabel,
+    this.method,
+    this.note,
+    this.photo,
+    this.actorUserId,
+    this.actorName,
+    required this.at,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['member_id'] = Variable<String>(memberId);
+    map['kind'] = Variable<String>(kind);
+    map['delta'] = Variable<int>(delta);
+    if (!nullToAbsent || paymentId != null) {
+      map['payment_id'] = Variable<String>(paymentId);
+    }
+    if (!nullToAbsent || visitId != null) {
+      map['visit_id'] = Variable<String>(visitId);
+    }
+    map['bill_label'] = Variable<String>(billLabel);
+    if (!nullToAbsent || method != null) {
+      map['method'] = Variable<String>(method);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    if (!nullToAbsent || photo != null) {
+      map['photo'] = Variable<Uint8List>(photo);
+    }
+    if (!nullToAbsent || actorUserId != null) {
+      map['actor_user_id'] = Variable<String>(actorUserId);
+    }
+    if (!nullToAbsent || actorName != null) {
+      map['actor_name'] = Variable<String>(actorName);
+    }
+    map['at'] = Variable<DateTime>(at);
+    return map;
+  }
+
+  MemberDebtsCompanion toCompanion(bool nullToAbsent) {
+    return MemberDebtsCompanion(
+      id: Value(id),
+      memberId: Value(memberId),
+      kind: Value(kind),
+      delta: Value(delta),
+      paymentId: paymentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(paymentId),
+      visitId: visitId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(visitId),
+      billLabel: Value(billLabel),
+      method: method == null && nullToAbsent
+          ? const Value.absent()
+          : Value(method),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      photo: photo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(photo),
+      actorUserId: actorUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actorUserId),
+      actorName: actorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actorName),
+      at: Value(at),
+    );
+  }
+
+  factory MemberDebt.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MemberDebt(
+      id: serializer.fromJson<String>(json['id']),
+      memberId: serializer.fromJson<String>(json['memberId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      delta: serializer.fromJson<int>(json['delta']),
+      paymentId: serializer.fromJson<String?>(json['paymentId']),
+      visitId: serializer.fromJson<String?>(json['visitId']),
+      billLabel: serializer.fromJson<String>(json['billLabel']),
+      method: serializer.fromJson<String?>(json['method']),
+      note: serializer.fromJson<String?>(json['note']),
+      photo: serializer.fromJson<Uint8List?>(json['photo']),
+      actorUserId: serializer.fromJson<String?>(json['actorUserId']),
+      actorName: serializer.fromJson<String?>(json['actorName']),
+      at: serializer.fromJson<DateTime>(json['at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'memberId': serializer.toJson<String>(memberId),
+      'kind': serializer.toJson<String>(kind),
+      'delta': serializer.toJson<int>(delta),
+      'paymentId': serializer.toJson<String?>(paymentId),
+      'visitId': serializer.toJson<String?>(visitId),
+      'billLabel': serializer.toJson<String>(billLabel),
+      'method': serializer.toJson<String?>(method),
+      'note': serializer.toJson<String?>(note),
+      'photo': serializer.toJson<Uint8List?>(photo),
+      'actorUserId': serializer.toJson<String?>(actorUserId),
+      'actorName': serializer.toJson<String?>(actorName),
+      'at': serializer.toJson<DateTime>(at),
+    };
+  }
+
+  MemberDebt copyWith({
+    String? id,
+    String? memberId,
+    String? kind,
+    int? delta,
+    Value<String?> paymentId = const Value.absent(),
+    Value<String?> visitId = const Value.absent(),
+    String? billLabel,
+    Value<String?> method = const Value.absent(),
+    Value<String?> note = const Value.absent(),
+    Value<Uint8List?> photo = const Value.absent(),
+    Value<String?> actorUserId = const Value.absent(),
+    Value<String?> actorName = const Value.absent(),
+    DateTime? at,
+  }) => MemberDebt(
+    id: id ?? this.id,
+    memberId: memberId ?? this.memberId,
+    kind: kind ?? this.kind,
+    delta: delta ?? this.delta,
+    paymentId: paymentId.present ? paymentId.value : this.paymentId,
+    visitId: visitId.present ? visitId.value : this.visitId,
+    billLabel: billLabel ?? this.billLabel,
+    method: method.present ? method.value : this.method,
+    note: note.present ? note.value : this.note,
+    photo: photo.present ? photo.value : this.photo,
+    actorUserId: actorUserId.present ? actorUserId.value : this.actorUserId,
+    actorName: actorName.present ? actorName.value : this.actorName,
+    at: at ?? this.at,
+  );
+  MemberDebt copyWithCompanion(MemberDebtsCompanion data) {
+    return MemberDebt(
+      id: data.id.present ? data.id.value : this.id,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      delta: data.delta.present ? data.delta.value : this.delta,
+      paymentId: data.paymentId.present ? data.paymentId.value : this.paymentId,
+      visitId: data.visitId.present ? data.visitId.value : this.visitId,
+      billLabel: data.billLabel.present ? data.billLabel.value : this.billLabel,
+      method: data.method.present ? data.method.value : this.method,
+      note: data.note.present ? data.note.value : this.note,
+      photo: data.photo.present ? data.photo.value : this.photo,
+      actorUserId: data.actorUserId.present
+          ? data.actorUserId.value
+          : this.actorUserId,
+      actorName: data.actorName.present ? data.actorName.value : this.actorName,
+      at: data.at.present ? data.at.value : this.at,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MemberDebt(')
+          ..write('id: $id, ')
+          ..write('memberId: $memberId, ')
+          ..write('kind: $kind, ')
+          ..write('delta: $delta, ')
+          ..write('paymentId: $paymentId, ')
+          ..write('visitId: $visitId, ')
+          ..write('billLabel: $billLabel, ')
+          ..write('method: $method, ')
+          ..write('note: $note, ')
+          ..write('photo: $photo, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('actorName: $actorName, ')
+          ..write('at: $at')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    memberId,
+    kind,
+    delta,
+    paymentId,
+    visitId,
+    billLabel,
+    method,
+    note,
+    $driftBlobEquality.hash(photo),
+    actorUserId,
+    actorName,
+    at,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MemberDebt &&
+          other.id == this.id &&
+          other.memberId == this.memberId &&
+          other.kind == this.kind &&
+          other.delta == this.delta &&
+          other.paymentId == this.paymentId &&
+          other.visitId == this.visitId &&
+          other.billLabel == this.billLabel &&
+          other.method == this.method &&
+          other.note == this.note &&
+          $driftBlobEquality.equals(other.photo, this.photo) &&
+          other.actorUserId == this.actorUserId &&
+          other.actorName == this.actorName &&
+          other.at == this.at);
+}
+
+class MemberDebtsCompanion extends UpdateCompanion<MemberDebt> {
+  final Value<String> id;
+  final Value<String> memberId;
+  final Value<String> kind;
+  final Value<int> delta;
+  final Value<String?> paymentId;
+  final Value<String?> visitId;
+  final Value<String> billLabel;
+  final Value<String?> method;
+  final Value<String?> note;
+  final Value<Uint8List?> photo;
+  final Value<String?> actorUserId;
+  final Value<String?> actorName;
+  final Value<DateTime> at;
+  final Value<int> rowid;
+  const MemberDebtsCompanion({
+    this.id = const Value.absent(),
+    this.memberId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.delta = const Value.absent(),
+    this.paymentId = const Value.absent(),
+    this.visitId = const Value.absent(),
+    this.billLabel = const Value.absent(),
+    this.method = const Value.absent(),
+    this.note = const Value.absent(),
+    this.photo = const Value.absent(),
+    this.actorUserId = const Value.absent(),
+    this.actorName = const Value.absent(),
+    this.at = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MemberDebtsCompanion.insert({
+    required String id,
+    required String memberId,
+    required String kind,
+    required int delta,
+    this.paymentId = const Value.absent(),
+    this.visitId = const Value.absent(),
+    this.billLabel = const Value.absent(),
+    this.method = const Value.absent(),
+    this.note = const Value.absent(),
+    this.photo = const Value.absent(),
+    this.actorUserId = const Value.absent(),
+    this.actorName = const Value.absent(),
+    required DateTime at,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       memberId = Value(memberId),
+       kind = Value(kind),
+       delta = Value(delta),
+       at = Value(at);
+  static Insertable<MemberDebt> custom({
+    Expression<String>? id,
+    Expression<String>? memberId,
+    Expression<String>? kind,
+    Expression<int>? delta,
+    Expression<String>? paymentId,
+    Expression<String>? visitId,
+    Expression<String>? billLabel,
+    Expression<String>? method,
+    Expression<String>? note,
+    Expression<Uint8List>? photo,
+    Expression<String>? actorUserId,
+    Expression<String>? actorName,
+    Expression<DateTime>? at,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (memberId != null) 'member_id': memberId,
+      if (kind != null) 'kind': kind,
+      if (delta != null) 'delta': delta,
+      if (paymentId != null) 'payment_id': paymentId,
+      if (visitId != null) 'visit_id': visitId,
+      if (billLabel != null) 'bill_label': billLabel,
+      if (method != null) 'method': method,
+      if (note != null) 'note': note,
+      if (photo != null) 'photo': photo,
+      if (actorUserId != null) 'actor_user_id': actorUserId,
+      if (actorName != null) 'actor_name': actorName,
+      if (at != null) 'at': at,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MemberDebtsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? memberId,
+    Value<String>? kind,
+    Value<int>? delta,
+    Value<String?>? paymentId,
+    Value<String?>? visitId,
+    Value<String>? billLabel,
+    Value<String?>? method,
+    Value<String?>? note,
+    Value<Uint8List?>? photo,
+    Value<String?>? actorUserId,
+    Value<String?>? actorName,
+    Value<DateTime>? at,
+    Value<int>? rowid,
+  }) {
+    return MemberDebtsCompanion(
+      id: id ?? this.id,
+      memberId: memberId ?? this.memberId,
+      kind: kind ?? this.kind,
+      delta: delta ?? this.delta,
+      paymentId: paymentId ?? this.paymentId,
+      visitId: visitId ?? this.visitId,
+      billLabel: billLabel ?? this.billLabel,
+      method: method ?? this.method,
+      note: note ?? this.note,
+      photo: photo ?? this.photo,
+      actorUserId: actorUserId ?? this.actorUserId,
+      actorName: actorName ?? this.actorName,
+      at: at ?? this.at,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (delta.present) {
+      map['delta'] = Variable<int>(delta.value);
+    }
+    if (paymentId.present) {
+      map['payment_id'] = Variable<String>(paymentId.value);
+    }
+    if (visitId.present) {
+      map['visit_id'] = Variable<String>(visitId.value);
+    }
+    if (billLabel.present) {
+      map['bill_label'] = Variable<String>(billLabel.value);
+    }
+    if (method.present) {
+      map['method'] = Variable<String>(method.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (photo.present) {
+      map['photo'] = Variable<Uint8List>(photo.value);
+    }
+    if (actorUserId.present) {
+      map['actor_user_id'] = Variable<String>(actorUserId.value);
+    }
+    if (actorName.present) {
+      map['actor_name'] = Variable<String>(actorName.value);
+    }
+    if (at.present) {
+      map['at'] = Variable<DateTime>(at.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MemberDebtsCompanion(')
+          ..write('id: $id, ')
+          ..write('memberId: $memberId, ')
+          ..write('kind: $kind, ')
+          ..write('delta: $delta, ')
+          ..write('paymentId: $paymentId, ')
+          ..write('visitId: $visitId, ')
+          ..write('billLabel: $billLabel, ')
+          ..write('method: $method, ')
+          ..write('note: $note, ')
+          ..write('photo: $photo, ')
           ..write('actorUserId: $actorUserId, ')
           ..write('actorName: $actorName, ')
           ..write('at: $at, ')
@@ -25461,6 +26463,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CashEntriesTable cashEntries = $CashEntriesTable(this);
   late final $MembersTable members = $MembersTable(this);
   late final $MemberPointsTable memberPoints = $MemberPointsTable(this);
+  late final $MemberDebtsTable memberDebts = $MemberDebtsTable(this);
   late final $ShiftsTable shifts = $ShiftsTable(this);
   late final $DemoStatesTable demoStates = $DemoStatesTable(this);
   @override
@@ -25504,6 +26507,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     cashEntries,
     members,
     memberPoints,
+    memberDebts,
     shifts,
     demoStates,
   ];
@@ -29484,6 +30488,9 @@ typedef $$VenueSettingsTableCreateCompanionBuilder =
       Value<int> memberRedeemMin,
       Value<String?> memberPunchItemId,
       Value<int> memberPunchTarget,
+      Value<bool> memberDebtEnabled,
+      Value<int> memberDebtLimit,
+      Value<int> memberDebtOverdueDays,
       Value<int> rowid,
     });
 typedef $$VenueSettingsTableUpdateCompanionBuilder =
@@ -29534,6 +30541,9 @@ typedef $$VenueSettingsTableUpdateCompanionBuilder =
       Value<int> memberRedeemMin,
       Value<String?> memberPunchItemId,
       Value<int> memberPunchTarget,
+      Value<bool> memberDebtEnabled,
+      Value<int> memberDebtLimit,
+      Value<int> memberDebtOverdueDays,
       Value<int> rowid,
     });
 
@@ -29773,6 +30783,21 @@ class $$VenueSettingsTableFilterComposer
 
   ColumnFilters<int> get memberPunchTarget => $composableBuilder(
     column: $table.memberPunchTarget,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get memberDebtEnabled => $composableBuilder(
+    column: $table.memberDebtEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get memberDebtLimit => $composableBuilder(
+    column: $table.memberDebtLimit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get memberDebtOverdueDays => $composableBuilder(
+    column: $table.memberDebtOverdueDays,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -30015,6 +31040,21 @@ class $$VenueSettingsTableOrderingComposer
     column: $table.memberPunchTarget,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get memberDebtEnabled => $composableBuilder(
+    column: $table.memberDebtEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get memberDebtLimit => $composableBuilder(
+    column: $table.memberDebtLimit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get memberDebtOverdueDays => $composableBuilder(
+    column: $table.memberDebtOverdueDays,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VenueSettingsTableAnnotationComposer
@@ -30241,6 +31281,21 @@ class $$VenueSettingsTableAnnotationComposer
     column: $table.memberPunchTarget,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get memberDebtEnabled => $composableBuilder(
+    column: $table.memberDebtEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get memberDebtLimit => $composableBuilder(
+    column: $table.memberDebtLimit,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get memberDebtOverdueDays => $composableBuilder(
+    column: $table.memberDebtOverdueDays,
+    builder: (column) => column,
+  );
 }
 
 class $$VenueSettingsTableTableManager
@@ -30320,6 +31375,9 @@ class $$VenueSettingsTableTableManager
                 Value<int> memberRedeemMin = const Value.absent(),
                 Value<String?> memberPunchItemId = const Value.absent(),
                 Value<int> memberPunchTarget = const Value.absent(),
+                Value<bool> memberDebtEnabled = const Value.absent(),
+                Value<int> memberDebtLimit = const Value.absent(),
+                Value<int> memberDebtOverdueDays = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion(
                 id: id,
@@ -30368,6 +31426,9 @@ class $$VenueSettingsTableTableManager
                 memberRedeemMin: memberRedeemMin,
                 memberPunchItemId: memberPunchItemId,
                 memberPunchTarget: memberPunchTarget,
+                memberDebtEnabled: memberDebtEnabled,
+                memberDebtLimit: memberDebtLimit,
+                memberDebtOverdueDays: memberDebtOverdueDays,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -30418,6 +31479,9 @@ class $$VenueSettingsTableTableManager
                 Value<int> memberRedeemMin = const Value.absent(),
                 Value<String?> memberPunchItemId = const Value.absent(),
                 Value<int> memberPunchTarget = const Value.absent(),
+                Value<bool> memberDebtEnabled = const Value.absent(),
+                Value<int> memberDebtLimit = const Value.absent(),
+                Value<int> memberDebtOverdueDays = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion.insert(
                 id: id,
@@ -30466,6 +31530,9 @@ class $$VenueSettingsTableTableManager
                 memberRedeemMin: memberRedeemMin,
                 memberPunchItemId: memberPunchItemId,
                 memberPunchTarget: memberPunchTarget,
+                memberDebtEnabled: memberDebtEnabled,
+                memberDebtLimit: memberDebtLimit,
+                memberDebtOverdueDays: memberDebtOverdueDays,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -36697,6 +37764,7 @@ typedef $$MembersTableCreateCompanionBuilder =
       Value<String?> note,
       Value<DateTime?> birthday,
       required DateTime joinedAt,
+      Value<int?> debtLimit,
       Value<int> rowid,
     });
 typedef $$MembersTableUpdateCompanionBuilder =
@@ -36708,6 +37776,7 @@ typedef $$MembersTableUpdateCompanionBuilder =
       Value<String?> note,
       Value<DateTime?> birthday,
       Value<DateTime> joinedAt,
+      Value<int?> debtLimit,
       Value<int> rowid,
     });
 
@@ -36752,6 +37821,11 @@ class $$MembersTableFilterComposer
 
   ColumnFilters<DateTime> get joinedAt => $composableBuilder(
     column: $table.joinedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get debtLimit => $composableBuilder(
+    column: $table.debtLimit,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -36799,6 +37873,11 @@ class $$MembersTableOrderingComposer
     column: $table.joinedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get debtLimit => $composableBuilder(
+    column: $table.debtLimit,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MembersTableAnnotationComposer
@@ -36830,6 +37909,9 @@ class $$MembersTableAnnotationComposer
 
   GeneratedColumn<DateTime> get joinedAt =>
       $composableBuilder(column: $table.joinedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get debtLimit =>
+      $composableBuilder(column: $table.debtLimit, builder: (column) => column);
 }
 
 class $$MembersTableTableManager
@@ -36867,6 +37949,7 @@ class $$MembersTableTableManager
                 Value<String?> note = const Value.absent(),
                 Value<DateTime?> birthday = const Value.absent(),
                 Value<DateTime> joinedAt = const Value.absent(),
+                Value<int?> debtLimit = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MembersCompanion(
                 id: id,
@@ -36876,6 +37959,7 @@ class $$MembersTableTableManager
                 note: note,
                 birthday: birthday,
                 joinedAt: joinedAt,
+                debtLimit: debtLimit,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -36887,6 +37971,7 @@ class $$MembersTableTableManager
                 Value<String?> note = const Value.absent(),
                 Value<DateTime?> birthday = const Value.absent(),
                 required DateTime joinedAt,
+                Value<int?> debtLimit = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MembersCompanion.insert(
                 id: id,
@@ -36896,6 +37981,7 @@ class $$MembersTableTableManager
                 note: note,
                 birthday: birthday,
                 joinedAt: joinedAt,
+                debtLimit: debtLimit,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -37217,6 +38303,360 @@ typedef $$MemberPointsTableProcessedTableManager =
         BaseReferences<_$AppDatabase, $MemberPointsTable, MemberPoint>,
       ),
       MemberPoint,
+      PrefetchHooks Function()
+    >;
+typedef $$MemberDebtsTableCreateCompanionBuilder =
+    MemberDebtsCompanion Function({
+      required String id,
+      required String memberId,
+      required String kind,
+      required int delta,
+      Value<String?> paymentId,
+      Value<String?> visitId,
+      Value<String> billLabel,
+      Value<String?> method,
+      Value<String?> note,
+      Value<Uint8List?> photo,
+      Value<String?> actorUserId,
+      Value<String?> actorName,
+      required DateTime at,
+      Value<int> rowid,
+    });
+typedef $$MemberDebtsTableUpdateCompanionBuilder =
+    MemberDebtsCompanion Function({
+      Value<String> id,
+      Value<String> memberId,
+      Value<String> kind,
+      Value<int> delta,
+      Value<String?> paymentId,
+      Value<String?> visitId,
+      Value<String> billLabel,
+      Value<String?> method,
+      Value<String?> note,
+      Value<Uint8List?> photo,
+      Value<String?> actorUserId,
+      Value<String?> actorName,
+      Value<DateTime> at,
+      Value<int> rowid,
+    });
+
+class $$MemberDebtsTableFilterComposer
+    extends Composer<_$AppDatabase, $MemberDebtsTable> {
+  $$MemberDebtsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get delta => $composableBuilder(
+    column: $table.delta,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get paymentId => $composableBuilder(
+    column: $table.paymentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get visitId => $composableBuilder(
+    column: $table.visitId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get billLabel => $composableBuilder(
+    column: $table.billLabel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get method => $composableBuilder(
+    column: $table.method,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get photo => $composableBuilder(
+    column: $table.photo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actorUserId => $composableBuilder(
+    column: $table.actorUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actorName => $composableBuilder(
+    column: $table.actorName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MemberDebtsTableOrderingComposer
+    extends Composer<_$AppDatabase, $MemberDebtsTable> {
+  $$MemberDebtsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get delta => $composableBuilder(
+    column: $table.delta,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get paymentId => $composableBuilder(
+    column: $table.paymentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get visitId => $composableBuilder(
+    column: $table.visitId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get billLabel => $composableBuilder(
+    column: $table.billLabel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get method => $composableBuilder(
+    column: $table.method,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get photo => $composableBuilder(
+    column: $table.photo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actorUserId => $composableBuilder(
+    column: $table.actorUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actorName => $composableBuilder(
+    column: $table.actorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MemberDebtsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MemberDebtsTable> {
+  $$MemberDebtsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get memberId =>
+      $composableBuilder(column: $table.memberId, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get delta =>
+      $composableBuilder(column: $table.delta, builder: (column) => column);
+
+  GeneratedColumn<String> get paymentId =>
+      $composableBuilder(column: $table.paymentId, builder: (column) => column);
+
+  GeneratedColumn<String> get visitId =>
+      $composableBuilder(column: $table.visitId, builder: (column) => column);
+
+  GeneratedColumn<String> get billLabel =>
+      $composableBuilder(column: $table.billLabel, builder: (column) => column);
+
+  GeneratedColumn<String> get method =>
+      $composableBuilder(column: $table.method, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get photo =>
+      $composableBuilder(column: $table.photo, builder: (column) => column);
+
+  GeneratedColumn<String> get actorUserId => $composableBuilder(
+    column: $table.actorUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actorName =>
+      $composableBuilder(column: $table.actorName, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get at =>
+      $composableBuilder(column: $table.at, builder: (column) => column);
+}
+
+class $$MemberDebtsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MemberDebtsTable,
+          MemberDebt,
+          $$MemberDebtsTableFilterComposer,
+          $$MemberDebtsTableOrderingComposer,
+          $$MemberDebtsTableAnnotationComposer,
+          $$MemberDebtsTableCreateCompanionBuilder,
+          $$MemberDebtsTableUpdateCompanionBuilder,
+          (
+            MemberDebt,
+            BaseReferences<_$AppDatabase, $MemberDebtsTable, MemberDebt>,
+          ),
+          MemberDebt,
+          PrefetchHooks Function()
+        > {
+  $$MemberDebtsTableTableManager(_$AppDatabase db, $MemberDebtsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MemberDebtsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MemberDebtsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MemberDebtsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> memberId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<int> delta = const Value.absent(),
+                Value<String?> paymentId = const Value.absent(),
+                Value<String?> visitId = const Value.absent(),
+                Value<String> billLabel = const Value.absent(),
+                Value<String?> method = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<Uint8List?> photo = const Value.absent(),
+                Value<String?> actorUserId = const Value.absent(),
+                Value<String?> actorName = const Value.absent(),
+                Value<DateTime> at = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MemberDebtsCompanion(
+                id: id,
+                memberId: memberId,
+                kind: kind,
+                delta: delta,
+                paymentId: paymentId,
+                visitId: visitId,
+                billLabel: billLabel,
+                method: method,
+                note: note,
+                photo: photo,
+                actorUserId: actorUserId,
+                actorName: actorName,
+                at: at,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String memberId,
+                required String kind,
+                required int delta,
+                Value<String?> paymentId = const Value.absent(),
+                Value<String?> visitId = const Value.absent(),
+                Value<String> billLabel = const Value.absent(),
+                Value<String?> method = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<Uint8List?> photo = const Value.absent(),
+                Value<String?> actorUserId = const Value.absent(),
+                Value<String?> actorName = const Value.absent(),
+                required DateTime at,
+                Value<int> rowid = const Value.absent(),
+              }) => MemberDebtsCompanion.insert(
+                id: id,
+                memberId: memberId,
+                kind: kind,
+                delta: delta,
+                paymentId: paymentId,
+                visitId: visitId,
+                billLabel: billLabel,
+                method: method,
+                note: note,
+                photo: photo,
+                actorUserId: actorUserId,
+                actorName: actorName,
+                at: at,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MemberDebtsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MemberDebtsTable,
+      MemberDebt,
+      $$MemberDebtsTableFilterComposer,
+      $$MemberDebtsTableOrderingComposer,
+      $$MemberDebtsTableAnnotationComposer,
+      $$MemberDebtsTableCreateCompanionBuilder,
+      $$MemberDebtsTableUpdateCompanionBuilder,
+      (
+        MemberDebt,
+        BaseReferences<_$AppDatabase, $MemberDebtsTable, MemberDebt>,
+      ),
+      MemberDebt,
       PrefetchHooks Function()
     >;
 typedef $$ShiftsTableCreateCompanionBuilder =
@@ -37709,6 +39149,8 @@ class $AppDatabaseManager {
       $$MembersTableTableManager(_db, _db.members);
   $$MemberPointsTableTableManager get memberPoints =>
       $$MemberPointsTableTableManager(_db, _db.memberPoints);
+  $$MemberDebtsTableTableManager get memberDebts =>
+      $$MemberDebtsTableTableManager(_db, _db.memberDebts);
   $$ShiftsTableTableManager get shifts =>
       $$ShiftsTableTableManager(_db, _db.shifts);
   $$DemoStatesTableTableManager get demoStates =>

@@ -31,6 +31,7 @@ String paymentMethodLabel(AppL10n l10n, String method) => switch (method) {
   'qris' => l10n.payMethodQris,
   'transfer' => l10n.payMethodTransfer,
   'lainnya' => l10n.payMethodOther,
+  'piutang' => l10n.payMethodOnAccount,
   _ => method,
 };
 
@@ -39,6 +40,10 @@ String paymentMethodLabel(AppL10n l10n, String method) => switch (method) {
 /// The English aliases above are **read-only**: the sample seed writes `cash` /
 /// `card`, so history holds both spellings and the renderer has to know it.
 /// Nothing new is ever written under them.
+/// `piutang` is deliberately **absent**: it is not a method a cashier picks
+/// from this list. It appears on the till only when a member with headroom is
+/// attached, and it is refused outright as a refund method (ADR-0098) — so the
+/// screens that need it opt in rather than the ones that don't opting out.
 const paymentMethods = ['tunai', 'kartu', 'qris', 'transfer', 'lainnya'];
 
 /// Display name for a course, keyed by the serial id persisted on a ticket
@@ -212,11 +217,10 @@ String cashCategoryKeyLabel(AppL10n l10n, String key) {
 /// Whether an opname claims to have seen every bahan (ADR-0096). The claim is
 /// the difference between "we counted March" and "we counted some things in
 /// March", so it is rendered wherever a session is.
-String stockCountScopeLabel(AppL10n l10n, StockCountScopeKind s) =>
-    switch (s) {
-      StockCountScopeKind.full => l10n.stkOpnameScopeFull,
-      StockCountScopeKind.partial => l10n.stkOpnameScopePartial,
-    };
+String stockCountScopeLabel(AppL10n l10n, StockCountScopeKind s) => switch (s) {
+  StockCountScopeKind.full => l10n.stkOpnameScopeFull,
+  StockCountScopeKind.partial => l10n.stkOpnameScopePartial,
+};
 
 /// Which movement of the petty cash box a row is.
 String cashEntryKindLabel(AppL10n l10n, CashEntryKind k) => switch (k) {
@@ -232,6 +236,15 @@ String memberPointKindLabel(AppL10n l10n, MemberPointKind k) => switch (k) {
   MemberPointKind.redeem => l10n.memPointKindRedeem,
   MemberPointKind.adjust => l10n.memPointKindAdjust,
   MemberPointKind.reversal => l10n.memPointKindReversal,
+};
+
+/// Which movement a [[Piutang]] ledger row is (ADR-0098).
+String memberDebtKindLabel(AppL10n l10n, MemberDebtKind k) => switch (k) {
+  MemberDebtKind.charge => l10n.memDebtKindCharge,
+  MemberDebtKind.payment => l10n.memDebtKindPayment,
+  MemberDebtKind.reversal => l10n.memDebtKindReversal,
+  MemberDebtKind.writeOff => l10n.memDebtKindWriteOff,
+  MemberDebtKind.adjust => l10n.memDebtKindAdjust,
 };
 
 /// Display name for a bundled alert clip. Ids that are already words in both

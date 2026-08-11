@@ -31,6 +31,9 @@ _$ReportsSnapshotDtoImpl _$$ReportsSnapshotDtoImplFromJson(
   members: json['members'] == null
       ? const MembersSectionDto()
       : MembersSectionDto.fromJson(json['members'] as Map<String, dynamic>),
+  piutang: json['piutang'] == null
+      ? const PiutangSectionDto()
+      : PiutangSectionDto.fromJson(json['piutang'] as Map<String, dynamic>),
   jamKerja: json['jamKerja'] == null
       ? const JamKerjaSectionDto()
       : JamKerjaSectionDto.fromJson(json['jamKerja'] as Map<String, dynamic>),
@@ -51,6 +54,7 @@ Map<String, dynamic> _$$ReportsSnapshotDtoImplToJson(
   'moneyAudit': instance.moneyAudit,
   'kas': instance.kas,
   'members': instance.members,
+  'piutang': instance.piutang,
   'jamKerja': instance.jamKerja,
 };
 
@@ -133,6 +137,7 @@ _$SalesSectionDtoImpl _$$SalesSectionDtoImplFromJson(
   takeaway: json['takeaway'] == null
       ? null
       : TakeawaySplitDto.fromJson(json['takeaway'] as Map<String, dynamic>),
+  badDebt: (json['badDebt'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$$SalesSectionDtoImplToJson(
@@ -142,6 +147,7 @@ Map<String, dynamic> _$$SalesSectionDtoImplToJson(
   'coverTrend': instance.coverTrend,
   'hourly': instance.hourly,
   'takeaway': instance.takeaway,
+  'badDebt': instance.badDebt,
 };
 
 _$TakeawaySplitDtoImpl _$$TakeawaySplitDtoImplFromJson(
@@ -633,6 +639,74 @@ Map<String, dynamic> _$$MembersSectionDtoImplToJson(
   'liabilityEstimate': instance.liabilityEstimate,
   'top': instance.top,
 };
+
+_$PiutangSectionDtoImpl _$$PiutangSectionDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$PiutangSectionDtoImpl(
+  enabled: json['enabled'] as bool? ?? false,
+  opening: (json['opening'] as num?)?.toInt() ?? 0,
+  charged: (json['charged'] as num?)?.toInt() ?? 0,
+  collected: (json['collected'] as num?)?.toInt() ?? 0,
+  writtenOff: (json['writtenOff'] as num?)?.toInt() ?? 0,
+  adjusted: (json['adjusted'] as num?)?.toInt() ?? 0,
+  closing: (json['closing'] as num?)?.toInt() ?? 0,
+  byMethod:
+      (json['byMethod'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, (e as num).toInt()),
+      ) ??
+      const <String, int>{},
+  overdueDays: (json['overdueDays'] as num?)?.toInt() ?? 30,
+  overdueTotal: (json['overdueTotal'] as num?)?.toInt() ?? 0,
+  debtorCount: (json['debtorCount'] as num?)?.toInt() ?? 0,
+  debtors:
+      (json['debtors'] as List<dynamic>?)
+          ?.map((e) => DebtorRowDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <DebtorRowDto>[],
+  debtorsTruncated: json['debtorsTruncated'] as bool? ?? false,
+);
+
+Map<String, dynamic> _$$PiutangSectionDtoImplToJson(
+  _$PiutangSectionDtoImpl instance,
+) => <String, dynamic>{
+  'enabled': instance.enabled,
+  'opening': instance.opening,
+  'charged': instance.charged,
+  'collected': instance.collected,
+  'writtenOff': instance.writtenOff,
+  'adjusted': instance.adjusted,
+  'closing': instance.closing,
+  'byMethod': instance.byMethod,
+  'overdueDays': instance.overdueDays,
+  'overdueTotal': instance.overdueTotal,
+  'debtorCount': instance.debtorCount,
+  'debtors': instance.debtors,
+  'debtorsTruncated': instance.debtorsTruncated,
+};
+
+_$DebtorRowDtoImpl _$$DebtorRowDtoImplFromJson(Map<String, dynamic> json) =>
+    _$DebtorRowDtoImpl(
+      memberId: json['memberId'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      phone: json['phone'] as String? ?? '',
+      balance: (json['balance'] as num?)?.toInt() ?? 0,
+      oldestUnpaidAt: json['oldestUnpaidAt'] == null
+          ? null
+          : DateTime.parse(json['oldestUnpaidAt'] as String),
+      lastPaymentAt: json['lastPaymentAt'] == null
+          ? null
+          : DateTime.parse(json['lastPaymentAt'] as String),
+    );
+
+Map<String, dynamic> _$$DebtorRowDtoImplToJson(_$DebtorRowDtoImpl instance) =>
+    <String, dynamic>{
+      'memberId': instance.memberId,
+      'name': instance.name,
+      'phone': instance.phone,
+      'balance': instance.balance,
+      'oldestUnpaidAt': instance.oldestUnpaidAt?.toIso8601String(),
+      'lastPaymentAt': instance.lastPaymentAt?.toIso8601String(),
+    };
 
 _$MemberTopRowDtoImpl _$$MemberTopRowDtoImplFromJson(
   Map<String, dynamic> json,

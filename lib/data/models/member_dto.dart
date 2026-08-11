@@ -24,6 +24,12 @@ class MemberDto {
   String get name => member.name;
   String get phone => member.phone;
   int get points => member.points;
+  int get debt => member.debt;
+
+  /// What may still go on the tab. Zero when the venue runs no tabs, when this
+  /// member has no limit, or when they have used it up — the till only has to
+  /// ask whether this is bigger than the amount.
+  int get debtHeadroom => member.debtHeadroom;
 
   factory MemberDto.fromJson(Map<String, dynamic> j) => MemberDto(
     member: Member(
@@ -40,6 +46,11 @@ class MemberDto {
       visitCount: _int(j['visitCount']),
       lifetimeSpend: _int(j['lifetimeSpend']),
       lastVisitAt: DateTime.tryParse(j['lastVisitAt'] as String? ?? ''),
+      debt: _int(j['debt']),
+      debtLimit: _int(j['debtLimit']),
+      // Null means "inherits the venue default", which is not the same as 0 —
+      // so this one is read as nullable rather than coerced (ADR-0098).
+      ownDebtLimit: (j['ownDebtLimit'] as num?)?.toInt(),
     ),
     punchTarget: _int((j['punch'] as Map?)?['target'] ?? j['punchTarget']),
     punchRewardDue:
