@@ -192,10 +192,17 @@ Future<Member?> findMemberByPhone(AppDatabase db, String phone) async {
 /// [query] matches a phone **prefix** (the till's numeric keypad) or a name
 /// substring (the admin directory). [birthdayMonth] is 1..12 for the "ulang
 /// tahun bulan ini" filter, which is the whole of the birthday feature.
+///
+/// [lapsedDays] keeps only members whose last settled visit is older than that
+/// many days — the "belum kembali" cut. **Never visited counts as lapsed**: an
+/// enrolment that never came back is exactly who the filter is for. Nothing is
+/// stored and no status exists; lapse is read off `lastVisitAt` each time, for
+/// the reason points never expire (ADR-0095) — the server has no scheduler.
 Future<List<Member>> listMembers(
   AppDatabase db, {
   String query = '',
   int? birthdayMonth,
+  int? lapsedDays,
   int limit = 50,
 }) async {
   final q = db.select(db.members);
@@ -215,7 +222,14 @@ Future<List<Member>> listMembers(
   if (birthdayMonth != null) {
     rows = rows.where((m) => m.birthday?.month == birthdayMonth).toList();
   }
-  return _decorate(db, rows);
+  final page = await _decorate(db, rows);
+  if (lapsedDays == null) return page;
+  // Filtered after the page, like the birthday cut above: `lastVisitAt` is
+  // derived in _decorate, not a column to put in a WHERE.
+  final cutoff = SatClock.now().toUtc().subtract(Duration(days: lapsedDays));
+  return page
+      .where((m) => m.lastVisitAt == null || m.lastVisitAt!.isBefore(cutoff))
+      .toList();
 }
 
 /// Attach the derived figures to a page of rows with two grouped queries rather
@@ -779,6 +793,83 @@ Map<String, dynamic> memberJson(Member m) => {
   'lastVisitAt': m.lastVisitAt?.toIso8601String(),
 };
 
+/// One settled bill in a member's history, read straight off the snapshot the
+/// close writes ([TableSessions], ADR-0024). Deliberately **lifetime** — the
+/// report's window lives on the report; a person's file does not have a range.
+///
+/// Carries no points figure: a `member_points` row names the *visit*, and the
+/// snapshot mints its own id while the visit is deleted (`snapshotVisitAndDelete`
+/// in `tables_routes.dart`), so nothing joins the two. The ledger tab is where
+/// points are read.
+class MemberVisitRow {
+  final String id;
+  final DateTime closedAt;
+  final String? tableLabel;
+  final int pax;
+
+  /// `dineIn` | `takeaway`, frozen at snapshot (ADR-0026).
+  final String kind;
+
+  /// Money actually collected on this bill (ADR-0039).
+  final int settledTotal;
+  final int discountAmount;
+
+  /// Non-zero ⇒ a walkout close. Rendered as such, never as a small spend.
+  final int lossAmount;
+
+  const MemberVisitRow({
+    required this.id,
+    required this.closedAt,
+    required this.tableLabel,
+    required this.pax,
+    required this.kind,
+    required this.settledTotal,
+    required this.discountAmount,
+    required this.lossAmount,
+  });
+}
+
+/// A member's settled bills, newest first. Paged by **growing limit** — the
+/// cashier-history pattern (ADR-0079): no cursor, no offset, the client asks
+/// for more of the same list.
+Future<List<MemberVisitRow>> memberVisits(
+  AppDatabase db,
+  String memberId, {
+  int limit = 30,
+}) async {
+  final s = db.tableSessions;
+  final rows =
+      await (db.select(s)
+            ..where((x) => x.memberId.equals(memberId))
+            ..orderBy([(x) => OrderingTerm.desc(x.closedAt)])
+            ..limit(limit))
+          .get();
+  return [
+    for (final r in rows)
+      MemberVisitRow(
+        id: r.id,
+        closedAt: r.closedAt,
+        tableLabel: r.tableLabel,
+        pax: r.pax,
+        kind: r.kind,
+        settledTotal: r.settledTotal,
+        discountAmount: r.discountAmount,
+        lossAmount: r.lossAmount,
+      ),
+  ];
+}
+
+Map<String, dynamic> memberVisitJson(MemberVisitRow v) => {
+  'id': v.id,
+  'closedAt': v.closedAt.toIso8601String(),
+  'tableLabel': v.tableLabel,
+  'pax': v.pax,
+  'kind': v.kind,
+  'settledTotal': v.settledTotal,
+  'discountAmount': v.discountAmount,
+  'lossAmount': v.lossAmount,
+};
+
 Map<String, dynamic> memberPointEntryJson(MemberPointEntry e) => {
   'id': e.id,
   'kind': e.kind.name,
@@ -790,6 +881,12 @@ Map<String, dynamic> memberPointEntryJson(MemberPointEntry e) => {
   'actorName': e.actorName,
   'at': e.at.toIso8601String(),
 };
+
+/// How many members the ranked list carries. The report is one payload, so an
+/// uncapped list grows with the venue's success until the snapshot is the
+/// problem; 100 is already past where anyone reads, and the remainder ships as
+/// a count.
+const _topRankLimit = 100;
 
 /// The Keanggotaan block of the venue report.
 ///
@@ -848,10 +945,16 @@ Future<Map<String, dynamic>> memberReportSection(
   var earned = 0;
   var redeemed = 0;
   var adjusted = 0;
+  // Per-member earn, for the ranked list's points column. Keyed on the ledger's
+  // own `memberId` — a points row cannot be traced to one session (the snapshot
+  // mints a fresh id and the visit it names is deleted), so this is the finest
+  // grain the schema supports.
+  final earnedBy = <String, int>{};
   for (final row in ledger) {
     switch (memberPointKindFromName(row.kind)) {
       case MemberPointKind.earn:
         earned += row.delta;
+        earnedBy[row.memberId] = (earnedBy[row.memberId] ?? 0) + row.delta;
       case MemberPointKind.redeem:
         redeemed += -row.delta;
       case MemberPointKind.adjust:
@@ -861,6 +964,7 @@ Future<Map<String, dynamic>> memberReportSection(
         // subtracted from whichever side it belongs to rather than reported.
         if (row.delta < 0) {
           earned += row.delta;
+          earnedBy[row.memberId] = (earnedBy[row.memberId] ?? 0) + row.delta;
         } else {
           redeemed -= row.delta;
         }
@@ -886,7 +990,7 @@ Future<Map<String, dynamic>> memberReportSection(
   final top = spendBy.keys.toList()
     ..sort((a, b) => (spendBy[b] ?? 0).compareTo(spendBy[a] ?? 0));
   final topRows = <Map<String, dynamic>>[];
-  for (final id in top.take(10)) {
+  for (final id in top.take(_topRankLimit)) {
     final name = await _nameOf(db, id);
     topRows.add({
       'memberId': id,
@@ -895,11 +999,15 @@ Future<Map<String, dynamic>> memberReportSection(
       'name': name,
       'visits': visitsBy[id] ?? 0,
       'spend': spendBy[id] ?? 0,
+      'points': earnedBy[id] ?? 0,
     });
   }
 
   return {
     'enabled': cfg.enabled,
+    // The points program runs independently of membership itself, so the client
+    // hides the points column rather than drawing a column of structural zeros.
+    'pointsEnabled': cfg.pointsEnabled,
     'enrolled': enrolled.length,
     'activeMembers': spendBy.length,
     'memberBills': memberBills,
@@ -917,5 +1025,9 @@ Future<Map<String, dynamic>> memberReportSection(
     // is only ever an estimate, which is why it is named one.
     'liabilityEstimate': owedPoints * cfg.pointValue,
     'top': topRows,
+    // Members who traded in the window but fell off the end of the list. Sent
+    // as a count so the client can say "+380 lainnya" rather than implying the
+    // hundredth name is the last one.
+    'topTruncated': spendBy.length - topRows.length,
   };
 }

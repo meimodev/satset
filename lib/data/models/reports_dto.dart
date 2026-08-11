@@ -448,6 +448,12 @@ class MembersSectionDto with _$MembersSectionDto {
   const factory MembersSectionDto({
     /// False ⇒ the venue does not run a program, and the section is not drawn.
     @Default(false) bool enabled,
+
+    /// The points program runs (or not) independently of membership. False ⇒
+    /// the points figures and the ranked list's points column are **hidden**,
+    /// not zeroed — a zero says "earned nothing", which is a different and
+    /// false statement from "this venue does not run points".
+    @Default(false) bool pointsEnabled,
     @Default(0) int enrolled,
     @Default(0) int activeMembers,
     @Default(0) int memberBills,
@@ -465,6 +471,10 @@ class MembersSectionDto with _$MembersSectionDto {
     /// construction — the rate can move before they are spent.
     @Default(0) int liabilityEstimate,
     @Default(<MemberTopRowDto>[]) List<MemberTopRowDto> top,
+
+    /// Members who traded in the window beyond the end of [top]. Shown as a
+    /// tail count, so the hundredth name never reads as the last one.
+    @Default(0) int topTruncated,
   }) = _MembersSectionDto;
 
   factory MembersSectionDto.fromJson(Map<String, dynamic> json) =>
@@ -480,7 +490,17 @@ class MemberTopRowDto with _$MemberTopRowDto {
     String? name,
     @Default(0) int visits,
     @Default(0) int spend,
+
+    /// Points earned in the window. Hidden by the section when the points
+    /// program is off; see [MembersSectionDto.pointsEnabled].
+    @Default(0) int points,
   }) = _MemberTopRowDto;
+
+  const MemberTopRowDto._();
+
+  /// What one visit was worth on average. Derived, never sent — the two figures
+  /// it divides are already on the wire.
+  int get avgSpend => visits == 0 ? 0 : spend ~/ visits;
 
   factory MemberTopRowDto.fromJson(Map<String, dynamic> json) =>
       _$MemberTopRowDtoFromJson(json);

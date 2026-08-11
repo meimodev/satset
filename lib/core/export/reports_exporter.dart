@@ -116,6 +116,36 @@ String buildReportsCsv(
     rows.add(csvRow([c.name, _pct(c.shareThisWeek), _pct(c.shareLastWeek)]));
   }
 
+  // Keanggotaan — the ranked list, exactly as the section ranks it. Only when
+  // the venue runs a program; the points column follows its own toggle, so an
+  // export never carries a column of structural zeros.
+  if (s.members.enabled && s.members.top.isNotEmpty) {
+    section(l.rptMembersTop);
+    rows.add(
+      csvRow([
+        l.rptMembersColName,
+        l.rptMembersColVisits,
+        l.rptMembersColAvg,
+        if (s.members.pointsEnabled) l.rptMembersColPoints,
+        l.rptMembersColSpend,
+      ]),
+    );
+    for (final m in s.members.top) {
+      rows.add(
+        csvRow([
+          m.name ?? l.rptMembersGone,
+          m.visits,
+          formatIDR(m.avgSpend),
+          if (s.members.pointsEnabled) m.points,
+          formatIDR(m.spend),
+        ]),
+      );
+    }
+    if (s.members.topTruncated > 0) {
+      rows.add(csvRow([l.rptMembersMore(s.members.topTruncated)]));
+    }
+  }
+
   // Hourly sales.
   section(l.expHourlySales);
   rows.add(csvRow([l.expColHour, l.expColValue]));
@@ -249,6 +279,42 @@ Future<Uint8List> buildReportsPdf(
             ],
             numericFrom: 1,
           ),
+        ],
+
+        // Keanggotaan — the ranked list. Absent when the venue runs no
+        // program, and the points column follows its own toggle.
+        if (s.members.enabled && s.members.top.isNotEmpty) ...[
+          pw.SizedBox(height: 14),
+          pdfSectionTitle(l.rptMembersTop),
+          pdfTable(
+            l,
+            headers: [
+              l.rptMembersColName,
+              l.rptMembersColVisits,
+              l.rptMembersColAvg,
+              if (s.members.pointsEnabled) l.rptMembersColPoints,
+              l.rptMembersColSpend,
+            ],
+            rows: [
+              for (final m in s.members.top)
+                [
+                  m.name ?? l.rptMembersGone,
+                  '${m.visits}',
+                  formatIDR(m.avgSpend),
+                  if (s.members.pointsEnabled) '${m.points}',
+                  formatIDR(m.spend),
+                ],
+            ],
+            numericFrom: 1,
+          ),
+          if (s.members.topTruncated > 0)
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(top: 6),
+              child: pw.Text(
+                l.rptMembersMore(s.members.topTruncated),
+                style: const pw.TextStyle(fontSize: 8),
+              ),
+            ),
         ],
 
         // Hourly.
