@@ -31,6 +31,9 @@ _$ReportsSnapshotDtoImpl _$$ReportsSnapshotDtoImplFromJson(
   members: json['members'] == null
       ? const MembersSectionDto()
       : MembersSectionDto.fromJson(json['members'] as Map<String, dynamic>),
+  jamKerja: json['jamKerja'] == null
+      ? const JamKerjaSectionDto()
+      : JamKerjaSectionDto.fromJson(json['jamKerja'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$$ReportsSnapshotDtoImplToJson(
@@ -48,6 +51,7 @@ Map<String, dynamic> _$$ReportsSnapshotDtoImplToJson(
   'moneyAudit': instance.moneyAudit,
   'kas': instance.kas,
   'members': instance.members,
+  'jamKerja': instance.jamKerja,
 };
 
 _$FilterOptionsDtoImpl _$$FilterOptionsDtoImplFromJson(
@@ -540,6 +544,51 @@ Map<String, dynamic> _$$KasSectionDtoImplToJson(_$KasSectionDtoImpl instance) =>
       'byCategory': instance.byCategory,
       'count': instance.count,
     };
+
+_$JamKerjaSectionDtoImpl _$$JamKerjaSectionDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$JamKerjaSectionDtoImpl(
+  staff:
+      (json['staff'] as List<dynamic>?)
+          ?.map((e) => JamKerjaRowDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <JamKerjaRowDto>[],
+  dayStartHour: (json['dayStartHour'] as num?)?.toInt() ?? 4,
+  unclosed: (json['unclosed'] as num?)?.toInt() ?? 0,
+);
+
+Map<String, dynamic> _$$JamKerjaSectionDtoImplToJson(
+  _$JamKerjaSectionDtoImpl instance,
+) => <String, dynamic>{
+  'staff': instance.staff,
+  'dayStartHour': instance.dayStartHour,
+  'unclosed': instance.unclosed,
+};
+
+_$JamKerjaRowDtoImpl _$$JamKerjaRowDtoImplFromJson(Map<String, dynamic> json) =>
+    _$JamKerjaRowDtoImpl(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      minutes: (json['minutes'] as num?)?.toInt() ?? 0,
+      shifts: (json['shifts'] as num?)?.toInt() ?? 0,
+      days: (json['days'] as num?)?.toInt() ?? 0,
+      unclosed: (json['unclosed'] as num?)?.toInt() ?? 0,
+      medianFirstIn: (json['medianFirstIn'] as num?)?.toInt(),
+      lastSeen: json['lastSeen'] as String?,
+    );
+
+Map<String, dynamic> _$$JamKerjaRowDtoImplToJson(
+  _$JamKerjaRowDtoImpl instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'minutes': instance.minutes,
+  'shifts': instance.shifts,
+  'days': instance.days,
+  'unclosed': instance.unclosed,
+  'medianFirstIn': instance.medianFirstIn,
+  'lastSeen': instance.lastSeen,
+};
 
 _$MembersSectionDtoImpl _$$MembersSectionDtoImplFromJson(
   Map<String, dynamic> json,

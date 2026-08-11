@@ -30,6 +30,11 @@ class ReportsSnapshotDto with _$ReportsSnapshotDto {
     /// not a channel — folding a give-away into [sales] would let it read as
     /// revenue (ADR-0095).
     @Default(MembersSectionDto()) MembersSectionDto members,
+
+    /// Attendance over the same window. Deliberately not part of [staff]: that
+    /// section is what someone sold, this one is whether they were here, and a
+    /// slow Tuesday must not read as a slack one.
+    @Default(JamKerjaSectionDto()) JamKerjaSectionDto jamKerja,
   }) = _ReportsSnapshotDto;
 
   factory ReportsSnapshotDto.fromJson(Map<String, dynamic> json) =>
@@ -374,6 +379,61 @@ class KasSectionDto with _$KasSectionDto {
 
   factory KasSectionDto.fromJson(Map<String, dynamic> json) =>
       _$KasSectionDtoFromJson(json);
+}
+
+/// The Jam kerja (attendance) block — [[Shift]] hours per staff member.
+///
+/// Hours come only from shifts somebody signed out of. A shift the business-day
+/// rollover had to retire contributes to [JamKerjaRowDto.unclosed] and nothing
+/// else, because its length is an artefact of the boundary rather than a
+/// measurement (ADR-0096).
+@freezed
+class JamKerjaSectionDto with _$JamKerjaSectionDto {
+  const factory JamKerjaSectionDto({
+    @Default(<JamKerjaRowDto>[]) List<JamKerjaRowDto> staff,
+
+    /// The venue's rollover hour, so the screen can turn [
+    /// JamKerjaRowDto.medianFirstIn] back into a clock time.
+    @Default(4) int dayStartHour,
+
+    /// Shifts nobody signed out of, across everyone. The section's headline
+    /// caveat: a venue with a high number here is not reading real hours.
+    @Default(0) int unclosed,
+  }) = _JamKerjaSectionDto;
+
+  factory JamKerjaSectionDto.fromJson(Map<String, dynamic> json) =>
+      _$JamKerjaSectionDtoFromJson(json);
+}
+
+/// One staff member's attendance over the window.
+@freezed
+class JamKerjaRowDto with _$JamKerjaRowDto {
+  const factory JamKerjaRowDto({
+    required String id,
+    required String name,
+
+    /// Minutes actually worked — closed shifts only.
+    @Default(0) int minutes,
+    @Default(0) int shifts,
+
+    /// Distinct business days with at least one shift. Lower than [shifts]
+    /// whenever a day was split by a handover.
+    @Default(0) int days,
+    @Default(0) int unclosed,
+
+    /// Median minutes **after the venue's rollover** that this person clocked
+    /// in — not a wall clock, so it compares across venues with different
+    /// business-day starts. Null when they never clocked in.
+    int? medianFirstIn,
+
+    /// The last thing an unclosed shift of theirs actually did. The honest
+    /// answer to "when did they really stop"; null when nothing they did in it
+    /// was auditable.
+    String? lastSeen,
+  }) = _JamKerjaRowDto;
+
+  factory JamKerjaRowDto.fromJson(Map<String, dynamic> json) =>
+      _$JamKerjaRowDtoFromJson(json);
 }
 
 /// The [[Keanggotaan (membership)]] block.

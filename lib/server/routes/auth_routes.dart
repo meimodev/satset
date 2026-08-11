@@ -45,7 +45,7 @@ Router authRoutes(ServerAuth auth) {
     final caps = role == null
         ? const <String>[]
         : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
-    final shiftStartedAt = await resumeOrOpenShift(auth.db, session.userId);
+    final shiftStartedAt = await openShift(auth.db, session.userId);
     return Response.ok(
       jsonEncode({
         'token': session.token,
@@ -59,27 +59,17 @@ Router authRoutes(ServerAuth auth) {
     );
   });
 
-  /// Drops the staff session. `{"endShift": true}` additionally closes the
-  /// shift — the difference between "Keluar" (hand the handset over, shift
-  /// keeps running) and "Akhiri shift & keluar". Both effects land in one
-  /// request so there is no window where the session is gone but the shift
-  /// is still open. See ADR-0065.
+  /// Drops the staff session **and closes the shift** — one and the same act
+  /// since ADR-0096. Both effects land in one request so there is no window
+  /// where the session is gone but the shift is still open.
+  ///
+  /// There is no longer a body: the old `{"endShift": true}` field chose
+  /// between the two exits, and there is only one exit now.
   r.post('/auth/logout', (Request req) async {
     final t = _bearer(req);
     // Resolve before revoking — afterwards the token no longer identifies anyone.
     final user = await auth.resolveBearer(t);
-    var alsoEndShift = false;
-    try {
-      final raw = await req.readAsString();
-      if (raw.isNotEmpty) {
-        final body = jsonDecode(raw) as Map<String, dynamic>;
-        alsoEndShift = body['endShift'] == true;
-      }
-    } catch (_) {
-      // A bodiless or malformed logout is still a logout; it just keeps the
-      // shift open, which is the non-destructive reading.
-    }
-    if (alsoEndShift && user != null) await endShift(auth.db, user.id);
+    if (user != null) await endShift(auth.db, user.id);
     if (t != null) await auth.revoke(t);
     return Response(204);
   });
@@ -121,10 +111,10 @@ Router authRoutes(ServerAuth auth) {
     final caps = role == null
         ? const <String>[]
         : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
-    // Read-only: a profile fetch must not *start* a shift, so a stamp older
-    // than today's rollover reports as null rather than being re-anchored.
-    // Matters on session restore — a token that survives overnight would
-    // otherwise hand the client yesterday's clock. Only a login opens a shift.
+    // A profile fetch must never *start* a shift — only a login does that. It
+    // does retire a forgotten one: a row left open past its own rollover is
+    // closed here and reports as null, so a token that survives overnight
+    // cannot hand the client yesterday's clock.
     final shift = await openShiftOf(auth.db, user.id);
     return Response.ok(
       jsonEncode({
@@ -136,6 +126,8 @@ Router authRoutes(ServerAuth auth) {
         'capabilities': caps,
         'avatarColorHex': user.avatarColorHex,
         'shiftStartedAt': shift?.toIso8601String(),
+        // Says the null above is an answer, not a shrug — see `MeDto`.
+        'shiftTracked': true,
       }),
       headers: {'content-type': 'application/json'},
     );

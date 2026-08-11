@@ -49,6 +49,7 @@ part 'database.g.dart';
     CashEntries,
     Members,
     MemberPoints,
+    Shifts,
     DemoStates,
   ],
 )
@@ -69,7 +70,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 51;
+  int get schemaVersion => 53;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -1016,6 +1017,12 @@ class AppDatabase extends _$AppDatabase {
           type: 'INTEGER NOT NULL DEFAULT 10',
         );
       }
+      // One arm at 53, not 52, because of a real failure: a build stamped 52
+      // before it carried the table, so a device that ran it sits at the
+      // current version with no `shifts` in it and no arm left to run — every
+      // read of the table 500s, forever. Re-checking at 53 repairs that
+      // database, and the check is what makes re-running it harmless.
+      if (from < 53) await _ensureShiftsTable(m);
     },
     onCreate: (m) async {
       await m.createAll();
@@ -1030,6 +1037,7 @@ class AppDatabase extends _$AppDatabase {
       );
       await _createDiscountIndexes();
       await _createMemberIndexes();
+      await _createShiftIndexes();
       await _createLookupIndexes();
       await into(venueSettings).insertOnConflictUpdate(
         VenueSettingsCompanion.insert(
@@ -1161,6 +1169,47 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
+  /// Create `shifts` if it is missing, and move any surviving `shiftStartedAt`
+  /// stamp into it (ADR-0096).
+  ///
+  /// A shift becomes a row rather than a stamp, so the hours report has a
+  /// history to read. Backfill first, drop second: whoever is mid-shift at the
+  /// moment of the upgrade keeps their clock, as an open row.
+  ///
+  /// Written to be safe to run on a database that already has the table,
+  /// because a version arm is a promise about what ran once and this one has
+  /// already been broken — see the caller.
+  Future<void> _ensureShiftsTable(Migrator m) async {
+    if (!await _hasTable('shifts')) {
+      await m.createTable(shifts);
+    }
+    await _createShiftIndexes();
+    // Guarded: a database old enough to predate the stamp has no column to
+    // read, and an unguarded SELECT would abort the whole upgrade on it.
+    if (await _hasColumn('users', 'shift_started_at')) {
+      await customStatement(
+        "INSERT INTO shifts (id, user_id, started_at) "
+        "SELECT 'mig-' || id, id, shift_started_at FROM users "
+        'WHERE shift_started_at IS NOT NULL',
+      );
+      // Two places that can hold the same clock are two places that can
+      // disagree. Tolerated if it fails: on a sqlite too old for DROP COLUMN
+      // the column lingers, unreferenced by any Dart in the app.
+      try {
+        await customStatement('ALTER TABLE users DROP COLUMN shift_started_at');
+      } catch (_) {}
+    }
+  }
+
+  /// The open-shift lookup filters `user_id` then `ended_at IS NULL`; the hours
+  /// report scans a date range and groups by user. One composite serves both.
+  Future<void> _createShiftIndexes() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS shifts_user_started '
+      'ON shifts(user_id, started_at)',
+    );
+  }
+
   Future<void> _createStockIndexes() async {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS recipe_lines_owner '
@@ -1244,6 +1293,19 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> _safeAddColumn(String column, {String type = 'TEXT'}) =>
       _safeAddColumnOn('users', column, type: type);
+
+  Future<bool> _hasColumn(String table, String column) async {
+    final cols = await customSelect("PRAGMA table_info('$table')").get();
+    return cols.any((r) => r.read<String>('name') == column);
+  }
+
+  Future<bool> _hasTable(String table) async {
+    final rows = await customSelect(
+      "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+      variables: [Variable<String>(table)],
+    ).get();
+    return rows.isNotEmpty;
+  }
 
   Future<void> _safeAddColumnOn(
     String table,

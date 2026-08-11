@@ -11,6 +11,7 @@ import 'package:satset/server/members.dart';
 import 'package:satset/server/routes/tables_routes.dart'
     show snapshotVisitAndDelete;
 import 'package:satset/server/routes/tickets_routes.dart' show submitOrder;
+import 'package:satset/server/shift.dart';
 import 'package:satset/server/stock.dart';
 import 'package:satset/server/ws_hub.dart';
 
@@ -119,6 +120,11 @@ Future<void> clearSampleData(AppDatabase db, {WsHub? hub}) async {
     await (db.delete(
       db.auditEntries,
     )..where((a) => a.id.like('$samplePrefix%'))).go();
+    // The fabricated month's attendance goes with the month. A real shift
+    // opened since carries no prefix and is left standing.
+    await (db.delete(
+      db.shifts,
+    )..where((s) => s.id.like('$samplePrefix%'))).go();
     await (db.delete(
       db.receipts,
     )..where((r) => r.id.like('$samplePrefix%'))).go();
@@ -198,6 +204,15 @@ Future<void> seedHistory(
       .map((u) => u.id)
       .toList();
   final actors = waiters.isEmpty ? staff.map((u) => u.id).toList() : waiters;
+  // Attendance covers everyone, not only the people the month attributes bills
+  // to: a cook clocks in exactly like a waiter, and a Jam kerja block that
+  // quietly omitted the kitchen would teach the owner it does not cover them.
+  // The Firebase admin row is excluded — it is provisioned on first sign-in and
+  // never worked a shift.
+  final shiftStaff = staff
+      .where((u) => u.firebaseUid == null)
+      .map((u) => u.id)
+      .toList();
   // Discounts are approved by someone other than the waiter asking for one
   // (ADR-0037) — the admin row, or the first staff row on a venue without.
   final approver = staff.isEmpty ? null : staff.first.id;
@@ -297,6 +312,21 @@ Future<void> seedHistory(
     final load = weekdayLoad[day.weekday] ?? 1.0;
     final bills = ((34 + rng.nextInt(14)) * load).round();
 
+    // Who is in today, decided before a single order is planned. An absent
+    // waiter must take no bills — deriving the shift from orders they should
+    // never have taken would put a contradiction in the seeded month.
+    final present = {
+      for (final id in shiftStaff)
+        if (rng.nextDouble() >= _attendanceOf(id).absentRate) id,
+    };
+    final dayActors = [for (final id in actors) if (present.contains(id)) id];
+    final todayActors = dayActors.isEmpty ? actors : dayActors;
+    // First and last order per person, which is what each shift is bracketed
+    // around — a clock-out at 18:00 with a bill at 21:00 is the kind of thing
+    // an owner notices the moment they cross-read two sections.
+    final firstBy = <String, DateTime>{};
+    final lastBy = <String, DateTime>{};
+
     // Plan the day first so consumption is known before any stock moves —
     // restocks are sized from the sales they cover (ADR-0052 §6), and the
     // production path *rejects* uncovered lines, so under-buying silently
@@ -367,7 +397,15 @@ Future<void> seedHistory(
     for (final o in orders) {
       final table = floor[rng.nextInt(floor.length)];
       final closedAt = o.openedAt.add(Duration(minutes: 45 + rng.nextInt(60)));
-      final actor = actors.isEmpty ? null : actors[rng.nextInt(actors.length)];
+      final actor = todayActors.isEmpty
+          ? null
+          : todayActors[rng.nextInt(todayActors.length)];
+      if (actor != null) {
+        final f = firstBy[actor];
+        if (f == null || o.openedAt.isBefore(f)) firstBy[actor] = o.openedAt;
+        final l = lastBy[actor];
+        if (l == null || closedAt.isAfter(l)) lastBy[actor] = closedAt;
+      }
 
       planned += o.lines.length;
       final res = await submitOrder(
@@ -648,6 +686,19 @@ Future<void> seedHistory(
         ),
       );
     }
+
+    // Shifts last, once the day's audit rows exist: `endShift` reads the last
+    // auditable thing a shift did, and on a forgotten sign-out that timestamp
+    // is the only honest answer to "when did they actually stop".
+    await _seedShifts(
+      db,
+      rng,
+      day: day,
+      present: present,
+      firstBy: firstBy,
+      lastBy: lastBy,
+      orders: orders,
+    );
     onDay?.call(historyDays - d + 1, historyDays);
   }
 
@@ -657,6 +708,76 @@ Future<void> seedHistory(
     throw StateError(
       'sample seed lost lines to stock rejection: $landed of $planned',
     );
+  }
+}
+
+StaffAttendance _attendanceOf(String id) =>
+    staffAttendance[id] ?? defaultAttendance;
+
+/// Write one seeded day's [[Shift]] rows, through `openShift` / `endShift` — the
+/// same writer the live path uses, for the same reason the orders above go
+/// through `submitOrder`.
+///
+/// A forgotten sign-out is seeded by simply **not** calling `endShift`. The row
+/// stays open, and the next day's `openShift` retires it at its own rollover
+/// with `endedBy: rollover`, which is exactly what happens to a handset somebody
+/// put down and walked away from. Nothing here fabricates that state directly.
+Future<void> _seedShifts(
+  AppDatabase db,
+  Random rng, {
+  required DateTime day,
+  required Set<String> present,
+  required Map<String, DateTime> firstBy,
+  required Map<String, DateTime> lastBy,
+  required List<_PlannedOrder> orders,
+}) async {
+  if (orders.isEmpty) return;
+  // The service window, for staff the month attributes no bills to — the
+  // kitchen works the same hours without ever appearing as an actor.
+  final serviceOpen = orders.first.openedAt;
+  final serviceClose = orders.last.openedAt.add(const Duration(minutes: 75));
+
+  int between(int lo, int hi) => lo + rng.nextInt(hi - lo + 1);
+
+  for (final id in present) {
+    final a = _attendanceOf(id);
+    final firstOrder = firstBy[id] ?? serviceOpen;
+    final lastOrder = lastBy[id] ?? serviceClose;
+    final start = firstOrder.subtract(
+      Duration(minutes: between(a.earlyMin, a.earlyMax)),
+    );
+    final end = lastOrder.add(
+      Duration(minutes: between(closingDownMin, closingDownMax)),
+    );
+    if (!end.isAfter(start)) continue;
+
+    final forgot = rng.nextDouble() < a.forgetRate;
+    final split =
+        !forgot &&
+        rng.nextDouble() < a.splitRate &&
+        end.difference(start).inMinutes > 240;
+
+    if (split) {
+      // A handover: the handset changes hands mid-service and comes back. Two
+      // rows, one day — which is the whole reason "hari" and "shift" are
+      // different columns.
+      final total = end.difference(start).inMinutes;
+      final gapStart = start.add(Duration(minutes: between(total ~/ 3, total ~/ 2)));
+      final gap = between(35, 70);
+      await openShift(db, id, at: start, idPrefix: samplePrefix);
+      await endShift(db, id, at: gapStart);
+      await openShift(
+        db,
+        id,
+        at: gapStart.add(Duration(minutes: gap)),
+        idPrefix: samplePrefix,
+      );
+      await endShift(db, id, at: end);
+      continue;
+    }
+
+    await openShift(db, id, at: start, idPrefix: samplePrefix);
+    if (!forgot) await endShift(db, id, at: end);
   }
 }
 

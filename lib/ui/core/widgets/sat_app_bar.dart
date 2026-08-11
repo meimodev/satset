@@ -323,18 +323,32 @@ class _ShiftCluster extends ConsumerWidget {
     final startedRaw = ref.watch(
       authStateProvider.select((s) => s.user?.shiftStartedAt),
     );
+    // No shift is a state, not a zero. The counter disappears rather than
+    // resting at zero, because a clock reading zero beside the word SHIFT is a
+    // shift that just started, and this is a shift that has ended — the
+    // rollover retired it, or the host never opened one (ADR-0096). An
+    // unparseable stamp is a different thing and still shows zero: it means a
+    // shift we cannot read, not the absence of one. That zero goes through
+    // [formatElapsed] too, so it reads in the counter's own vocabulary ("0d")
+    // rather than in a clock shape this pill never otherwise speaks.
     final started = startedRaw == null ? null : DateTime.tryParse(startedRaw);
-    final elapsed = started == null
-        ? '00:00:00'
-        : formatElapsed(context.l10n, now.difference(started));
+    final elapsed = formatElapsed(
+      context.l10n,
+      started == null ? Duration.zero : now.difference(started),
+    );
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(context.l10n.shiftLabel, style: SatType.caption(color: sc.textLo)),
-        const SizedBox(width: Sp.s1h),
-        Text(elapsed, style: SatType.monoM(color: hi)),
-        const SizedBox(width: Sp.s3h),
+        if (startedRaw != null) ...[
+          Text(
+            context.l10n.shiftLabel,
+            style: SatType.caption(color: sc.textLo),
+          ),
+          const SizedBox(width: Sp.s1h),
+          Text(elapsed, style: SatType.monoM(color: hi)),
+          const SizedBox(width: Sp.s3h),
+        ],
         Text(formatBarClockId(now), style: SatType.monoM(color: sc.textMd)),
       ],
     );

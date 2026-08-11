@@ -5308,6 +5308,9 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String get meNoShift => 'No shift running';
+
+  @override
   String get meAuditEmpty =>
       'No audit entries yet. Voids, comps and post-send changes show up here.';
 
@@ -5635,7 +5638,7 @@ class AppL10nEn extends AppL10n {
   String get meKpiCovers => 'Covers served';
 
   @override
-  String get meEndShiftAndLogout => 'End shift & sign out';
+  String get meSignOut => 'Sign out';
 
   @override
   String get liaFireNow => 'Fire now';
@@ -6746,9 +6749,6 @@ class AppL10nEn extends AppL10n {
   String get meEndAdminTitle => 'End admin session?';
 
   @override
-  String get meEndShiftTitle => 'End shift?';
-
-  @override
   String meEndServerBodyLive(int n) {
     String _temp0 = intl.Intl.pluralLogic(
       n,
@@ -6764,14 +6764,7 @@ class AppL10nEn extends AppL10n {
       'Signing out shuts the server down. Staff cannot connect until an admin signs in again.';
 
   @override
-  String get meEndShiftBody =>
-      'The shift closes and its counters stop. Signing in again starts a new one. To hand the device over without closing the shift, use \"Log out\".';
-
-  @override
   String get meEndAndShutdown => 'Sign out & shut down';
-
-  @override
-  String get meEndShiftConfirm => 'End shift';
 
   @override
   String get meNoOpenTickets => 'No open tickets';
@@ -7674,4 +7667,67 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get cshMemberRedeemAll => 'Redeem the lot';
+
+  @override
+  String get rptSecJamKerja => 'Hours';
+
+  @override
+  String rptJamKerjaSub(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n staff',
+      one: '1 staff',
+    );
+    return '$_temp0 · from closed shifts';
+  }
+
+  @override
+  String get rptJamEmpty => 'No shifts recorded in this range.';
+
+  @override
+  String rptJamHours(int h, int m) {
+    return '${h}h ${m}m';
+  }
+
+  @override
+  String rptJamDaysShifts(int d, int s) {
+    String _temp0 = intl.Intl.pluralLogic(
+      d,
+      locale: localeName,
+      other: '$d days',
+      one: '1 day',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      s,
+      locale: localeName,
+      other: '$s shifts',
+      one: '1 shift',
+    );
+    return '$_temp0 · $_temp1';
+  }
+
+  @override
+  String rptJamFirstIn(String clock) {
+    return 'in ±$clock';
+  }
+
+  @override
+  String rptJamUnclosed(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n shifts not closed',
+      one: '1 shift not closed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String rptJamLastSeen(String clock) {
+    return 'last activity $clock';
+  }
+
+  @override
+  String get rptJamUnclosedNote => 'Unclosed shifts count no hours.';
 }

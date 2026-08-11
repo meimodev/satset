@@ -8545,6 +8545,12 @@ abstract class AppL10n {
   /// **'MULAI {start} · {elapsed} BERJALAN'**
   String meShiftLine(String start, String elapsed);
 
+  /// No description provided for @meNoShift.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada shift berjalan'**
+  String get meNoShift;
+
   /// No description provided for @meAuditEmpty.
   ///
   /// In id, this message translates to:
@@ -9091,11 +9097,11 @@ abstract class AppL10n {
   /// **'Cover dilayani'**
   String get meKpiCovers;
 
-  /// No description provided for @meEndShiftAndLogout.
+  /// No description provided for @meSignOut.
   ///
   /// In id, this message translates to:
-  /// **'Akhiri shift & keluar'**
-  String get meEndShiftAndLogout;
+  /// **'Keluar'**
+  String get meSignOut;
 
   /// No description provided for @liaFireNow.
   ///
@@ -10819,12 +10825,6 @@ abstract class AppL10n {
   /// **'Akhiri sesi admin?'**
   String get meEndAdminTitle;
 
-  /// Dialog title when a waiter ends their shift.
-  ///
-  /// In id, this message translates to:
-  /// **'Akhiri shift?'**
-  String get meEndShiftTitle;
-
   /// Sign-out warning on the server device while tables are still live.
   ///
   /// In id, this message translates to:
@@ -10837,23 +10837,11 @@ abstract class AppL10n {
   /// **'Keluar akan mematikan server. Staff tidak bisa menyambung sampai admin masuk lagi.'**
   String get meEndServerBody;
 
-  /// Explains that ending a shift stops the counters, unlike a plain log out.
-  ///
-  /// In id, this message translates to:
-  /// **'Shift ditutup dan hitungannya berhenti. Masuk lagi akan memulai shift baru. Untuk menyerahkan perangkat tanpa menutup shift, pakai \"Keluar\".'**
-  String get meEndShiftBody;
-
   /// Confirm button: sign out and stop the embedded server.
   ///
   /// In id, this message translates to:
   /// **'Keluar & matikan'**
   String get meEndAndShutdown;
-
-  /// Confirm button: close the shift.
-  ///
-  /// In id, this message translates to:
-  /// **'Akhiri shift'**
-  String get meEndShiftConfirm;
 
   /// Shift summary when nothing is in flight.
   ///
@@ -12318,6 +12306,60 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Tukar semua'**
   String get cshMemberRedeemAll;
+
+  /// Report section title: staff attendance hours.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam kerja'**
+  String get rptSecJamKerja;
+
+  /// Subtitle: how many staff, and that hours come only from closed shifts.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} staf}} · dari shift yang ditutup'**
+  String rptJamKerjaSub(int n);
+
+  /// Empty state when no shift was recorded in the range.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada shift tercatat di rentang ini.'**
+  String get rptJamEmpty;
+
+  /// Worked time, hours and minutes.
+  ///
+  /// In id, this message translates to:
+  /// **'{h}j {m}m'**
+  String rptJamHours(int h, int m);
+
+  /// Days worked and shift count for one staff member.
+  ///
+  /// In id, this message translates to:
+  /// **'{d, plural, other{{d} hari}} · {s, plural, other{{s} shift}}'**
+  String rptJamDaysShifts(int d, int s);
+
+  /// Median clock-in time for one staff member.
+  ///
+  /// In id, this message translates to:
+  /// **'masuk ±{clock}'**
+  String rptJamFirstIn(String clock);
+
+  /// Badge: shifts the rollover had to close.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} shift tak ditutup}}'**
+  String rptJamUnclosed(int n);
+
+  /// When an unclosed shift last did something auditable.
+  ///
+  /// In id, this message translates to:
+  /// **'aktivitas terakhir {clock}'**
+  String rptJamLastSeen(String clock);
+
+  /// Caveat under the section title when unclosed shifts exist.
+  ///
+  /// In id, this message translates to:
+  /// **'Shift yang tak ditutup tidak dihitung sebagai jam kerja.'**
+  String get rptJamUnclosedNote;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

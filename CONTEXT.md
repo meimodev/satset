@@ -408,7 +408,7 @@ The shrinking window the [[Admin eligibility (T&C kill switch)|staleness guard]]
 
 The embedded LAN server's running state is bound to a valid admin session. It starts when an [[Admin session (Firebase-gated)|admin]] signs in, and is **killed on admin logout or loss of [[Admin eligibility (T&C kill switch)|eligibility]]** — connected staff/client devices are disconnected and **cannot reconnect until an admin successfully re-signs-in**. The admin session is thus the venue's on/off switch. A logout while live tables exist warns first ("X meja aktif, staff akan terputus") but still proceeds — the kill is intentional.
 
-Because of this, a Server-mode admin is the one user offered **no shift-preserving exit**: the two-exit model other roles get ("Keluar" vs "Akhiri shift & keluar", see [[Shift]]) would promise to keep their shift running while taking the venue offline, so their device shows only the shift-ending exit. Staff and [[Owner|owners]], who host nothing, are unaffected.
+Because of this, a Server-mode admin is the one user whose **exit is confirmed**. Everyone else's exit is prominent and unconfirmed — it ends a [[Shift]] and nothing more, and it happens once a service. On the host it takes the venue offline, which is not a thing to do by mis-tap. Staff and [[Owner|owners]], who host nothing, are unaffected.
 
 _Avoid_: leaving the server running after the admin signs out; offering a host admin a "lightweight" sign-out.
 
@@ -546,24 +546,35 @@ Between `recommended` and `latest` the [[Main Device]] alone carries a **persist
 **Only the [[Main Device]] ever installs.** It downloads the signed APK from the GitHub Release the website already links to and hands it to Android's package installer. Every other device — staff client and admin-client alike — is told to fetch an admin, because SatSet is distributed by hand and updating a device means someone holding it. _Avoid_: a staff-installable update; a block that also tears down the server; a nag on a device that cannot act on it; release notes written for developers on a screen read by a restaurant owner.
 
 ### Shift
-**ID · EN** — Shift · Shift; Ringkasan shift · Shift summary; Saya · Me. Exits: "Keluar" · "Sign out"; "Akhiri shift & keluar" · "End shift & sign out". The two exits must stay as visibly different in English as in Indonesian — one keeps the clock running, the other stops it.
+**ID · EN** — Shift · Shift; Ringkasan shift · Shift summary; Saya · Me. The exit: "Keluar" · "Sign out". There is exactly one, so it needs no qualifier — the longer "Akhiri shift & keluar" named the exit that had a twin to be told apart from, and the twin is gone.
 
-One staff member's stretch of work — **not** a fixed roster block, and **not** the same thing as a login. It **outlives the [[Pairing vs staff session|staff session]] that opened it**: signing out with **"Keluar"** leaves the shift running, so the next PIN sign-in *resumes* it, on that handset or a different one. Handsets are shared, so this is what lets a waiter hand a device over or swap to another without losing their clock.
+One staff member's stretch of work — **not** a fixed roster block. It **is** the [[Pairing vs staff session|staff session]]: it opens at PIN sign-in and closes at sign-out, and a later sign-in never resumes it, it opens a new one. Handsets are shared, so handing a device over is a clock-out and a clock-in — deliberately, because a shift that survived a handover could also survive a three-hour disappearance and hide it (ADR-0096, superseding ADR-0065).
 
-Exactly two things end a shift: the explicit **"Akhiri shift & keluar"**, and the **business-day boundary** (`businessDayStartHour`, default 04:00 — the same rollover reports bucket "today" on). The boundary is not a nicety: without it one forgotten sign-out leaks the shift forever and tomorrow's first login inherits a 14-hour clock. Working past midnight therefore stays *one* shift, because 23:00 and 02:00 sit in the same business day.
+Two things end a shift: **signing out**, and the **business-day boundary** (`businessDayStartHour`, default 04:00 — the same rollover reports bucket "today" on). The boundary is not a nicety: without it one forgotten sign-out leaks the shift forever and tomorrow's first login inherits a 14-hour clock. A shift retired that way records both the boundary that closed it and its holder's **last audited act**, and it is **flagged and excluded from hours** — an estimate that looks measured is worse than a gap.
 
-**Server-authoritative** — `Users.shiftStartedAt`, stamped by the host, because surviving a device change is the whole point and device-local storage cannot. Elapsed time is `now − shiftStartedAt`. A client keeps its own `loginAt` only as an offline fallback for a host that has no opinion.
+**Server-authoritative and recorded**, one row per shift in its own table, never derived from sales activity: a kitchen account takes no orders, and prep, setup and cash-up are exactly the diligence being measured. Elapsed time is `now − startedAt`. A client keeps its own `loginAt` only as an offline fallback for a host that has no opinion.
 
-The **Ringkasan shift** ("Saya" tab) is a **live snapshot** of what its owner is holding *right now* — outstanding tickets, seated [[Cover|covers]], tables in hand — plus their own [[Void (item)|void]] [[Audit]] rows for the shift. Closing a table correctly makes those numbers go **down**; that is intended, the screen answers "what is on my plate", not "what did I do tonight". It deliberately carries **no sales figure and no per-hour rate**: both need closed [[Close (table) / Table session|TableSessions]], which clients never receive. See [ADR-0065](docs/adr/0065-a-shift-outlives-the-staff-session.md).
+The **Ringkasan shift** ("Saya" tab) is a **live snapshot** of what its owner is holding *right now* — outstanding tickets, seated [[Cover|covers]], tables in hand — plus their own [[Void (item)|void]] [[Audit]] rows for **the business day** (not the shift: signing out for a break must not empty the list). Closing a table correctly makes those numbers go **down**; that is intended, the screen answers "what is on my plate", not "what did I do tonight". It deliberately carries **no sales figure and no per-hour rate**: both need closed [[Close (table) / Table session|TableSessions]], which clients never receive.
 
-_Avoid_: treating a shift as a scheduled shift-pattern, or as venue-wide (it is per-account); equating sign-out with shift end (only one of the two exits ends it); reading the Saya tab's counts as a shift total.
+_Avoid_: treating a shift as a scheduled shift-pattern, or as venue-wide (it is per-account); expecting a sign-in to resume yesterday's, or today's earlier, shift; reading the Saya tab's counts as a shift total.
+
+### Jam kerja (hours worked)
+**ID · EN** — Jam kerja · Hours worked; "Belum ditutup" · "Not signed out"; Masuk pertama · First sign-in.
+
+The attendance block in Laporan, one row per staff member over the selected range: hours, days worked, [[Shift]] count, median first sign-in, and how many shifts were closed by the rollover instead of by their holder. It answers "who turns up, and when" — the question a roster cannot answer and the sales report answers wrongly.
+
+**Days and shifts are different numbers** on purpose: one person may work one long stretch, another the same day in two, and the pair of numbers is what shows it. **Rollover-closed shifts add no hours** — they appear only in the flag column.
+
+**Read-only.** There is no editing a recorded `endedAt`; an owner who can adjust the hours their staff are judged on is not reading a record. Gated `viewReports`, like every other section.
+
+_Avoid_: reading hours as time *productive* (it is time signed in, and a handover gap is uncounted); treating the unclosed flag as misconduct (it is a forgotten tap); comparing a month against a partial one.
 
 ### Pairing vs staff session
-**Three** independent lifetimes, not two. **Pairing** is the LAN connection to a [[Main Device]] (host URL + pinned TLS fingerprint, the `ApiConfig`), established once by picking the server off mDNS discovery — the client pins the fingerprint advertised in the TXT record and auto-claims over it — and held in secure storage. A **staff session** is one operator's authenticated bearer (the local JWT). A **[[Shift]]** is that operator's stretch of work, and it is **server-side state that outlives the session** — the newest of the three distinctions and the easiest to get wrong.
+**Three** independent lifetimes, not two. **Pairing** is the LAN connection to a [[Main Device]] (host URL + pinned TLS fingerprint, the `ApiConfig`), established once by picking the server off mDNS discovery — the client pins the fingerprint advertised in the TXT record and auto-claims over it — and held in secure storage. A **staff session** is one operator's authenticated bearer (the local JWT). A **[[Shift]]** is that operator's stretch of work; it shares the session's edges but is **server-side state recorded in its own right**, so it outlives the token that opened it as a *record* even though it never outlives it as a *clock*.
 
-**Staff sign-out drops only the session** (revokes the token, clears `AuthState`) and **keeps the pairing** — "the connection to the server is still alive" — so the next operator can PIN in without re-pairing. Whether it also ends the shift depends on *which* exit was used: **"Keluar"** keeps the shift open for the next sign-in to resume, **"Akhiri shift & keluar"** closes it. Contrast the [[Local server lifecycle|admin/Server side]], where admin logout *kills the server* — which is why a Server-mode admin is offered only the shift-ending exit.
+**Staff sign-out drops only the session** (revokes the token, clears `AuthState`) and **keeps the pairing** — "the connection to the server is still alive" — so the next operator can PIN in without re-pairing. It also closes the shift; there is one exit and it does both (ADR-0096). Contrast the [[Local server lifecycle|admin/Server side]], where admin logout *kills the server* — which is why a Server-mode admin's exit is the one that asks first.
 
-_Avoid_: conflating sign-out with un-pairing; assuming a live pairing implies a live session (the data screens still need a session to load); assuming sign-out ends the shift.
+_Avoid_: conflating sign-out with un-pairing; assuming a live pairing implies a live session (the data screens still need a session to load); assuming a sign-in resumes the shift the last sign-out closed.
 
 ### Terputus (client disconnected)
 **ID · EN** — Terputus · Disconnected. The same word [[Local server lifecycle]] already uses ("staff akan terputus"), deliberately reused rather than minting "Offline".

@@ -665,12 +665,18 @@ mixin _$MeDto {
   List<String> get capabilities => throw _privateConstructorUsedError;
   int? get avatarColorHex => throw _privateConstructorUsedError;
 
-  /// Start of the caller's open shift, server-authoritative (ADR-0065). Null
-  /// when they have no open shift — after "Akhiri shift", or once the
-  /// business-day boundary has retired a forgotten one. Also null against a
-  /// legacy host that predates the field, which is why the client keeps its
-  /// device-local `loginAt` as a fallback.
+  /// Start of the caller's open shift, server-authoritative (ADR-0096). Null
+  /// when they have no open shift — after signing out, or once the
+  /// business-day boundary has retired a forgotten one.
   String? get shiftStartedAt => throw _privateConstructorUsedError;
+
+  /// Whether this host records shifts at all, which is the only thing that
+  /// makes a null [shiftStartedAt] readable. A host that keeps shifts sends
+  /// true and its null means *no open shift*; a legacy host omits the field
+  /// and its null means *no opinion*, so the client falls back to its own
+  /// `loginAt`. Without the distinction the fallback fires on a retired
+  /// shift and the app bar counts up against a row the server has closed.
+  bool get shiftTracked => throw _privateConstructorUsedError;
 
   /// Serializes this MeDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -695,6 +701,7 @@ abstract class $MeDtoCopyWith<$Res> {
     List<String> capabilities,
     int? avatarColorHex,
     String? shiftStartedAt,
+    bool shiftTracked,
   });
 }
 
@@ -721,6 +728,7 @@ class _$MeDtoCopyWithImpl<$Res, $Val extends MeDto>
     Object? capabilities = null,
     Object? avatarColorHex = freezed,
     Object? shiftStartedAt = freezed,
+    Object? shiftTracked = null,
   }) {
     return _then(
       _value.copyWith(
@@ -756,6 +764,10 @@ class _$MeDtoCopyWithImpl<$Res, $Val extends MeDto>
                 ? _value.shiftStartedAt
                 : shiftStartedAt // ignore: cast_nullable_to_non_nullable
                       as String?,
+            shiftTracked: null == shiftTracked
+                ? _value.shiftTracked
+                : shiftTracked // ignore: cast_nullable_to_non_nullable
+                      as bool,
           )
           as $Val,
     );
@@ -779,6 +791,7 @@ abstract class _$$MeDtoImplCopyWith<$Res> implements $MeDtoCopyWith<$Res> {
     List<String> capabilities,
     int? avatarColorHex,
     String? shiftStartedAt,
+    bool shiftTracked,
   });
 }
 
@@ -804,6 +817,7 @@ class __$$MeDtoImplCopyWithImpl<$Res>
     Object? capabilities = null,
     Object? avatarColorHex = freezed,
     Object? shiftStartedAt = freezed,
+    Object? shiftTracked = null,
   }) {
     return _then(
       _$MeDtoImpl(
@@ -839,6 +853,10 @@ class __$$MeDtoImplCopyWithImpl<$Res>
             ? _value.shiftStartedAt
             : shiftStartedAt // ignore: cast_nullable_to_non_nullable
                   as String?,
+        shiftTracked: null == shiftTracked
+            ? _value.shiftTracked
+            : shiftTracked // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -856,6 +874,7 @@ class _$MeDtoImpl implements _MeDto {
     required final List<String> capabilities,
     this.avatarColorHex,
     this.shiftStartedAt,
+    this.shiftTracked = false,
   }) : _capabilities = capabilities;
 
   factory _$MeDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -882,17 +901,25 @@ class _$MeDtoImpl implements _MeDto {
   @override
   final int? avatarColorHex;
 
-  /// Start of the caller's open shift, server-authoritative (ADR-0065). Null
-  /// when they have no open shift — after "Akhiri shift", or once the
-  /// business-day boundary has retired a forgotten one. Also null against a
-  /// legacy host that predates the field, which is why the client keeps its
-  /// device-local `loginAt` as a fallback.
+  /// Start of the caller's open shift, server-authoritative (ADR-0096). Null
+  /// when they have no open shift — after signing out, or once the
+  /// business-day boundary has retired a forgotten one.
   @override
   final String? shiftStartedAt;
 
+  /// Whether this host records shifts at all, which is the only thing that
+  /// makes a null [shiftStartedAt] readable. A host that keeps shifts sends
+  /// true and its null means *no open shift*; a legacy host omits the field
+  /// and its null means *no opinion*, so the client falls back to its own
+  /// `loginAt`. Without the distinction the fallback fires on a retired
+  /// shift and the app bar counts up against a row the server has closed.
+  @override
+  @JsonKey()
+  final bool shiftTracked;
+
   @override
   String toString() {
-    return 'MeDto(userId: $userId, name: $name, initials: $initials, roleId: $roleId, zoneAssigned: $zoneAssigned, capabilities: $capabilities, avatarColorHex: $avatarColorHex, shiftStartedAt: $shiftStartedAt)';
+    return 'MeDto(userId: $userId, name: $name, initials: $initials, roleId: $roleId, zoneAssigned: $zoneAssigned, capabilities: $capabilities, avatarColorHex: $avatarColorHex, shiftStartedAt: $shiftStartedAt, shiftTracked: $shiftTracked)';
   }
 
   @override
@@ -914,7 +941,9 @@ class _$MeDtoImpl implements _MeDto {
             (identical(other.avatarColorHex, avatarColorHex) ||
                 other.avatarColorHex == avatarColorHex) &&
             (identical(other.shiftStartedAt, shiftStartedAt) ||
-                other.shiftStartedAt == shiftStartedAt));
+                other.shiftStartedAt == shiftStartedAt) &&
+            (identical(other.shiftTracked, shiftTracked) ||
+                other.shiftTracked == shiftTracked));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -929,6 +958,7 @@ class _$MeDtoImpl implements _MeDto {
     const DeepCollectionEquality().hash(_capabilities),
     avatarColorHex,
     shiftStartedAt,
+    shiftTracked,
   );
 
   /// Create a copy of MeDto
@@ -955,6 +985,7 @@ abstract class _MeDto implements MeDto {
     required final List<String> capabilities,
     final int? avatarColorHex,
     final String? shiftStartedAt,
+    final bool shiftTracked,
   }) = _$MeDtoImpl;
 
   factory _MeDto.fromJson(Map<String, dynamic> json) = _$MeDtoImpl.fromJson;
@@ -974,13 +1005,20 @@ abstract class _MeDto implements MeDto {
   @override
   int? get avatarColorHex;
 
-  /// Start of the caller's open shift, server-authoritative (ADR-0065). Null
-  /// when they have no open shift — after "Akhiri shift", or once the
-  /// business-day boundary has retired a forgotten one. Also null against a
-  /// legacy host that predates the field, which is why the client keeps its
-  /// device-local `loginAt` as a fallback.
+  /// Start of the caller's open shift, server-authoritative (ADR-0096). Null
+  /// when they have no open shift — after signing out, or once the
+  /// business-day boundary has retired a forgotten one.
   @override
   String? get shiftStartedAt;
+
+  /// Whether this host records shifts at all, which is the only thing that
+  /// makes a null [shiftStartedAt] readable. A host that keeps shifts sends
+  /// true and its null means *no open shift*; a legacy host omits the field
+  /// and its null means *no opinion*, so the client falls back to its own
+  /// `loginAt`. Without the distinction the fallback fires on a retired
+  /// shift and the app bar counts up against a row the server has closed.
+  @override
+  bool get shiftTracked;
 
   /// Create a copy of MeDto
   /// with the given fields replaced by the non-null parameter values.

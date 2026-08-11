@@ -419,7 +419,17 @@ extension on ServerRuntime {
     return (Handler inner) {
       return (Request req) async {
         final sw = Stopwatch()..start();
-        final res = await inner(req);
+        final Response res;
+        try {
+          res = await inner(req);
+        } catch (e, st) {
+          // Shelf turns an uncaught throw into a bare 500 and drops the reason
+          // on the floor, so a route that breaks is invisible in the log —
+          // every other request keeps succeeding and nothing says why this one
+          // did not. Log it and rethrow; the response shelf sends is unchanged.
+          SatLog.err('${req.method} /${req.url.path} threw', e, st);
+          rethrow;
+        }
         final ms = sw.elapsedMilliseconds;
         // Skip /ws upgrades and /healthz from latency stats: ws never returns,
         // healthz is the client ping itself (would create a feedback loop).

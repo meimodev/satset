@@ -2,6 +2,14 @@
 
 ## Status
 
+**Superseded on the shift boundary and the two exits by
+[ADR-0096](0096-a-shift-is-a-session-and-it-is-recorded.md)** — a shift no
+longer outlives the session, "Keluar" no longer preserves it, and
+`Users.shiftStartedAt` is gone. The rest of this ADR stands: ownership by
+`lastActorId`, the live-snapshot Saya tab, server-side-only attribution, and
+`GET /audit` scoped from the bearer with no query parameter and no row limit
+(ADR-0096 widens its *window* to the business day).
+
 Accepted. Redefines the [[Shift]] boundary previously implied by
 ADR-0004 (PIN + JWT sessions), and carves one exception out of ADR-0015
 (the local server is bound to a valid admin session).

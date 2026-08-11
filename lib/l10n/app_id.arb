@@ -4128,6 +4128,7 @@
       }
     }
   },
+  "meNoShift": "Tidak ada shift berjalan",
   "meAuditEmpty": "Belum ada entri audit. Pembatalan, comp, dan perubahan pasca-kirim muncul di sini.",
   "meAuditCount": "{count, plural, other{{count} entri}}",
   "@meAuditCount": {
@@ -4324,7 +4325,7 @@
   "ordServe": "Sajikan",
   "meKpiOpenTickets": "Tiket terbuka",
   "meKpiCovers": "Cover dilayani",
-  "meEndShiftAndLogout": "Akhiri shift & keluar",
+  "meSignOut": "Keluar",
   "liaFireNow": "Bakar sekarang",
   "liaEditItem": "Ubah item",
   "liaUnserve": "Batalkan sajian",
@@ -5025,10 +5026,6 @@
   "@meEndAdminTitle": {
     "description": "Dialog title when the admin on the server device signs out."
   },
-  "meEndShiftTitle": "Akhiri shift?",
-  "@meEndShiftTitle": {
-    "description": "Dialog title when a waiter ends their shift."
-  },
   "meEndServerBodyLive": "{n, plural, other{{n} meja}} masih aktif. Keluar akan mematikan server — semua staff terputus dan tidak bisa menyambung sampai admin masuk lagi.",
   "@meEndServerBodyLive": {
     "description": "Sign-out warning on the server device while tables are still live.",
@@ -5042,17 +5039,9 @@
   "@meEndServerBody": {
     "description": "Sign-out warning on the server device with no live tables."
   },
-  "meEndShiftBody": "Shift ditutup dan hitungannya berhenti. Masuk lagi akan memulai shift baru. Untuk menyerahkan perangkat tanpa menutup shift, pakai \"Keluar\".",
-  "@meEndShiftBody": {
-    "description": "Explains that ending a shift stops the counters, unlike a plain log out."
-  },
   "meEndAndShutdown": "Keluar & matikan",
   "@meEndAndShutdown": {
     "description": "Confirm button: sign out and stop the embedded server."
-  },
-  "meEndShiftConfirm": "Akhiri shift",
-  "@meEndShiftConfirm": {
-    "description": "Confirm button: close the shift."
   },
   "meNoOpenTickets": "Tidak ada tiket terbuka",
   "@meNoOpenTickets": {
@@ -6153,5 +6142,77 @@
   "cshMemberRedeemAll": "Tukar semua",
   "@cshMemberRedeemAll": {
     "description": "The member row on a live bill."
+  },
+  "rptSecJamKerja": "Jam kerja",
+  "@rptSecJamKerja": {
+      "description": "Report section title: staff attendance hours."
+  },
+  "rptJamKerjaSub": "{n, plural, other{{n} staf}} · dari shift yang ditutup",
+  "@rptJamKerjaSub": {
+      "placeholders": {
+          "n": {
+              "type": "int"
+          }
+      },
+      "description": "Subtitle: how many staff, and that hours come only from closed shifts."
+  },
+  "rptJamEmpty": "Belum ada shift tercatat di rentang ini.",
+  "@rptJamEmpty": {
+      "description": "Empty state when no shift was recorded in the range."
+  },
+  "rptJamHours": "{h}j {m}m",
+  "@rptJamHours": {
+      "placeholders": {
+          "h": {
+              "type": "int"
+          },
+          "m": {
+              "type": "int"
+          }
+      },
+      "description": "Worked time, hours and minutes."
+  },
+  "rptJamDaysShifts": "{d, plural, other{{d} hari}} · {s, plural, other{{s} shift}}",
+  "@rptJamDaysShifts": {
+      "placeholders": {
+          "d": {
+              "type": "int"
+          },
+          "s": {
+              "type": "int"
+          }
+      },
+      "description": "Days worked and shift count for one staff member."
+  },
+  "rptJamFirstIn": "masuk ±{clock}",
+  "@rptJamFirstIn": {
+      "placeholders": {
+          "clock": {
+              "type": "String"
+          }
+      },
+      "description": "Median clock-in time for one staff member."
+  },
+  "rptJamUnclosed": "{n, plural, other{{n} shift tak ditutup}}",
+  "@rptJamUnclosed": {
+      "placeholders": {
+          "n": {
+              "type": "int"
+          }
+      },
+      "description": "Badge: shifts the rollover had to close."
+  },
+  "rptJamLastSeen": "aktivitas terakhir {clock}",
+  "@rptJamLastSeen": {
+      "placeholders": {
+          "clock": {
+              "type": "String"
+          }
+      },
+      "description": "When an unclosed shift last did something auditable."
+  },
+  "rptJamUnclosedNote": "Shift yang tak ditutup tidak dihitung sebagai jam kerja.",
+  "@rptJamUnclosedNote": {
+      "description": "Caveat under the section title when unclosed shifts exist."
   }
 }
