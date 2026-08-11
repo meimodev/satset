@@ -950,6 +950,10 @@ class AppL10nEn extends AppL10n {
       'Admin access has been revoked. Contact the operator.';
 
   @override
+  String get bootBlockFailed =>
+      'The server could not start on this device. Close the app and open it again.';
+
+  @override
   String get tempPasswordTitle => 'Change password';
 
   @override
@@ -6369,6 +6373,13 @@ class AppL10nEn extends AppL10n {
   String get authVenueInactive => 'This venue is inactive.';
 
   @override
+  String get admissionUnreachable =>
+      'Could not reach the identity server. Check the internet connection and try again.';
+
+  @override
+  String get admissionCancel => 'Cancel';
+
+  @override
   String get sendQueueFull =>
       'Send queue is full — reconnect to the server before taking more orders';
 
@@ -6762,6 +6773,41 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String rptMembersMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+ $count more members',
+      one: '+ 1 more member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rptMembersColName => 'Member';
+
+  @override
+  String get rptMembersColVisits => 'Visits';
+
+  @override
+  String get rptMembersColAvg => 'Average';
+
+  @override
+  String get rptMembersColPoints => 'Points';
+
+  @override
+  String get rptMembersColSpend => 'Spend';
+
+  @override
+  String get rptMembersSortSpend => 'Highest spend';
+
+  @override
+  String get rptMembersSortVisits => 'Most visits';
+
+  @override
+  String get rptMembersSortPoints => 'Most points';
+
+  @override
   String get rptKasOpening => 'Opening';
 
   @override
@@ -6957,6 +7003,19 @@ class AppL10nEn extends AppL10n {
   @override
   String get pinServerBootFailed =>
       'Couldn\'t start the server on this phone. Try again.';
+
+  @override
+  String get pinResetPairing => 'Forget this server';
+
+  @override
+  String get pinResetPairingTitle => 'Forget this server?';
+
+  @override
+  String get pinResetPairingBody =>
+      'This device will stop connecting to that server. To connect again, the server must be running and on the same network.';
+
+  @override
+  String get pinResetPairingConfirm => 'Forget';
 
   @override
   String pinAutoClaimFailed(String error) {
@@ -7745,6 +7804,24 @@ class AppL10nEn extends AppL10n {
       'Enrol a regular with the Add button, or from the bill screen while they pay.';
 
   @override
+  String get memFilterEmptyTitle => 'Nothing matches';
+
+  @override
+  String get memFilterEmptyBody =>
+      'Change the search or clear the filter to see every member.';
+
+  @override
+  String memMatchCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count matches',
+      one: '1 match',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get memOffTitle => 'Membership is off';
 
   @override
@@ -7796,6 +7873,44 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get memLedgerEmpty => 'No point movements yet.';
+
+  @override
+  String get memLapsedLabel => 'Not back since';
+
+  @override
+  String memLapsedDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get memVisitsTitle => 'Visit history';
+
+  @override
+  String get memVisitsLoading => 'Loading visits…';
+
+  @override
+  String get memVisitsEmpty => 'No settled visits yet.';
+
+  @override
+  String get memVisitsFailed => 'Visit history failed to load.';
+
+  @override
+  String get memVisitsMore => 'Load more';
+
+  @override
+  String get memVisitTakeaway => 'Takeaway';
+
+  @override
+  String get memVisitNoTable => 'No table';
+
+  @override
+  String get memVisitWalkout => 'Unpaid';
 
   @override
   String get memSheetAddTitle => 'New member';

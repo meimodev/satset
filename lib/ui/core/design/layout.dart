@@ -76,6 +76,34 @@ class SatLayout {
   }
 }
 
+/// Dimensions, not spacing.
+///
+/// `Sp` stops at 48 and says why: above that a number is the *shape of a thing*
+/// — a panel, a row, a mark — and naming it on the spacing scale invites the
+/// wrong one to be reached for. This is where those live instead, so the
+/// sign-in surfaces stop carrying four bare literals that only agree by luck.
+class SatSize {
+  SatSize._();
+
+  /// The sign-in panel. Wide enough for a full email address at body size,
+  /// narrow enough that the eye does not travel between a label and its field.
+  /// The tablet layout gives it a deeper inset, not a wider box.
+  static const double authPanel = 480;
+
+  /// The same panel where it holds a message rather than a form — the
+  /// host-occupied screen, the password change. Prose reads narrower.
+  static const double authPanelNarrow = 420;
+
+  /// The panel's own inset. Deliberately off the spacing scale: it is the
+  /// panel's shape, not a gap between two things inside it.
+  static const double authPanelInset = 56;
+
+  /// A pressable row — the mode toggle's pill, a large field. Above the 48 the
+  /// scale stops at because principle 1 sizes this for a moving thumb, not for
+  /// the grid.
+  static const double control = 52;
+}
+
 extension SatLayoutX on BuildContext {
   SatLayout get layout => SatLayout.of(this);
 }

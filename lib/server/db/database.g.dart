@@ -8753,7 +8753,7 @@ class $VenueSettingsTable extends VenueSettings
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'CHECK ("members_enabled" IN (0, 1))',
     ),
-    defaultValue: const Constant(false),
+    defaultValue: const Constant(true),
   );
   static const VerificationMeta _memberPointsEnabledMeta =
       const VerificationMeta('memberPointsEnabled');
@@ -9676,10 +9676,12 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   final String soundUngreeted;
   final String soundPickup;
 
-  /// **Keanggotaan** — the master switch. Off by default: a venue that does not
-  /// want a guest directory must not grow one by upgrading. Off hides
-  /// `/members`, the bill overlay's member row, the receipt lines and the whole
-  /// Reports section; it never deletes anything.
+  /// **Keanggotaan** — the master switch, **on** for a new venue: a directory of
+  /// regulars is the ordinary case, and a venue that does not want one turns it
+  /// off in Pengaturan. Off hides `/members`, the bill overlay's member row, the
+  /// receipt lines and the whole Reports section; it never deletes anything.
+  /// The default only paints a *fresh* row — an existing venue keeps whatever it
+  /// stored, so nobody's deliberate "off" is flipped by an upgrade.
   final bool membersEnabled;
 
   /// The two mechanisms that nest under it, both off by default. Turning

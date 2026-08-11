@@ -950,6 +950,10 @@ class AppL10nId extends AppL10n {
   String get bootBlockIneligible => 'Akses admin dicabut. Hubungi pengelola.';
 
   @override
+  String get bootBlockFailed =>
+      'Server tidak bisa dijalankan di perangkat ini. Tutup aplikasi lalu buka lagi.';
+
+  @override
   String get tempPasswordTitle => 'Ganti sandi';
 
   @override
@@ -6290,6 +6294,13 @@ class AppL10nId extends AppL10n {
   String get authVenueInactive => 'Venue tidak aktif.';
 
   @override
+  String get admissionUnreachable =>
+      'Tidak bisa menghubungi server identitas. Periksa koneksi internet lalu coba lagi.';
+
+  @override
+  String get admissionCancel => 'Batal';
+
+  @override
   String get sendQueueFull =>
       'Antrean kirim penuh — sambungkan dulu ke server sebelum pesan lagi';
 
@@ -6675,6 +6686,40 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String rptMembersMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+ $count pelanggan lainnya',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rptMembersColName => 'Pelanggan';
+
+  @override
+  String get rptMembersColVisits => 'Kunjungan';
+
+  @override
+  String get rptMembersColAvg => 'Rata-rata';
+
+  @override
+  String get rptMembersColPoints => 'Poin';
+
+  @override
+  String get rptMembersColSpend => 'Belanja';
+
+  @override
+  String get rptMembersSortSpend => 'Belanja terbesar';
+
+  @override
+  String get rptMembersSortVisits => 'Paling sering datang';
+
+  @override
+  String get rptMembersSortPoints => 'Poin terbanyak';
+
+  @override
   String get rptKasOpening => 'Saldo awal';
 
   @override
@@ -6868,6 +6913,19 @@ class AppL10nId extends AppL10n {
   @override
   String get pinServerBootFailed =>
       'Gagal menjalankan server di HP ini. Coba lagi.';
+
+  @override
+  String get pinResetPairing => 'Lupakan server ini';
+
+  @override
+  String get pinResetPairingTitle => 'Lupakan server ini?';
+
+  @override
+  String get pinResetPairingBody =>
+      'Perangkat ini akan berhenti tersambung ke server tersebut. Untuk menyambung lagi, server harus aktif dan berada di jaringan yang sama.';
+
+  @override
+  String get pinResetPairingConfirm => 'Lupakan';
 
   @override
   String pinAutoClaimFailed(String error) {
@@ -7649,6 +7707,23 @@ class AppL10nId extends AppL10n {
       'Daftarkan tamu langganan lewat tombol Tambah, atau dari layar tagihan saat mereka bayar.';
 
   @override
+  String get memFilterEmptyTitle => 'Tidak ada yang cocok';
+
+  @override
+  String get memFilterEmptyBody =>
+      'Ubah pencarian atau lepas filternya untuk melihat semua pelanggan.';
+
+  @override
+  String memMatchCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cocok',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get memOffTitle => 'Keanggotaan tidak aktif';
 
   @override
@@ -7700,6 +7775,43 @@ class AppL10nId extends AppL10n {
 
   @override
   String get memLedgerEmpty => 'Belum ada gerakan poin.';
+
+  @override
+  String get memLapsedLabel => 'Belum kembali';
+
+  @override
+  String memLapsedDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days hari',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get memVisitsTitle => 'Riwayat kunjungan';
+
+  @override
+  String get memVisitsLoading => 'Memuat kunjungan…';
+
+  @override
+  String get memVisitsEmpty => 'Belum ada kunjungan yang selesai.';
+
+  @override
+  String get memVisitsFailed => 'Riwayat kunjungan gagal dimuat.';
+
+  @override
+  String get memVisitsMore => 'Muat lebih banyak';
+
+  @override
+  String get memVisitTakeaway => 'Bawa pulang';
+
+  @override
+  String get memVisitNoTable => 'Tanpa meja';
+
+  @override
+  String get memVisitWalkout => 'Tak tertagih';
 
   @override
   String get memSheetAddTitle => 'Pelanggan baru';

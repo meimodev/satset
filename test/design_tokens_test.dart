@@ -665,6 +665,57 @@ void main() {
     );
   });
 
+  // `fromLTRB` was the hole in the rule above, and it was not a small one: the
+  // ban lists `all`/`symmetric`/`only` and stops there, so the sign-in screen
+  // passed a clean run while every panel inset on it was a bare literal.
+  //
+  // A ratchet rather than a ban because it lands at 159 call sites across 121
+  // files, and a ban would mean either a green test nobody can reach or 121
+  // files in one commit. Same contract as the `rules` list: it can fall, never
+  // climb.
+  //
+  // The baseline counts **arguments**, not call sites, because that is what the
+  // rule above it counts — one `fromLTRB(12, 0, 12, 12)` is three hits, not
+  // one. So the number here is ~4× the site count and moves in steps of up to
+  // four when a site is fixed.
+  //
+  // Not counted alongside it: `Container(width:/height:)`. The widened matcher
+  // caught 101 of those too, but they are *sizing* — a 22px spinner, a 44px
+  // brand mark — and folding them into the padding scale would be the wrong
+  // fix. `SatSize` is where the ones above the scale belong.
+  const fromLtrbBaseline = 659;
+  test('no new: raw EdgeInsets.fromLTRB spacing', () {
+    final hits = <String>[];
+    for (final file in files) {
+      final src = file.readAsStringSync();
+      if (file.path.endsWith('receipt_preview.dart')) continue;
+      for (final m in RegExp(r'EdgeInsets\.fromLTRB\(').allMatches(src)) {
+        final body = _callBody(src, m.start);
+        if (body.length < 2) continue;
+        for (final arg in _splitArgs(body.substring(1, body.length - 1))) {
+          final g = _bareNumberArg.firstMatch(arg);
+          if (g != null && _isSpacing(arg)) {
+            hits.add('${file.path}:${_lineOf(src, m.start)}  ${arg.trim()}');
+          }
+        }
+      }
+    }
+    if (hits.length > fromLtrbBaseline) {
+      fail(
+        'raw EdgeInsets.fromLTRB: ${hits.length} occurrences, baseline '
+        '$fromLtrbBaseline (+${hits.length - fromLtrbBaseline} new).\n'
+        'Fix: use Sp — design/spacing.dart.\n\n${hits.join('\n')}',
+      );
+    }
+    if (hits.length < fromLtrbBaseline) {
+      fail(
+        'raw EdgeInsets.fromLTRB dropped to ${hits.length} (baseline '
+        '$fromLtrbBaseline). Good — now set fromLtrbBaseline to ${hits.length} '
+        'in test/design_tokens_test.dart so it cannot climb back.',
+      );
+    }
+  });
+
   for (final rule in rules) {
     test('no new: ${rule.name}', () {
       final hits = <String>[];

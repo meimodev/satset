@@ -54,6 +54,11 @@ class ReleaseGateRepository extends StateNotifier<ReleaseGate> {
       _watchCloud();
       return;
     }
+    // Unpaired: no host to read, no socket to wire — and `wsClientProvider`
+    // throws rather than returning null, so reaching it here is how every cold
+    // boot on the sign-in screen used to raise `ApiConfig not initialised`.
+    // The provider rebuilds when prefs land a paired host, re-entering here.
+    if (ref.read(apiConfigProvider) == null) return;
     _wireWs();
     await _fetchFromHost();
   }

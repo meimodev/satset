@@ -29,7 +29,7 @@ class AdminGraceBanner extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      margin: const EdgeInsets.only(left: Sp.s3, top: Sp.s2, right: Sp.s3),
       padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
       decoration: SatBox.d(
         color: bg,

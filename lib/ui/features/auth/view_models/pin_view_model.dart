@@ -16,10 +16,28 @@ import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/mdns_browser_service.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
+import 'package:satset/domain/models/admission.dart';
 import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/ui/features/onboarding/view_models/mode_select_view_model.dart';
 
 enum SignInMode { admin, staff }
+
+/// Where the staff half of the sign-in screen is. One enum replaces the three
+/// booleans this screen used to carry — a widget-local `_serverEditing`, the
+/// view-model's `selectedServer.paired`, and a widget-local `_sheetOpen` that
+/// stayed `true` forever if the sheet ever threw, after which the PIN pad could
+/// not be reopened at all.
+enum StaffStage {
+  /// Choosing a server: the paired one, anything mDNS has found, or a typed
+  /// address. Also where "ganti server" and a failed pairing land.
+  pickingServer,
+
+  /// A paired server is selected and reachable; the card is showing.
+  connected,
+
+  /// The PIN pad is up.
+  enteringPin,
+}
 
 class PairedServerInfo {
   final String host;
@@ -50,20 +68,26 @@ class PairedServerInfo {
 class PinState {
   final SignInMode mode;
   final bool adminBusy;
-  final String? adminError;
+
+  /// The last admission attempt's outcome, or null before the first one. The
+  /// screen switches on this — it is not an error string, because eleven of the
+  /// fifteen outcomes are not errors and four of them say nothing at all.
+  final AdmissionOutcome? admission;
   final List<PairedServerInfo> servers;
   final String? selectedServerKey;
   final bool pairingBusy;
   final String? pairingError;
+  final StaffStage stage;
 
   const PinState({
     this.mode = SignInMode.staff,
     this.adminBusy = false,
-    this.adminError,
+    this.admission,
     this.servers = const [],
     this.selectedServerKey,
     this.pairingBusy = false,
     this.pairingError,
+    this.stage = StaffStage.pickingServer,
   });
 
   PairedServerInfo? get selectedServer {
@@ -77,15 +101,19 @@ class PinState {
   PinState copyWith({
     SignInMode? mode,
     bool? adminBusy,
-    Object? adminError = _unset,
+    Object? admission = _unset,
     List<PairedServerInfo>? servers,
     Object? selectedServerKey = _unset,
     bool? pairingBusy,
     Object? pairingError = _unset,
+    StaffStage? stage,
   }) => PinState(
     mode: mode ?? this.mode,
     adminBusy: adminBusy ?? this.adminBusy,
-    adminError: adminError == _unset ? this.adminError : adminError as String?,
+    admission: admission == _unset
+        ? this.admission
+        : admission as AdmissionOutcome?,
+    stage: stage ?? this.stage,
     servers: servers ?? this.servers,
     selectedServerKey: selectedServerKey == _unset
         ? this.selectedServerKey
@@ -168,6 +196,11 @@ class PinViewModel extends StateNotifier<PinState> {
   }
 
   void _rebuildServers() {
+    // Captured before the rebuild so the stage can be promoted on the *edge* —
+    // the moment an unpaired selection becomes a paired one. Promoting on the
+    // level instead would drag the user back to the connected card every mDNS
+    // tick after they asked to change server.
+    final hadPaired = state.selectedServer?.paired ?? false;
     final byKey = <String, PairedServerInfo>{};
     var pairedLocal = _pairedFromPrefs;
 
@@ -260,7 +293,13 @@ class PinViewModel extends StateNotifier<PinState> {
       }
     }
 
-    state = state.copyWith(servers: list, selectedServerKey: sel);
+    final nowPaired =
+        sel != null && (byKey[sel]?.paired ?? false);
+    state = state.copyWith(
+      servers: list,
+      selectedServerKey: sel,
+      stage: !hadPaired && nowPaired ? StaffStage.connected : null,
+    );
 
     // Don't override the loopback ApiConfig that Admin/Server mode publishes.
     if (state.mode != SignInMode.admin && sel != null) {
@@ -272,18 +311,58 @@ class PinViewModel extends StateNotifier<PinState> {
     }
   }
 
+  /// The toggle is the truth, and `AppMode` follows it. The persisted mode is a
+  /// memory of what this device was last time; the person holding it knows what
+  /// it is now, and must outrank that memory. See ADR-0098.
   void setMode(SignInMode m) {
     if (state.mode == m) return;
     SatLog.vm('PinVM setMode ${m.name}');
-    state = state.copyWith(mode: m, adminError: null);
+    state = state.copyWith(mode: m, admission: null);
     if (m == SignInMode.staff) {
       // verifyPin() re-persists mode and is the authoritative gate.
       _persistMode(AppMode.client).catchError((Object e) {
         SatLog.vm('PinVM setMode persist fail $e');
       });
+      // Re-enter the rebuild so the selected paired server publishes its
+      // ApiConfig. `_publishApiConfig` refuses to run in Admin mode — it would
+      // clobber the loopback config — so the flip has to bring us back through
+      // it. Without this, a staff member on a device that once hosted the venue
+      // reached a PIN pad with no server behind it, and the pad answered
+      // "server belum siap" until an unrelated mDNS tick happened to fire.
+      _rebuildServers();
     }
     // Admin server boot is deferred to submitAdmin() so a failure can be
-    // surfaced via adminError and block sign-in.
+    // surfaced as an outcome and block sign-in.
+  }
+
+  /// Move the staff half between its three stages. The screen never writes
+  /// stage state of its own — a second copy of "where are we" is what made the
+  /// PIN pad unopenable when the sheet threw on the way up.
+  void setStage(StaffStage s) {
+    if (state.stage == s) return;
+    SatLog.vm('PinVM setStage ${s.name}');
+    state = state.copyWith(stage: s);
+  }
+
+  /// Forget this device's pairing and go back to discovery.
+  ///
+  /// The only way out of a pairing that cannot work — a server re-homed to a
+  /// dead address, a fingerprint that will never match again, a wedge nobody
+  /// has diagnosed yet. Before this, the exit was to uninstall the app.
+  Future<void> resetPairing() async {
+    SatLog.vm('PinVM resetPairing');
+    await _storage.clearSession();
+    await _storage.writeServerFingerprint(null);
+    await _prefs.setPairedHost(null);
+    await _prefs.setPairedPort(null);
+    _ref.read(apiConfigProvider.notifier).state = null;
+    _pairedFromPrefs = null;
+    state = state.copyWith(
+      selectedServerKey: null,
+      pairingError: null,
+      stage: StaffStage.pickingServer,
+    );
+    await refreshPairedServers();
   }
 
   Future<void> _persistMode(AppMode m) async {
@@ -329,9 +408,9 @@ class PinViewModel extends StateNotifier<PinState> {
     _ref.read(apiConfigProvider.notifier).state = next;
   }
 
-  void clearAdminError() {
-    if (state.adminError != null) {
-      state = state.copyWith(adminError: null);
+  void clearAdmission() {
+    if (state.admission != null) {
+      state = state.copyWith(admission: null);
     }
   }
 
@@ -371,60 +450,44 @@ class PinViewModel extends StateNotifier<PinState> {
     return err ?? _ref.read(l10nProvider).authWrongPin;
   }
 
-  Future<bool> submitAdmin({
+  /// Run one admission and hand back its outcome.
+  ///
+  /// NB: do NOT persist Server mode up front — a super-admin login must not
+  /// mark this device as a server. The admin path persists Server mode inside
+  /// `bootServer` (ModeSelect.choose); a super admin boots no server (ADR-0016).
+  /// Firebase gates entry + eligibility first; the embedded server boots only
+  /// once that passes (ADR-0015), and a boot failure comes back as
+  /// [AdmissionServerBootFailed] rather than an exception to unpick here.
+  Future<AdmissionOutcome> submitAdmin({
     required String email,
     required String password,
+    bool freshProfile = false,
   }) async {
-    SatLog.vm('PinVM submitAdmin');
-    if (state.adminBusy) return false;
-    state = state.copyWith(adminBusy: true, adminError: null);
-    // NB: do NOT persist Server mode up front — a super-admin login must not
-    // mark this device as a server. The admin path persists Server mode inside
-    // bootServer (ModeSelect.choose); a super admin boots no server. ADR-0016.
-    // Firebase gates entry + eligibility first; the embedded server boots only
-    // once that passes (see ADR-0015). Boot failure surfaces as adminError.
-    StateError? bootError;
-    final ok = await _auth.signInAsAdmin(
+    if (state.adminBusy) return const AdmissionCancelled();
+    SatLog.vm('PinVM submitAdmin fresh=$freshProfile');
+    state = state.copyWith(adminBusy: true, admission: null);
+    final outcome = await _auth.signInAsAdmin(
       email: email,
       password: password,
-      bootServer: (venueId) async {
-        try {
-          await _bootServerMode(venueId);
-        } catch (e) {
-          bootError = StateError('$e');
-          rethrow;
-        }
-      },
+      bootServer: _bootServerMode,
+      freshProfile: freshProfile,
     );
-    if (bootError != null) {
-      SatLog.vm('PinVM submitAdmin boot fail $bootError');
-      state = state.copyWith(
-        adminBusy: false,
-        adminError: _ref.read(l10nProvider).pinServerBootFailed,
-      );
-      return false;
-    }
-    if (ok) {
-      SatLog.vm('PinVM submitAdmin result=ok');
-      state = state.copyWith(adminBusy: false);
-      return true;
-    }
-    final auth = _ref.read(authStateProvider);
-    // Refused because another device already hosts this venue (ADR-0077). The
-    // credentials were fine — the block screen says so itself, so labelling this
-    // "password salah" would send the admin to retype a correct password.
-    if (auth.hostOccupied != null) {
-      SatLog.vm('PinVM submitAdmin result=host-occupied');
-      state = state.copyWith(adminBusy: false, adminError: null);
-      return false;
-    }
-    final err = auth.error;
-    SatLog.vm('PinVM submitAdmin result=fail err=$err');
+    SatLog.vm('PinVM submitAdmin outcome=${outcome.runtimeType}');
+    state = state.copyWith(adminBusy: false, admission: outcome);
+    return outcome;
+  }
+
+  /// Abandon an admission in flight. Optimistically drops `adminBusy` so the
+  /// form comes back the instant it is pressed — the repository's attempt token
+  /// is what guarantees the abandoned run cannot write over us afterwards.
+  void cancelAdmin() {
+    if (!state.adminBusy) return;
+    SatLog.vm('PinVM cancelAdmin');
+    _auth.cancelAdmission();
     state = state.copyWith(
       adminBusy: false,
-      adminError: err ?? _ref.read(l10nProvider).authWrongCredentials,
+      admission: const AdmissionCancelled(),
     );
-    return false;
   }
 
   /// LAN-trusted auto-claim for a server surfaced via mDNS. POSTs to

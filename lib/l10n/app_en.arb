@@ -314,6 +314,7 @@
   "fltReleaseGateInvalid": "Must be 1.2.3, and min <= recommended <= latest.",
   "bootBlockStale": "Internet is needed to verify the admin. Reconnect, then sign in again.",
   "bootBlockIneligible": "Admin access has been revoked. Contact the operator.",
+  "bootBlockFailed": "The server could not start on this device. Close the app and open it again.",
   "tempPasswordTitle": "Change password",
   "logout": "Sign out",
   "tempPasswordReason": "You signed in with a temporary password. Create a new one to continue.",
@@ -1879,6 +1880,8 @@
   "authVenueNotFound": "Venue not found. Contact your operator.",
   "authVenueSuspended": "This venue is suspended. Contact your operator.",
   "authVenueInactive": "This venue is inactive.",
+  "admissionUnreachable": "Could not reach the identity server. Check the internet connection and try again.",
+  "admissionCancel": "Cancel",
   "sendQueueFull": "Send queue is full — reconnect to the server before taking more orders",
   "sendQueuePending": "{count, plural, =1{1 order waiting to send} other{{count} orders waiting to send}}",
   "@sendQueuePending": {
@@ -2070,6 +2073,22 @@
       }
     }
   },
+  "rptMembersMore": "{count, plural, =1{+ 1 more member} other{+ {count} more members}}",
+  "@rptMembersMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rptMembersColName": "Member",
+  "rptMembersColVisits": "Visits",
+  "rptMembersColAvg": "Average",
+  "rptMembersColPoints": "Points",
+  "rptMembersColSpend": "Spend",
+  "rptMembersSortSpend": "Highest spend",
+  "rptMembersSortVisits": "Most visits",
+  "rptMembersSortPoints": "Most points",
   "rptKasOpening": "Opening",
   "rptKasIn": "In",
   "rptKasOut": "Out",
@@ -2123,6 +2142,10 @@
   "pinDeviceNotPaired": "This phone isn't paired. Scan the QR again to pair it.",
   "pinSetupFailed": "Couldn't set the app up. Try again.",
   "pinServerBootFailed": "Couldn't start the server on this phone. Try again.",
+  "pinResetPairing": "Forget this server",
+  "pinResetPairingTitle": "Forget this server?",
+  "pinResetPairingBody": "This device will stop connecting to that server. To connect again, the server must be running and on the same network.",
+  "pinResetPairingConfirm": "Forget",
   "pinAutoClaimFailed": "Auto-connect failed: {error}",
   "prnNothingToPrint": "Nothing to print",
   "prnThisDevice": "This device",
@@ -2339,6 +2362,16 @@
   "memBirthdayFilter": "Birthdays this month",
   "memEmptyTitle": "No members yet",
   "memEmptyBody": "Enrol a regular with the Add button, or from the bill screen while they pay.",
+  "memFilterEmptyTitle": "Nothing matches",
+  "memFilterEmptyBody": "Change the search or clear the filter to see every member.",
+  "memMatchCount": "{count, plural, =1{1 match} other{{count} matches}}",
+  "@memMatchCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "memOffTitle": "Membership is off",
   "memOffBody": "Turn it on in Venue settings → Membership. Points and stamps already recorded stay intact.",
   "memPhoneOnly": "Open this on a tablet. A directory is read row against row, and a phone shows one.",
@@ -2378,6 +2411,23 @@
   "memLedgerTitle": "Point history",
   "memLedgerLoading": "Loading history…",
   "memLedgerEmpty": "No point movements yet.",
+  "memLapsedLabel": "Not back since",
+  "memLapsedDays": "{days, plural, =1{1 day} other{{days} days}}",
+  "@memLapsedDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "memVisitsTitle": "Visit history",
+  "memVisitsLoading": "Loading visits…",
+  "memVisitsEmpty": "No settled visits yet.",
+  "memVisitsFailed": "Visit history failed to load.",
+  "memVisitsMore": "Load more",
+  "memVisitTakeaway": "Takeaway",
+  "memVisitNoTable": "No table",
+  "memVisitWalkout": "Unpaid",
   "memSheetAddTitle": "New member",
   "memSheetEditTitle": "Edit member",
   "memFieldName": "Name",

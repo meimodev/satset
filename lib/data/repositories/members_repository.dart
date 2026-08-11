@@ -23,6 +23,10 @@ class MembersState {
   final String query;
   final int? birthdayMonth;
 
+  /// The "belum kembali" cut, in days. Null ⇒ off. Derived server-side off
+  /// `lastVisitAt` on every read — there is no lapsed *status* to go stale.
+  final int? lapsedDays;
+
   final bool loading;
   final Object? error;
 
@@ -35,6 +39,7 @@ class MembersState {
     this.members = const [],
     this.query = '',
     this.birthdayMonth,
+    this.lapsedDays,
     this.loading = false,
     this.error,
     this.enabled = true,
@@ -45,6 +50,8 @@ class MembersState {
     String? query,
     int? birthdayMonth,
     bool clearBirthdayMonth = false,
+    int? lapsedDays,
+    bool clearLapsedDays = false,
     bool? loading,
     Object? error,
     bool clearError = false,
@@ -55,6 +62,7 @@ class MembersState {
     birthdayMonth: clearBirthdayMonth
         ? null
         : (birthdayMonth ?? this.birthdayMonth),
+    lapsedDays: clearLapsedDays ? null : (lapsedDays ?? this.lapsedDays),
     loading: loading ?? this.loading,
     error: clearError ? null : (error ?? this.error),
     enabled: enabled ?? this.enabled,
@@ -105,6 +113,19 @@ class MembersRepository extends StateNotifier<MembersState> {
     await _fetch();
   }
 
+  /// The "belum kembali" cut — regulars who have stopped coming, and enrolments
+  /// that never did. Days, not a stored status: a lapsed member who walks in
+  /// tomorrow is simply not lapsed on the next read.
+  Future<void> filterByLapsedDays(int? days) async {
+    state = state.copyWith(
+      lapsedDays: days,
+      clearLapsedDays: days == null,
+      loading: true,
+      clearError: true,
+    );
+    await _fetch();
+  }
+
   Future<void> _fetch() async {
     try {
       final raw =
@@ -118,6 +139,8 @@ class MembersRepository extends StateNotifier<MembersState> {
                         'q': state.query.trim(),
                       if (state.birthdayMonth != null)
                         'birthdayMonth': '${state.birthdayMonth}',
+                      if (state.lapsedDays != null)
+                        'lapsedDays': '${state.lapsedDays}',
                     },
                   )
               as List;
@@ -155,6 +178,22 @@ class MembersRepository extends StateNotifier<MembersState> {
         await _ref.read(apiClientProvider).getJson('/members/$id')
             as Map<String, dynamic>;
     return MemberDetail.fromJson(raw);
+  }
+
+  /// A member's settled bills, newest first, paged by growing [limit] — the
+  /// cashier-history pattern (ADR-0079). Lifetime by construction; the report's
+  /// window does not reach here.
+  Future<List<MemberVisitDto>> visits(String id, {int limit = 30}) async {
+    final raw =
+        await _ref.read(apiClientProvider).getJson(
+              '/members/$id/visits',
+              query: {'limit': '$limit'},
+            )
+            as List;
+    return [
+      for (final v in raw)
+        MemberVisitDto.fromJson((v as Map).cast<String, dynamic>()),
+    ];
   }
 
   Future<MemberDto> enrol({
@@ -354,7 +393,9 @@ class MembersRepository extends StateNotifier<MembersState> {
     // ponytail: a stranger only joins the list when nothing is filtering it —
     // deciding whether they match the server's search is the server's job, and
     // guessing here is how a filtered view starts showing rows it excluded.
-    if (state.query.trim().isEmpty && state.birthdayMonth == null) {
+    if (state.query.trim().isEmpty &&
+        state.birthdayMonth == null &&
+        state.lapsedDays == null) {
       state = state.copyWith(members: [member, ...state.members]);
     }
   }

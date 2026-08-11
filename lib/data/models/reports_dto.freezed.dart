@@ -6910,6 +6910,12 @@ MembersSectionDto _$MembersSectionDtoFromJson(Map<String, dynamic> json) {
 mixin _$MembersSectionDto {
   /// False ⇒ the venue does not run a program, and the section is not drawn.
   bool get enabled => throw _privateConstructorUsedError;
+
+  /// The points program runs (or not) independently of membership. False ⇒
+  /// the points figures and the ranked list's points column are **hidden**,
+  /// not zeroed — a zero says "earned nothing", which is a different and
+  /// false statement from "this venue does not run points".
+  bool get pointsEnabled => throw _privateConstructorUsedError;
   int get enrolled => throw _privateConstructorUsedError;
   int get activeMembers => throw _privateConstructorUsedError;
   int get memberBills => throw _privateConstructorUsedError;
@@ -6927,6 +6933,10 @@ mixin _$MembersSectionDto {
   /// construction — the rate can move before they are spent.
   int get liabilityEstimate => throw _privateConstructorUsedError;
   List<MemberTopRowDto> get top => throw _privateConstructorUsedError;
+
+  /// Members who traded in the window beyond the end of [top]. Shown as a
+  /// tail count, so the hundredth name never reads as the last one.
+  int get topTruncated => throw _privateConstructorUsedError;
 
   /// Serializes this MembersSectionDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -6947,6 +6957,7 @@ abstract class $MembersSectionDtoCopyWith<$Res> {
   @useResult
   $Res call({
     bool enabled,
+    bool pointsEnabled,
     int enrolled,
     int activeMembers,
     int memberBills,
@@ -6961,6 +6972,7 @@ abstract class $MembersSectionDtoCopyWith<$Res> {
     int pointsOutstanding,
     int liabilityEstimate,
     List<MemberTopRowDto> top,
+    int topTruncated,
   });
 }
 
@@ -6980,6 +6992,7 @@ class _$MembersSectionDtoCopyWithImpl<$Res, $Val extends MembersSectionDto>
   @override
   $Res call({
     Object? enabled = null,
+    Object? pointsEnabled = null,
     Object? enrolled = null,
     Object? activeMembers = null,
     Object? memberBills = null,
@@ -6994,12 +7007,17 @@ class _$MembersSectionDtoCopyWithImpl<$Res, $Val extends MembersSectionDto>
     Object? pointsOutstanding = null,
     Object? liabilityEstimate = null,
     Object? top = null,
+    Object? topTruncated = null,
   }) {
     return _then(
       _value.copyWith(
             enabled: null == enabled
                 ? _value.enabled
                 : enabled // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            pointsEnabled: null == pointsEnabled
+                ? _value.pointsEnabled
+                : pointsEnabled // ignore: cast_nullable_to_non_nullable
                       as bool,
             enrolled: null == enrolled
                 ? _value.enrolled
@@ -7057,6 +7075,10 @@ class _$MembersSectionDtoCopyWithImpl<$Res, $Val extends MembersSectionDto>
                 ? _value.top
                 : top // ignore: cast_nullable_to_non_nullable
                       as List<MemberTopRowDto>,
+            topTruncated: null == topTruncated
+                ? _value.topTruncated
+                : topTruncated // ignore: cast_nullable_to_non_nullable
+                      as int,
           )
           as $Val,
     );
@@ -7074,6 +7096,7 @@ abstract class _$$MembersSectionDtoImplCopyWith<$Res>
   @useResult
   $Res call({
     bool enabled,
+    bool pointsEnabled,
     int enrolled,
     int activeMembers,
     int memberBills,
@@ -7088,6 +7111,7 @@ abstract class _$$MembersSectionDtoImplCopyWith<$Res>
     int pointsOutstanding,
     int liabilityEstimate,
     List<MemberTopRowDto> top,
+    int topTruncated,
   });
 }
 
@@ -7106,6 +7130,7 @@ class __$$MembersSectionDtoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? enabled = null,
+    Object? pointsEnabled = null,
     Object? enrolled = null,
     Object? activeMembers = null,
     Object? memberBills = null,
@@ -7120,12 +7145,17 @@ class __$$MembersSectionDtoImplCopyWithImpl<$Res>
     Object? pointsOutstanding = null,
     Object? liabilityEstimate = null,
     Object? top = null,
+    Object? topTruncated = null,
   }) {
     return _then(
       _$MembersSectionDtoImpl(
         enabled: null == enabled
             ? _value.enabled
             : enabled // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        pointsEnabled: null == pointsEnabled
+            ? _value.pointsEnabled
+            : pointsEnabled // ignore: cast_nullable_to_non_nullable
                   as bool,
         enrolled: null == enrolled
             ? _value.enrolled
@@ -7183,6 +7213,10 @@ class __$$MembersSectionDtoImplCopyWithImpl<$Res>
             ? _value._top
             : top // ignore: cast_nullable_to_non_nullable
                   as List<MemberTopRowDto>,
+        topTruncated: null == topTruncated
+            ? _value.topTruncated
+            : topTruncated // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -7193,6 +7227,7 @@ class __$$MembersSectionDtoImplCopyWithImpl<$Res>
 class _$MembersSectionDtoImpl implements _MembersSectionDto {
   const _$MembersSectionDtoImpl({
     this.enabled = false,
+    this.pointsEnabled = false,
     this.enrolled = 0,
     this.activeMembers = 0,
     this.memberBills = 0,
@@ -7207,6 +7242,7 @@ class _$MembersSectionDtoImpl implements _MembersSectionDto {
     this.pointsOutstanding = 0,
     this.liabilityEstimate = 0,
     final List<MemberTopRowDto> top = const <MemberTopRowDto>[],
+    this.topTruncated = 0,
   }) : _top = top;
 
   factory _$MembersSectionDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -7216,6 +7252,14 @@ class _$MembersSectionDtoImpl implements _MembersSectionDto {
   @override
   @JsonKey()
   final bool enabled;
+
+  /// The points program runs (or not) independently of membership. False ⇒
+  /// the points figures and the ranked list's points column are **hidden**,
+  /// not zeroed — a zero says "earned nothing", which is a different and
+  /// false statement from "this venue does not run points".
+  @override
+  @JsonKey()
+  final bool pointsEnabled;
   @override
   @JsonKey()
   final int enrolled;
@@ -7267,9 +7311,15 @@ class _$MembersSectionDtoImpl implements _MembersSectionDto {
     return EqualUnmodifiableListView(_top);
   }
 
+  /// Members who traded in the window beyond the end of [top]. Shown as a
+  /// tail count, so the hundredth name never reads as the last one.
+  @override
+  @JsonKey()
+  final int topTruncated;
+
   @override
   String toString() {
-    return 'MembersSectionDto(enabled: $enabled, enrolled: $enrolled, activeMembers: $activeMembers, memberBills: $memberBills, memberNet: $memberNet, guestBills: $guestBills, guestNet: $guestNet, avgMemberBill: $avgMemberBill, avgGuestBill: $avgGuestBill, pointsEarned: $pointsEarned, pointsRedeemed: $pointsRedeemed, pointsAdjusted: $pointsAdjusted, pointsOutstanding: $pointsOutstanding, liabilityEstimate: $liabilityEstimate, top: $top)';
+    return 'MembersSectionDto(enabled: $enabled, pointsEnabled: $pointsEnabled, enrolled: $enrolled, activeMembers: $activeMembers, memberBills: $memberBills, memberNet: $memberNet, guestBills: $guestBills, guestNet: $guestNet, avgMemberBill: $avgMemberBill, avgGuestBill: $avgGuestBill, pointsEarned: $pointsEarned, pointsRedeemed: $pointsRedeemed, pointsAdjusted: $pointsAdjusted, pointsOutstanding: $pointsOutstanding, liabilityEstimate: $liabilityEstimate, top: $top, topTruncated: $topTruncated)';
   }
 
   @override
@@ -7278,6 +7328,8 @@ class _$MembersSectionDtoImpl implements _MembersSectionDto {
         (other.runtimeType == runtimeType &&
             other is _$MembersSectionDtoImpl &&
             (identical(other.enabled, enabled) || other.enabled == enabled) &&
+            (identical(other.pointsEnabled, pointsEnabled) ||
+                other.pointsEnabled == pointsEnabled) &&
             (identical(other.enrolled, enrolled) ||
                 other.enrolled == enrolled) &&
             (identical(other.activeMembers, activeMembers) ||
@@ -7304,7 +7356,9 @@ class _$MembersSectionDtoImpl implements _MembersSectionDto {
                 other.pointsOutstanding == pointsOutstanding) &&
             (identical(other.liabilityEstimate, liabilityEstimate) ||
                 other.liabilityEstimate == liabilityEstimate) &&
-            const DeepCollectionEquality().equals(other._top, _top));
+            const DeepCollectionEquality().equals(other._top, _top) &&
+            (identical(other.topTruncated, topTruncated) ||
+                other.topTruncated == topTruncated));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -7312,6 +7366,7 @@ class _$MembersSectionDtoImpl implements _MembersSectionDto {
   int get hashCode => Object.hash(
     runtimeType,
     enabled,
+    pointsEnabled,
     enrolled,
     activeMembers,
     memberBills,
@@ -7326,6 +7381,7 @@ class _$MembersSectionDtoImpl implements _MembersSectionDto {
     pointsOutstanding,
     liabilityEstimate,
     const DeepCollectionEquality().hash(_top),
+    topTruncated,
   );
 
   /// Create a copy of MembersSectionDto
@@ -7348,6 +7404,7 @@ class _$MembersSectionDtoImpl implements _MembersSectionDto {
 abstract class _MembersSectionDto implements MembersSectionDto {
   const factory _MembersSectionDto({
     final bool enabled,
+    final bool pointsEnabled,
     final int enrolled,
     final int activeMembers,
     final int memberBills,
@@ -7362,6 +7419,7 @@ abstract class _MembersSectionDto implements MembersSectionDto {
     final int pointsOutstanding,
     final int liabilityEstimate,
     final List<MemberTopRowDto> top,
+    final int topTruncated,
   }) = _$MembersSectionDtoImpl;
 
   factory _MembersSectionDto.fromJson(Map<String, dynamic> json) =
@@ -7370,6 +7428,13 @@ abstract class _MembersSectionDto implements MembersSectionDto {
   /// False ⇒ the venue does not run a program, and the section is not drawn.
   @override
   bool get enabled;
+
+  /// The points program runs (or not) independently of membership. False ⇒
+  /// the points figures and the ranked list's points column are **hidden**,
+  /// not zeroed — a zero says "earned nothing", which is a different and
+  /// false statement from "this venue does not run points".
+  @override
+  bool get pointsEnabled;
   @override
   int get enrolled;
   @override
@@ -7401,6 +7466,11 @@ abstract class _MembersSectionDto implements MembersSectionDto {
   int get liabilityEstimate;
   @override
   List<MemberTopRowDto> get top;
+
+  /// Members who traded in the window beyond the end of [top]. Shown as a
+  /// tail count, so the hundredth name never reads as the last one.
+  @override
+  int get topTruncated;
 
   /// Create a copy of MembersSectionDto
   /// with the given fields replaced by the non-null parameter values.
@@ -8175,6 +8245,10 @@ mixin _$MemberTopRowDto {
   int get visits => throw _privateConstructorUsedError;
   int get spend => throw _privateConstructorUsedError;
 
+  /// Points earned in the window. Hidden by the section when the points
+  /// program is off; see [MembersSectionDto.pointsEnabled].
+  int get points => throw _privateConstructorUsedError;
+
   /// Serializes this MemberTopRowDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -8192,7 +8266,7 @@ abstract class $MemberTopRowDtoCopyWith<$Res> {
     $Res Function(MemberTopRowDto) then,
   ) = _$MemberTopRowDtoCopyWithImpl<$Res, MemberTopRowDto>;
   @useResult
-  $Res call({String memberId, String? name, int visits, int spend});
+  $Res call({String memberId, String? name, int visits, int spend, int points});
 }
 
 /// @nodoc
@@ -8214,6 +8288,7 @@ class _$MemberTopRowDtoCopyWithImpl<$Res, $Val extends MemberTopRowDto>
     Object? name = freezed,
     Object? visits = null,
     Object? spend = null,
+    Object? points = null,
   }) {
     return _then(
       _value.copyWith(
@@ -8233,6 +8308,10 @@ class _$MemberTopRowDtoCopyWithImpl<$Res, $Val extends MemberTopRowDto>
                 ? _value.spend
                 : spend // ignore: cast_nullable_to_non_nullable
                       as int,
+            points: null == points
+                ? _value.points
+                : points // ignore: cast_nullable_to_non_nullable
+                      as int,
           )
           as $Val,
     );
@@ -8248,7 +8327,7 @@ abstract class _$$MemberTopRowDtoImplCopyWith<$Res>
   ) = __$$MemberTopRowDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String memberId, String? name, int visits, int spend});
+  $Res call({String memberId, String? name, int visits, int spend, int points});
 }
 
 /// @nodoc
@@ -8269,6 +8348,7 @@ class __$$MemberTopRowDtoImplCopyWithImpl<$Res>
     Object? name = freezed,
     Object? visits = null,
     Object? spend = null,
+    Object? points = null,
   }) {
     return _then(
       _$MemberTopRowDtoImpl(
@@ -8288,6 +8368,10 @@ class __$$MemberTopRowDtoImplCopyWithImpl<$Res>
             ? _value.spend
             : spend // ignore: cast_nullable_to_non_nullable
                   as int,
+        points: null == points
+            ? _value.points
+            : points // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -8295,13 +8379,14 @@ class __$$MemberTopRowDtoImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$MemberTopRowDtoImpl implements _MemberTopRowDto {
+class _$MemberTopRowDtoImpl extends _MemberTopRowDto {
   const _$MemberTopRowDtoImpl({
     this.memberId = '',
     this.name,
     this.visits = 0,
     this.spend = 0,
-  });
+    this.points = 0,
+  }) : super._();
 
   factory _$MemberTopRowDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$MemberTopRowDtoImplFromJson(json);
@@ -8318,9 +8403,15 @@ class _$MemberTopRowDtoImpl implements _MemberTopRowDto {
   @JsonKey()
   final int spend;
 
+  /// Points earned in the window. Hidden by the section when the points
+  /// program is off; see [MembersSectionDto.pointsEnabled].
+  @override
+  @JsonKey()
+  final int points;
+
   @override
   String toString() {
-    return 'MemberTopRowDto(memberId: $memberId, name: $name, visits: $visits, spend: $spend)';
+    return 'MemberTopRowDto(memberId: $memberId, name: $name, visits: $visits, spend: $spend, points: $points)';
   }
 
   @override
@@ -8332,12 +8423,14 @@ class _$MemberTopRowDtoImpl implements _MemberTopRowDto {
                 other.memberId == memberId) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.visits, visits) || other.visits == visits) &&
-            (identical(other.spend, spend) || other.spend == spend));
+            (identical(other.spend, spend) || other.spend == spend) &&
+            (identical(other.points, points) || other.points == points));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, memberId, name, visits, spend);
+  int get hashCode =>
+      Object.hash(runtimeType, memberId, name, visits, spend, points);
 
   /// Create a copy of MemberTopRowDto
   /// with the given fields replaced by the non-null parameter values.
@@ -8356,13 +8449,15 @@ class _$MemberTopRowDtoImpl implements _MemberTopRowDto {
   }
 }
 
-abstract class _MemberTopRowDto implements MemberTopRowDto {
+abstract class _MemberTopRowDto extends MemberTopRowDto {
   const factory _MemberTopRowDto({
     final String memberId,
     final String? name,
     final int visits,
     final int spend,
+    final int points,
   }) = _$MemberTopRowDtoImpl;
+  const _MemberTopRowDto._() : super._();
 
   factory _MemberTopRowDto.fromJson(Map<String, dynamic> json) =
       _$MemberTopRowDtoImpl.fromJson;
@@ -8375,6 +8470,11 @@ abstract class _MemberTopRowDto implements MemberTopRowDto {
   int get visits;
   @override
   int get spend;
+
+  /// Points earned in the window. Hidden by the section when the points
+  /// program is off; see [MembersSectionDto.pointsEnabled].
+  @override
+  int get points;
 
   /// Create a copy of MemberTopRowDto
   /// with the given fields replaced by the non-null parameter values.

@@ -600,6 +600,7 @@ _$MembersSectionDtoImpl _$$MembersSectionDtoImplFromJson(
   Map<String, dynamic> json,
 ) => _$MembersSectionDtoImpl(
   enabled: json['enabled'] as bool? ?? false,
+  pointsEnabled: json['pointsEnabled'] as bool? ?? false,
   enrolled: (json['enrolled'] as num?)?.toInt() ?? 0,
   activeMembers: (json['activeMembers'] as num?)?.toInt() ?? 0,
   memberBills: (json['memberBills'] as num?)?.toInt() ?? 0,
@@ -618,12 +619,14 @@ _$MembersSectionDtoImpl _$$MembersSectionDtoImplFromJson(
           ?.map((e) => MemberTopRowDto.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <MemberTopRowDto>[],
+  topTruncated: (json['topTruncated'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$$MembersSectionDtoImplToJson(
   _$MembersSectionDtoImpl instance,
 ) => <String, dynamic>{
   'enabled': instance.enabled,
+  'pointsEnabled': instance.pointsEnabled,
   'enrolled': instance.enrolled,
   'activeMembers': instance.activeMembers,
   'memberBills': instance.memberBills,
@@ -638,6 +641,7 @@ Map<String, dynamic> _$$MembersSectionDtoImplToJson(
   'pointsOutstanding': instance.pointsOutstanding,
   'liabilityEstimate': instance.liabilityEstimate,
   'top': instance.top,
+  'topTruncated': instance.topTruncated,
 };
 
 _$PiutangSectionDtoImpl _$$PiutangSectionDtoImplFromJson(
@@ -715,6 +719,7 @@ _$MemberTopRowDtoImpl _$$MemberTopRowDtoImplFromJson(
   name: json['name'] as String?,
   visits: (json['visits'] as num?)?.toInt() ?? 0,
   spend: (json['spend'] as num?)?.toInt() ?? 0,
+  points: (json['points'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$$MemberTopRowDtoImplToJson(
@@ -724,6 +729,7 @@ Map<String, dynamic> _$$MemberTopRowDtoImplToJson(
   'name': instance.name,
   'visits': instance.visits,
   'spend': instance.spend,
+  'points': instance.points,
 };
 
 _$MoneyAuditSectionDtoImpl _$$MoneyAuditSectionDtoImplFromJson(

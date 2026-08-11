@@ -18,6 +18,7 @@ import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
 import 'package:satset/data/services/mdns_browser_service.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
+import 'package:satset/domain/models/admission.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/server/server.dart' show serverRuntimeProvider;
@@ -78,14 +79,6 @@ class AuthState {
   /// Empty unless [isOwner].
   final String ownerVenueId;
 
-  /// Set when admin sign-in stopped because another device on the LAN is
-  /// already hosting this venue — carries that host's mDNS label so the block
-  /// screen can name the device instead of describing it. A venue has one
-  /// admin on one device (ADR-0077); the second device is refused rather than
-  /// admitted as a client. Transient by nature: it clears the moment the other
-  /// device stops hosting, which is why the Firebase session is kept alive and
-  /// only this flag is raised.
-  final String? hostOccupied;
   const AuthState({
     this.isAuthenticated = false,
     this.user,
@@ -96,7 +89,6 @@ class AuthState {
     this.isSuperAdmin = false,
     this.isOwner = false,
     this.ownerVenueId = '',
-    this.hostOccupied,
   });
 
   AuthState copyWith({
@@ -109,7 +101,6 @@ class AuthState {
     bool? isSuperAdmin,
     bool? isOwner,
     String? ownerVenueId,
-    String? hostOccupied,
   }) => AuthState(
     isAuthenticated: isAuthenticated ?? this.isAuthenticated,
     user: user ?? this.user,
@@ -120,9 +111,6 @@ class AuthState {
     isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
     isOwner: isOwner ?? this.isOwner,
     ownerVenueId: ownerVenueId ?? this.ownerVenueId,
-    // Reset-by-default like `error`: both describe the last attempt, and a
-    // block that survived into the next one would be a lie.
-    hostOccupied: hostOccupied,
   );
 
   bool has(Capability c) => capabilities.contains(c);
@@ -214,37 +202,122 @@ class AuthRepository extends StateNotifier<AuthState> {
     }
   }
 
-  /// Admin sign-in via Firebase Authentication (email + password). Firebase
-  /// gates identity + eligibility (`admins/{uid}.status == active`); only on a
-  /// pass does [bootServer] start the embedded server, after which the local
-  /// admin session is minted **in-process** (no HTTP, no token round-trip).
-  /// Starts the live eligibility kill switch on success. See ADR-0015.
-  Future<bool> signInAsAdmin({
+  /// A stage that has not answered in this long is not going to. Matches the
+  /// budget [FirebaseAdminService.evaluateForBoot] already uses at boot, so the
+  /// interactive path and the cached path give up on the same terms.
+  static const _stageTimeout = Duration(seconds: 8);
+
+  /// Backstop for the whole admission, covering any stage nobody wrapped.
+  static const _admissionBudget = Duration(seconds: 25);
+
+  /// Bumped on every submit and every cancel. A stage that lands late belongs
+  /// to a superseded attempt and must not write state — see [cancelAdmission].
+  int _admissionAttempt = 0;
+
+  /// Abandon the admission in flight. `fb.signIn` returns a Future with no
+  /// cancellation, so this cannot stop the work — it stops us *listening*, and
+  /// signs the cloud session out so a success landing after the admin walked
+  /// away cannot leave a live session behind an unauthenticated screen.
+  ///
+  /// Without the attempt token this would be a lie: the gauntlet would run to
+  /// completion and mutate state under a screen that had moved on.
+  void cancelAdmission() {
+    SatLog.repo('auth.cancelAdmission');
+    _admissionAttempt++;
+    state = state.copyWith(busy: false);
+    unawaited(
+      ref.read(firebaseAdminServiceProvider).signOut().catchError((_) {}),
+    );
+  }
+
+  /// One **admission**: Firebase gates identity + eligibility
+  /// (`admins/{uid}.status == active`); only on a pass does [bootServer] start
+  /// the embedded server, after which the local admin session is minted
+  /// **in-process** (no HTTP, no token round-trip). Starts the live eligibility
+  /// kill switch on success. See ADR-0015.
+  ///
+  /// Returns the outcome instead of a `bool`: there are fifteen and only two of
+  /// them mean "wrong password". Nothing here writes an error string — the
+  /// caller switches on the outcome, and the words are composed at read time
+  /// (ADR-0085).
+  ///
+  /// Every stage carries a deadline. A venue whose Wi-Fi has a LAN but no WAN
+  /// is the ordinary restaurant failure, and Firestore's cache-first read does
+  /// not fail on it — it waits, which used to spin the sign-in button until the
+  /// app was killed.
+  Future<AdmissionOutcome> signInAsAdmin({
     required String email,
     required String password,
     required Future<void> Function(String venueId) bootServer,
+    bool freshProfile = false,
   }) async {
-    SatLog.repo('auth.signInAsAdmin email=$email');
+    final attempt = ++_admissionAttempt;
+    SatLog.repo('auth.signInAsAdmin email=$email attempt=$attempt');
     state = state.copyWith(busy: true, error: null);
-    final fb = ref.read(firebaseAdminServiceProvider);
     try {
-      final cred = await fb.signIn(email: email, password: password);
+      final outcome = await _admit(
+        email: email,
+        password: password,
+        bootServer: bootServer,
+        attempt: attempt,
+        freshProfile: freshProfile,
+      ).timeout(_admissionBudget);
+      // A superseded attempt reports nothing and touches nothing: the current
+      // one owns the screen.
+      if (attempt != _admissionAttempt) return const AdmissionCancelled();
+      if (!outcome.isAdmitted) state = state.copyWith(busy: false);
+      SatLog.repo('auth.signInAsAdmin outcome=${outcome.runtimeType}');
+      return outcome;
+    } on TimeoutException {
+      SatLog.repo('auth.signInAsAdmin budget-expired');
+      if (attempt != _admissionAttempt) return const AdmissionCancelled();
+      state = state.copyWith(busy: false);
+      unawaited(
+        ref.read(firebaseAdminServiceProvider).signOut().catchError((_) {}),
+      );
+      return const AdmissionUnreachable('budget');
+    }
+  }
+
+  /// The staged gauntlet itself. Split out so [signInAsAdmin] owns the deadline
+  /// and the attempt token in one place and this reads as the policy it is.
+  Future<AdmissionOutcome> _admit({
+    required String email,
+    required String password,
+    required Future<void> Function(String venueId) bootServer,
+    required int attempt,
+    required bool freshProfile,
+  }) async {
+    final fb = ref.read(firebaseAdminServiceProvider);
+    // Names the call that ran out of time, for the log. The copy is the same
+    // whichever it was — "cannot reach the identity server" is the whole of
+    // what the admin can act on.
+    var stage = 'signIn';
+    bool superseded() => attempt != _admissionAttempt;
+    try {
+      final cred = await fb
+          .signIn(email: email, password: password)
+          .timeout(_stageTimeout);
       final uid = cred.user?.uid;
-      if (uid == null) {
-        state = state.copyWith(
-          busy: false,
-          error: ref.read(l10nProvider).authAdminLoginFailed,
-        );
-        return false;
-      }
-      final profile = await fb.fetch(uid);
+      if (uid == null) return const AdmissionCredentialsRejected('no-uid');
+      if (superseded()) return const AdmissionCancelled();
+
+      stage = 'fetchAdmin';
+      // `freshProfile` is set only on the re-entry after a password change:
+      // `changeOwnPassword` clears `mustChangePassword` server-side, but the
+      // cache-first read still reports the old value, which used to send the
+      // admin straight back to the change form. Cache-first every other time —
+      // an ordinary sign-in must keep working with no WAN.
+      final profile = await fb
+          .fetch(uid, serverOnly: freshProfile)
+          .timeout(_stageTimeout);
+      if (superseded()) return const AdmissionCancelled();
       if (profile == null) {
         // Auth user exists but has no `admins/{uid}` doc. Log the uid so an
         // operator can create the doc / record (doc id == uid).
         SatLog.repo('auth.signInAsAdmin blocked uid=$uid status=no-doc');
         await fb.signOut();
-        state = state.copyWith(busy: false, error: _eligibilityMessage(null));
-        return false;
+        return const AdmissionNotRegistered();
       }
 
       // A dictated temporary password, checked before every divert and long
@@ -258,13 +331,7 @@ class AuthRepository extends StateNotifier<AuthState> {
         );
         if (expired) {
           await fb.signOut();
-          state = state.copyWith(
-            busy: false,
-            // No BuildContext in a repository — the strings come off the
-            // provider instead. ADR-0083.
-            error: ref.read(l10nProvider).tempPasswordExpired,
-          );
-          return false;
+          return const AdmissionTempPasswordExpired();
         }
         // Not signed out, unlike every other rejection here. This one is a
         // continuation rather than a refusal: `changeOwnPassword` is authorized
@@ -272,17 +339,18 @@ class AuthRepository extends StateNotifier<AuthState> {
         // change form with no way to prove who is asking. The session buys
         // nothing else — no local JWT, no server, and Firestore rules give a
         // plain admin only its own doc and one heartbeat field.
-        ref.read(pendingPasswordChangeProvider.notifier).state =
-            PendingPasswordChange(uid: uid, email: email, name: profile.name);
-        state = state.copyWith(busy: false, error: null);
-        return false;
+        return AdmissionNeedsNewPassword(
+          uid: uid,
+          email: email,
+          name: profile.name,
+        );
       }
 
       // Fleet operator: no venue, no local server — divert to the Fleet console.
       if (profile.isSuper) {
         _establishSuperSession(profile, email);
         SatLog.repo('auth.signInAsAdmin super uid=$uid');
-        return true;
+        return const AdmittedAsSuper();
       }
 
       // Report owner: read-only, no local server — divert to /owner. Requires
@@ -294,23 +362,18 @@ class AuthRepository extends StateNotifier<AuthState> {
             'auth.signInAsAdmin blocked owner uid=$uid status=${profile.status.name}',
           );
           await fb.signOut();
-          state = state.copyWith(
-            busy: false,
-            error: _eligibilityMessage(profile),
-          );
-          return false;
+          return AdmissionAccountBlocked(_blockOf(profile.status));
         }
         if (profile.venueId.isEmpty) {
           SatLog.repo('auth.signInAsAdmin blocked owner uid=$uid no-venue');
           await fb.signOut();
-          state = state.copyWith(busy: false, error: _noVenueMessage);
-          return false;
+          return const AdmissionNoVenue();
         }
         _establishOwnerSession(profile, email);
         SatLog.repo(
           'auth.signInAsAdmin owner uid=$uid venue=${profile.venueId}',
         );
-        return true;
+        return const AdmittedAsOwner();
       }
 
       if (!profile.isActive) {
@@ -318,11 +381,7 @@ class AuthRepository extends StateNotifier<AuthState> {
           'auth.signInAsAdmin blocked uid=$uid status=${profile.status.name}',
         );
         await fb.signOut();
-        state = state.copyWith(
-          busy: false,
-          error: _eligibilityMessage(profile),
-        );
-        return false;
+        return AdmissionAccountBlocked(_blockOf(profile.status));
       }
 
       // Venue-level kill switch: the venue this admin belongs to must be active
@@ -330,17 +389,19 @@ class AuthRepository extends StateNotifier<AuthState> {
       if (profile.venueId.isEmpty) {
         SatLog.repo('auth.signInAsAdmin blocked uid=$uid no-venue');
         await fb.signOut();
-        state = state.copyWith(busy: false, error: _noVenueMessage);
-        return false;
+        return const AdmissionNoVenue();
       }
-      final venue = await fb.fetchVenue(profile.venueId);
+      stage = 'fetchVenue';
+      final venue = await fb.fetchVenue(profile.venueId).timeout(_stageTimeout);
+      if (superseded()) return const AdmissionCancelled();
       if (venue == null || !venue.isActive) {
         SatLog.repo(
           'auth.signInAsAdmin blocked venue=${profile.venueId} status=${venue?.status.name ?? "no-doc"}',
         );
         await fb.signOut();
-        state = state.copyWith(busy: false, error: _venueMessage(venue));
-        return false;
+        return AdmissionVenueBlocked(
+          venue == null ? AdmissionBlock.notFound : _blockOf(venue.status),
+        );
       }
 
       await storage.writeAdminConfirmedAt(SatClock.now());
@@ -352,51 +413,57 @@ class AuthRepository extends StateNotifier<AuthState> {
       // signed in: the condition clears as soon as the other device stops
       // hosting, and charging a password re-entry for that would be a tax on
       // the person standing between both devices.
+      //
+      // Already bounded at 3s by its own discovery window, so no deadline here.
       final host = await ref
           .read(mdnsBrowserServiceProvider)
           .findVenueHost(profile.venueId);
+      if (superseded()) return const AdmissionCancelled();
       if (host != null) {
         SatLog.repo(
           'auth.signInAsAdmin refused host-occupied host=${host.label} '
           'venue=${profile.venueId}',
         );
-        state = state.copyWith(busy: false, hostOccupied: host.label);
-        return false;
+        return AdmissionHostOccupied(host.label);
       }
 
       // Eligible + no existing host — boot the embedded server (scoped to this
       // admin's venue so it advertises `vid` for the guard), then mint the
       // session locally.
-      await bootServer(profile.venueId);
-      final ok = await _establishAdminSession(uid: uid, profile: profile);
-      if (!ok) {
-        state = state.copyWith(
-          busy: false,
-          error: ref.read(l10nProvider).authServerNotReady,
-        );
-        return false;
+      try {
+        await bootServer(profile.venueId);
+      } catch (e) {
+        SatLog.repo('auth.signInAsAdmin boot-failed $e');
+        return const AdmissionServerBootFailed();
       }
+      if (superseded()) return const AdmissionCancelled();
+      final ok = await _establishAdminSession(uid: uid, profile: profile);
+      if (!ok) return const AdmissionLocalSessionFailed();
       _startEligibilityWatch(uid, profile.venueId);
       SatLog.repo(
         'auth.signInAsAdmin ok host uid=$uid venue=${profile.venueId}',
       );
-      return true;
+      return const AdmittedAsHost();
+    } on TimeoutException {
+      SatLog.repo('auth.signInAsAdmin unreachable stage=$stage');
+      unawaited(fb.signOut().catchError((_) {}));
+      return AdmissionUnreachable(stage);
     } on fb_auth.FirebaseAuthException catch (e) {
       SatLog.repo('auth.signInAsAdmin fb-fail ${e.code}');
-      state = state.copyWith(busy: false, error: _firebaseAuthMessage(e));
-      return false;
+      return AdmissionCredentialsRejected(e.code);
     } catch (e) {
       SatLog.repo('auth.signInAsAdmin fail $e');
-      state = state.copyWith(
-        busy: false,
-        error: authErrorMessage(ref.read(l10nProvider), e, pin: false),
-      );
-      return false;
+      unawaited(fb.signOut().catchError((_) {}));
+      return const AdmissionCredentialsRejected('unknown');
     }
   }
 
-  /// Drop the Firebase session an admin was left holding while blocked by
-  /// [AuthState.hostOccupied] — the way off that screen when the block is not
+  static AdmissionBlock _blockOf(AdminStatus s) => s == AdminStatus.suspended
+      ? AdmissionBlock.suspended
+      : AdmissionBlock.inactive;
+
+  /// Drop the Firebase session an admin was left holding after an
+  /// [AdmissionHostOccupied] — the way off that screen when the block is not
   /// going to clear (a surplus admin account on a venue that predates the cap,
   /// rather than a device that will be switched off in a minute).
   Future<void> abandonHostOccupied() async {
@@ -666,42 +733,6 @@ class AuthRepository extends StateNotifier<AuthState> {
     state = const AuthState();
   }
 
-  String _eligibilityMessage(AdminProfile? p) {
-    final l = ref.read(l10nProvider);
-    if (p == null) return l.authAdminNotRegistered;
-    return switch (p.status) {
-      AdminStatus.suspended => l.authAdminSuspended,
-      _ => l.authAdminInactive,
-    };
-  }
-
-  String get _noVenueMessage => ref.read(l10nProvider).authNoVenueAssigned;
-
-  String _venueMessage(Venue? v) {
-    final l = ref.read(l10nProvider);
-    if (v == null) return l.authVenueNotFound;
-    return switch (v.status) {
-      AdminStatus.suspended => l.authVenueSuspended,
-      // Also where a pre-ADR-0076 `banned` document lands: it parses to
-      // `unknown`, fails `isActive`, and stops the venue exactly as before.
-      _ => l.authVenueInactive,
-    };
-  }
-
-  String _firebaseAuthMessage(fb_auth.FirebaseAuthException e) {
-    final l = ref.read(l10nProvider);
-    return switch (e.code) {
-      'invalid-email' => l.authInvalidEmail,
-      'user-disabled' => l.authAccountDisabled,
-      'user-not-found' ||
-      'wrong-password' ||
-      'invalid-credential' => l.authWrongCredentials,
-      'too-many-requests' => l.authTooManyAttempts,
-      'network-request-failed' => l.authFirstLoginNeedsInternet,
-      _ => l.authAdminLoginFailed,
-    };
-  }
-
   /// Restore an existing token by calling `/auth/me`. No-op if no API config
   /// or no stored token.
   ///
@@ -718,42 +749,58 @@ class AuthRepository extends StateNotifier<AuthState> {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) return;
     state = state.copyWith(restoring: true);
-    final token = await storage.readToken();
-    if (token == null || token.isEmpty) {
-      state = state.copyWith(restoring: false);
-      return;
-    }
     try {
-      final api = ref.read(apiClientProvider);
-      final raw = (await api.getJson('/auth/me') as Map)
-          .cast<String, dynamic>();
-      final me = MeDto.fromJson(raw);
-      await storage.writeMe(jsonEncode(raw));
-      await _applyMe(me);
-      // Admin auto-login: re-arm the two-sided kill switch + heartbeat for the
-      // cached Firebase session so a console/fleet flip still tears the server
-      // down. Resolve the venueId off the admin doc (cache-tolerant).
-      final fb = ref.read(firebaseAdminServiceProvider);
-      final fbUid = fb.currentUser?.uid;
-      if (fbUid != null) {
-        final profile = await fb.fetch(fbUid).catchError((_) => null);
-        if (profile != null && profile.venueId.isNotEmpty) {
-          _startEligibilityWatch(fbUid, profile.venueId);
-        }
+      final String? token;
+      try {
+        token = await storage.readToken();
+      } catch (e, st) {
+        // The keystore itself failed. That is not a verdict on the session —
+        // there is nothing to restore and nothing to clear — so land on the
+        // sign-in screen instead of throwing out of a call nobody awaits.
+        SatLog.err('auth.restore token read', e, st);
+        return;
       }
-    } on ApiException catch (e) {
-      // The host answered and said no. Anything else it says (500, a bad
-      // gateway, a truncated body) is the host having a bad day, not this
-      // session being invalid.
-      if (e.statusCode == 401 || e.statusCode == 403) {
-        SatLog.repo('auth.restore rejected ${e.statusCode} — clearing session');
-        await storage.clearSession();
-        state = state.copyWith(restoring: false);
-      } else {
+      if (token == null || token.isEmpty) return;
+      try {
+        final api = ref.read(apiClientProvider);
+        final raw = (await api.getJson('/auth/me') as Map)
+            .cast<String, dynamic>();
+        final me = MeDto.fromJson(raw);
+        await storage.writeMe(jsonEncode(raw));
+        await _applyMe(me);
+        // Admin auto-login: re-arm the two-sided kill switch + heartbeat for
+        // the cached Firebase session so a console/fleet flip still tears the
+        // server down. Resolve the venueId off the admin doc (cache-tolerant).
+        final fb = ref.read(firebaseAdminServiceProvider);
+        final fbUid = fb.currentUser?.uid;
+        if (fbUid != null) {
+          final profile = await fb.fetch(fbUid).catchError((_) => null);
+          if (profile != null && profile.venueId.isNotEmpty) {
+            _startEligibilityWatch(fbUid, profile.venueId);
+          }
+        }
+      } on ApiException catch (e) {
+        // The host answered and said no. Anything else it says (500, a bad
+        // gateway, a truncated body) is the host having a bad day, not this
+        // session being invalid.
+        if (e.statusCode == 401 || e.statusCode == 403) {
+          SatLog.repo(
+            'auth.restore rejected ${e.statusCode} — clearing session',
+          );
+          await storage.clearSession();
+        } else {
+          await _restoreFromCachedMe();
+        }
+      } catch (_) {
         await _restoreFromCachedMe();
       }
-    } catch (_) {
-      await _restoreFromCachedMe();
+    } finally {
+      // `restoring` gates a full-screen spinner with no escape hatch, so every
+      // path out of here has to clear it — including the ones that throw before
+      // the inner try begins. `readToken()` used to sit outside it, and a
+      // secure-storage failure wedged the sign-in screen for the whole session
+      // with no way back but a force-kill.
+      if (state.restoring) state = state.copyWith(restoring: false);
     }
   }
 
@@ -765,7 +812,6 @@ class AuthRepository extends StateNotifier<AuthState> {
     final cached = await storage.readMe();
     if (cached == null || cached.isEmpty) {
       SatLog.repo('auth.restore unreachable, no cached me — staying signed out');
-      state = state.copyWith(restoring: false);
       return;
     }
     try {
@@ -776,8 +822,8 @@ class AuthRepository extends StateNotifier<AuthState> {
     } catch (_) {
       // A cache we cannot parse is a cache from an older wire shape. Drop it
       // rather than wedging every boot on it; the next reachable host refills.
+      // The `restoring` flag is cleared by the caller's `finally` — one owner.
       await storage.writeMe(null);
-      state = state.copyWith(restoring: false);
     }
   }
 
@@ -870,24 +916,3 @@ final authStateProvider = StateNotifierProvider<AuthRepository, AuthState>(
   ),
 );
 
-/// An admin who just signed in with a temporary password and has not replaced
-/// it yet. See ADR-0075.
-class PendingPasswordChange {
-  final String uid;
-  final String email;
-  final String name;
-  const PendingPasswordChange({
-    required this.uid,
-    required this.email,
-    required this.name,
-  });
-}
-
-/// Set by [AuthRepository.signInAsAdmin] when a temporary password is presented,
-/// consumed by the PIN screen to open the change form. Deliberately *not* a
-/// route redirect: the sign-in is already abandoned (Firebase is signed out
-/// again) so there is no session for a redirect guard to reason about, and
-/// backing out of the form lands where it should — the PIN screen, signed out.
-final pendingPasswordChangeProvider = StateProvider<PendingPasswordChange?>(
-  (_) => null,
-);

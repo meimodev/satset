@@ -97,4 +97,52 @@ class MemberDetail {
   );
 }
 
+/// One settled bill in a member's history. **Lifetime**, not window-scoped —
+/// the report's date range belongs to the report, a person's file has none.
+///
+/// No points figure by design: a points row names the live visit, which the
+/// close deletes after snapshotting under a fresh id, so nothing joins a bill
+/// to the points it earned. The ledger is where points are read.
+class MemberVisitDto {
+  final String id;
+  final DateTime closedAt;
+  final String? tableLabel;
+  final int pax;
+
+  /// `dineIn` | `takeaway`, frozen at snapshot.
+  final String kind;
+  final int settledTotal;
+  final int discountAmount;
+
+  /// Non-zero ⇒ the bill closed as a walkout. The row must say so; read as a
+  /// spend it claims the guest paid.
+  final int lossAmount;
+
+  const MemberVisitDto({
+    required this.id,
+    required this.closedAt,
+    this.tableLabel,
+    this.pax = 0,
+    this.kind = 'dineIn',
+    this.settledTotal = 0,
+    this.discountAmount = 0,
+    this.lossAmount = 0,
+  });
+
+  bool get isTakeaway => kind == 'takeaway';
+  bool get isWalkout => lossAmount > 0;
+
+  factory MemberVisitDto.fromJson(Map<String, dynamic> j) => MemberVisitDto(
+    id: j['id'] as String? ?? '',
+    closedAt: DateTime.tryParse(j['closedAt'] as String? ?? '')?.toLocal() ??
+        DateTime(2000),
+    tableLabel: j['tableLabel'] as String?,
+    pax: _int(j['pax']),
+    kind: j['kind'] as String? ?? 'dineIn',
+    settledTotal: _int(j['settledTotal']),
+    discountAmount: _int(j['discountAmount']),
+    lossAmount: _int(j['lossAmount']),
+  );
+}
+
 int _int(Object? v) => v is int ? v : (v is num ? v.toInt() : 0);

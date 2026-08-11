@@ -94,11 +94,28 @@ Future<void> main() async {
         final decision = await fbAdmin.evaluateForBoot(storage);
         switch (decision.gate) {
           case AdminBootGate.ok:
-            server = await ServerRuntime.boot(version: AppVersion.value);
-            apiConfig = ApiConfig(
-              baseUri: Uri.parse('https://127.0.0.1:${server.port}'),
-              trustedFingerprint: server.tls.fingerprint,
-            );
+            // A boot that never returns is the one failure with no way out: it
+            // happens before `runApp`, so there is no frame, no on-screen log
+            // and no button — only a force-kill. A held port, a TLS keygen that
+            // stalls, a long migration all land here. The deadline does not
+            // rescue the server; it rescues the app, which can then say so.
+            final booting = ServerRuntime.boot(version: AppVersion.value);
+            try {
+              server = await booting.timeout(const Duration(seconds: 15));
+              apiConfig = ApiConfig(
+                baseUri: Uri.parse('https://127.0.0.1:${server.port}'),
+                trustedFingerprint: server.tls.fingerprint,
+              );
+            } catch (e, st) {
+              SatLog.err('boot', e, st);
+              // Abandoned, not cancelled: a boot that lands after the deadline
+              // still holds the port the next attempt needs. Shut it down if it
+              // ever arrives.
+              unawaited(booting.then((s) => s.shutdown()).catchError((_) {}));
+              server = null;
+              apiConfig = null;
+              adminBootBlock = 'bootfailed';
+            }
           case AdminBootGate.ineligible:
             await fbAdmin.signOut();
             adminBootBlock = 'ineligible';

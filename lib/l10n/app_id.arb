@@ -426,6 +426,7 @@
   "fltReleaseGateInvalid": "Format harus 1.2.3, dan min <= disarankan <= terbaru.",
   "bootBlockStale": "Perlu koneksi internet untuk verifikasi admin. Sambungkan internet lalu masuk lagi.",
   "bootBlockIneligible": "Akses admin dicabut. Hubungi pengelola.",
+  "bootBlockFailed": "Server tidak bisa dijalankan di perangkat ini. Tutup aplikasi lalu buka lagi.",
   "tempPasswordTitle": "Ganti sandi",
   "logout": "Keluar",
   "tempPasswordReason": "Anda masuk dengan sandi sementara. Buat sandi baru untuk melanjutkan.",
@@ -4826,6 +4827,8 @@
   "authVenueNotFound": "Venue tidak ditemukan. Hubungi pengelola.",
   "authVenueSuspended": "Venue ditangguhkan. Hubungi pengelola.",
   "authVenueInactive": "Venue tidak aktif.",
+  "admissionUnreachable": "Tidak bisa menghubungi server identitas. Periksa koneksi internet lalu coba lagi.",
+  "admissionCancel": "Batal",
   "sendQueueFull": "Antrean kirim penuh — sambungkan dulu ke server sebelum pesan lagi",
   "sendQueuePending": "{count, plural, other{{count} pesanan menunggu terkirim}}",
   "@sendQueuePending": {
@@ -5055,6 +5058,22 @@
       }
     }
   },
+  "rptMembersMore": "{count, plural, other{+ {count} pelanggan lainnya}}",
+  "@rptMembersMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rptMembersColName": "Pelanggan",
+  "rptMembersColVisits": "Kunjungan",
+  "rptMembersColAvg": "Rata-rata",
+  "rptMembersColPoints": "Poin",
+  "rptMembersColSpend": "Belanja",
+  "rptMembersSortSpend": "Belanja terbesar",
+  "rptMembersSortVisits": "Paling sering datang",
+  "rptMembersSortPoints": "Poin terbanyak",
   "rptKasOpening": "Saldo awal",
   "rptKasIn": "Masuk",
   "rptKasOut": "Keluar",
@@ -5129,6 +5148,10 @@
   "pinDeviceNotPaired": "HP belum tersambung. Scan QR lagi untuk pasangkan.",
   "pinSetupFailed": "Gagal menyiapkan aplikasi. Coba lagi.",
   "pinServerBootFailed": "Gagal menjalankan server di HP ini. Coba lagi.",
+  "pinResetPairing": "Lupakan server ini",
+  "pinResetPairingTitle": "Lupakan server ini?",
+  "pinResetPairingBody": "Perangkat ini akan berhenti tersambung ke server tersebut. Untuk menyambung lagi, server harus aktif dan berada di jaringan yang sama.",
+  "pinResetPairingConfirm": "Lupakan",
   "pinAutoClaimFailed": "Sambung otomatis gagal: {error}",
   "@pinAutoClaimFailed": {
     "placeholders": {
@@ -6129,6 +6152,16 @@
   "memBirthdayFilter": "Ulang tahun bulan ini",
   "memEmptyTitle": "Belum ada pelanggan",
   "memEmptyBody": "Daftarkan tamu langganan lewat tombol Tambah, atau dari layar tagihan saat mereka bayar.",
+  "memFilterEmptyTitle": "Tidak ada yang cocok",
+  "memFilterEmptyBody": "Ubah pencarian atau lepas filternya untuk melihat semua pelanggan.",
+  "memMatchCount": "{count, plural, other{{count} cocok}}",
+  "@memMatchCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "memOffTitle": "Keanggotaan tidak aktif",
   "memOffBody": "Nyalakan di Pengaturan venue → Keanggotaan. Poin dan stempel yang sudah tercatat tetap utuh.",
   "memPhoneOnly": "Buka di tablet. Daftar pelanggan dibaca baris per baris, dan layar telepon cuma muat satu.",
@@ -6168,6 +6201,23 @@
   "memLedgerTitle": "Riwayat poin",
   "memLedgerLoading": "Memuat riwayat…",
   "memLedgerEmpty": "Belum ada gerakan poin.",
+  "memLapsedLabel": "Belum kembali",
+  "memLapsedDays": "{days, plural, other{{days} hari}}",
+  "@memLapsedDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "memVisitsTitle": "Riwayat kunjungan",
+  "memVisitsLoading": "Memuat kunjungan…",
+  "memVisitsEmpty": "Belum ada kunjungan yang selesai.",
+  "memVisitsFailed": "Riwayat kunjungan gagal dimuat.",
+  "memVisitsMore": "Muat lebih banyak",
+  "memVisitTakeaway": "Bawa pulang",
+  "memVisitNoTable": "Tanpa meja",
+  "memVisitWalkout": "Tak tertagih",
   "memSheetAddTitle": "Pelanggan baru",
   "memSheetEditTitle": "Ubah pelanggan",
   "memFieldName": "Nama",

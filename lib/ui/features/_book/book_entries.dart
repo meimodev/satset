@@ -31,6 +31,8 @@ import 'package:satset/ui/core/widgets/payment_proof_thumb.dart';
 import 'package:satset/ui/core/widgets/order_line_card.dart';
 import 'package:satset/ui/core/widgets/pin_sheet.dart';
 import 'package:satset/ui/core/widgets/pulse_dot.dart';
+import 'package:satset/ui/core/widgets/sat_inline_error.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 import 'package:satset/ui/core/widgets/ready_banner.dart';
 import 'package:satset/ui/core/widgets/ready_toast.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
@@ -982,6 +984,48 @@ List<BookEntry> bookEntries() => [
               glow: c.sat.success.withValues(alpha: 0.25),
             ),
           ],
+        ),
+      ),
+    ],
+  ),
+
+  BookEntry(
+    name: 'SatInlineError',
+    group: _gControls,
+    note:
+        'The one error line. Four hand-built copies lived on the sign-in '
+        'screen alone, and two of them could not wrap. Long message here on '
+        'purpose — shrink the width and watch it wrap rather than overflow.',
+    states: [
+      BookState(
+        'under a field / under a form',
+        (c, r) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SatInlineError('Email tidak valid'),
+            const SizedBox(height: Sp.s4),
+            const SatInlineError(
+              'Tidak bisa menghubungi server. Periksa Wi-Fi lalu coba lagi.',
+              center: true,
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+  BookEntry(
+    name: 'SatSpinner',
+    group: _gControls,
+    note:
+        'Two sizes, two jobs. Was four diameters across the sign-in flow, one '
+        'of them 24 wide by 22 tall.',
+    states: [
+      BookState(
+        'sm / md',
+        (c, r) => const Wrap(
+          spacing: Sp.s4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [SatSpinner(), SatSpinner(size: SatSpinnerSize.md)],
         ),
       ),
     ],

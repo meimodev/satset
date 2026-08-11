@@ -44,6 +44,7 @@ Never hardcode a `Color`, a spacing number, or a curve. Go through these.
 | `darken(Color, [amount])` | `colors.dart` | Far end of an avatar/badge gradient. Blends toward black so a saturated hue keeps its identity. |
 | `satBarrier`, `satMediaScrim`, `satShadowInk` | `colors.dart` | Dimming and shadow that must stay dark on *both* themes — modal barrier, label-over-photo scrim, ambient shadow. Not `sc.scrim`: that token is an opaque blend base and paints the layer underneath out entirely. |
 | `context.layout` | `layout.dart` | Phone/tablet breakpoints, `useTabletShell`. |
+| `SatSize` | `layout.dart` | Dimensions above the spacing scale — a panel's width, its own inset, a control's height. `Sp` stops at 48 because past that a number is the shape of a thing, not a gap; this is where those get named instead of sitting bare in a screen. |
 | `courseVisual`, `roleVisual`, `zoneVisual`, `auditTone` | `course_visuals.dart`, `role_visuals.dart`, `zone_visuals.dart`, `audit_visuals.dart` | Course/role/zone/audit-type color + icon. One hue vocabulary — don't re-map. `auditTone` is shared by the personal feed and the venue log, so a void looks the same on both; it is an exhaustive switch, so a new `AuditType` won't compile until it has one. |
 | `SatChannel` | `channel_visuals.dart` | How a takeaway reached the venue (bungkus / telepon / gofood / grab) + its hue. The channel pill is a takeaway's stand-in for a dine-in's zone chip, so it goes in the same slot. ADR-0066. |
 | `format.dart` | `format.dart` | Currency, time, duration formatting. |
@@ -82,7 +83,7 @@ it is not.
 
 | Widget | File | Use for |
 |---|---|---|
-| `SatButton` | `sat_button.dart` | **Every** button. `.primary` / `.neutral` / `.outline` / `.ghost` / `.success` / `.danger` carry the intent; `size` (sm/md/lg), `icon`, `busy` and `trailingValue` are the only open axes. Disabled reads from the neutral ramp on every variant — a greyed danger button must not still look dangerous. |
+| `SatButton` | `sat_button.dart` | **Every** button. `.primary` / `.neutral` / `.outline` / `.ghost` / `.success` / `.danger` carry the intent; `size` (sm/md/lg), `icon`, `busy` and `trailingValue` are the only open axes. Disabled reads from the neutral ramp on every variant — a greyed danger button must not still look dangerous. **`busy` is not disabled**: it keeps its fill and says so with the spinner, because a working button dropped to the neutral ramp reads as refused. |
 | `SatIconButton` | `sat_icon_button.dart` | Icon-only target. `tooltip` is **required**: with no text child Flutter derives no semantics. |
 | `SatChip` | `sat_chip.dart` | `.tag` states a fact (seven hues, optional icon/dot/count); `.select` takes a tap. Selection is a **fill, never a tint** — under Glow it fills with `accent` and takes `accentInk`, matching the zone strip (ADR-0051 as amended; the obsidian slab stays on the active menu category tab, which is not a chip). Not `StatusChip`, which stays: a ticket's lifecycle is domain vocabulary with a fixed set. `.tag(filled: true)` fills the hue instead of tinting it and inks via `inkOn` — a fact that changes what someone does, e.g. the KDS paid add-on beside a merely-chosen option (ADR-0051). `neutral` ignores it; its tint is already flat `bg3`. |
 | `SatToggle` | `sat_toggle.dart` | On/off. Owns its 44px tap target and its `Semantics(toggled:)`. A disabled toggle still announces its state. |
@@ -95,7 +96,9 @@ it is not.
 | `SatEmpty` | `sat_empty.dart` | "Nothing here yet". `body` is where the next action goes, in words. |
 | `SatSectionLabel` | `sat_empty.dart` | Caps label above a section that is not inside a card. |
 | `SatSheetHeader` | `sat_sheet_header.dart` | Top of a bottom sheet: padding, leading slot, and the close button with its tooltip. |
-| `PulseDot` | `pulse_dot.dart` | Status dot that breathes while something needs attention. Reduced motion holds it at the **midpoint**, not the trough — a dot frozen at its dimmest reads as "off". |
+| `PulseDot` | `pulse_dot.dart` | Status dot that breathes while something needs attention. Reduced motion holds it at the **midpoint**, not the trough — a dot frozen at its dimmest reads as "off". `pulse: false` is the plain dot with the same glow — reachability is a fact, not a request for attention. |
+| `SatInlineError` | `sat_inline_error.dart` | The red line under a field or under a form: glyph, gap, wrapping message. `center: true` is the form-level variant. Reach for this over `SatField`'s `errorText`, which hands the line to Material and prints it without the glyph. |
+| `SatSpinner` | `sat_spinner.dart` | The busy indicator, `sm` (inline) or `md` (alone on a screen). Two sizes because there are two jobs. A whole-screen wait with a known shape wants `SkeletonCard` instead. |
 
 ### Type roles — `SatType`
 
