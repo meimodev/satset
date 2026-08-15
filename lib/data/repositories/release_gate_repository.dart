@@ -34,7 +34,12 @@ class ReleaseGateRepository extends StateNotifier<ReleaseGate> {
     required ReleaseGate seed,
     bool listen = true,
   }) : super(seed) {
-    if (listen) Future.microtask(_start);
+    // Wired synchronously, not off a microtask: the provider watches prefs, so
+    // a deferred `_start` could land after SharedPreferences resolved and
+    // marked this notifier for rebuild — which is the `!_didChangeDependency`
+    // assert every cold boot used to raise. Reads during create are fine; the
+    // only awaits are past the network call.
+    if (listen) unawaited(_start());
   }
 
   final Ref ref;

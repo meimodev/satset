@@ -356,6 +356,7 @@ class _PinScreenState extends ConsumerState<PinScreen>
                 ref.read(pinViewModelProvider.notifier).selectServer(k),
             onAutoClaim: (s) =>
                 ref.read(pinViewModelProvider.notifier).selectDiscovered(s),
+            onResetPairing: _resetPairing,
           )
         : _ConnectedServerCard(
             server: state.selectedServer!,
@@ -794,6 +795,11 @@ class _ServerList extends ConsumerWidget {
   final String? pairingError;
   final ValueChanged<String> onSelect;
   final Future<bool> Function(PairedServerInfo) onAutoClaim;
+
+  /// Same last resort the connected card offers. It has to live here too: the
+  /// card is only ever on screen underneath the modal PIN sheet, so this list
+  /// is the one reachable place to drop a pairing that cannot work.
+  final VoidCallback onResetPairing;
   const _ServerList({
     required this.servers,
     required this.selectedKey,
@@ -801,6 +807,7 @@ class _ServerList extends ConsumerWidget {
     required this.pairingError,
     required this.onSelect,
     required this.onAutoClaim,
+    required this.onResetPairing,
   });
 
   @override
@@ -860,14 +867,24 @@ class _ServerList extends ConsumerWidget {
         ),
         if (servers.isNotEmpty) ...[
           const SizedBox(height: Sp.s2),
-          Align(
-            alignment: Alignment.centerRight,
-            child: SatButton.ghost(
-              label: context.l10n.pinManualConnectBtn,
-              icon: Icons.settings_ethernet,
-              size: SatButtonSize.sm,
-              onTap: () => _showManualAddressDialog(context),
-            ),
+          Row(
+            mainAxisAlignment: servers.any((s) => s.paired)
+                ? MainAxisAlignment.spaceBetween
+                : MainAxisAlignment.end,
+            children: [
+              if (servers.any((s) => s.paired))
+                SatButton.ghost(
+                  label: context.l10n.pinResetPairing,
+                  size: SatButtonSize.sm,
+                  onTap: onResetPairing,
+                ),
+              SatButton.ghost(
+                label: context.l10n.pinManualConnectBtn,
+                icon: Icons.settings_ethernet,
+                size: SatButtonSize.sm,
+                onTap: () => _showManualAddressDialog(context),
+              ),
+            ],
           ),
         ],
         if (pairingError != null) ...[
