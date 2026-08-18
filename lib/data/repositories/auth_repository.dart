@@ -23,6 +23,7 @@ import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/server/server.dart' show serverRuntimeProvider;
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/data/services/error_bus_service.dart';
 
 /// Derive the legacy [UserRole] bucket from the server-authoritative
 /// capabilities set. Source of truth is the role row on the server; the
@@ -811,7 +812,9 @@ class AuthRepository extends StateNotifier<AuthState> {
   Future<void> _restoreFromCachedMe() async {
     final cached = await storage.readMe();
     if (cached == null || cached.isEmpty) {
-      SatLog.repo('auth.restore unreachable, no cached me — staying signed out');
+      SatLog.repo(
+        'auth.restore unreachable, no cached me — staying signed out',
+      );
       return;
     }
     try {
@@ -899,6 +902,29 @@ class AuthRepository extends StateNotifier<AuthState> {
     state = const AuthState();
   }
 
+  /// The host rejected a token we still believed in — the session is over.
+  ///
+  /// Distinct from [signOut]: there is nobody to tell. The token is already
+  /// dead, so calling `/auth/logout` with it would only 401 again, and the
+  /// shift it would have closed was closed by whatever invalidated the
+  /// session. This drops the local state and lets the router's redirect put
+  /// the user back on the PIN screen, which is the only honest thing to show.
+  ///
+  /// Idempotent, because several in-flight requests can 401 at once.
+  Future<void> sessionExpired() async {
+    if (!state.isAuthenticated) return;
+    SatLog.repo('auth.sessionExpired');
+    ref
+        .read(errorBusServiceProvider)
+        .push(
+          ref.read(l10nProvider).authSessionExpired,
+          level: AppErrorLevel.warning,
+          code: 'session_expired',
+        );
+    await storage.clearSession();
+    state = const AuthState();
+  }
+
   @override
   void dispose() {
     unawaited(_eligibilitySub?.cancel());
@@ -915,4 +941,3 @@ final authStateProvider = StateNotifierProvider<AuthRepository, AuthState>(
     storage: ref.watch(secureStorageServiceProvider),
   ),
 );
-

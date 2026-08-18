@@ -82,6 +82,10 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     // local bearer, so the first GET can come back 401. Without this the venue
     // would sit on an empty menu until the app restarted. Same shape as
     // TablesRepository. See ADR-0021.
+    // `refresh()` re-enters this method, so the subscription is claimed once
+    // — a second listener would refetch the menu twice per event and outlive
+    // `dispose`, which only cancels the field's current value.
+    if (_wsSub != null) return;
     _wsSub = ref.read(wsClientProvider).events.listen((ev) {
       if (ev.type == WsEventTypes.connected) {
         unawaited(_resync());

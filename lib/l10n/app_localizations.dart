@@ -8917,12 +8917,6 @@ abstract class AppL10n {
   /// **'Pesanan Meja {table} sudah live di display dapur dan bar.'**
   String sntBody(String table);
 
-  /// No description provided for @sntLatency.
-  ///
-  /// In id, this message translates to:
-  /// **'LAN P50 {ms}MS · CLOUD QUEUED'**
-  String sntLatency(String ms);
-
   /// No description provided for @meShiftLine.
   ///
   /// In id, this message translates to:
@@ -9996,6 +9990,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Server belum siap. Coba lagi.'**
   String get authServerNotReady;
+
+  /// No description provided for @authSessionExpired.
+  ///
+  /// In id, this message translates to:
+  /// **'Sesi berakhir. Masuk lagi.'**
+  String get authSessionExpired;
 
   /// No description provided for @authAdminNotRegistered.
   ///

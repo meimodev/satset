@@ -5613,11 +5613,6 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
-  String sntLatency(String ms) {
-    return 'LAN P50 ${ms}MS · CLOUD QUEUED';
-  }
-
-  @override
   String meShiftLine(String start, String elapsed) {
     return 'STARTED $start · $elapsed RUNNING';
   }
@@ -6346,6 +6341,9 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get authServerNotReady => 'The server isn\'t ready yet. Try again.';
+
+  @override
+  String get authSessionExpired => 'Session ended. Sign in again.';
 
   @override
   String get authAdminNotRegistered =>

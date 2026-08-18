@@ -1,5 +1,4 @@
 import 'package:satset/core/localization/report_copy.dart';
-import 'dart:math';
 
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -25,8 +24,6 @@ class SentScreen extends ConsumerStatefulWidget {
 
 class _SentScreenState extends ConsumerState<SentScreen>
     with TickerProviderStateMixin {
-  int _progress = 0;
-  late final int _latency;
   // Set once the waiter taps "Cetak struk" so the auto-return doesn't yank the
   // screen out from under the printer picker.
   bool _engaged = false;
@@ -34,13 +31,6 @@ class _SentScreenState extends ConsumerState<SentScreen>
   @override
   void initState() {
     super.initState();
-    _latency = 120 + Random().nextInt(180);
-    Future.delayed(const Duration(milliseconds: 280), () {
-      if (mounted) setState(() => _progress = 1);
-    });
-    Future.delayed(const Duration(milliseconds: 620), () {
-      if (mounted) setState(() => _progress = 2);
-    });
     Future.delayed(const Duration(milliseconds: 1900), () {
       if (!mounted || _engaged) return;
       // Pop back to the original table detail (sent → review → menu → detail)
@@ -105,16 +95,14 @@ class _SentScreenState extends ConsumerState<SentScreen>
                 runSpacing: 8,
                 alignment: WrapAlignment.center,
                 children: [
-                  for (var i = 0; i < widget.stations.length; i++)
-                    _StationChip(name: widget.stations[i], done: _progress > i),
+                  // Every station on this list already has the order: the
+                  // POST returned 200 before this screen was pushed. The
+                  // chips report that, and nothing else — they used to tick
+                  // over on timers, which staged a delivery that had already
+                  // happened and invented a latency figure to go with it.
+                  for (final station in widget.stations)
+                    _StationChip(name: station),
                 ],
-              ),
-              const SizedBox(height: Sp.s4),
-              Text(
-                context.l10n.sntLatency('$_latency'),
-                style: SatType.monoS(
-                  color: glow ? ink.withValues(alpha: 0.55) : sc.textLo,
-                ),
               ),
               if (table != null) ...[
                 const SizedBox(height: Sp.s6),
@@ -144,8 +132,7 @@ class _SentScreenState extends ConsumerState<SentScreen>
 
 class _StationChip extends StatelessWidget {
   final String name;
-  final bool done;
-  const _StationChip({required this.name, required this.done});
+  const _StationChip({required this.name});
 
   @override
   Widget build(BuildContext context) {
@@ -160,26 +147,13 @@ class _StationChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          done
-              ? Container(
-                  width: 18,
-                  height: 18,
-                  decoration: SatBox.d(
-                    shape: BoxShape.circle,
-                    color: sc.success,
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(Icons.check, size: 11, color: sc.successInk),
-                )
-              : SizedBox(
-                  width: Sp.s4h,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: sc.accentText,
-                    backgroundColor: sc.border2,
-                  ),
-                ),
+          Container(
+            width: 18,
+            height: 18,
+            decoration: SatBox.d(shape: BoxShape.circle, color: sc.success),
+            alignment: Alignment.center,
+            child: Icon(Icons.check, size: 11, color: sc.successInk),
+          ),
           const SizedBox(width: Sp.s2),
           Text(
             stationLabel(context.l10n, name),

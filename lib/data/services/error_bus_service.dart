@@ -42,6 +42,15 @@ class ErrorBusService {
   Future<void> dispose() => _c.close();
 }
 
+/// The bus as a provider the UI can `ref.listen` to.
+///
+/// `AppShell` is the one subscriber (ADR-0103): the shell outlives every tab,
+/// so an error raised on one screen still surfaces if the user has already
+/// walked to another.
+final appErrorProvider = StreamProvider<AppError>(
+  (ref) => ref.watch(errorBusServiceProvider).stream,
+);
+
 final errorBusServiceProvider = Provider<ErrorBusService>((ref) {
   final bus = ErrorBusService();
   ref.onDispose(bus.dispose);

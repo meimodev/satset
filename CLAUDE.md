@@ -43,7 +43,9 @@ Lints: `package:flutter_lints/flutter.yaml`. No custom rules.
 
 ## Architecture
 
-Strict three-layer split: `ui/` ← `domain/` ← `data/`. Server lives separately under `server/`.
+Three layers pointing one way: `ui/` ← `domain/` ← `data/`. Server lives separately under `server/`.
+
+Enforced by `test/layering_test.dart`, which bans each cross-layer import and carries a **frozen allowlist** of the four files that already break it (ADR-0104) — the three use cases, which import `flutter_riverpod` and reach down into `data/repositories/`, and `data/services/alert_sound_service`, which reaches up into a `ui/` view model. Entries come off that list when an import goes away; nothing goes on. `lib/domain/models/**` is pure with no exceptions.
 
 **Entry:** `lib/main.dart` → `ProviderScope` → `SatSetApp` (`lib/app.dart`) → `MaterialApp.router` wired to `routerProvider`.
 
@@ -61,7 +63,7 @@ Strict three-layer split: `ui/` ← `domain/` ← `data/`. Server lives separate
   - Other: `me/`, `void_flow/`, `shell/app_shell.dart`, `_stub/`.
   - Debug: `_book/` — widget book (`book_screen`, `book_entries`, `book_stubs`), debug builds only. ADR-0054.
 
-**`lib/domain/`** — business logic, no Flutter imports.
+**`lib/domain/`** — business logic. `models/` import nothing outside themselves; `use_cases/` are Riverpod providers that orchestrate repositories, so they do reach `flutter_riverpod` and `data/` (ADR-0104).
 - `models/` — `venue_table`, `zone`, `menu_item`, `menu_category`, `modifier_group`, `ticket` (freezed), `course` (freezed), `cart_item`, `role` (freezed), `user`, `capability`, `app_mode`, `audit_entry`, `member` (+ `MemberPointKind`).
 - `use_cases/` — `submit_order_use_case`, `fire_course_use_case`, `advance_ticket_status_use_case`.
 
@@ -91,7 +93,8 @@ GoRouter with refresh-listener pattern (auth / prefs / apiConfig changes trigger
 - `/pin` — `PinScreen` (carries inline mode-select + mDNS discovery/auto-claim if unpaired). **The only pairing surface** — `/pair` is gone.
 - `/forbidden` — capability-denied landing.
 - `/book` — **debug builds only** (`if (kDebugMode)`). Widget book: every `core/widgets/` widget in all its states against stub data, with theme/skin, text-scale, reduced-motion and phone/tablet toggles. In the pair-gate bypass set, so it works unpaired. Two entries: a debug button on `PinScreen` (pre-pairing) and a "Book" item at the foot of `TabletSideRail` (pushed, not `go`ne — back returns to your tab). Lives in `lib/ui/features/_book/`. See ADR-0054 — add an entry there in the same commit as a new shared widget.
-- `ShellRoute` → `AppShell` wraps tab routes: `/tables`, `/orders`, `/kitchen`, `/venue`, `/floor`, `/menuadm`, `/alerts`, `/reports`, `/settings`, `/staff`, `/me`.
+- `ShellRoute` → `AppShell` wraps tab routes: `/tables`, `/orders`, `/kitchen`, `/kasir`, `/venue`, `/venue-settings`, `/zone-admin`, `/menuadm`, `/stock`, `/alerts`, `/reports`, `/audit`, `/kas`, `/members`, `/opname`, `/system`, `/staff`, `/me`.
+  - `AppShell` is also the app's **only** error-bus subscriber (ADR-0103) — a repository pushing to `errorBusServiceProvider` surfaces as a snackbar here, from whatever screen the user has since walked to.
   - `/alerts` = alert config (thresholds + sounds + this-device mute), reached from the Venue hub. Gated `editSettings`.
   - `/audit` = venue-wide integrity log (ADR-0072), reached from the Venue hub. Gated `viewReports`; admin rows need `manageStaff` on top, enforced server-side. **Tablet only** — the phone route renders an explanation. A row with a non-null `paymentId` shows a camera glyph and opens the proof photo on tap (ADR-0086) — this is the only place proofs are browsed across a range; Reports has no payments section.
   - `/members` = the Pelanggan (member) directory (ADR-0092), reached from the Venue hub. Gated `manageMembers`. **Tablet only**, like `/audit` and `/kas`. Reading a member is open to the till server-side, but the till reaches one through the bill overlay (`ui/features/cashier/member_panel.dart`) — this route is where records change. Enrol / edit / adjust points / merge / delete all live here; nothing on this screen touches a bill.
@@ -107,7 +110,9 @@ GoRouter with refresh-listener pattern (auth / prefs / apiConfig changes trigger
 3. Authenticated on `/pin` → `/venue` (server mode) or `/tables` (client mode), per `prefs.appMode()`.
 4. Authenticated elsewhere → `_capabilityFor(loc)` returns the capabilities that open it; **any one** is enough (`needed.any(auth.has)`); fail-closed → `/forbidden`.
 
-Capabilities (`domain/models/capability.dart`): `viewKds`, `takeOrder`, `manageStaff`, `manageCash`, … Route → capability mapping is in `_capabilityFor` at the top of `app_router.dart`.
+Capabilities (`domain/models/capability.dart`): `viewKds`, `takeOrder`, `manageStaff`, `manageCash`, … Route → capability mapping is in `_capabilityFor` at the top of `app_router.dart`, and each arm must mirror the capability the **server** demands of the writes that screen makes — the client gate decides what to offer, never what to allow.
+
+A **ticket transition** carries its capability in the graph itself: `ticketTransitions` in `lib/domain/models/ticket_transitions.dart` maps `from → to → Capability`, and both the client use case and the server route read that one table (ADR-0101). A move's presence is what makes it legal; there is no separate "which capability does this cost" switch to forget an arm in.
 
 ### Shell
 
@@ -132,6 +137,8 @@ Capabilities (`domain/models/capability.dart`): `viewKds`, `takeOrder`, `manageS
 - **A bill discount has a `source`** (ADR-0094): `manual` | `member` | `redeem`, one slot each, enforced by the `idx_discounts_bill_source_uniq` partial index. They stack by design — a cashier's promo, the member's standing discount and a points redemption are three different give-backs, and putting them in one slot is how one silently erases another. Everything is frozen at the first payment (ADR-0068), which is why `MemberPanel` gates on `billClosedAt == null && paidAmount == 0` instead of letting a button 409.
 - **A new `Capability` reaches existing venues only because the admin role is reconciled on boot.** `_ensureAdminRole` (`lib/server/db/seed.dart`) rewrites `role-admin` to `Capability.values` every Server boot, because that role *is* all capabilities by definition and the Staf sheet shows it read-only — a stored snapshot is the one set nobody can repair. Every other role stores its own set, so a capability a non-admin role needs must be added to `seed_data.dart` **and** granted on already-seeded venues through the role sheet; there is no backfill but the one-off `_ensureWaiterCanVoid` pattern.
 - **An offline write is an intent, not a row** (ADR-0090). `submitOrder` and `seat` fall back to `sendQueueProvider` when `wsConnStateProvider != open` (or when the request never lands), and the backlog replays through the *ordinary* routes on the next `connected` event. A new offline-capable action means a `SendIntentKind` + an arm in `apiIntentSender` — never a bulk endpoint, or the stock, visit and audit rules gain a second place to drift. `sendQueueDrainProvider` only subscribes because `AppShell` watches it.
+- **A ledger guard only holds inside a transaction** (ADR-0100). `spendCash`, `countCash`, `reverseCash`, `spendPoints` and `earnPointsForVisit` re-read the balance (or the existence check) *inside* `db.transaction`, because the balance is derived — `SUM(delta)`, never stored — so no `CHECK` constraint can hold the invariant and the guard lives entirely in Dart. A new ledger writer that skips the transaction is a review finding. The same rule pairs a ledger row with the bill discount it pays for, in `settlement_routes`.
+- **Every route factory takes a non-null `ServerAuth`** (ADR-0102). There is no "no auth configured" path that waves a caller through — that branch existed in sixteen files, three of which handed the anonymous caller `Capability.values`. A route test signs in through `test/support/route_auth.dart` and puts the bearer on the request, like a client would.
 - **Release builds run R8** (`isMinifyEnabled` + `isShrinkResources`). Dart is AOT and untouched, but a new plugin that resolves Java/Kotlin classes reflectively needs a keep rule in `android/app/proguard-rules.pro` or it fails only in release. `flutter build apk --release` is the check; debug will not catch it. Crashlytics' Gradle plugin uploads the mapping file, so minified traces stay symbolicated.
 - **A sign-in returns an `AdmissionOutcome`, and nothing else** (ADR-0098). The sealed type in `lib/domain/models/admission.dart` is the *only* channel — `AuthState.error`, a `hostOccupied` flag and a `bool` return were the three that preceded it. A new outcome means a subclass **and** an arm in the exhaustive `switch` in `lib/core/localization/admission_text.dart` (which is why the analyzer will tell you), plus an ARB entry in both locales. The outcome carries a code, never a sentence. Admin sign-in has **no offline path** (ADR-0099); a session *restore* does, and the two are deliberately different.
 - **`Sp` stops at 48; `SatSize` (`design/layout.dart`) is where a bigger number gets a name.** A panel width, its own inset, a control height. `EdgeInsets.fromLTRB` is now ratcheted by `design_tokens_test.dart` at a frozen baseline — the `no raw spacing literal` ban next to it lists `all`/`symmetric`/`only` only, which is how the sign-in screen stayed green while every inset on it was a literal.

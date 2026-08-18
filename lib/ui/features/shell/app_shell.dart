@@ -3,6 +3,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:satset/data/services/error_bus_service.dart';
 import 'package:satset/data/services/send_queue_drain.dart';
 import 'package:satset/data/services/send_queue_service.dart';
 import 'package:satset/ui/features/shell/send_result_dialog.dart';
@@ -114,6 +115,45 @@ class AppShell extends ConsumerWidget {
       ref.read(sendReportProvider.notifier).state = null;
       if (r.failures.isEmpty && !r.interrupted) return;
       showSendResultDialog(context, r);
+    });
+    // The transport error bus. Repositories push here from anywhere; the shell
+    // is the only subscriber, because it is the only widget that outlives the
+    // screen an error was raised on (ADR-0103).
+    ref.listen<AsyncValue<AppError>>(appErrorProvider, (_, next) {
+      final err = next.value;
+      if (err == null) return;
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      if (messenger == null) return;
+      final tone = switch (err.level) {
+        AppErrorLevel.error => sc.urgent,
+        AppErrorLevel.warning => sc.warn,
+        AppErrorLevel.info => sc.info,
+      };
+      messenger
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: sc.bg2,
+            content: Row(
+              children: [
+                Container(
+                  width: Sp.s1,
+                  height: Sp.s5,
+                  decoration: SatBox.d(color: tone, borderRadius: SatR.a(2)),
+                ),
+                const SizedBox(width: Sp.s3),
+                Expanded(
+                  child: Text(
+                    err.message,
+                    style: SatType.bodyM(color: sc.textHi),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
     });
     final ready = ref.watch(totalReadyCountProvider);
     final kitchenCount = ref.watch(kitchenNewOrderCountProvider);

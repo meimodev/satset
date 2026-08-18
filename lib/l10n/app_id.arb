@@ -4328,14 +4328,6 @@
       }
     }
   },
-  "sntLatency": "LAN P50 {ms}MS · CLOUD QUEUED",
-  "@sntLatency": {
-    "placeholders": {
-      "ms": {
-        "type": "String"
-      }
-    }
-  },
   "meShiftLine": "MULAI {start} · {elapsed} BERJALAN",
   "@meShiftLine": {
     "placeholders": {
@@ -4820,6 +4812,7 @@
   },
   "authServerNotReadyWait": "Server belum siap. Tunggu sebentar lalu coba lagi.",
   "authServerNotReady": "Server belum siap. Coba lagi.",
+  "authSessionExpired": "Sesi berakhir. Masuk lagi.",
   "authAdminNotRegistered": "Akun admin belum terdaftar. Hubungi pengelola.",
   "authAdminSuspended": "Akun admin ditangguhkan. Hubungi pengelola.",
   "authAdminInactive": "Akun admin tidak aktif.",

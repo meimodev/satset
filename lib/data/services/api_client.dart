@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart' as http_io;
 
 import 'package:satset/core/log/sat_log.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
 
 /// Holds the LAN connection parameters the ApiClient needs.
@@ -57,14 +58,23 @@ class ApiClient {
   /// re-pick a reachable server.
   static const Duration requestTimeout = Duration(seconds: 8);
 
-  ApiClient({required ApiConfig config, required SecureStorageService storage})
-    : _config = config,
-      _storage = storage,
-      _inner = _buildClient(config);
+  ApiClient({
+    required ApiConfig config,
+    required SecureStorageService storage,
+    this.onUnauthorized,
+  }) : _config = config,
+       _storage = storage,
+       _inner = _buildClient(config);
 
   final ApiConfig _config;
   final SecureStorageService _storage;
   final http.Client _inner;
+
+  /// Called when the host rejects a request that **did** carry a bearer token.
+  /// A 401 on a request with no token is the ordinary boot race — a repository
+  /// bootstrapping before `/auth/me` has minted one — and is not a dead
+  /// session, so it never reaches here.
+  final void Function()? onUnauthorized;
 
   static http.Client _buildClient(ApiConfig cfg) {
     final pinned = cfg.trustedFingerprint.toLowerCase();
@@ -188,6 +198,9 @@ class ApiClient {
       SatLog.http(
         '$method $path → ${r.statusCode} ${sw.elapsedMilliseconds}ms',
       );
+      if (r.statusCode == 401 && headers.containsKey('Authorization')) {
+        onUnauthorized?.call();
+      }
       return _decode(r);
     } on ApiException catch (e) {
       SatLog.http(
@@ -232,7 +245,14 @@ final apiClientProvider = Provider<ApiClient>((ref) {
     throw StateError('ApiConfig not initialised. Boot mode/pair first.');
   }
   final storage = ref.watch(secureStorageServiceProvider);
-  final client = ApiClient(config: cfg, storage: storage);
+  final client = ApiClient(
+    config: cfg,
+    storage: storage,
+    // A token the host no longer honours means the session is over, and the
+    // app has to say so rather than paint stale screens on failing reads.
+    onUnauthorized: () =>
+        unawaited(ref.read(authStateProvider.notifier).sessionExpired()),
+  );
   ref.onDispose(client.close);
   return client;
 });
