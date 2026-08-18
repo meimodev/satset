@@ -13,14 +13,18 @@ import 'package:satset/server/routes/tickets_routes.dart';
 import 'package:satset/server/ws_hub.dart';
 import 'package:shelf/shelf.dart';
 
+import 'support/route_auth.dart';
+
 void main() {
   late AppDatabase db;
   late Handler router;
+  late TestCaller caller;
 
-  setUp(() {
+  setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
-    // auth omitted -> _requireCap allows; WsHub broadcast no-ops (no clients).
-    router = ticketsRoutes(db, WsHub()).call;
+    // Route gates want a real caller now (ADR-0102); WsHub broadcast no-ops.
+    caller = await signInForTest(db);
+    router = ticketsRoutes(db, WsHub(), caller.auth).call;
   });
 
   tearDown(() async {
@@ -67,13 +71,17 @@ void main() {
           'POST',
           Uri.parse('http://localhost/orders'),
           body: orderBody,
-          headers: {'content-type': 'application/json'},
+          headers: {'content-type': 'application/json', ...caller.headers},
         ),
       );
       expect(postRes.statusCode, 200, reason: await postRes.readAsString());
 
       final getRes = await router(
-        Request('GET', Uri.parse('http://localhost/tickets')),
+        Request(
+          'GET',
+          Uri.parse('http://localhost/tickets'),
+          headers: caller.headers,
+        ),
       );
       expect(getRes.statusCode, 200);
       final tickets = jsonDecode(await getRes.readAsString()) as List;

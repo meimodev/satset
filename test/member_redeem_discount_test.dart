@@ -20,11 +20,16 @@ import 'package:satset/server/members.dart';
 import 'package:satset/server/routes/settlement_routes.dart';
 import 'package:satset/server/ws_hub.dart';
 
+import 'support/route_auth.dart';
+
 void main() {
   late AppDatabase db;
+  late TestCaller caller;
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
+    // Route gates want a real caller now (ADR-0102).
+    caller = await signInForTest(db);
     await db
         .into(db.venueSettings)
         .insertOnConflictUpdate(
@@ -74,19 +79,19 @@ void main() {
           ),
         );
 
-    final router = settlementRoutes(db, WsHub()).call;
+    final router = settlementRoutes(db, WsHub(), caller.auth).call;
     final res = await router(
       Request(
         'POST',
         Uri.parse('http://x/settlement/visits/v1/redeem'),
         body: jsonEncode({'points': 50}),
+        headers: caller.headers,
       ),
     );
     expect(res.statusCode, 200);
 
-    final bill =
-        ((jsonDecode(await res.readAsString()) as Map)['bill'] as Map)
-            .cast<String, dynamic>();
+    final bill = ((jsonDecode(await res.readAsString()) as Map)['bill'] as Map)
+        .cast<String, dynamic>();
     expect(bill['subtotal'], 170000);
     expect(bill['discountAmount'], 50000, reason: '50 poin x Rp1.000');
     expect(bill['total'], 120000, reason: 'the whole bill was discounted away');

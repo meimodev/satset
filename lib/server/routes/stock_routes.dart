@@ -23,9 +23,8 @@ const _uuid = Uuid();
 Future<(String?, Set<String>)?> _actor(
   Request req,
   AppDatabase db,
-  ServerAuth? auth,
+  ServerAuth auth,
 ) async {
-  if (auth == null) return (null, Capability.values.map((c) => c.name).toSet());
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -62,7 +61,7 @@ Response _json(Object body) => Response.ok(
 /// are fetched on demand by the one screen that needs them, gated by capability
 /// rather than by app mode so an admin-client can run stock without hunting for
 /// the host tablet (ADR-0040).
-Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
+Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   final r = Router();
 
   /// Re-broadcast the menu only when a derived availability flag flipped.
@@ -304,10 +303,7 @@ Router stockRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (existing != null) {
       return Response(
         409,
-        body: jsonEncode({
-          'code': 'countAlreadyOpen',
-          'countId': existing.id,
-        }),
+        body: jsonEncode({'code': 'countAlreadyOpen', 'countId': existing.id}),
         headers: {'content-type': 'application/json'},
       );
     }

@@ -15,10 +15,9 @@ import 'package:satset/server/server.dart';
 Future<Response?> _requireCap(
   Request req,
   AppDatabase db,
-  ServerAuth? auth,
+  ServerAuth auth,
   Capability needed,
 ) async {
-  if (auth == null) return null;
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',

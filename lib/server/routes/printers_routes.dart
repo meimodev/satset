@@ -21,8 +21,7 @@ const _uuid = Uuid();
 /// Lighter gate than [_requireCap]: just proves a valid staff bearer. Used for
 /// add / test, which any authenticated staff may do (ADR-0020). Delete keeps
 /// the [_requireCap] editSettings gate.
-Future<Response?> _requireAuth(Request req, ServerAuth? auth) async {
-  if (auth == null) return null;
+Future<Response?> _requireAuth(Request req, ServerAuth auth) async {
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -35,10 +34,9 @@ Future<Response?> _requireAuth(Request req, ServerAuth? auth) async {
 Future<Response?> _requireCap(
   Request req,
   AppDatabase db,
-  ServerAuth? auth,
+  ServerAuth auth,
   Capability needed,
 ) async {
-  if (auth == null) return null;
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -77,7 +75,7 @@ Map<String, dynamic> printerJson(Printer p) => {
   'createdAt': p.createdAt.toIso8601String(),
 };
 
-Router printersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
+Router printersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   final r = Router();
 
   r.get('/printers', (Request req) async {

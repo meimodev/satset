@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/domain/models/ticket_transitions.dart';
 
 class IllegalTicketTransition implements Exception {
   final TicketStatus from;
@@ -11,35 +12,15 @@ class IllegalTicketTransition implements Exception {
   String toString() => 'IllegalTicketTransition($from -> $to)';
 }
 
-/// Enforces the canonical waiter/KDS transition graph and delegates the
+/// Enforces the canonical waiter/KDS transition graph — the one in
+/// [ticketTransitions], shared with the server route that re-checks it — and
+/// delegates the
 /// persisted move to [TicketsRepository.transition] which posts to
 /// `/tickets/:id/transition`. All UI ticket mutations go through this so
 /// server and clients converge.
 class AdvanceTicketStatusUseCase {
   AdvanceTicketStatusUseCase(this._tickets);
   final TicketsRepository _tickets;
-
-  static final _allowed = <TicketStatus, Set<TicketStatus>>{
-    TicketStatus.draft: {TicketStatus.sent, TicketStatus.voided},
-    TicketStatus.acknowledged: {TicketStatus.prep, TicketStatus.voided},
-    TicketStatus.sent: {
-      TicketStatus.prep,
-      TicketStatus.cooked,
-      TicketStatus.held,
-      TicketStatus.voided,
-    },
-    TicketStatus.held: {TicketStatus.sent, TicketStatus.voided},
-    TicketStatus.prep: {TicketStatus.cooked, TicketStatus.voided},
-    TicketStatus.cooked: {TicketStatus.ready, TicketStatus.voided},
-    TicketStatus.ready: {TicketStatus.served, TicketStatus.voided},
-    // `served → ready` mirrors the server graph so the waiter "unserve"
-    // action stays on the canonical transition path.
-    TicketStatus.served: {TicketStatus.ready, TicketStatus.voided},
-    TicketStatus.voided: <TicketStatus>{},
-  };
-
-  bool canTransition(TicketStatus from, TicketStatus to) =>
-      _allowed[from]?.contains(to) ?? false;
 
   Future<void> call(
     String tableId,

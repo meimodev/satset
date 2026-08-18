@@ -14,10 +14,9 @@ import 'package:satset/server/ws_hub.dart';
 Future<Response?> _requireCap(
   Request req,
   AppDatabase db,
-  ServerAuth? auth,
+  ServerAuth auth,
   Capability needed,
 ) async {
-  if (auth == null) return null;
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -43,7 +42,7 @@ Future<Response?> _requireCap(
   return null;
 }
 
-Router devicesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
+Router devicesRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   final r = Router();
 
   /// Read-only list of paired devices joined with each device's most-recent

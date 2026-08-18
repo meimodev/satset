@@ -40,11 +40,10 @@ const _methods = {'tunai', 'kartu', 'qris', 'transfer', 'lainnya', 'piutang'};
 /// so a detached unpaid bill survives the table being freed. See
 /// docs/adr/0023-two-phase-settlement-and-split-bills.md, ADR-0024, and
 /// CONTEXT.md (Bill / Settlement / Bill close / Split bill / Payment).
-Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
+Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   final r = Router();
 
   Future<User?> resolve(Request req) async {
-    if (auth == null) return null;
     final token = req.headers['authorization']?.replaceFirst(
       RegExp(r'^[Bb]earer\s+'),
       '',
@@ -53,7 +52,6 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   }
 
   Future<List<String>> capsOf(Request req) async {
-    if (auth == null) return const [];
     final user = await resolve(req);
     if (user == null) return const [];
     final role = await (db.select(
@@ -65,7 +63,6 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   }
 
   Future<Response?> requireCap(Request req, Capability needed) async {
-    if (auth == null) return null;
     final user = await resolve(req);
     if (user == null) return Response(401);
     if (!(await capsOf(req)).contains(needed.name)) {
@@ -95,78 +92,84 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   }) async {
     final visitId = visit.id;
     final now = SatClock.now().toUtc();
-    await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
-      VisitsCompanion(
-        billClosedAt: Value(now),
-        billClosedBy: Value(actorId),
-        lossAmount: Value(loss),
-      ),
-    );
-    await _audit(
-      db,
-      AuditType.billClosed,
-      loss > 0 ? AuditKind.billWrittenOff : AuditKind.billClosed,
-      params: {
-        'table': visit.tableLabel ?? '',
-        if (loss > 0) 'amount': auditRupiah(loss),
-      },
-      tableId: visit.tableId,
-      actor: actorId,
-      reason: reason,
-      // Only a write-off moves money; a normal close is bookkeeping, so it
-      // carries no amount rather than a zero the venue log would tally.
-      amountCents: loss > 0 ? loss : null,
-    );
-    // [[Poin]] earn at bill close, once per visit (ADR-0095). A write-off pays
-    // out nothing — the guest did not pay, so there is no spend to reward — and
-    // the base is the bill net of discount, before service and tax, so the
-    // points agree with the figure the guest was actually charged for food.
-    if (visit.memberId != null && loss <= 0) {
-      final bill = await _buildBill(db, visitId);
-      if (bill != null) {
-        final base =
-            (bill['total'] as int) -
-            (bill['serviceAmount'] as int) -
-            (bill['taxAmount'] as int);
-        await earnPointsForVisit(
-          db,
-          memberId: visit.memberId!,
-          visitId: visitId,
-          base: base,
-          actorUserId: actorId,
-          hub: hub,
-        );
-      }
-    }
-    final fresh = await _visit(db, visitId);
-    final snapshotted = fresh != null && fresh.tableFreedAt != null;
-    if (snapshotted) {
-      await snapshotVisitAndDelete(
-        db,
-        hub,
-        fresh,
-        billClosedBy: actorId,
-        lossAmount: loss,
+    // A close is one act: the stamp, its audit row, the points it pays out and
+    // the snapshot that files it (ADR-0100). Half of it is a bill marked
+    // closed that never earned, or an archived visit with no audit line.
+    final snapshotted = await db.transaction(() async {
+      await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
+        VisitsCompanion(
+          billClosedAt: Value(now),
+          billClosedBy: Value(actorId),
+          lossAmount: Value(loss),
+        ),
       );
-    } else {
-      final tbl = await (db.select(
-        db.venueTables,
-      )..where((t) => t.currentVisitId.equals(visitId))).getSingleOrNull();
-      if (tbl != null) {
-        await (db.update(db.venueTables)..where((t) => t.id.equals(tbl.id)))
-            .write(VenueTablesCompanion(billClosedAt: Value(now)));
-        final fresh2 = await (db.select(
-          db.venueTables,
-        )..where((t) => t.id.equals(tbl.id))).getSingleOrNull();
-        if (fresh2 != null) {
-          hub.broadcast(WsEventTypes.tableUpdated, tableJson(fresh2));
+      await _audit(
+        db,
+        AuditType.billClosed,
+        loss > 0 ? AuditKind.billWrittenOff : AuditKind.billClosed,
+        params: {
+          'table': visit.tableLabel ?? '',
+          if (loss > 0) 'amount': auditRupiah(loss),
+        },
+        tableId: visit.tableId,
+        actor: actorId,
+        reason: reason,
+        // Only a write-off moves money; a normal close is bookkeeping, so it
+        // carries no amount rather than a zero the venue log would tally.
+        amountCents: loss > 0 ? loss : null,
+      );
+      // [[Poin]] earn at bill close, once per visit (ADR-0095). A write-off pays
+      // out nothing — the guest did not pay, so there is no spend to reward — and
+      // the base is the bill net of discount, before service and tax, so the
+      // points agree with the figure the guest was actually charged for food.
+      if (visit.memberId != null && loss <= 0) {
+        final bill = await _buildBill(db, visitId);
+        if (bill != null) {
+          final base =
+              (bill['total'] as int) -
+              (bill['serviceAmount'] as int) -
+              (bill['taxAmount'] as int);
+          await earnPointsForVisit(
+            db,
+            memberId: visit.memberId!,
+            visitId: visitId,
+            base: base,
+            actorUserId: actorId,
+            hub: hub,
+          );
         }
       }
-      hub.broadcast(WsEventTypes.billUpdated, {
-        'visitId': visitId,
-        'billClosed': true,
-      });
-    }
+      final fresh = await _visit(db, visitId);
+      final didSnapshot = fresh != null && fresh.tableFreedAt != null;
+      if (didSnapshot) {
+        await snapshotVisitAndDelete(
+          db,
+          hub,
+          fresh,
+          billClosedBy: actorId,
+          lossAmount: loss,
+        );
+      } else {
+        final tbl = await (db.select(
+          db.venueTables,
+        )..where((t) => t.currentVisitId.equals(visitId))).getSingleOrNull();
+        if (tbl != null) {
+          await (db.update(db.venueTables)..where((t) => t.id.equals(tbl.id)))
+              .write(VenueTablesCompanion(billClosedAt: Value(now)));
+          final fresh2 = await (db.select(
+            db.venueTables,
+          )..where((t) => t.id.equals(tbl.id))).getSingleOrNull();
+          if (fresh2 != null) {
+            hub.broadcast(WsEventTypes.tableUpdated, tableJson(fresh2));
+          }
+        }
+        hub.broadcast(WsEventTypes.billUpdated, {
+          'visitId': visitId,
+          'billClosed': true,
+        });
+      }
+      return didSnapshot;
+    });
     return snapshotted;
   }
 
@@ -461,7 +464,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   /// returns null when the PIN is absent, wrong, or belongs to someone without
   /// the capability.
   Future<String?> resolveStepUp(String? pin) async {
-    if (auth == null || pin == null || pin.isEmpty) return null;
+    if (pin == null || pin.isEmpty) return null;
     final approver =
         await (db.select(db.users)..where(
               (u) =>
@@ -913,13 +916,18 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     // Swapping one member for another gives the first one's points back before
     // the second takes the slot.
     if (visit.memberId != null && visit.memberId != member.id) {
-      await reverseRedeemForVisit(
-        db,
-        visitId: visitId,
-        actorUserId: actor?.id,
-        hub: hub,
-      );
-      await clearMemberDiscounts(visitId);
+      // Ledger row and discount row land together or not at all (ADR-0100):
+      // half of this is a guest whose points went back but whose discount
+      // stayed, or the reverse.
+      await db.transaction(() async {
+        await reverseRedeemForVisit(
+          db,
+          visitId: visitId,
+          actorUserId: actor?.id,
+          hub: hub,
+        );
+        await clearMemberDiscounts(visitId);
+      });
     }
     await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
       VisitsCompanion(
@@ -976,16 +984,19 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final unpaid = await unpaidGuard(visitId);
     if (unpaid != null) return unpaid;
     final actor = await resolve(req);
-    await reverseRedeemForVisit(
-      db,
-      visitId: visitId,
-      actorUserId: actor?.id,
-      hub: hub,
-    );
-    await clearMemberDiscounts(visitId);
-    await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
-      const VisitsCompanion(memberId: Value(null)),
-    );
+    // The points, the discount and the detachment are one act (ADR-0100).
+    await db.transaction(() async {
+      await reverseRedeemForVisit(
+        db,
+        visitId: visitId,
+        actorUserId: actor?.id,
+        hub: hub,
+      );
+      await clearMemberDiscounts(visitId);
+      await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
+        const VisitsCompanion(memberId: Value(null)),
+      );
+    });
     await _recompute(db, visitId);
     await broadcastBill(visitId);
     return _ok({'bill': await _buildBill(db, visitId)});
@@ -1033,41 +1044,47 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     }
 
     final actor = await resolve(req);
-    final int amount;
     try {
-      amount = await spendPoints(
-        db,
-        memberId: memberId,
-        visitId: visitId,
-        points: points,
-        actorUserId: actor?.id,
-        hub: hub,
-      );
+      // The ledger row and the discount it pays for are one write (ADR-0100).
+      // `spendPoints` deliberately does not create the discount itself, so
+      // this is the only place the pair is held together.
+      await db.transaction(() async {
+        final amount = await spendPoints(
+          db,
+          memberId: memberId,
+          visitId: visitId,
+          points: points,
+          actorUserId: actor?.id,
+          hub: hub,
+        );
+        await db
+            .into(db.discounts)
+            .insert(
+              DiscountsCompanion.insert(
+                id: _uuid.v4(),
+                visitId: Value(visitId),
+                // No preset behind it — the guest's own points are the
+                // authority, and the amount is what the venue's own rate
+                // makes them worth.
+                name: 'Tukar poin',
+                // 'fixed' = rupiah off. `resolveDiscountAmount` reads every
+                // OTHER kind as basis points, so a rupiah figure in a
+                // mislabelled row clamps to 10000 bps and takes the whole
+                // bill.
+                kind: 'fixed',
+                value: Value(amount),
+                amount: Value(amount),
+                source: const Value('redeem'),
+                byUserId: Value(actor?.id),
+                at: SatClock.now().toUtc(),
+              ),
+            );
+      });
     } on MemberException catch (e) {
       return _err(409, e.code, 'penukaran poin ditolak', {
         if (e.points != null) 'points': e.points,
       });
     }
-    await db
-        .into(db.discounts)
-        .insert(
-          DiscountsCompanion.insert(
-            id: _uuid.v4(),
-            visitId: Value(visitId),
-            // No preset behind it — the guest's own points are the authority,
-            // and the amount is what the venue's own rate makes them worth.
-            name: 'Tukar poin',
-            // 'fixed' = rupiah off. `resolveDiscountAmount` reads every OTHER
-            // kind as basis points, so a rupiah figure in a mislabelled row
-            // clamps to 10000 bps and takes the whole bill.
-            kind: 'fixed',
-            value: Value(amount),
-            amount: Value(amount),
-            source: const Value('redeem'),
-            byUserId: Value(actor?.id),
-            at: SatClock.now().toUtc(),
-          ),
-        );
     await _recompute(db, visitId);
     await settleOrBroadcast(visitId, actor?.id);
     return _ok({'bill': await _buildBill(db, visitId)});
@@ -1087,19 +1104,22 @@ Router settlementRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     final unpaid = await unpaidGuard(visitId);
     if (unpaid != null) return unpaid;
     final actor = await resolve(req);
-    await reverseRedeemForVisit(
-      db,
-      visitId: visitId,
-      actorUserId: actor?.id,
-      hub: hub,
-    );
-    await (db.delete(db.discounts)..where(
-          (x) =>
-              x.visitId.equals(visitId) &
-              x.receiptId.isNull() &
-              x.source.equals('redeem'),
-        ))
-        .go();
+    // Points back and discount off are one act (ADR-0100).
+    await db.transaction(() async {
+      await reverseRedeemForVisit(
+        db,
+        visitId: visitId,
+        actorUserId: actor?.id,
+        hub: hub,
+      );
+      await (db.delete(db.discounts)..where(
+            (x) =>
+                x.visitId.equals(visitId) &
+                x.receiptId.isNull() &
+                x.source.equals('redeem'),
+          ))
+          .go();
+    });
     await _recompute(db, visitId);
     await broadcastBill(visitId);
     return _ok({'bill': await _buildBill(db, visitId)});

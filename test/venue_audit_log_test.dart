@@ -24,16 +24,24 @@ import 'package:satset/server/routes/reference_routes.dart';
 import 'package:satset/server/routes/tickets_routes.dart';
 import 'package:satset/server/ws_hub.dart';
 
+import 'support/route_auth.dart';
+
 void main() {
   late AppDatabase db;
+  late TestCaller caller;
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
+    // Route gates want a real caller now (ADR-0102). The permissions group
+    // below signs in its own, narrower callers — this one is the default for
+    // the groups whose subject is the log's shape rather than who may read it.
+    caller = await signInForTest(db);
   });
   tearDown(() => db.close());
 
-  Future<Response> get(Handler router, String path) async =>
-      await router(Request('GET', Uri.parse('http://x$path')));
+  Future<Response> get(Handler router, String path) async => await router(
+    Request('GET', Uri.parse('http://x$path'), headers: caller.headers),
+  );
 
   Future<dynamic> getJson(Handler router, String path) async {
     final res = await get(router, path);
@@ -64,7 +72,7 @@ void main() {
               ),
             );
       }
-      final router = referenceRoutes(db, WsHub()).call;
+      final router = referenceRoutes(db, WsHub(), caller.auth).call;
 
       final seen = <String>[];
       String? cursor;
@@ -120,7 +128,7 @@ void main() {
           ),
         );
 
-    final router = referenceRoutes(db, WsHub()).call;
+    final router = referenceRoutes(db, WsHub(), caller.auth).call;
     final from = now.subtract(const Duration(days: 1)).toIso8601String();
     final body =
         await getJson(router, '/audit/venue?limit=5&from=$from')
@@ -285,13 +293,14 @@ void main() {
             'PATCH',
             Uri.parse('http://x/tickets/$id'),
             body: jsonEncode(body),
+            headers: caller.headers,
           ),
         );
 
     setUp(() {
-      // auth omitted → the capability check passes, so what is under test is
-      // the status rule itself rather than the permission in front of it.
-      tickets = ticketsRoutes(db, WsHub()).call;
+      // The caller holds every capability, so what is under test is the
+      // status rule itself rather than the permission in front of it.
+      tickets = ticketsRoutes(db, WsHub(), caller.auth).call;
     });
 
     test('a held line accepts an edit', () async {
@@ -358,7 +367,7 @@ void main() {
         params: {'qty': '1', 'name': 'void $i', 'amount': 'Rp. 0'},
       );
     }
-    final router = referenceRoutes(db, WsHub()).call;
+    final router = referenceRoutes(db, WsHub(), caller.auth).call;
 
     // One page is capped well below the total.
     final page =
@@ -390,7 +399,7 @@ void main() {
       },
       reason: 'tamu bilang: "salah pesan"',
     );
-    final router = referenceRoutes(db, WsHub()).call;
+    final router = referenceRoutes(db, WsHub(), caller.auth).call;
     final csv = await (await get(router, '/audit/venue.csv')).readAsString();
     final row = csv.split('\n')[1];
     // Quotes doubled, field wrapped — otherwise the reason column shifts into

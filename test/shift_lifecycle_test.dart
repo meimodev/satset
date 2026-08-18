@@ -17,6 +17,8 @@ import 'package:satset/server/db/database.dart';
 import 'package:satset/server/routes/reports_routes.dart';
 import 'package:satset/server/shift.dart';
 
+import 'support/route_auth.dart';
+
 /// A shift *is* the signed-in session (ADR-0097), and it is recorded rather
 /// than derived. Two things are worth pinning: that a sign-in never resumes —
 /// the gap between two shifts is the thing the hours report exists to show —
@@ -83,17 +85,23 @@ void main() {
     expect(rows.last.endedAt, isNull);
   });
 
-  test('signing out stamps the row manual, and closing again is a no-op', () async {
-    await openShift(db, 'maya');
-    SatClock.adopt(const Duration(minutes: 45));
-    await endShift(db, 'maya');
-    await endShift(db, 'maya');
+  test(
+    'signing out stamps the row manual, and closing again is a no-op',
+    () async {
+      await openShift(db, 'maya');
+      SatClock.adopt(const Duration(minutes: 45));
+      await endShift(db, 'maya');
+      await endShift(db, 'maya');
 
-    final rows = await rowsOf('maya');
-    expect(rows, hasLength(1));
-    expect(rows.single.endedBy, ShiftEnd.manual.name);
-    expect(rows.single.endedAt!.difference(rows.single.startedAt).inMinutes, 45);
-  });
+      final rows = await rowsOf('maya');
+      expect(rows, hasLength(1));
+      expect(rows.single.endedBy, ShiftEnd.manual.name);
+      expect(
+        rows.single.endedAt!.difference(rows.single.startedAt).inMinutes,
+        45,
+      );
+    },
+  );
 
   test(
     'a shift left open overnight is retired at its own rollover, not at now',
@@ -128,16 +136,19 @@ void main() {
     },
   );
 
-  test('before the rollover hour, last night\'s shift is still running', () async {
-    await setRolloverHour(4);
-    // Opened 23:00, read at 02:00 — same business day, so a waiter working
-    // past midnight keeps one continuous shift.
-    final start = DateTime(2026, 7, 29, 23);
-    await openShift(db, 'maya', at: start);
-    SatClock.adopt(DateTime(2026, 7, 30, 2).difference(DateTime.now()));
+  test(
+    'before the rollover hour, last night\'s shift is still running',
+    () async {
+      await setRolloverHour(4);
+      // Opened 23:00, read at 02:00 — same business day, so a waiter working
+      // past midnight keeps one continuous shift.
+      final start = DateTime(2026, 7, 29, 23);
+      await openShift(db, 'maya', at: start);
+      SatClock.adopt(DateTime(2026, 7, 30, 2).difference(DateTime.now()));
 
-    expect(await openShiftOf(db, 'maya'), start);
-  });
+      expect(await openShiftOf(db, 'maya'), start);
+    },
+  );
 
   test('a rollover shift contributes no hours, only a flag', () async {
     await setRolloverHour(4);
@@ -178,42 +189,54 @@ void main() {
     expect(section['dayStartHour'], 4);
   });
 
-  test('an open shift not yet past its rollover is left out of hours', () async {
-    await setRolloverHour(4);
-    await openShift(db, 'maya', at: DateTime(2026, 7, 29, 11));
-    SatClock.adopt(DateTime(2026, 7, 29, 15).difference(DateTime.now()));
+  test(
+    'an open shift not yet past its rollover is left out of hours',
+    () async {
+      await setRolloverHour(4);
+      await openShift(db, 'maya', at: DateTime(2026, 7, 29, 11));
+      SatClock.adopt(DateTime(2026, 7, 29, 15).difference(DateTime.now()));
 
-    final section = await shiftReportSection(
-      db,
-      from: DateTime(2026, 7, 29, 4),
-      to: DateTime(2026, 7, 30, 4),
-    );
-    final row = (section['staff'] as List).single as Map;
-    expect(row['shifts'], 1);
-    expect(
-      row['minutes'],
-      0,
-      reason: 'counting to now would move the report while it is read',
-    );
-    expect(row['unclosed'], 0, reason: 'still on shift is not a missed sign-out');
-  });
+      final section = await shiftReportSection(
+        db,
+        from: DateTime(2026, 7, 29, 4),
+        to: DateTime(2026, 7, 30, 4),
+      );
+      final row = (section['staff'] as List).single as Map;
+      expect(row['shifts'], 1);
+      expect(
+        row['minutes'],
+        0,
+        reason: 'counting to now would move the report while it is read',
+      );
+      expect(
+        row['unclosed'],
+        0,
+        reason: 'still on shift is not a missed sign-out',
+      );
+    },
+  );
 
-  test('a database stamped 52 without the table repairs itself at 53', () async {
-    // Exactly what a device that ran the intermediate build presents: the
-    // current-ish version, and no `shifts` in it. Left unrepaired, every read
-    // of the table 500s forever, because no version arm is left to run.
-    await db.customStatement('DROP TABLE shifts');
-    await db.migration.onUpgrade(db.createMigrator(), 52, 53);
+  test(
+    'a database stamped 52 without the table repairs itself at 53',
+    () async {
+      // Exactly what a device that ran the intermediate build presents: the
+      // current-ish version, and no `shifts` in it. Left unrepaired, every read
+      // of the table 500s forever, because no version arm is left to run.
+      await db.customStatement('DROP TABLE shifts');
+      await db.migration.onUpgrade(db.createMigrator(), 52, 53);
 
-    expect(await rowsOf('maya'), isEmpty);
-    await openShift(db, 'maya');
-    expect(await rowsOf('maya'), hasLength(1));
-  });
+      expect(await rowsOf('maya'), isEmpty);
+      await openShift(db, 'maya');
+      expect(await rowsOf('maya'), hasLength(1));
+    },
+  );
 
   test('upgrading from 51 carries an open shiftStartedAt into a row', () async {
     // Rewind to the v51 shape: the stamp on `users`, no `shifts` table.
     await db.customStatement('DROP TABLE shifts');
-    await db.customStatement('ALTER TABLE users ADD COLUMN shift_started_at INTEGER');
+    await db.customStatement(
+      'ALTER TABLE users ADD COLUMN shift_started_at INTEGER',
+    );
     final started = DateTime(2026, 7, 29, 18);
     await db.customStatement(
       'UPDATE users SET shift_started_at = ? WHERE id = ?',
@@ -222,7 +245,11 @@ void main() {
     await db.migration.onUpgrade(db.createMigrator(), 51, 53);
 
     final row = (await rowsOf('maya')).single;
-    expect(row.startedAt, started, reason: 'mid-shift at upgrade keeps its clock');
+    expect(
+      row.startedAt,
+      started,
+      reason: 'mid-shift at upgrade keeps its clock',
+    );
     expect(row.endedAt, isNull);
     expect(await rowsOf('adi'), isEmpty, reason: 'a null stamp is not a shift');
     // The stamp is gone, so there is only one place a shift clock lives.
@@ -242,8 +269,14 @@ void main() {
     SatClock.adopt(DateTime(2026, 8, 11, 0, 40).difference(DateTime.now()));
     await openShift(db, 'maya', at: DateTime(2026, 8, 11, 0, 40));
 
-    final res = await reportsRoutes(db).call(
-      Request('GET', Uri.parse('http://x/reports/snapshot?range=today')),
+    // Route gates want a real caller now (ADR-0102).
+    final caller = await signInForTest(db);
+    final res = await reportsRoutes(db, caller.auth).call(
+      Request(
+        'GET',
+        Uri.parse('http://x/reports/snapshot?range=today'),
+        headers: caller.headers,
+      ),
     );
     final body = jsonDecode(await res.readAsString()) as Map<String, dynamic>;
     final staff = (body['jamKerja'] as Map)['staff'] as List;
@@ -273,15 +306,17 @@ void main() {
     final auth = ServerAuth(db, secret: 'test-secret');
     final s = await auth.mintSession(userId: 'maya', deviceId: 'dev-1');
 
-    Future<Map<String, dynamic>> me() async => jsonDecode(
-      await (await authRoutes(auth).call(
-        Request(
-          'GET',
-          Uri.parse('http://x/auth/me'),
-          headers: {'authorization': 'Bearer ${s.token}'},
-        ),
-      )).readAsString(),
-    ) as Map<String, dynamic>;
+    Future<Map<String, dynamic>> me() async =>
+        jsonDecode(
+              await (await authRoutes(auth).call(
+                Request(
+                  'GET',
+                  Uri.parse('http://x/auth/me'),
+                  headers: {'authorization': 'Bearer ${s.token}'},
+                ),
+              )).readAsString(),
+            )
+            as Map<String, dynamic>;
 
     final live = await me();
     expect(live['shiftTracked'], isTrue);
@@ -316,8 +351,14 @@ void main() {
   });
 
   test('businessDayStart anchors to the previous day before the rollover', () {
-    expect(businessDayStart(DateTime(2026, 7, 30, 2), 4), DateTime(2026, 7, 29, 4));
-    expect(businessDayStart(DateTime(2026, 7, 30, 10), 4), DateTime(2026, 7, 30, 4));
+    expect(
+      businessDayStart(DateTime(2026, 7, 30, 2), 4),
+      DateTime(2026, 7, 29, 4),
+    );
+    expect(
+      businessDayStart(DateTime(2026, 7, 30, 10), 4),
+      DateTime(2026, 7, 30, 4),
+    );
   });
 
   test('the audit window spans a whole business day, not one shift', () async {
@@ -343,11 +384,13 @@ void main() {
 
     // The window GET /audit uses, read mid-second-shift.
     final since = businessDayStart(DateTime(2026, 7, 29, 19), 4);
-    final visible = await (db.select(db.auditEntries)
-          ..where(
-            (a) => a.actorUserId.equals('maya') & a.at.isBiggerOrEqualValue(since),
-          ))
-        .get();
+    final visible =
+        await (db.select(db.auditEntries)..where(
+              (a) =>
+                  a.actorUserId.equals('maya') &
+                  a.at.isBiggerOrEqualValue(since),
+            ))
+            .get();
 
     expect(
       visible,

@@ -20,8 +20,7 @@ const _uuid = Uuid();
 
 /// Bearer-token user, for audit attribution. Null when no auth helper is
 /// configured (server-mode boot before the secret loads).
-Future<User?> _actor(Request req, AppDatabase db, ServerAuth? auth) async {
-  if (auth == null) return null;
+Future<User?> _actor(Request req, AppDatabase db, ServerAuth auth) async {
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -32,10 +31,9 @@ Future<User?> _actor(Request req, AppDatabase db, ServerAuth? auth) async {
 Future<Response?> _requireCap(
   Request req,
   AppDatabase db,
-  ServerAuth? auth,
+  ServerAuth auth,
   Capability needed,
 ) async {
-  if (auth == null) return null;
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -61,7 +59,7 @@ Future<Response?> _requireCap(
   return null;
 }
 
-Router menuRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
+Router menuRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   final r = Router();
 
   r.get('/menu', (Request req) async {

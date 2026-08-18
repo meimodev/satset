@@ -24,13 +24,10 @@ import 'package:satset/server/ws_hub.dart';
 /// Attaching a member to a bill and redeeming points live in
 /// `settlement_routes.dart` instead — they are settlement acts and belong with
 /// the bill they change (ADR-0093).
-Router membersRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
+Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   final r = Router();
 
   Future<(String?, Set<String>)?> actor(Request req) async {
-    if (auth == null) {
-      return (null, Capability.values.map((c) => c.name).toSet());
-    }
     final token = req.headers['authorization']?.replaceFirst(
       RegExp(r'^[Bb]earer\s+'),
       '',

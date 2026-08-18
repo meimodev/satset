@@ -21,7 +21,8 @@ import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/domain/models/member.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/server/audit_log.dart';
-import 'package:satset/server/debts.dart' show creditLimitFor, debtConfig, memberDebt;
+import 'package:satset/server/debts.dart'
+    show creditLimitFor, debtConfig, memberDebt;
 // Hidden: Drift generates its own `Member` for the row, and the two are
 // different things — one is the table, one is what a reader sees. Same
 // collision `cash.dart` resolves the same way.
@@ -567,38 +568,42 @@ Future<int> spendPoints(
   if (points < cfg.redeemMin) {
     throw MemberException('below_minimum', points: cfg.redeemMin);
   }
-  final balance = await memberPoints(db, memberId);
-  if (points > balance) {
-    // The ledger cannot go negative, for the reason the cash box cannot: a
-    // balance that can be overdrawn is a balance somebody spent twice.
-    throw MemberException('insufficient_points', points: balance);
-  }
-  await _post(
-    db,
-    memberId: memberId,
-    kind: MemberPointKind.redeem,
-    delta: -points,
-    visitId: visitId,
-    actorUserId: actorUserId,
-    at: at,
-    idPrefix: idPrefix,
-  );
   final amount = points * cfg.pointValue;
-  await writeAudit(
-    db,
-    type: AuditType.memberChanged,
-    kind: AuditKind.memberPointsRedeemed,
-    params: {
-      'name': (await _nameOf(db, memberId)) ?? '',
-      'points': '$points',
-      'amount': auditRupiah(amount),
-    },
-    actorUserId: actorUserId,
-    amountCents: amount,
-    hub: hub,
-    at: at,
-    idPrefix: idPrefix,
-  );
+  // Check and write are one atomic step (ADR-0100): two tills redeeming the
+  // same member at once must not both clear a balance neither still meets.
+  await db.transaction(() async {
+    final balance = await memberPoints(db, memberId);
+    if (points > balance) {
+      // The ledger cannot go negative, for the reason the cash box cannot: a
+      // balance that can be overdrawn is a balance somebody spent twice.
+      throw MemberException('insufficient_points', points: balance);
+    }
+    await _post(
+      db,
+      memberId: memberId,
+      kind: MemberPointKind.redeem,
+      delta: -points,
+      visitId: visitId,
+      actorUserId: actorUserId,
+      at: at,
+      idPrefix: idPrefix,
+    );
+    await writeAudit(
+      db,
+      type: AuditType.memberChanged,
+      kind: AuditKind.memberPointsRedeemed,
+      params: {
+        'name': (await _nameOf(db, memberId)) ?? '',
+        'points': '$points',
+        'amount': auditRupiah(amount),
+      },
+      actorUserId: actorUserId,
+      amountCents: amount,
+      hub: hub,
+      at: at,
+      idPrefix: idPrefix,
+    );
+  });
   final member = await getMember(db, memberId);
   if (member != null) _broadcast(hub, member);
   return amount;
@@ -626,21 +631,28 @@ Future<int> earnPointsForVisit(
   final cfg = await memberConfig(db);
   if (!cfg.enabled || !cfg.pointsEnabled) return 0;
   if (base <= 0 || cfg.earnPerThousand <= 0) return 0;
-  final already = await _earnRowFor(db, visitId);
-  if (already != null) return already.delta;
-  final points = (base ~/ 1000) * cfg.earnPerThousand;
+  // Check and write are one atomic step (ADR-0100): the idempotency guard is
+  // worth nothing if a re-close can read "no earn yet" while the first close
+  // is still inserting one — the guest earns twice for one meal.
+  final points = await db.transaction(() async {
+    final already = await _earnRowFor(db, visitId);
+    if (already != null) return already.delta;
+    final earned = (base ~/ 1000) * cfg.earnPerThousand;
+    if (earned <= 0) return 0;
+    await _post(
+      db,
+      memberId: memberId,
+      kind: MemberPointKind.earn,
+      delta: earned,
+      visitId: visitId,
+      baseAmount: base,
+      actorUserId: actorUserId,
+      at: at,
+      idPrefix: idPrefix,
+    );
+    return earned;
+  });
   if (points <= 0) return 0;
-  await _post(
-    db,
-    memberId: memberId,
-    kind: MemberPointKind.earn,
-    delta: points,
-    visitId: visitId,
-    baseAmount: base,
-    actorUserId: actorUserId,
-    at: at,
-    idPrefix: idPrefix,
-  );
   final member = await getMember(db, memberId);
   if (member != null) _broadcast(hub, member);
   return points;

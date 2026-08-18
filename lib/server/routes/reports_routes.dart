@@ -23,10 +23,9 @@ const _defaultBusinessDayStartHour = 4;
 Future<Response?> _requireCap(
   Request req,
   AppDatabase db,
-  ServerAuth? auth,
+  ServerAuth auth,
   Capability needed,
 ) async {
-  if (auth == null) return null;
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -113,7 +112,7 @@ const int _moneyAuditCap = 500;
   }
 }
 
-Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
+Router reportsRoutes(AppDatabase db, ServerAuth auth) {
   final r = Router();
 
   r.get('/reports/snapshot', (Request req) async {
@@ -242,11 +241,7 @@ Router reportsRoutes(AppDatabase db, [ServerAuth? auth]) {
       final lastWk = prevSessions
           .where((s) => s.closedAt.weekday == dow)
           .fold<int>(0, (a, s) => a + s.pax);
-      coverTrend.add({
-        'dow': dow,
-        'thisWeek': thisWk,
-        'lastWeek': lastWk,
-      });
+      coverTrend.add({'dow': dow, 'thisWeek': thisWk, 'lastWeek': lastWk});
     }
 
     // Hourly revenue: 12 bars 11..22. Sum qty*price from tickets.
@@ -1515,4 +1510,3 @@ double _median(List<double> values) {
       ? (sorted[mid - 1] + sorted[mid]) / 2
       : sorted[mid];
 }
-

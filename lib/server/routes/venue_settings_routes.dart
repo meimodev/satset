@@ -16,10 +16,9 @@ const _singletonId = 'default';
 Future<Response?> _requireCap(
   Request req,
   AppDatabase db,
-  ServerAuth? auth,
+  ServerAuth auth,
   Capability needed,
 ) async {
-  if (auth == null) return null;
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -45,7 +44,7 @@ Future<Response?> _requireCap(
   return null;
 }
 
-Router venueSettingsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
+Router venueSettingsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   final r = Router();
 
   r.get('/venue/settings', (Request req) async {

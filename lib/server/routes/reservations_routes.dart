@@ -17,10 +17,9 @@ const _allowedStatuses = {'pending', 'seated', 'noShow', 'cancelled'};
 Future<Response?> _requireCap(
   Request req,
   AppDatabase db,
-  ServerAuth? auth,
+  ServerAuth auth,
   Capability needed,
 ) async {
-  if (auth == null) return null;
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -64,7 +63,7 @@ Map<String, dynamic> _toJson(Reservation r) => {
   'updatedAt': r.updatedAt?.toIso8601String(),
 };
 
-Router reservationsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
+Router reservationsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   final r = Router();
   const uuid = Uuid();
 

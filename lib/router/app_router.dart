@@ -82,10 +82,16 @@ List<Capability>? _capabilityFor(String loc) {
   if (loc.startsWith('/opname')) {
     return const [Capability.viewReports, Capability.manageIngredients];
   }
-  if (loc.startsWith('/menuadm') ||
-      loc.startsWith('/staff') ||
+  // Each of these mirrors the capability the server already demands of the
+  // writes the screen makes. They used to share one `manageStaff` arm, which
+  // meant a menu editor holding `editMenu` was bounced to /forbidden and only
+  // an admin could open the screen their own capability was made for.
+  if (loc.startsWith('/menuadm')) return const [Capability.editMenu];
+  if (loc.startsWith('/zone-admin')) return const [Capability.editSettings];
+  // `/system` is the seed and sample-data screen; every route behind it is
+  // `manageStaff` server-side, and so is the hub that leads to it.
+  if (loc.startsWith('/staff') ||
       loc.startsWith('/system') ||
-      loc.startsWith('/zone-admin') ||
       loc.startsWith('/venue')) {
     return const [Capability.manageStaff];
   }

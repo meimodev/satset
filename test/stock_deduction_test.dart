@@ -18,14 +18,25 @@ import 'package:satset/server/stock_counts.dart';
 import 'package:satset/server/ws_hub.dart';
 import 'package:shelf/shelf.dart';
 
+import 'package:satset/domain/models/capability.dart';
+
+import 'support/route_auth.dart';
+
 void main() {
   late AppDatabase db;
   late Handler router;
+  late TestCaller caller;
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
-    // auth omitted -> capability checks pass; WsHub broadcast no-ops.
-    router = ticketsRoutes(db, WsHub()).call;
+    // Every route gate wants a real caller now (ADR-0102). This one holds
+    // everything *except* `overrideStock`, which is the whole subject here:
+    // a caller who may override is never blocked by the stock guard.
+    caller = await signInForTest(
+      db,
+      caps: Capability.values.toSet()..remove(Capability.overrideStock),
+    );
+    router = ticketsRoutes(db, WsHub(), caller.auth).call;
     stockFlags.invalidate();
 
     // Menu: Nasi Ayam, Reguler (1 portion of rice + 1 chicken) and Besar
@@ -108,6 +119,7 @@ void main() {
               {'course': 'main', 'unitPrice': 25000, 'name': 'Nasi Ayam', ...l},
           ],
         }),
+        headers: caller.headers,
       ),
     );
     return jsonDecode(await res.readAsString()) as Map<String, dynamic>;
@@ -233,6 +245,7 @@ void main() {
           'voidReason': 'Tamu berubah pikiran',
           'voidReasonCode': 'customerChange',
         }),
+        headers: caller.headers,
       ),
     );
 
@@ -252,6 +265,7 @@ void main() {
         'POST',
         Uri.parse('http://x/tickets/$id/transition'),
         body: jsonEncode({'status': 'prep'}),
+        headers: caller.headers,
       ),
     );
     await router(
@@ -265,6 +279,7 @@ void main() {
           'voidReason': 'Tamu berubah pikiran',
           'voidReasonCode': 'customerChange',
         }),
+        headers: caller.headers,
       ),
     );
 

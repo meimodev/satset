@@ -137,28 +137,32 @@ Future<CashEntry> spendCash(
   String? idPrefix,
 }) async {
   if (amount <= 0) throw const CashException('invalid_amount');
-  final balance = await cashBalance(db);
-  if (amount > balance) {
-    // Physical notes cannot be fewer than zero, so a would-be negative is always
-    // a row nobody wrote down — usually a top-up handed over in person. Refusing
-    // is what produces that conversation (ADR-0088).
-    throw CashException('insufficient_cash', balance: balance);
-  }
-  return _post(
-    db,
-    kind: CashEntryKind.expense,
-    delta: -amount,
-    category: category,
-    note: note,
-    photo: photo,
-    actorUserId: actorUserId,
-    hub: hub,
-    at: at,
-    idPrefix: idPrefix,
-    auditKind: AuditKind.cashSpent,
-    auditParams: {'amount': auditRupiah(amount), 'category': category.name},
-    amountCents: amount,
-  );
+  // Check and write are one atomic step (ADR-0100): two supervisors
+  // spending at once must not both clear a guard neither still meets.
+  return db.transaction(() async {
+    final balance = await cashBalance(db);
+    if (amount > balance) {
+      // Physical notes cannot be fewer than zero, so a would-be negative is always
+      // a row nobody wrote down — usually a top-up handed over in person. Refusing
+      // is what produces that conversation (ADR-0088).
+      throw CashException('insufficient_cash', balance: balance);
+    }
+    return _post(
+      db,
+      kind: CashEntryKind.expense,
+      delta: -amount,
+      category: category,
+      note: note,
+      photo: photo,
+      actorUserId: actorUserId,
+      hub: hub,
+      at: at,
+      idPrefix: idPrefix,
+      auditKind: AuditKind.cashSpent,
+      auditParams: {'amount': auditRupiah(amount), 'category': category.name},
+      amountCents: amount,
+    );
+  });
 }
 
 /// Opname kas: the counter reports the **absolute** cash found and the server
@@ -178,27 +182,32 @@ Future<CashEntry> countCash(
   String? idPrefix,
 }) async {
   if (counted < 0) throw const CashException('invalid_amount');
-  final balance = await cashBalance(db);
-  final variance = counted - balance;
-  return _post(
-    db,
-    kind: CashEntryKind.count,
-    delta: variance,
-    countedAmount: counted,
-    note: note,
-    actorUserId: actorUserId,
-    hub: hub,
-    at: at,
-    idPrefix: idPrefix,
-    auditKind: AuditKind.cashCounted,
-    auditParams: {
-      'counted': auditRupiah(counted),
-      // Signed on purpose: "-Rp. 20.000" is the finding, and a magnitude would
-      // hide which way the box was wrong.
-      'variance': '${variance > 0 ? '+' : ''}${auditRupiah(variance)}',
-    },
-    amountCents: variance.abs(),
-  );
+  // Check and write are one atomic step (ADR-0100): a variance computed
+  // against a balance that moved before the insert records the wrong
+  // finding, which is the one number an opname exists to get right.
+  return db.transaction(() async {
+    final balance = await cashBalance(db);
+    final variance = counted - balance;
+    return _post(
+      db,
+      kind: CashEntryKind.count,
+      delta: variance,
+      countedAmount: counted,
+      note: note,
+      actorUserId: actorUserId,
+      hub: hub,
+      at: at,
+      idPrefix: idPrefix,
+      auditKind: AuditKind.cashCounted,
+      auditParams: {
+        'counted': auditRupiah(counted),
+        // Signed on purpose: "-Rp. 20.000" is the finding, and a magnitude would
+        // hide which way the box was wrong.
+        'variance': '${variance > 0 ? '+' : ''}${auditRupiah(variance)}',
+      },
+      amountCents: variance.abs(),
+    );
+  });
 }
 
 /// Undo one earlier row with a counter-entry. At most one per row, no time
@@ -213,36 +222,40 @@ Future<CashEntry> reverseCash(
   String? actorUserId,
   WsHub? hub,
 }) async {
-  if (note.trim().isEmpty) throw const CashException('note_required');
-  final target = await (db.select(
-    db.cashEntries,
-  )..where((c) => c.id.equals(entryId))).getSingleOrNull();
-  if (target == null) throw const CashException('not_found');
-  if (target.reversedById != null) {
-    throw const CashException('already_reversed');
-  }
-  if (target.kind == CashEntryKind.reversal.name) {
-    // A reversal of a reversal is a chain nobody can read back.
-    throw const CashException('not_reversible');
-  }
-  final entry = await _post(
-    db,
-    kind: CashEntryKind.reversal,
-    delta: -target.delta,
-    note: note.trim(),
-    reversesId: target.id,
-    actorUserId: actorUserId,
-    hub: hub,
-    auditKind: AuditKind.cashReversed,
-    auditParams: {'amount': auditRupiah(target.delta.abs())},
-    amountCents: target.delta.abs(),
-  );
-  // The one field a row ever gains after the fact — a link, not an edit. What
-  // happened is untouched.
-  await (db.update(db.cashEntries)..where((c) => c.id.equals(target.id))).write(
-    CashEntriesCompanion(reversedById: Value(entry.id)),
-  );
-  return entry;
+  // Check and write are one atomic step (ADR-0100): two concurrent
+  // reversals of the same row must not both pass the `already_reversed`
+  // guard and post two counter-entries.
+  return db.transaction(() async {
+    if (note.trim().isEmpty) throw const CashException('note_required');
+    final target = await (db.select(
+      db.cashEntries,
+    )..where((c) => c.id.equals(entryId))).getSingleOrNull();
+    if (target == null) throw const CashException('not_found');
+    if (target.reversedById != null) {
+      throw const CashException('already_reversed');
+    }
+    if (target.kind == CashEntryKind.reversal.name) {
+      // A reversal of a reversal is a chain nobody can read back.
+      throw const CashException('not_reversible');
+    }
+    final entry = await _post(
+      db,
+      kind: CashEntryKind.reversal,
+      delta: -target.delta,
+      note: note.trim(),
+      reversesId: target.id,
+      actorUserId: actorUserId,
+      hub: hub,
+      auditKind: AuditKind.cashReversed,
+      auditParams: {'amount': auditRupiah(target.delta.abs())},
+      amountCents: target.delta.abs(),
+    );
+    // The one field a row ever gains after the fact — a link, not an edit. What
+    // happened is untouched.
+    await (db.update(db.cashEntries)..where((c) => c.id.equals(target.id)))
+        .write(CashEntriesCompanion(reversedById: Value(entry.id)));
+    return entry;
+  });
 }
 
 Future<CashEntry> _post(
@@ -265,21 +278,23 @@ Future<CashEntry> _post(
   final id = '${idPrefix ?? ''}${_uuid.v4()}';
   final actor = await resolveActor(db, actorUserId);
   final when = at ?? SatClock.now();
-  await db.into(db.cashEntries).insert(
-    CashEntriesCompanion.insert(
-      id: id,
-      kind: kind.name,
-      delta: delta,
-      at: when,
-      category: Value(category?.name),
-      note: Value(note),
-      reversesId: Value(reversesId),
-      countedAmount: Value(countedAmount),
-      photo: Value(photo),
-      actorUserId: Value(actorUserId),
-      actorName: Value(actor?.name),
-    ),
-  );
+  await db
+      .into(db.cashEntries)
+      .insert(
+        CashEntriesCompanion.insert(
+          id: id,
+          kind: kind.name,
+          delta: delta,
+          at: when,
+          category: Value(category?.name),
+          note: Value(note),
+          reversesId: Value(reversesId),
+          countedAmount: Value(countedAmount),
+          photo: Value(photo),
+          actorUserId: Value(actorUserId),
+          actorName: Value(actor?.name),
+        ),
+      );
   await writeAudit(
     db,
     type: AuditType.cashMovement,

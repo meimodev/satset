@@ -20,13 +20,10 @@ import 'package:satset/server/ws_hub.dart';
 /// so a supervisor can spend from the box, while **funding and counting** it need
 /// `editSettings` — the owner's authority. Both are enforced here and not only in
 /// the UI, because a capability checked client-side is a suggestion.
-Router cashRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
+Router cashRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   final r = Router();
 
   Future<(String?, Set<String>)?> actor(Request req) async {
-    if (auth == null) {
-      return (null, Capability.values.map((c) => c.name).toSet());
-    }
     final token = req.headers['authorization']?.replaceFirst(
       RegExp(r'^[Bb]earer\s+'),
       '',
@@ -70,8 +67,7 @@ Router cashRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         !a.$2.contains(Capability.viewReports.name)) {
       return forbidden(Capability.manageCash);
     }
-    final limit =
-        int.tryParse(req.url.queryParameters['limit'] ?? '') ?? 50;
+    final limit = int.tryParse(req.url.queryParameters['limit'] ?? '') ?? 50;
     final entries = await cashLedger(db, limit: limit.clamp(1, 500));
     return json({
       'balance': await cashBalance(db),
@@ -173,11 +169,7 @@ Router cashRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       );
       return json(await _broadcast(db, hub, entry));
     } on CashException catch (e) {
-      return err(
-        e.code == 'not_found' ? 404 : 400,
-        e.code,
-        balance: e.balance,
-      );
+      return err(e.code == 'not_found' ? 404 : 400, e.code, balance: e.balance);
     }
   });
 

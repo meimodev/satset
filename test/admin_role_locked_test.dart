@@ -23,16 +23,21 @@ import 'package:satset/server/db/database.dart';
 import 'package:satset/server/routes/reference_routes.dart';
 import 'package:satset/server/ws_hub.dart';
 
+import 'support/route_auth.dart';
+
 void main() {
   late AppDatabase db;
   late Handler router;
+  late TestCaller caller;
 
   const adminRoleId = 'role-admin';
   const waiterRoleId = 'role-waiter';
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
-    router = referenceRoutes(db, WsHub()).call;
+    // Route gates want a real caller now (ADR-0102).
+    caller = await signInForTest(db);
+    router = referenceRoutes(db, WsHub(), caller.auth).call;
     await db
         .into(db.roles)
         .insertOnConflictUpdate(
@@ -79,6 +84,7 @@ void main() {
           'PATCH',
           Uri.parse('http://x/roles/$id'),
           body: jsonEncode(body),
+          headers: caller.headers,
         ),
       );
 
@@ -116,7 +122,11 @@ void main() {
 
   test('the admin role cannot be deleted', () async {
     final res = await router(
-      Request('DELETE', Uri.parse('http://x/roles/$adminRoleId')),
+      Request(
+        'DELETE',
+        Uri.parse('http://x/roles/$adminRoleId'),
+        headers: caller.headers,
+      ),
     );
     expect(res.statusCode, 403);
     final still = await (db.select(
@@ -158,6 +168,7 @@ void main() {
           'name': 'Backdoor',
           'capabilities': [Capability.manageStaff.name],
         }),
+        headers: caller.headers,
       ),
     );
     expect(res.statusCode, 403);

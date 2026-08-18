@@ -20,17 +20,26 @@ import 'package:satset/server/db/database.dart';
 import 'package:satset/server/routes/settlement_routes.dart';
 import 'package:satset/server/ws_hub.dart';
 
+import 'support/route_auth.dart';
+
 void main() {
   late AppDatabase db;
+  late TestCaller caller;
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
+    // Route gates want a real caller now (ADR-0102).
+    caller = await signInForTest(db);
   });
   tearDown(() => db.close());
 
   Future<Map<String, dynamic>> history(Handler router, String query) async {
     final res = await router(
-      Request('GET', Uri.parse('http://x/settlement/history$query')),
+      Request(
+        'GET',
+        Uri.parse('http://x/settlement/history$query'),
+        headers: caller.headers,
+      ),
     );
     return (jsonDecode(await res.readAsString()) as Map)
         .cast<String, dynamic>();
@@ -67,7 +76,7 @@ void main() {
     // a venue that settled 200. Nothing throws; the number is just a lie.
     const closed = 200;
     await seedClosed(closed);
-    final router = settlementRoutes(db, WsHub()).call;
+    final router = settlementRoutes(db, WsHub(), caller.auth).call;
 
     final body = await history(router, '?days=7&limit=$historyPageSize');
 
@@ -92,7 +101,7 @@ void main() {
       // ordered the same way — otherwise a bill visibly jumps or vanishes as the
       // cashier scrolls past the boundary.
       await seedClosed(150);
-      final router = settlementRoutes(db, WsHub()).call;
+      final router = settlementRoutes(db, WsHub(), caller.auth).call;
 
       final first = idsOf(await history(router, '?days=7&limit=60'));
       final second = idsOf(await history(router, '?days=7&limit=120'));
@@ -118,7 +127,7 @@ void main() {
     // Without this every `tableSession.closed` during a rush refetches whatever
     // the cashier last scrolled to, for the rest of the shift.
     await seedClosed(historyPageCeiling + 40);
-    final router = settlementRoutes(db, WsHub()).call;
+    final router = settlementRoutes(db, WsHub(), caller.auth).call;
 
     final body = await history(router, '?days=7&limit=99999');
 

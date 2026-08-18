@@ -17,67 +17,16 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/ticket.dart'
     show TicketStatus, ticketStatusFromKey;
 import 'package:satset/domain/models/capability.dart';
+import 'package:satset/domain/models/ticket_transitions.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 import 'package:satset/domain/models/audit_kind.dart';
-
-const _allowedTransitions = <TicketStatus, Set<TicketStatus>>{
-  TicketStatus.draft: {TicketStatus.sent, TicketStatus.voided},
-  TicketStatus.acknowledged: {TicketStatus.prep, TicketStatus.voided},
-  TicketStatus.sent: {
-    TicketStatus.prep,
-    TicketStatus.cooked,
-    TicketStatus.held,
-    TicketStatus.voided,
-  },
-  TicketStatus.held: {TicketStatus.sent, TicketStatus.voided},
-  TicketStatus.prep: {TicketStatus.cooked, TicketStatus.voided},
-  TicketStatus.cooked: {TicketStatus.ready, TicketStatus.voided},
-  TicketStatus.ready: {TicketStatus.served, TicketStatus.voided},
-  // `served → ready` is allowed so a waiter can undo a premature serve mark
-  // through the same canonical transition path (no local-only rewind).
-  TicketStatus.served: {TicketStatus.ready, TicketStatus.voided},
-  TicketStatus.voided: <TicketStatus>{},
-};
-
-Capability? _requiredCap(TicketStatus from, TicketStatus to) {
-  // Pre-serve voids are self-served by any waiter holding voidItem (ADR-0006).
-  // Voiding an already-served item is a comp/refund — a manager power — so it
-  // routes through compItem instead.
-  if (to == TicketStatus.voided) {
-    return from == TicketStatus.served
-        ? Capability.compItem
-        : Capability.voidItem;
-  }
-  // Waiter-driven transitions: serve, undo-serve, fire-from-hold.
-  if (from == TicketStatus.ready && to == TicketStatus.served) {
-    return Capability.takeOrder;
-  }
-  if (from == TicketStatus.served && to == TicketStatus.ready) {
-    return Capability.takeOrder;
-  }
-  if (from == TicketStatus.held && to == TicketStatus.sent) {
-    return Capability.takeOrder;
-  }
-  // KDS progression along the cook line.
-  if (from == TicketStatus.sent && to == TicketStatus.prep) {
-    return Capability.viewKds;
-  }
-  if (from == TicketStatus.prep && to == TicketStatus.cooked) {
-    return Capability.viewKds;
-  }
-  if (from == TicketStatus.cooked && to == TicketStatus.ready) {
-    return Capability.viewKds;
-  }
-  return null;
-}
 
 Future<Response?> _requireCap(
   Request req,
   AppDatabase db,
-  ServerAuth? auth,
+  ServerAuth auth,
   Capability needed,
 ) async {
-  if (auth == null) return null;
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -109,14 +58,9 @@ Future<Response?> _requireCap(
 Future<bool> _hasCap(
   Request req,
   AppDatabase db,
-  ServerAuth? auth,
+  ServerAuth auth,
   Capability needed,
 ) async {
-  // No auth helper configured (server-mode boot before the secret loads) means
-  // nobody has *proved* they hold this. `_requireCap` opens up in that window
-  // because it gates ordinary work; this one gates a safety bypass, and a
-  // bypass that silently switches itself on is the wrong default.
-  if (auth == null) return false;
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -134,8 +78,7 @@ Future<bool> _hasCap(
 
 /// Resolve the bearer-token user for void attribution. Null when no auth
 /// helper is configured (server-mode boot before secret loaded).
-Future<User?> _actor(Request req, AppDatabase db, ServerAuth? auth) async {
-  if (auth == null) return null;
+Future<User?> _actor(Request req, AppDatabase db, ServerAuth auth) async {
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -489,7 +432,7 @@ Future<SubmitOrderResult> submitOrder(
   );
 }
 
-Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
+Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   final r = Router();
 
   r.get('/tickets', (Request req) async {
@@ -768,8 +711,8 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
     if (current == null) return Response.notFound('ticket not found');
     final from = ticketStatusFromKey(current.status);
     final to = ticketStatusFromKey(statusRaw);
-    final allowed = _allowedTransitions[from] ?? const <TicketStatus>{};
-    if (!allowed.contains(to)) {
+    final needed = capabilityForTransition(from, to);
+    if (needed == null) {
       return Response(
         409,
         body: jsonEncode({
@@ -779,11 +722,8 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
         headers: {'content-type': 'application/json'},
       );
     }
-    final needed = _requiredCap(from, to);
-    if (needed != null) {
-      final denied = await _requireCap(req, db, auth, needed);
-      if (denied != null) return denied;
-    }
+    final denied = await _requireCap(req, db, auth, needed);
+    if (denied != null) return denied;
     // Void requires a reason + canonical code so reports can attribute lost
     // revenue (ADR-0006). UI-only enforcement is insufficient now the manager
     // gate is gone.

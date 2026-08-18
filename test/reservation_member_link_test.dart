@@ -21,8 +21,11 @@ import 'package:satset/server/routes/reservations_routes.dart';
 import 'package:satset/server/routes/tables_routes.dart';
 import 'package:satset/server/ws_hub.dart';
 
+import 'support/route_auth.dart';
+
 void main() {
   late AppDatabase db;
+  late TestCaller caller;
   late WsHub hub;
 
   setUp(() async {
@@ -47,6 +50,8 @@ void main() {
             status: const Value('available'),
           ),
         );
+    // Route gates want a real caller now (ADR-0102).
+    caller = await signInForTest(db);
   });
   tearDown(() => db.close());
 
@@ -55,7 +60,7 @@ void main() {
 
     // The wire has to carry the link both ways, or the client cannot draw the
     // member glyph on a row it just created.
-    final res = await reservationsRoutes(db, hub).call(
+    final res = await reservationsRoutes(db, hub, caller.auth).call(
       Request(
         'POST',
         Uri.parse('http://x/reservations'),
@@ -66,17 +71,19 @@ void main() {
           'expectedAt': DateTime.now().toUtc().toIso8601String(),
           'memberId': member.id,
         }),
+        headers: caller.headers,
       ),
     );
     expect(res.statusCode, 200);
     final booking = jsonDecode(await res.readAsString()) as Map;
     expect(booking['memberId'], member.id);
 
-    final seat = await tablesRoutes(db, hub).call(
+    final seat = await tablesRoutes(db, hub, caller.auth).call(
       Request(
         'POST',
         Uri.parse('http://x/tables/t1/seat'),
         body: jsonEncode({'pax': 2, 'reservationId': booking['id']}),
+        headers: caller.headers,
       ),
     );
     expect(seat.statusCode, 200);
@@ -92,11 +99,12 @@ void main() {
   });
 
   test('a walk-in seat opens a visit with no member', () async {
-    final seat = await tablesRoutes(db, hub).call(
+    final seat = await tablesRoutes(db, hub, caller.auth).call(
       Request(
         'POST',
         Uri.parse('http://x/tables/t1/seat'),
         body: jsonEncode({'pax': 2}),
+        headers: caller.headers,
       ),
     );
     expect(seat.statusCode, 200);
@@ -108,7 +116,7 @@ void main() {
 
   test('clearing the link unlinks the booking, not the member', () async {
     final member = await createMember(db, name: 'Budi', phone: '081234567890');
-    final router = reservationsRoutes(db, hub).call;
+    final router = reservationsRoutes(db, hub, caller.auth).call;
     final made =
         jsonDecode(
               await (await router(
@@ -120,6 +128,7 @@ void main() {
                     'expectedAt': DateTime.now().toUtc().toIso8601String(),
                     'memberId': member.id,
                   }),
+                  headers: caller.headers,
                 ),
               )).readAsString(),
             )
@@ -130,6 +139,7 @@ void main() {
         'PATCH',
         Uri.parse('http://x/reservations/${made['id']}'),
         body: jsonEncode({'memberId': null}),
+        headers: caller.headers,
       ),
     );
     expect(patched.statusCode, 200);

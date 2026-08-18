@@ -17,7 +17,7 @@ const _pendingStatuses = [
   'held',
 ];
 
-Router kdsRoutes(AppDatabase db, [ServerAuth? auth]) {
+Router kdsRoutes(AppDatabase db, ServerAuth auth) {
   final r = Router();
 
   /// One row per distinct kitchen/bar station declared on a MenuItem.

@@ -26,10 +26,9 @@ const _uuid = Uuid();
 Future<Response?> _requireCap(
   Request req,
   AppDatabase db,
-  ServerAuth? auth,
+  ServerAuth auth,
   Capability needed,
 ) async {
-  if (auth == null) return null;
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -525,7 +524,7 @@ Future<void> syncVisitMoney(AppDatabase db, WsHub hub, String visitId) async {
   if (fresh != null) hub.broadcast(WsEventTypes.tableUpdated, _toJson(fresh));
 }
 
-Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
+Router tablesRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   final r = Router();
 
   // Read-only: any authenticated user can list tables.
@@ -838,15 +837,11 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   r.delete('/tables/<id>/lock', (Request req, String id) async {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
-    String? userId;
-    if (auth != null) {
-      final token = req.headers['authorization']?.replaceFirst(
-        RegExp(r'^[Bb]earer\s+'),
-        '',
-      );
-      final user = await auth.resolveBearer(token);
-      userId = user?.id;
-    }
+    final token = req.headers['authorization']?.replaceFirst(
+      RegExp(r'^[Bb]earer\s+'),
+      '',
+    );
+    final userId = (await auth.resolveBearer(token))?.id;
     final row = await (db.select(
       db.venueTables,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
@@ -1053,17 +1048,16 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
       );
     }
     // Resolve the mover from the bearer when auth is on; fall back to the
-    // body actorId (dev / no-auth) so the lock check + audit stay accurate.
-    String? moverId = body['actorId'] as String?;
+    // The bearer names the mover; the body's `actorId` is only a fallback for
+    // a queued intent replayed on someone else's behalf (ADR-0090).
     final moverName = body['actorName'] as String?;
-    if (auth != null) {
-      final token = req.headers['authorization']?.replaceFirst(
-        RegExp(r'^[Bb]earer\s+'),
-        '',
-      );
-      final u = await auth.resolveBearer(token);
-      moverId = u?.id ?? moverId;
-    }
+    final moverToken = req.headers['authorization']?.replaceFirst(
+      RegExp(r'^[Bb]earer\s+'),
+      '',
+    );
+    final moverId =
+        (await auth.resolveBearer(moverToken))?.id ??
+        body['actorId'] as String?;
     final source = await (db.select(
       db.venueTables,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
@@ -1240,14 +1234,11 @@ Router tablesRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
   // Print a guest order-confirmation struk for this table to a VENUE printer.
   // Server renders + sends (ADR-0020); any authenticated staff may trigger it.
   r.post('/tables/<id>/print', (Request req, String id) async {
-    if (auth != null) {
-      final token = req.headers['authorization']?.replaceFirst(
-        RegExp(r'^[Bb]earer\s+'),
-        '',
-      );
-      final user = await auth.resolveBearer(token);
-      if (user == null) return Response(401);
-    }
+    final token = req.headers['authorization']?.replaceFirst(
+      RegExp(r'^[Bb]earer\s+'),
+      '',
+    );
+    if (await auth.resolveBearer(token) == null) return Response(401);
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final printerId = body['printerId'] as String?;
     if (printerId == null || printerId.isEmpty) {

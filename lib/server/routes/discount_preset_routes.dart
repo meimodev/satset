@@ -56,10 +56,9 @@ Response _ok(Object? body) => Response.ok(
 Future<Response?> _requireCap(
   Request req,
   AppDatabase db,
-  ServerAuth? auth,
+  ServerAuth auth,
   Capability needed,
 ) async {
-  if (auth == null) return null;
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -90,7 +89,7 @@ String? _validate(String name, String scope, String kind, int value) {
   return null;
 }
 
-Router discountPresetRoutes(AppDatabase db, WsHub hub, [ServerAuth? auth]) {
+Router discountPresetRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   final r = Router();
 
   Future<void> broadcast() async {

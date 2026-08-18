@@ -36,10 +36,9 @@ const _uuid = Uuid();
 Future<Response?> _requireCap(
   Request req,
   AppDatabase db,
-  ServerAuth? auth,
+  ServerAuth auth,
   Capability needed,
 ) async {
-  if (auth == null) return null;
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -67,8 +66,7 @@ Future<Response?> _requireCap(
 
 /// Resolve the bearer-token user for audit attribution. Returns null when
 /// no auth helper is configured (server-mode boot before secret loaded).
-Future<User?> _actor(Request req, AppDatabase db, ServerAuth? auth) async {
-  if (auth == null) return null;
+Future<User?> _actor(Request req, AppDatabase db, ServerAuth auth) async {
   final token = req.headers['authorization']?.replaceFirst(
     RegExp(r'^[Bb]earer\s+'),
     '',
@@ -163,7 +161,7 @@ Future<bool> _roleHasManageStaff(AppDatabase db, String roleId) async {
 Future<Expression<bool> Function($AuditEntriesTable)> _venueAuditFilter(
   Request req,
   AppDatabase db,
-  ServerAuth? auth,
+  ServerAuth auth,
   Map<String, String> q,
 ) async {
   final from = DateTime.tryParse(q['from'] ?? '');
@@ -175,14 +173,7 @@ Future<Expression<bool> Function($AuditEntriesTable)> _venueAuditFilter(
 
   // Fails closed on an unresolvable caller: no session ⇒ no admin rows.
   final me = await _actor(req, db, auth);
-  var canSeeAdmin = false;
-  if (auth == null) {
-    // No auth configured (dev / pre-secret boot) — the cap check upstream is
-    // already a no-op, so don't hide rows it never gated.
-    canSeeAdmin = true;
-  } else if (me != null) {
-    canSeeAdmin = await _roleHasManageStaff(db, me.roleId);
-  }
+  final canSeeAdmin = me != null && await _roleHasManageStaff(db, me.roleId);
   final hidden = canSeeAdmin
       ? const <String>{}
       : {for (final t in AuditType.values.where(isAdminAuditType)) t.name};
@@ -293,7 +284,7 @@ Map<String, dynamic> _zoneJson(Zone z) => {
   'iconKey': z.iconKey,
 };
 
-Router referenceRoutes(AppDatabase db, [WsHub? hub, ServerAuth? auth]) {
+Router referenceRoutes(AppDatabase db, WsHub? hub, ServerAuth auth) {
   final r = Router();
 
   r.get('/zones', (Request req) async {
