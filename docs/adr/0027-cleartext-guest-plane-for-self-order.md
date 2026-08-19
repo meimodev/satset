@@ -1,6 +1,6 @@
 # Cleartext guest plane for QR self-ordering
 
-**Status:** Superseded by [0080](0080-self-order-and-token-pairing-removed.md) — guest QR self-ordering removed. Kept for the reasoning; the feature no longer exists.
+**Status:** Superseded by [0080](0080-self-order-and-token-pairing-removed.md) — guest QR self-ordering removed. Kept for the reasoning. Re-decided by [0105](0105-guest-self-order-returns-as-an-intent-not-a-ticket.md) — the cleartext plane returns, flag-gated.
 
 Originally: accepted — qualifies [0003](0003-pairing-mdns-qr-self-signed-tls.md) (self-signed TLS for all connections)
 

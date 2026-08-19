@@ -185,7 +185,6 @@ class _FloorHead extends ConsumerWidget {
         )
         .length;
     final takeaway = ref.watch(takeawayVisitsProvider).length;
-
     final actions = Wrap(
       spacing: 8,
       runSpacing: 8,

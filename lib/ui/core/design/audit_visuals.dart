@@ -88,6 +88,13 @@ AuditTone auditTone(AuditType t, SatColors sc) => switch (t) {
     bg: sc.warnSoft,
     fg: sc.warn,
   ),
+  // `info`: a guest ordering for themselves is a normal service event, not a
+  // discrepancy and not money. It should read as traffic, not as a finding.
+  AuditType.selfOrder => (
+    icon: Icons.qr_code_2_outlined,
+    bg: sc.infoSoft,
+    fg: sc.info,
+  ),
   AuditType.menuKilled => (
     icon: Icons.remove_circle_outline,
     bg: sc.urgentSoft,

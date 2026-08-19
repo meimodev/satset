@@ -595,6 +595,498 @@ abstract class AppL10n {
   /// **'Opname'**
   String get auditTypeStockCounted;
 
+  /// No description provided for @soTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesan mandiri'**
+  String get soTitle;
+
+  /// No description provided for @soSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Tamu pesan sendiri dari HP'**
+  String get soSub;
+
+  /// No description provided for @soAdminTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Atur pesan mandiri'**
+  String get soAdminTitle;
+
+  /// No description provided for @soAdminSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Kode QR, menu tamu, aturan'**
+  String get soAdminSub;
+
+  /// No description provided for @soTabletOnly.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengaturan dibaca tiga tab sekaligus, jadi butuh layar tablet. Antrean pesanan tamu tetap bisa dibuka di HP.'**
+  String get soTabletOnly;
+
+  /// No description provided for @soTabQueue.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan masuk'**
+  String get soTabQueue;
+
+  /// No description provided for @soTabQr.
+  ///
+  /// In id, this message translates to:
+  /// **'QR & meja'**
+  String get soTabQr;
+
+  /// No description provided for @soTabMenu.
+  ///
+  /// In id, this message translates to:
+  /// **'Menu tamu'**
+  String get soTabMenu;
+
+  /// No description provided for @soTabRules.
+  ///
+  /// In id, this message translates to:
+  /// **'Aturan'**
+  String get soTabRules;
+
+  /// No description provided for @soHeroLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari ini'**
+  String get soHeroLabel;
+
+  /// No description provided for @soHeroValue.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} pesanan}}'**
+  String soHeroValue(num n);
+
+  /// No description provided for @soHeroDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'{accepted} diterima · {rejected} ditolak · nilai {value}'**
+  String soHeroDesc(num accepted, num rejected, String value);
+
+  /// No description provided for @soStatPending.
+  ///
+  /// In id, this message translates to:
+  /// **'Menunggu'**
+  String get soStatPending;
+
+  /// No description provided for @soStatValue.
+  ///
+  /// In id, this message translates to:
+  /// **'Nilai diterima'**
+  String get soStatValue;
+
+  /// No description provided for @soStatWait.
+  ///
+  /// In id, this message translates to:
+  /// **'Median konfirmasi'**
+  String get soStatWait;
+
+  /// No description provided for @soWaitSecs.
+  ///
+  /// In id, this message translates to:
+  /// **'{n} dtk'**
+  String soWaitSecs(num n);
+
+  /// No description provided for @soFilterAll.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua'**
+  String get soFilterAll;
+
+  /// No description provided for @soFilterPending.
+  ///
+  /// In id, this message translates to:
+  /// **'Perlu konfirmasi'**
+  String get soFilterPending;
+
+  /// No description provided for @soFilterAccepted.
+  ///
+  /// In id, this message translates to:
+  /// **'Ke dapur'**
+  String get soFilterAccepted;
+
+  /// No description provided for @soFilterRejected.
+  ///
+  /// In id, this message translates to:
+  /// **'Ditolak'**
+  String get soFilterRejected;
+
+  /// No description provided for @soQueueEmptyTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada pesanan tamu'**
+  String get soQueueEmptyTitle;
+
+  /// No description provided for @soQueueEmptyBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan yang dikirim tamu dari HP muncul di sini untuk dikonfirmasi.'**
+  String get soQueueEmptyBody;
+
+  /// No description provided for @soQueueEmptyFilteredTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada pesanan di saringan ini'**
+  String get soQueueEmptyFilteredTitle;
+
+  /// No description provided for @soQueueEmptyFiltered.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada pesanan pada saringan ini.'**
+  String get soQueueEmptyFiltered;
+
+  /// No description provided for @soAccept.
+  ///
+  /// In id, this message translates to:
+  /// **'Terima'**
+  String get soAccept;
+
+  /// No description provided for @soReject.
+  ///
+  /// In id, this message translates to:
+  /// **'Tolak'**
+  String get soReject;
+
+  /// No description provided for @soAcceptAll.
+  ///
+  /// In id, this message translates to:
+  /// **'Terima semua'**
+  String get soAcceptAll;
+
+  /// No description provided for @soAcceptFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} pesanan gagal diterima.}}'**
+  String soAcceptFailed(num n);
+
+  /// No description provided for @soRejectTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan menolak'**
+  String get soRejectTitle;
+
+  /// No description provided for @soReasonHabis.
+  ///
+  /// In id, this message translates to:
+  /// **'Bahan habis'**
+  String get soReasonHabis;
+
+  /// No description provided for @soReasonGantiMenu.
+  ///
+  /// In id, this message translates to:
+  /// **'Menu diganti'**
+  String get soReasonGantiMenu;
+
+  /// No description provided for @soReasonTutup.
+  ///
+  /// In id, this message translates to:
+  /// **'Dapur sudah tutup'**
+  String get soReasonTutup;
+
+  /// No description provided for @soReasonOther.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan lain'**
+  String get soReasonOther;
+
+  /// No description provided for @soStatusPending.
+  ///
+  /// In id, this message translates to:
+  /// **'Menunggu konfirmasi'**
+  String get soStatusPending;
+
+  /// No description provided for @soStatusAccepted.
+  ///
+  /// In id, this message translates to:
+  /// **'Diterima'**
+  String get soStatusAccepted;
+
+  /// No description provided for @soStatusRejected.
+  ///
+  /// In id, this message translates to:
+  /// **'Ditolak'**
+  String get soStatusRejected;
+
+  /// No description provided for @soStatusCancelled.
+  ///
+  /// In id, this message translates to:
+  /// **'Dibatalkan tamu'**
+  String get soStatusCancelled;
+
+  /// No description provided for @soLines.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} item}}'**
+  String soLines(num n);
+
+  /// No description provided for @soTableTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Kode meja'**
+  String get soTableTitle;
+
+  /// No description provided for @soTableSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Satu kode per meja. Cetak QR-nya dan tempel di meja.'**
+  String get soTableSub;
+
+  /// No description provided for @soRotate.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti semua kode'**
+  String get soRotate;
+
+  /// No description provided for @soRotateConfirmTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti semua kode meja?'**
+  String get soRotateConfirmTitle;
+
+  /// No description provided for @soRotateConfirmBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua QR yang sudah dicetak berhenti berfungsi saat ini juga. Cetak ulang seluruh meja setelah ini.'**
+  String get soRotateConfirmBody;
+
+  /// No description provided for @soQrFor.
+  ///
+  /// In id, this message translates to:
+  /// **'Meja {table}'**
+  String soQrFor(String table);
+
+  /// No description provided for @soQrHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pindai untuk memesan'**
+  String get soQrHint;
+
+  /// No description provided for @soPrint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cetak'**
+  String get soPrint;
+
+  /// No description provided for @soTableOn.
+  ///
+  /// In id, this message translates to:
+  /// **'Meja ini melayani pesan mandiri'**
+  String get soTableOn;
+
+  /// No description provided for @soNoHost.
+  ///
+  /// In id, this message translates to:
+  /// **'Server belum terhubung, alamat QR belum bisa dibuat.'**
+  String get soNoHost;
+
+  /// No description provided for @soMenuSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Yang boleh dilihat dan dipesan tamu dari HP.'**
+  String get soMenuSub;
+
+  /// No description provided for @soItemVisible.
+  ///
+  /// In id, this message translates to:
+  /// **'Tampil'**
+  String get soItemVisible;
+
+  /// No description provided for @soItemFeatured.
+  ///
+  /// In id, this message translates to:
+  /// **'Andalan'**
+  String get soItemFeatured;
+
+  /// No description provided for @soStockAuto.
+  ///
+  /// In id, this message translates to:
+  /// **'Otomatis'**
+  String get soStockAuto;
+
+  /// No description provided for @soStockIn.
+  ///
+  /// In id, this message translates to:
+  /// **'Paksa ada'**
+  String get soStockIn;
+
+  /// No description provided for @soStockOut.
+  ///
+  /// In id, this message translates to:
+  /// **'Paksa habis'**
+  String get soStockOut;
+
+  /// No description provided for @soSoldOut.
+  ///
+  /// In id, this message translates to:
+  /// **'Habis'**
+  String get soSoldOut;
+
+  /// No description provided for @soOverrideManual.
+  ///
+  /// In id, this message translates to:
+  /// **'Override manual'**
+  String get soOverrideManual;
+
+  /// No description provided for @soEffectiveIn.
+  ///
+  /// In id, this message translates to:
+  /// **'Bisa dipesan tamu'**
+  String get soEffectiveIn;
+
+  /// No description provided for @soEffectiveOut.
+  ///
+  /// In id, this message translates to:
+  /// **'Habis di halaman tamu'**
+  String get soEffectiveOut;
+
+  /// No description provided for @soAlcohol.
+  ///
+  /// In id, this message translates to:
+  /// **'Alkohol · verifikasi staf'**
+  String get soAlcohol;
+
+  /// No description provided for @soAlcoholWarn.
+  ///
+  /// In id, this message translates to:
+  /// **'Ada item alkohol. Periksa usia tamu sebelum diteruskan ke bar.'**
+  String get soAlcoholWarn;
+
+  /// No description provided for @soDecidedBy.
+  ///
+  /// In id, this message translates to:
+  /// **'Diputuskan oleh {name}'**
+  String soDecidedBy(String name);
+
+  /// No description provided for @soPrintAll.
+  ///
+  /// In id, this message translates to:
+  /// **'Cetak semua kartu'**
+  String get soPrintAll;
+
+  /// No description provided for @soPrintAllDone.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} kartu dikirim ke printer.}}'**
+  String soPrintAllDone(int n);
+
+  /// No description provided for @soTableMeta.
+  ///
+  /// In id, this message translates to:
+  /// **'{zone} · {seats, plural, other{{seats} kursi}}'**
+  String soTableMeta(String zone, int seats);
+
+  /// No description provided for @soGuestPreview.
+  ///
+  /// In id, this message translates to:
+  /// **'Pratinjau halaman tamu'**
+  String get soGuestPreview;
+
+  /// No description provided for @soHeroHours.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam layanan {range}'**
+  String soHeroHours(String range);
+
+  /// No description provided for @soHeroHoursOpen.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanpa batas jam layanan'**
+  String get soHeroHoursOpen;
+
+  /// No description provided for @soMenuAlcoholHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Centang Alkohol pada item yang perlu diperiksa usianya. Tamu tetap bisa memesannya; staf yang memutuskan.'**
+  String get soMenuAlcoholHint;
+
+  /// No description provided for @soRuleMaster.
+  ///
+  /// In id, this message translates to:
+  /// **'Nyalakan pesan mandiri'**
+  String get soRuleMaster;
+
+  /// No description provided for @soRuleMasterSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Selama mati, halaman tamu tidak berjalan sama sekali.'**
+  String get soRuleMasterSub;
+
+  /// No description provided for @soRestartNeeded.
+  ///
+  /// In id, this message translates to:
+  /// **'Perlu mulai ulang server agar berlaku.'**
+  String get soRestartNeeded;
+
+  /// No description provided for @soRuleNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Izinkan catatan tamu'**
+  String get soRuleNote;
+
+  /// No description provided for @soRuleNoteSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Maksimal 120 huruf per item.'**
+  String get soRuleNoteSub;
+
+  /// No description provided for @soRuleHours.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam layanan'**
+  String get soRuleHours;
+
+  /// No description provided for @soRuleHoursSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam sama = tanpa batas waktu.'**
+  String get soRuleHoursSub;
+
+  /// No description provided for @soRuleMaxItems.
+  ///
+  /// In id, this message translates to:
+  /// **'Maksimal item sekali kirim'**
+  String get soRuleMaxItems;
+
+  /// No description provided for @soRuleSession.
+  ///
+  /// In id, this message translates to:
+  /// **'Masa berlaku sesi (jam)'**
+  String get soRuleSession;
+
+  /// No description provided for @soOffTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesan mandiri mati'**
+  String get soOffTitle;
+
+  /// No description provided for @soOffBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Nyalakan di tab Aturan, lalu mulai ulang server.'**
+  String get soOffBody;
+
+  /// No description provided for @soHubBadgeOn.
+  ///
+  /// In id, this message translates to:
+  /// **'Nyala'**
+  String get soHubBadgeOn;
+
+  /// No description provided for @soHubBadgeOff.
+  ///
+  /// In id, this message translates to:
+  /// **'Mati'**
+  String get soHubBadgeOff;
+
+  /// No description provided for @auditTypeSelfOrder.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesan mandiri'**
+  String get auditTypeSelfOrder;
+
   /// No description provided for @auditTypeMenuKilled.
   ///
   /// In id, this message translates to:
@@ -984,6 +1476,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Belum dilayani'**
   String get venueSettingsSoundUngreeted;
+
+  /// No description provided for @venueSettingsSoundGuestPending.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan tamu masuk'**
+  String get venueSettingsSoundGuestPending;
 
   /// No description provided for @venueSettingsSoundPickup.
   ///
@@ -1416,6 +1914,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Saya'**
   String get tabSaya;
+
+  /// No description provided for @tabTamu.
+  ///
+  /// In id, this message translates to:
+  /// **'Tamu'**
+  String get tabTamu;
 
   /// No description provided for @shiftLabel.
   ///
@@ -3480,6 +3984,36 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Tutup stok opname — {lines, plural, other{{lines} bahan}}, selisih {variance}'**
   String auditStockCountClosed(num lines, String variance);
+
+  /// No description provided for @auditGuestOrderAccepted.
+  ///
+  /// In id, this message translates to:
+  /// **'Terima pesanan tamu {table} — {lines, plural, other{{lines} item}}'**
+  String auditGuestOrderAccepted(String table, num lines);
+
+  /// No description provided for @auditGuestOrderRejected.
+  ///
+  /// In id, this message translates to:
+  /// **'Tolak pesanan tamu {table} — {lines, plural, other{{lines} item}}'**
+  String auditGuestOrderRejected(String table, num lines);
+
+  /// No description provided for @auditGuestCodesRotated.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti kode meja — {tables, plural, other{{tables} meja}}'**
+  String auditGuestCodesRotated(num tables);
+
+  /// No description provided for @auditGuestOrderingEnabled.
+  ///
+  /// In id, this message translates to:
+  /// **'Nyalakan pesan mandiri'**
+  String get auditGuestOrderingEnabled;
+
+  /// No description provided for @auditGuestOrderingDisabled.
+  ///
+  /// In id, this message translates to:
+  /// **'Matikan pesan mandiri'**
+  String get auditGuestOrderingDisabled;
 
   /// No description provided for @auditMemberCreated.
   ///

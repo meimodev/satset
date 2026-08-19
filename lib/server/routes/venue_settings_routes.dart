@@ -9,6 +9,9 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/ws_hub.dart';
+import 'package:satset/domain/models/audit_entry.dart' show AuditType;
+import 'package:satset/domain/models/audit_kind.dart';
+import 'package:satset/server/audit_log.dart';
 import 'package:satset/domain/models/capability.dart';
 
 const _singletonId = 'default';
@@ -59,7 +62,7 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final denied = await _requireCap(req, db, auth, Capability.editSettings);
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-    await _readOrSeed(db);
+    final before = await _readOrSeed(db);
     await (db.update(
       db.venueSettings,
     )..where((t) => t.id.equals(_singletonId))).write(
@@ -231,9 +234,52 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
                 ((body['memberDebtOverdueDays'] as num).toInt()).clamp(1, 365),
               )
             : const Value.absent(),
+        // [[Pesan mandiri]] (ADR-0105). The master switch decides whether the
+        // cleartext guest listener binds at all, which is why flipping it needs
+        // a server restart to take effect — the router is built once at boot.
+        guestOrderingEnabled: body.containsKey('guestOrderingEnabled')
+            ? Value(body['guestOrderingEnabled'] == true)
+            : const Value.absent(),
+        guestNoteEnabled: body.containsKey('guestNoteEnabled')
+            ? Value(body['guestNoteEnabled'] == true)
+            : const Value.absent(),
+        // Minutes from midnight. Equal values ⇒ no window, the default.
+        guestHoursStartMin: body.containsKey('guestHoursStartMin')
+            ? Value(((body['guestHoursStartMin'] as num).toInt()).clamp(0, 1439))
+            : const Value.absent(),
+        guestHoursEndMin: body.containsKey('guestHoursEndMin')
+            ? Value(((body['guestHoursEndMin'] as num).toInt()).clamp(0, 1439))
+            : const Value.absent(),
+        guestMaxItems: body.containsKey('guestMaxItems')
+            ? Value(((body['guestMaxItems'] as num).toInt()).clamp(1, 99))
+            : const Value.absent(),
+        guestSessionHours: body.containsKey('guestSessionHours')
+            ? Value(((body['guestSessionHours'] as num).toInt()).clamp(1, 24))
+            : const Value.absent(),
+        soundGuestPending: body.containsKey('soundGuestPending')
+            ? Value(body['soundGuestPending'] as String?)
+            : const Value.absent(),
       ),
     );
     final row = await _readOrSeed(db);
+    // Audited because it changes what the venue exposes to the street, not
+    // merely how a screen looks. Two kinds rather than one with a state param:
+    // a log line is composed from a code, and "on" is not a code (ADR-0085).
+    if (row.guestOrderingEnabled != before.guestOrderingEnabled) {
+      final token = req.headers['authorization']?.replaceFirst(
+        RegExp(r'^[Bb]earer\s+'),
+        '',
+      );
+      await writeAudit(
+        db,
+        type: AuditType.selfOrder,
+        kind: row.guestOrderingEnabled
+            ? AuditKind.guestOrderingEnabled
+            : AuditKind.guestOrderingDisabled,
+        actorUserId: (await auth.resolveBearer(token))?.id,
+        hub: hub,
+      );
+    }
     final payload = _toJson(row);
     hub.broadcast(WsEventTypes.venueSettingsUpdated, payload);
     return Response.ok(
@@ -383,4 +429,13 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
   'memberDebtEnabled': s.memberDebtEnabled,
   'memberDebtLimit': s.memberDebtLimit,
   'memberDebtOverdueDays': s.memberDebtOverdueDays,
+  // [[Pesan mandiri]] (ADR-0105). Readable like the rest: the client decides
+  // whether to draw the hub tile before it has any right to change anything.
+  'guestOrderingEnabled': s.guestOrderingEnabled,
+  'guestNoteEnabled': s.guestNoteEnabled,
+  'guestHoursStartMin': s.guestHoursStartMin,
+  'guestHoursEndMin': s.guestHoursEndMin,
+  'guestMaxItems': s.guestMaxItems,
+  'guestSessionHours': s.guestSessionHours,
+  'soundGuestPending': s.soundGuestPending,
 };

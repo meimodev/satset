@@ -978,3 +978,66 @@ A theme is **device-local**: it lives in `SharedPreferences` on one handset, nex
 The six semantic hues ([[Habis / Sold out (menu item out of stock)|habis]], ready, urgent, and friends) are byte-identical across themes so the colour vocabulary is learned once — except where a theme's accent would collide with one of them, in which case only that one token is retuned. See [docs/adr/0045-device-local-theme-selection.md](docs/adr/0045-device-local-theme-selection.md).
 
 _Avoid_: treating theme as a user profile setting or a venue policy; putting the picker behind an admin capability (every waiter sets their own); adding a theme whose accent duplicates a semantic hue.
+
+### Pesan mandiri (Self-order)
+**ID · EN** — Pesan mandiri · Self-order. _Not_ "Self-service" (that is a buffet) and _not_ "Online ordering" (nothing leaves the LAN).
+
+A guest at a [[Table]] scans the QR stuck to it, browses the venue's own menu on their own phone, and submits an order that a staff member accepts (ADR-0105). Off by default; a venue switches it on venue-wide and then per table, so the dining room can self-order while the bar counter stays staff-taken.
+
+It is **not a second ordering path**. What the guest submits is a [[Pesanan tamu (intent)]], and accepting it calls the same `submitOrder` a waiter's send calls. Payment is unaffected: the lines join the open [[Bill (tab)]] and settle at the till like any other.
+
+_Avoid_: calling it "guest mode" (that is the pairing vocabulary); treating a submitted order as sent to the kitchen; implying it takes payment.
+
+### Tamu (nav destination) (Guest)
+**ID · EN** — Tamu · Guest.
+
+The staff-side destination where waiting [[Pesanan tamu (intent)|pesanan tamu]] are accepted or rejected — a nav slot of its own on both the tablet rail and the phone tab bar, badged with the pending count, opened by `takeOrder` (ADR-0106). It is a **watch job**, not a setting: everything an owner curates about [[Pesan mandiri]] lives on a separate `editSettings` screen reached from the Venue hub.
+
+The one word is the destination's name, and the destination is the queue. It is *not* the guest, the [[Sesi tamu (Guest session)|sesi tamu]] or the guest's phone, and it is _not_ "Antrian" — that word already names the [[Batch (kitchen order)|kitchen]] queue one slot away on the same rail, and two queues sharing a label is how a waiter taps the wrong one mid-rush.
+
+_Avoid_: "Antrian tamu" on a rail label (collides with the KDS); calling the settings screen "Tamu"; reading the slot's absence as a permission error — a venue with self-order off has no such destination.
+
+### Pesanan tamu (intent) (Guest order)
+**ID · EN** — Pesanan tamu · Guest order. Statuses: menunggu · Pending; diterima · Accepted; ditolak · Rejected; dibatalkan · Cancelled.
+
+What a guest's phone actually creates: rows in `guest_orders` + `guest_order_lines`, priced **by the server** from `menu_items` — the phone is untrusted and its numbers are ignored. It is an *intent*, not a [[Ticket]] and not a [[Batch (kitchen order)]]: nothing is cooked, nothing is billed, and no reader of `tickets` can see it.
+
+Accepting it (capability `takeOrder`) writes the real tickets through the ordinary path — same stock check, same [[Visit]] attachment, same audit. Rejecting it stores a **code**, never a sentence (ADR-0085). A guest may cancel their own while it is still pending; once accepted it is a ticket, and a ticket is [[Void (item)|voided]] by staff.
+
+_Avoid_: a `pendingReview` ticket status (ADR-0080 removed it, and ADR-0105 declines to bring it back); auto-accepting; reading a price off the wire.
+
+### Kode meja (Table code)
+**ID · EN** — Kode meja · Table code.
+
+The eight-character code in a table's QR URL (`http://<venue-lan-ip>:8080/t/<code>`), stored on `venue_tables.guest_code`. It is the whole credential — there is no guest login and no guest token — and it opens exactly one table's menu and submit button.
+
+Rotating (`Ubah semua kode`) remints every table at once and kills every printed QR in the venue, which is why it is one audited act rather than a per-table button. A code that does not resolve — unknown, deactivated table, or a table opted out of self-order — is one indistinguishable 404, so the QR cannot be used to enumerate the floor.
+
+_Avoid_: reusing a code across tables; treating it as a secret worth encrypting; a per-table rotate that leaves the venue's QR sheet half-valid.
+
+### Sesi tamu (Guest session)
+**ID · EN** — Sesi tamu · Guest session.
+
+An opaque id given to a guest's phone on first load so "Pesanan saya" can exist without a login. It is bound to a **sitting**, not to a table: it dies the moment the table is reopened or its [[Bill close (Tutup tagihan)|bill closes]], derived from the table row rather than stored — so every path that frees a table closes the sessions on it without knowing they exist.
+
+That expiry is the point. A phone left on a windowsill, or a screenshot of the page, must not be able to order onto the next party's bill.
+
+_Avoid_: treating it as authentication; persisting it server-side past the sitting; sharing one session across tables.
+
+### Override stok tamu (Guest stock override)
+**ID · EN** — Override stok tamu · Guest stock override. Values: Ikut inventaris · Follow inventory (`auto`); Paksa ada · Force in (`forceIn`); Paksa habis · Force out (`forceOut`).
+
+A manual call on whether the guest page may sell one item, overriding the derivation from [[Bahan (ingredient)]] stock. `auto` is the ordinary state and reads the live inventory; the two forces are a **shift-long** claim that the inventory is wrong, and they expire at the business-day rollover rather than standing until someone remembers to clear them.
+
+Set on the Menu tamu tab, stored on `menu_items.guest_stock_override` with its stamp in `guest_override_at`. **Persisted names** — renaming one orphans every row. What the tab and the guest page both read is the *effective* value, computed server-side: a force that has outlived its day already reads `auto`, so no screen can draw a button as held down after the server has let go.
+
+_Avoid_: treating a force as permanent; expiring it on a calendar day rather than the business day; recomputing sold-out client-side.
+
+### Item alkohol (Alcohol item)
+**ID · EN** — Item alkohol · Alcohol item.
+
+A menu item flagged `menu_items.alcohol`, meaning a human must see the guest before it reaches the bar. It is the one thing on a [[Pesanan tamu (intent)]] that self-order cannot delegate to the phone that placed it: the feature can take the order, but it cannot check an ID.
+
+The flag does **not** hide the item or block the order — it badges the row on the Menu tamu tab and warns on the queue card, so the staff member holding the accept button knows to look up. Ticked per item on that tab; defaulted off on every existing row, because guessing which venue-authored categories mean alcohol is how a soft drink acquires an age check nobody asked for.
+
+_Avoid_: refusing the order automatically; inferring it from a category name; treating the badge as a legal control rather than a prompt to a person.

@@ -93,7 +93,19 @@ mixin _$VenueSettingsDto {
 
   /// How long a tab may stand before the report calls it overdue. A credit
   /// policy, not a fact, which is why it is a setting.
-  int get memberDebtOverdueDays => throw _privateConstructorUsedError;
+  int get memberDebtOverdueDays =>
+      throw _privateConstructorUsedError; // [[Pesan mandiri]] (ADR-0105). Off by default — a venue opts in, and until
+  // it does the cleartext guest listener does not bind at all.
+  bool get guestOrderingEnabled => throw _privateConstructorUsedError;
+  bool get guestNoteEnabled => throw _privateConstructorUsedError;
+
+  /// The service window, in minutes from midnight. **Equal values mean no
+  /// window** (the default): a guest may order whenever the server is up.
+  int get guestHoursStartMin => throw _privateConstructorUsedError;
+  int get guestHoursEndMin => throw _privateConstructorUsedError;
+  int get guestMaxItems => throw _privateConstructorUsedError;
+  int get guestSessionHours => throw _privateConstructorUsedError;
+  String get soundGuestPending => throw _privateConstructorUsedError;
 
   /// Serializes this VenueSettingsDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -161,6 +173,13 @@ abstract class $VenueSettingsDtoCopyWith<$Res> {
     bool memberDebtEnabled,
     int memberDebtLimit,
     int memberDebtOverdueDays,
+    bool guestOrderingEnabled,
+    bool guestNoteEnabled,
+    int guestHoursStartMin,
+    int guestHoursEndMin,
+    int guestMaxItems,
+    int guestSessionHours,
+    String soundGuestPending,
   });
 }
 
@@ -227,6 +246,13 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
     Object? memberDebtEnabled = null,
     Object? memberDebtLimit = null,
     Object? memberDebtOverdueDays = null,
+    Object? guestOrderingEnabled = null,
+    Object? guestNoteEnabled = null,
+    Object? guestHoursStartMin = null,
+    Object? guestHoursEndMin = null,
+    Object? guestMaxItems = null,
+    Object? guestSessionHours = null,
+    Object? soundGuestPending = null,
   }) {
     return _then(
       _value.copyWith(
@@ -422,6 +448,34 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
                 ? _value.memberDebtOverdueDays
                 : memberDebtOverdueDays // ignore: cast_nullable_to_non_nullable
                       as int,
+            guestOrderingEnabled: null == guestOrderingEnabled
+                ? _value.guestOrderingEnabled
+                : guestOrderingEnabled // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            guestNoteEnabled: null == guestNoteEnabled
+                ? _value.guestNoteEnabled
+                : guestNoteEnabled // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            guestHoursStartMin: null == guestHoursStartMin
+                ? _value.guestHoursStartMin
+                : guestHoursStartMin // ignore: cast_nullable_to_non_nullable
+                      as int,
+            guestHoursEndMin: null == guestHoursEndMin
+                ? _value.guestHoursEndMin
+                : guestHoursEndMin // ignore: cast_nullable_to_non_nullable
+                      as int,
+            guestMaxItems: null == guestMaxItems
+                ? _value.guestMaxItems
+                : guestMaxItems // ignore: cast_nullable_to_non_nullable
+                      as int,
+            guestSessionHours: null == guestSessionHours
+                ? _value.guestSessionHours
+                : guestSessionHours // ignore: cast_nullable_to_non_nullable
+                      as int,
+            soundGuestPending: null == soundGuestPending
+                ? _value.soundGuestPending
+                : soundGuestPending // ignore: cast_nullable_to_non_nullable
+                      as String,
           )
           as $Val,
     );
@@ -486,6 +540,13 @@ abstract class _$$VenueSettingsDtoImplCopyWith<$Res>
     bool memberDebtEnabled,
     int memberDebtLimit,
     int memberDebtOverdueDays,
+    bool guestOrderingEnabled,
+    bool guestNoteEnabled,
+    int guestHoursStartMin,
+    int guestHoursEndMin,
+    int guestMaxItems,
+    int guestSessionHours,
+    String soundGuestPending,
   });
 }
 
@@ -551,6 +612,13 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
     Object? memberDebtEnabled = null,
     Object? memberDebtLimit = null,
     Object? memberDebtOverdueDays = null,
+    Object? guestOrderingEnabled = null,
+    Object? guestNoteEnabled = null,
+    Object? guestHoursStartMin = null,
+    Object? guestHoursEndMin = null,
+    Object? guestMaxItems = null,
+    Object? guestSessionHours = null,
+    Object? soundGuestPending = null,
   }) {
     return _then(
       _$VenueSettingsDtoImpl(
@@ -746,6 +814,34 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
             ? _value.memberDebtOverdueDays
             : memberDebtOverdueDays // ignore: cast_nullable_to_non_nullable
                   as int,
+        guestOrderingEnabled: null == guestOrderingEnabled
+            ? _value.guestOrderingEnabled
+            : guestOrderingEnabled // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        guestNoteEnabled: null == guestNoteEnabled
+            ? _value.guestNoteEnabled
+            : guestNoteEnabled // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        guestHoursStartMin: null == guestHoursStartMin
+            ? _value.guestHoursStartMin
+            : guestHoursStartMin // ignore: cast_nullable_to_non_nullable
+                  as int,
+        guestHoursEndMin: null == guestHoursEndMin
+            ? _value.guestHoursEndMin
+            : guestHoursEndMin // ignore: cast_nullable_to_non_nullable
+                  as int,
+        guestMaxItems: null == guestMaxItems
+            ? _value.guestMaxItems
+            : guestMaxItems // ignore: cast_nullable_to_non_nullable
+                  as int,
+        guestSessionHours: null == guestSessionHours
+            ? _value.guestSessionHours
+            : guestSessionHours // ignore: cast_nullable_to_non_nullable
+                  as int,
+        soundGuestPending: null == soundGuestPending
+            ? _value.soundGuestPending
+            : soundGuestPending // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -803,6 +899,13 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     this.memberDebtEnabled = false,
     this.memberDebtLimit = 0,
     this.memberDebtOverdueDays = 30,
+    this.guestOrderingEnabled = false,
+    this.guestNoteEnabled = true,
+    this.guestHoursStartMin = 0,
+    this.guestHoursEndMin = 0,
+    this.guestMaxItems = 20,
+    this.guestSessionHours = 4,
+    this.soundGuestPending = 'chime',
   });
 
   factory _$VenueSettingsDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -975,10 +1078,36 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
   @override
   @JsonKey()
   final int memberDebtOverdueDays;
+  // [[Pesan mandiri]] (ADR-0105). Off by default — a venue opts in, and until
+  // it does the cleartext guest listener does not bind at all.
+  @override
+  @JsonKey()
+  final bool guestOrderingEnabled;
+  @override
+  @JsonKey()
+  final bool guestNoteEnabled;
+
+  /// The service window, in minutes from midnight. **Equal values mean no
+  /// window** (the default): a guest may order whenever the server is up.
+  @override
+  @JsonKey()
+  final int guestHoursStartMin;
+  @override
+  @JsonKey()
+  final int guestHoursEndMin;
+  @override
+  @JsonKey()
+  final int guestMaxItems;
+  @override
+  @JsonKey()
+  final int guestSessionHours;
+  @override
+  @JsonKey()
+  final String soundGuestPending;
 
   @override
   String toString() {
-    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, pickupTargetMins: $pickupTargetMins, ungreetedMins: $ungreetedMins, ungreetedEscalateMins: $ungreetedEscalateMins, longStayMins: $longStayMins, idleTableMins: $idleTableMins, reservationGraceMins: $reservationGraceMins, ungreetedAlertEnabled: $ungreetedAlertEnabled, pickupAlertEnabled: $pickupAlertEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue, soundUngreeted: $soundUngreeted, soundPickup: $soundPickup, membersEnabled: $membersEnabled, memberPointsEnabled: $memberPointsEnabled, memberPunchEnabled: $memberPunchEnabled, memberPresetId: $memberPresetId, memberEarnPerThousand: $memberEarnPerThousand, memberPointValue: $memberPointValue, memberRedeemMin: $memberRedeemMin, memberPunchItemId: $memberPunchItemId, memberPunchTarget: $memberPunchTarget, memberDebtEnabled: $memberDebtEnabled, memberDebtLimit: $memberDebtLimit, memberDebtOverdueDays: $memberDebtOverdueDays)';
+    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, pickupTargetMins: $pickupTargetMins, ungreetedMins: $ungreetedMins, ungreetedEscalateMins: $ungreetedEscalateMins, longStayMins: $longStayMins, idleTableMins: $idleTableMins, reservationGraceMins: $reservationGraceMins, ungreetedAlertEnabled: $ungreetedAlertEnabled, pickupAlertEnabled: $pickupAlertEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue, soundUngreeted: $soundUngreeted, soundPickup: $soundPickup, membersEnabled: $membersEnabled, memberPointsEnabled: $memberPointsEnabled, memberPunchEnabled: $memberPunchEnabled, memberPresetId: $memberPresetId, memberEarnPerThousand: $memberEarnPerThousand, memberPointValue: $memberPointValue, memberRedeemMin: $memberRedeemMin, memberPunchItemId: $memberPunchItemId, memberPunchTarget: $memberPunchTarget, memberDebtEnabled: $memberDebtEnabled, memberDebtLimit: $memberDebtLimit, memberDebtOverdueDays: $memberDebtOverdueDays, guestOrderingEnabled: $guestOrderingEnabled, guestNoteEnabled: $guestNoteEnabled, guestHoursStartMin: $guestHoursStartMin, guestHoursEndMin: $guestHoursEndMin, guestMaxItems: $guestMaxItems, guestSessionHours: $guestSessionHours, soundGuestPending: $soundGuestPending)';
   }
 
   @override
@@ -1077,7 +1206,21 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
             (identical(other.memberDebtLimit, memberDebtLimit) ||
                 other.memberDebtLimit == memberDebtLimit) &&
             (identical(other.memberDebtOverdueDays, memberDebtOverdueDays) ||
-                other.memberDebtOverdueDays == memberDebtOverdueDays));
+                other.memberDebtOverdueDays == memberDebtOverdueDays) &&
+            (identical(other.guestOrderingEnabled, guestOrderingEnabled) ||
+                other.guestOrderingEnabled == guestOrderingEnabled) &&
+            (identical(other.guestNoteEnabled, guestNoteEnabled) ||
+                other.guestNoteEnabled == guestNoteEnabled) &&
+            (identical(other.guestHoursStartMin, guestHoursStartMin) ||
+                other.guestHoursStartMin == guestHoursStartMin) &&
+            (identical(other.guestHoursEndMin, guestHoursEndMin) ||
+                other.guestHoursEndMin == guestHoursEndMin) &&
+            (identical(other.guestMaxItems, guestMaxItems) ||
+                other.guestMaxItems == guestMaxItems) &&
+            (identical(other.guestSessionHours, guestSessionHours) ||
+                other.guestSessionHours == guestSessionHours) &&
+            (identical(other.soundGuestPending, soundGuestPending) ||
+                other.soundGuestPending == soundGuestPending));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1132,6 +1275,13 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     memberDebtEnabled,
     memberDebtLimit,
     memberDebtOverdueDays,
+    guestOrderingEnabled,
+    guestNoteEnabled,
+    guestHoursStartMin,
+    guestHoursEndMin,
+    guestMaxItems,
+    guestSessionHours,
+    soundGuestPending,
   ]);
 
   /// Create a copy of VenueSettingsDto
@@ -1201,6 +1351,13 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
     final bool memberDebtEnabled,
     final int memberDebtLimit,
     final int memberDebtOverdueDays,
+    final bool guestOrderingEnabled,
+    final bool guestNoteEnabled,
+    final int guestHoursStartMin,
+    final int guestHoursEndMin,
+    final int guestMaxItems,
+    final int guestSessionHours,
+    final String soundGuestPending,
   }) = _$VenueSettingsDtoImpl;
 
   factory _VenueSettingsDto.fromJson(Map<String, dynamic> json) =
@@ -1321,7 +1478,25 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
   /// How long a tab may stand before the report calls it overdue. A credit
   /// policy, not a fact, which is why it is a setting.
   @override
-  int get memberDebtOverdueDays;
+  int get memberDebtOverdueDays; // [[Pesan mandiri]] (ADR-0105). Off by default — a venue opts in, and until
+  // it does the cleartext guest listener does not bind at all.
+  @override
+  bool get guestOrderingEnabled;
+  @override
+  bool get guestNoteEnabled;
+
+  /// The service window, in minutes from midnight. **Equal values mean no
+  /// window** (the default): a guest may order whenever the server is up.
+  @override
+  int get guestHoursStartMin;
+  @override
+  int get guestHoursEndMin;
+  @override
+  int get guestMaxItems;
+  @override
+  int get guestSessionHours;
+  @override
+  String get soundGuestPending;
 
   /// Create a copy of VenueSettingsDto
   /// with the given fields replaced by the non-null parameter values.

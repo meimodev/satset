@@ -1,6 +1,6 @@
 # A guest order arriving gets its own cue
 
-**Status:** Superseded by [0080](0080-self-order-and-token-pairing-removed.md) — guest QR self-ordering removed, and with it `AlertEvent.guestPending`. Kept for the reasoning.
+**Status:** Superseded by [0080](0080-self-order-and-token-pairing-removed.md) — guest QR self-ordering removed, and with it `AlertEvent.guestPending`. Kept for the reasoning. Re-decided by [0105](0105-guest-self-order-returns-as-an-intent-not-a-ticket.md) — the cue returns.
 
 Extends [ADR-0028](0028-guest-orders-pending-review-not-auto-fire.md) (guest orders rest in review) and [ADR-0044](0044-table-state-alerts-channel-escalation-and-per-event-mute.md) (what earns a sound). `AlertEvent` grows a seventh member, `guestPending`, with its own venue-wide preset (`soundGuestPending`, schema v40) and its own row in the device mute list.
 

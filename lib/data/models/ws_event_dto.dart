@@ -57,6 +57,16 @@ class WsEventTypes {
   /// Payload `{id}`. Fires on a delete and on the losing half of a merge, which
   /// look identical from the directory's side.
   static const memberDeleted = 'member.deleted';
+  /// A guest submitted an order on the cleartext plane (ADR-0105). Payload is
+  /// the whole intent, so the staff queue renders without a refetch — and so
+  /// the alert sound has something to name.
+  static const guestOrderSubmitted = 'guestOrder.submitted';
+
+  /// A guest order was accepted, rejected or cancelled. Payload is the whole
+  /// intent in its new state; the queue removes it from `pending` on any of the
+  /// three, which is why there is one event, not three.
+  static const guestOrderDecided = 'guestOrder.decided';
+
   static const rolesUpdated = 'roles.updated';
 
   /// Sample-data seed job progress. Payload `{daysDone, daysTotal}` while

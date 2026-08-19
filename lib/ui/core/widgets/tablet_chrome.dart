@@ -17,6 +17,8 @@ class TabletShell extends StatelessWidget {
   final int readyCount;
   final int kitchenCount;
   final bool showKasir;
+  final bool showTamu;
+  final int guestPending;
   final Widget child;
   final List<String> crumbs;
 
@@ -26,6 +28,8 @@ class TabletShell extends StatelessWidget {
     required this.readyCount,
     required this.kitchenCount,
     this.showKasir = false,
+    this.showTamu = false,
+    this.guestPending = 0,
     required this.child,
     required this.crumbs,
   });
@@ -42,6 +46,8 @@ class TabletShell extends StatelessWidget {
             readyCount: readyCount,
             kitchenCount: kitchenCount,
             showKasir: showKasir,
+            showTamu: showTamu,
+            guestPending: guestPending,
           ),
           Expanded(
             child: Column(
@@ -62,12 +68,16 @@ class TabletSideRail extends StatelessWidget {
   final int readyCount;
   final int kitchenCount;
   final bool showKasir;
+  final bool showTamu;
+  final int guestPending;
   const TabletSideRail({
     super.key,
     required this.active,
     required this.readyCount,
     required this.kitchenCount,
     this.showKasir = false,
+    this.showTamu = false,
+    this.guestPending = 0,
   });
 
   @override
@@ -125,6 +135,15 @@ class TabletSideRail extends StatelessWidget {
                     badge: readyCount,
                     alert: readyCount > 0,
                   ),
+                  if (showTamu)
+                    _RailBtn(
+                      id: 'tamu',
+                      label: context.l10n.tabTamu,
+                      icon: Icons.qr_code_2_outlined,
+                      route: '/selforder',
+                      active: active,
+                      badge: guestPending,
+                    ),
                   if (showKasir)
                     _RailBtn(
                       id: 'kasir',

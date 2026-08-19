@@ -289,6 +289,333 @@ class AppL10nId extends AppL10n {
   String get auditTypeStockCounted => 'Opname';
 
   @override
+  String get soTitle => 'Pesan mandiri';
+
+  @override
+  String get soSub => 'Tamu pesan sendiri dari HP';
+
+  @override
+  String get soAdminTitle => 'Atur pesan mandiri';
+
+  @override
+  String get soAdminSub => 'Kode QR, menu tamu, aturan';
+
+  @override
+  String get soTabletOnly =>
+      'Pengaturan dibaca tiga tab sekaligus, jadi butuh layar tablet. Antrean pesanan tamu tetap bisa dibuka di HP.';
+
+  @override
+  String get soTabQueue => 'Pesanan masuk';
+
+  @override
+  String get soTabQr => 'QR & meja';
+
+  @override
+  String get soTabMenu => 'Menu tamu';
+
+  @override
+  String get soTabRules => 'Aturan';
+
+  @override
+  String get soHeroLabel => 'Hari ini';
+
+  @override
+  String soHeroValue(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString pesanan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String soHeroDesc(num accepted, num rejected, String value) {
+    final intl.NumberFormat acceptedNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String acceptedString = acceptedNumberFormat.format(accepted);
+    final intl.NumberFormat rejectedNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String rejectedString = rejectedNumberFormat.format(rejected);
+
+    return '$acceptedString diterima · $rejectedString ditolak · nilai $value';
+  }
+
+  @override
+  String get soStatPending => 'Menunggu';
+
+  @override
+  String get soStatValue => 'Nilai diterima';
+
+  @override
+  String get soStatWait => 'Median konfirmasi';
+
+  @override
+  String soWaitSecs(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    return '$nString dtk';
+  }
+
+  @override
+  String get soFilterAll => 'Semua';
+
+  @override
+  String get soFilterPending => 'Perlu konfirmasi';
+
+  @override
+  String get soFilterAccepted => 'Ke dapur';
+
+  @override
+  String get soFilterRejected => 'Ditolak';
+
+  @override
+  String get soQueueEmptyTitle => 'Belum ada pesanan tamu';
+
+  @override
+  String get soQueueEmptyBody =>
+      'Pesanan yang dikirim tamu dari HP muncul di sini untuk dikonfirmasi.';
+
+  @override
+  String get soQueueEmptyFilteredTitle => 'Tidak ada pesanan di saringan ini';
+
+  @override
+  String get soQueueEmptyFiltered => 'Tidak ada pesanan pada saringan ini.';
+
+  @override
+  String get soAccept => 'Terima';
+
+  @override
+  String get soReject => 'Tolak';
+
+  @override
+  String get soAcceptAll => 'Terima semua';
+
+  @override
+  String soAcceptFailed(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString pesanan gagal diterima.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get soRejectTitle => 'Alasan menolak';
+
+  @override
+  String get soReasonHabis => 'Bahan habis';
+
+  @override
+  String get soReasonGantiMenu => 'Menu diganti';
+
+  @override
+  String get soReasonTutup => 'Dapur sudah tutup';
+
+  @override
+  String get soReasonOther => 'Alasan lain';
+
+  @override
+  String get soStatusPending => 'Menunggu konfirmasi';
+
+  @override
+  String get soStatusAccepted => 'Diterima';
+
+  @override
+  String get soStatusRejected => 'Ditolak';
+
+  @override
+  String get soStatusCancelled => 'Dibatalkan tamu';
+
+  @override
+  String soLines(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get soTableTitle => 'Kode meja';
+
+  @override
+  String get soTableSub =>
+      'Satu kode per meja. Cetak QR-nya dan tempel di meja.';
+
+  @override
+  String get soRotate => 'Ganti semua kode';
+
+  @override
+  String get soRotateConfirmTitle => 'Ganti semua kode meja?';
+
+  @override
+  String get soRotateConfirmBody =>
+      'Semua QR yang sudah dicetak berhenti berfungsi saat ini juga. Cetak ulang seluruh meja setelah ini.';
+
+  @override
+  String soQrFor(String table) {
+    return 'Meja $table';
+  }
+
+  @override
+  String get soQrHint => 'Pindai untuk memesan';
+
+  @override
+  String get soPrint => 'Cetak';
+
+  @override
+  String get soTableOn => 'Meja ini melayani pesan mandiri';
+
+  @override
+  String get soNoHost => 'Server belum terhubung, alamat QR belum bisa dibuat.';
+
+  @override
+  String get soMenuSub => 'Yang boleh dilihat dan dipesan tamu dari HP.';
+
+  @override
+  String get soItemVisible => 'Tampil';
+
+  @override
+  String get soItemFeatured => 'Andalan';
+
+  @override
+  String get soStockAuto => 'Otomatis';
+
+  @override
+  String get soStockIn => 'Paksa ada';
+
+  @override
+  String get soStockOut => 'Paksa habis';
+
+  @override
+  String get soSoldOut => 'Habis';
+
+  @override
+  String get soOverrideManual => 'Override manual';
+
+  @override
+  String get soEffectiveIn => 'Bisa dipesan tamu';
+
+  @override
+  String get soEffectiveOut => 'Habis di halaman tamu';
+
+  @override
+  String get soAlcohol => 'Alkohol · verifikasi staf';
+
+  @override
+  String get soAlcoholWarn =>
+      'Ada item alkohol. Periksa usia tamu sebelum diteruskan ke bar.';
+
+  @override
+  String soDecidedBy(String name) {
+    return 'Diputuskan oleh $name';
+  }
+
+  @override
+  String get soPrintAll => 'Cetak semua kartu';
+
+  @override
+  String soPrintAllDone(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n kartu dikirim ke printer.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String soTableMeta(String zone, int seats) {
+    String _temp0 = intl.Intl.pluralLogic(
+      seats,
+      locale: localeName,
+      other: '$seats kursi',
+    );
+    return '$zone · $_temp0';
+  }
+
+  @override
+  String get soGuestPreview => 'Pratinjau halaman tamu';
+
+  @override
+  String soHeroHours(String range) {
+    return 'Jam layanan $range';
+  }
+
+  @override
+  String get soHeroHoursOpen => 'Tanpa batas jam layanan';
+
+  @override
+  String get soMenuAlcoholHint =>
+      'Centang Alkohol pada item yang perlu diperiksa usianya. Tamu tetap bisa memesannya; staf yang memutuskan.';
+
+  @override
+  String get soRuleMaster => 'Nyalakan pesan mandiri';
+
+  @override
+  String get soRuleMasterSub =>
+      'Selama mati, halaman tamu tidak berjalan sama sekali.';
+
+  @override
+  String get soRestartNeeded => 'Perlu mulai ulang server agar berlaku.';
+
+  @override
+  String get soRuleNote => 'Izinkan catatan tamu';
+
+  @override
+  String get soRuleNoteSub => 'Maksimal 120 huruf per item.';
+
+  @override
+  String get soRuleHours => 'Jam layanan';
+
+  @override
+  String get soRuleHoursSub => 'Jam sama = tanpa batas waktu.';
+
+  @override
+  String get soRuleMaxItems => 'Maksimal item sekali kirim';
+
+  @override
+  String get soRuleSession => 'Masa berlaku sesi (jam)';
+
+  @override
+  String get soOffTitle => 'Pesan mandiri mati';
+
+  @override
+  String get soOffBody => 'Nyalakan di tab Aturan, lalu mulai ulang server.';
+
+  @override
+  String get soHubBadgeOn => 'Nyala';
+
+  @override
+  String get soHubBadgeOff => 'Mati';
+
+  @override
+  String get auditTypeSelfOrder => 'Pesan mandiri';
+
+  @override
   String get auditTypeMenuKilled => 'Stop jual';
 
   @override
@@ -492,6 +819,9 @@ class AppL10nId extends AppL10n {
 
   @override
   String get venueSettingsSoundUngreeted => 'Belum dilayani';
+
+  @override
+  String get venueSettingsSoundGuestPending => 'Pesanan tamu masuk';
 
   @override
   String get venueSettingsSoundPickup => 'Menunggu diantar';
@@ -731,6 +1061,9 @@ class AppL10nId extends AppL10n {
 
   @override
   String get tabSaya => 'Saya';
+
+  @override
+  String get tabTamu => 'Tamu';
 
   @override
   String get shiftLabel => 'SHIFT';
@@ -1986,6 +2319,57 @@ class AppL10nId extends AppL10n {
     );
     return 'Tutup stok opname — $_temp0, selisih $variance';
   }
+
+  @override
+  String auditGuestOrderAccepted(String table, num lines) {
+    final intl.NumberFormat linesNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String linesString = linesNumberFormat.format(lines);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      lines,
+      locale: localeName,
+      other: '$linesString item',
+    );
+    return 'Terima pesanan tamu $table — $_temp0';
+  }
+
+  @override
+  String auditGuestOrderRejected(String table, num lines) {
+    final intl.NumberFormat linesNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String linesString = linesNumberFormat.format(lines);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      lines,
+      locale: localeName,
+      other: '$linesString item',
+    );
+    return 'Tolak pesanan tamu $table — $_temp0';
+  }
+
+  @override
+  String auditGuestCodesRotated(num tables) {
+    final intl.NumberFormat tablesNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String tablesString = tablesNumberFormat.format(tables);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tablesString meja',
+    );
+    return 'Ganti kode meja — $_temp0';
+  }
+
+  @override
+  String get auditGuestOrderingEnabled => 'Nyalakan pesan mandiri';
+
+  @override
+  String get auditGuestOrderingDisabled => 'Matikan pesan mandiri';
 
   @override
   String auditMemberCreated(String name) {

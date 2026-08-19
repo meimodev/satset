@@ -9,6 +9,8 @@ import 'package:path/path.dart' as p;
 
 import 'package:satset/domain/models/user.dart' show avatarColorPalette;
 
+import 'package:satset/server/guest/guest_code.dart';
+
 import 'tables.dart';
 
 part 'database.g.dart';
@@ -54,6 +56,9 @@ part 'database.g.dart';
     MemberDebts,
     Shifts,
     DemoStates,
+    GuestSessions,
+    GuestOrders,
+    GuestOrderLines,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -73,7 +78,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 55;
+  int get schemaVersion => 57;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -105,6 +110,25 @@ class AppDatabase extends _$AppDatabase {
   /// fact rather than a route-code convention. Raw SQL because it is partial:
   /// a blank phone should never collide with another blank one, though the
   /// enroll route refuses one anyway.
+  Future<void> _createGuestIndexes() async {
+    await customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_venue_tables_guest_code '
+      "ON venue_tables(guest_code) WHERE guest_code <> ''",
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_guest_orders_status '
+      'ON guest_orders(status, submitted_at)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_guest_orders_session '
+      'ON guest_orders(session_id, submitted_at)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_guest_order_lines_order '
+      'ON guest_order_lines(order_id)',
+    );
+  }
+
   Future<void> _createMemberIndexes() async {
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_members_phone_uniq '
@@ -1073,6 +1097,109 @@ class AppDatabase extends _$AppDatabase {
           type: 'INTEGER NOT NULL DEFAULT 30',
         );
       }
+
+      // v56 — [[Pesan mandiri]] returns as an intent, not a ticket (ADR-0105).
+      if (from < 56) {
+        if (!await _hasTable('guest_sessions')) {
+          await m.createTable(guestSessions);
+        }
+        if (!await _hasTable('guest_orders')) {
+          await m.createTable(guestOrders);
+        }
+        if (!await _hasTable('guest_order_lines')) {
+          await m.createTable(guestOrderLines);
+        }
+        await _safeAddColumnOn(
+          'venue_tables',
+          'guest_ordering_enabled',
+          type: 'INTEGER NOT NULL DEFAULT 1',
+        );
+        await _safeAddColumnOn(
+          'venue_tables',
+          'guest_code',
+          type: "TEXT NOT NULL DEFAULT ''",
+        );
+        await _safeAddColumnOn(
+          'menu_items',
+          'guest_visible',
+          type: 'INTEGER NOT NULL DEFAULT 1',
+        );
+        await _safeAddColumnOn(
+          'menu_items',
+          'guest_featured',
+          type: 'INTEGER NOT NULL DEFAULT 0',
+        );
+        await _safeAddColumnOn(
+          'menu_items',
+          'guest_stock_override',
+          type: "TEXT NOT NULL DEFAULT 'auto'",
+        );
+        await _safeAddColumnOn('menu_items', 'guest_override_at', type: 'INTEGER');
+        await _safeAddColumnOn(
+          'venue_settings',
+          'guest_ordering_enabled',
+          type: 'INTEGER NOT NULL DEFAULT 0',
+        );
+        await _safeAddColumnOn(
+          'venue_settings',
+          'guest_note_enabled',
+          type: 'INTEGER NOT NULL DEFAULT 1',
+        );
+        await _safeAddColumnOn(
+          'venue_settings',
+          'guest_hours_start_min',
+          type: 'INTEGER NOT NULL DEFAULT 0',
+        );
+        await _safeAddColumnOn(
+          'venue_settings',
+          'guest_hours_end_min',
+          type: 'INTEGER NOT NULL DEFAULT 0',
+        );
+        await _safeAddColumnOn(
+          'venue_settings',
+          'guest_max_items',
+          type: 'INTEGER NOT NULL DEFAULT 20',
+        );
+        await _safeAddColumnOn(
+          'venue_settings',
+          'guest_session_hours',
+          type: 'INTEGER NOT NULL DEFAULT 4',
+        );
+        await _safeAddColumnOn(
+          'venue_settings',
+          'sound_guest_pending',
+          type: 'TEXT',
+        );
+        // After the columns, never before: the unique index is *on*
+        // `venue_tables.guest_code`, so creating it first fails the whole
+        // upgrade with "no such column" on any venue that has traded.
+        await _createGuestIndexes();
+        // Every existing table needs a code or its QR cannot be printed. The
+        // default is '' and a blank code resolves to nothing, so mint one here
+        // rather than leaving the floor half-scannable.
+        final rows = await customSelect(
+          "SELECT id FROM venue_tables WHERE guest_code = ''",
+        ).get();
+        for (final r in rows) {
+          await customStatement('UPDATE venue_tables SET guest_code = ? WHERE id = ?', [
+            mintGuestCode(),
+            r.read<String>('id'),
+          ]);
+        }
+      }
+
+      // v57 — an item may need a human to check an ID before it reaches the
+      // bar. Defaults false on every existing row and is deliberately **not**
+      // backfilled by category: a venue's category names are its own, and
+      // guessing which of them mean alcohol is how a soft drink acquires an
+      // age check nobody asked for. The owner ticks the boxes once.
+      if (from < 57) {
+        await _safeAddColumnOn(
+          'menu_items',
+          'alcohol',
+          type: 'INTEGER NOT NULL DEFAULT 0',
+        );
+      }
     },
     onCreate: (m) async {
       await m.createAll();
@@ -1087,6 +1214,7 @@ class AppDatabase extends _$AppDatabase {
       );
       await _createDiscountIndexes();
       await _createMemberIndexes();
+      await _createGuestIndexes();
       await _createShiftIndexes();
       await _createLookupIndexes();
       await into(venueSettings).insertOnConflictUpdate(

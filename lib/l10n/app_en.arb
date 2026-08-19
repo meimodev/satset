@@ -86,6 +86,173 @@
   "auditTypeDebtMovement": "Tab",
   "auditTypeMemberChanged": "Member",
   "auditTypeStockCounted": "Stocktake",
+  "soTitle": "Self-order",
+  "soSub": "Guests order from their own phone",
+  "soAdminTitle": "Self-order setup",
+  "soAdminSub": "QR codes, guest menu, rules",
+  "soTabletOnly": "Setup reads its three tabs against each other, so it needs a tablet screen. The guest order queue opens on a phone.",
+  "soTabQueue": "Incoming",
+  "soTabQr": "QR & tables",
+  "soTabMenu": "Guest menu",
+  "soTabRules": "Rules",
+  "soHeroLabel": "Today",
+  "soHeroValue": "{n, plural, =1{1 order} other{{n} orders}}",
+  "@soHeroValue": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "soHeroDesc": "{accepted} accepted · {rejected} rejected · value {value}",
+  "@soHeroDesc": {
+    "placeholders": {
+      "accepted": {
+        "type": "num",
+        "format": "compact"
+      },
+      "rejected": {
+        "type": "num",
+        "format": "compact"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "soStatPending": "Waiting",
+  "soStatValue": "Accepted value",
+  "soStatWait": "Median confirmation",
+  "soWaitSecs": "{n}s",
+  "@soWaitSecs": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "soFilterAll": "All",
+  "soFilterPending": "Needs confirming",
+  "soFilterAccepted": "To the kitchen",
+  "soFilterRejected": "Turned down",
+  "soQueueEmptyTitle": "No guest orders yet",
+  "soQueueEmptyBody": "Orders sent from a guest phone land here for confirmation.",
+  "soQueueEmptyFilteredTitle": "Nothing under this filter",
+  "soQueueEmptyFiltered": "No orders match this filter.",
+  "soAccept": "Accept",
+  "soReject": "Reject",
+  "soAcceptAll": "Accept all",
+  "soAcceptFailed": "{n, plural, =1{1 order could not be accepted.} other{{n} orders could not be accepted.}}",
+  "@soAcceptFailed": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "soRejectTitle": "Reason for rejecting",
+  "soReasonHabis": "Out of stock",
+  "soReasonGantiMenu": "Menu changed",
+  "soReasonTutup": "Kitchen closed",
+  "soReasonOther": "Other reason",
+  "soStatusPending": "Waiting for confirmation",
+  "soStatusAccepted": "Accepted",
+  "soStatusRejected": "Rejected",
+  "soStatusCancelled": "Cancelled by guest",
+  "soLines": "{n, plural, =1{1 item} other{{n} items}}",
+  "@soLines": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "soTableTitle": "Table codes",
+  "soTableSub": "One code per table. Print its QR and stick it on the table.",
+  "soRotate": "Rotate every code",
+  "soRotateConfirmTitle": "Rotate every table code?",
+  "soRotateConfirmBody": "Every QR already printed stops working immediately. Reprint the whole floor afterwards.",
+  "soQrFor": "Table {table}",
+  "@soQrFor": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "soQrHint": "Scan to order",
+  "soPrint": "Print",
+  "soTableOn": "This table serves self-order",
+  "soNoHost": "Not connected to a server, so the QR address cannot be built.",
+  "soMenuSub": "What guests may see and order from their phone.",
+  "soItemVisible": "Shown",
+  "soItemFeatured": "Featured",
+  "soStockAuto": "Automatic",
+  "soStockIn": "Force in stock",
+  "soStockOut": "Force sold out",
+  "soSoldOut": "Sold out",
+  "soOverrideManual": "Manual override",
+  "soEffectiveIn": "Guests can order it",
+  "soEffectiveOut": "Sold out on the guest page",
+  "soAlcohol": "Alcohol · staff check",
+  "soAlcoholWarn": "Contains alcohol. Check the guest's age before this reaches the bar.",
+  "soDecidedBy": "Decided by {name}",
+  "@soDecidedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "soPrintAll": "Print every card",
+  "soPrintAllDone": "{n, plural, other{{n} cards sent to the printer.}}",
+  "@soPrintAllDone": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "soTableMeta": "{zone} · {seats, plural, =1{1 seat} other{{seats} seats}}",
+  "@soTableMeta": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      },
+      "seats": {
+        "type": "int"
+      }
+    }
+  },
+  "soGuestPreview": "Preview the guest page",
+  "soHeroHours": "Service hours {range}",
+  "@soHeroHours": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "soHeroHoursOpen": "No service-hour limit",
+  "soMenuAlcoholHint": "Tick Alcohol on anything that needs an age check. Guests can still order it; staff decide.",
+  "soRuleMaster": "Turn self-order on",
+  "soRuleMasterSub": "While off, the guest page does not run at all.",
+  "soRestartNeeded": "Needs a server restart to take effect.",
+  "soRuleNote": "Allow guest notes",
+  "soRuleNoteSub": "120 characters per item at most.",
+  "soRuleHours": "Service hours",
+  "soRuleHoursSub": "Equal times means no window.",
+  "soRuleMaxItems": "Max items per submission",
+  "soRuleSession": "Session validity (hours)",
+  "soOffTitle": "Self-order is off",
+  "soOffBody": "Turn it on under Rules, then restart the server.",
+  "soHubBadgeOn": "On",
+  "soHubBadgeOff": "Off",
+  "auditTypeSelfOrder": "Self-order",
   "auditTypeMenuKilled": "Sold out",
   "auditTypeMenuRestored": "On sale",
   "auditTypeStaffCreated": "Staff +",
@@ -151,6 +318,7 @@
   "venueSettingsSoundVoid": "Void",
   "venueSettingsSoundOverdue": "Overdue",
   "venueSettingsSoundUngreeted": "Not greeted",
+  "venueSettingsSoundGuestPending": "Guest order waiting",
   "venueSettingsSoundPickup": "Waiting to run",
   "venueSettingsSoundPreview": "Play",
   "venueSettingsTimingPrepTarget": "Ready target (all menu default)",
@@ -223,6 +391,7 @@
   "tabKasir": "Cashier",
   "tabVenue": "Venue",
   "tabSaya": "Me",
+  "tabTamu": "Guest",
   "shiftLabel": "SHIFT",
   "kasirRiwayatBatas": "Showing the most recent bills. Older ones are in Reports.",
   "kitchenQueueTitle": "Prep Queue",
@@ -648,6 +817,41 @@
       }
     }
   },
+  "auditGuestOrderAccepted": "Accepted guest order {table} — {lines, plural, =1{1 item} other{{lines} items}}",
+  "@auditGuestOrderAccepted": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      },
+      "lines": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "auditGuestOrderRejected": "Rejected guest order {table} — {lines, plural, =1{1 item} other{{lines} items}}",
+  "@auditGuestOrderRejected": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      },
+      "lines": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "auditGuestCodesRotated": "Rotated table codes — {tables, plural, =1{1 table} other{{tables} tables}}",
+  "@auditGuestCodesRotated": {
+    "placeholders": {
+      "tables": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "auditGuestOrderingEnabled": "Turned self-order on",
+  "auditGuestOrderingDisabled": "Turned self-order off",
   "auditMemberCreated": "Enrolled member {name}",
   "@auditMemberCreated": {
     "placeholders": {

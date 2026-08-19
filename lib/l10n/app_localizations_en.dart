@@ -289,6 +289,338 @@ class AppL10nEn extends AppL10n {
   String get auditTypeStockCounted => 'Stocktake';
 
   @override
+  String get soTitle => 'Self-order';
+
+  @override
+  String get soSub => 'Guests order from their own phone';
+
+  @override
+  String get soAdminTitle => 'Self-order setup';
+
+  @override
+  String get soAdminSub => 'QR codes, guest menu, rules';
+
+  @override
+  String get soTabletOnly =>
+      'Setup reads its three tabs against each other, so it needs a tablet screen. The guest order queue opens on a phone.';
+
+  @override
+  String get soTabQueue => 'Incoming';
+
+  @override
+  String get soTabQr => 'QR & tables';
+
+  @override
+  String get soTabMenu => 'Guest menu';
+
+  @override
+  String get soTabRules => 'Rules';
+
+  @override
+  String get soHeroLabel => 'Today';
+
+  @override
+  String soHeroValue(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString orders',
+      one: '1 order',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String soHeroDesc(num accepted, num rejected, String value) {
+    final intl.NumberFormat acceptedNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String acceptedString = acceptedNumberFormat.format(accepted);
+    final intl.NumberFormat rejectedNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String rejectedString = rejectedNumberFormat.format(rejected);
+
+    return '$acceptedString accepted · $rejectedString rejected · value $value';
+  }
+
+  @override
+  String get soStatPending => 'Waiting';
+
+  @override
+  String get soStatValue => 'Accepted value';
+
+  @override
+  String get soStatWait => 'Median confirmation';
+
+  @override
+  String soWaitSecs(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    return '${nString}s';
+  }
+
+  @override
+  String get soFilterAll => 'All';
+
+  @override
+  String get soFilterPending => 'Needs confirming';
+
+  @override
+  String get soFilterAccepted => 'To the kitchen';
+
+  @override
+  String get soFilterRejected => 'Turned down';
+
+  @override
+  String get soQueueEmptyTitle => 'No guest orders yet';
+
+  @override
+  String get soQueueEmptyBody =>
+      'Orders sent from a guest phone land here for confirmation.';
+
+  @override
+  String get soQueueEmptyFilteredTitle => 'Nothing under this filter';
+
+  @override
+  String get soQueueEmptyFiltered => 'No orders match this filter.';
+
+  @override
+  String get soAccept => 'Accept';
+
+  @override
+  String get soReject => 'Reject';
+
+  @override
+  String get soAcceptAll => 'Accept all';
+
+  @override
+  String soAcceptFailed(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString orders could not be accepted.',
+      one: '1 order could not be accepted.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get soRejectTitle => 'Reason for rejecting';
+
+  @override
+  String get soReasonHabis => 'Out of stock';
+
+  @override
+  String get soReasonGantiMenu => 'Menu changed';
+
+  @override
+  String get soReasonTutup => 'Kitchen closed';
+
+  @override
+  String get soReasonOther => 'Other reason';
+
+  @override
+  String get soStatusPending => 'Waiting for confirmation';
+
+  @override
+  String get soStatusAccepted => 'Accepted';
+
+  @override
+  String get soStatusRejected => 'Rejected';
+
+  @override
+  String get soStatusCancelled => 'Cancelled by guest';
+
+  @override
+  String soLines(num n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$nString items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get soTableTitle => 'Table codes';
+
+  @override
+  String get soTableSub =>
+      'One code per table. Print its QR and stick it on the table.';
+
+  @override
+  String get soRotate => 'Rotate every code';
+
+  @override
+  String get soRotateConfirmTitle => 'Rotate every table code?';
+
+  @override
+  String get soRotateConfirmBody =>
+      'Every QR already printed stops working immediately. Reprint the whole floor afterwards.';
+
+  @override
+  String soQrFor(String table) {
+    return 'Table $table';
+  }
+
+  @override
+  String get soQrHint => 'Scan to order';
+
+  @override
+  String get soPrint => 'Print';
+
+  @override
+  String get soTableOn => 'This table serves self-order';
+
+  @override
+  String get soNoHost =>
+      'Not connected to a server, so the QR address cannot be built.';
+
+  @override
+  String get soMenuSub => 'What guests may see and order from their phone.';
+
+  @override
+  String get soItemVisible => 'Shown';
+
+  @override
+  String get soItemFeatured => 'Featured';
+
+  @override
+  String get soStockAuto => 'Automatic';
+
+  @override
+  String get soStockIn => 'Force in stock';
+
+  @override
+  String get soStockOut => 'Force sold out';
+
+  @override
+  String get soSoldOut => 'Sold out';
+
+  @override
+  String get soOverrideManual => 'Manual override';
+
+  @override
+  String get soEffectiveIn => 'Guests can order it';
+
+  @override
+  String get soEffectiveOut => 'Sold out on the guest page';
+
+  @override
+  String get soAlcohol => 'Alcohol · staff check';
+
+  @override
+  String get soAlcoholWarn =>
+      'Contains alcohol. Check the guest\'s age before this reaches the bar.';
+
+  @override
+  String soDecidedBy(String name) {
+    return 'Decided by $name';
+  }
+
+  @override
+  String get soPrintAll => 'Print every card';
+
+  @override
+  String soPrintAllDone(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n cards sent to the printer.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String soTableMeta(String zone, int seats) {
+    String _temp0 = intl.Intl.pluralLogic(
+      seats,
+      locale: localeName,
+      other: '$seats seats',
+      one: '1 seat',
+    );
+    return '$zone · $_temp0';
+  }
+
+  @override
+  String get soGuestPreview => 'Preview the guest page';
+
+  @override
+  String soHeroHours(String range) {
+    return 'Service hours $range';
+  }
+
+  @override
+  String get soHeroHoursOpen => 'No service-hour limit';
+
+  @override
+  String get soMenuAlcoholHint =>
+      'Tick Alcohol on anything that needs an age check. Guests can still order it; staff decide.';
+
+  @override
+  String get soRuleMaster => 'Turn self-order on';
+
+  @override
+  String get soRuleMasterSub =>
+      'While off, the guest page does not run at all.';
+
+  @override
+  String get soRestartNeeded => 'Needs a server restart to take effect.';
+
+  @override
+  String get soRuleNote => 'Allow guest notes';
+
+  @override
+  String get soRuleNoteSub => '120 characters per item at most.';
+
+  @override
+  String get soRuleHours => 'Service hours';
+
+  @override
+  String get soRuleHoursSub => 'Equal times means no window.';
+
+  @override
+  String get soRuleMaxItems => 'Max items per submission';
+
+  @override
+  String get soRuleSession => 'Session validity (hours)';
+
+  @override
+  String get soOffTitle => 'Self-order is off';
+
+  @override
+  String get soOffBody => 'Turn it on under Rules, then restart the server.';
+
+  @override
+  String get soHubBadgeOn => 'On';
+
+  @override
+  String get soHubBadgeOff => 'Off';
+
+  @override
+  String get auditTypeSelfOrder => 'Self-order';
+
+  @override
   String get auditTypeMenuKilled => 'Sold out';
 
   @override
@@ -492,6 +824,9 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get venueSettingsSoundUngreeted => 'Not greeted';
+
+  @override
+  String get venueSettingsSoundGuestPending => 'Guest order waiting';
 
   @override
   String get venueSettingsSoundPickup => 'Waiting to run';
@@ -729,6 +1064,9 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get tabSaya => 'Me';
+
+  @override
+  String get tabTamu => 'Guest';
 
   @override
   String get shiftLabel => 'SHIFT';
@@ -1993,6 +2331,60 @@ class AppL10nEn extends AppL10n {
     );
     return 'Stocktake closed — $_temp0, variance $variance';
   }
+
+  @override
+  String auditGuestOrderAccepted(String table, num lines) {
+    final intl.NumberFormat linesNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String linesString = linesNumberFormat.format(lines);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      lines,
+      locale: localeName,
+      other: '$linesString items',
+      one: '1 item',
+    );
+    return 'Accepted guest order $table — $_temp0';
+  }
+
+  @override
+  String auditGuestOrderRejected(String table, num lines) {
+    final intl.NumberFormat linesNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String linesString = linesNumberFormat.format(lines);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      lines,
+      locale: localeName,
+      other: '$linesString items',
+      one: '1 item',
+    );
+    return 'Rejected guest order $table — $_temp0';
+  }
+
+  @override
+  String auditGuestCodesRotated(num tables) {
+    final intl.NumberFormat tablesNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String tablesString = tablesNumberFormat.format(tables);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tablesString tables',
+      one: '1 table',
+    );
+    return 'Rotated table codes — $_temp0';
+  }
+
+  @override
+  String get auditGuestOrderingEnabled => 'Turned self-order on';
+
+  @override
+  String get auditGuestOrderingDisabled => 'Turned self-order off';
 
   @override
   String auditMemberCreated(String name) {

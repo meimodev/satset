@@ -1,6 +1,6 @@
 # Guest web app is a hand-rolled static SPA, not Flutter web
 
-**Status:** Superseded by [0080](0080-self-order-and-token-pairing-removed.md) — guest QR self-ordering removed. Kept for the reasoning; the feature no longer exists.
+**Status:** Superseded by [0080](0080-self-order-and-token-pairing-removed.md) — guest QR self-ordering removed. Kept for the reasoning. Re-decided by [0105](0105-guest-self-order-returns-as-an-intent-not-a-ticket.md) — the hand-rolled SPA returns.
 
 Originally: accepted — depends on [0027](0027-cleartext-guest-plane-for-self-order.md) (guest plane)
 

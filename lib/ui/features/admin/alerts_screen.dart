@@ -71,6 +71,7 @@ String alertEventLabel(AppL10n l10n, AlertEvent e) => switch (e) {
   AlertEvent.overdue => l10n.venueSettingsSoundOverdue,
   AlertEvent.ungreeted => l10n.venueSettingsSoundUngreeted,
   AlertEvent.pickup => l10n.venueSettingsSoundPickup,
+  AlertEvent.guestPending => l10n.venueSettingsSoundGuestPending,
 };
 
 /// Same summary the hub tile badge shows — the two thresholds an owner tunes
@@ -397,6 +398,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
     AlertEvent.overdue,
     AlertEvent.ungreeted,
     AlertEvent.pickup,
+    AlertEvent.guestPending,
   ];
 
   String _currentId(VenueSettingsDto s, AlertEvent e) => switch (e) {
@@ -406,6 +408,7 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
     AlertEvent.overdue => s.soundOverdue,
     AlertEvent.ungreeted => s.soundUngreeted,
     AlertEvent.pickup => s.soundPickup,
+    AlertEvent.guestPending => s.soundGuestPending,
   };
 
   void _patch(AlertEvent e, String id) {
@@ -423,6 +426,8 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
         n.patch(soundUngreeted: id);
       case AlertEvent.pickup:
         n.patch(soundPickup: id);
+      case AlertEvent.guestPending:
+        n.patch(soundGuestPending: id);
     }
   }
 
@@ -581,6 +586,7 @@ class _DeviceMuteCard extends ConsumerWidget {
     AlertEvent.voided,
     AlertEvent.ungreeted,
     AlertEvent.pickup,
+    AlertEvent.guestPending,
   };
 
   @override

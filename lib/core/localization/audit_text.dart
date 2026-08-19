@@ -78,6 +78,20 @@ String auditText(AppL10n l, AuditEntry e) {
       s('variance'),
     ),
 
+    AuditKind.guestOrderAccepted => l.auditGuestOrderAccepted(
+      s('table'),
+      int.tryParse(s('lines')) ?? 0,
+    ),
+    AuditKind.guestOrderRejected => l.auditGuestOrderRejected(
+      s('table'),
+      int.tryParse(s('lines')) ?? 0,
+    ),
+    AuditKind.guestCodesRotated => l.auditGuestCodesRotated(
+      int.tryParse(s('tables')) ?? 0,
+    ),
+    AuditKind.guestOrderingEnabled => l.auditGuestOrderingEnabled,
+    AuditKind.guestOrderingDisabled => l.auditGuestOrderingDisabled,
+
     AuditKind.memberCreated => l.auditMemberCreated(s('name')),
     AuditKind.memberDeleted => l.auditMemberDeleted(s('name')),
     AuditKind.memberMerged => l.auditMemberMerged(s('from'), s('to')),

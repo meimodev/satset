@@ -99,6 +99,24 @@ enum AuditKind {
   /// opname document, and a flooded log is a log nobody reads.
   stockCountClosed,
 
+  // ---------- pesan mandiri (ADR-0105) ----------
+  /// `{table}` (the label frozen at write time), `{lines}` — a guest's order
+  /// became real tickets. One row per accepted submission, never per line.
+  guestOrderAccepted,
+
+  /// `{table}`, `{lines}`. The *why* rides `reason` as a code, where every
+  /// other explained act keeps it.
+  guestOrderRejected,
+
+  /// `{tables}` — how many table codes were reminted. Every printed QR for the
+  /// venue died at this moment, which is exactly why it is audited.
+  guestCodesRotated,
+
+  /// No params. Two kinds rather than one with a state param: a log line is
+  /// composed at read time from a code, and "on" is not a code (ADR-0085).
+  guestOrderingEnabled,
+  guestOrderingDisabled,
+
   // ---------- membership ----------
   /// `{name}` — the member's own name, guest-authored and never translated.
   memberCreated,

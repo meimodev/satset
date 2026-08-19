@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 
+import 'package:satset/server/self_order.dart' show mintMissingGuestCodes;
+
 import 'package:satset/domain/models/capability.dart';
 
 import '../stock.dart';
@@ -107,6 +109,12 @@ Future<void> seedGenericRestaurant(AppDatabase db) async {
           );
     }
 
+    // Every table gets a code, so the QR sheet is printable the moment a venue
+    // switches [[Pesan mandiri]] on rather than needing a rotate first
+    // (ADR-0105). Only blanks are filled: re-running this seed must not kill
+    // every QR already printed and stuck to a table.
+    await mintMissingGuestCodes(db);
+
     // Staff (2 waiters + 2 kitchen, hashed PINs).
     for (final u in seed.DummyData.genericUsers) {
       await db
@@ -150,6 +158,12 @@ Future<void> seedGenericRestaurant(AppDatabase db) async {
               categoryId: it.categoryId,
               description: Value(it.description),
               basePrice: it.basePrice,
+              // ponytail: the seed's own three drink categories, not a
+              // general rule — a real venue ticks the box per item on the
+              // Menu tamu tab, because category names are venue-authored.
+              alcohol: Value(
+                const {'beer', 'wine', 'cocktails'}.contains(it.categoryId),
+              ),
               // Heuristic seed cost: 35% of base price. Manager overrides per
               // item in the editor; reports treat cost=0 as full margin.
               cost: Value((it.basePrice * 0.35).round()),

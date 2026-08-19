@@ -512,9 +512,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       );
     }
     final createdIds = res.createdIds;
-    final createdRows = res.createdRows;
     final rejected = res.rejected;
-    final tableRow = res.tableRow;
     final orderVisitId = res.visitId;
     final storedResponse = res.storedResponse;
 
@@ -524,26 +522,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         headers: {'content-type': 'application/json'},
       );
     }
-    for (final t in createdRows) {
-      hub.broadcast(WsEventTypes.ticketCreated, _toJson(t));
-    }
-    if (tableRow != null) {
-      hub.broadcast(WsEventTypes.tableUpdated, _tableToJson(tableRow));
-    }
-    if (orderVisitId != null) {
-      // Dine-in: refresh the floor money badge. Takeaway: no attached table so
-      // syncVisitMoney no-ops; nudge the cashier list/detail to re-fetch.
-      if (takeaway) {
-        hub.broadcast(WsEventTypes.billUpdated, {'visitId': orderVisitId});
-      } else {
-        await syncVisitMoney(db, hub, orderVisitId);
-      }
-    }
-    // Re-broadcast the menu only when a derived habis flag actually flipped —
-    // beras going 8.0 → 7.8 kg must stay silent (ADR-0040).
-    if (createdIds.isNotEmpty && await stockFlags.refreshAndDetectFlip(db)) {
-      hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'stock'});
-    }
+    await broadcastSubmitted(db, hub, res, takeaway: takeaway);
     return Response.ok(
       jsonEncode({
         'ticketIds': createdIds,
@@ -904,6 +883,45 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   });
 
   return r;
+}
+
+/// Everything a written order owes the room: the tickets to the KDS, the table
+/// to the floor, the money to the cashier, and the menu when a habis flag
+/// actually flipped.
+///
+/// [submitOrder] only writes — so this fan-out lives beside it rather than
+/// inside the `POST /orders` handler, because the guest-accept path (ADR-0105)
+/// goes through the same writer and must tell the room the same thing. A
+/// second, thinner story is how a ticket lands in the DB and on nobody's
+/// screen.
+Future<void> broadcastSubmitted(
+  AppDatabase db,
+  WsHub hub,
+  SubmitOrderResult res, {
+  bool takeaway = false,
+}) async {
+  for (final t in res.createdRows) {
+    hub.broadcast(WsEventTypes.ticketCreated, _toJson(t));
+  }
+  final tableRow = res.tableRow;
+  if (tableRow != null) {
+    hub.broadcast(WsEventTypes.tableUpdated, _tableToJson(tableRow));
+  }
+  final orderVisitId = res.visitId;
+  if (orderVisitId != null) {
+    // Dine-in: refresh the floor money badge. Takeaway: no attached table so
+    // syncVisitMoney no-ops; nudge the cashier list/detail to re-fetch.
+    if (takeaway) {
+      hub.broadcast(WsEventTypes.billUpdated, {'visitId': orderVisitId});
+    } else {
+      await syncVisitMoney(db, hub, orderVisitId);
+    }
+  }
+  // Re-broadcast the menu only when a derived habis flag actually flipped —
+  // beras going 8.0 → 7.8 kg must stay silent (ADR-0040).
+  if (res.createdIds.isNotEmpty && await stockFlags.refreshAndDetectFlip(db)) {
+    hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'stock'});
+  }
 }
 
 Map<String, dynamic> _toJson(Ticket t) => {

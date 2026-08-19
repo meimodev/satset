@@ -108,6 +108,173 @@
   "auditTypeDebtMovement": "Piutang",
   "auditTypeMemberChanged": "Pelanggan",
   "auditTypeStockCounted": "Opname",
+  "soTitle": "Pesan mandiri",
+  "soSub": "Tamu pesan sendiri dari HP",
+  "soAdminTitle": "Atur pesan mandiri",
+  "soAdminSub": "Kode QR, menu tamu, aturan",
+  "soTabletOnly": "Pengaturan dibaca tiga tab sekaligus, jadi butuh layar tablet. Antrean pesanan tamu tetap bisa dibuka di HP.",
+  "soTabQueue": "Pesanan masuk",
+  "soTabQr": "QR & meja",
+  "soTabMenu": "Menu tamu",
+  "soTabRules": "Aturan",
+  "soHeroLabel": "Hari ini",
+  "soHeroValue": "{n, plural, other{{n} pesanan}}",
+  "@soHeroValue": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "soHeroDesc": "{accepted} diterima · {rejected} ditolak · nilai {value}",
+  "@soHeroDesc": {
+    "placeholders": {
+      "accepted": {
+        "type": "num",
+        "format": "compact"
+      },
+      "rejected": {
+        "type": "num",
+        "format": "compact"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "soStatPending": "Menunggu",
+  "soStatValue": "Nilai diterima",
+  "soStatWait": "Median konfirmasi",
+  "soWaitSecs": "{n} dtk",
+  "@soWaitSecs": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "soFilterAll": "Semua",
+  "soFilterPending": "Perlu konfirmasi",
+  "soFilterAccepted": "Ke dapur",
+  "soFilterRejected": "Ditolak",
+  "soQueueEmptyTitle": "Belum ada pesanan tamu",
+  "soQueueEmptyBody": "Pesanan yang dikirim tamu dari HP muncul di sini untuk dikonfirmasi.",
+  "soQueueEmptyFilteredTitle": "Tidak ada pesanan di saringan ini",
+  "soQueueEmptyFiltered": "Tidak ada pesanan pada saringan ini.",
+  "soAccept": "Terima",
+  "soReject": "Tolak",
+  "soAcceptAll": "Terima semua",
+  "soAcceptFailed": "{n, plural, other{{n} pesanan gagal diterima.}}",
+  "@soAcceptFailed": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "soRejectTitle": "Alasan menolak",
+  "soReasonHabis": "Bahan habis",
+  "soReasonGantiMenu": "Menu diganti",
+  "soReasonTutup": "Dapur sudah tutup",
+  "soReasonOther": "Alasan lain",
+  "soStatusPending": "Menunggu konfirmasi",
+  "soStatusAccepted": "Diterima",
+  "soStatusRejected": "Ditolak",
+  "soStatusCancelled": "Dibatalkan tamu",
+  "soLines": "{n, plural, other{{n} item}}",
+  "@soLines": {
+    "placeholders": {
+      "n": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "soTableTitle": "Kode meja",
+  "soTableSub": "Satu kode per meja. Cetak QR-nya dan tempel di meja.",
+  "soRotate": "Ganti semua kode",
+  "soRotateConfirmTitle": "Ganti semua kode meja?",
+  "soRotateConfirmBody": "Semua QR yang sudah dicetak berhenti berfungsi saat ini juga. Cetak ulang seluruh meja setelah ini.",
+  "soQrFor": "Meja {table}",
+  "@soQrFor": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "soQrHint": "Pindai untuk memesan",
+  "soPrint": "Cetak",
+  "soTableOn": "Meja ini melayani pesan mandiri",
+  "soNoHost": "Server belum terhubung, alamat QR belum bisa dibuat.",
+  "soMenuSub": "Yang boleh dilihat dan dipesan tamu dari HP.",
+  "soItemVisible": "Tampil",
+  "soItemFeatured": "Andalan",
+  "soStockAuto": "Otomatis",
+  "soStockIn": "Paksa ada",
+  "soStockOut": "Paksa habis",
+  "soSoldOut": "Habis",
+  "soOverrideManual": "Override manual",
+  "soEffectiveIn": "Bisa dipesan tamu",
+  "soEffectiveOut": "Habis di halaman tamu",
+  "soAlcohol": "Alkohol · verifikasi staf",
+  "soAlcoholWarn": "Ada item alkohol. Periksa usia tamu sebelum diteruskan ke bar.",
+  "soDecidedBy": "Diputuskan oleh {name}",
+  "@soDecidedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "soPrintAll": "Cetak semua kartu",
+  "soPrintAllDone": "{n, plural, other{{n} kartu dikirim ke printer.}}",
+  "@soPrintAllDone": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "soTableMeta": "{zone} · {seats, plural, other{{seats} kursi}}",
+  "@soTableMeta": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      },
+      "seats": {
+        "type": "int"
+      }
+    }
+  },
+  "soGuestPreview": "Pratinjau halaman tamu",
+  "soHeroHours": "Jam layanan {range}",
+  "@soHeroHours": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "soHeroHoursOpen": "Tanpa batas jam layanan",
+  "soMenuAlcoholHint": "Centang Alkohol pada item yang perlu diperiksa usianya. Tamu tetap bisa memesannya; staf yang memutuskan.",
+  "soRuleMaster": "Nyalakan pesan mandiri",
+  "soRuleMasterSub": "Selama mati, halaman tamu tidak berjalan sama sekali.",
+  "soRestartNeeded": "Perlu mulai ulang server agar berlaku.",
+  "soRuleNote": "Izinkan catatan tamu",
+  "soRuleNoteSub": "Maksimal 120 huruf per item.",
+  "soRuleHours": "Jam layanan",
+  "soRuleHoursSub": "Jam sama = tanpa batas waktu.",
+  "soRuleMaxItems": "Maksimal item sekali kirim",
+  "soRuleSession": "Masa berlaku sesi (jam)",
+  "soOffTitle": "Pesan mandiri mati",
+  "soOffBody": "Nyalakan di tab Aturan, lalu mulai ulang server.",
+  "soHubBadgeOn": "Nyala",
+  "soHubBadgeOff": "Mati",
+  "auditTypeSelfOrder": "Pesan mandiri",
   "auditTypeMenuKilled": "Stop jual",
   "auditTypeMenuRestored": "Jual lagi",
   "auditTypeStaffCreated": "Staf +",
@@ -190,6 +357,7 @@
   "venueSettingsSoundVoid": "Void",
   "venueSettingsSoundOverdue": "Lewat waktu",
   "venueSettingsSoundUngreeted": "Belum dilayani",
+  "venueSettingsSoundGuestPending": "Pesanan tamu masuk",
   "venueSettingsSoundPickup": "Menunggu diantar",
   "venueSettingsSoundPreview": "Dengar",
   "venueSettingsTimingPrepTarget": "Target siap (default semua menu)",
@@ -297,6 +465,7 @@
   "tabKasir": "Kasir",
   "tabVenue": "Venue",
   "tabSaya": "Saya",
+  "tabTamu": "Tamu",
   "shiftLabel": "SHIFT",
   "kasirRiwayatBatas": "Menampilkan tagihan terbaru. Tagihan lebih lama ada di Laporan.",
   "kitchenQueueTitle": "Antrian Persiapan",
@@ -1371,6 +1540,41 @@
       }
     }
   },
+  "auditGuestOrderAccepted": "Terima pesanan tamu {table} — {lines, plural, other{{lines} item}}",
+  "@auditGuestOrderAccepted": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      },
+      "lines": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "auditGuestOrderRejected": "Tolak pesanan tamu {table} — {lines, plural, other{{lines} item}}",
+  "@auditGuestOrderRejected": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      },
+      "lines": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "auditGuestCodesRotated": "Ganti kode meja — {tables, plural, other{{tables} meja}}",
+  "@auditGuestCodesRotated": {
+    "placeholders": {
+      "tables": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "auditGuestOrderingEnabled": "Nyalakan pesan mandiri",
+  "auditGuestOrderingDisabled": "Matikan pesan mandiri",
   "auditMemberCreated": "Daftar pelanggan {name}",
   "@auditMemberCreated": {
     "placeholders": {
@@ -6648,75 +6852,75 @@
   "pinManualEntryNotFound": "Tidak dapat terhubung ke server. Periksa alamat IP dan Wi-Fi.",
   "rptSecJamKerja": "Jam kerja",
   "@rptSecJamKerja": {
-      "description": "Report section title: staff attendance hours."
+    "description": "Report section title: staff attendance hours."
   },
   "rptJamKerjaSub": "{n, plural, other{{n} staf}} · dari shift yang ditutup",
   "@rptJamKerjaSub": {
-      "placeholders": {
-          "n": {
-              "type": "int"
-          }
-      },
-      "description": "Subtitle: how many staff, and that hours come only from closed shifts."
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    },
+    "description": "Subtitle: how many staff, and that hours come only from closed shifts."
   },
   "rptJamEmpty": "Belum ada shift tercatat di rentang ini.",
   "@rptJamEmpty": {
-      "description": "Empty state when no shift was recorded in the range."
+    "description": "Empty state when no shift was recorded in the range."
   },
   "rptJamHours": "{h}j {m}m",
   "@rptJamHours": {
-      "placeholders": {
-          "h": {
-              "type": "int"
-          },
-          "m": {
-              "type": "int"
-          }
+    "placeholders": {
+      "h": {
+        "type": "int"
       },
-      "description": "Worked time, hours and minutes."
+      "m": {
+        "type": "int"
+      }
+    },
+    "description": "Worked time, hours and minutes."
   },
   "rptJamDaysShifts": "{d, plural, other{{d} hari}} · {s, plural, other{{s} shift}}",
   "@rptJamDaysShifts": {
-      "placeholders": {
-          "d": {
-              "type": "int"
-          },
-          "s": {
-              "type": "int"
-          }
+    "placeholders": {
+      "d": {
+        "type": "int"
       },
-      "description": "Days worked and shift count for one staff member."
+      "s": {
+        "type": "int"
+      }
+    },
+    "description": "Days worked and shift count for one staff member."
   },
   "rptJamFirstIn": "masuk ±{clock}",
   "@rptJamFirstIn": {
-      "placeholders": {
-          "clock": {
-              "type": "String"
-          }
-      },
-      "description": "Median clock-in time for one staff member."
+    "placeholders": {
+      "clock": {
+        "type": "String"
+      }
+    },
+    "description": "Median clock-in time for one staff member."
   },
   "rptJamUnclosed": "{n, plural, other{{n} shift tak ditutup}}",
   "@rptJamUnclosed": {
-      "placeholders": {
-          "n": {
-              "type": "int"
-          }
-      },
-      "description": "Badge: shifts the rollover had to close."
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    },
+    "description": "Badge: shifts the rollover had to close."
   },
   "rptJamLastSeen": "aktivitas terakhir {clock}",
   "@rptJamLastSeen": {
-      "placeholders": {
-          "clock": {
-              "type": "String"
-          }
-      },
-      "description": "When an unclosed shift last did something auditable."
+    "placeholders": {
+      "clock": {
+        "type": "String"
+      }
+    },
+    "description": "When an unclosed shift last did something auditable."
   },
   "rptJamUnclosedNote": "Shift yang tak ditutup tidak dihitung sebagai jam kerja.",
   "@rptJamUnclosedNote": {
-      "description": "Caveat under the section title when unclosed shifts exist."
+    "description": "Caveat under the section title when unclosed shifts exist."
   },
   "memErrHasDebt": "Masih ada piutang. Terima atau hapus buku dulu, baru hapus pelanggan.",
   "@memErrHasDebt": {
@@ -6738,16 +6942,24 @@
   "@auditDebtChargedNoBill": {
     "description": "A piutang charge whose bill carried no table label.",
     "placeholders": {
-      "member": { "type": "String" },
-      "amount": { "type": "String" }
+      "member": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "auditDebtReversedNoBill": "Batal piutang {member} — {amount}",
   "@auditDebtReversedNoBill": {
     "description": "A piutang reversal whose bill carried no table label.",
     "placeholders": {
-      "member": { "type": "String" },
-      "amount": { "type": "String" }
+      "member": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
     }
   }
 }

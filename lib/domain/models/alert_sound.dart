@@ -12,7 +12,20 @@ library;
 /// The other table states ("Meja lama", "Meja selesai makan") are deliberately
 /// **visual only** and so are absent here — a cue a waiter cannot discharge is
 /// noise that devalues every other cue.
-enum AlertEvent { newOrder, orderReady, voided, overdue, ungreeted, pickup }
+enum AlertEvent {
+  newOrder,
+  orderReady,
+  voided,
+  overdue,
+  ungreeted,
+  pickup,
+
+  /// A guest submitted an order from their own phone and it is waiting for a
+  /// waiter to accept it (ADR-0105). The one alert in this list nobody on the
+  /// floor caused, which is exactly why it needs a sound: there is no tray to
+  /// carry and no screen anyone was already looking at.
+  guestPending,
+}
 
 /// A selectable bundled clip. [asset] is null for the silent "none" preset.
 ///
@@ -66,6 +79,7 @@ const alertEventDefaults = <AlertEvent, String>{
   AlertEvent.overdue: 'alert',
   AlertEvent.ungreeted: 'chime',
   AlertEvent.pickup: 'chime',
+  AlertEvent.guestPending: 'chime',
 };
 
 /// Preset for [id], or null if [id] is unknown (e.g. a removed preset).

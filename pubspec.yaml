@@ -110,6 +110,10 @@ flutter:
   generate: true
   assets:
     - assets/sounds/
+    # The [[Pesan mandiri]] guest page (ADR-0105). Served off the cleartext
+    # plane by reading it out of the bundle — an APK has no filesystem for a
+    # static handler to walk.
+    - assets/guest_web/
 
   # Every face every skin can reach, so the app never needs the network to draw
   # a correct first frame — which is the whole promise. Archivo serves `glow`

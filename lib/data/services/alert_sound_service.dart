@@ -131,11 +131,19 @@ class AlertSoundService {
       AlertEvent.overdue => s.soundOverdue,
       AlertEvent.ungreeted => s.soundUngreeted,
       AlertEvent.pickup => s.soundPickup,
+      AlertEvent.guestPending => s.soundGuestPending,
     };
     return resolveSoundId(event, stored);
   }
 
   void _onEvent(WsEventDto ev) {
+    // A guest submitted from their own phone (ADR-0105). Announced on **both**
+    // modes: the tablet on the pass and the waiter's handset both show the
+    // review queue, and whoever is nearer should get to it.
+    if (ev.type == WsEventTypes.guestOrderSubmitted) {
+      _play(AlertEvent.guestPending);
+      return;
+    }
     if (ev.type != WsEventTypes.ticketCreated &&
         ev.type != WsEventTypes.ticketUpdated) {
       return;

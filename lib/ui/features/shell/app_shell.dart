@@ -11,7 +11,9 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/repositories/self_order_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/ui/core/widgets/admin_grace_banner.dart';
 import 'package:satset/ui/core/widgets/update_banner.dart';
@@ -49,6 +51,7 @@ const _railRoutes = <String, String>{
   '/orders': 'orders',
   '/kitchen': 'kitchen',
   '/kasir': 'kasir',
+  '/selforder': 'tamu',
   '/me': 'me',
 };
 
@@ -59,6 +62,7 @@ String? railLabel(AppL10n l10n, String railId) => switch (railId) {
   'orders' => l10n.tabPesanan,
   'kitchen' => l10n.tabAntrian,
   'kasir' => l10n.tabKasir,
+  'tamu' => l10n.tabTamu,
   'me' => l10n.tabSaya,
   _ => null,
 };
@@ -76,8 +80,19 @@ String? venueHubCrumb(AppL10n l10n, String path) => switch (path) {
   '/reports' => l10n.crumbLaporanShift,
   '/system' => l10n.venueHubSectionSystem,
   '/staff' => l10n.crumbStafAkun,
+  '/selforder-admin' => l10n.soAdminTitle,
   _ => null,
 };
+
+/// Whether the guest-queue destination exists for this user (ADR-0106).
+///
+/// Two conditions, both necessary: the guest socket is bound at all, and this
+/// person is the one who decides a guest order. A destination that renders an
+/// "off" empty state to a waiter is a tab that costs a tap to learn nothing.
+bool showGuestQueue({
+  required bool guestOrderingEnabled,
+  required bool canTakeOrder,
+}) => guestOrderingEnabled && canTakeOrder;
 
 /// Which rail item owns [loc].
 String activeTabFor(String loc) => _railRoutes[_firstSegment(loc)] ?? 'venue';
@@ -162,6 +177,16 @@ class AppShell extends ConsumerWidget {
 
     final activeTab = activeTabFor(loc);
     final showKasir = ref.watch(authStateProvider).has(Capability.settleBill);
+    // [[Pesan mandiri]] (ADR-0106). Off means the guest socket does not exist,
+    // so the destination does not either — this is not a screen worth showing
+    // empty. `takeOrder` because the one act on it is deciding a guest order.
+    final showTamu = showGuestQueue(
+      guestOrderingEnabled: ref.watch(venueSettingsProvider).guestOrderingEnabled,
+      canTakeOrder: ref.watch(authStateProvider).has(Capability.takeOrder),
+    );
+    final guestPending = showTamu
+        ? ref.watch(selfOrderProvider).pending.length
+        : 0;
     final userName = ref.watch(
       authStateProvider.select((s) => s.user?.name ?? ''),
     );
@@ -173,6 +198,8 @@ class AppShell extends ConsumerWidget {
           readyCount: ready,
           kitchenCount: kitchenCount,
           showKasir: showKasir,
+          showTamu: showTamu,
+          guestPending: guestPending,
           crumbs: crumbsFor(context.l10n, loc, userName),
           child: Column(
             children: [
@@ -210,6 +237,8 @@ class AppShell extends ConsumerWidget {
                       active: activeTab,
                       readyCount: ready,
                       showKasir: showKasir,
+                      showTamu: showTamu,
+                      guestPending: guestPending,
                     ),
                   ),
                 ],
@@ -226,10 +255,14 @@ class _FloatingTabBar extends StatelessWidget {
   final String active;
   final int readyCount;
   final bool showKasir;
+  final bool showTamu;
+  final int guestPending;
   const _FloatingTabBar({
     required this.active,
     required this.readyCount,
     this.showKasir = false,
+    this.showTamu = false,
+    this.guestPending = 0,
   });
 
   @override
@@ -280,6 +313,18 @@ class _FloatingTabBar extends StatelessWidget {
               icon: Icons.point_of_sale_rounded,
               active: active == 'kasir',
               onTap: () => context.go('/kasir'),
+            ),
+          if (showTamu)
+            _Tab(
+              id: 'tamu',
+              label: context.l10n.tabTamu,
+              icon: Icons.qr_code_2_outlined,
+              active: active == 'tamu',
+              // Accent, not the alert green: green is the ready-line meaning
+              // already learned one tab to the left, and a waiting guest is a
+              // job to pick up rather than a plate to run.
+              badge: guestPending,
+              onTap: () => context.go('/selforder'),
             ),
           _Tab(
             id: 'me',

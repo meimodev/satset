@@ -1,6 +1,6 @@
 # Guest QR self-ordering and token pairing are removed
 
-**Status:** Accepted — 2026-08-05 — supersedes [0027](0027-cleartext-guest-plane-for-self-order.md) (cleartext guest plane), [0028](0028-guest-orders-pending-review-not-auto-fire.md) (guest orders rest in review), [0029](0029-guest-web-app-hand-rolled-spa-not-flutter-web.md) (hand-rolled guest SPA), [0064](0064-a-guest-order-gets-its-own-cue.md) (guest-order cue); amends [0003](0003-pairing-mdns-qr-self-signed-tls.md) (pairing) and [0048](0048-floor-screen-parity-and-derived-staleness.md) (the unreviewed-order `crit` rule)
+**Status:** §1 superseded by [0105](0105-guest-self-order-returns-as-an-intent-not-a-ticket.md) — self-ordering is rebuilt as an intent, not a ticket. §2 (token pairing removed) stands. Accepted — 2026-08-05 — supersedes [0027](0027-cleartext-guest-plane-for-self-order.md) (cleartext guest plane), [0028](0028-guest-orders-pending-review-not-auto-fire.md) (guest orders rest in review), [0029](0029-guest-web-app-hand-rolled-spa-not-flutter-web.md) (hand-rolled guest SPA), [0064](0064-a-guest-order-gets-its-own-cue.md) (guest-order cue); amends [0003](0003-pairing-mdns-qr-self-signed-tls.md) (pairing) and [0048](0048-floor-screen-parity-and-derived-staleness.md) (the unreviewed-order `crit` rule)
 
 ## Context
 

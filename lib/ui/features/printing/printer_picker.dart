@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:satset/l10n/app_localizations.dart';
+import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
+
 import 'package:satset/core/printing/bill_struk_builder.dart';
 import 'package:satset/core/printing/bill_struk_data.dart';
 import 'package:satset/core/printing/bill_struk_renderer.dart';
@@ -210,6 +212,93 @@ Future<void> printDebtSlip({
     PrintJob(
       subtitle: subtitle,
       renderBytes: () async => BillStrukRenderer.render(l, data),
+    ),
+  );
+}
+
+/// The [[Kode meja]] poster (ADR-0105): venue name, table label, the QR a guest
+/// scans, and one line telling them what to do with it.
+///
+/// Rendered inline rather than through [StrukData], which is a *receipt* shape
+/// — header, lines, totals, footer — and has no room for a page that is one
+/// glyph and three words. No preview sheet either: what comes out is the QR
+/// already on screen behind this button.
+Future<void> printTableQr({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String tableLabel,
+  required String url,
+}) async {
+  final l = context.l10n;
+  final venue = ref.read(venueSettingsProvider);
+  await _openPicker(
+    context,
+    PrintJob(
+      subtitle: l.soQrFor(tableLabel),
+      renderBytes: () async {
+        final g = Generator(PaperSize.mm58, await CapabilityProfile.load());
+        return _qrCardBytes(g, l, venue.displayName, tableLabel, url);
+      },
+    ),
+  );
+}
+
+/// One printed table card. Extracted so a single card and a whole floor's
+/// worth are the same bytes — a wall of laminated QRs that do not match each
+/// other is worse than no wall.
+List<int> _qrCardBytes(
+  Generator g,
+  AppL10n l,
+  String venueName,
+  String tableLabel,
+  String url,
+) => [
+  ...g.text(
+    venueName,
+    styles: const PosStyles(align: PosAlign.center, bold: true),
+  ),
+  ...g.text(
+    l.soQrFor(tableLabel),
+    styles: const PosStyles(
+      align: PosAlign.center,
+      bold: true,
+      height: PosTextSize.size2,
+      width: PosTextSize.size2,
+    ),
+  ),
+  ...g.feed(1),
+  ...g.qrcode(url, size: QRSize.size8),
+  ...g.feed(1),
+  ...g.text(l.soQrHint, styles: const PosStyles(align: PosAlign.center)),
+  ...g.feed(3),
+  ...g.cut(),
+];
+
+/// Every table's card, as **one** job. Deliberately not a loop over
+/// [printTableQr]: that would ask which printer twenty times for one act, and
+/// the cut between cards already separates them on the roll.
+Future<void> printAllTableQr({
+  required BuildContext context,
+  required WidgetRef ref,
+  required List<({String label, String url})> cards,
+}) async {
+  final l = context.l10n;
+  if (cards.isEmpty) {
+    _toast(context, l.prnNothingToPrint);
+    return;
+  }
+  final venue = ref.read(venueSettingsProvider);
+  await _openPicker(
+    context,
+    PrintJob(
+      subtitle: l.soPrintAll,
+      renderBytes: () async {
+        final g = Generator(PaperSize.mm58, await CapabilityProfile.load());
+        return [
+          for (final c in cards)
+            ..._qrCardBytes(g, l, venue.displayName, c.label, c.url),
+        ];
+      },
     ),
   );
 }

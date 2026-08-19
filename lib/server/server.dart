@@ -33,10 +33,13 @@ import 'routes/reservations_routes.dart';
 import 'routes/server_routes.dart';
 import 'routes/cash_routes.dart';
 import 'routes/members_routes.dart';
+import 'routes/self_order_routes.dart';
 import 'routes/settlement_routes.dart';
 import 'routes/tables_routes.dart';
 import 'routes/tickets_routes.dart';
 import 'routes/venue_settings_routes.dart';
+import 'guest/guest_plane.dart';
+import 'self_order.dart' show guestRules;
 import 'tls.dart';
 import 'ws_hub.dart';
 
@@ -97,6 +100,10 @@ class ServerRuntime {
     hub.broadcast(WsEventTypes.releaseGate, next.toJson());
   }
   HttpServer? _http;
+
+  /// The cleartext [[Pesan mandiri]] listener (ADR-0105). Bound only while the
+  /// venue flag is on, torn down and rebuilt by [restart] like the staff one.
+  GuestPlane? _guest;
   Timer? _statusTicker;
   Timer? _printerHeartbeat;
   bool _restarting = false;
@@ -189,6 +196,7 @@ class ServerRuntime {
       version: version,
       venueId: venueId,
     );
+    await rt._syncGuestPlane();
     rt._startStatusTicker();
     rt._startPrinterHeartbeat();
     return rt;
@@ -279,6 +287,8 @@ class ServerRuntime {
       _printerHeartbeat?.cancel();
       // Drain WS clients.
       await hub.dispose();
+      await _guest?.stop();
+      _guest = null;
       // Close HTTP listener with a short grace period.
       try {
         await _http?.close().timeout(const Duration(seconds: 2));
@@ -309,6 +319,7 @@ class ServerRuntime {
         version: version,
         venueId: venueId,
       );
+      await _syncGuestPlane();
       startedAt = SatClock.now();
       _resetLatency();
       _startStatusTicker();
@@ -343,6 +354,7 @@ class ServerRuntime {
     r.mount('/', settlementRoutes(db, hub, auth).call);
     r.mount('/', cashRoutes(db, hub, auth).call);
     r.mount('/', membersRoutes(db, hub, auth).call);
+    r.mount('/', selfOrderRoutes(db, hub, auth).call);
 
     // LAN-trusted auto-claim: the client reached this server via mDNS and
     // verified its TLS fingerprint end-to-end, so reaching this handler at all
@@ -395,10 +407,29 @@ class ServerRuntime {
     return r;
   }
 
+  /// Bind or unbind the guest plane to match `venue_settings`. Off means the
+  /// socket does not exist — not that it exists and 403s — so a venue that
+  /// never opted in has no second surface at all.
+  Future<void> _syncGuestPlane() async {
+    final on = (await guestRules(db)).enabled;
+    if (on && _guest == null) {
+      final plane = GuestPlane(db: db, hub: hub);
+      await plane.start();
+      _guest = plane;
+    } else if (!on && _guest != null) {
+      await _guest!.stop();
+      _guest = null;
+    }
+  }
+
+  /// Whether a guest phone can reach this server right now.
+  bool get guestPlaneRunning => _guest?.running ?? false;
+
   Future<void> shutdown() async {
     _statusTicker?.cancel();
     _printerHeartbeat?.cancel();
     await _http?.close(force: true);
+    await _guest?.stop();
     await advertiser.stop();
     await hub.dispose();
     await db.close();

@@ -47,6 +47,12 @@ enum AuditType {
   /// production do not audit: they are ordinary stock movements with their own
   /// ledger, whereas a count overrides what that ledger says.
   stockCounted,
+
+  /// **[[Pesan mandiri]]** (ADR-0105) — a guest order accepted or rejected, the
+  /// table codes rotated, the whole feature switched on or off. **One** type for
+  /// all of them, for the reason [cashMovement] is one: the reader auditing
+  /// self-order wants the feature's whole story in one filter, not four.
+  selfOrder,
   staffCreated,
   staffDeleted,
   staffDisabled,
@@ -105,6 +111,9 @@ bool isAdminAuditType(AuditType t) {
     // are the ones who run the pantry, and they hold `viewReports` long before
     // they hold `manageStaff`.
     case AuditType.stockCounted:
+    // A waiter accepting a guest's order is order-taking, and the people who
+    // read that queue back hold `viewReports`, not `manageStaff`.
+    case AuditType.selfOrder:
       return false;
   }
 }

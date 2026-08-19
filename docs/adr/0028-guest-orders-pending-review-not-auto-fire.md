@@ -1,6 +1,6 @@
 # Guest orders land in pending-review, not straight to the kitchen
 
-**Status:** Superseded by [0080](0080-self-order-and-token-pairing-removed.md) — guest QR self-ordering removed. Kept for the reasoning; the feature no longer exists.
+**Status:** Superseded by [0080](0080-self-order-and-token-pairing-removed.md) — guest QR self-ordering removed. Kept for the reasoning. Re-decided by [0105](0105-guest-self-order-returns-as-an-intent-not-a-ticket.md) — a guest order rests in review again, as an intent rather than a ticket state.
 
 Originally: accepted — depends on [0027](0027-cleartext-guest-plane-for-self-order.md) (guest plane)
 

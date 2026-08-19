@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 import 'package:satset/domain/models/audit_kind.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/server/audit_log.dart';
 import 'package:satset/server/auth.dart';
@@ -492,6 +493,13 @@ List<Expression> _itemCols(AppDatabase db) => [
   db.menuItems.dietaryJson,
   db.menuItems.unavailable,
   db.menuItems.photoRev,
+  // [[Menu tamu]] (ADR-0105) — three fields the guest page reads and the
+  // "Menu tamu" tab writes. They ride the ordinary snapshot rather than a
+  // second endpoint, so a menu edit and a guest-visibility edit cannot
+  // disagree about which item they mean.
+  db.menuItems.guestVisible,
+  db.menuItems.guestFeatured,
+  db.menuItems.guestStockOverride,
 ];
 
 Future<List<TypedResult>> _selectItemsNoBlob(AppDatabase db, {String? id}) {
@@ -526,6 +534,9 @@ Map<String, dynamic> _itemResultToJson(
   'soldOutVariantIds': flags?.soldOutVariantIds.toList() ?? const <String>[],
   'soldOutOptionIds': flags?.soldOutOptionIds.toList() ?? const <String>[],
   'photoRev': r.read(db.menuItems.photoRev)!,
+  'guestVisible': r.read(db.menuItems.guestVisible)!,
+  'guestFeatured': r.read(db.menuItems.guestFeatured)!,
+  'guestStockOverride': r.read(db.menuItems.guestStockOverride)!,
 };
 
 Map<String, dynamic> _tagRowToJson(MenuTag t) => {
@@ -574,6 +585,8 @@ Future<void> _writeItem(
             allergensJson: Value(jsonEncode(body['allergens'] ?? const [])),
             dietaryJson: Value(jsonEncode(body['dietary'] ?? const [])),
             unavailable: Value((body['unavailable'] as bool?) ?? false),
+            guestVisible: Value((body['guestVisible'] as bool?) ?? true),
+            guestFeatured: Value((body['guestFeatured'] as bool?) ?? false),
           ),
         );
   } else {
@@ -593,6 +606,28 @@ Future<void> _writeItem(
             : const Value.absent(),
         cost: body.containsKey('cost')
             ? Value((body['cost'] as num).toInt())
+            : const Value.absent(),
+        guestVisible: body.containsKey('guestVisible')
+            ? Value(body['guestVisible'] == true)
+            : const Value.absent(),
+        guestFeatured: body.containsKey('guestFeatured')
+            ? Value(body['guestFeatured'] == true)
+            : const Value.absent(),
+        // The manual habis call for the guest page. Stamped with *when*,
+        // because a `forceOut` set at last night's rush must not still be
+        // hiding rendang at lunch — the read side expires it at the business
+        // day rollover rather than trusting the value alone.
+        guestStockOverride: body.containsKey('guestStockOverride')
+            ? Value(
+                const {'auto', 'forceIn', 'forceOut'}.contains(
+                      body['guestStockOverride'],
+                    )
+                    ? body['guestStockOverride'] as String
+                    : 'auto',
+              )
+            : const Value.absent(),
+        guestOverrideAt: body.containsKey('guestStockOverride')
+            ? Value(SatClock.now())
             : const Value.absent(),
         // Explicit null clears the override back to "ikut target venue".
         prepTime: body.containsKey('prepTime')

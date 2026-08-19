@@ -151,6 +151,23 @@ List<_HubSection> _sectionsFor(AppL10n l10n) => <_HubSection>[
     badgeBuilder: (ref) => ref.read(l10nProvider).venueHubShiftReport,
   ),
   _HubSection(
+    label: l10n.soAdminTitle,
+    sub: l10n.soAdminSub,
+    icon: Icons.qr_code_2_outlined,
+    route: '/selforder-admin',
+    tint: (sc) => sc.accent,
+    // On/off, not a backlog. The queue is a nav destination with its own badge
+    // now (ADR-0106); what this hub owns is whether the feature is running at
+    // all, and counting pending orders here would send an owner to the wrong
+    // screen for them.
+    badgeBuilder: (ref) {
+      final l = ref.read(l10nProvider);
+      return ref.watch(venueSettingsProvider).guestOrderingEnabled
+          ? l.soHubBadgeOn
+          : l.soHubBadgeOff;
+    },
+  ),
+  _HubSection(
     label: l10n.kasTitle,
     sub: l10n.kasHubSubtitle,
     icon: Icons.savings_outlined,

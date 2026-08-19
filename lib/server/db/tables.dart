@@ -117,6 +117,16 @@ class VenueTables extends Table {
   /// yet locked) | null (nothing paid). `openAmount` carries the **outstanding**
   /// rupiah. Kept in sync on order/serve/void + every payment. See ADR-0024.
   TextColumn get moneyState => text().nullable()();
+
+  /// **[[Pesan mandiri]]** per-table opt-in. A venue can run self-order on the
+  /// dining room and keep the bar counter staff-only (ADR-0105).
+  BoolColumn get guestOrderingEnabled =>
+      boolean().withDefault(const Constant(true))();
+
+  /// The rotatable code in the guest URL (`/t/<code>`). This is the *whole*
+  /// guest credential — there is no guest JWT and no guest auth scope
+  /// (ADR-0105). Rotating it invalidates every printed QR for the table.
+  TextColumn get guestCode => text().withDefault(const Constant(''))();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -245,6 +255,26 @@ class MenuItems extends Table {
   /// Monotonic revision bumped on every photo write/clear. Rides the snapshot
   /// (the bytes do not) so clients cache-bust by `(itemId, photoRev)`.
   IntColumn get photoRev => integer().withDefault(const Constant(0))();
+
+  /// Contains alcohol, so a human must see the guest before it reaches the
+  /// bar. The one thing on a guest order that cannot be delegated to the
+  /// phone that placed it — self-order can take the order, but it cannot
+  /// check an ID. Set from the [[Menu tamu]] tab, seeded by category.
+  BoolColumn get alcohol => boolean().withDefault(const Constant(false))();
+
+  /// **[[Menu tamu]]** (ADR-0105). Hidden items still sell at the till; this
+  /// only governs what the guest phone page lists.
+  BoolColumn get guestVisible => boolean().withDefault(const Constant(true))();
+  BoolColumn get guestFeatured =>
+      boolean().withDefault(const Constant(false))();
+
+  /// `auto` | `forceIn` | `forceOut`. **Persisted names** — renaming orphans
+  /// every row. `auto` reads the live recipe/stock derivation; the two forces
+  /// are a shift-long manual call and are cleared at the business-day
+  /// rollover, which is what `guestOverrideAt` is for.
+  TextColumn get guestStockOverride =>
+      text().withDefault(const Constant('auto'))();
+  DateTimeColumn get guestOverrideAt => dateTime().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -517,6 +547,26 @@ class VenueSettings extends Table {
   /// overdue. A credit policy, not a fact, which is why it is not hardcoded.
   IntColumn get memberDebtOverdueDays =>
       integer().withDefault(const Constant(30))();
+
+  /// **[[Pesan mandiri]]** master switch (ADR-0105). Off ⇒ the cleartext guest
+  /// listener never binds, so the plane does not exist rather than 403ing.
+  BoolColumn get guestOrderingEnabled =>
+      boolean().withDefault(const Constant(false))();
+
+  /// Guest-side rules. A note the guest may leave per line (capped in the
+  /// route), the service window in minutes-from-midnight (equal values ⇒ no
+  /// window), the cap on lines in one submit, and how long a guest session
+  /// stays valid before the phone must re-scan.
+  BoolColumn get guestNoteEnabled =>
+      boolean().withDefault(const Constant(true))();
+  IntColumn get guestHoursStartMin => integer().withDefault(const Constant(0))();
+  IntColumn get guestHoursEndMin => integer().withDefault(const Constant(0))();
+  IntColumn get guestMaxItems => integer().withDefault(const Constant(20))();
+  IntColumn get guestSessionHours => integer().withDefault(const Constant(4))();
+
+  /// Sound id for [AlertEvent.guestPending]. Same shape as the sibling
+  /// `sound*` columns.
+  TextColumn get soundGuestPending => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -1376,6 +1426,66 @@ class DemoStates extends Table {
   BoolColumn get promptAnswered =>
       boolean().withDefault(const Constant(false))();
 
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// A guest's phone, bound to one table for a while. Opaque id in a cookie;
+/// the row exists so "Pesanan saya" can list what *this* phone submitted
+/// without any account. Expires by `expiresAt` and is closed at bill-close.
+/// See ADR-0105.
+class GuestSessions extends Table {
+  TextColumn get id => text()();
+  TextColumn get tableId => text()();
+  DateTimeColumn get startedAt => dateTime()();
+  DateTimeColumn get expiresAt => dateTime()();
+  DateTimeColumn get closedAt => dateTime().nullable()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// A guest's submission — an **intent, not a ticket** (ADR-0105). Nothing
+/// reaches the kitchen, the bill or a report until staff accept it, at which
+/// point the ordinary `submitOrder` path runs and this row records what came
+/// of it. `status`: `pending` | `accepted` | `rejected` | `cancelled`
+/// (persisted names).
+class GuestOrders extends Table {
+  TextColumn get id => text()();
+  TextColumn get sessionId => text()();
+  TextColumn get tableId => text()();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+  DateTimeColumn get submittedAt => dateTime()();
+  DateTimeColumn get decidedAt => dateTime().nullable()();
+  TextColumn get decidedByUserId => text().nullable()();
+
+  /// A code, never a sentence (ADR-0085).
+  TextColumn get rejectReasonCode => text().nullable()();
+
+  /// Filled on accept: the visit the lines joined and the tickets born of them.
+  TextColumn get visitId => text().nullable()();
+  TextColumn get ticketIdsJson => text().withDefault(const Constant('[]'))();
+
+  /// Frozen at submit so the queue card renders without re-pricing a menu that
+  /// may have moved. The bill is priced by `submitOrder`, not by this.
+  IntColumn get subtotal => integer().withDefault(const Constant(0))();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// One line of a [GuestOrders] row, in the shape `submitOrder` already accepts.
+class GuestOrderLines extends Table {
+  TextColumn get id => text()();
+  TextColumn get orderId => text()();
+  TextColumn get itemId => text()();
+  TextColumn get name => text()();
+  TextColumn get variantName => text().withDefault(const Constant(''))();
+  TextColumn get course => text().withDefault(const Constant('mains'))();
+  IntColumn get qty => integer().withDefault(const Constant(1))();
+
+  /// `[{"optionId": "..."}]` — same wire shape the staff order path sends.
+  TextColumn get modifiersJson => text().withDefault(const Constant('[]'))();
+  TextColumn get note => text().nullable()();
+  IntColumn get unitPrice => integer()();
   @override
   Set<Column> get primaryKey => {id};
 }

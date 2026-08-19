@@ -13,6 +13,7 @@ import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/printing/struk_socket.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
+import 'package:satset/server/self_order.dart' show mintMissingGuestCodes;
 import 'package:satset/server/ws_hub.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/capability.dart';
@@ -573,6 +574,9 @@ Router tablesRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             active: Value((body['active'] as bool?) ?? true),
           ),
         );
+    // A new table needs a [[Kode meja]] or its QR cannot be printed. Blanks
+    // only, so editing an existing table never kills a QR already stuck to it.
+    await mintMissingGuestCodes(db);
     final row = await (db.select(
       db.venueTables,
     )..where((t) => t.id.equals(id))).getSingleOrNull();

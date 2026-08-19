@@ -83,6 +83,19 @@ class VenueSettingsDto with _$VenueSettingsDto {
     /// How long a tab may stand before the report calls it overdue. A credit
     /// policy, not a fact, which is why it is a setting.
     @Default(30) int memberDebtOverdueDays,
+
+    // [[Pesan mandiri]] (ADR-0105). Off by default — a venue opts in, and until
+    // it does the cleartext guest listener does not bind at all.
+    @Default(false) bool guestOrderingEnabled,
+    @Default(true) bool guestNoteEnabled,
+
+    /// The service window, in minutes from midnight. **Equal values mean no
+    /// window** (the default): a guest may order whenever the server is up.
+    @Default(0) int guestHoursStartMin,
+    @Default(0) int guestHoursEndMin,
+    @Default(20) int guestMaxItems,
+    @Default(4) int guestSessionHours,
+    @Default('chime') String soundGuestPending,
   }) = _VenueSettingsDto;
 
   factory VenueSettingsDto.fromJson(Map<String, dynamic> json) =>

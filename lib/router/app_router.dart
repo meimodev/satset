@@ -35,6 +35,8 @@ import 'package:satset/ui/features/admin/venue_hub_screen.dart';
 import 'package:satset/ui/features/admin/alerts_screen.dart';
 import 'package:satset/ui/features/admin/audit_screen.dart';
 import 'package:satset/ui/features/admin/kas_screen.dart';
+import 'package:satset/ui/features/admin/self_order_admin_screen.dart';
+import 'package:satset/ui/features/admin/self_order_screen.dart';
 import 'package:satset/ui/features/admin/opname_screen.dart';
 import 'package:satset/ui/features/admin/members_screen.dart';
 import 'package:satset/ui/features/admin/venue_settings_screen.dart';
@@ -70,6 +72,21 @@ List<Capability>? _capabilityFor(String loc) {
   // of the three actions each may take is enforced per-route, server-side.
   if (loc.startsWith('/kas')) {
     return const [Capability.manageCash, Capability.editSettings];
+  }
+  // [[Pesan mandiri]], configuration half (ADR-0106) — codes, guest menu,
+  // rules. One authority, matching the writes: every route this screen calls
+  // demands `editSettings` server-side. Must be tested before `/selforder`,
+  // which is a prefix of it.
+  if (loc.startsWith('/selforder-admin')) {
+    return const [Capability.editSettings];
+  }
+  // The queue (ADR-0105, ADR-0106). Two authorities, like `/kas`: `takeOrder`
+  // decides a guest's order, which is a waiter's act and why this is a nav
+  // destination rather than a hub child; `editSettings` is kept because the
+  // server hands an owner the queue read, and narrowing the client to
+  // `takeOrder` would lock them out of a screen they are allowed to see.
+  if (loc.startsWith('/selforder')) {
+    return const [Capability.takeOrder, Capability.editSettings];
   }
   if (loc.startsWith('/venue/diskon')) return const [Capability.editSettings];
   // The directory-keeper's screen (ADR-0092). Reading it is open to the till
@@ -248,6 +265,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen()),
           GoRoute(path: '/audit', builder: (_, _) => const AuditScreen()),
           GoRoute(path: '/kas', builder: (_, _) => const KasScreen()),
+          GoRoute(
+            path: '/selforder',
+            builder: (_, _) => const SelfOrderScreen(),
+          ),
+          GoRoute(
+            path: '/selforder-admin',
+            builder: (_, _) => const SelfOrderAdminScreen(),
+          ),
           GoRoute(path: '/members', builder: (_, _) => const MembersScreen()),
           GoRoute(path: '/opname', builder: (_, _) => const OpnameScreen()),
           GoRoute(path: '/system', builder: (_, _) => const SystemScreen()),

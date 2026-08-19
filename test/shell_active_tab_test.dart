@@ -45,6 +45,12 @@ void main() {
       '/orders': ('orders', [l10n.tabPesanan]),
       '/kitchen': ('kitchen', [l10n.tabAntrian]),
       '/kasir': ('kasir', [l10n.tabKasir]),
+      // [[Pesan mandiri]] split in two (ADR-0106): the queue is a destination
+      // of its own, its settings stay a hub child. The two paths share a
+      // prefix, so this pair is also the guard against `/selforder-admin`
+      // being swallowed by `/selforder` the way `/menuadm` once was by `/me`.
+      '/selforder': ('tamu', [l10n.tabTamu]),
+      '/selforder-admin': ('venue', [hub, l10n.soAdminTitle]),
       // The one dynamic tail: who is logged in, not the label "Saya".
       '/me': ('me', [me]),
     };

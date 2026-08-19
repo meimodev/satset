@@ -57,6 +57,13 @@ _$VenueSettingsDtoImpl _$$VenueSettingsDtoImplFromJson(
   memberDebtEnabled: json['memberDebtEnabled'] as bool? ?? false,
   memberDebtLimit: (json['memberDebtLimit'] as num?)?.toInt() ?? 0,
   memberDebtOverdueDays: (json['memberDebtOverdueDays'] as num?)?.toInt() ?? 30,
+  guestOrderingEnabled: json['guestOrderingEnabled'] as bool? ?? false,
+  guestNoteEnabled: json['guestNoteEnabled'] as bool? ?? true,
+  guestHoursStartMin: (json['guestHoursStartMin'] as num?)?.toInt() ?? 0,
+  guestHoursEndMin: (json['guestHoursEndMin'] as num?)?.toInt() ?? 0,
+  guestMaxItems: (json['guestMaxItems'] as num?)?.toInt() ?? 20,
+  guestSessionHours: (json['guestSessionHours'] as num?)?.toInt() ?? 4,
+  soundGuestPending: json['soundGuestPending'] as String? ?? 'chime',
 );
 
 Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
@@ -110,4 +117,11 @@ Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
   'memberDebtEnabled': instance.memberDebtEnabled,
   'memberDebtLimit': instance.memberDebtLimit,
   'memberDebtOverdueDays': instance.memberDebtOverdueDays,
+  'guestOrderingEnabled': instance.guestOrderingEnabled,
+  'guestNoteEnabled': instance.guestNoteEnabled,
+  'guestHoursStartMin': instance.guestHoursStartMin,
+  'guestHoursEndMin': instance.guestHoursEndMin,
+  'guestMaxItems': instance.guestMaxItems,
+  'guestSessionHours': instance.guestSessionHours,
+  'soundGuestPending': instance.soundGuestPending,
 };

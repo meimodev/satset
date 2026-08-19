@@ -1628,6 +1628,32 @@ class $VenueTablesTable extends VenueTables
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _guestOrderingEnabledMeta =
+      const VerificationMeta('guestOrderingEnabled');
+  @override
+  late final GeneratedColumn<bool> guestOrderingEnabled = GeneratedColumn<bool>(
+    'guest_ordering_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("guest_ordering_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _guestCodeMeta = const VerificationMeta(
+    'guestCode',
+  );
+  @override
+  late final GeneratedColumn<String> guestCode = GeneratedColumn<String>(
+    'guest_code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1651,6 +1677,8 @@ class $VenueTablesTable extends VenueTables
     currentVisitId,
     billClosedAt,
     moneyState,
+    guestOrderingEnabled,
+    guestCode,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1809,6 +1837,21 @@ class $VenueTablesTable extends VenueTables
         moneyState.isAcceptableOrUnknown(data['money_state']!, _moneyStateMeta),
       );
     }
+    if (data.containsKey('guest_ordering_enabled')) {
+      context.handle(
+        _guestOrderingEnabledMeta,
+        guestOrderingEnabled.isAcceptableOrUnknown(
+          data['guest_ordering_enabled']!,
+          _guestOrderingEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('guest_code')) {
+      context.handle(
+        _guestCodeMeta,
+        guestCode.isAcceptableOrUnknown(data['guest_code']!, _guestCodeMeta),
+      );
+    }
     return context;
   }
 
@@ -1902,6 +1945,14 @@ class $VenueTablesTable extends VenueTables
         DriftSqlType.string,
         data['${effectivePrefix}money_state'],
       ),
+      guestOrderingEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}guest_ordering_enabled'],
+      )!,
+      guestCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}guest_code'],
+      )!,
     );
   }
 
@@ -1948,6 +1999,15 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
   /// yet locked) | null (nothing paid). `openAmount` carries the **outstanding**
   /// rupiah. Kept in sync on order/serve/void + every payment. See ADR-0024.
   final String? moneyState;
+
+  /// **[[Pesan mandiri]]** per-table opt-in. A venue can run self-order on the
+  /// dining room and keep the bar counter staff-only (ADR-0105).
+  final bool guestOrderingEnabled;
+
+  /// The rotatable code in the guest URL (`/t/<code>`). This is the *whole*
+  /// guest credential — there is no guest JWT and no guest auth scope
+  /// (ADR-0105). Rotating it invalidates every printed QR for the table.
+  final String guestCode;
   const VenueTable({
     required this.id,
     required this.zoneId,
@@ -1970,6 +2030,8 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     this.currentVisitId,
     this.billClosedAt,
     this.moneyState,
+    required this.guestOrderingEnabled,
+    required this.guestCode,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2021,6 +2083,8 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     if (!nullToAbsent || moneyState != null) {
       map['money_state'] = Variable<String>(moneyState);
     }
+    map['guest_ordering_enabled'] = Variable<bool>(guestOrderingEnabled);
+    map['guest_code'] = Variable<String>(guestCode);
     return map;
   }
 
@@ -2073,6 +2137,8 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       moneyState: moneyState == null && nullToAbsent
           ? const Value.absent()
           : Value(moneyState),
+      guestOrderingEnabled: Value(guestOrderingEnabled),
+      guestCode: Value(guestCode),
     );
   }
 
@@ -2103,6 +2169,10 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       currentVisitId: serializer.fromJson<String?>(json['currentVisitId']),
       billClosedAt: serializer.fromJson<DateTime?>(json['billClosedAt']),
       moneyState: serializer.fromJson<String?>(json['moneyState']),
+      guestOrderingEnabled: serializer.fromJson<bool>(
+        json['guestOrderingEnabled'],
+      ),
+      guestCode: serializer.fromJson<String>(json['guestCode']),
     );
   }
   @override
@@ -2130,6 +2200,8 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       'currentVisitId': serializer.toJson<String?>(currentVisitId),
       'billClosedAt': serializer.toJson<DateTime?>(billClosedAt),
       'moneyState': serializer.toJson<String?>(moneyState),
+      'guestOrderingEnabled': serializer.toJson<bool>(guestOrderingEnabled),
+      'guestCode': serializer.toJson<String>(guestCode),
     };
   }
 
@@ -2155,6 +2227,8 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     Value<String?> currentVisitId = const Value.absent(),
     Value<DateTime?> billClosedAt = const Value.absent(),
     Value<String?> moneyState = const Value.absent(),
+    bool? guestOrderingEnabled,
+    String? guestCode,
   }) => VenueTable(
     id: id ?? this.id,
     zoneId: zoneId ?? this.zoneId,
@@ -2183,6 +2257,8 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
         : this.currentVisitId,
     billClosedAt: billClosedAt.present ? billClosedAt.value : this.billClosedAt,
     moneyState: moneyState.present ? moneyState.value : this.moneyState,
+    guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
+    guestCode: guestCode ?? this.guestCode,
   );
   VenueTable copyWithCompanion(VenueTablesCompanion data) {
     return VenueTable(
@@ -2227,6 +2303,10 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
       moneyState: data.moneyState.present
           ? data.moneyState.value
           : this.moneyState,
+      guestOrderingEnabled: data.guestOrderingEnabled.present
+          ? data.guestOrderingEnabled.value
+          : this.guestOrderingEnabled,
+      guestCode: data.guestCode.present ? data.guestCode.value : this.guestCode,
     );
   }
 
@@ -2253,7 +2333,9 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
           ..write('reservationId: $reservationId, ')
           ..write('currentVisitId: $currentVisitId, ')
           ..write('billClosedAt: $billClosedAt, ')
-          ..write('moneyState: $moneyState')
+          ..write('moneyState: $moneyState, ')
+          ..write('guestOrderingEnabled: $guestOrderingEnabled, ')
+          ..write('guestCode: $guestCode')
           ..write(')'))
         .toString();
   }
@@ -2281,6 +2363,8 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
     currentVisitId,
     billClosedAt,
     moneyState,
+    guestOrderingEnabled,
+    guestCode,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -2306,7 +2390,9 @@ class VenueTable extends DataClass implements Insertable<VenueTable> {
           other.reservationId == this.reservationId &&
           other.currentVisitId == this.currentVisitId &&
           other.billClosedAt == this.billClosedAt &&
-          other.moneyState == this.moneyState);
+          other.moneyState == this.moneyState &&
+          other.guestOrderingEnabled == this.guestOrderingEnabled &&
+          other.guestCode == this.guestCode);
 }
 
 class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
@@ -2331,6 +2417,8 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
   final Value<String?> currentVisitId;
   final Value<DateTime?> billClosedAt;
   final Value<String?> moneyState;
+  final Value<bool> guestOrderingEnabled;
+  final Value<String> guestCode;
   final Value<int> rowid;
   const VenueTablesCompanion({
     this.id = const Value.absent(),
@@ -2354,6 +2442,8 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     this.currentVisitId = const Value.absent(),
     this.billClosedAt = const Value.absent(),
     this.moneyState = const Value.absent(),
+    this.guestOrderingEnabled = const Value.absent(),
+    this.guestCode = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueTablesCompanion.insert({
@@ -2378,6 +2468,8 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     this.currentVisitId = const Value.absent(),
     this.billClosedAt = const Value.absent(),
     this.moneyState = const Value.absent(),
+    this.guestOrderingEnabled = const Value.absent(),
+    this.guestCode = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        zoneId = Value(zoneId);
@@ -2403,6 +2495,8 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     Expression<String>? currentVisitId,
     Expression<DateTime>? billClosedAt,
     Expression<String>? moneyState,
+    Expression<bool>? guestOrderingEnabled,
+    Expression<String>? guestCode,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2427,6 +2521,9 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
       if (currentVisitId != null) 'current_visit_id': currentVisitId,
       if (billClosedAt != null) 'bill_closed_at': billClosedAt,
       if (moneyState != null) 'money_state': moneyState,
+      if (guestOrderingEnabled != null)
+        'guest_ordering_enabled': guestOrderingEnabled,
+      if (guestCode != null) 'guest_code': guestCode,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2453,6 +2550,8 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     Value<String?>? currentVisitId,
     Value<DateTime?>? billClosedAt,
     Value<String?>? moneyState,
+    Value<bool>? guestOrderingEnabled,
+    Value<String>? guestCode,
     Value<int>? rowid,
   }) {
     return VenueTablesCompanion(
@@ -2477,6 +2576,8 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
       currentVisitId: currentVisitId ?? this.currentVisitId,
       billClosedAt: billClosedAt ?? this.billClosedAt,
       moneyState: moneyState ?? this.moneyState,
+      guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
+      guestCode: guestCode ?? this.guestCode,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2547,6 +2648,14 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
     if (moneyState.present) {
       map['money_state'] = Variable<String>(moneyState.value);
     }
+    if (guestOrderingEnabled.present) {
+      map['guest_ordering_enabled'] = Variable<bool>(
+        guestOrderingEnabled.value,
+      );
+    }
+    if (guestCode.present) {
+      map['guest_code'] = Variable<String>(guestCode.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2577,6 +2686,8 @@ class VenueTablesCompanion extends UpdateCompanion<VenueTable> {
           ..write('currentVisitId: $currentVisitId, ')
           ..write('billClosedAt: $billClosedAt, ')
           ..write('moneyState: $moneyState, ')
+          ..write('guestOrderingEnabled: $guestOrderingEnabled, ')
+          ..write('guestCode: $guestCode, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4105,6 +4216,75 @@ class $MenuItemsTable extends MenuItems
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _alcoholMeta = const VerificationMeta(
+    'alcohol',
+  );
+  @override
+  late final GeneratedColumn<bool> alcohol = GeneratedColumn<bool>(
+    'alcohol',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("alcohol" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _guestVisibleMeta = const VerificationMeta(
+    'guestVisible',
+  );
+  @override
+  late final GeneratedColumn<bool> guestVisible = GeneratedColumn<bool>(
+    'guest_visible',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("guest_visible" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _guestFeaturedMeta = const VerificationMeta(
+    'guestFeatured',
+  );
+  @override
+  late final GeneratedColumn<bool> guestFeatured = GeneratedColumn<bool>(
+    'guest_featured',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("guest_featured" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _guestStockOverrideMeta =
+      const VerificationMeta('guestStockOverride');
+  @override
+  late final GeneratedColumn<String> guestStockOverride =
+      GeneratedColumn<String>(
+        'guest_stock_override',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('auto'),
+      );
+  static const VerificationMeta _guestOverrideAtMeta = const VerificationMeta(
+    'guestOverrideAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> guestOverrideAt =
+      GeneratedColumn<DateTime>(
+        'guest_override_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -4121,6 +4301,11 @@ class $MenuItemsTable extends MenuItems
     unavailable,
     photo,
     photoRev,
+    alcohol,
+    guestVisible,
+    guestFeatured,
+    guestStockOverride,
+    guestOverrideAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4241,6 +4426,48 @@ class $MenuItemsTable extends MenuItems
         photoRev.isAcceptableOrUnknown(data['photo_rev']!, _photoRevMeta),
       );
     }
+    if (data.containsKey('alcohol')) {
+      context.handle(
+        _alcoholMeta,
+        alcohol.isAcceptableOrUnknown(data['alcohol']!, _alcoholMeta),
+      );
+    }
+    if (data.containsKey('guest_visible')) {
+      context.handle(
+        _guestVisibleMeta,
+        guestVisible.isAcceptableOrUnknown(
+          data['guest_visible']!,
+          _guestVisibleMeta,
+        ),
+      );
+    }
+    if (data.containsKey('guest_featured')) {
+      context.handle(
+        _guestFeaturedMeta,
+        guestFeatured.isAcceptableOrUnknown(
+          data['guest_featured']!,
+          _guestFeaturedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('guest_stock_override')) {
+      context.handle(
+        _guestStockOverrideMeta,
+        guestStockOverride.isAcceptableOrUnknown(
+          data['guest_stock_override']!,
+          _guestStockOverrideMeta,
+        ),
+      );
+    }
+    if (data.containsKey('guest_override_at')) {
+      context.handle(
+        _guestOverrideAtMeta,
+        guestOverrideAt.isAcceptableOrUnknown(
+          data['guest_override_at']!,
+          _guestOverrideAtMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -4306,6 +4533,26 @@ class $MenuItemsTable extends MenuItems
         DriftSqlType.int,
         data['${effectivePrefix}photo_rev'],
       )!,
+      alcohol: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}alcohol'],
+      )!,
+      guestVisible: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}guest_visible'],
+      )!,
+      guestFeatured: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}guest_featured'],
+      )!,
+      guestStockOverride: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}guest_stock_override'],
+      )!,
+      guestOverrideAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}guest_override_at'],
+      ),
     );
   }
 
@@ -4355,6 +4602,24 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
   /// Monotonic revision bumped on every photo write/clear. Rides the snapshot
   /// (the bytes do not) so clients cache-bust by `(itemId, photoRev)`.
   final int photoRev;
+
+  /// Contains alcohol, so a human must see the guest before it reaches the
+  /// bar. The one thing on a guest order that cannot be delegated to the
+  /// phone that placed it — self-order can take the order, but it cannot
+  /// check an ID. Set from the [[Menu tamu]] tab, seeded by category.
+  final bool alcohol;
+
+  /// **[[Menu tamu]]** (ADR-0105). Hidden items still sell at the till; this
+  /// only governs what the guest phone page lists.
+  final bool guestVisible;
+  final bool guestFeatured;
+
+  /// `auto` | `forceIn` | `forceOut`. **Persisted names** — renaming orphans
+  /// every row. `auto` reads the live recipe/stock derivation; the two forces
+  /// are a shift-long manual call and are cleared at the business-day
+  /// rollover, which is what `guestOverrideAt` is for.
+  final String guestStockOverride;
+  final DateTime? guestOverrideAt;
   const MenuItem({
     required this.id,
     required this.name,
@@ -4370,6 +4635,11 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     required this.unavailable,
     this.photo,
     required this.photoRev,
+    required this.alcohol,
+    required this.guestVisible,
+    required this.guestFeatured,
+    required this.guestStockOverride,
+    this.guestOverrideAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4392,6 +4662,13 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       map['photo'] = Variable<Uint8List>(photo);
     }
     map['photo_rev'] = Variable<int>(photoRev);
+    map['alcohol'] = Variable<bool>(alcohol);
+    map['guest_visible'] = Variable<bool>(guestVisible);
+    map['guest_featured'] = Variable<bool>(guestFeatured);
+    map['guest_stock_override'] = Variable<String>(guestStockOverride);
+    if (!nullToAbsent || guestOverrideAt != null) {
+      map['guest_override_at'] = Variable<DateTime>(guestOverrideAt);
+    }
     return map;
   }
 
@@ -4415,6 +4692,13 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
           ? const Value.absent()
           : Value(photo),
       photoRev: Value(photoRev),
+      alcohol: Value(alcohol),
+      guestVisible: Value(guestVisible),
+      guestFeatured: Value(guestFeatured),
+      guestStockOverride: Value(guestStockOverride),
+      guestOverrideAt: guestOverrideAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(guestOverrideAt),
     );
   }
 
@@ -4440,6 +4724,13 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       unavailable: serializer.fromJson<bool>(json['unavailable']),
       photo: serializer.fromJson<Uint8List?>(json['photo']),
       photoRev: serializer.fromJson<int>(json['photoRev']),
+      alcohol: serializer.fromJson<bool>(json['alcohol']),
+      guestVisible: serializer.fromJson<bool>(json['guestVisible']),
+      guestFeatured: serializer.fromJson<bool>(json['guestFeatured']),
+      guestStockOverride: serializer.fromJson<String>(
+        json['guestStockOverride'],
+      ),
+      guestOverrideAt: serializer.fromJson<DateTime?>(json['guestOverrideAt']),
     );
   }
   @override
@@ -4460,6 +4751,11 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
       'unavailable': serializer.toJson<bool>(unavailable),
       'photo': serializer.toJson<Uint8List?>(photo),
       'photoRev': serializer.toJson<int>(photoRev),
+      'alcohol': serializer.toJson<bool>(alcohol),
+      'guestVisible': serializer.toJson<bool>(guestVisible),
+      'guestFeatured': serializer.toJson<bool>(guestFeatured),
+      'guestStockOverride': serializer.toJson<String>(guestStockOverride),
+      'guestOverrideAt': serializer.toJson<DateTime?>(guestOverrideAt),
     };
   }
 
@@ -4478,6 +4774,11 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     bool? unavailable,
     Value<Uint8List?> photo = const Value.absent(),
     int? photoRev,
+    bool? alcohol,
+    bool? guestVisible,
+    bool? guestFeatured,
+    String? guestStockOverride,
+    Value<DateTime?> guestOverrideAt = const Value.absent(),
   }) => MenuItem(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -4493,6 +4794,13 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     unavailable: unavailable ?? this.unavailable,
     photo: photo.present ? photo.value : this.photo,
     photoRev: photoRev ?? this.photoRev,
+    alcohol: alcohol ?? this.alcohol,
+    guestVisible: guestVisible ?? this.guestVisible,
+    guestFeatured: guestFeatured ?? this.guestFeatured,
+    guestStockOverride: guestStockOverride ?? this.guestStockOverride,
+    guestOverrideAt: guestOverrideAt.present
+        ? guestOverrideAt.value
+        : this.guestOverrideAt,
   );
   MenuItem copyWithCompanion(MenuItemsCompanion data) {
     return MenuItem(
@@ -4524,6 +4832,19 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
           : this.unavailable,
       photo: data.photo.present ? data.photo.value : this.photo,
       photoRev: data.photoRev.present ? data.photoRev.value : this.photoRev,
+      alcohol: data.alcohol.present ? data.alcohol.value : this.alcohol,
+      guestVisible: data.guestVisible.present
+          ? data.guestVisible.value
+          : this.guestVisible,
+      guestFeatured: data.guestFeatured.present
+          ? data.guestFeatured.value
+          : this.guestFeatured,
+      guestStockOverride: data.guestStockOverride.present
+          ? data.guestStockOverride.value
+          : this.guestStockOverride,
+      guestOverrideAt: data.guestOverrideAt.present
+          ? data.guestOverrideAt.value
+          : this.guestOverrideAt,
     );
   }
 
@@ -4543,7 +4864,12 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
           ..write('dietaryJson: $dietaryJson, ')
           ..write('unavailable: $unavailable, ')
           ..write('photo: $photo, ')
-          ..write('photoRev: $photoRev')
+          ..write('photoRev: $photoRev, ')
+          ..write('alcohol: $alcohol, ')
+          ..write('guestVisible: $guestVisible, ')
+          ..write('guestFeatured: $guestFeatured, ')
+          ..write('guestStockOverride: $guestStockOverride, ')
+          ..write('guestOverrideAt: $guestOverrideAt')
           ..write(')'))
         .toString();
   }
@@ -4564,6 +4890,11 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
     unavailable,
     $driftBlobEquality.hash(photo),
     photoRev,
+    alcohol,
+    guestVisible,
+    guestFeatured,
+    guestStockOverride,
+    guestOverrideAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -4582,7 +4913,12 @@ class MenuItem extends DataClass implements Insertable<MenuItem> {
           other.dietaryJson == this.dietaryJson &&
           other.unavailable == this.unavailable &&
           $driftBlobEquality.equals(other.photo, this.photo) &&
-          other.photoRev == this.photoRev);
+          other.photoRev == this.photoRev &&
+          other.alcohol == this.alcohol &&
+          other.guestVisible == this.guestVisible &&
+          other.guestFeatured == this.guestFeatured &&
+          other.guestStockOverride == this.guestStockOverride &&
+          other.guestOverrideAt == this.guestOverrideAt);
 }
 
 class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
@@ -4600,6 +4936,11 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
   final Value<bool> unavailable;
   final Value<Uint8List?> photo;
   final Value<int> photoRev;
+  final Value<bool> alcohol;
+  final Value<bool> guestVisible;
+  final Value<bool> guestFeatured;
+  final Value<String> guestStockOverride;
+  final Value<DateTime?> guestOverrideAt;
   final Value<int> rowid;
   const MenuItemsCompanion({
     this.id = const Value.absent(),
@@ -4616,6 +4957,11 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     this.unavailable = const Value.absent(),
     this.photo = const Value.absent(),
     this.photoRev = const Value.absent(),
+    this.alcohol = const Value.absent(),
+    this.guestVisible = const Value.absent(),
+    this.guestFeatured = const Value.absent(),
+    this.guestStockOverride = const Value.absent(),
+    this.guestOverrideAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MenuItemsCompanion.insert({
@@ -4633,6 +4979,11 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     this.unavailable = const Value.absent(),
     this.photo = const Value.absent(),
     this.photoRev = const Value.absent(),
+    this.alcohol = const Value.absent(),
+    this.guestVisible = const Value.absent(),
+    this.guestFeatured = const Value.absent(),
+    this.guestStockOverride = const Value.absent(),
+    this.guestOverrideAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -4653,6 +5004,11 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     Expression<bool>? unavailable,
     Expression<Uint8List>? photo,
     Expression<int>? photoRev,
+    Expression<bool>? alcohol,
+    Expression<bool>? guestVisible,
+    Expression<bool>? guestFeatured,
+    Expression<String>? guestStockOverride,
+    Expression<DateTime>? guestOverrideAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4671,6 +5027,12 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
       if (unavailable != null) 'unavailable': unavailable,
       if (photo != null) 'photo': photo,
       if (photoRev != null) 'photo_rev': photoRev,
+      if (alcohol != null) 'alcohol': alcohol,
+      if (guestVisible != null) 'guest_visible': guestVisible,
+      if (guestFeatured != null) 'guest_featured': guestFeatured,
+      if (guestStockOverride != null)
+        'guest_stock_override': guestStockOverride,
+      if (guestOverrideAt != null) 'guest_override_at': guestOverrideAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4690,6 +5052,11 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     Value<bool>? unavailable,
     Value<Uint8List?>? photo,
     Value<int>? photoRev,
+    Value<bool>? alcohol,
+    Value<bool>? guestVisible,
+    Value<bool>? guestFeatured,
+    Value<String>? guestStockOverride,
+    Value<DateTime?>? guestOverrideAt,
     Value<int>? rowid,
   }) {
     return MenuItemsCompanion(
@@ -4707,6 +5074,11 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
       unavailable: unavailable ?? this.unavailable,
       photo: photo ?? this.photo,
       photoRev: photoRev ?? this.photoRev,
+      alcohol: alcohol ?? this.alcohol,
+      guestVisible: guestVisible ?? this.guestVisible,
+      guestFeatured: guestFeatured ?? this.guestFeatured,
+      guestStockOverride: guestStockOverride ?? this.guestStockOverride,
+      guestOverrideAt: guestOverrideAt ?? this.guestOverrideAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4756,6 +5128,21 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
     if (photoRev.present) {
       map['photo_rev'] = Variable<int>(photoRev.value);
     }
+    if (alcohol.present) {
+      map['alcohol'] = Variable<bool>(alcohol.value);
+    }
+    if (guestVisible.present) {
+      map['guest_visible'] = Variable<bool>(guestVisible.value);
+    }
+    if (guestFeatured.present) {
+      map['guest_featured'] = Variable<bool>(guestFeatured.value);
+    }
+    if (guestStockOverride.present) {
+      map['guest_stock_override'] = Variable<String>(guestStockOverride.value);
+    }
+    if (guestOverrideAt.present) {
+      map['guest_override_at'] = Variable<DateTime>(guestOverrideAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4779,6 +5166,11 @@ class MenuItemsCompanion extends UpdateCompanion<MenuItem> {
           ..write('unavailable: $unavailable, ')
           ..write('photo: $photo, ')
           ..write('photoRev: $photoRev, ')
+          ..write('alcohol: $alcohol, ')
+          ..write('guestVisible: $guestVisible, ')
+          ..write('guestFeatured: $guestFeatured, ')
+          ..write('guestStockOverride: $guestStockOverride, ')
+          ..write('guestOverrideAt: $guestOverrideAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -8891,6 +9283,94 @@ class $VenueSettingsTable extends VenueSettings
     requiredDuringInsert: false,
     defaultValue: const Constant(30),
   );
+  static const VerificationMeta _guestOrderingEnabledMeta =
+      const VerificationMeta('guestOrderingEnabled');
+  @override
+  late final GeneratedColumn<bool> guestOrderingEnabled = GeneratedColumn<bool>(
+    'guest_ordering_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("guest_ordering_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _guestNoteEnabledMeta = const VerificationMeta(
+    'guestNoteEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> guestNoteEnabled = GeneratedColumn<bool>(
+    'guest_note_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("guest_note_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _guestHoursStartMinMeta =
+      const VerificationMeta('guestHoursStartMin');
+  @override
+  late final GeneratedColumn<int> guestHoursStartMin = GeneratedColumn<int>(
+    'guest_hours_start_min',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _guestHoursEndMinMeta = const VerificationMeta(
+    'guestHoursEndMin',
+  );
+  @override
+  late final GeneratedColumn<int> guestHoursEndMin = GeneratedColumn<int>(
+    'guest_hours_end_min',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _guestMaxItemsMeta = const VerificationMeta(
+    'guestMaxItems',
+  );
+  @override
+  late final GeneratedColumn<int> guestMaxItems = GeneratedColumn<int>(
+    'guest_max_items',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(20),
+  );
+  static const VerificationMeta _guestSessionHoursMeta = const VerificationMeta(
+    'guestSessionHours',
+  );
+  @override
+  late final GeneratedColumn<int> guestSessionHours = GeneratedColumn<int>(
+    'guest_session_hours',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(4),
+  );
+  static const VerificationMeta _soundGuestPendingMeta = const VerificationMeta(
+    'soundGuestPending',
+  );
+  @override
+  late final GeneratedColumn<String> soundGuestPending =
+      GeneratedColumn<String>(
+        'sound_guest_pending',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -8942,6 +9422,13 @@ class $VenueSettingsTable extends VenueSettings
     memberDebtEnabled,
     memberDebtLimit,
     memberDebtOverdueDays,
+    guestOrderingEnabled,
+    guestNoteEnabled,
+    guestHoursStartMin,
+    guestHoursEndMin,
+    guestMaxItems,
+    guestSessionHours,
+    soundGuestPending,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9368,6 +9855,69 @@ class $VenueSettingsTable extends VenueSettings
         ),
       );
     }
+    if (data.containsKey('guest_ordering_enabled')) {
+      context.handle(
+        _guestOrderingEnabledMeta,
+        guestOrderingEnabled.isAcceptableOrUnknown(
+          data['guest_ordering_enabled']!,
+          _guestOrderingEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('guest_note_enabled')) {
+      context.handle(
+        _guestNoteEnabledMeta,
+        guestNoteEnabled.isAcceptableOrUnknown(
+          data['guest_note_enabled']!,
+          _guestNoteEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('guest_hours_start_min')) {
+      context.handle(
+        _guestHoursStartMinMeta,
+        guestHoursStartMin.isAcceptableOrUnknown(
+          data['guest_hours_start_min']!,
+          _guestHoursStartMinMeta,
+        ),
+      );
+    }
+    if (data.containsKey('guest_hours_end_min')) {
+      context.handle(
+        _guestHoursEndMinMeta,
+        guestHoursEndMin.isAcceptableOrUnknown(
+          data['guest_hours_end_min']!,
+          _guestHoursEndMinMeta,
+        ),
+      );
+    }
+    if (data.containsKey('guest_max_items')) {
+      context.handle(
+        _guestMaxItemsMeta,
+        guestMaxItems.isAcceptableOrUnknown(
+          data['guest_max_items']!,
+          _guestMaxItemsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('guest_session_hours')) {
+      context.handle(
+        _guestSessionHoursMeta,
+        guestSessionHours.isAcceptableOrUnknown(
+          data['guest_session_hours']!,
+          _guestSessionHoursMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sound_guest_pending')) {
+      context.handle(
+        _soundGuestPendingMeta,
+        soundGuestPending.isAcceptableOrUnknown(
+          data['sound_guest_pending']!,
+          _soundGuestPendingMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -9573,6 +10123,34 @@ class $VenueSettingsTable extends VenueSettings
         DriftSqlType.int,
         data['${effectivePrefix}member_debt_overdue_days'],
       )!,
+      guestOrderingEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}guest_ordering_enabled'],
+      )!,
+      guestNoteEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}guest_note_enabled'],
+      )!,
+      guestHoursStartMin: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}guest_hours_start_min'],
+      )!,
+      guestHoursEndMin: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}guest_hours_end_min'],
+      )!,
+      guestMaxItems: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}guest_max_items'],
+      )!,
+      guestSessionHours: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}guest_session_hours'],
+      )!,
+      soundGuestPending: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sound_guest_pending'],
+      ),
     );
   }
 
@@ -9724,6 +10302,24 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   /// How old an unsettled charge must be before the Piutang section counts it
   /// overdue. A credit policy, not a fact, which is why it is not hardcoded.
   final int memberDebtOverdueDays;
+
+  /// **[[Pesan mandiri]]** master switch (ADR-0105). Off ⇒ the cleartext guest
+  /// listener never binds, so the plane does not exist rather than 403ing.
+  final bool guestOrderingEnabled;
+
+  /// Guest-side rules. A note the guest may leave per line (capped in the
+  /// route), the service window in minutes-from-midnight (equal values ⇒ no
+  /// window), the cap on lines in one submit, and how long a guest session
+  /// stays valid before the phone must re-scan.
+  final bool guestNoteEnabled;
+  final int guestHoursStartMin;
+  final int guestHoursEndMin;
+  final int guestMaxItems;
+  final int guestSessionHours;
+
+  /// Sound id for [AlertEvent.guestPending]. Same shape as the sibling
+  /// `sound*` columns.
+  final String? soundGuestPending;
   const VenueSetting({
     required this.id,
     required this.displayName,
@@ -9774,6 +10370,13 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     required this.memberDebtEnabled,
     required this.memberDebtLimit,
     required this.memberDebtOverdueDays,
+    required this.guestOrderingEnabled,
+    required this.guestNoteEnabled,
+    required this.guestHoursStartMin,
+    required this.guestHoursEndMin,
+    required this.guestMaxItems,
+    required this.guestSessionHours,
+    this.soundGuestPending,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -9833,6 +10436,15 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     map['member_debt_enabled'] = Variable<bool>(memberDebtEnabled);
     map['member_debt_limit'] = Variable<int>(memberDebtLimit);
     map['member_debt_overdue_days'] = Variable<int>(memberDebtOverdueDays);
+    map['guest_ordering_enabled'] = Variable<bool>(guestOrderingEnabled);
+    map['guest_note_enabled'] = Variable<bool>(guestNoteEnabled);
+    map['guest_hours_start_min'] = Variable<int>(guestHoursStartMin);
+    map['guest_hours_end_min'] = Variable<int>(guestHoursEndMin);
+    map['guest_max_items'] = Variable<int>(guestMaxItems);
+    map['guest_session_hours'] = Variable<int>(guestSessionHours);
+    if (!nullToAbsent || soundGuestPending != null) {
+      map['sound_guest_pending'] = Variable<String>(soundGuestPending);
+    }
     return map;
   }
 
@@ -9891,6 +10503,15 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       memberDebtEnabled: Value(memberDebtEnabled),
       memberDebtLimit: Value(memberDebtLimit),
       memberDebtOverdueDays: Value(memberDebtOverdueDays),
+      guestOrderingEnabled: Value(guestOrderingEnabled),
+      guestNoteEnabled: Value(guestNoteEnabled),
+      guestHoursStartMin: Value(guestHoursStartMin),
+      guestHoursEndMin: Value(guestHoursEndMin),
+      guestMaxItems: Value(guestMaxItems),
+      guestSessionHours: Value(guestSessionHours),
+      soundGuestPending: soundGuestPending == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soundGuestPending),
     );
   }
 
@@ -9965,6 +10586,17 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       memberDebtOverdueDays: serializer.fromJson<int>(
         json['memberDebtOverdueDays'],
       ),
+      guestOrderingEnabled: serializer.fromJson<bool>(
+        json['guestOrderingEnabled'],
+      ),
+      guestNoteEnabled: serializer.fromJson<bool>(json['guestNoteEnabled']),
+      guestHoursStartMin: serializer.fromJson<int>(json['guestHoursStartMin']),
+      guestHoursEndMin: serializer.fromJson<int>(json['guestHoursEndMin']),
+      guestMaxItems: serializer.fromJson<int>(json['guestMaxItems']),
+      guestSessionHours: serializer.fromJson<int>(json['guestSessionHours']),
+      soundGuestPending: serializer.fromJson<String?>(
+        json['soundGuestPending'],
+      ),
     );
   }
   @override
@@ -10020,6 +10652,13 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       'memberDebtEnabled': serializer.toJson<bool>(memberDebtEnabled),
       'memberDebtLimit': serializer.toJson<int>(memberDebtLimit),
       'memberDebtOverdueDays': serializer.toJson<int>(memberDebtOverdueDays),
+      'guestOrderingEnabled': serializer.toJson<bool>(guestOrderingEnabled),
+      'guestNoteEnabled': serializer.toJson<bool>(guestNoteEnabled),
+      'guestHoursStartMin': serializer.toJson<int>(guestHoursStartMin),
+      'guestHoursEndMin': serializer.toJson<int>(guestHoursEndMin),
+      'guestMaxItems': serializer.toJson<int>(guestMaxItems),
+      'guestSessionHours': serializer.toJson<int>(guestSessionHours),
+      'soundGuestPending': serializer.toJson<String?>(soundGuestPending),
     };
   }
 
@@ -10073,6 +10712,13 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     bool? memberDebtEnabled,
     int? memberDebtLimit,
     int? memberDebtOverdueDays,
+    bool? guestOrderingEnabled,
+    bool? guestNoteEnabled,
+    int? guestHoursStartMin,
+    int? guestHoursEndMin,
+    int? guestMaxItems,
+    int? guestSessionHours,
+    Value<String?> soundGuestPending = const Value.absent(),
   }) => VenueSetting(
     id: id ?? this.id,
     displayName: displayName ?? this.displayName,
@@ -10127,6 +10773,15 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     memberDebtEnabled: memberDebtEnabled ?? this.memberDebtEnabled,
     memberDebtLimit: memberDebtLimit ?? this.memberDebtLimit,
     memberDebtOverdueDays: memberDebtOverdueDays ?? this.memberDebtOverdueDays,
+    guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
+    guestNoteEnabled: guestNoteEnabled ?? this.guestNoteEnabled,
+    guestHoursStartMin: guestHoursStartMin ?? this.guestHoursStartMin,
+    guestHoursEndMin: guestHoursEndMin ?? this.guestHoursEndMin,
+    guestMaxItems: guestMaxItems ?? this.guestMaxItems,
+    guestSessionHours: guestSessionHours ?? this.guestSessionHours,
+    soundGuestPending: soundGuestPending.present
+        ? soundGuestPending.value
+        : this.soundGuestPending,
   );
   VenueSetting copyWithCompanion(VenueSettingsCompanion data) {
     return VenueSetting(
@@ -10263,6 +10918,27 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       memberDebtOverdueDays: data.memberDebtOverdueDays.present
           ? data.memberDebtOverdueDays.value
           : this.memberDebtOverdueDays,
+      guestOrderingEnabled: data.guestOrderingEnabled.present
+          ? data.guestOrderingEnabled.value
+          : this.guestOrderingEnabled,
+      guestNoteEnabled: data.guestNoteEnabled.present
+          ? data.guestNoteEnabled.value
+          : this.guestNoteEnabled,
+      guestHoursStartMin: data.guestHoursStartMin.present
+          ? data.guestHoursStartMin.value
+          : this.guestHoursStartMin,
+      guestHoursEndMin: data.guestHoursEndMin.present
+          ? data.guestHoursEndMin.value
+          : this.guestHoursEndMin,
+      guestMaxItems: data.guestMaxItems.present
+          ? data.guestMaxItems.value
+          : this.guestMaxItems,
+      guestSessionHours: data.guestSessionHours.present
+          ? data.guestSessionHours.value
+          : this.guestSessionHours,
+      soundGuestPending: data.soundGuestPending.present
+          ? data.soundGuestPending.value
+          : this.soundGuestPending,
     );
   }
 
@@ -10317,7 +10993,14 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           ..write('memberPunchTarget: $memberPunchTarget, ')
           ..write('memberDebtEnabled: $memberDebtEnabled, ')
           ..write('memberDebtLimit: $memberDebtLimit, ')
-          ..write('memberDebtOverdueDays: $memberDebtOverdueDays')
+          ..write('memberDebtOverdueDays: $memberDebtOverdueDays, ')
+          ..write('guestOrderingEnabled: $guestOrderingEnabled, ')
+          ..write('guestNoteEnabled: $guestNoteEnabled, ')
+          ..write('guestHoursStartMin: $guestHoursStartMin, ')
+          ..write('guestHoursEndMin: $guestHoursEndMin, ')
+          ..write('guestMaxItems: $guestMaxItems, ')
+          ..write('guestSessionHours: $guestSessionHours, ')
+          ..write('soundGuestPending: $soundGuestPending')
           ..write(')'))
         .toString();
   }
@@ -10373,6 +11056,13 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     memberDebtEnabled,
     memberDebtLimit,
     memberDebtOverdueDays,
+    guestOrderingEnabled,
+    guestNoteEnabled,
+    guestHoursStartMin,
+    guestHoursEndMin,
+    guestMaxItems,
+    guestSessionHours,
+    soundGuestPending,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -10426,7 +11116,14 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           other.memberPunchTarget == this.memberPunchTarget &&
           other.memberDebtEnabled == this.memberDebtEnabled &&
           other.memberDebtLimit == this.memberDebtLimit &&
-          other.memberDebtOverdueDays == this.memberDebtOverdueDays);
+          other.memberDebtOverdueDays == this.memberDebtOverdueDays &&
+          other.guestOrderingEnabled == this.guestOrderingEnabled &&
+          other.guestNoteEnabled == this.guestNoteEnabled &&
+          other.guestHoursStartMin == this.guestHoursStartMin &&
+          other.guestHoursEndMin == this.guestHoursEndMin &&
+          other.guestMaxItems == this.guestMaxItems &&
+          other.guestSessionHours == this.guestSessionHours &&
+          other.soundGuestPending == this.soundGuestPending);
 }
 
 class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
@@ -10479,6 +11176,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
   final Value<bool> memberDebtEnabled;
   final Value<int> memberDebtLimit;
   final Value<int> memberDebtOverdueDays;
+  final Value<bool> guestOrderingEnabled;
+  final Value<bool> guestNoteEnabled;
+  final Value<int> guestHoursStartMin;
+  final Value<int> guestHoursEndMin;
+  final Value<int> guestMaxItems;
+  final Value<int> guestSessionHours;
+  final Value<String?> soundGuestPending;
   final Value<int> rowid;
   const VenueSettingsCompanion({
     this.id = const Value.absent(),
@@ -10530,6 +11234,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.memberDebtEnabled = const Value.absent(),
     this.memberDebtLimit = const Value.absent(),
     this.memberDebtOverdueDays = const Value.absent(),
+    this.guestOrderingEnabled = const Value.absent(),
+    this.guestNoteEnabled = const Value.absent(),
+    this.guestHoursStartMin = const Value.absent(),
+    this.guestHoursEndMin = const Value.absent(),
+    this.guestMaxItems = const Value.absent(),
+    this.guestSessionHours = const Value.absent(),
+    this.soundGuestPending = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueSettingsCompanion.insert({
@@ -10582,6 +11293,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.memberDebtEnabled = const Value.absent(),
     this.memberDebtLimit = const Value.absent(),
     this.memberDebtOverdueDays = const Value.absent(),
+    this.guestOrderingEnabled = const Value.absent(),
+    this.guestNoteEnabled = const Value.absent(),
+    this.guestHoursStartMin = const Value.absent(),
+    this.guestHoursEndMin = const Value.absent(),
+    this.guestMaxItems = const Value.absent(),
+    this.guestSessionHours = const Value.absent(),
+    this.soundGuestPending = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id);
   static Insertable<VenueSetting> custom({
@@ -10634,6 +11352,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Expression<bool>? memberDebtEnabled,
     Expression<int>? memberDebtLimit,
     Expression<int>? memberDebtOverdueDays,
+    Expression<bool>? guestOrderingEnabled,
+    Expression<bool>? guestNoteEnabled,
+    Expression<int>? guestHoursStartMin,
+    Expression<int>? guestHoursEndMin,
+    Expression<int>? guestMaxItems,
+    Expression<int>? guestSessionHours,
+    Expression<String>? soundGuestPending,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -10696,6 +11421,15 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       if (memberDebtLimit != null) 'member_debt_limit': memberDebtLimit,
       if (memberDebtOverdueDays != null)
         'member_debt_overdue_days': memberDebtOverdueDays,
+      if (guestOrderingEnabled != null)
+        'guest_ordering_enabled': guestOrderingEnabled,
+      if (guestNoteEnabled != null) 'guest_note_enabled': guestNoteEnabled,
+      if (guestHoursStartMin != null)
+        'guest_hours_start_min': guestHoursStartMin,
+      if (guestHoursEndMin != null) 'guest_hours_end_min': guestHoursEndMin,
+      if (guestMaxItems != null) 'guest_max_items': guestMaxItems,
+      if (guestSessionHours != null) 'guest_session_hours': guestSessionHours,
+      if (soundGuestPending != null) 'sound_guest_pending': soundGuestPending,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -10750,6 +11484,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Value<bool>? memberDebtEnabled,
     Value<int>? memberDebtLimit,
     Value<int>? memberDebtOverdueDays,
+    Value<bool>? guestOrderingEnabled,
+    Value<bool>? guestNoteEnabled,
+    Value<int>? guestHoursStartMin,
+    Value<int>? guestHoursEndMin,
+    Value<int>? guestMaxItems,
+    Value<int>? guestSessionHours,
+    Value<String?>? soundGuestPending,
     Value<int>? rowid,
   }) {
     return VenueSettingsCompanion(
@@ -10806,6 +11547,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       memberDebtLimit: memberDebtLimit ?? this.memberDebtLimit,
       memberDebtOverdueDays:
           memberDebtOverdueDays ?? this.memberDebtOverdueDays,
+      guestOrderingEnabled: guestOrderingEnabled ?? this.guestOrderingEnabled,
+      guestNoteEnabled: guestNoteEnabled ?? this.guestNoteEnabled,
+      guestHoursStartMin: guestHoursStartMin ?? this.guestHoursStartMin,
+      guestHoursEndMin: guestHoursEndMin ?? this.guestHoursEndMin,
+      guestMaxItems: guestMaxItems ?? this.guestMaxItems,
+      guestSessionHours: guestSessionHours ?? this.guestSessionHours,
+      soundGuestPending: soundGuestPending ?? this.soundGuestPending,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -10970,6 +11718,29 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
         memberDebtOverdueDays.value,
       );
     }
+    if (guestOrderingEnabled.present) {
+      map['guest_ordering_enabled'] = Variable<bool>(
+        guestOrderingEnabled.value,
+      );
+    }
+    if (guestNoteEnabled.present) {
+      map['guest_note_enabled'] = Variable<bool>(guestNoteEnabled.value);
+    }
+    if (guestHoursStartMin.present) {
+      map['guest_hours_start_min'] = Variable<int>(guestHoursStartMin.value);
+    }
+    if (guestHoursEndMin.present) {
+      map['guest_hours_end_min'] = Variable<int>(guestHoursEndMin.value);
+    }
+    if (guestMaxItems.present) {
+      map['guest_max_items'] = Variable<int>(guestMaxItems.value);
+    }
+    if (guestSessionHours.present) {
+      map['guest_session_hours'] = Variable<int>(guestSessionHours.value);
+    }
+    if (soundGuestPending.present) {
+      map['sound_guest_pending'] = Variable<String>(soundGuestPending.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -11028,6 +11799,13 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
           ..write('memberDebtEnabled: $memberDebtEnabled, ')
           ..write('memberDebtLimit: $memberDebtLimit, ')
           ..write('memberDebtOverdueDays: $memberDebtOverdueDays, ')
+          ..write('guestOrderingEnabled: $guestOrderingEnabled, ')
+          ..write('guestNoteEnabled: $guestNoteEnabled, ')
+          ..write('guestHoursStartMin: $guestHoursStartMin, ')
+          ..write('guestHoursEndMin: $guestHoursEndMin, ')
+          ..write('guestMaxItems: $guestMaxItems, ')
+          ..write('guestSessionHours: $guestSessionHours, ')
+          ..write('soundGuestPending: $soundGuestPending, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -26417,6 +27195,1653 @@ class DemoStatesCompanion extends UpdateCompanion<DemoState> {
   }
 }
 
+class $GuestSessionsTable extends GuestSessions
+    with TableInfo<$GuestSessionsTable, GuestSession> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GuestSessionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tableIdMeta = const VerificationMeta(
+    'tableId',
+  );
+  @override
+  late final GeneratedColumn<String> tableId = GeneratedColumn<String>(
+    'table_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _expiresAtMeta = const VerificationMeta(
+    'expiresAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> expiresAt = GeneratedColumn<DateTime>(
+    'expires_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _closedAtMeta = const VerificationMeta(
+    'closedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> closedAt = GeneratedColumn<DateTime>(
+    'closed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    tableId,
+    startedAt,
+    expiresAt,
+    closedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'guest_sessions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<GuestSession> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('table_id')) {
+      context.handle(
+        _tableIdMeta,
+        tableId.isAcceptableOrUnknown(data['table_id']!, _tableIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tableIdMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('expires_at')) {
+      context.handle(
+        _expiresAtMeta,
+        expiresAt.isAcceptableOrUnknown(data['expires_at']!, _expiresAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_expiresAtMeta);
+    }
+    if (data.containsKey('closed_at')) {
+      context.handle(
+        _closedAtMeta,
+        closedAt.isAcceptableOrUnknown(data['closed_at']!, _closedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  GuestSession map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GuestSession(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      tableId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}table_id'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      expiresAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}expires_at'],
+      )!,
+      closedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}closed_at'],
+      ),
+    );
+  }
+
+  @override
+  $GuestSessionsTable createAlias(String alias) {
+    return $GuestSessionsTable(attachedDatabase, alias);
+  }
+}
+
+class GuestSession extends DataClass implements Insertable<GuestSession> {
+  final String id;
+  final String tableId;
+  final DateTime startedAt;
+  final DateTime expiresAt;
+  final DateTime? closedAt;
+  const GuestSession({
+    required this.id,
+    required this.tableId,
+    required this.startedAt,
+    required this.expiresAt,
+    this.closedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['table_id'] = Variable<String>(tableId);
+    map['started_at'] = Variable<DateTime>(startedAt);
+    map['expires_at'] = Variable<DateTime>(expiresAt);
+    if (!nullToAbsent || closedAt != null) {
+      map['closed_at'] = Variable<DateTime>(closedAt);
+    }
+    return map;
+  }
+
+  GuestSessionsCompanion toCompanion(bool nullToAbsent) {
+    return GuestSessionsCompanion(
+      id: Value(id),
+      tableId: Value(tableId),
+      startedAt: Value(startedAt),
+      expiresAt: Value(expiresAt),
+      closedAt: closedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(closedAt),
+    );
+  }
+
+  factory GuestSession.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GuestSession(
+      id: serializer.fromJson<String>(json['id']),
+      tableId: serializer.fromJson<String>(json['tableId']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      expiresAt: serializer.fromJson<DateTime>(json['expiresAt']),
+      closedAt: serializer.fromJson<DateTime?>(json['closedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'tableId': serializer.toJson<String>(tableId),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'expiresAt': serializer.toJson<DateTime>(expiresAt),
+      'closedAt': serializer.toJson<DateTime?>(closedAt),
+    };
+  }
+
+  GuestSession copyWith({
+    String? id,
+    String? tableId,
+    DateTime? startedAt,
+    DateTime? expiresAt,
+    Value<DateTime?> closedAt = const Value.absent(),
+  }) => GuestSession(
+    id: id ?? this.id,
+    tableId: tableId ?? this.tableId,
+    startedAt: startedAt ?? this.startedAt,
+    expiresAt: expiresAt ?? this.expiresAt,
+    closedAt: closedAt.present ? closedAt.value : this.closedAt,
+  );
+  GuestSession copyWithCompanion(GuestSessionsCompanion data) {
+    return GuestSession(
+      id: data.id.present ? data.id.value : this.id,
+      tableId: data.tableId.present ? data.tableId.value : this.tableId,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      expiresAt: data.expiresAt.present ? data.expiresAt.value : this.expiresAt,
+      closedAt: data.closedAt.present ? data.closedAt.value : this.closedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GuestSession(')
+          ..write('id: $id, ')
+          ..write('tableId: $tableId, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('expiresAt: $expiresAt, ')
+          ..write('closedAt: $closedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, tableId, startedAt, expiresAt, closedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GuestSession &&
+          other.id == this.id &&
+          other.tableId == this.tableId &&
+          other.startedAt == this.startedAt &&
+          other.expiresAt == this.expiresAt &&
+          other.closedAt == this.closedAt);
+}
+
+class GuestSessionsCompanion extends UpdateCompanion<GuestSession> {
+  final Value<String> id;
+  final Value<String> tableId;
+  final Value<DateTime> startedAt;
+  final Value<DateTime> expiresAt;
+  final Value<DateTime?> closedAt;
+  final Value<int> rowid;
+  const GuestSessionsCompanion({
+    this.id = const Value.absent(),
+    this.tableId = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.expiresAt = const Value.absent(),
+    this.closedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GuestSessionsCompanion.insert({
+    required String id,
+    required String tableId,
+    required DateTime startedAt,
+    required DateTime expiresAt,
+    this.closedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       tableId = Value(tableId),
+       startedAt = Value(startedAt),
+       expiresAt = Value(expiresAt);
+  static Insertable<GuestSession> custom({
+    Expression<String>? id,
+    Expression<String>? tableId,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? expiresAt,
+    Expression<DateTime>? closedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tableId != null) 'table_id': tableId,
+      if (startedAt != null) 'started_at': startedAt,
+      if (expiresAt != null) 'expires_at': expiresAt,
+      if (closedAt != null) 'closed_at': closedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GuestSessionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? tableId,
+    Value<DateTime>? startedAt,
+    Value<DateTime>? expiresAt,
+    Value<DateTime?>? closedAt,
+    Value<int>? rowid,
+  }) {
+    return GuestSessionsCompanion(
+      id: id ?? this.id,
+      tableId: tableId ?? this.tableId,
+      startedAt: startedAt ?? this.startedAt,
+      expiresAt: expiresAt ?? this.expiresAt,
+      closedAt: closedAt ?? this.closedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (tableId.present) {
+      map['table_id'] = Variable<String>(tableId.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (expiresAt.present) {
+      map['expires_at'] = Variable<DateTime>(expiresAt.value);
+    }
+    if (closedAt.present) {
+      map['closed_at'] = Variable<DateTime>(closedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GuestSessionsCompanion(')
+          ..write('id: $id, ')
+          ..write('tableId: $tableId, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('expiresAt: $expiresAt, ')
+          ..write('closedAt: $closedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $GuestOrdersTable extends GuestOrders
+    with TableInfo<$GuestOrdersTable, GuestOrder> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GuestOrdersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tableIdMeta = const VerificationMeta(
+    'tableId',
+  );
+  @override
+  late final GeneratedColumn<String> tableId = GeneratedColumn<String>(
+    'table_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _submittedAtMeta = const VerificationMeta(
+    'submittedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> submittedAt = GeneratedColumn<DateTime>(
+    'submitted_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _decidedAtMeta = const VerificationMeta(
+    'decidedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> decidedAt = GeneratedColumn<DateTime>(
+    'decided_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _decidedByUserIdMeta = const VerificationMeta(
+    'decidedByUserId',
+  );
+  @override
+  late final GeneratedColumn<String> decidedByUserId = GeneratedColumn<String>(
+    'decided_by_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rejectReasonCodeMeta = const VerificationMeta(
+    'rejectReasonCode',
+  );
+  @override
+  late final GeneratedColumn<String> rejectReasonCode = GeneratedColumn<String>(
+    'reject_reason_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _visitIdMeta = const VerificationMeta(
+    'visitId',
+  );
+  @override
+  late final GeneratedColumn<String> visitId = GeneratedColumn<String>(
+    'visit_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _ticketIdsJsonMeta = const VerificationMeta(
+    'ticketIdsJson',
+  );
+  @override
+  late final GeneratedColumn<String> ticketIdsJson = GeneratedColumn<String>(
+    'ticket_ids_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _subtotalMeta = const VerificationMeta(
+    'subtotal',
+  );
+  @override
+  late final GeneratedColumn<int> subtotal = GeneratedColumn<int>(
+    'subtotal',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sessionId,
+    tableId,
+    status,
+    submittedAt,
+    decidedAt,
+    decidedByUserId,
+    rejectReasonCode,
+    visitId,
+    ticketIdsJson,
+    subtotal,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'guest_orders';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<GuestOrder> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('table_id')) {
+      context.handle(
+        _tableIdMeta,
+        tableId.isAcceptableOrUnknown(data['table_id']!, _tableIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tableIdMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('submitted_at')) {
+      context.handle(
+        _submittedAtMeta,
+        submittedAt.isAcceptableOrUnknown(
+          data['submitted_at']!,
+          _submittedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_submittedAtMeta);
+    }
+    if (data.containsKey('decided_at')) {
+      context.handle(
+        _decidedAtMeta,
+        decidedAt.isAcceptableOrUnknown(data['decided_at']!, _decidedAtMeta),
+      );
+    }
+    if (data.containsKey('decided_by_user_id')) {
+      context.handle(
+        _decidedByUserIdMeta,
+        decidedByUserId.isAcceptableOrUnknown(
+          data['decided_by_user_id']!,
+          _decidedByUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reject_reason_code')) {
+      context.handle(
+        _rejectReasonCodeMeta,
+        rejectReasonCode.isAcceptableOrUnknown(
+          data['reject_reason_code']!,
+          _rejectReasonCodeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('visit_id')) {
+      context.handle(
+        _visitIdMeta,
+        visitId.isAcceptableOrUnknown(data['visit_id']!, _visitIdMeta),
+      );
+    }
+    if (data.containsKey('ticket_ids_json')) {
+      context.handle(
+        _ticketIdsJsonMeta,
+        ticketIdsJson.isAcceptableOrUnknown(
+          data['ticket_ids_json']!,
+          _ticketIdsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('subtotal')) {
+      context.handle(
+        _subtotalMeta,
+        subtotal.isAcceptableOrUnknown(data['subtotal']!, _subtotalMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  GuestOrder map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GuestOrder(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      tableId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}table_id'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      submittedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}submitted_at'],
+      )!,
+      decidedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}decided_at'],
+      ),
+      decidedByUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}decided_by_user_id'],
+      ),
+      rejectReasonCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reject_reason_code'],
+      ),
+      visitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}visit_id'],
+      ),
+      ticketIdsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ticket_ids_json'],
+      )!,
+      subtotal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}subtotal'],
+      )!,
+    );
+  }
+
+  @override
+  $GuestOrdersTable createAlias(String alias) {
+    return $GuestOrdersTable(attachedDatabase, alias);
+  }
+}
+
+class GuestOrder extends DataClass implements Insertable<GuestOrder> {
+  final String id;
+  final String sessionId;
+  final String tableId;
+  final String status;
+  final DateTime submittedAt;
+  final DateTime? decidedAt;
+  final String? decidedByUserId;
+
+  /// A code, never a sentence (ADR-0085).
+  final String? rejectReasonCode;
+
+  /// Filled on accept: the visit the lines joined and the tickets born of them.
+  final String? visitId;
+  final String ticketIdsJson;
+
+  /// Frozen at submit so the queue card renders without re-pricing a menu that
+  /// may have moved. The bill is priced by `submitOrder`, not by this.
+  final int subtotal;
+  const GuestOrder({
+    required this.id,
+    required this.sessionId,
+    required this.tableId,
+    required this.status,
+    required this.submittedAt,
+    this.decidedAt,
+    this.decidedByUserId,
+    this.rejectReasonCode,
+    this.visitId,
+    required this.ticketIdsJson,
+    required this.subtotal,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['session_id'] = Variable<String>(sessionId);
+    map['table_id'] = Variable<String>(tableId);
+    map['status'] = Variable<String>(status);
+    map['submitted_at'] = Variable<DateTime>(submittedAt);
+    if (!nullToAbsent || decidedAt != null) {
+      map['decided_at'] = Variable<DateTime>(decidedAt);
+    }
+    if (!nullToAbsent || decidedByUserId != null) {
+      map['decided_by_user_id'] = Variable<String>(decidedByUserId);
+    }
+    if (!nullToAbsent || rejectReasonCode != null) {
+      map['reject_reason_code'] = Variable<String>(rejectReasonCode);
+    }
+    if (!nullToAbsent || visitId != null) {
+      map['visit_id'] = Variable<String>(visitId);
+    }
+    map['ticket_ids_json'] = Variable<String>(ticketIdsJson);
+    map['subtotal'] = Variable<int>(subtotal);
+    return map;
+  }
+
+  GuestOrdersCompanion toCompanion(bool nullToAbsent) {
+    return GuestOrdersCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      tableId: Value(tableId),
+      status: Value(status),
+      submittedAt: Value(submittedAt),
+      decidedAt: decidedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(decidedAt),
+      decidedByUserId: decidedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(decidedByUserId),
+      rejectReasonCode: rejectReasonCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rejectReasonCode),
+      visitId: visitId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(visitId),
+      ticketIdsJson: Value(ticketIdsJson),
+      subtotal: Value(subtotal),
+    );
+  }
+
+  factory GuestOrder.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GuestOrder(
+      id: serializer.fromJson<String>(json['id']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      tableId: serializer.fromJson<String>(json['tableId']),
+      status: serializer.fromJson<String>(json['status']),
+      submittedAt: serializer.fromJson<DateTime>(json['submittedAt']),
+      decidedAt: serializer.fromJson<DateTime?>(json['decidedAt']),
+      decidedByUserId: serializer.fromJson<String?>(json['decidedByUserId']),
+      rejectReasonCode: serializer.fromJson<String?>(json['rejectReasonCode']),
+      visitId: serializer.fromJson<String?>(json['visitId']),
+      ticketIdsJson: serializer.fromJson<String>(json['ticketIdsJson']),
+      subtotal: serializer.fromJson<int>(json['subtotal']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'tableId': serializer.toJson<String>(tableId),
+      'status': serializer.toJson<String>(status),
+      'submittedAt': serializer.toJson<DateTime>(submittedAt),
+      'decidedAt': serializer.toJson<DateTime?>(decidedAt),
+      'decidedByUserId': serializer.toJson<String?>(decidedByUserId),
+      'rejectReasonCode': serializer.toJson<String?>(rejectReasonCode),
+      'visitId': serializer.toJson<String?>(visitId),
+      'ticketIdsJson': serializer.toJson<String>(ticketIdsJson),
+      'subtotal': serializer.toJson<int>(subtotal),
+    };
+  }
+
+  GuestOrder copyWith({
+    String? id,
+    String? sessionId,
+    String? tableId,
+    String? status,
+    DateTime? submittedAt,
+    Value<DateTime?> decidedAt = const Value.absent(),
+    Value<String?> decidedByUserId = const Value.absent(),
+    Value<String?> rejectReasonCode = const Value.absent(),
+    Value<String?> visitId = const Value.absent(),
+    String? ticketIdsJson,
+    int? subtotal,
+  }) => GuestOrder(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    tableId: tableId ?? this.tableId,
+    status: status ?? this.status,
+    submittedAt: submittedAt ?? this.submittedAt,
+    decidedAt: decidedAt.present ? decidedAt.value : this.decidedAt,
+    decidedByUserId: decidedByUserId.present
+        ? decidedByUserId.value
+        : this.decidedByUserId,
+    rejectReasonCode: rejectReasonCode.present
+        ? rejectReasonCode.value
+        : this.rejectReasonCode,
+    visitId: visitId.present ? visitId.value : this.visitId,
+    ticketIdsJson: ticketIdsJson ?? this.ticketIdsJson,
+    subtotal: subtotal ?? this.subtotal,
+  );
+  GuestOrder copyWithCompanion(GuestOrdersCompanion data) {
+    return GuestOrder(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      tableId: data.tableId.present ? data.tableId.value : this.tableId,
+      status: data.status.present ? data.status.value : this.status,
+      submittedAt: data.submittedAt.present
+          ? data.submittedAt.value
+          : this.submittedAt,
+      decidedAt: data.decidedAt.present ? data.decidedAt.value : this.decidedAt,
+      decidedByUserId: data.decidedByUserId.present
+          ? data.decidedByUserId.value
+          : this.decidedByUserId,
+      rejectReasonCode: data.rejectReasonCode.present
+          ? data.rejectReasonCode.value
+          : this.rejectReasonCode,
+      visitId: data.visitId.present ? data.visitId.value : this.visitId,
+      ticketIdsJson: data.ticketIdsJson.present
+          ? data.ticketIdsJson.value
+          : this.ticketIdsJson,
+      subtotal: data.subtotal.present ? data.subtotal.value : this.subtotal,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GuestOrder(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('tableId: $tableId, ')
+          ..write('status: $status, ')
+          ..write('submittedAt: $submittedAt, ')
+          ..write('decidedAt: $decidedAt, ')
+          ..write('decidedByUserId: $decidedByUserId, ')
+          ..write('rejectReasonCode: $rejectReasonCode, ')
+          ..write('visitId: $visitId, ')
+          ..write('ticketIdsJson: $ticketIdsJson, ')
+          ..write('subtotal: $subtotal')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    sessionId,
+    tableId,
+    status,
+    submittedAt,
+    decidedAt,
+    decidedByUserId,
+    rejectReasonCode,
+    visitId,
+    ticketIdsJson,
+    subtotal,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GuestOrder &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.tableId == this.tableId &&
+          other.status == this.status &&
+          other.submittedAt == this.submittedAt &&
+          other.decidedAt == this.decidedAt &&
+          other.decidedByUserId == this.decidedByUserId &&
+          other.rejectReasonCode == this.rejectReasonCode &&
+          other.visitId == this.visitId &&
+          other.ticketIdsJson == this.ticketIdsJson &&
+          other.subtotal == this.subtotal);
+}
+
+class GuestOrdersCompanion extends UpdateCompanion<GuestOrder> {
+  final Value<String> id;
+  final Value<String> sessionId;
+  final Value<String> tableId;
+  final Value<String> status;
+  final Value<DateTime> submittedAt;
+  final Value<DateTime?> decidedAt;
+  final Value<String?> decidedByUserId;
+  final Value<String?> rejectReasonCode;
+  final Value<String?> visitId;
+  final Value<String> ticketIdsJson;
+  final Value<int> subtotal;
+  final Value<int> rowid;
+  const GuestOrdersCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.tableId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.submittedAt = const Value.absent(),
+    this.decidedAt = const Value.absent(),
+    this.decidedByUserId = const Value.absent(),
+    this.rejectReasonCode = const Value.absent(),
+    this.visitId = const Value.absent(),
+    this.ticketIdsJson = const Value.absent(),
+    this.subtotal = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GuestOrdersCompanion.insert({
+    required String id,
+    required String sessionId,
+    required String tableId,
+    this.status = const Value.absent(),
+    required DateTime submittedAt,
+    this.decidedAt = const Value.absent(),
+    this.decidedByUserId = const Value.absent(),
+    this.rejectReasonCode = const Value.absent(),
+    this.visitId = const Value.absent(),
+    this.ticketIdsJson = const Value.absent(),
+    this.subtotal = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       sessionId = Value(sessionId),
+       tableId = Value(tableId),
+       submittedAt = Value(submittedAt);
+  static Insertable<GuestOrder> custom({
+    Expression<String>? id,
+    Expression<String>? sessionId,
+    Expression<String>? tableId,
+    Expression<String>? status,
+    Expression<DateTime>? submittedAt,
+    Expression<DateTime>? decidedAt,
+    Expression<String>? decidedByUserId,
+    Expression<String>? rejectReasonCode,
+    Expression<String>? visitId,
+    Expression<String>? ticketIdsJson,
+    Expression<int>? subtotal,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (tableId != null) 'table_id': tableId,
+      if (status != null) 'status': status,
+      if (submittedAt != null) 'submitted_at': submittedAt,
+      if (decidedAt != null) 'decided_at': decidedAt,
+      if (decidedByUserId != null) 'decided_by_user_id': decidedByUserId,
+      if (rejectReasonCode != null) 'reject_reason_code': rejectReasonCode,
+      if (visitId != null) 'visit_id': visitId,
+      if (ticketIdsJson != null) 'ticket_ids_json': ticketIdsJson,
+      if (subtotal != null) 'subtotal': subtotal,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GuestOrdersCompanion copyWith({
+    Value<String>? id,
+    Value<String>? sessionId,
+    Value<String>? tableId,
+    Value<String>? status,
+    Value<DateTime>? submittedAt,
+    Value<DateTime?>? decidedAt,
+    Value<String?>? decidedByUserId,
+    Value<String?>? rejectReasonCode,
+    Value<String?>? visitId,
+    Value<String>? ticketIdsJson,
+    Value<int>? subtotal,
+    Value<int>? rowid,
+  }) {
+    return GuestOrdersCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      tableId: tableId ?? this.tableId,
+      status: status ?? this.status,
+      submittedAt: submittedAt ?? this.submittedAt,
+      decidedAt: decidedAt ?? this.decidedAt,
+      decidedByUserId: decidedByUserId ?? this.decidedByUserId,
+      rejectReasonCode: rejectReasonCode ?? this.rejectReasonCode,
+      visitId: visitId ?? this.visitId,
+      ticketIdsJson: ticketIdsJson ?? this.ticketIdsJson,
+      subtotal: subtotal ?? this.subtotal,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (tableId.present) {
+      map['table_id'] = Variable<String>(tableId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (submittedAt.present) {
+      map['submitted_at'] = Variable<DateTime>(submittedAt.value);
+    }
+    if (decidedAt.present) {
+      map['decided_at'] = Variable<DateTime>(decidedAt.value);
+    }
+    if (decidedByUserId.present) {
+      map['decided_by_user_id'] = Variable<String>(decidedByUserId.value);
+    }
+    if (rejectReasonCode.present) {
+      map['reject_reason_code'] = Variable<String>(rejectReasonCode.value);
+    }
+    if (visitId.present) {
+      map['visit_id'] = Variable<String>(visitId.value);
+    }
+    if (ticketIdsJson.present) {
+      map['ticket_ids_json'] = Variable<String>(ticketIdsJson.value);
+    }
+    if (subtotal.present) {
+      map['subtotal'] = Variable<int>(subtotal.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GuestOrdersCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('tableId: $tableId, ')
+          ..write('status: $status, ')
+          ..write('submittedAt: $submittedAt, ')
+          ..write('decidedAt: $decidedAt, ')
+          ..write('decidedByUserId: $decidedByUserId, ')
+          ..write('rejectReasonCode: $rejectReasonCode, ')
+          ..write('visitId: $visitId, ')
+          ..write('ticketIdsJson: $ticketIdsJson, ')
+          ..write('subtotal: $subtotal, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $GuestOrderLinesTable extends GuestOrderLines
+    with TableInfo<$GuestOrderLinesTable, GuestOrderLine> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GuestOrderLinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _orderIdMeta = const VerificationMeta(
+    'orderId',
+  );
+  @override
+  late final GeneratedColumn<String> orderId = GeneratedColumn<String>(
+    'order_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _variantNameMeta = const VerificationMeta(
+    'variantName',
+  );
+  @override
+  late final GeneratedColumn<String> variantName = GeneratedColumn<String>(
+    'variant_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _courseMeta = const VerificationMeta('course');
+  @override
+  late final GeneratedColumn<String> course = GeneratedColumn<String>(
+    'course',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('mains'),
+  );
+  static const VerificationMeta _qtyMeta = const VerificationMeta('qty');
+  @override
+  late final GeneratedColumn<int> qty = GeneratedColumn<int>(
+    'qty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _modifiersJsonMeta = const VerificationMeta(
+    'modifiersJson',
+  );
+  @override
+  late final GeneratedColumn<String> modifiersJson = GeneratedColumn<String>(
+    'modifiers_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _unitPriceMeta = const VerificationMeta(
+    'unitPrice',
+  );
+  @override
+  late final GeneratedColumn<int> unitPrice = GeneratedColumn<int>(
+    'unit_price',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    orderId,
+    itemId,
+    name,
+    variantName,
+    course,
+    qty,
+    modifiersJson,
+    note,
+    unitPrice,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'guest_order_lines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<GuestOrderLine> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('order_id')) {
+      context.handle(
+        _orderIdMeta,
+        orderId.isAcceptableOrUnknown(data['order_id']!, _orderIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_orderIdMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('variant_name')) {
+      context.handle(
+        _variantNameMeta,
+        variantName.isAcceptableOrUnknown(
+          data['variant_name']!,
+          _variantNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('course')) {
+      context.handle(
+        _courseMeta,
+        course.isAcceptableOrUnknown(data['course']!, _courseMeta),
+      );
+    }
+    if (data.containsKey('qty')) {
+      context.handle(
+        _qtyMeta,
+        qty.isAcceptableOrUnknown(data['qty']!, _qtyMeta),
+      );
+    }
+    if (data.containsKey('modifiers_json')) {
+      context.handle(
+        _modifiersJsonMeta,
+        modifiersJson.isAcceptableOrUnknown(
+          data['modifiers_json']!,
+          _modifiersJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('unit_price')) {
+      context.handle(
+        _unitPriceMeta,
+        unitPrice.isAcceptableOrUnknown(data['unit_price']!, _unitPriceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_unitPriceMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  GuestOrderLine map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GuestOrderLine(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      orderId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}order_id'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      variantName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}variant_name'],
+      )!,
+      course: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}course'],
+      )!,
+      qty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}qty'],
+      )!,
+      modifiersJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}modifiers_json'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      unitPrice: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}unit_price'],
+      )!,
+    );
+  }
+
+  @override
+  $GuestOrderLinesTable createAlias(String alias) {
+    return $GuestOrderLinesTable(attachedDatabase, alias);
+  }
+}
+
+class GuestOrderLine extends DataClass implements Insertable<GuestOrderLine> {
+  final String id;
+  final String orderId;
+  final String itemId;
+  final String name;
+  final String variantName;
+  final String course;
+  final int qty;
+
+  /// `[{"optionId": "..."}]` — same wire shape the staff order path sends.
+  final String modifiersJson;
+  final String? note;
+  final int unitPrice;
+  const GuestOrderLine({
+    required this.id,
+    required this.orderId,
+    required this.itemId,
+    required this.name,
+    required this.variantName,
+    required this.course,
+    required this.qty,
+    required this.modifiersJson,
+    this.note,
+    required this.unitPrice,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['order_id'] = Variable<String>(orderId);
+    map['item_id'] = Variable<String>(itemId);
+    map['name'] = Variable<String>(name);
+    map['variant_name'] = Variable<String>(variantName);
+    map['course'] = Variable<String>(course);
+    map['qty'] = Variable<int>(qty);
+    map['modifiers_json'] = Variable<String>(modifiersJson);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['unit_price'] = Variable<int>(unitPrice);
+    return map;
+  }
+
+  GuestOrderLinesCompanion toCompanion(bool nullToAbsent) {
+    return GuestOrderLinesCompanion(
+      id: Value(id),
+      orderId: Value(orderId),
+      itemId: Value(itemId),
+      name: Value(name),
+      variantName: Value(variantName),
+      course: Value(course),
+      qty: Value(qty),
+      modifiersJson: Value(modifiersJson),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      unitPrice: Value(unitPrice),
+    );
+  }
+
+  factory GuestOrderLine.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GuestOrderLine(
+      id: serializer.fromJson<String>(json['id']),
+      orderId: serializer.fromJson<String>(json['orderId']),
+      itemId: serializer.fromJson<String>(json['itemId']),
+      name: serializer.fromJson<String>(json['name']),
+      variantName: serializer.fromJson<String>(json['variantName']),
+      course: serializer.fromJson<String>(json['course']),
+      qty: serializer.fromJson<int>(json['qty']),
+      modifiersJson: serializer.fromJson<String>(json['modifiersJson']),
+      note: serializer.fromJson<String?>(json['note']),
+      unitPrice: serializer.fromJson<int>(json['unitPrice']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'orderId': serializer.toJson<String>(orderId),
+      'itemId': serializer.toJson<String>(itemId),
+      'name': serializer.toJson<String>(name),
+      'variantName': serializer.toJson<String>(variantName),
+      'course': serializer.toJson<String>(course),
+      'qty': serializer.toJson<int>(qty),
+      'modifiersJson': serializer.toJson<String>(modifiersJson),
+      'note': serializer.toJson<String?>(note),
+      'unitPrice': serializer.toJson<int>(unitPrice),
+    };
+  }
+
+  GuestOrderLine copyWith({
+    String? id,
+    String? orderId,
+    String? itemId,
+    String? name,
+    String? variantName,
+    String? course,
+    int? qty,
+    String? modifiersJson,
+    Value<String?> note = const Value.absent(),
+    int? unitPrice,
+  }) => GuestOrderLine(
+    id: id ?? this.id,
+    orderId: orderId ?? this.orderId,
+    itemId: itemId ?? this.itemId,
+    name: name ?? this.name,
+    variantName: variantName ?? this.variantName,
+    course: course ?? this.course,
+    qty: qty ?? this.qty,
+    modifiersJson: modifiersJson ?? this.modifiersJson,
+    note: note.present ? note.value : this.note,
+    unitPrice: unitPrice ?? this.unitPrice,
+  );
+  GuestOrderLine copyWithCompanion(GuestOrderLinesCompanion data) {
+    return GuestOrderLine(
+      id: data.id.present ? data.id.value : this.id,
+      orderId: data.orderId.present ? data.orderId.value : this.orderId,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      name: data.name.present ? data.name.value : this.name,
+      variantName: data.variantName.present
+          ? data.variantName.value
+          : this.variantName,
+      course: data.course.present ? data.course.value : this.course,
+      qty: data.qty.present ? data.qty.value : this.qty,
+      modifiersJson: data.modifiersJson.present
+          ? data.modifiersJson.value
+          : this.modifiersJson,
+      note: data.note.present ? data.note.value : this.note,
+      unitPrice: data.unitPrice.present ? data.unitPrice.value : this.unitPrice,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GuestOrderLine(')
+          ..write('id: $id, ')
+          ..write('orderId: $orderId, ')
+          ..write('itemId: $itemId, ')
+          ..write('name: $name, ')
+          ..write('variantName: $variantName, ')
+          ..write('course: $course, ')
+          ..write('qty: $qty, ')
+          ..write('modifiersJson: $modifiersJson, ')
+          ..write('note: $note, ')
+          ..write('unitPrice: $unitPrice')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    orderId,
+    itemId,
+    name,
+    variantName,
+    course,
+    qty,
+    modifiersJson,
+    note,
+    unitPrice,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GuestOrderLine &&
+          other.id == this.id &&
+          other.orderId == this.orderId &&
+          other.itemId == this.itemId &&
+          other.name == this.name &&
+          other.variantName == this.variantName &&
+          other.course == this.course &&
+          other.qty == this.qty &&
+          other.modifiersJson == this.modifiersJson &&
+          other.note == this.note &&
+          other.unitPrice == this.unitPrice);
+}
+
+class GuestOrderLinesCompanion extends UpdateCompanion<GuestOrderLine> {
+  final Value<String> id;
+  final Value<String> orderId;
+  final Value<String> itemId;
+  final Value<String> name;
+  final Value<String> variantName;
+  final Value<String> course;
+  final Value<int> qty;
+  final Value<String> modifiersJson;
+  final Value<String?> note;
+  final Value<int> unitPrice;
+  final Value<int> rowid;
+  const GuestOrderLinesCompanion({
+    this.id = const Value.absent(),
+    this.orderId = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.variantName = const Value.absent(),
+    this.course = const Value.absent(),
+    this.qty = const Value.absent(),
+    this.modifiersJson = const Value.absent(),
+    this.note = const Value.absent(),
+    this.unitPrice = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GuestOrderLinesCompanion.insert({
+    required String id,
+    required String orderId,
+    required String itemId,
+    required String name,
+    this.variantName = const Value.absent(),
+    this.course = const Value.absent(),
+    this.qty = const Value.absent(),
+    this.modifiersJson = const Value.absent(),
+    this.note = const Value.absent(),
+    required int unitPrice,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       orderId = Value(orderId),
+       itemId = Value(itemId),
+       name = Value(name),
+       unitPrice = Value(unitPrice);
+  static Insertable<GuestOrderLine> custom({
+    Expression<String>? id,
+    Expression<String>? orderId,
+    Expression<String>? itemId,
+    Expression<String>? name,
+    Expression<String>? variantName,
+    Expression<String>? course,
+    Expression<int>? qty,
+    Expression<String>? modifiersJson,
+    Expression<String>? note,
+    Expression<int>? unitPrice,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (orderId != null) 'order_id': orderId,
+      if (itemId != null) 'item_id': itemId,
+      if (name != null) 'name': name,
+      if (variantName != null) 'variant_name': variantName,
+      if (course != null) 'course': course,
+      if (qty != null) 'qty': qty,
+      if (modifiersJson != null) 'modifiers_json': modifiersJson,
+      if (note != null) 'note': note,
+      if (unitPrice != null) 'unit_price': unitPrice,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GuestOrderLinesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? orderId,
+    Value<String>? itemId,
+    Value<String>? name,
+    Value<String>? variantName,
+    Value<String>? course,
+    Value<int>? qty,
+    Value<String>? modifiersJson,
+    Value<String?>? note,
+    Value<int>? unitPrice,
+    Value<int>? rowid,
+  }) {
+    return GuestOrderLinesCompanion(
+      id: id ?? this.id,
+      orderId: orderId ?? this.orderId,
+      itemId: itemId ?? this.itemId,
+      name: name ?? this.name,
+      variantName: variantName ?? this.variantName,
+      course: course ?? this.course,
+      qty: qty ?? this.qty,
+      modifiersJson: modifiersJson ?? this.modifiersJson,
+      note: note ?? this.note,
+      unitPrice: unitPrice ?? this.unitPrice,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (orderId.present) {
+      map['order_id'] = Variable<String>(orderId.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (variantName.present) {
+      map['variant_name'] = Variable<String>(variantName.value);
+    }
+    if (course.present) {
+      map['course'] = Variable<String>(course.value);
+    }
+    if (qty.present) {
+      map['qty'] = Variable<int>(qty.value);
+    }
+    if (modifiersJson.present) {
+      map['modifiers_json'] = Variable<String>(modifiersJson.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (unitPrice.present) {
+      map['unit_price'] = Variable<int>(unitPrice.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GuestOrderLinesCompanion(')
+          ..write('id: $id, ')
+          ..write('orderId: $orderId, ')
+          ..write('itemId: $itemId, ')
+          ..write('name: $name, ')
+          ..write('variantName: $variantName, ')
+          ..write('course: $course, ')
+          ..write('qty: $qty, ')
+          ..write('modifiersJson: $modifiersJson, ')
+          ..write('note: $note, ')
+          ..write('unitPrice: $unitPrice, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -26468,6 +28893,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MemberDebtsTable memberDebts = $MemberDebtsTable(this);
   late final $ShiftsTable shifts = $ShiftsTable(this);
   late final $DemoStatesTable demoStates = $DemoStatesTable(this);
+  late final $GuestSessionsTable guestSessions = $GuestSessionsTable(this);
+  late final $GuestOrdersTable guestOrders = $GuestOrdersTable(this);
+  late final $GuestOrderLinesTable guestOrderLines = $GuestOrderLinesTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -26512,6 +28942,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     memberDebts,
     shifts,
     demoStates,
+    guestSessions,
+    guestOrders,
+    guestOrderLines,
   ];
 }
 
@@ -27241,6 +29674,8 @@ typedef $$VenueTablesTableCreateCompanionBuilder =
       Value<String?> currentVisitId,
       Value<DateTime?> billClosedAt,
       Value<String?> moneyState,
+      Value<bool> guestOrderingEnabled,
+      Value<String> guestCode,
       Value<int> rowid,
     });
 typedef $$VenueTablesTableUpdateCompanionBuilder =
@@ -27266,6 +29701,8 @@ typedef $$VenueTablesTableUpdateCompanionBuilder =
       Value<String?> currentVisitId,
       Value<DateTime?> billClosedAt,
       Value<String?> moneyState,
+      Value<bool> guestOrderingEnabled,
+      Value<String> guestCode,
       Value<int> rowid,
     });
 
@@ -27380,6 +29817,16 @@ class $$VenueTablesTableFilterComposer
 
   ColumnFilters<String> get moneyState => $composableBuilder(
     column: $table.moneyState,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get guestOrderingEnabled => $composableBuilder(
+    column: $table.guestOrderingEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get guestCode => $composableBuilder(
+    column: $table.guestCode,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -27497,6 +29944,16 @@ class $$VenueTablesTableOrderingComposer
     column: $table.moneyState,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get guestOrderingEnabled => $composableBuilder(
+    column: $table.guestOrderingEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get guestCode => $composableBuilder(
+    column: $table.guestCode,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VenueTablesTableAnnotationComposer
@@ -27590,6 +30047,14 @@ class $$VenueTablesTableAnnotationComposer
     column: $table.moneyState,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get guestOrderingEnabled => $composableBuilder(
+    column: $table.guestOrderingEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get guestCode =>
+      $composableBuilder(column: $table.guestCode, builder: (column) => column);
 }
 
 class $$VenueTablesTableTableManager
@@ -27644,6 +30109,8 @@ class $$VenueTablesTableTableManager
                 Value<String?> currentVisitId = const Value.absent(),
                 Value<DateTime?> billClosedAt = const Value.absent(),
                 Value<String?> moneyState = const Value.absent(),
+                Value<bool> guestOrderingEnabled = const Value.absent(),
+                Value<String> guestCode = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueTablesCompanion(
                 id: id,
@@ -27667,6 +30134,8 @@ class $$VenueTablesTableTableManager
                 currentVisitId: currentVisitId,
                 billClosedAt: billClosedAt,
                 moneyState: moneyState,
+                guestOrderingEnabled: guestOrderingEnabled,
+                guestCode: guestCode,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -27692,6 +30161,8 @@ class $$VenueTablesTableTableManager
                 Value<String?> currentVisitId = const Value.absent(),
                 Value<DateTime?> billClosedAt = const Value.absent(),
                 Value<String?> moneyState = const Value.absent(),
+                Value<bool> guestOrderingEnabled = const Value.absent(),
+                Value<String> guestCode = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueTablesCompanion.insert(
                 id: id,
@@ -27715,6 +30186,8 @@ class $$VenueTablesTableTableManager
                 currentVisitId: currentVisitId,
                 billClosedAt: billClosedAt,
                 moneyState: moneyState,
+                guestOrderingEnabled: guestOrderingEnabled,
+                guestCode: guestCode,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -28398,6 +30871,11 @@ typedef $$MenuItemsTableCreateCompanionBuilder =
       Value<bool> unavailable,
       Value<Uint8List?> photo,
       Value<int> photoRev,
+      Value<bool> alcohol,
+      Value<bool> guestVisible,
+      Value<bool> guestFeatured,
+      Value<String> guestStockOverride,
+      Value<DateTime?> guestOverrideAt,
       Value<int> rowid,
     });
 typedef $$MenuItemsTableUpdateCompanionBuilder =
@@ -28416,6 +30894,11 @@ typedef $$MenuItemsTableUpdateCompanionBuilder =
       Value<bool> unavailable,
       Value<Uint8List?> photo,
       Value<int> photoRev,
+      Value<bool> alcohol,
+      Value<bool> guestVisible,
+      Value<bool> guestFeatured,
+      Value<String> guestStockOverride,
+      Value<DateTime?> guestOverrideAt,
       Value<int> rowid,
     });
 
@@ -28495,6 +30978,31 @@ class $$MenuItemsTableFilterComposer
 
   ColumnFilters<int> get photoRev => $composableBuilder(
     column: $table.photoRev,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get alcohol => $composableBuilder(
+    column: $table.alcohol,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get guestVisible => $composableBuilder(
+    column: $table.guestVisible,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get guestFeatured => $composableBuilder(
+    column: $table.guestFeatured,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get guestStockOverride => $composableBuilder(
+    column: $table.guestStockOverride,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get guestOverrideAt => $composableBuilder(
+    column: $table.guestOverrideAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -28577,6 +31085,31 @@ class $$MenuItemsTableOrderingComposer
     column: $table.photoRev,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get alcohol => $composableBuilder(
+    column: $table.alcohol,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get guestVisible => $composableBuilder(
+    column: $table.guestVisible,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get guestFeatured => $composableBuilder(
+    column: $table.guestFeatured,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get guestStockOverride => $composableBuilder(
+    column: $table.guestStockOverride,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get guestOverrideAt => $composableBuilder(
+    column: $table.guestOverrideAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MenuItemsTableAnnotationComposer
@@ -28643,6 +31176,29 @@ class $$MenuItemsTableAnnotationComposer
 
   GeneratedColumn<int> get photoRev =>
       $composableBuilder(column: $table.photoRev, builder: (column) => column);
+
+  GeneratedColumn<bool> get alcohol =>
+      $composableBuilder(column: $table.alcohol, builder: (column) => column);
+
+  GeneratedColumn<bool> get guestVisible => $composableBuilder(
+    column: $table.guestVisible,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get guestFeatured => $composableBuilder(
+    column: $table.guestFeatured,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get guestStockOverride => $composableBuilder(
+    column: $table.guestStockOverride,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get guestOverrideAt => $composableBuilder(
+    column: $table.guestOverrideAt,
+    builder: (column) => column,
+  );
 }
 
 class $$MenuItemsTableTableManager
@@ -28687,6 +31243,11 @@ class $$MenuItemsTableTableManager
                 Value<bool> unavailable = const Value.absent(),
                 Value<Uint8List?> photo = const Value.absent(),
                 Value<int> photoRev = const Value.absent(),
+                Value<bool> alcohol = const Value.absent(),
+                Value<bool> guestVisible = const Value.absent(),
+                Value<bool> guestFeatured = const Value.absent(),
+                Value<String> guestStockOverride = const Value.absent(),
+                Value<DateTime?> guestOverrideAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MenuItemsCompanion(
                 id: id,
@@ -28703,6 +31264,11 @@ class $$MenuItemsTableTableManager
                 unavailable: unavailable,
                 photo: photo,
                 photoRev: photoRev,
+                alcohol: alcohol,
+                guestVisible: guestVisible,
+                guestFeatured: guestFeatured,
+                guestStockOverride: guestStockOverride,
+                guestOverrideAt: guestOverrideAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -28721,6 +31287,11 @@ class $$MenuItemsTableTableManager
                 Value<bool> unavailable = const Value.absent(),
                 Value<Uint8List?> photo = const Value.absent(),
                 Value<int> photoRev = const Value.absent(),
+                Value<bool> alcohol = const Value.absent(),
+                Value<bool> guestVisible = const Value.absent(),
+                Value<bool> guestFeatured = const Value.absent(),
+                Value<String> guestStockOverride = const Value.absent(),
+                Value<DateTime?> guestOverrideAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MenuItemsCompanion.insert(
                 id: id,
@@ -28737,6 +31308,11 @@ class $$MenuItemsTableTableManager
                 unavailable: unavailable,
                 photo: photo,
                 photoRev: photoRev,
+                alcohol: alcohol,
+                guestVisible: guestVisible,
+                guestFeatured: guestFeatured,
+                guestStockOverride: guestStockOverride,
+                guestOverrideAt: guestOverrideAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -30493,6 +33069,13 @@ typedef $$VenueSettingsTableCreateCompanionBuilder =
       Value<bool> memberDebtEnabled,
       Value<int> memberDebtLimit,
       Value<int> memberDebtOverdueDays,
+      Value<bool> guestOrderingEnabled,
+      Value<bool> guestNoteEnabled,
+      Value<int> guestHoursStartMin,
+      Value<int> guestHoursEndMin,
+      Value<int> guestMaxItems,
+      Value<int> guestSessionHours,
+      Value<String?> soundGuestPending,
       Value<int> rowid,
     });
 typedef $$VenueSettingsTableUpdateCompanionBuilder =
@@ -30546,6 +33129,13 @@ typedef $$VenueSettingsTableUpdateCompanionBuilder =
       Value<bool> memberDebtEnabled,
       Value<int> memberDebtLimit,
       Value<int> memberDebtOverdueDays,
+      Value<bool> guestOrderingEnabled,
+      Value<bool> guestNoteEnabled,
+      Value<int> guestHoursStartMin,
+      Value<int> guestHoursEndMin,
+      Value<int> guestMaxItems,
+      Value<int> guestSessionHours,
+      Value<String?> soundGuestPending,
       Value<int> rowid,
     });
 
@@ -30800,6 +33390,41 @@ class $$VenueSettingsTableFilterComposer
 
   ColumnFilters<int> get memberDebtOverdueDays => $composableBuilder(
     column: $table.memberDebtOverdueDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get guestOrderingEnabled => $composableBuilder(
+    column: $table.guestOrderingEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get guestNoteEnabled => $composableBuilder(
+    column: $table.guestNoteEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get guestHoursStartMin => $composableBuilder(
+    column: $table.guestHoursStartMin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get guestHoursEndMin => $composableBuilder(
+    column: $table.guestHoursEndMin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get guestMaxItems => $composableBuilder(
+    column: $table.guestMaxItems,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get guestSessionHours => $composableBuilder(
+    column: $table.guestSessionHours,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get soundGuestPending => $composableBuilder(
+    column: $table.soundGuestPending,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -31057,6 +33682,41 @@ class $$VenueSettingsTableOrderingComposer
     column: $table.memberDebtOverdueDays,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get guestOrderingEnabled => $composableBuilder(
+    column: $table.guestOrderingEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get guestNoteEnabled => $composableBuilder(
+    column: $table.guestNoteEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get guestHoursStartMin => $composableBuilder(
+    column: $table.guestHoursStartMin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get guestHoursEndMin => $composableBuilder(
+    column: $table.guestHoursEndMin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get guestMaxItems => $composableBuilder(
+    column: $table.guestMaxItems,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get guestSessionHours => $composableBuilder(
+    column: $table.guestSessionHours,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get soundGuestPending => $composableBuilder(
+    column: $table.soundGuestPending,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VenueSettingsTableAnnotationComposer
@@ -31298,6 +33958,41 @@ class $$VenueSettingsTableAnnotationComposer
     column: $table.memberDebtOverdueDays,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get guestOrderingEnabled => $composableBuilder(
+    column: $table.guestOrderingEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get guestNoteEnabled => $composableBuilder(
+    column: $table.guestNoteEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get guestHoursStartMin => $composableBuilder(
+    column: $table.guestHoursStartMin,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get guestHoursEndMin => $composableBuilder(
+    column: $table.guestHoursEndMin,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get guestMaxItems => $composableBuilder(
+    column: $table.guestMaxItems,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get guestSessionHours => $composableBuilder(
+    column: $table.guestSessionHours,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get soundGuestPending => $composableBuilder(
+    column: $table.soundGuestPending,
+    builder: (column) => column,
+  );
 }
 
 class $$VenueSettingsTableTableManager
@@ -31380,6 +34075,13 @@ class $$VenueSettingsTableTableManager
                 Value<bool> memberDebtEnabled = const Value.absent(),
                 Value<int> memberDebtLimit = const Value.absent(),
                 Value<int> memberDebtOverdueDays = const Value.absent(),
+                Value<bool> guestOrderingEnabled = const Value.absent(),
+                Value<bool> guestNoteEnabled = const Value.absent(),
+                Value<int> guestHoursStartMin = const Value.absent(),
+                Value<int> guestHoursEndMin = const Value.absent(),
+                Value<int> guestMaxItems = const Value.absent(),
+                Value<int> guestSessionHours = const Value.absent(),
+                Value<String?> soundGuestPending = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion(
                 id: id,
@@ -31431,6 +34133,13 @@ class $$VenueSettingsTableTableManager
                 memberDebtEnabled: memberDebtEnabled,
                 memberDebtLimit: memberDebtLimit,
                 memberDebtOverdueDays: memberDebtOverdueDays,
+                guestOrderingEnabled: guestOrderingEnabled,
+                guestNoteEnabled: guestNoteEnabled,
+                guestHoursStartMin: guestHoursStartMin,
+                guestHoursEndMin: guestHoursEndMin,
+                guestMaxItems: guestMaxItems,
+                guestSessionHours: guestSessionHours,
+                soundGuestPending: soundGuestPending,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -31484,6 +34193,13 @@ class $$VenueSettingsTableTableManager
                 Value<bool> memberDebtEnabled = const Value.absent(),
                 Value<int> memberDebtLimit = const Value.absent(),
                 Value<int> memberDebtOverdueDays = const Value.absent(),
+                Value<bool> guestOrderingEnabled = const Value.absent(),
+                Value<bool> guestNoteEnabled = const Value.absent(),
+                Value<int> guestHoursStartMin = const Value.absent(),
+                Value<int> guestHoursEndMin = const Value.absent(),
+                Value<int> guestMaxItems = const Value.absent(),
+                Value<int> guestSessionHours = const Value.absent(),
+                Value<String?> soundGuestPending = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion.insert(
                 id: id,
@@ -31535,6 +34251,13 @@ class $$VenueSettingsTableTableManager
                 memberDebtEnabled: memberDebtEnabled,
                 memberDebtLimit: memberDebtLimit,
                 memberDebtOverdueDays: memberDebtOverdueDays,
+                guestOrderingEnabled: guestOrderingEnabled,
+                guestNoteEnabled: guestNoteEnabled,
+                guestHoursStartMin: guestHoursStartMin,
+                guestHoursEndMin: guestHoursEndMin,
+                guestMaxItems: guestMaxItems,
+                guestSessionHours: guestSessionHours,
+                soundGuestPending: soundGuestPending,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -39075,6 +41798,833 @@ typedef $$DemoStatesTableProcessedTableManager =
       DemoState,
       PrefetchHooks Function()
     >;
+typedef $$GuestSessionsTableCreateCompanionBuilder =
+    GuestSessionsCompanion Function({
+      required String id,
+      required String tableId,
+      required DateTime startedAt,
+      required DateTime expiresAt,
+      Value<DateTime?> closedAt,
+      Value<int> rowid,
+    });
+typedef $$GuestSessionsTableUpdateCompanionBuilder =
+    GuestSessionsCompanion Function({
+      Value<String> id,
+      Value<String> tableId,
+      Value<DateTime> startedAt,
+      Value<DateTime> expiresAt,
+      Value<DateTime?> closedAt,
+      Value<int> rowid,
+    });
+
+class $$GuestSessionsTableFilterComposer
+    extends Composer<_$AppDatabase, $GuestSessionsTable> {
+  $$GuestSessionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tableId => $composableBuilder(
+    column: $table.tableId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get closedAt => $composableBuilder(
+    column: $table.closedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$GuestSessionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $GuestSessionsTable> {
+  $$GuestSessionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tableId => $composableBuilder(
+    column: $table.tableId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get closedAt => $composableBuilder(
+    column: $table.closedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$GuestSessionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GuestSessionsTable> {
+  $$GuestSessionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get tableId =>
+      $composableBuilder(column: $table.tableId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get expiresAt =>
+      $composableBuilder(column: $table.expiresAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get closedAt =>
+      $composableBuilder(column: $table.closedAt, builder: (column) => column);
+}
+
+class $$GuestSessionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $GuestSessionsTable,
+          GuestSession,
+          $$GuestSessionsTableFilterComposer,
+          $$GuestSessionsTableOrderingComposer,
+          $$GuestSessionsTableAnnotationComposer,
+          $$GuestSessionsTableCreateCompanionBuilder,
+          $$GuestSessionsTableUpdateCompanionBuilder,
+          (
+            GuestSession,
+            BaseReferences<_$AppDatabase, $GuestSessionsTable, GuestSession>,
+          ),
+          GuestSession,
+          PrefetchHooks Function()
+        > {
+  $$GuestSessionsTableTableManager(_$AppDatabase db, $GuestSessionsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GuestSessionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GuestSessionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GuestSessionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> tableId = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<DateTime> expiresAt = const Value.absent(),
+                Value<DateTime?> closedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => GuestSessionsCompanion(
+                id: id,
+                tableId: tableId,
+                startedAt: startedAt,
+                expiresAt: expiresAt,
+                closedAt: closedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String tableId,
+                required DateTime startedAt,
+                required DateTime expiresAt,
+                Value<DateTime?> closedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => GuestSessionsCompanion.insert(
+                id: id,
+                tableId: tableId,
+                startedAt: startedAt,
+                expiresAt: expiresAt,
+                closedAt: closedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$GuestSessionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $GuestSessionsTable,
+      GuestSession,
+      $$GuestSessionsTableFilterComposer,
+      $$GuestSessionsTableOrderingComposer,
+      $$GuestSessionsTableAnnotationComposer,
+      $$GuestSessionsTableCreateCompanionBuilder,
+      $$GuestSessionsTableUpdateCompanionBuilder,
+      (
+        GuestSession,
+        BaseReferences<_$AppDatabase, $GuestSessionsTable, GuestSession>,
+      ),
+      GuestSession,
+      PrefetchHooks Function()
+    >;
+typedef $$GuestOrdersTableCreateCompanionBuilder =
+    GuestOrdersCompanion Function({
+      required String id,
+      required String sessionId,
+      required String tableId,
+      Value<String> status,
+      required DateTime submittedAt,
+      Value<DateTime?> decidedAt,
+      Value<String?> decidedByUserId,
+      Value<String?> rejectReasonCode,
+      Value<String?> visitId,
+      Value<String> ticketIdsJson,
+      Value<int> subtotal,
+      Value<int> rowid,
+    });
+typedef $$GuestOrdersTableUpdateCompanionBuilder =
+    GuestOrdersCompanion Function({
+      Value<String> id,
+      Value<String> sessionId,
+      Value<String> tableId,
+      Value<String> status,
+      Value<DateTime> submittedAt,
+      Value<DateTime?> decidedAt,
+      Value<String?> decidedByUserId,
+      Value<String?> rejectReasonCode,
+      Value<String?> visitId,
+      Value<String> ticketIdsJson,
+      Value<int> subtotal,
+      Value<int> rowid,
+    });
+
+class $$GuestOrdersTableFilterComposer
+    extends Composer<_$AppDatabase, $GuestOrdersTable> {
+  $$GuestOrdersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tableId => $composableBuilder(
+    column: $table.tableId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get submittedAt => $composableBuilder(
+    column: $table.submittedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get decidedAt => $composableBuilder(
+    column: $table.decidedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get decidedByUserId => $composableBuilder(
+    column: $table.decidedByUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rejectReasonCode => $composableBuilder(
+    column: $table.rejectReasonCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get visitId => $composableBuilder(
+    column: $table.visitId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ticketIdsJson => $composableBuilder(
+    column: $table.ticketIdsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get subtotal => $composableBuilder(
+    column: $table.subtotal,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$GuestOrdersTableOrderingComposer
+    extends Composer<_$AppDatabase, $GuestOrdersTable> {
+  $$GuestOrdersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tableId => $composableBuilder(
+    column: $table.tableId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get submittedAt => $composableBuilder(
+    column: $table.submittedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get decidedAt => $composableBuilder(
+    column: $table.decidedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get decidedByUserId => $composableBuilder(
+    column: $table.decidedByUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rejectReasonCode => $composableBuilder(
+    column: $table.rejectReasonCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get visitId => $composableBuilder(
+    column: $table.visitId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ticketIdsJson => $composableBuilder(
+    column: $table.ticketIdsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get subtotal => $composableBuilder(
+    column: $table.subtotal,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$GuestOrdersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GuestOrdersTable> {
+  $$GuestOrdersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<String> get tableId =>
+      $composableBuilder(column: $table.tableId, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get submittedAt => $composableBuilder(
+    column: $table.submittedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get decidedAt =>
+      $composableBuilder(column: $table.decidedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get decidedByUserId => $composableBuilder(
+    column: $table.decidedByUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get rejectReasonCode => $composableBuilder(
+    column: $table.rejectReasonCode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get visitId =>
+      $composableBuilder(column: $table.visitId, builder: (column) => column);
+
+  GeneratedColumn<String> get ticketIdsJson => $composableBuilder(
+    column: $table.ticketIdsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get subtotal =>
+      $composableBuilder(column: $table.subtotal, builder: (column) => column);
+}
+
+class $$GuestOrdersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $GuestOrdersTable,
+          GuestOrder,
+          $$GuestOrdersTableFilterComposer,
+          $$GuestOrdersTableOrderingComposer,
+          $$GuestOrdersTableAnnotationComposer,
+          $$GuestOrdersTableCreateCompanionBuilder,
+          $$GuestOrdersTableUpdateCompanionBuilder,
+          (
+            GuestOrder,
+            BaseReferences<_$AppDatabase, $GuestOrdersTable, GuestOrder>,
+          ),
+          GuestOrder,
+          PrefetchHooks Function()
+        > {
+  $$GuestOrdersTableTableManager(_$AppDatabase db, $GuestOrdersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GuestOrdersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GuestOrdersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GuestOrdersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<String> tableId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime> submittedAt = const Value.absent(),
+                Value<DateTime?> decidedAt = const Value.absent(),
+                Value<String?> decidedByUserId = const Value.absent(),
+                Value<String?> rejectReasonCode = const Value.absent(),
+                Value<String?> visitId = const Value.absent(),
+                Value<String> ticketIdsJson = const Value.absent(),
+                Value<int> subtotal = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => GuestOrdersCompanion(
+                id: id,
+                sessionId: sessionId,
+                tableId: tableId,
+                status: status,
+                submittedAt: submittedAt,
+                decidedAt: decidedAt,
+                decidedByUserId: decidedByUserId,
+                rejectReasonCode: rejectReasonCode,
+                visitId: visitId,
+                ticketIdsJson: ticketIdsJson,
+                subtotal: subtotal,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String sessionId,
+                required String tableId,
+                Value<String> status = const Value.absent(),
+                required DateTime submittedAt,
+                Value<DateTime?> decidedAt = const Value.absent(),
+                Value<String?> decidedByUserId = const Value.absent(),
+                Value<String?> rejectReasonCode = const Value.absent(),
+                Value<String?> visitId = const Value.absent(),
+                Value<String> ticketIdsJson = const Value.absent(),
+                Value<int> subtotal = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => GuestOrdersCompanion.insert(
+                id: id,
+                sessionId: sessionId,
+                tableId: tableId,
+                status: status,
+                submittedAt: submittedAt,
+                decidedAt: decidedAt,
+                decidedByUserId: decidedByUserId,
+                rejectReasonCode: rejectReasonCode,
+                visitId: visitId,
+                ticketIdsJson: ticketIdsJson,
+                subtotal: subtotal,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$GuestOrdersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $GuestOrdersTable,
+      GuestOrder,
+      $$GuestOrdersTableFilterComposer,
+      $$GuestOrdersTableOrderingComposer,
+      $$GuestOrdersTableAnnotationComposer,
+      $$GuestOrdersTableCreateCompanionBuilder,
+      $$GuestOrdersTableUpdateCompanionBuilder,
+      (
+        GuestOrder,
+        BaseReferences<_$AppDatabase, $GuestOrdersTable, GuestOrder>,
+      ),
+      GuestOrder,
+      PrefetchHooks Function()
+    >;
+typedef $$GuestOrderLinesTableCreateCompanionBuilder =
+    GuestOrderLinesCompanion Function({
+      required String id,
+      required String orderId,
+      required String itemId,
+      required String name,
+      Value<String> variantName,
+      Value<String> course,
+      Value<int> qty,
+      Value<String> modifiersJson,
+      Value<String?> note,
+      required int unitPrice,
+      Value<int> rowid,
+    });
+typedef $$GuestOrderLinesTableUpdateCompanionBuilder =
+    GuestOrderLinesCompanion Function({
+      Value<String> id,
+      Value<String> orderId,
+      Value<String> itemId,
+      Value<String> name,
+      Value<String> variantName,
+      Value<String> course,
+      Value<int> qty,
+      Value<String> modifiersJson,
+      Value<String?> note,
+      Value<int> unitPrice,
+      Value<int> rowid,
+    });
+
+class $$GuestOrderLinesTableFilterComposer
+    extends Composer<_$AppDatabase, $GuestOrderLinesTable> {
+  $$GuestOrderLinesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get orderId => $composableBuilder(
+    column: $table.orderId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get variantName => $composableBuilder(
+    column: $table.variantName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get course => $composableBuilder(
+    column: $table.course,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get qty => $composableBuilder(
+    column: $table.qty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modifiersJson => $composableBuilder(
+    column: $table.modifiersJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get unitPrice => $composableBuilder(
+    column: $table.unitPrice,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$GuestOrderLinesTableOrderingComposer
+    extends Composer<_$AppDatabase, $GuestOrderLinesTable> {
+  $$GuestOrderLinesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get orderId => $composableBuilder(
+    column: $table.orderId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get variantName => $composableBuilder(
+    column: $table.variantName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get course => $composableBuilder(
+    column: $table.course,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get qty => $composableBuilder(
+    column: $table.qty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modifiersJson => $composableBuilder(
+    column: $table.modifiersJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get unitPrice => $composableBuilder(
+    column: $table.unitPrice,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$GuestOrderLinesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GuestOrderLinesTable> {
+  $$GuestOrderLinesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get orderId =>
+      $composableBuilder(column: $table.orderId, builder: (column) => column);
+
+  GeneratedColumn<String> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get variantName => $composableBuilder(
+    column: $table.variantName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get course =>
+      $composableBuilder(column: $table.course, builder: (column) => column);
+
+  GeneratedColumn<int> get qty =>
+      $composableBuilder(column: $table.qty, builder: (column) => column);
+
+  GeneratedColumn<String> get modifiersJson => $composableBuilder(
+    column: $table.modifiersJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<int> get unitPrice =>
+      $composableBuilder(column: $table.unitPrice, builder: (column) => column);
+}
+
+class $$GuestOrderLinesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $GuestOrderLinesTable,
+          GuestOrderLine,
+          $$GuestOrderLinesTableFilterComposer,
+          $$GuestOrderLinesTableOrderingComposer,
+          $$GuestOrderLinesTableAnnotationComposer,
+          $$GuestOrderLinesTableCreateCompanionBuilder,
+          $$GuestOrderLinesTableUpdateCompanionBuilder,
+          (
+            GuestOrderLine,
+            BaseReferences<
+              _$AppDatabase,
+              $GuestOrderLinesTable,
+              GuestOrderLine
+            >,
+          ),
+          GuestOrderLine,
+          PrefetchHooks Function()
+        > {
+  $$GuestOrderLinesTableTableManager(
+    _$AppDatabase db,
+    $GuestOrderLinesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GuestOrderLinesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GuestOrderLinesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GuestOrderLinesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> orderId = const Value.absent(),
+                Value<String> itemId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> variantName = const Value.absent(),
+                Value<String> course = const Value.absent(),
+                Value<int> qty = const Value.absent(),
+                Value<String> modifiersJson = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<int> unitPrice = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => GuestOrderLinesCompanion(
+                id: id,
+                orderId: orderId,
+                itemId: itemId,
+                name: name,
+                variantName: variantName,
+                course: course,
+                qty: qty,
+                modifiersJson: modifiersJson,
+                note: note,
+                unitPrice: unitPrice,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String orderId,
+                required String itemId,
+                required String name,
+                Value<String> variantName = const Value.absent(),
+                Value<String> course = const Value.absent(),
+                Value<int> qty = const Value.absent(),
+                Value<String> modifiersJson = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                required int unitPrice,
+                Value<int> rowid = const Value.absent(),
+              }) => GuestOrderLinesCompanion.insert(
+                id: id,
+                orderId: orderId,
+                itemId: itemId,
+                name: name,
+                variantName: variantName,
+                course: course,
+                qty: qty,
+                modifiersJson: modifiersJson,
+                note: note,
+                unitPrice: unitPrice,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$GuestOrderLinesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $GuestOrderLinesTable,
+      GuestOrderLine,
+      $$GuestOrderLinesTableFilterComposer,
+      $$GuestOrderLinesTableOrderingComposer,
+      $$GuestOrderLinesTableAnnotationComposer,
+      $$GuestOrderLinesTableCreateCompanionBuilder,
+      $$GuestOrderLinesTableUpdateCompanionBuilder,
+      (
+        GuestOrderLine,
+        BaseReferences<_$AppDatabase, $GuestOrderLinesTable, GuestOrderLine>,
+      ),
+      GuestOrderLine,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -39157,4 +42707,10 @@ class $AppDatabaseManager {
       $$ShiftsTableTableManager(_db, _db.shifts);
   $$DemoStatesTableTableManager get demoStates =>
       $$DemoStatesTableTableManager(_db, _db.demoStates);
+  $$GuestSessionsTableTableManager get guestSessions =>
+      $$GuestSessionsTableTableManager(_db, _db.guestSessions);
+  $$GuestOrdersTableTableManager get guestOrders =>
+      $$GuestOrdersTableTableManager(_db, _db.guestOrders);
+  $$GuestOrderLinesTableTableManager get guestOrderLines =>
+      $$GuestOrderLinesTableTableManager(_db, _db.guestOrderLines);
 }
