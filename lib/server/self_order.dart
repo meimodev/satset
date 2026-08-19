@@ -304,9 +304,15 @@ Future<Map<String, dynamic>> guestMenuJson(
     };
   }
 
+  // Only categories that hold something. `menu_categories` carries a pseudo
+  // row (`all`, "Semua") that the staff menu uses as its all-items tab and no
+  // item is ever filed under — emitted here it drew a second "Semua" chip
+  // beside the page's own, and tapping it filtered the menu down to nothing.
+  final stocked = {for (final i in items) i.categoryId};
   return {
     'categories': [
-      for (final c in cats) {'id': c.id, 'name': c.name},
+      for (final c in cats)
+        if (stocked.contains(c.id)) {'id': c.id, 'name': c.name},
     ],
     'items': [for (final i in items) itemJson(i)],
     'noteEnabled': rules.noteEnabled,

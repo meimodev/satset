@@ -1,0 +1,8 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]: …
+  - main [ref=e6]:
+    - generic [ref=e7]:
+      - paragraph [ref=e8]: 🔍
+      - paragraph [ref=e9]: Meja tidak ditemukan
+      - paragraph [ref=e10]: Pindai ulang kode QR di meja Anda.

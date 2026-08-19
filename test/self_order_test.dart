@@ -365,6 +365,28 @@ void main() {
     expect(row['visible'], isFalse);
   });
 
+  test('the chip row lists only categories that hold something', () async {
+    // `all` is the staff menu's all-items tab, filed under by nothing. Emitted
+    // to the guest it drew a second "Semua" beside the page's own chip and
+    // filtered the menu to empty.
+    for (final c in const [
+      ('all', 'Semua'),
+      ('mains', 'Utama'),
+      ('desserts', 'Penutup'),
+    ]) {
+      await db
+          .into(db.menuCategories)
+          .insertOnConflictUpdate(
+            MenuCategoriesCompanion.insert(id: c.$1, name: c.$2),
+          );
+    }
+    final cats = [
+      for (final c in (await guestMenuJson(db))['categories'] as List)
+        (c as Map)['id'],
+    ];
+    expect(cats, ['mains']);
+  });
+
   test('accept goes through the ordinary order path', () async {
     final o = await pending();
     final res = await acceptGuestOrder(db, orderId: o.id, actorId: 'u1');
