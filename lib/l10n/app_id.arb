@@ -184,6 +184,7 @@
   "soStatusAccepted": "Diterima",
   "soStatusRejected": "Ditolak",
   "soStatusCancelled": "Dibatalkan tamu",
+  "soSectionDecided": "Sudah diputuskan",
   "soLines": "{n, plural, other{{n} item}}",
   "@soLines": {
     "placeholders": {

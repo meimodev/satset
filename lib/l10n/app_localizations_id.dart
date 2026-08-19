@@ -444,6 +444,9 @@ class AppL10nId extends AppL10n {
   String get soStatusCancelled => 'Dibatalkan tamu';
 
   @override
+  String get soSectionDecided => 'Sudah diputuskan';
+
+  @override
   String soLines(num n) {
     final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
       locale: localeName,

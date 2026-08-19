@@ -817,6 +817,12 @@ abstract class AppL10n {
   /// **'Dibatalkan tamu'**
   String get soStatusCancelled;
 
+  /// No description provided for @soSectionDecided.
+  ///
+  /// In id, this message translates to:
+  /// **'Sudah diputuskan'**
+  String get soSectionDecided;
+
   /// No description provided for @soLines.
   ///
   /// In id, this message translates to:

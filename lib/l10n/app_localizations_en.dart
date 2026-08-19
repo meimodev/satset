@@ -446,6 +446,9 @@ class AppL10nEn extends AppL10n {
   String get soStatusCancelled => 'Cancelled by guest';
 
   @override
+  String get soSectionDecided => 'Decided';
+
+  @override
   String soLines(num n) {
     final intl.NumberFormat nNumberFormat = intl.NumberFormat.compact(
       locale: localeName,

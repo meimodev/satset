@@ -162,6 +162,7 @@
   "soStatusAccepted": "Accepted",
   "soStatusRejected": "Rejected",
   "soStatusCancelled": "Cancelled by guest",
+  "soSectionDecided": "Decided",
   "soLines": "{n, plural, =1{1 item} other{{n} items}}",
   "@soLines": {
     "placeholders": {

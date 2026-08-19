@@ -207,7 +207,7 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
         ],
         if (decided.isNotEmpty) ...[
           const SizedBox(height: Sp.s4),
-          SatSectionLabel(l10n.soStatusAccepted),
+          SatSectionLabel(l10n.soSectionDecided),
           const SizedBox(height: Sp.s2),
           for (final o in decided)
             Padding(
