@@ -23,9 +23,16 @@ Until now that was three structures:
 Structure (2) is the problem. `return null` at the end of a capability lookup
 means "this move is free", and it is reached by every legal move nobody wrote
 an arm for. Four were: `draft → sent`, `acknowledged → prep`, `sent → cooked`
-and `sent → held`. Each was a legal, reachable move that any paired device
-could make with no capability at all — including `draft → sent`, which is the
-act of putting an order into the kitchen.
+and `sent → held`. Any paired device could make them with no capability at all.
+
+Three of the four had no writer — nothing mints a `draft` or an
+`acknowledged`, and pacing writes `held` at order time rather than walking a
+fired line back — which is *why* they were the ungated ones: an arm nobody
+exercises is an arm nobody notices missing. That makes them the cheap half of
+the finding, not the harmless half. `draft → sent` is the act of putting an
+order into the kitchen, and it sat open waiting for the feature that would use
+it. Only `sent → cooked` was live, from the KDS, whose route already demands
+`viewKds`.
 
 Nothing about (1) and (2) makes them notice each other. A move added to the
 graph is legal the moment it is written; it becomes *gated* only if somebody
@@ -66,8 +73,8 @@ a compiler guarantee without the guarantee.
 **Derive the capability from the destination status alone.** Tempting —
 `prep`/`cooked`/`ready` look like the kitchen's, `served` like the waiter's —
 but it is wrong at both ends: `voided` costs `voidItem` or `compItem` depending
-where you came *from*, and `sent` is reached both by a waiter sending a draft
-and by a waiter firing a held course. The origin carries meaning.
+where you came *from*, and `sent` is reached both when an order is minted and
+when a waiter fires a held course. The origin carries meaning.
 
 **Generate the client graph from the server at runtime.** Rejected: it makes an
 offline client's UI depend on a fetch, in an app whose premise is that it works
@@ -75,11 +82,19 @@ when the network does not.
 
 ## Consequences
 
-Four transitions are now gated that were not, which is a behaviour change on an
-already-deployed venue: a role holding neither `takeOrder` nor `viewKds` could
-previously drive those moves and now gets a 403. Every seeded role holds the
-capability its own work needs, so this bites only a hand-edited role — and the
-role sheet is where it is fixed.
+**The three writerless moves are not in the table.** A transition graph says
+what is legal, and legalising a move nobody makes is how the ungated hole
+opened in the first place — an unused row is a standing offer with nobody
+watching it. `draft → sent`, `acknowledged → prep` and `sent → held` are gone;
+`draft` and `acknowledged` themselves stay, because they are persisted strings
+and `TicketStatus` already documents them as reserved. Re-adding a row is one
+line the day a writer appears, and the row cannot be written without naming its
+capability.
+
+**No venue changes behaviour.** `sent → cooked` is the only one of the four
+with a caller, and it is the KDS — already behind `viewKds` at the route gate,
+which is the capability it now costs. There is nothing to migrate and no role
+to repair.
 
 The transition graph is now a domain constant rather than a server detail,
 which is where the other shared vocabularies (`Capability`, `TicketStatus`)

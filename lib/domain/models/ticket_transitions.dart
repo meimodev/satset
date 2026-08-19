@@ -10,25 +10,23 @@ import 'package:satset/domain/models/ticket.dart';
 /// `switch` for the gate on the server — and a legal move whose arm nobody
 /// wrote fell through to "no capability required". Four of them did.
 ///
+/// Which is also why a move nobody makes does not get a row. `draft → sent`,
+/// `acknowledged → prep` and `sent → held` were all legal here and written by
+/// nothing: no route mints a `draft` or an `acknowledged` (see [TicketStatus]),
+/// and pacing writes `held` at order time rather than walking a fired line
+/// back. They were the ungated ones precisely because nobody exercised them.
+/// Re-add a row the day a writer appears — with its capability, in the same
+/// line.
+///
 /// Adding a move means adding a row here, which means naming its capability.
 /// There is no arm to forget.
 const ticketTransitions = <TicketStatus, Map<TicketStatus, Capability>>{
-  TicketStatus.draft: {
-    // Sending a draft is the order-taking act itself.
-    TicketStatus.sent: Capability.takeOrder,
-    TicketStatus.voided: Capability.voidItem,
-  },
-  TicketStatus.acknowledged: {
-    TicketStatus.prep: Capability.viewKds,
-    TicketStatus.voided: Capability.voidItem,
-  },
+  TicketStatus.draft: {TicketStatus.voided: Capability.voidItem},
+  TicketStatus.acknowledged: {TicketStatus.voided: Capability.voidItem},
   TicketStatus.sent: {
     TicketStatus.prep: Capability.viewKds,
     // The line may skip `prep` when a dish needs no staging.
     TicketStatus.cooked: Capability.viewKds,
-    // Putting a fired course back on hold is pacing, and pacing is the
-    // waiter's call — the mirror of `held → sent` below.
-    TicketStatus.held: Capability.takeOrder,
     TicketStatus.voided: Capability.voidItem,
   },
   TicketStatus.held: {

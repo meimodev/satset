@@ -112,7 +112,7 @@ GoRouter with refresh-listener pattern (auth / prefs / apiConfig changes trigger
 
 Capabilities (`domain/models/capability.dart`): `viewKds`, `takeOrder`, `manageStaff`, `manageCash`, … Route → capability mapping is in `_capabilityFor` at the top of `app_router.dart`, and each arm must mirror the capability the **server** demands of the writes that screen makes — the client gate decides what to offer, never what to allow.
 
-A **ticket transition** carries its capability in the graph itself: `ticketTransitions` in `lib/domain/models/ticket_transitions.dart` maps `from → to → Capability`, and both the client use case and the server route read that one table (ADR-0101). A move's presence is what makes it legal; there is no separate "which capability does this cost" switch to forget an arm in.
+A **ticket transition** carries its capability in the graph itself: `ticketTransitions` in `lib/domain/models/ticket_transitions.dart` maps `from → to → Capability`, and both the client use case and the server route read that one table (ADR-0101). A move's presence is what makes it legal; there is no separate "which capability does this cost" switch to forget an arm in. A move nothing writes gets no row — `draft → sent`, `acknowledged → prep` and `sent → held` were legal, writerless and therefore ungated, which is the whole failure mode. The statuses stay (they are persisted strings, reserved on purpose); the arms come back the day a writer does.
 
 ### Shell
 
