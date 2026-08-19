@@ -284,7 +284,11 @@ class _GuestOrderCard extends ConsumerWidget {
     final l10n = context.l10n;
     final hue = switch (order.status) {
       'accepted' => SatChipHue.success,
-      'rejected' || 'cancelled' => SatChipHue.urgent,
+      // A guest withdrawing their own order is not a failure — `urgent` is the
+      // scarce signal, and spending it here teaches the room to ignore red.
+      // Only a rejection is something the venue did.
+      'rejected' => SatChipHue.urgent,
+      'cancelled' => SatChipHue.neutral,
       _ => SatChipHue.warn,
     };
     final hasAlcohol = order.lines.any((x) => alcoholIds.contains(x.itemId));
