@@ -3001,6 +3001,37 @@ class AppL10nEn extends AppL10n {
   String get cshAmount => 'Amount';
 
   @override
+  String get rptRingkasTitle => 'Summary';
+
+  @override
+  String get rptRingkasTag => 'CLOSE';
+
+  @override
+  String get rptRingkasRevenue => 'Revenue';
+
+  @override
+  String get rptRingkasBills => 'Bills';
+
+  @override
+  String get rptRingkasCovers => 'Guests';
+
+  @override
+  String get rptRingkasAvg => 'Average bill';
+
+  @override
+  String get rptRingkasTop => 'Top sellers';
+
+  @override
+  String rptRingkasKasOk(String closing) {
+    return 'Petty cash $closing, matches the ledger.';
+  }
+
+  @override
+  String rptRingkasKasOff(String closing, String variance) {
+    return 'Petty cash $closing, off by $variance.';
+  }
+
+  @override
   String get rptSecSales => 'Sales';
 
   @override

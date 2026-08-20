@@ -2267,6 +2267,17 @@
   "@cshAmount": {
     "description": "A money amount on the payment sheet — not a count."
   },
+  "rptRingkasTitle": "Ringkas",
+  "rptRingkasTag": "TUTUP",
+  "rptRingkasRevenue": "Pemasukan",
+  "rptRingkasBills": "Nota",
+  "rptRingkasCovers": "Tamu",
+  "rptRingkasAvg": "Rata-rata nota",
+  "rptRingkasTop": "Terlaris",
+  "rptRingkasKasOk": "Kas kecil {closing}, cocok dengan catatan.",
+  "@rptRingkasKasOk": {"placeholders": {"closing": {"type": "String"}}},
+  "rptRingkasKasOff": "Kas kecil {closing}, selisih {variance}.",
+  "@rptRingkasKasOff": {"placeholders": {"closing": {"type": "String"}, "variance": {"type": "String"}}},
   "rptSecSales": "Penjualan",
   "rptSecStaff": "Staf",
   "rptSecMenu": "Menu",

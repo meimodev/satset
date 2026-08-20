@@ -2980,6 +2980,37 @@ class AppL10nId extends AppL10n {
   String get cshAmount => 'Jumlah';
 
   @override
+  String get rptRingkasTitle => 'Ringkas';
+
+  @override
+  String get rptRingkasTag => 'TUTUP';
+
+  @override
+  String get rptRingkasRevenue => 'Pemasukan';
+
+  @override
+  String get rptRingkasBills => 'Nota';
+
+  @override
+  String get rptRingkasCovers => 'Tamu';
+
+  @override
+  String get rptRingkasAvg => 'Rata-rata nota';
+
+  @override
+  String get rptRingkasTop => 'Terlaris';
+
+  @override
+  String rptRingkasKasOk(String closing) {
+    return 'Kas kecil $closing, cocok dengan catatan.';
+  }
+
+  @override
+  String rptRingkasKasOff(String closing, String variance) {
+    return 'Kas kecil $closing, selisih $variance.';
+  }
+
+  @override
   String get rptSecSales => 'Penjualan';
 
   @override

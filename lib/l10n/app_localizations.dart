@@ -4927,6 +4927,60 @@ abstract class AppL10n {
   /// **'Jumlah'**
   String get cshAmount;
 
+  /// No description provided for @rptRingkasTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Ringkas'**
+  String get rptRingkasTitle;
+
+  /// No description provided for @rptRingkasTag.
+  ///
+  /// In id, this message translates to:
+  /// **'TUTUP'**
+  String get rptRingkasTag;
+
+  /// No description provided for @rptRingkasRevenue.
+  ///
+  /// In id, this message translates to:
+  /// **'Pemasukan'**
+  String get rptRingkasRevenue;
+
+  /// No description provided for @rptRingkasBills.
+  ///
+  /// In id, this message translates to:
+  /// **'Nota'**
+  String get rptRingkasBills;
+
+  /// No description provided for @rptRingkasCovers.
+  ///
+  /// In id, this message translates to:
+  /// **'Tamu'**
+  String get rptRingkasCovers;
+
+  /// No description provided for @rptRingkasAvg.
+  ///
+  /// In id, this message translates to:
+  /// **'Rata-rata nota'**
+  String get rptRingkasAvg;
+
+  /// No description provided for @rptRingkasTop.
+  ///
+  /// In id, this message translates to:
+  /// **'Terlaris'**
+  String get rptRingkasTop;
+
+  /// No description provided for @rptRingkasKasOk.
+  ///
+  /// In id, this message translates to:
+  /// **'Kas kecil {closing}, cocok dengan catatan.'**
+  String rptRingkasKasOk(String closing);
+
+  /// No description provided for @rptRingkasKasOff.
+  ///
+  /// In id, this message translates to:
+  /// **'Kas kecil {closing}, selisih {variance}.'**
+  String rptRingkasKasOff(String closing, String variance);
+
   /// No description provided for @rptSecSales.
   ///
   /// In id, this message translates to:

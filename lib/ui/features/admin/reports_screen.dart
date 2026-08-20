@@ -15,6 +15,10 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/export_sheet.dart';
 import 'package:satset/ui/core/widgets/skeleton_card.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/domain/models/venue_module.dart';
+import 'package:satset/ui/features/admin/report_ringkas.dart';
 import 'package:satset/ui/features/admin/report_sections_view.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -215,6 +219,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     AsyncValue<void> status,
     ReportsQuery query,
   ) {
+    final ringkas = ref
+        .watch(venueSettingsProvider)
+        .counterOn(counterRingkasReport);
     return [
       if (status.hasError) ...[
         _errorBanner(context, status),
@@ -226,12 +233,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       const SizedBox(height: Sp.s3),
       if (snapshot == null)
         const ReportsSkeleton()
-      else
+      else ...[
+        if (ringkas) ...[
+          ReportRingkas(snapshot: snapshot),
+          const SizedBox(height: Sp.s3),
+        ],
         ReportSectionsView(
           snapshot: snapshot,
           isTab: isTab,
           loading: status.isLoading,
+          compact: ringkas,
         ),
+      ],
     ];
   }
 

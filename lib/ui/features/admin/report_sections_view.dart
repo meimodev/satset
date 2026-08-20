@@ -34,6 +34,7 @@ class ReportSectionsView extends StatefulWidget {
     required this.isTab,
     this.loading = false,
     this.showStock = true,
+    this.compact = false,
   });
 
   final ReportsSnapshotDto snapshot;
@@ -44,6 +45,12 @@ class ReportSectionsView extends StatefulWidget {
   /// off-site owner (ADR-0036) has no route to — their view renders from a
   /// cloud snapshot only, so it passes `false`.
   final bool showStock;
+
+  /// [[Laporan ringkas]] (switch `ringkasReport`). The compact card above this
+  /// view already carries the close, so the nine sections start **collapsed**
+  /// rather than all open. The strip itself is untouched: this changes what is
+  /// expanded on arrival, never what may be.
+  final bool compact;
 
   @override
   State<ReportSectionsView> createState() => _ReportSectionsViewState();
@@ -77,6 +84,12 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.piutang,
     _Section.jamKerja,
   };
+  @override
+  void initState() {
+    super.initState();
+    if (widget.compact) _on.clear();
+  }
+
   _StaffSort _staffSort = _StaffSort.net;
   _MemberSort _memberSort = _MemberSort.spend;
 
@@ -156,7 +169,12 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     ReportsSnapshotDto snapshot,
     bool loading,
   ) {
-    if (_on.isEmpty) return _emptyState(context);
+    // Nothing open is the *arrival* state under a ringkas card, not an empty
+    // report — the numbers are right above. Prompting to pick a section there
+    // would be telling the reader they have nothing when they have the close.
+    if (_on.isEmpty) {
+      return widget.compact ? const SizedBox.shrink() : _emptyState(context);
+    }
     final blocks = <Widget>[
       if (_on.contains(_Section.sales))
         Reveal(
