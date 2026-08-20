@@ -510,6 +510,8 @@ The **base package** — what a venue buying no modules gets — is floor, kitch
 
 Mirrored into local `VenueSettings` down the path cloud-owned identity already uses (ADR-0018), so **offline fails open**: the last known set keeps serving, with no staleness cutoff. Payment is enforced by [[Subscription cutoff]] and by nothing else.
 
+**A mode key is the exception, and it fails closed** (ADR-0109). `counterService` — the key behind [[Kedai (counter mode)|Kedai]] — answers "did an operator deliberately reshape this venue", not "did they pay for this", and the two cannot share a default: the fail-open that protects a paid feature would flip an un-mirrored restaurant into a counter shop. So it reads absent, null and never-mirrored all as **off**, through its own resolver, and it is excluded from the trial's implicit grant. It is also the only module whose switches live outside `addOns` — in a `counterConfig` map beside it — because those are configuration, not entitlement.
+
 **Unentitled is invisible to staff and locked to the owner** — identical to a toggled-off feature everywhere a waiter or cashier can reach, and a greyed tile on the admin hub, where the buyer is. Losing a module **freezes** rather than deletes ([[Poin]]'s rule generalised); the console refuses to remove `members` while [[Piutang]] is outstanding, so a venue never loses the ability to collect its own debts.
 
 _Avoid_: a module that carries its own price or its own term (the plan carries both); a tier ladder; **any read of the module set that branches on the plan**; a staleness cutoff that revokes a module offline; gating reports or multi-device; a route that reads the module set for itself instead of going through the feature's own writer. See [ADR-0107](docs/adr/0107-a-module-is-an-entitlement-beside-the-plan.md) and [ADR-0108](docs/adr/0108-a-trial-is-shaped-like-any-other-venue.md).
@@ -890,7 +892,7 @@ A [[Bawa pulang (Takeaway)]] [[Bill (tab)]] whose money **arrived before the foo
 ### Bawa pulang (Takeaway)
 **ID · EN** — Bawa pulang · Takeaway; Makan di tempat · Dine-in; Serahkan · Hand over. _Not_ "Takeout" or "To go" — pick one and hold it across the board, the KDS and the cashier.
 
-A [[Visit]] that **never occupies a [[Table]]** — a takeaway order. Modeled as a Visit with `kind == takeaway`: no `tableId`/table row, `tableLabel` = the guest name (+ running takeaway number), **guestName required** (its only handle). It rides ADR-0024's two-axis end, with **handover replacing [[Table close (detach)]]**:
+A [[Visit]] that **never occupies a [[Table]]** — a takeaway order. Modeled as a Visit with `kind == takeaway`: no `tableId`/table row, `tableLabel` = the guest name (+ running takeaway number). The name is normally **required** — it is the order's only handle — but under [[Kedai (counter mode)|Kedai]]'s `anonTakeaway` it becomes **optional**, and a nameless order rides its `Bawa pulang #N` label alone. The running number is not new and not a fallback bolted on for that case: it is minted per business day from `DailyCounters` on every takeaway, named or not. It rides ADR-0024's two-axis end, with **handover replacing [[Table close (detach)]]**:
 
 - **Handover ("Serahkan")** — marks the food handed to the guest. Same **all-tickets-terminal gate** as table-close (can't hand over food still cooking); stamps the visit's `tableFreedAt` (reinterpreted as handover time). Gated by `takeOrder` — **waiter or cashier** may tap it.
 - **[[Bill close (Tutup tagihan)]]** — unchanged money axis.
@@ -1056,3 +1058,88 @@ A menu item flagged `menu_items.alcohol`, meaning a human must see the guest bef
 The flag does **not** hide the item or block the order — it badges the row on the Menu tamu tab and warns on the queue card, so the staff member holding the accept button knows to look up. Ticked per item on that tab; defaulted off on every existing row, because guessing which venue-authored categories mean alcohol is how a soft drink acquires an age check nobody asked for.
 
 _Avoid_: refusing the order automatically; inferring it from a category name; treating the badge as a legal control rather than a prompt to a person.
+
+### Kedai (counter mode)
+**ID · EN** — Kedai · Counter mode. States: aktif · on. _Not_ "Kafe"/"Cafe" — the shape being described is **ordering at a counter**, which a warung, a kiosk and a bar all share; naming it after one kind of shop invites the wrong venues to tick it and the right ones to skip it. _Not_ "mode sederhana"/"simple mode" either: nothing is removed, the defaults are different.
+
+The shape of a venue where one person at one counter takes the order, makes it and takes the money — as against the four-role floor the rest of the app assumes ([[Waiter]] at a [[Table]], kitchen on a [[KDS / Antrian Persiapan|KDS]], [[Cashier]] at a till). Held as the `counterService` [[Modul (module)|Modul]] and, unlike every other module, **fails closed**: absent means restaurant (ADR-0109).
+
+**It is a preset, and a preset is a set of switches** — `menuHome`, `anonTakeaway`, `settleAfterSend`, `simpleKds`, `counterQr`, `ringkasReport`, held in `venues/{vid}.counterConfig` and mirrored down beside the module set. Ticking the module *writes* all six on; the operator then unticks what that venue does not want. Nothing reads back "is this venue a preset" — there is no preset state, only switches, which is what keeps "a cafe with six seats" expressible instead of a rung between two tiers. The names are **persisted** under the same rule as a module key.
+
+Set by the **operator on the fleet console**, not by the owner in Pengaturan: unlike [[Pelanggan (member)|membership]] or [[Pesan mandiri (Self-order)|self-order]], this is not a programme an owner opts into, it is the shape of their shop, settled at onboarding. Everything it hides stays **legal and written** — tables, zones, [[Reservation]]s and locks are all still there, so a venue that adds a floor next month unticks a switch and finds it intact.
+
+_Avoid_: a `venueKind` enum (it cannot be half-ticked, and half-ticked is the common case); a switch that changes what a **writer** writes rather than what a screen defaults to; reading a mode key through the fail-open module resolver; treating a switch as a [[Capability]] — these change defaults, never permission.
+
+### Buka kedai / Tutup kedai (venue day)
+**ID · EN** — Buka kedai · Open shop; Tutup kedai · Close shop. _Not_ "Buka/Tutup shift" — a [[Shift]] belongs to one person and there may be three of them in a day; this happens once, to the venue.
+
+The opening and closing ritual of a trading day: float into the [[Kas kecil (petty cash)|box]], trade, count the box, read the day back, go home. In a two-person shop it is the only control there is — nobody supervises the till, so counting at a fixed moment is what makes a discrepancy visible.
+
+**It is a sequence, not an entity** (ADR-0111). Nothing about the day is persisted as a row; the record is two [[Audit]] entries, `venueOpened` and `venueClosed`, and the money moves through the writers that already own it. Gated by `openDrawer` and `closeShift` — two capabilities granted since the beginning and, until now, checked by nothing.
+
+Closing **records; it does not enforce**: open bills and live tickets do not block it, because a close that refuses is a close that gets routed around, and then the record — the whole point — is what is lost. Deliberately **outside** the sequence: [[Opname (Stocktake)|opname]] (a document with its own cadence; stapling it to every closing is how a stocktake becomes a rubber stamp) and staff sign-out (that is each person's own shift).
+
+_Avoid_: a `venue_days` table (a second answer to "what is today", beside `businessDayStartHour`, and a row that can be left open forever); a boolean on `venue_settings` (state that can be wrong, and it forgets who opened); deriving "is the venue open" from these rows — the guest plane decides on its own hours, and the floor decides on nothing.
+
+### Ringkas (compact report)
+**ID · EN** — Ringkas · Compact.
+
+The one-page reading of a trading day, for an owner on a phone at closing time: revenue, transactions and average ticket, top five items, cash variance, COGS %, each against yesterday. A **layout over the existing report sections**, not a new report — the same DTOs the full Laporan screen reads, arranged for someone who is standing up.
+
+Switched on by [[Kedai (counter mode)|Kedai]]'s `ringkasReport`, and shown by [[Buka kedai / Tutup kedai (venue day)|Tutup kedai]] as its last step.
+
+_Avoid_: a second server-side aggregation ("the compact numbers" and "the real numbers" drifting apart is the failure); adding a figure here that the full report cannot show.
+
+### Kode kedai (venue code)
+**ID · EN** — Kode kedai · Venue code.
+
+The counter shop's single QR — one code for the whole venue rather than one per table, opening the [[Tamu (nav destination) (Guest)|guest]] menu with no table bound to it. Stored on `venue_settings`, minted **fill-blank only** exactly as [[Kode meja (Table code)|Kode meja]] is, so nothing that runs twice invalidates a laminated card.
+
+A scan **creates nothing**. The guest builds an order and submits an ordinary [[Pesanan tamu (intent) (Guest order)|pesanan tamu]]; it becomes a [[Visit]] only when a staff member accepts it, through the same `acceptGuestOrder` path a table order uses. The guest is **not** asked to choose dine-in or takeaway: a counter shop hands everything across the counter, and the person accepting can still seat it.
+
+_Avoid_: binding a venue code to a pseudo-table; letting the guest choose the binding; a second accept path that does not go through the intent.
+
+### Stok par (par level)
+**ID · EN** — Stok par · Par level. _Not_ "stok minimum" — that is the **threshold**, a different number with a different job.
+
+The quantity of a [[Bahan (Ingredient)|bahan]] the venue wants to hold when fully stocked. It answers **"how much to buy"**; the reorder threshold (`lowStockAt`) answers **"warn me"**. Two numbers because they are two questions: a venue may want warning at 2 litres and a full shelf at 12.
+
+Entered in the ingredient's display unit and stored in milli-base, exactly as the threshold is. Optional — without it an ingredient still warns, it just cannot name a quantity on the [[Belanja (shopping list)|Belanja]] list. Nothing else writes it: neither receiving nor [[Opname (Stocktake)|opname]] touches par.
+
+_Avoid_: overloading `lowStockAt` to mean both (a threshold that quietly becomes an order quantity is wrong in both directions); deriving par from past usage.
+
+### Belanja (shopping list)
+**ID · EN** — Belanja · Shopping list.
+
+Today's buying, derived: every [[Bahan (Ingredient)|bahan]] at or under its reorder threshold, with the shortfall to its [[Stok par (par level)|stok par]] as the quantity to buy. **Derived, never stored** — there is no list entity, nothing is ticked off, and buying is recorded by [[Mutasi stok (Stock movement)|receiving stock]] as it always was.
+
+Exists because a cafe buys milk and bread *daily*, and the threshold badge that already ships answers "something is low" without answering "and how much do I carry back".
+
+_Avoid_: a persisted list with its own state (a checkbox that survives the shop trip is a second source of truth about stock); treating it as an order to a supplier.
+
+### Buang (waste)
+**ID · EN** — Buang · Discard (the act); **Terbuang** · Wasted (the ledger reason, already shipped as `StockReason.waste`). Keep both: the button is an imperative, the movement is a past participle, and swapping them makes a log entry read like a command.
+
+Recording stock thrown away — spoiled milk, unsold pastries, a dropped jug. Until it is logged the loss lands in [[Opname (Stocktake)|opname]] as unexplained variance, and every COGS figure is wrong by exactly the amount the owner most wants to see.
+
+Two entry points, **one writer**: an ingredient directly, or a menu item, which explodes its [[Resep (Recipe)|resep]] into the same `waste` movements. A menu item with **no recipe cannot be discarded** — the act refuses and points at [[Jual satuan (sold by unit)|jual satuan]], because a waste log that silently records nothing is worse than one that admits it can't. Audited, gated by `manageIngredients`: this is a shrinkage vector, and the reason it audits is that it is the one stock write with no counterpart anywhere else in the books.
+
+_Avoid_: a second writer beside the ledger; a by-item discard that writes nothing when the recipe is missing; treating a [[Void (item)]] of made food as this — that path already writes its own `waste` movement.
+
+### Item bebas (open item)
+**ID · EN** — Item bebas · Open item. _Not_ "item lain"/"misc" — the defining property is that **the price is typed at the till**, not that the thing is uncategorised.
+
+A sale of something not on the menu, at a price entered by the cashier: a supplier pastry, a tumbler, a slice sold for catering. It carries a **mandatory note** and its own [[Capability]], `sellOpenItem`, deliberately **not** granted to the waiter role — an arbitrary-price line is the classic till fraud, and the guard is who may reach it plus an [[Audit]] row carrying the price and the note.
+
+It behaves as an ordinary line otherwise: it goes to the [[KDS / Antrian Persiapan|KDS]] with its note, it is taxed like anything else, and it counts in **revenue**. It is **excluded from menu engineering** — it has no cost, so it would poison the margin matrix — and it is **never on the guest menu**, because a caller naming its own price is precisely what server-side pricing exists to prevent (ADR-0105).
+
+_Avoid_: a till-only variant that skips the kitchen (a second kind of line, and a second reason a ticket may not exist); an open item without a note; granting the capability to the floor by default.
+
+### Jual satuan (sold by unit)
+**ID · EN** — Jual satuan · Sold by unit.
+
+A menu item that is bought in and sold as a whole thing — a bottled drink, a bag of beans, a pastry from a supplier — so its stock is a **count of itself** rather than the sum of a recipe.
+
+It is **not a new stock model**. ADR-0040 keeps one path, so the item gets an ordinary `pcs` [[Bahan (Ingredient)|bahan]] and a 1:1 [[Resep (Recipe)|resep]] line, and everything downstream — sold-out derivation, [[Opname (Stocktake)|opname]], COGS, [[Buang (waste)|buang]] — works with no special case. The toggle in the menu editor is a **convenience that creates those two rows and then stops caring**: no name synchronisation, no lifecycle link, hand-edits to the recipe welcome, and unticking archives nothing.
+
+_Avoid_: a `stock_count` column on the menu item (ADR-0040 removed it on purpose); a live coupling between item and ingredient (a second writer over recipes, to buy tidiness in names).
