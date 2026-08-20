@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/prefs_service.dart';
+import 'package:satset/data/services/send_queue_drain.dart';
 import 'package:satset/data/services/send_queue_service.dart';
 
 /// The drain is the whole feature (ADR-0090): everything else is plumbing that
@@ -340,5 +342,17 @@ void main() {
       ['already_seated', 'visit_changed'],
     );
     expect(q.isEmpty, isTrue);
+  });
+
+  /// An admin logout nulls `apiConfigProvider` while `AppShell` is still
+  /// mounted, and the shell watches this provider. `wsClientProvider` throws
+  /// rather than returning null without a config, so an unguarded `watch` here
+  /// paints a red frame on the way to `/pin`.
+  test('drain trigger is inert without an ApiConfig', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    expect(container.read(apiConfigProvider), isNull);
+    expect(() => container.read(sendQueueDrainProvider), returnsNormally);
   });
 }

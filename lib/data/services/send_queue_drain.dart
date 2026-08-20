@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/send_queue_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 
@@ -16,6 +17,12 @@ import 'package:satset/data/services/ws_client.dart';
 /// Must be watched by a long-lived widget (the app shell); a provider nobody
 /// holds is a provider that never subscribes.
 final sendQueueDrainProvider = Provider<void>((ref) {
+  // No host, no socket, nothing to drain. This is a `watch`, not a `read`, so
+  // it re-runs the moment `apiConfigProvider` goes null — which is exactly what
+  // an admin logout does while the shell is still mounted. `wsClientProvider`
+  // throws rather than returning null there, and the throw surfaces as a red
+  // frame in `AppShell.build` before the router redirects to `/pin`.
+  if (ref.watch(apiConfigProvider) == null) return;
   final sub = ref.watch(wsClientProvider).events.listen((ev) async {
     if (ev.type != WsEventTypes.connected) return;
     if (ref.read(sendQueueProvider).isEmpty) return;
