@@ -7859,9 +7859,6 @@ class AppL10nId extends AppL10n {
   String get fltModulesHint => 'Fitur yang dijual terpisah dari paket dasar.';
 
   @override
-  String get fltModulesTrial => 'Trial mencakup semua modul.';
-
-  @override
   String get fltModuleMembers => 'Keanggotaan';
 
   @override

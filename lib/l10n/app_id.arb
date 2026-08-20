@@ -6040,11 +6040,7 @@
   },
   "fltModulesHint": "Fitur yang dijual terpisah dari paket dasar.",
   "@fltModulesHint": {
-    "description": "Subtitle under the module card on a partner venue."
-  },
-  "fltModulesTrial": "Trial mencakup semua modul.",
-  "@fltModulesTrial": {
-    "description": "Subtitle under the module card on a trial, where the toggles are inert."
+    "description": "Subtitle under the module card. Same on every plan."
   },
   "fltModuleMembers": "Keanggotaan",
   "@fltModuleMembers": {

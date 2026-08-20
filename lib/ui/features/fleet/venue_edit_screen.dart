@@ -72,10 +72,10 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
 
   late String _planKey = widget.venue.plan;
 
-  /// Staged [[Modul]] set (ADR-0107 §9). Seeded from the stored `addOns`, never
-  /// from [Venue.hasModule] — a trial's implicit entitlement is a *read* rule and
-  /// baking it in here would write "everything" onto the document the moment the
-  /// operator converted the venue to a partner.
+  /// Staged [[Modul]] set (ADR-0107 §9). Seeded from the stored `addOns`, which
+  /// since ADR-0108 is also what [Venue.hasModule] answers from — the plan no
+  /// longer bends the entitlement, so what the operator sees ticked here is what
+  /// the floor renders, on a trial and on a partner alike.
   late Set<String> _modules = {...widget.venue.addOns};
   late DateTime? _trialStartAt = widget.venue.trialStartAt;
   late DateTime? _paidUntil = widget.venue.paidUntil;
@@ -107,11 +107,11 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   DateTime? get _trialStartValue =>
       _planKey == venuePlanTrial ? _trialStartAt : null;
 
-  /// Only meaningful on a partner. Same argument as [_priceValue]: a trial holds
-  /// every module implicitly, so the control it never renders must not save what
-  /// it happened to be showing when the plan changed mid-session.
-  Set<String>? get _modulesValue =>
-      _planKey == venuePlanTrial ? null : _modules;
+  /// Unlike [_priceValue] and [_trialStartValue], this does **not** branch on the
+  /// plan: a module set means the same thing on both plans (ADR-0108), so
+  /// switching a venue's plan mid-session must carry the entitlement across
+  /// rather than silently drop it.
+  Set<String> get _modulesValue => _modules;
 
   /// A trial has no cycle to speak of, so it records the default rather than
   /// keeping whatever the venue held while it was a partner.
@@ -186,7 +186,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         _paidUntil != v.paidUntil ||
         _priceValue != v.priceMonthly ||
         _cycleValue != v.billingCycle ||
-        (_modulesValue != null && !_sameModules(_modulesValue!, v.addOns));
+        !_sameModules(_modulesValue, v.addOns);
   }
 
   Future<void> _save() async {
@@ -210,8 +210,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     // Entitlement rides `updateVenue` beside identity, never `setVenueBilling`
     // (ADR-0107 §9) — a module set carries no money and cannot disagree with a
     // date, which is the only thing that callable's atomicity is for.
-    final modulesChanged =
-        newModules != null && !_sameModules(newModules, v.addOns);
+    final modulesChanged = !_sameModules(newModules, v.addOns);
     final planChanged = _planKey != v.plan;
     final trialStartChanged = newTrialStart != v.trialStartAt;
     final paidUntilChanged = _paidUntil != v.paidUntil;
@@ -573,14 +572,13 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
 
   /// **[[Modul]]** — the à-la-carte entitlement set (ADR-0107).
   ///
-  /// On a trial the toggles render on and inert, because a trial holds every
-  /// module implicitly and there is nothing here to decide. Staged like every
+  /// Identical on every plan since ADR-0108: a trial is shaped here like any
+  /// other venue, so a demo can be cut down to the quote. Staged like every
   /// other *field* on this screen and committed on Save; only **removal**
   /// confirms, because adding a module is the ordinary act and taking one away
   /// is the one that surprises a venue mid-service.
   Widget _modulesCard(SatColors sc) {
-    final trial = _planKey == venuePlanTrial;
-    final can = !_busy && !_offline && !trial;
+    final can = !_busy && !_offline;
     return SatCard.titled(
       title: context.l10n.fltModules,
       tag: context.l10n.fltTagModules,
@@ -588,7 +586,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            trial ? context.l10n.fltModulesTrial : context.l10n.fltModulesHint,
+            context.l10n.fltModulesHint,
             style: SatType.bodyS(color: sc.textLo),
           ),
           const SizedBox(height: Sp.s3),
@@ -596,7 +594,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             Row(
               children: [
                 SatToggle(
-                  value: trial || _modules.contains(key),
+                  value: _modules.contains(key),
                   semanticLabel: _moduleLabel(key),
                   onChanged: can ? (v) => _setModule(key, v) : null,
                 ),

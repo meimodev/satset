@@ -2501,7 +2501,6 @@
   "fltModules": "Modules",
   "fltTagModules": "MODULES",
   "fltModulesHint": "Features sold separately from the base package.",
-  "fltModulesTrial": "A trial includes every module.",
   "fltModuleMembers": "Membership",
   "fltModuleSelfOrder": "Self-order",
   "fltModuleOffTitle": "Turn off {module} for {venue}?",

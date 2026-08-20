@@ -572,10 +572,11 @@ exports.createVenue = onCall(async (request) => {
     address,
     status: "active",
     plan,
-    // Empty rather than pre-stocked: a trial is entitled to every module
-    // implicitly (ADR-0107 §2), so provisioning one here would answer the
-    // conversion question on the venue's behalf.
-    addOns: [],
+    // The plan does not bend entitlement any more (ADR-0108), so a trial that
+    // started empty would demo missing half the app. Provisioning branches on
+    // the plan; reading never does. A partner starts empty because a module
+    // nobody quoted is a module nobody bought.
+    addOns: plan === "trial" ? [...MODULES] : [],
     trialStartAt: plan === "trial" ? FieldValue.serverTimestamp() : null,
     paidUntil: null,
     priceMonthly: null,

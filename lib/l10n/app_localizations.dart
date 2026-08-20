@@ -12523,17 +12523,11 @@ abstract class AppL10n {
   /// **'MODUL'**
   String get fltTagModules;
 
-  /// Subtitle under the module card on a partner venue.
+  /// Subtitle under the module card. Same on every plan.
   ///
   /// In id, this message translates to:
   /// **'Fitur yang dijual terpisah dari paket dasar.'**
   String get fltModulesHint;
-
-  /// Subtitle under the module card on a trial, where the toggles are inert.
-  ///
-  /// In id, this message translates to:
-  /// **'Trial mencakup semua modul.'**
-  String get fltModulesTrial;
 
   /// Name of the members module.
   ///

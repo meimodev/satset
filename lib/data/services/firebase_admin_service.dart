@@ -129,9 +129,9 @@ class Venue {
   final String billingCycle;
 
   /// The [[Modul]] set the venue holds à la carte, beside — never inside — the
-  /// plan (ADR-0107). Persisted strings; see [venueModuleKeys]. Empty is the
-  /// ordinary state for a trial, which holds everything implicitly, so read this
-  /// through [hasModule] and never directly.
+  /// plan (ADR-0107). Persisted strings; see [venueModuleKeys]. Empty means the
+  /// venue holds nothing, on every plan alike (ADR-0108); read this through
+  /// [hasModule] and never directly.
   final Set<String> addOns;
   final DateTime? lastSeenAt;
   final bool fromCache;
@@ -154,11 +154,14 @@ class Venue {
   bool get isTrial => plan == venuePlanTrial;
   bool get isYearly => billingCycle == venueCycleYearly;
 
-  /// Whether the venue may use [key]. **A trial holds every module implicitly**
-  /// (ADR-0107 §2) — the trial is the demonstration of the whole app, and the
-  /// decision it exists to produce is *which of these do I keep*. That rule lives
-  /// here and nowhere else: every other reader asks this method.
-  bool hasModule(String key) => isTrial || addOns.contains(key);
+  /// Whether the venue may use [key]. **The plan does not enter this answer**
+  /// (ADR-0108, superseding ADR-0107 §2): a trial holds exactly what it was
+  /// given, same as a partner, so the module set a sales call shapes is the one
+  /// the floor renders. Provisioning still branches on the plan — a new trial is
+  /// created holding everything — but that is a default, written once, not a read
+  /// rule. The rule lives here and nowhere else: every other reader asks this
+  /// method.
+  bool hasModule(String key) => addOns.contains(key);
 }
 
 const venuePlanTrial = 'trial';

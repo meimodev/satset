@@ -7962,9 +7962,6 @@ class AppL10nEn extends AppL10n {
       'Features sold separately from the base package.';
 
   @override
-  String get fltModulesTrial => 'A trial includes every module.';
-
-  @override
   String get fltModuleMembers => 'Membership';
 
   @override

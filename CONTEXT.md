@@ -502,7 +502,7 @@ _Avoid_: a `billingStatus` flag in any form (the dates say it); a plan that carr
 ### Modul (module)
 **ID · EN** — Modul · Module. States: aktif · on; terkunci · locked. _Not_ "paket"/"plan" — a [[Venue billing|plan]] is the commercial arrangement, a module is one feature the venue holds under it.
 
-A slice of the app a [[Venue (cloud)|venue]] holds or does not hold, sold **à la carte** beside the plan rather than as a tier. Held as `venues/{vid}.addOns` — a set of persisted string keys (`members`, `selfOrder`), same naming rule as [[Audit (venue audit log)|AuditKind]]: renaming one silently un-entitles every venue holding it. A **[[Venue billing|trial]] holds every module implicitly**, because a trial is the demonstration of the whole app.
+A slice of the app a [[Venue (cloud)|venue]] holds or does not hold, sold **à la carte** beside the plan rather than as a tier. Held as `venues/{vid}.addOns` — a set of persisted string keys (`members`, `selfOrder`), same naming rule as [[Audit (venue audit log)|AuditKind]]: renaming one silently un-entitles every venue holding it. A **[[Venue billing|trial]] is shaped like any other venue** (ADR-0108): it is *created* holding every module, so it demos whole, but the operator may untick any of them and the floor obeys — the plan is not part of the entitlement answer.
 
 The **base package** — what a venue buying no modules gets — is floor, kitchen and till. Settlement is never a module: a restaurant that cannot take money is not a product.
 
@@ -512,7 +512,7 @@ Mirrored into local `VenueSettings` down the path cloud-owned identity already u
 
 **Unentitled is invisible to staff and locked to the owner** — identical to a toggled-off feature everywhere a waiter or cashier can reach, and a greyed tile on the admin hub, where the buyer is. Losing a module **freezes** rather than deletes ([[Poin]]'s rule generalised); the console refuses to remove `members` while [[Piutang]] is outstanding, so a venue never loses the ability to collect its own debts.
 
-_Avoid_: a module that carries its own price or its own term (the plan carries both); a tier ladder; a staleness cutoff that revokes a module offline; gating reports or multi-device; a route that reads the module set for itself instead of going through the feature's own writer. See [ADR-0107](docs/adr/0107-a-module-is-an-entitlement-beside-the-plan.md).
+_Avoid_: a module that carries its own price or its own term (the plan carries both); a tier ladder; **any read of the module set that branches on the plan**; a staleness cutoff that revokes a module offline; gating reports or multi-device; a route that reads the module set for itself instead of going through the feature's own writer. See [ADR-0107](docs/adr/0107-a-module-is-an-entitlement-beside-the-plan.md) and [ADR-0108](docs/adr/0108-a-trial-is-shaped-like-any-other-venue.md).
 
 ### Subscription cutoff
 When an unpaid [[Venue billing|subscription]] actually stops a venue trading. An hourly scheduled function (`onSchedule`, riding the pattern `sweepExpiredTempPasswords` proved) flips `status` to `suspended` on any `active` venue past its cutoff:
