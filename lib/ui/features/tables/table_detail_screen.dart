@@ -573,7 +573,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                             children: [
                               PendingOrdersBlock(tableId: table.id),
                               for (final (i, cid)
-                                  in Courses.stationOrder
+                                  in Courses.all
                                       .map((c) => c.id)
                                       .indexed)
                                 if (grouped[cid] != null &&
@@ -1547,7 +1547,7 @@ class _TabletSplit extends StatelessWidget {
                                 children: [
                                   PendingOrdersBlock(tableId: table.id),
                                   for (final (i, cid)
-                                      in Courses.stationOrder
+                                      in Courses.all
                                           .map((c) => c.id)
                                           .indexed)
                                     if (grouped[cid] != null &&

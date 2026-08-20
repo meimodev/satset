@@ -204,14 +204,7 @@ class ReviewScreen extends ConsumerWidget {
                         l.bottomInset + 100,
                       ),
                       children: [
-                        for (final cid in [
-                          CourseId.drinksNow,
-                          CourseId.starters,
-                          CourseId.mains,
-                          CourseId.sides,
-                          CourseId.desserts,
-                          CourseId.fireNow,
-                        ])
+                        for (final cid in Courses.all.map((c) => c.id))
                           if (grouped[cid] != null && grouped[cid]!.isNotEmpty)
                             _ReviewCourseBlock(
                               course: Courses.byId(cid),

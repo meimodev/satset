@@ -36,8 +36,10 @@ class Courses {
   static const desserts = Course(id: CourseId.desserts);
   static const fireNow = Course(id: CourseId.fireNow);
 
+  /// Every course, in the order a screen renders them. The one list — a
+  /// second, shorter one omitted `fireNow` and a table's fire-now lines
+  /// rendered nowhere at all.
   static const all = [drinksNow, starters, mains, sides, desserts, fireNow];
-  static const stationOrder = [drinksNow, starters, mains, sides, desserts];
 
   static Course byId(CourseId id) => all.firstWhere((c) => c.id == id);
 
