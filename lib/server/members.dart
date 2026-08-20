@@ -170,6 +170,35 @@ Future<PunchStatus> punchStatus(
   return PunchStatus(bought: bought, given: given, target: c.punchTarget);
 }
 
+/// The **only** member fact that may cross the guest plane (ADR-0110): how far
+/// into the current card, and how long a card is. Two integers, and nothing
+/// else — no name, no phone echoed back, no points, no debt.
+///
+/// An unknown phone answers in the **same shape** as a known one, a zeroed
+/// card. A 404-for-absent would make this an enumeration oracle for enrolment
+/// no matter how little it carried, which is the whole reason the list is
+/// closed at two integers.
+///
+/// A finished card reads `progress == target`. That is the reward waiting at
+/// the till: `bought % target` alone would show a full card as an empty one,
+/// and the guest would be told to buy ten more.
+///
+/// Returns null only when the program is not running — the route turns that
+/// into a 404 identical to every other member route on a venue that never
+/// opted in (ADR-0091), so a guest cannot tell an unlicensed venue from an old
+/// server.
+Future<({int progress, int target})?> guestPunchStatus(
+  AppDatabase db,
+  String phone,
+) async {
+  final c = await memberConfig(db);
+  if (!c.punchRunning) return null;
+  final m = await findMemberByPhone(db, phone);
+  if (m == null) return (progress: 0, target: c.punchTarget);
+  final p = await punchStatus(db, m.id, cfg: c);
+  return (progress: p.rewardDue ? p.target : p.progress, target: p.target);
+}
+
 /// Read a member with everything a reader needs, including the two derived
 /// figures. Returns null when the id is unknown — which is also what a deleted
 /// member looks like, deliberately (ADR-0092).

@@ -160,9 +160,17 @@ var CODE = decodeURIComponent(location.pathname.split('/t/')[1] || '');
 var SKEY = 'satset.guest.' + CODE;
 var venue = null, menu = null, cart = [], tab = 'menu', cat = '', q = '';
 var orders = [], poll = null, editing = null;
+// The last stempel answer, and nothing more: two integers the server handed
+// back (ADR-0110). Never cached to storage — a count goes stale the moment the
+// guest buys anything, and a stale card is worse than no card.
+var punch = null;
 
 function sid(){ try { return localStorage.getItem(SKEY) || ''; } catch(e){ return ''; } }
 function setSid(v){ try { localStorage.setItem(SKEY, v); } catch(e){} }
+// The phone *is* worth keeping: it is the guest's own, they typed it here, and
+// retyping it every visit is the friction that kills the feature.
+function phone(){ try { return localStorage.getItem(SKEY + '.hp') || ''; } catch(e){ return ''; } }
+function setPhone(v){ try { localStorage.setItem(SKEY + '.hp', v); } catch(e){} }
 
 function rp(n){ return 'Rp' + (n|0).toLocaleString('id-ID'); }
 function el(id){ return document.getElementById(id); }
@@ -201,7 +209,9 @@ var CODES = {
   out_of_stock: 'Bahan habis.',
   menu_changed: 'Menu diganti.',
   closed: 'Dapur sudah tutup.',
-  other: 'Ditolak kasir.'
+  other: 'Ditolak kasir.',
+  too_many: 'Terlalu sering. Coba lagi setelah pindai ulang QR.',
+  bad_request: 'Nomor HP belum diisi.'
 };
 function say(code){ return CODES[code] || 'Terjadi kesalahan.'; }
 
@@ -479,10 +489,58 @@ function orderHtml(o){
       say(o.rejectReasonCode) + '</div>' : '') + '</div>';
 }
 
+// The [[Kartu stempel]] box (ADR-0110). Read-only by design: it tells the guest
+// where they stand so the card can actually change what they buy, and the
+// reward itself is still claimed at the till by a human.
+function punchHtml(){
+  if (!venue || !venue.punch) return '';
+  var body;
+  if (punch) {
+    var dots = '';
+    for (var i = 0; i < punch.target; i++) {
+      dots += '<div class="step' + (i < punch.progress ? ' on' : '') + '"></div>';
+    }
+    var done = punch.progress >= punch.target;
+    body = '<div class="steps">' + dots + '</div>' +
+      '<p class="muted" style="margin:10px 0 0">' +
+      (done
+        ? 'Kartu penuh — tunjukkan ke kasir untuk gratisannya.'
+        : 'Terkumpul ' + punch.progress + ' dari ' + punch.target + '.') +
+      '</p>' +
+      // The count only moves when a cashier settles a bill, so what is on
+      // screen goes stale the moment the guest buys something. One tap back to
+      // the form is cheaper than pretending it refreshes itself.
+      '<button class="btn ghost" id="hpAgain" style="margin-top:10px">Cek lagi</button>';
+  } else {
+    body = '<div class="row" style="margin-top:10px">' +
+      '<input class="search grow" id="hp" inputmode="tel" maxlength="20" ' +
+      'style="margin:0" placeholder="08…" value="' + esc(phone()) + '">' +
+      '<button class="btn" id="hpGo" style="width:auto">Cek</button></div>';
+  }
+  return '<h2>Kartu stempel</h2><div class="card">' + body + '</div>';
+}
+
+function wirePunch(){
+  var again = el('hpAgain');
+  if (again) again.onclick = function(){ punch = null; renderOrders(); };
+  var go = el('hpGo');
+  if (!go) return;
+  go.onclick = function(){
+    var v = (el('hp').value || '').trim();
+    if (!v) { toast('Isi nomor HP dulu.'); return; }
+    go.disabled = true;
+    setPhone(v);
+    api('/guest/punch', {method:'POST', body: JSON.stringify({phone: v})})
+      .then(function(j){ punch = j; renderOrders(); })
+      .catch(function(e){ go.disabled = false; toast(say(e.code)); });
+  };
+}
+
 function renderOrders(){
-  el('main').innerHTML = orders.length
-    ? orders.map(orderHtml).join('')
-    : '<div class="empty"><p style="font-size:44px;margin:0">🧾</p><p>Belum ada pesanan.</p></div>';
+  el('main').innerHTML = punchHtml() + (orders.length
+    ? '<h2>Pesanan saya</h2>' + orders.map(orderHtml).join('')
+    : '<div class="empty"><p style="font-size:44px;margin:0">🧾</p><p>Belum ada pesanan.</p></div>');
+  wirePunch();
   Array.prototype.forEach.call(document.querySelectorAll('[data-cancel]'), function(b){
     b.onclick = function(){
       b.disabled = true;

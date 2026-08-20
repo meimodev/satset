@@ -5,6 +5,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import 'package:satset/server/db/database.dart';
+import 'package:satset/server/members.dart';
 import 'package:satset/server/self_order.dart';
 import 'package:satset/server/ws_hub.dart';
 
@@ -62,6 +63,12 @@ Router guestRoutes(AppDatabase db, WsHub hub) {
     return null;
   }
 
+  /// Stempel lookups already spent, per session (ADR-0110 §2). Held in memory
+  /// on purpose: this router is built once at boot, the cap is per *session*
+  /// rather than per day, and a counter nobody ever reads back is not worth a
+  /// column. It dies with the socket, which is the right lifetime for it.
+  final punchTries = <String, int>{};
+
   Future<GuestSession?> session(Request req) async {
     final id = req.headers['x-guest-session'];
     return id == null ? null : liveGuestSession(db, id);
@@ -99,6 +106,10 @@ Router guestRoutes(AppDatabase db, WsHub hub) {
       'open': withinServiceHours(rules, DateTime.now()),
       'noteEnabled': rules.noteEnabled,
       'maxItems': rules.maxItems,
+      // Whether the stempel box is worth drawing at all (ADR-0110). A
+      // venue-level fact, not a member one — it says a card exists here, never
+      // that anyone holds it.
+      'punch': (await memberConfig(db)).punchRunning,
     });
   });
 
@@ -164,6 +175,31 @@ Router guestRoutes(AppDatabase db, WsHub hub) {
     final s = await session(req);
     if (s == null) return err(401, 'session_expired');
     return json({'orders': await guestOrdersJson(db, sessionId: s.id)});
+  });
+
+  /// The **only** member fact on this plane (ADR-0110). Two integers out — how
+  /// far into the card, how long a card is — for a phone the caller already
+  /// had, and the same two whether that number is enrolled or not.
+  ///
+  /// It is not a member route: it takes no [ServerAuth] like everything else
+  /// here, reads through `members.dart` rather than the tables, and 404s on a
+  /// venue without the program exactly as an authenticated member route would
+  /// (ADR-0091). Read-only — the reward itself is redeemed at the till.
+  r.post('/guest/punch', (Request req) async {
+    final s = await session(req);
+    if (s == null) return err(401, 'session_expired');
+    // Counted before the answer, so a rejected try still costs a try. A punch
+    // check is a once-per-visit act; anything shaped like a sweep is not this
+    // feature.
+    final tries = (punchTries[s.id] ?? 0) + 1;
+    punchTries[s.id] = tries;
+    if (tries > 5) return err(429, 'too_many');
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final phone = ((body['phone'] as String?) ?? '').trim();
+    if (phone.isEmpty) return err(400, 'bad_request');
+    final st = await guestPunchStatus(db, phone);
+    if (st == null) return err(404, 'not_found');
+    return json({'progress': st.progress, 'target': st.target});
   });
 
   r.delete('/guest/orders/<id>', (Request req, String id) async {
