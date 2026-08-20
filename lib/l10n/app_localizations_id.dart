@@ -499,6 +499,13 @@ class AppL10nId extends AppL10n {
   String get soTableOn => 'Meja ini melayani pesan mandiri';
 
   @override
+  String get soCounterLabel => 'Konter';
+
+  @override
+  String get soCounterSub =>
+      'Satu QR untuk seluruh kedai. Tiap pesanan jadi nota bawa pulang sendiri.';
+
+  @override
   String get soNoHost => 'Server belum terhubung, alamat QR belum bisa dibuat.';
 
   @override

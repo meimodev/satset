@@ -79,6 +79,11 @@ Router selfOrderRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       // the tablet's own client half is paired over loopback.
       'host': host,
       'guestPort': guestPlanePort,
+      // The counter's own code (ADR-0109), minted here on first read. This is
+      // the moment an owner opens the QR tab having turned the switch on, and
+      // it is the only place that mints — a code handed out anywhere else is a
+      // live QR nobody asked to publish. Null when the switch is off.
+      'counterCode': await counterGuestCode(db, mint: true) ?? '',
       'orders': await guestOrdersJson(db, status: status, staffView: true),
       'stats': await guestOrderStats(db),
       // The [[Menu tamu]] tab's rows, resolved exactly as the guest page sees

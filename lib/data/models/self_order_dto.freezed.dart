@@ -509,6 +509,11 @@ mixin _$GuestOrderDto {
   String get id => throw _privateConstructorUsedError;
   String get tableId => throw _privateConstructorUsedError;
   String? get tableLabel => throw _privateConstructorUsedError;
+
+  /// A counter order (ADR-0109): no table, its own [[Bawa pulang]] bill once
+  /// accepted. The queue card spells it, because a blank table label is not
+  /// a word.
+  bool get counter => throw _privateConstructorUsedError;
   String get status => throw _privateConstructorUsedError;
   DateTime get submittedAt => throw _privateConstructorUsedError;
   DateTime? get decidedAt => throw _privateConstructorUsedError;
@@ -541,6 +546,7 @@ abstract class $GuestOrderDtoCopyWith<$Res> {
     String id,
     String tableId,
     String? tableLabel,
+    bool counter,
     String status,
     DateTime submittedAt,
     DateTime? decidedAt,
@@ -569,6 +575,7 @@ class _$GuestOrderDtoCopyWithImpl<$Res, $Val extends GuestOrderDto>
     Object? id = null,
     Object? tableId = null,
     Object? tableLabel = freezed,
+    Object? counter = null,
     Object? status = null,
     Object? submittedAt = null,
     Object? decidedAt = freezed,
@@ -591,6 +598,10 @@ class _$GuestOrderDtoCopyWithImpl<$Res, $Val extends GuestOrderDto>
                 ? _value.tableLabel
                 : tableLabel // ignore: cast_nullable_to_non_nullable
                       as String?,
+            counter: null == counter
+                ? _value.counter
+                : counter // ignore: cast_nullable_to_non_nullable
+                      as bool,
             status: null == status
                 ? _value.status
                 : status // ignore: cast_nullable_to_non_nullable
@@ -638,6 +649,7 @@ abstract class _$$GuestOrderDtoImplCopyWith<$Res>
     String id,
     String tableId,
     String? tableLabel,
+    bool counter,
     String status,
     DateTime submittedAt,
     DateTime? decidedAt,
@@ -665,6 +677,7 @@ class __$$GuestOrderDtoImplCopyWithImpl<$Res>
     Object? id = null,
     Object? tableId = null,
     Object? tableLabel = freezed,
+    Object? counter = null,
     Object? status = null,
     Object? submittedAt = null,
     Object? decidedAt = freezed,
@@ -687,6 +700,10 @@ class __$$GuestOrderDtoImplCopyWithImpl<$Res>
             ? _value.tableLabel
             : tableLabel // ignore: cast_nullable_to_non_nullable
                   as String?,
+        counter: null == counter
+            ? _value.counter
+            : counter // ignore: cast_nullable_to_non_nullable
+                  as bool,
         status: null == status
             ? _value.status
             : status // ignore: cast_nullable_to_non_nullable
@@ -727,6 +744,7 @@ class _$GuestOrderDtoImpl implements _GuestOrderDto {
     required this.id,
     required this.tableId,
     this.tableLabel,
+    this.counter = false,
     this.status = 'pending',
     required this.submittedAt,
     this.decidedAt,
@@ -745,6 +763,13 @@ class _$GuestOrderDtoImpl implements _GuestOrderDto {
   final String tableId;
   @override
   final String? tableLabel;
+
+  /// A counter order (ADR-0109): no table, its own [[Bawa pulang]] bill once
+  /// accepted. The queue card spells it, because a blank table label is not
+  /// a word.
+  @override
+  @JsonKey()
+  final bool counter;
   @override
   @JsonKey()
   final String status;
@@ -773,7 +798,7 @@ class _$GuestOrderDtoImpl implements _GuestOrderDto {
 
   @override
   String toString() {
-    return 'GuestOrderDto(id: $id, tableId: $tableId, tableLabel: $tableLabel, status: $status, submittedAt: $submittedAt, decidedAt: $decidedAt, rejectReasonCode: $rejectReasonCode, decidedBy: $decidedBy, subtotal: $subtotal, lines: $lines)';
+    return 'GuestOrderDto(id: $id, tableId: $tableId, tableLabel: $tableLabel, counter: $counter, status: $status, submittedAt: $submittedAt, decidedAt: $decidedAt, rejectReasonCode: $rejectReasonCode, decidedBy: $decidedBy, subtotal: $subtotal, lines: $lines)';
   }
 
   @override
@@ -785,6 +810,7 @@ class _$GuestOrderDtoImpl implements _GuestOrderDto {
             (identical(other.tableId, tableId) || other.tableId == tableId) &&
             (identical(other.tableLabel, tableLabel) ||
                 other.tableLabel == tableLabel) &&
+            (identical(other.counter, counter) || other.counter == counter) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.submittedAt, submittedAt) ||
                 other.submittedAt == submittedAt) &&
@@ -806,6 +832,7 @@ class _$GuestOrderDtoImpl implements _GuestOrderDto {
     id,
     tableId,
     tableLabel,
+    counter,
     status,
     submittedAt,
     decidedAt,
@@ -834,6 +861,7 @@ abstract class _GuestOrderDto implements GuestOrderDto {
     required final String id,
     required final String tableId,
     final String? tableLabel,
+    final bool counter,
     final String status,
     required final DateTime submittedAt,
     final DateTime? decidedAt,
@@ -852,6 +880,12 @@ abstract class _GuestOrderDto implements GuestOrderDto {
   String get tableId;
   @override
   String? get tableLabel;
+
+  /// A counter order (ADR-0109): no table, its own [[Bawa pulang]] bill once
+  /// accepted. The queue card spells it, because a blank table label is not
+  /// a word.
+  @override
+  bool get counter;
   @override
   String get status;
   @override

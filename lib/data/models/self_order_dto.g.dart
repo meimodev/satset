@@ -49,6 +49,7 @@ _$GuestOrderDtoImpl _$$GuestOrderDtoImplFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       tableId: json['tableId'] as String,
       tableLabel: json['tableLabel'] as String?,
+      counter: json['counter'] as bool? ?? false,
       status: json['status'] as String? ?? 'pending',
       submittedAt: DateTime.parse(json['submittedAt'] as String),
       decidedAt: json['decidedAt'] == null
@@ -71,6 +72,7 @@ Map<String, dynamic> _$$GuestOrderDtoImplToJson(_$GuestOrderDtoImpl instance) =>
       'id': instance.id,
       'tableId': instance.tableId,
       'tableLabel': instance.tableLabel,
+      'counter': instance.counter,
       'status': instance.status,
       'submittedAt': instance.submittedAt.toIso8601String(),
       'decidedAt': instance.decidedAt?.toIso8601String(),

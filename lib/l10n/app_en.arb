@@ -190,6 +190,8 @@
   "soQrHint": "Scan to order",
   "soPrint": "Print",
   "soTableOn": "This table serves self-order",
+  "soCounterLabel": "Counter",
+  "soCounterSub": "One QR for the whole shop. Each order becomes its own takeaway bill.",
   "soNoHost": "Not connected to a server, so the QR address cannot be built.",
   "soMenuSub": "What guests may see and order from their phone.",
   "soItemVisible": "Shown",

@@ -43,6 +43,11 @@ abstract class GuestOrderDto with _$GuestOrderDto {
     required String id,
     required String tableId,
     String? tableLabel,
+
+    /// A counter order (ADR-0109): no table, its own [[Bawa pulang]] bill once
+    /// accepted. The queue card spells it, because a blank table label is not
+    /// a word.
+    @Default(false) bool counter,
     @Default('pending') String status,
     required DateTime submittedAt,
     DateTime? decidedAt,

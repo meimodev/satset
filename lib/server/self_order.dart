@@ -117,6 +117,44 @@ Future<VenueTable?> tableForGuestCode(AppDatabase db, String code) async {
       .getSingleOrNull();
 }
 
+/// The venue's own code — the QR on the counter, not on a table (ADR-0109).
+///
+/// A [[Kedai]] has one queue and no floor plan, so its guests scan one code and
+/// each order becomes its **own** [[Bawa pulang]] bill. That last part is why
+/// this is not "point the QR at table 1": a shared table would merge two
+/// strangers' orders onto one bill, which is correct for a party and wrong for
+/// a queue.
+///
+/// The code is carried as an empty `tableId` throughout — the same convention a
+/// takeaway visit has always used for "no table". Nothing here invents a
+/// sentinel table row, because a fake table is a row that shows up on the floor
+/// plan, in the reports and in the seat picker forever after.
+///
+/// Returns null when the switch is off: an unentitled or unswitched venue has
+/// no counter code, and a code minted "just in case" is a live QR nobody chose
+/// to publish.
+Future<String?> counterGuestCode(AppDatabase db, {bool mint = false}) async {
+  final s = await _settings(db);
+  if (!counterSwitchOn(s, counterQr)) return null;
+  final have = s?.counterGuestCode ?? '';
+  if (have.isNotEmpty) return have;
+  if (!mint) return null;
+  final code = mintGuestCode();
+  await (db.update(
+    db.venueSettings,
+  )..where((x) => x.id.equals('default'))).write(
+    VenueSettingsCompanion(counterGuestCode: Value(code)),
+  );
+  return code;
+}
+
+/// Whether [code] is the venue's counter code. Blank-safe on both sides: a
+/// venue with no code must not be opened by a guest who sends none.
+Future<bool> isCounterGuestCode(AppDatabase db, String code) async {
+  if (code.isEmpty) return false;
+  return await counterGuestCode(db) == code;
+}
+
 /// Give a code to every table that has none. Idempotent, and the *only* safe
 /// thing to run on a venue whose QRs are already printed — [rotateGuestCodes]
 /// is the deliberate act that kills them.
@@ -143,6 +181,18 @@ Future<int> rotateGuestCodes(
     for (final t in rows) {
       await (db.update(db.venueTables)..where((x) => x.id.equals(t.id))).write(
         VenueTablesCompanion(guestCode: Value(mintGuestCode())),
+      );
+    }
+    // The counter's card is on the same wall as the tables' and dies with
+    // them — a rotate that spared it would leave one live QR from the set the
+    // owner just declared burned. Reminted rather than cleared, so the switch
+    // does not silently turn itself off.
+    final s = await _settings(db);
+    if ((s?.counterGuestCode ?? '').isNotEmpty) {
+      await (db.update(
+        db.venueSettings,
+      )..where((x) => x.id.equals('default'))).write(
+        VenueSettingsCompanion(counterGuestCode: Value(mintGuestCode())),
       );
     }
   });
@@ -206,6 +256,10 @@ Future<GuestSession?> liveGuestSession(AppDatabase db, String id) async {
   )..where((x) => x.id.equals(id))).getSingleOrNull();
   if (s == null || s.closedAt != null) return null;
   if (SatClock.now().isAfter(s.expiresAt)) return null;
+  // A counter session sits at no table, so there is no sitting to go stale
+  // against — the TTL is the whole of its life. Everything below asks a table
+  // row questions that have no counter answer.
+  if (s.tableId.isEmpty) return s;
   final t = await (db.select(
     db.venueTables,
   )..where((x) => x.id.equals(s.tableId))).getSingleOrNull();
@@ -336,7 +390,10 @@ Future<Map<String, dynamic>> guestMenuJson(
 Future<GuestOrder> submitGuestOrder(
   AppDatabase db, {
   required GuestSession session,
-  required VenueTable table,
+
+  /// The table this order is for, or **empty** for a counter order (ADR-0109).
+  /// A string rather than the row, because the counter has no row.
+  required String tableId,
   required List<Map<String, dynamic>> lines,
   WsHub? hub,
 }) async {
@@ -425,7 +482,7 @@ Future<GuestOrder> submitGuestOrder(
   final order = GuestOrdersCompanion.insert(
     id: orderId,
     sessionId: session.id,
-    tableId: table.id,
+    tableId: tableId,
     submittedAt: SatClock.now(),
     subtotal: Value(subtotal),
   );
@@ -468,6 +525,10 @@ acceptGuestOrder(
   final result = await submitOrder(
     db,
     tableId: claimed.tableId,
+    // A counter order belongs to whoever is standing there, not to a table, so
+    // it becomes its own `Bawa pulang #N` bill — the same writer the till uses
+    // for a walk-in, with no name to ask for across a bar (ADR-0109).
+    takeaway: claimed.tableId.isEmpty,
     // The intent's own id: a double-tapped Terima on two tablets replays the
     // same claim rather than firing the food twice.
     idem: 'guest-$orderId',
@@ -657,6 +718,10 @@ Future<Map<String, dynamic>> guestOrderJson(
     'id': o.id,
     'sessionId': o.sessionId,
     'tableId': o.tableId,
+    // An empty `tableId` is the counter (ADR-0109). Sent as its own flag rather
+    // than left for every reader to infer from a blank string — the word for it
+    // is composed at read time on each plane, in that plane's own copy.
+    'counter': o.tableId.isEmpty,
     'tableLabel': label,
     'decidedBy': decidedBy,
     'status': o.status,

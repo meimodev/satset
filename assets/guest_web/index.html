@@ -225,7 +225,10 @@ function boot(){
   ]).then(function(res){
     venue = res[0]; menu = res[1];
     el('venue').textContent = venue.venue;
-    el('tbl').textContent = 'Meja ' + venue.tableLabel;
+    // Konter (ADR-0109): satu QR untuk seluruh kedai, tanpa meja. Pesanan
+    // yang diterima jadi nota bawa pulang sendiri, jadi kata "Meja" salah.
+    el('tbl').textContent = venue.counter ? 'Pesan di konter'
+                                          : 'Meja ' + venue.tableLabel;
     el('bar').hidden = false;
     if (!sid()) return openSession();
   }).then(function(){

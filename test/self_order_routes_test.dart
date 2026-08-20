@@ -73,7 +73,7 @@ void main() {
     return submitGuestOrder(
       db,
       session: session,
-      table: table,
+      tableId: table.id,
       lines: [
         {'itemId': 'nasgor', 'qty': 1},
       ],

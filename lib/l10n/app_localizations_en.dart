@@ -502,6 +502,13 @@ class AppL10nEn extends AppL10n {
   String get soTableOn => 'This table serves self-order';
 
   @override
+  String get soCounterLabel => 'Counter';
+
+  @override
+  String get soCounterSub =>
+      'One QR for the whole shop. Each order becomes its own takeaway bill.';
+
+  @override
   String get soNoHost =>
       'Not connected to a server, so the QR address cannot be built.';
 

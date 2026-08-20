@@ -9393,6 +9393,17 @@ class $VenueSettingsTable extends VenueSettings
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _counterGuestCodeMeta = const VerificationMeta(
+    'counterGuestCode',
+  );
+  @override
+  late final GeneratedColumn<String> counterGuestCode = GeneratedColumn<String>(
+    'counter_guest_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -9453,6 +9464,7 @@ class $VenueSettingsTable extends VenueSettings
     soundGuestPending,
     modules,
     counterConfig,
+    counterGuestCode,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9957,6 +9969,15 @@ class $VenueSettingsTable extends VenueSettings
         ),
       );
     }
+    if (data.containsKey('counter_guest_code')) {
+      context.handle(
+        _counterGuestCodeMeta,
+        counterGuestCode.isAcceptableOrUnknown(
+          data['counter_guest_code']!,
+          _counterGuestCodeMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -10198,6 +10219,10 @@ class $VenueSettingsTable extends VenueSettings
         DriftSqlType.string,
         data['${effectivePrefix}counter_config'],
       ),
+      counterGuestCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}counter_guest_code'],
+      ),
     );
   }
 
@@ -10396,6 +10421,13 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   /// the same answer and are meant to be. A venue that has never phoned home is
   /// a restaurant, which is the point.
   final String? counterConfig;
+
+  /// The venue's own [[Pesan mandiri]] code — the QR taped to the counter
+  /// rather than to a table (ADR-0109, switch `counterQr`). Minted blank-only,
+  /// like a table's, and killed by the same venue-wide rotate. Null on a venue
+  /// that has never turned the switch on; a counter shop with no tables at all
+  /// has this and nothing else.
+  final String? counterGuestCode;
   const VenueSetting({
     required this.id,
     required this.displayName,
@@ -10455,6 +10487,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     this.soundGuestPending,
     this.modules,
     this.counterConfig,
+    this.counterGuestCode,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -10529,6 +10562,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     if (!nullToAbsent || counterConfig != null) {
       map['counter_config'] = Variable<String>(counterConfig);
     }
+    if (!nullToAbsent || counterGuestCode != null) {
+      map['counter_guest_code'] = Variable<String>(counterGuestCode);
+    }
     return map;
   }
 
@@ -10602,6 +10638,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       counterConfig: counterConfig == null && nullToAbsent
           ? const Value.absent()
           : Value(counterConfig),
+      counterGuestCode: counterGuestCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(counterGuestCode),
     );
   }
 
@@ -10689,6 +10728,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       ),
       modules: serializer.fromJson<String?>(json['modules']),
       counterConfig: serializer.fromJson<String?>(json['counterConfig']),
+      counterGuestCode: serializer.fromJson<String?>(json['counterGuestCode']),
     );
   }
   @override
@@ -10753,6 +10793,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       'soundGuestPending': serializer.toJson<String?>(soundGuestPending),
       'modules': serializer.toJson<String?>(modules),
       'counterConfig': serializer.toJson<String?>(counterConfig),
+      'counterGuestCode': serializer.toJson<String?>(counterGuestCode),
     };
   }
 
@@ -10815,6 +10856,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     Value<String?> soundGuestPending = const Value.absent(),
     Value<String?> modules = const Value.absent(),
     Value<String?> counterConfig = const Value.absent(),
+    Value<String?> counterGuestCode = const Value.absent(),
   }) => VenueSetting(
     id: id ?? this.id,
     displayName: displayName ?? this.displayName,
@@ -10882,6 +10924,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     counterConfig: counterConfig.present
         ? counterConfig.value
         : this.counterConfig,
+    counterGuestCode: counterGuestCode.present
+        ? counterGuestCode.value
+        : this.counterGuestCode,
   );
   VenueSetting copyWithCompanion(VenueSettingsCompanion data) {
     return VenueSetting(
@@ -11043,6 +11088,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       counterConfig: data.counterConfig.present
           ? data.counterConfig.value
           : this.counterConfig,
+      counterGuestCode: data.counterGuestCode.present
+          ? data.counterGuestCode.value
+          : this.counterGuestCode,
     );
   }
 
@@ -11106,7 +11154,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           ..write('guestSessionHours: $guestSessionHours, ')
           ..write('soundGuestPending: $soundGuestPending, ')
           ..write('modules: $modules, ')
-          ..write('counterConfig: $counterConfig')
+          ..write('counterConfig: $counterConfig, ')
+          ..write('counterGuestCode: $counterGuestCode')
           ..write(')'))
         .toString();
   }
@@ -11171,6 +11220,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     soundGuestPending,
     modules,
     counterConfig,
+    counterGuestCode,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -11233,7 +11283,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           other.guestSessionHours == this.guestSessionHours &&
           other.soundGuestPending == this.soundGuestPending &&
           other.modules == this.modules &&
-          other.counterConfig == this.counterConfig);
+          other.counterConfig == this.counterConfig &&
+          other.counterGuestCode == this.counterGuestCode);
 }
 
 class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
@@ -11295,6 +11346,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
   final Value<String?> soundGuestPending;
   final Value<String?> modules;
   final Value<String?> counterConfig;
+  final Value<String?> counterGuestCode;
   final Value<int> rowid;
   const VenueSettingsCompanion({
     this.id = const Value.absent(),
@@ -11355,6 +11407,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.soundGuestPending = const Value.absent(),
     this.modules = const Value.absent(),
     this.counterConfig = const Value.absent(),
+    this.counterGuestCode = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueSettingsCompanion.insert({
@@ -11416,6 +11469,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.soundGuestPending = const Value.absent(),
     this.modules = const Value.absent(),
     this.counterConfig = const Value.absent(),
+    this.counterGuestCode = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id);
   static Insertable<VenueSetting> custom({
@@ -11477,6 +11531,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Expression<String>? soundGuestPending,
     Expression<String>? modules,
     Expression<String>? counterConfig,
+    Expression<String>? counterGuestCode,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -11550,6 +11605,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       if (soundGuestPending != null) 'sound_guest_pending': soundGuestPending,
       if (modules != null) 'modules': modules,
       if (counterConfig != null) 'counter_config': counterConfig,
+      if (counterGuestCode != null) 'counter_guest_code': counterGuestCode,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -11613,6 +11669,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Value<String?>? soundGuestPending,
     Value<String?>? modules,
     Value<String?>? counterConfig,
+    Value<String?>? counterGuestCode,
     Value<int>? rowid,
   }) {
     return VenueSettingsCompanion(
@@ -11678,6 +11735,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       soundGuestPending: soundGuestPending ?? this.soundGuestPending,
       modules: modules ?? this.modules,
       counterConfig: counterConfig ?? this.counterConfig,
+      counterGuestCode: counterGuestCode ?? this.counterGuestCode,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -11871,6 +11929,9 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     if (counterConfig.present) {
       map['counter_config'] = Variable<String>(counterConfig.value);
     }
+    if (counterGuestCode.present) {
+      map['counter_guest_code'] = Variable<String>(counterGuestCode.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -11938,6 +11999,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
           ..write('soundGuestPending: $soundGuestPending, ')
           ..write('modules: $modules, ')
           ..write('counterConfig: $counterConfig, ')
+          ..write('counterGuestCode: $counterGuestCode, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -33264,6 +33326,7 @@ typedef $$VenueSettingsTableCreateCompanionBuilder =
       Value<String?> soundGuestPending,
       Value<String?> modules,
       Value<String?> counterConfig,
+      Value<String?> counterGuestCode,
       Value<int> rowid,
     });
 typedef $$VenueSettingsTableUpdateCompanionBuilder =
@@ -33326,6 +33389,7 @@ typedef $$VenueSettingsTableUpdateCompanionBuilder =
       Value<String?> soundGuestPending,
       Value<String?> modules,
       Value<String?> counterConfig,
+      Value<String?> counterGuestCode,
       Value<int> rowid,
     });
 
@@ -33625,6 +33689,11 @@ class $$VenueSettingsTableFilterComposer
 
   ColumnFilters<String> get counterConfig => $composableBuilder(
     column: $table.counterConfig,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get counterGuestCode => $composableBuilder(
+    column: $table.counterGuestCode,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -33927,6 +33996,11 @@ class $$VenueSettingsTableOrderingComposer
     column: $table.counterConfig,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get counterGuestCode => $composableBuilder(
+    column: $table.counterGuestCode,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VenueSettingsTableAnnotationComposer
@@ -34211,6 +34285,11 @@ class $$VenueSettingsTableAnnotationComposer
     column: $table.counterConfig,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get counterGuestCode => $composableBuilder(
+    column: $table.counterGuestCode,
+    builder: (column) => column,
+  );
 }
 
 class $$VenueSettingsTableTableManager
@@ -34302,6 +34381,7 @@ class $$VenueSettingsTableTableManager
                 Value<String?> soundGuestPending = const Value.absent(),
                 Value<String?> modules = const Value.absent(),
                 Value<String?> counterConfig = const Value.absent(),
+                Value<String?> counterGuestCode = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion(
                 id: id,
@@ -34362,6 +34442,7 @@ class $$VenueSettingsTableTableManager
                 soundGuestPending: soundGuestPending,
                 modules: modules,
                 counterConfig: counterConfig,
+                counterGuestCode: counterGuestCode,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -34424,6 +34505,7 @@ class $$VenueSettingsTableTableManager
                 Value<String?> soundGuestPending = const Value.absent(),
                 Value<String?> modules = const Value.absent(),
                 Value<String?> counterConfig = const Value.absent(),
+                Value<String?> counterGuestCode = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion.insert(
                 id: id,
@@ -34484,6 +34566,7 @@ class $$VenueSettingsTableTableManager
                 soundGuestPending: soundGuestPending,
                 modules: modules,
                 counterConfig: counterConfig,
+                counterGuestCode: counterGuestCode,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

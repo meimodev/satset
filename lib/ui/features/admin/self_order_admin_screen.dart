@@ -133,6 +133,14 @@ class _QrTab extends ConsumerWidget {
             ],
           ),
         ),
+        // The counter's card, above the tables and only while the switch is
+        // on (ADR-0109). One QR for the whole shop: each scan opens its own
+        // session and each accepted order becomes its own Bawa pulang bill, so
+        // two strangers in the same queue never land on one tab.
+        if (state.counterCode.isNotEmpty) ...[
+          const SizedBox(height: Sp.s4),
+          _CounterCodeCard(url: guestUrlFor(state, state.counterCode)),
+        ],
         const SizedBox(height: Sp.s4),
         for (final t in state.tables)
           Padding(
@@ -148,6 +156,8 @@ class _QrTab extends ConsumerWidget {
   /// would put a dead QR on a live table.
   Future<void> _printAll(BuildContext context, WidgetRef ref) async {
     final cards = <({String label, String url})>[
+      if (guestUrlFor(state, state.counterCode) case final u?)
+        (label: context.l10n.soCounterLabel, url: u),
       for (final t in state.tables)
         if (t.enabled)
           if (guestUrlFor(state, t.code) case final u?)
@@ -177,6 +187,81 @@ class _QrTab extends ConsumerWidget {
     );
     if (ok != true) return;
     await ref.read(selfOrderProvider.notifier).rotateCodes();
+  }
+}
+
+/// The counter's QR. Deliberately not a [_TableCodeCard] with a different
+/// label: it has no room, no seat count and no per-table switch to draw, and
+/// the printed card wants the shop's name where a table's wants its number.
+class _CounterCodeCard extends ConsumerWidget {
+  final String? url;
+
+  const _CounterCodeCard({this.url});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final sc = context.sat;
+    return SatCard.plain(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (url != null)
+            Container(
+              padding: const EdgeInsets.all(Sp.s2),
+              decoration: SatBox.d(
+                // Paper tokens, not the theme ramp — same reason as the table
+                // card: a QR is scanned off a screen or off paper, and a dark
+                // one on a dark ground does not resolve.
+                color: satPaperGround,
+                borderRadius: SatR.a(8),
+              ),
+              child: QrImageView(
+                data: url!,
+                version: QrVersions.auto,
+                size: 96,
+                padding: EdgeInsets.zero,
+                backgroundColor: satPaperGround,
+              ),
+            ),
+          const SizedBox(width: Sp.s4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.soCounterLabel,
+                  style: SatType.labelL(color: sc.textHi),
+                ),
+                const SizedBox(height: Sp.sHair),
+                Text(
+                  l10n.soCounterSub,
+                  style: SatType.bodyS(color: sc.textLo),
+                ),
+                const SizedBox(height: Sp.s3),
+                if (url == null)
+                  Text(
+                    l10n.soNoHost,
+                    style: SatType.bodyS(color: sc.warn),
+                  )
+                else
+                  SatButton.outline(
+                    label: l10n.soPrint,
+                    icon: Icons.print_rounded,
+                    size: SatButtonSize.sm,
+                    onTap: () => printTableQr(
+                      context: context,
+                      ref: ref,
+                      tableLabel: l10n.soCounterLabel,
+                      url: url!,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -583,6 +668,10 @@ String? guestUrlFor(SelfOrderState st, String code) {
 /// table with a code; null when the venue has none, which is the same "nothing
 /// to show" the QR cards already render.
 String? guestPreviewUrl(SelfOrderState st) {
+  // The counter first, when there is one: a [[Kedai]] may have no serving
+  // tables at all, and its owner previewing "the guest page" means the page
+  // their guests actually scan.
+  if (guestUrlFor(st, st.counterCode) case final u?) return u;
   for (final t in st.tables) {
     if (!t.enabled) continue;
     if (guestUrlFor(st, t.code) case final u?) return u;

@@ -215,6 +215,8 @@
   "soQrHint": "Pindai untuk memesan",
   "soPrint": "Cetak",
   "soTableOn": "Meja ini melayani pesan mandiri",
+  "soCounterLabel": "Konter",
+  "soCounterSub": "Satu QR untuk seluruh kedai. Tiap pesanan jadi nota bawa pulang sendiri.",
   "soNoHost": "Server belum terhubung, alamat QR belum bisa dibuat.",
   "soMenuSub": "Yang boleh dilihat dan dipesan tamu dari HP.",
   "soItemVisible": "Tampil",

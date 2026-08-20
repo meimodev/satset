@@ -596,6 +596,13 @@ class VenueSettings extends Table {
   /// the same answer and are meant to be. A venue that has never phoned home is
   /// a restaurant, which is the point.
   TextColumn get counterConfig => text().nullable()();
+
+  /// The venue's own [[Pesan mandiri]] code — the QR taped to the counter
+  /// rather than to a table (ADR-0109, switch `counterQr`). Minted blank-only,
+  /// like a table's, and killed by the same venue-wide rotate. Null on a venue
+  /// that has never turned the switch on; a counter shop with no tables at all
+  /// has this and nothing else.
+  TextColumn get counterGuestCode => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }

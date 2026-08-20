@@ -36,11 +36,31 @@ Router guestRoutes(AppDatabase db, WsHub hub) {
   /// that resolves to nothing is a 404 either way — an unknown code, a
   /// deactivated table and a table opted out of self-order must be
   /// indistinguishable, or the QR becomes a way to enumerate the floor plan.
-  Future<VenueTable?> table(Request req, [Map<String, dynamic>? body]) =>
-      tableForGuestCode(
-        db,
-        (body?['code'] as String?) ?? req.url.queryParameters['code'] ?? '',
-      );
+  String codeOf(Request req, [Map<String, dynamic>? body]) =>
+      (body?['code'] as String?) ?? req.url.queryParameters['code'] ?? '';
+
+  /// Where a code points. A table, or the **counter** (ADR-0109) — which is a
+  /// place to stand rather than a row, and so carries an empty `tableId`, the
+  /// same convention a [[Bawa pulang]] visit has always used for "no table".
+  ///
+  /// One resolver for both so no route can accidentally serve one kind and not
+  /// the other, and a miss stays a single indistinguishable 404.
+  Future<({String tableId, String label, bool counter})?> point(
+    Request req, [
+    Map<String, dynamic>? body,
+  ]) async {
+    final code = codeOf(req, body);
+    final t = await tableForGuestCode(db, code);
+    if (t != null) {
+      return (tableId: t.id, label: t.label ?? t.id, counter: false);
+    }
+    if (await isCounterGuestCode(db, code)) {
+      // No label: the page spells the counter in its own copy, because this
+      // plane sends codes and never sentences (ADR-0085).
+      return (tableId: '', label: '', counter: true);
+    }
+    return null;
+  }
 
   Future<GuestSession?> session(Request req) async {
     final id = req.headers['x-guest-session'];
@@ -65,7 +85,7 @@ Router guestRoutes(AppDatabase db, WsHub hub) {
   /// Who the guest is looking at: the venue's name and their own table. Also
   /// the liveness check the page runs before it draws anything.
   r.get('/guest/venue', (Request req) async {
-    final t = await table(req);
+    final t = await point(req);
     if (t == null) return err(404, 'not_found');
     final s = await (db.select(
       db.venueSettings,
@@ -73,8 +93,9 @@ Router guestRoutes(AppDatabase db, WsHub hub) {
     final rules = await guestRules(db);
     return json({
       'venue': s?.displayName ?? '',
-      'tableId': t.id,
-      'tableLabel': t.label ?? t.id,
+      'tableId': t.tableId,
+      'tableLabel': t.label,
+      'counter': t.counter,
       'open': withinServiceHours(rules, DateTime.now()),
       'noteEnabled': rules.noteEnabled,
       'maxItems': rules.maxItems,
@@ -82,8 +103,7 @@ Router guestRoutes(AppDatabase db, WsHub hub) {
   });
 
   r.get('/guest/menu', (Request req) async {
-    final t = await table(req);
-    if (t == null) return err(404, 'not_found');
+    if (await point(req) == null) return err(404, 'not_found');
     return json(await guestMenuJson(db));
   });
 
@@ -104,13 +124,13 @@ Router guestRoutes(AppDatabase db, WsHub hub) {
 
   r.post('/guest/session', (Request req) async {
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-    final t = await table(req, body);
+    final t = await point(req, body);
     if (t == null) return err(404, 'not_found');
     final rules = await guestRules(db);
     if (!rules.enabled) return err(404, 'not_found');
     final s = await openGuestSession(
       db,
-      tableId: t.id,
+      tableId: t.tableId,
       ttlHours: rules.sessionHours,
     );
     return json({'sessionId': s.id, 'expiresAt': s.expiresAt.toIso8601String()});
@@ -120,13 +140,13 @@ Router guestRoutes(AppDatabase db, WsHub hub) {
     final s = await session(req);
     if (s == null) return err(401, 'session_expired');
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-    final t = await table(req, body);
-    if (t == null || t.id != s.tableId) return err(404, 'not_found');
+    final t = await point(req, body);
+    if (t == null || t.tableId != s.tableId) return err(404, 'not_found');
     try {
       final o = await submitGuestOrder(
         db,
         session: s,
-        table: t,
+        tableId: t.tableId,
         lines: ((body['lines'] as List?) ?? const [])
             .cast<Map<String, dynamic>>(),
         hub: hub,

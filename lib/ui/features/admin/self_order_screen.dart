@@ -304,7 +304,12 @@ class _GuestOrderCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  order.tableLabel ?? order.tableId,
+                  // A counter order has no table and so no label — the word
+                  // for "the counter" is composed here, like every other code
+                  // that crosses the layer (ADR-0085, ADR-0109).
+                  order.counter
+                      ? context.l10n.soCounterLabel
+                      : (order.tableLabel ?? order.tableId),
                   style: SatType.labelL(color: sc.textHi),
                 ),
               ),

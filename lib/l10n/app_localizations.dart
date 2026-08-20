@@ -895,6 +895,18 @@ abstract class AppL10n {
   /// **'Meja ini melayani pesan mandiri'**
   String get soTableOn;
 
+  /// No description provided for @soCounterLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Konter'**
+  String get soCounterLabel;
+
+  /// No description provided for @soCounterSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Satu QR untuk seluruh kedai. Tiap pesanan jadi nota bawa pulang sendiri.'**
+  String get soCounterSub;
+
   /// No description provided for @soNoHost.
   ///
   /// In id, this message translates to:

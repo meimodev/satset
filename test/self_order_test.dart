@@ -205,7 +205,7 @@ void main() {
     final order = await submitGuestOrder(
       db,
       session: await open(),
-      table: await tbl(),
+      tableId: (await tbl()).id,
       lines: [
         {
           'itemId': 'nasgor',
@@ -232,7 +232,7 @@ void main() {
     final order = await submitGuestOrder(
       db,
       session: await open(),
-      table: await tbl(),
+      tableId: (await tbl()).id,
       lines: [
         {
           'itemId': 'nasgor',
@@ -258,7 +258,7 @@ void main() {
       () => submitGuestOrder(
         db,
         session: s,
-        table: t,
+        tableId: t.id,
         lines: [
           {'itemId': 'nasgor', 'qty': 1},
         ],
@@ -273,7 +273,7 @@ void main() {
     final s = await open();
     final t = await tbl();
     Future<void> submit(List<Map<String, dynamic>> lines) =>
-        submitGuestOrder(db, session: s, table: t, lines: lines);
+        submitGuestOrder(db, session: s, tableId: t.id, lines: lines);
 
     expect(
       () => submit(const []),
@@ -324,7 +324,7 @@ void main() {
       () => submitGuestOrder(
         db,
         session: s,
-        table: t,
+        tableId: t.id,
         lines: [
           {'itemId': 'nasgor', 'qty': 1},
         ],
@@ -342,7 +342,7 @@ void main() {
   Future<GuestOrder> pending() async => submitGuestOrder(
     db,
     session: await open(),
-    table: await tbl(),
+    tableId: (await tbl()).id,
     lines: [
       {'itemId': 'nasgor', 'qty': 1},
     ],

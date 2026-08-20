@@ -23,6 +23,11 @@ class SelfOrderState {
   /// first load, or when the server has no LAN address — a QR is not drawn then.
   final String? host;
   final int guestPort;
+
+  /// The venue's own guest code — the QR on the counter rather than on a table
+  /// (ADR-0109). Empty when the `counterQr` switch is off, which is also how
+  /// the QR tab decides whether to draw the card at all.
+  final String counterCode;
   final bool loading;
   final Object? error;
 
@@ -33,6 +38,7 @@ class SelfOrderState {
     this.menu = const [],
     this.host,
     this.guestPort = 8080,
+    this.counterCode = '',
     this.loading = false,
     this.error,
   });
@@ -48,6 +54,7 @@ class SelfOrderState {
     List<GuestMenuItemDto>? menu,
     String? host,
     int? guestPort,
+    String? counterCode,
     bool? loading,
     Object? error,
     bool clearError = false,
@@ -58,6 +65,7 @@ class SelfOrderState {
     menu: menu ?? this.menu,
     host: host ?? this.host,
     guestPort: guestPort ?? this.guestPort,
+    counterCode: counterCode ?? this.counterCode,
     loading: loading ?? this.loading,
     error: clearError ? null : (error ?? this.error),
   );
@@ -109,6 +117,7 @@ class SelfOrderRepository extends StateNotifier<SelfOrderState> {
         ],
         host: raw['host'] as String?,
         guestPort: (raw['guestPort'] as num?)?.toInt(),
+        counterCode: (raw['counterCode'] as String?) ?? '',
         loading: false,
       );
       SatLog.repo('selforder.loaded n=${state.orders.length}');
