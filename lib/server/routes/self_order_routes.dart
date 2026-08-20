@@ -224,6 +224,38 @@ Router selfOrderRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     return n == 0 ? err(404, 'not_found') : json({'ok': true});
   });
 
+  /// A category's [[Jam tayang]]. Send both `fromMin` and `toMin` to set one,
+  /// or both null to clear it — a half-window is not a thing, so the pair is
+  /// written together or not at all.
+  r.patch('/selforder/categories/<id>', (Request req, String id) async {
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!a.$2.contains(Capability.editSettings.name)) {
+      return forbidden(Capability.editSettings);
+    }
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final from = (body['fromMin'] as num?)?.toInt();
+    final to = (body['toMin'] as num?)?.toInt();
+    // Either a whole window or none. An equal pair is rejected rather than
+    // stored: it would mean a category that is never on, and "never" already
+    // has a control — hide the items.
+    if ((from == null) != (to == null)) return err(400, 'bad_request');
+    if (from != null && to != null) {
+      if (from < 0 || from > 1439 || to < 0 || to > 1439 || from == to) {
+        return err(400, 'bad_request');
+      }
+    }
+    final n =
+        await (db.update(db.menuCategories)..where((c) => c.id.equals(id)))
+            .write(
+              MenuCategoriesCompanion(
+                guestFromMin: Value(from),
+                guestToMin: Value(to),
+              ),
+            );
+    return n == 0 ? err(404, 'not_found') : json({'ok': true});
+  });
+
   r.post('/selforder/codes/rotate', (Request req) async {
     final a = await actor(req);
     if (a == null) return Response(401);

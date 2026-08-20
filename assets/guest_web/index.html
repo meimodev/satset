@@ -270,9 +270,23 @@ function priceOf(i){
   return i.basePrice;
 }
 
+// "Habis" and "Sarapan 06:00–11:00" are both sold out, but only one of them
+// tells the guest to come back tomorrow. A category outside its window says so;
+// a genuinely empty one stays plain.
+function hhmm(m){
+  return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2);
+}
+function windowOf(catId){
+  var c = (menu && menu.categories || []).filter(function(x){ return x.id === catId; })[0];
+  return (c && c.fromMin != null && c.toMin != null) ? c : null;
+}
 function itemHtml(i){
-  var tags = (i.featured ? '<span class="tag star">Andalan</span>' : '') +
-             (i.soldOut ? '<span class="tag out">Habis</span>' : '');
+  var w = i.soldOut ? windowOf(i.categoryId) : null;
+  var outTag = i.soldOut
+    ? '<span class="tag out">' +
+      (w ? hhmm(w.fromMin) + '–' + hhmm(w.toMin) : 'Habis') + '</span>'
+    : '';
+  var tags = (i.featured ? '<span class="tag star">Andalan</span>' : '') + outTag;
   var img = i.photoRev > 0
     ? '<img class="thumb" alt="" src="/guest/photo/' + i.id + '?v=' + i.photoRev + '">' : '';
   return '<li class="item" data-id="' + i.id + '"' + (i.soldOut ? ' aria-disabled="true"' : '') + '>' +

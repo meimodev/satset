@@ -1210,6 +1210,222 @@ abstract class _GuestTableDto implements GuestTableDto {
       throw _privateConstructorUsedError;
 }
 
+GuestCategoryDto _$GuestCategoryDtoFromJson(Map<String, dynamic> json) {
+  return _GuestCategoryDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$GuestCategoryDto {
+  String get id => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  int? get fromMin => throw _privateConstructorUsedError;
+  int? get toMin => throw _privateConstructorUsedError;
+
+  /// Serializes this GuestCategoryDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of GuestCategoryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $GuestCategoryDtoCopyWith<GuestCategoryDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $GuestCategoryDtoCopyWith<$Res> {
+  factory $GuestCategoryDtoCopyWith(
+    GuestCategoryDto value,
+    $Res Function(GuestCategoryDto) then,
+  ) = _$GuestCategoryDtoCopyWithImpl<$Res, GuestCategoryDto>;
+  @useResult
+  $Res call({String id, String name, int? fromMin, int? toMin});
+}
+
+/// @nodoc
+class _$GuestCategoryDtoCopyWithImpl<$Res, $Val extends GuestCategoryDto>
+    implements $GuestCategoryDtoCopyWith<$Res> {
+  _$GuestCategoryDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of GuestCategoryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? fromMin = freezed,
+    Object? toMin = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+            fromMin: freezed == fromMin
+                ? _value.fromMin
+                : fromMin // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            toMin: freezed == toMin
+                ? _value.toMin
+                : toMin // ignore: cast_nullable_to_non_nullable
+                      as int?,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$GuestCategoryDtoImplCopyWith<$Res>
+    implements $GuestCategoryDtoCopyWith<$Res> {
+  factory _$$GuestCategoryDtoImplCopyWith(
+    _$GuestCategoryDtoImpl value,
+    $Res Function(_$GuestCategoryDtoImpl) then,
+  ) = __$$GuestCategoryDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String id, String name, int? fromMin, int? toMin});
+}
+
+/// @nodoc
+class __$$GuestCategoryDtoImplCopyWithImpl<$Res>
+    extends _$GuestCategoryDtoCopyWithImpl<$Res, _$GuestCategoryDtoImpl>
+    implements _$$GuestCategoryDtoImplCopyWith<$Res> {
+  __$$GuestCategoryDtoImplCopyWithImpl(
+    _$GuestCategoryDtoImpl _value,
+    $Res Function(_$GuestCategoryDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of GuestCategoryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? fromMin = freezed,
+    Object? toMin = freezed,
+  }) {
+    return _then(
+      _$GuestCategoryDtoImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+        fromMin: freezed == fromMin
+            ? _value.fromMin
+            : fromMin // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        toMin: freezed == toMin
+            ? _value.toMin
+            : toMin // ignore: cast_nullable_to_non_nullable
+                  as int?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$GuestCategoryDtoImpl implements _GuestCategoryDto {
+  const _$GuestCategoryDtoImpl({
+    required this.id,
+    required this.name,
+    this.fromMin,
+    this.toMin,
+  });
+
+  factory _$GuestCategoryDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$GuestCategoryDtoImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final int? fromMin;
+  @override
+  final int? toMin;
+
+  @override
+  String toString() {
+    return 'GuestCategoryDto(id: $id, name: $name, fromMin: $fromMin, toMin: $toMin)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$GuestCategoryDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.fromMin, fromMin) || other.fromMin == fromMin) &&
+            (identical(other.toMin, toMin) || other.toMin == toMin));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, name, fromMin, toMin);
+
+  /// Create a copy of GuestCategoryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$GuestCategoryDtoImplCopyWith<_$GuestCategoryDtoImpl> get copyWith =>
+      __$$GuestCategoryDtoImplCopyWithImpl<_$GuestCategoryDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$GuestCategoryDtoImplToJson(this);
+  }
+}
+
+abstract class _GuestCategoryDto implements GuestCategoryDto {
+  const factory _GuestCategoryDto({
+    required final String id,
+    required final String name,
+    final int? fromMin,
+    final int? toMin,
+  }) = _$GuestCategoryDtoImpl;
+
+  factory _GuestCategoryDto.fromJson(Map<String, dynamic> json) =
+      _$GuestCategoryDtoImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String get name;
+  @override
+  int? get fromMin;
+  @override
+  int? get toMin;
+
+  /// Create a copy of GuestCategoryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$GuestCategoryDtoImplCopyWith<_$GuestCategoryDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 GuestMenuItemDto _$GuestMenuItemDtoFromJson(Map<String, dynamic> json) {
   return _GuestMenuItemDto.fromJson(json);
 }

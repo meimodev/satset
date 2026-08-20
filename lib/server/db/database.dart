@@ -78,7 +78,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 61;
+  int get schemaVersion => 62;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -1212,6 +1212,21 @@ class AppDatabase extends _$AppDatabase {
         // Par level: the top-up target the shopping list subtracts from.
         // Nullable — an ingredient nobody stocks to a par has no shortfall.
         await _safeAddColumnOn('ingredients', 'par_level', type: 'INTEGER');
+      }
+      if (from < 62) {
+        // A category's guest window ([[Jam tayang]]). Both nullable, and no
+        // backfill: category names are venue-authored, and guessing which of
+        // them mean breakfast is how lunch acquires an opening time.
+        await _safeAddColumnOn(
+          'menu_categories',
+          'guest_from_min',
+          type: 'INTEGER',
+        );
+        await _safeAddColumnOn(
+          'menu_categories',
+          'guest_to_min',
+          type: 'INTEGER',
+        );
       }
       if (from < 61) {
         // The counter's own guest code (ADR-0109). Nullable and *not* minted

@@ -104,6 +104,24 @@ Map<String, dynamic> _$$GuestTableDtoImplToJson(_$GuestTableDtoImpl instance) =>
       'enabled': instance.enabled,
     };
 
+_$GuestCategoryDtoImpl _$$GuestCategoryDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$GuestCategoryDtoImpl(
+  id: json['id'] as String,
+  name: json['name'] as String,
+  fromMin: (json['fromMin'] as num?)?.toInt(),
+  toMin: (json['toMin'] as num?)?.toInt(),
+);
+
+Map<String, dynamic> _$$GuestCategoryDtoImplToJson(
+  _$GuestCategoryDtoImpl instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'fromMin': instance.fromMin,
+  'toMin': instance.toMin,
+};
+
 _$GuestMenuItemDtoImpl _$$GuestMenuItemDtoImplFromJson(
   Map<String, dynamic> json,
 ) => _$GuestMenuItemDtoImpl(

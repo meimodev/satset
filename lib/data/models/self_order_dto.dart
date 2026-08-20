@@ -80,6 +80,25 @@ abstract class GuestTableDto with _$GuestTableDto {
       _$GuestTableDtoFromJson(json);
 }
 
+/// A menu category as the [[Menu tamu]] tab sees it, which is the only place
+/// its [[Jam tayang]] can be set.
+///
+/// [fromMin] and [toMin] are minutes from midnight and move together — both
+/// null is "always", and a half-window is refused by the server rather than
+/// stored. `fromMin > toMin` wraps midnight, which is a late-night menu.
+@freezed
+abstract class GuestCategoryDto with _$GuestCategoryDto {
+  const factory GuestCategoryDto({
+    required String id,
+    required String name,
+    int? fromMin,
+    int? toMin,
+  }) = _GuestCategoryDto;
+
+  factory GuestCategoryDto.fromJson(Map<String, dynamic> json) =>
+      _$GuestCategoryDtoFromJson(json);
+}
+
 /// One row of the [[Menu tamu]] tab: what the guest page shows, resolved the
 /// same way the guest page resolves it.
 @freezed

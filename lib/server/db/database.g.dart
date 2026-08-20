@@ -3832,8 +3832,36 @@ class $MenuCategoriesTable extends MenuCategories
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _guestFromMinMeta = const VerificationMeta(
+    'guestFromMin',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name, sortOrder];
+  late final GeneratedColumn<int> guestFromMin = GeneratedColumn<int>(
+    'guest_from_min',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _guestToMinMeta = const VerificationMeta(
+    'guestToMin',
+  );
+  @override
+  late final GeneratedColumn<int> guestToMin = GeneratedColumn<int>(
+    'guest_to_min',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    sortOrder,
+    guestFromMin,
+    guestToMin,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3865,6 +3893,24 @@ class $MenuCategoriesTable extends MenuCategories
         sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
       );
     }
+    if (data.containsKey('guest_from_min')) {
+      context.handle(
+        _guestFromMinMeta,
+        guestFromMin.isAcceptableOrUnknown(
+          data['guest_from_min']!,
+          _guestFromMinMeta,
+        ),
+      );
+    }
+    if (data.containsKey('guest_to_min')) {
+      context.handle(
+        _guestToMinMeta,
+        guestToMin.isAcceptableOrUnknown(
+          data['guest_to_min']!,
+          _guestToMinMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -3886,6 +3932,14 @@ class $MenuCategoriesTable extends MenuCategories
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
       )!,
+      guestFromMin: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}guest_from_min'],
+      ),
+      guestToMin: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}guest_to_min'],
+      ),
     );
   }
 
@@ -3899,10 +3953,31 @@ class MenuCategory extends DataClass implements Insertable<MenuCategory> {
   final String id;
   final String name;
   final int sortOrder;
+
+  /// The **[[Jam tayang]]** of a whole category on the guest menu: minutes from
+  /// midnight, inclusive start, exclusive end. Both null — the default — means
+  /// always. A window is deliberately per *category* and not per item: a cafe
+  /// decides that breakfast stops at eleven, not that each of nine breakfast
+  /// items stops at eleven, and a per-item window is nine chances to forget one.
+  ///
+  /// `from > to` **wraps midnight**, which is what a late-night menu is.
+  /// `from == to` would be an empty window with no way to express "always", so
+  /// it is rejected at the route rather than stored.
+  ///
+  /// Outside its window an item reads sold out, exactly as an empty ingredient
+  /// does — it is not hidden. A guest who cannot find yesterday's breakfast at
+  /// all assumes the cafe stopped selling it; one who sees it greyed knows to
+  /// come back in the morning. A same-day `forceIn` still beats the window,
+  /// because a human saying "we have it" outranks a clock, same as it outranks
+  /// the stock ledger.
+  final int? guestFromMin;
+  final int? guestToMin;
   const MenuCategory({
     required this.id,
     required this.name,
     required this.sortOrder,
+    this.guestFromMin,
+    this.guestToMin,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3910,6 +3985,12 @@ class MenuCategory extends DataClass implements Insertable<MenuCategory> {
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
     map['sort_order'] = Variable<int>(sortOrder);
+    if (!nullToAbsent || guestFromMin != null) {
+      map['guest_from_min'] = Variable<int>(guestFromMin);
+    }
+    if (!nullToAbsent || guestToMin != null) {
+      map['guest_to_min'] = Variable<int>(guestToMin);
+    }
     return map;
   }
 
@@ -3918,6 +3999,12 @@ class MenuCategory extends DataClass implements Insertable<MenuCategory> {
       id: Value(id),
       name: Value(name),
       sortOrder: Value(sortOrder),
+      guestFromMin: guestFromMin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(guestFromMin),
+      guestToMin: guestToMin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(guestToMin),
     );
   }
 
@@ -3930,6 +4017,8 @@ class MenuCategory extends DataClass implements Insertable<MenuCategory> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      guestFromMin: serializer.fromJson<int?>(json['guestFromMin']),
+      guestToMin: serializer.fromJson<int?>(json['guestToMin']),
     );
   }
   @override
@@ -3939,20 +4028,35 @@ class MenuCategory extends DataClass implements Insertable<MenuCategory> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'sortOrder': serializer.toJson<int>(sortOrder),
+      'guestFromMin': serializer.toJson<int?>(guestFromMin),
+      'guestToMin': serializer.toJson<int?>(guestToMin),
     };
   }
 
-  MenuCategory copyWith({String? id, String? name, int? sortOrder}) =>
-      MenuCategory(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        sortOrder: sortOrder ?? this.sortOrder,
-      );
+  MenuCategory copyWith({
+    String? id,
+    String? name,
+    int? sortOrder,
+    Value<int?> guestFromMin = const Value.absent(),
+    Value<int?> guestToMin = const Value.absent(),
+  }) => MenuCategory(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    sortOrder: sortOrder ?? this.sortOrder,
+    guestFromMin: guestFromMin.present ? guestFromMin.value : this.guestFromMin,
+    guestToMin: guestToMin.present ? guestToMin.value : this.guestToMin,
+  );
   MenuCategory copyWithCompanion(MenuCategoriesCompanion data) {
     return MenuCategory(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      guestFromMin: data.guestFromMin.present
+          ? data.guestFromMin.value
+          : this.guestFromMin,
+      guestToMin: data.guestToMin.present
+          ? data.guestToMin.value
+          : this.guestToMin,
     );
   }
 
@@ -3961,37 +4065,48 @@ class MenuCategory extends DataClass implements Insertable<MenuCategory> {
     return (StringBuffer('MenuCategory(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('sortOrder: $sortOrder')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('guestFromMin: $guestFromMin, ')
+          ..write('guestToMin: $guestToMin')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, sortOrder);
+  int get hashCode =>
+      Object.hash(id, name, sortOrder, guestFromMin, guestToMin);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is MenuCategory &&
           other.id == this.id &&
           other.name == this.name &&
-          other.sortOrder == this.sortOrder);
+          other.sortOrder == this.sortOrder &&
+          other.guestFromMin == this.guestFromMin &&
+          other.guestToMin == this.guestToMin);
 }
 
 class MenuCategoriesCompanion extends UpdateCompanion<MenuCategory> {
   final Value<String> id;
   final Value<String> name;
   final Value<int> sortOrder;
+  final Value<int?> guestFromMin;
+  final Value<int?> guestToMin;
   final Value<int> rowid;
   const MenuCategoriesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.sortOrder = const Value.absent(),
+    this.guestFromMin = const Value.absent(),
+    this.guestToMin = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MenuCategoriesCompanion.insert({
     required String id,
     required String name,
     this.sortOrder = const Value.absent(),
+    this.guestFromMin = const Value.absent(),
+    this.guestToMin = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -3999,12 +4114,16 @@ class MenuCategoriesCompanion extends UpdateCompanion<MenuCategory> {
     Expression<String>? id,
     Expression<String>? name,
     Expression<int>? sortOrder,
+    Expression<int>? guestFromMin,
+    Expression<int>? guestToMin,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (sortOrder != null) 'sort_order': sortOrder,
+      if (guestFromMin != null) 'guest_from_min': guestFromMin,
+      if (guestToMin != null) 'guest_to_min': guestToMin,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4013,12 +4132,16 @@ class MenuCategoriesCompanion extends UpdateCompanion<MenuCategory> {
     Value<String>? id,
     Value<String>? name,
     Value<int>? sortOrder,
+    Value<int?>? guestFromMin,
+    Value<int?>? guestToMin,
     Value<int>? rowid,
   }) {
     return MenuCategoriesCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
       sortOrder: sortOrder ?? this.sortOrder,
+      guestFromMin: guestFromMin ?? this.guestFromMin,
+      guestToMin: guestToMin ?? this.guestToMin,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4035,6 +4158,12 @@ class MenuCategoriesCompanion extends UpdateCompanion<MenuCategory> {
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
+    if (guestFromMin.present) {
+      map['guest_from_min'] = Variable<int>(guestFromMin.value);
+    }
+    if (guestToMin.present) {
+      map['guest_to_min'] = Variable<int>(guestToMin.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4047,6 +4176,8 @@ class MenuCategoriesCompanion extends UpdateCompanion<MenuCategory> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('sortOrder: $sortOrder, ')
+          ..write('guestFromMin: $guestFromMin, ')
+          ..write('guestToMin: $guestToMin, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -30944,6 +31075,8 @@ typedef $$MenuCategoriesTableCreateCompanionBuilder =
       required String id,
       required String name,
       Value<int> sortOrder,
+      Value<int?> guestFromMin,
+      Value<int?> guestToMin,
       Value<int> rowid,
     });
 typedef $$MenuCategoriesTableUpdateCompanionBuilder =
@@ -30951,6 +31084,8 @@ typedef $$MenuCategoriesTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> name,
       Value<int> sortOrder,
+      Value<int?> guestFromMin,
+      Value<int?> guestToMin,
       Value<int> rowid,
     });
 
@@ -30975,6 +31110,16 @@ class $$MenuCategoriesTableFilterComposer
 
   ColumnFilters<int> get sortOrder => $composableBuilder(
     column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get guestFromMin => $composableBuilder(
+    column: $table.guestFromMin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get guestToMin => $composableBuilder(
+    column: $table.guestToMin,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -31002,6 +31147,16 @@ class $$MenuCategoriesTableOrderingComposer
     column: $table.sortOrder,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get guestFromMin => $composableBuilder(
+    column: $table.guestFromMin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get guestToMin => $composableBuilder(
+    column: $table.guestToMin,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MenuCategoriesTableAnnotationComposer
@@ -31021,6 +31176,16 @@ class $$MenuCategoriesTableAnnotationComposer
 
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<int> get guestFromMin => $composableBuilder(
+    column: $table.guestFromMin,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get guestToMin => $composableBuilder(
+    column: $table.guestToMin,
+    builder: (column) => column,
+  );
 }
 
 class $$MenuCategoriesTableTableManager
@@ -31059,11 +31224,15 @@ class $$MenuCategoriesTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
+                Value<int?> guestFromMin = const Value.absent(),
+                Value<int?> guestToMin = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MenuCategoriesCompanion(
                 id: id,
                 name: name,
                 sortOrder: sortOrder,
+                guestFromMin: guestFromMin,
+                guestToMin: guestToMin,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -31071,11 +31240,15 @@ class $$MenuCategoriesTableTableManager
                 required String id,
                 required String name,
                 Value<int> sortOrder = const Value.absent(),
+                Value<int?> guestFromMin = const Value.absent(),
+                Value<int?> guestToMin = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MenuCategoriesCompanion.insert(
                 id: id,
                 name: name,
                 sortOrder: sortOrder,
+                guestFromMin: guestFromMin,
+                guestToMin: guestToMin,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

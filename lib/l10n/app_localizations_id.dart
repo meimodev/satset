@@ -506,6 +506,12 @@ class AppL10nId extends AppL10n {
       'Satu QR untuk seluruh kedai. Tiap pesanan jadi nota bawa pulang sendiri.';
 
   @override
+  String get soWindowAlways => 'Selalu tayang';
+
+  @override
+  String get soWindowClear => 'Hapus jam';
+
+  @override
   String get soNoHost => 'Server belum terhubung, alamat QR belum bisa dibuat.';
 
   @override
@@ -8125,7 +8131,7 @@ class AppL10nId extends AppL10n {
 
   @override
   String get fltCounterRestartNote =>
-      'Saklar baru berlaku saat admin venue masuk lagi. QR kode kedai butuh server di-restart.';
+      'Saklar baru berlaku saat admin venue masuk lagi. QR konter muncul begitu admin membuka tab QR & meja. Kalau Pesan mandiri sendiri baru dinyalakan, server perlu di-restart dulu.';
 
   @override
   String get fltCounterOffBody =>

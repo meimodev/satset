@@ -54,6 +54,11 @@ void main() {
           ),
         );
     await db
+        .into(db.menuCategories)
+        .insertOnConflictUpdate(
+          MenuCategoriesCompanion.insert(id: 'mains', name: 'Makanan'),
+        );
+    await db
         .into(db.menuItems)
         .insertOnConflictUpdate(
           MenuItemsCompanion.insert(
@@ -405,6 +410,78 @@ void main() {
         'PATCH',
         '/selforder/tables/nope',
         body: {'enabled': false},
+      )).statusCode,
+      404,
+    );
+  });
+
+  test('a category window is written as a pair, or not at all', () async {
+    final owner = await signInForTest(
+      db,
+      caps: {Capability.editSettings},
+      userId: 'u-win',
+      pin: '5150',
+    );
+    Future<int> set(Object body) async =>
+        (await call(owner, 'PATCH', '/selforder/categories/mains', body: body))
+            .statusCode;
+
+    // A half-window is not a thing: a category with an opening time and no
+    // closing time would be on forever, which is what "always" already means.
+    expect(await set({'fromMin': 360}), 400);
+    expect(await set({'toMin': 660}), 400);
+    // Nor is an empty one — "never on" is what hiding the items is for.
+    expect(await set({'fromMin': 360, 'toMin': 360}), 400);
+    expect(await set({'fromMin': -1, 'toMin': 660}), 400);
+    expect(await set({'fromMin': 360, 'toMin': 1440}), 400);
+
+    expect(await set({'fromMin': 360, 'toMin': 660}), 200);
+    var row = await (db.select(
+      db.menuCategories,
+    )..where((c) => c.id.equals('mains'))).getSingle();
+    expect(row.guestFromMin, 360);
+    expect(row.guestToMin, 660);
+
+    // A wrapping window is a late-night menu, not a mistake.
+    expect(await set({'fromMin': 1320, 'toMin': 120}), 200);
+
+    // Both null clears it.
+    expect(await set(<String, dynamic>{}), 200);
+    row = await (db.select(
+      db.menuCategories,
+    )..where((c) => c.id.equals('mains'))).getSingle();
+    expect(row.guestFromMin, isNull);
+    expect(row.guestToMin, isNull);
+  });
+
+  test('setting a window wants editSettings, and a real category', () async {
+    final waiter = await signInForTest(
+      db,
+      caps: {Capability.takeOrder},
+      userId: 'u-w2',
+      pin: '5151',
+    );
+    expect(
+      (await call(
+        waiter,
+        'PATCH',
+        '/selforder/categories/mains',
+        body: {'fromMin': 360, 'toMin': 660},
+      )).statusCode,
+      403,
+    );
+    final owner = await signInForTest(
+      db,
+      caps: {Capability.editSettings},
+      userId: 'u-o2',
+      pin: '5152',
+    );
+    expect(
+      (await call(
+        owner,
+        'PATCH',
+        '/selforder/categories/nope',
+        body: {'fromMin': 360, 'toMin': 660},
       )).statusCode,
       404,
     );

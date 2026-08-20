@@ -509,6 +509,12 @@ class AppL10nEn extends AppL10n {
       'One QR for the whole shop. Each order becomes its own takeaway bill.';
 
   @override
+  String get soWindowAlways => 'Always on';
+
+  @override
+  String get soWindowClear => 'Clear hours';
+
+  @override
   String get soNoHost =>
       'Not connected to a server, so the QR address cannot be built.';
 
@@ -8228,7 +8234,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get fltCounterRestartNote =>
-      'Switches reach the floor at the venue\'s next admin sign-in. The venue QR needs a server restart.';
+      'Switches reach the floor at the venue\'s next admin sign-in. The counter QR appears as soon as an admin opens the QR & tables tab. If Pesan mandiri itself was only just switched on, the server needs a restart first.';
 
   @override
   String get fltCounterOffBody =>

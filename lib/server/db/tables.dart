@@ -210,6 +210,26 @@ class MenuCategories extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+
+  /// The **[[Jam tayang]]** of a whole category on the guest menu: minutes from
+  /// midnight, inclusive start, exclusive end. Both null — the default — means
+  /// always. A window is deliberately per *category* and not per item: a cafe
+  /// decides that breakfast stops at eleven, not that each of nine breakfast
+  /// items stops at eleven, and a per-item window is nine chances to forget one.
+  ///
+  /// `from > to` **wraps midnight**, which is what a late-night menu is.
+  /// `from == to` would be an empty window with no way to express "always", so
+  /// it is rejected at the route rather than stored.
+  ///
+  /// Outside its window an item reads sold out, exactly as an empty ingredient
+  /// does — it is not hidden. A guest who cannot find yesterday's breakfast at
+  /// all assumes the cafe stopped selling it; one who sees it greyed knows to
+  /// come back in the morning. A same-day `forceIn` still beats the window,
+  /// because a human saying "we have it" outranks a clock, same as it outranks
+  /// the stock ledger.
+  IntColumn get guestFromMin => integer().nullable()();
+  IntColumn get guestToMin => integer().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

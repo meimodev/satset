@@ -18,6 +18,10 @@ class SelfOrderState {
   /// rest — see [SelfOrderRepository.refresh].
   final List<GuestMenuItemDto> menu;
 
+  /// The menu's categories, in the venue's own order, each carrying its
+  /// [[Jam tayang]]. Only categories that hold an item are emitted.
+  final List<GuestCategoryDto> categories;
+
   /// The LAN address a guest phone can reach this venue on, as reported by the
   /// server itself, and the port its cleartext plane listens on. Null until the
   /// first load, or when the server has no LAN address — a QR is not drawn then.
@@ -36,6 +40,7 @@ class SelfOrderState {
     this.stats = const GuestStatsDto(),
     this.tables = const [],
     this.menu = const [],
+    this.categories = const [],
     this.host,
     this.guestPort = 8080,
     this.counterCode = '',
@@ -52,6 +57,7 @@ class SelfOrderState {
     GuestStatsDto? stats,
     List<GuestTableDto>? tables,
     List<GuestMenuItemDto>? menu,
+    List<GuestCategoryDto>? categories,
     String? host,
     int? guestPort,
     String? counterCode,
@@ -63,6 +69,7 @@ class SelfOrderState {
     stats: stats ?? this.stats,
     tables: tables ?? this.tables,
     menu: menu ?? this.menu,
+    categories: categories ?? this.categories,
     host: host ?? this.host,
     guestPort: guestPort ?? this.guestPort,
     counterCode: counterCode ?? this.counterCode,
@@ -114,6 +121,11 @@ class SelfOrderRepository extends StateNotifier<SelfOrderState> {
           for (final i
               in ((raw['menu'] as Map?)?['items'] as List? ?? const []))
             GuestMenuItemDto.fromJson((i as Map).cast<String, dynamic>()),
+        ],
+        categories: [
+          for (final c
+              in ((raw['menu'] as Map?)?['categories'] as List? ?? const []))
+            GuestCategoryDto.fromJson((c as Map).cast<String, dynamic>()),
         ],
         host: raw['host'] as String?,
         guestPort: (raw['guestPort'] as num?)?.toInt(),
@@ -171,6 +183,14 @@ class SelfOrderRepository extends StateNotifier<SelfOrderState> {
           'guestStockOverride': ?stockOverride,
         },
       ));
+
+  /// Set or clear a category's [[Jam tayang]]. Both null clears it; the server
+  /// refuses a half-window, so the pair travels together.
+  Future<void> setCategoryWindow(String id, {int? fromMin, int? toMin}) =>
+      _act(() => _ref.read(apiClientProvider).patchJson(
+            '/selforder/categories/$id',
+            {'fromMin': fromMin, 'toMin': toMin},
+          ));
 
   Future<void> setTableEnabled(String id, bool enabled) =>
       _act(() => _ref.read(apiClientProvider).patchJson(

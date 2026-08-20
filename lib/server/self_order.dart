@@ -320,7 +320,8 @@ Future<Map<String, dynamic>> guestMenuJson(
   bool includeHidden = false,
 }) async {
   final rules = await guestRules(db);
-  final today = businessDayStart(SatClock.now(), rules.dayStartHour);
+  final now = SatClock.now();
+  final today = businessDayStart(now, rules.dayStartHour);
   final cats = await (db.select(
     db.menuCategories,
   )..orderBy([(c) => OrderingTerm(expression: c.sortOrder)])).get();
@@ -335,11 +336,31 @@ Future<Map<String, dynamic>> guestMenuJson(
           .get();
   final flags = await deriveStockFlags(db);
 
+  // The [[Jam tayang]] of each category, evaluated once against the wall clock
+  // rather than per item. `from > to` wraps midnight, which is what a
+  // late-night menu is; both null means always, which is every category until
+  // somebody says otherwise.
+  final nowMin = now.hour * 60 + now.minute;
+  final shut = <String>{
+    for (final c in cats)
+      if (c.guestFromMin case final f?)
+        if (c.guestToMin case final t?)
+          if (f <= t ? (nowMin < f || nowMin >= t) : (nowMin < f && nowMin >= t))
+            c.id,
+  };
+
   Map<String, dynamic> itemJson(MenuItem i) {
     final override = i.guestOverrideAt != null && !i.guestOverrideAt!.isBefore(today)
         ? i.guestStockOverride
         : 'auto';
-    final auto = i.unavailable || (flags[i.id]?.autoSoldOut ?? false);
+    // Outside its category's window an item is sold out, not hidden — and it
+    // feeds `auto` rather than short-circuiting, so a same-day `forceIn` still
+    // beats the clock exactly as it beats the stock ledger. A human saying "we
+    // have it" outranks both.
+    final auto =
+        i.unavailable ||
+        shut.contains(i.categoryId) ||
+        (flags[i.id]?.autoSoldOut ?? false);
     final soldOut = switch (override) {
       'forceIn' => false,
       'forceOut' => true,
@@ -373,7 +394,18 @@ Future<Map<String, dynamic>> guestMenuJson(
   return {
     'categories': [
       for (final c in cats)
-        if (stocked.contains(c.id)) {'id': c.id, 'name': c.name},
+        if (stocked.contains(c.id))
+          {
+            'id': c.id,
+            'name': c.name,
+            // The window as stored, for the tab that edits it. The guest page
+            // needs none of this — an item outside its window already reads
+            // sold out above — but a "Sarapan · 06:00–11:00" chip tells a guest
+            // why, which is the difference between a closed kitchen and a
+            // menu that comes back tomorrow.
+            'fromMin': c.guestFromMin,
+            'toMin': c.guestToMin,
+          },
     ],
     'items': [for (final i in items) itemJson(i)],
     'noteEnabled': rules.noteEnabled,

@@ -1050,6 +1050,17 @@ Set on the Menu tamu tab, stored on `menu_items.guest_stock_override` with its s
 
 _Avoid_: treating a force as permanent; expiring it on a calendar day rather than the business day; recomputing sold-out client-side.
 
+### Jam tayang (Serving window)
+**ID · EN** — Jam tayang · Serving window.
+
+The hours a whole menu **category** is orderable on the Menu tamu tab — breakfast until eleven, a late-night list from ten. Stored on `menu_categories.guest_from_min` / `guest_to_min` as minutes from midnight, inclusive start and exclusive end; both null is "always", which is every category until somebody says otherwise. `from > to` **wraps midnight**, which is what a late-night menu is; an equal pair is refused rather than stored, because "never on" is what hiding the items is for.
+
+Deliberately per **category**, not per item: a cafe decides that breakfast stops at eleven, not that each of nine breakfast items stops at eleven, and a per-item window is nine chances to forget one.
+
+Outside its window an item reads **sold out, not hidden** — a guest who cannot find breakfast at all assumes it was discontinued, while one who sees it greyed with its hours knows to come back tomorrow. It feeds the same `auto` figure an empty ingredient does, so a same-day [[Stok tamu]] `forceIn` still beats the clock: a human saying "we have it" outranks a clock exactly as it outranks the stock ledger.
+
+_Avoid_: hiding the item instead of shutting it; putting the window on the item; letting the clock override a human's force; treating a wrapping window as a mistake.
+
 ### Item alkohol (Alcohol item)
 **ID · EN** — Item alkohol · Alcohol item.
 

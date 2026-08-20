@@ -376,11 +376,91 @@ class _MenuTab extends ConsumerWidget {
         const SizedBox(height: Sp.s1),
         Text(l10n.soMenuAlcoholHint, style: SatType.bodyS(color: sc.textLo)),
         const SizedBox(height: Sp.s4),
-        for (final i in state.menu)
-          Padding(
-            padding: const EdgeInsets.only(bottom: Sp.s2),
-            child: _GuestMenuRow(item: i, notifier: n),
+        // Grouped by category, because the [[Jam tayang]] is set per category
+        // and a control belongs beside the things it governs. A category the
+        // payload never mentioned (it holds nothing) draws nothing.
+        for (final c in state.categories) ...[
+          _CategoryHeader(category: c, notifier: n),
+          const SizedBox(height: Sp.s2),
+          for (final i in state.menu.where((i) => i.categoryId == c.id))
+            Padding(
+              padding: const EdgeInsets.only(bottom: Sp.s2),
+              child: _GuestMenuRow(item: i, notifier: n),
+            ),
+          const SizedBox(height: Sp.s4),
+        ],
+      ],
+    );
+  }
+}
+
+/// A category heading on the [[Menu tamu]] tab, carrying the one control that
+/// governs every row under it: its [[Jam tayang]].
+///
+/// The window shuts the items rather than hiding them — a guest who cannot
+/// find breakfast at all assumes it was discontinued, one who sees it greyed
+/// knows to come back tomorrow — so this is a *sold out* control that happens
+/// to run on a clock, not a visibility one.
+class _CategoryHeader extends StatelessWidget {
+  final GuestCategoryDto category;
+  final SelfOrderRepository notifier;
+  const _CategoryHeader({required this.category, required this.notifier});
+
+  static String _hhmm(int min) =>
+      '${(min ~/ 60).toString().padLeft(2, '0')}:'
+      '${(min % 60).toString().padLeft(2, '0')}';
+
+  Future<void> _edit(BuildContext context) async {
+    final from = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(
+        hour: (category.fromMin ?? 360) ~/ 60,
+        minute: (category.fromMin ?? 360) % 60,
+      ),
+    );
+    if (from == null || !context.mounted) return;
+    final to = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(
+        hour: (category.toMin ?? 660) ~/ 60,
+        minute: (category.toMin ?? 660) % 60,
+      ),
+    );
+    if (to == null) return;
+    final f = from.hour * 60 + from.minute;
+    final t = to.hour * 60 + to.minute;
+    // An equal pair has no meaning the server will take — it would be a
+    // category that is never on, and "never" is what hiding the items is for.
+    if (f == t) return;
+    await notifier.setCategoryWindow(category.id, fromMin: f, toMin: t);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final sc = context.sat;
+    final on = category.fromMin != null && category.toMin != null;
+    return Row(
+      children: [
+        Expanded(
+          child: Text(category.name, style: SatType.labelL(color: sc.textHi)),
+        ),
+        if (on) ...[
+          SatButton.ghost(
+            label: l10n.soWindowClear,
+            size: SatButtonSize.sm,
+            onTap: () => notifier.setCategoryWindow(category.id),
           ),
+          const SizedBox(width: Sp.s2),
+        ],
+        SatButton.outline(
+          label: on
+              ? '${_hhmm(category.fromMin!)}–${_hhmm(category.toMin!)}'
+              : l10n.soWindowAlways,
+          icon: Icons.schedule,
+          size: SatButtonSize.sm,
+          onTap: () => _edit(context),
+        ),
       ],
     );
   }

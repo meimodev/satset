@@ -217,6 +217,8 @@
   "soTableOn": "Meja ini melayani pesan mandiri",
   "soCounterLabel": "Konter",
   "soCounterSub": "Satu QR untuk seluruh kedai. Tiap pesanan jadi nota bawa pulang sendiri.",
+  "soWindowAlways": "Selalu tayang",
+  "soWindowClear": "Hapus jam",
   "soNoHost": "Server belum terhubung, alamat QR belum bisa dibuat.",
   "soMenuSub": "Yang boleh dilihat dan dipesan tamu dari HP.",
   "soItemVisible": "Tampil",
@@ -6213,7 +6215,7 @@
   "fltCounterSimpleKds": "Dapur satu antrean, tanpa stasiun",
   "fltCounterQr": "QR kode kedai",
   "fltCounterRingkas": "Laporan ringkas satu halaman",
-  "fltCounterRestartNote": "Saklar baru berlaku saat admin venue masuk lagi. QR kode kedai butuh server di-restart.",
+  "fltCounterRestartNote": "Saklar baru berlaku saat admin venue masuk lagi. QR konter muncul begitu admin membuka tab QR & meja. Kalau Pesan mandiri sendiri baru dinyalakan, server perlu di-restart dulu.",
   "fltCounterOffBody": "Venue kembali ke bentuk restoran. Saklarnya disimpan, jadi menyalakan mode lagi mengembalikan seperti semula.",
   "fltModuleMembers": "Keanggotaan",
   "@fltModuleMembers": {

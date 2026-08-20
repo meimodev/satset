@@ -907,6 +907,18 @@ abstract class AppL10n {
   /// **'Satu QR untuk seluruh kedai. Tiap pesanan jadi nota bawa pulang sendiri.'**
   String get soCounterSub;
 
+  /// No description provided for @soWindowAlways.
+  ///
+  /// In id, this message translates to:
+  /// **'Selalu tayang'**
+  String get soWindowAlways;
+
+  /// No description provided for @soWindowClear.
+  ///
+  /// In id, this message translates to:
+  /// **'Hapus jam'**
+  String get soWindowClear;
+
   /// No description provided for @soNoHost.
   ///
   /// In id, this message translates to:
@@ -12988,7 +13000,7 @@ abstract class AppL10n {
   /// No description provided for @fltCounterRestartNote.
   ///
   /// In id, this message translates to:
-  /// **'Saklar baru berlaku saat admin venue masuk lagi. QR kode kedai butuh server di-restart.'**
+  /// **'Saklar baru berlaku saat admin venue masuk lagi. QR konter muncul begitu admin membuka tab QR & meja. Kalau Pesan mandiri sendiri baru dinyalakan, server perlu di-restart dulu.'**
   String get fltCounterRestartNote;
 
   /// No description provided for @fltCounterOffBody.
