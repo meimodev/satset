@@ -6022,6 +6022,58 @@
   "@fltTagBilling": {
     "description": "Card tag over the subscription block."
   },
+  "venueHubLocked": "Terkunci",
+  "@venueHubLocked": {
+    "description": "Badge on a Venue hub tile whose module the venue does not hold (ADR-0107)."
+  },
+  "venueHubLockedBody": "Hubungi pengelola untuk mengaktifkan.",
+  "@venueHubLockedBody": {
+    "description": "Body of the dialog shown when an owner taps a locked module tile."
+  },
+  "fltModules": "Modul",
+  "@fltModules": {
+    "description": "Card title over the venue's a-la-carte module set (ADR-0107)."
+  },
+  "fltTagModules": "MODUL",
+  "@fltTagModules": {
+    "description": "Card tag over the module block."
+  },
+  "fltModulesHint": "Fitur yang dijual terpisah dari paket dasar.",
+  "@fltModulesHint": {
+    "description": "Subtitle under the module card on a partner venue."
+  },
+  "fltModulesTrial": "Trial mencakup semua modul.",
+  "@fltModulesTrial": {
+    "description": "Subtitle under the module card on a trial, where the toggles are inert."
+  },
+  "fltModuleMembers": "Keanggotaan",
+  "@fltModuleMembers": {
+    "description": "Name of the members module."
+  },
+  "fltModuleSelfOrder": "Pesan mandiri",
+  "@fltModuleSelfOrder": {
+    "description": "Name of the self-order module."
+  },
+  "fltModuleOffTitle": "Matikan {module} untuk {venue}?",
+  "@fltModuleOffTitle": {
+    "description": "Confirm dialog title when removing a module from a venue.",
+    "placeholders": {
+      "module": {
+        "type": "String"
+      },
+      "venue": {
+        "type": "String"
+      }
+    }
+  },
+  "fltModuleOffBody": "Data tersimpan, tampilan hilang.",
+  "@fltModuleOffBody": {
+    "description": "Confirm dialog body: removing a module freezes the feature, it never deletes data."
+  },
+  "fltModuleOffYes": "Matikan",
+  "@fltModuleOffYes": {
+    "description": "Confirm button on the module removal dialog."
+  },
   "fltAddAdmin": "Tambah admin",
   "@fltAddAdmin": {
     "description": "Button: add a venue admin account."

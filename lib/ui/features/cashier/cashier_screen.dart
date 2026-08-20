@@ -22,6 +22,7 @@ import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
 import 'package:satset/ui/features/cashier/debt_collect_sheet.dart';
 import 'package:satset/ui/features/cashier/widgets/bill_card.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
 
 /// Which slice of the venue's money the cashier is looking at.
 ///
@@ -121,7 +122,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                         // cannot hang off a card (ADR-0098).
                         if (ref.watch(
                           venueSettingsProvider.select(
-                            (v) => v.membersEnabled && v.memberDebtEnabled,
+                            (v) => v.membersOn && v.memberDebtEnabled,
                           ),
                         )) ...[
                           const SizedBox(height: Sp.s3),

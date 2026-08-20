@@ -7946,6 +7946,42 @@ class AppL10nEn extends AppL10n {
   String get fltTagBilling => 'BILLING';
 
   @override
+  String get venueHubLocked => 'Locked';
+
+  @override
+  String get venueHubLockedBody => 'Contact your operator to enable this.';
+
+  @override
+  String get fltModules => 'Modules';
+
+  @override
+  String get fltTagModules => 'MODULES';
+
+  @override
+  String get fltModulesHint =>
+      'Features sold separately from the base package.';
+
+  @override
+  String get fltModulesTrial => 'A trial includes every module.';
+
+  @override
+  String get fltModuleMembers => 'Membership';
+
+  @override
+  String get fltModuleSelfOrder => 'Self-order';
+
+  @override
+  String fltModuleOffTitle(String module, String venue) {
+    return 'Turn off $module for $venue?';
+  }
+
+  @override
+  String get fltModuleOffBody => 'Data is kept; the screens disappear.';
+
+  @override
+  String get fltModuleOffYes => 'Turn off';
+
+  @override
   String get fltAddAdmin => 'Add admin';
 
   @override

@@ -34,6 +34,12 @@ const STATUSES = ["active", "suspended"];
 const PLANS = ["trial", "partner"];
 const CYCLES = ["monthly", "yearly"];
 
+// The modules a venue can hold à la carte, beside its plan (ADR-0107). These are
+// **persisted strings**, same rule as an AuditKind: renaming one silently
+// un-entitles every venue holding it. A `trial` holds all of them implicitly and
+// stores none, so an empty array on a trial means nothing at all.
+const MODULES = ["members", "selfOrder"];
+
 // How long a partner keeps trading past its term before the cutoff sweep
 // suspends it. A trial gets none of this — going dark on the stated date is what
 // a trial is for. Must stay equal to `fleetGraceAfterLapse` in
@@ -182,6 +188,26 @@ function auditFields(snap, keys) {
     out[k] = v === undefined ? null : v;
   }
   return out;
+}
+
+/**
+ * Outstanding member debt for a venue, in rupiah, or 0 when unknown.
+ *
+ * The cloud cannot see Drift, so this reads the figure the host publishes on its
+ * own report snapshot (ADR-0036). **Absent reads as zero on purpose**: a host on
+ * an older build, or one that has not published since boot, must not be able to
+ * block its operator from editing modules. The refusal it feeds (ADR-0107 §7) is
+ * a guard against a known debt, not a proof that none exists.
+ */
+async function venueOpenDebt(vid) {
+  try {
+    const snap = await db.collection("reports").doc(vid).get();
+    const n = snap.get("openDebt");
+    return typeof n === "number" && n > 0 ? n : 0;
+  } catch (e) {
+    logger.warn("openDebt read failed", { vid, err: String(e) });
+    return 0;
+  }
 }
 
 const VENUE_BILLING_KEYS = [
@@ -546,6 +572,10 @@ exports.createVenue = onCall(async (request) => {
     address,
     status: "active",
     plan,
+    // Empty rather than pre-stocked: a trial is entitled to every module
+    // implicitly (ADR-0107 §2), so provisioning one here would answer the
+    // conversion question on the venue's behalf.
+    addOns: [],
     trialStartAt: plan === "trial" ? FieldValue.serverTimestamp() : null,
     paidUntil: null,
     priceMonthly: null,
@@ -567,11 +597,35 @@ exports.updateVenue = onCall(async (request) => {
   const patch = {};
   if (typeof request.data.name === "string") patch.name = request.data.name.trim();
   if (typeof request.data.address === "string") patch.address = request.data.address.trim();
+  // Entitlement rides `updateVenue`, not `setVenueBilling` (ADR-0107 §9):
+  // setVenueBilling exists to write the fields that can disagree with *each
+  // other* in one act, and a module set cannot disagree with a date.
+  if (Array.isArray(request.data.addOns)) {
+    const addOns = [...new Set(request.data.addOns.map((m) => String(m).trim()))];
+    for (const m of addOns) {
+      if (!MODULES.includes(m)) {
+        throw new HttpsError("invalid-argument", `addOns must be a subset of ${MODULES}.`);
+      }
+    }
+    patch.addOns = addOns;
+  }
   if (Object.keys(patch).length === 0) {
     throw new HttpsError("invalid-argument", "Nothing to update.");
   }
   const ref = db.collection("venues").doc(vid);
   const prev = await ref.get();
+  // A venue still owed money by its own members must not lose the screen it
+  // collects on (ADR-0107 §7). An invariant here rather than a warning in the
+  // console, because the console is not the only caller.
+  if (patch.addOns && !patch.addOns.includes("members")) {
+    const had = (prev.get("addOns") || []).includes("members");
+    if (had && (await venueOpenDebt(vid)) > 0) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Venue has outstanding member debt; settle or write it off before removing the members module.",
+      );
+    }
+  }
   await ref.update(patch);
   await writeFleetAudit(
     actor,

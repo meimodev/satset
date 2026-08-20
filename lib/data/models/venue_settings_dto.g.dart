@@ -64,6 +64,9 @@ _$VenueSettingsDtoImpl _$$VenueSettingsDtoImplFromJson(
   guestMaxItems: (json['guestMaxItems'] as num?)?.toInt() ?? 20,
   guestSessionHours: (json['guestSessionHours'] as num?)?.toInt() ?? 4,
   soundGuestPending: json['soundGuestPending'] as String? ?? 'chime',
+  modules: (json['modules'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
 );
 
 Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
@@ -124,4 +127,5 @@ Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
   'guestMaxItems': instance.guestMaxItems,
   'guestSessionHours': instance.guestSessionHours,
   'soundGuestPending': instance.soundGuestPending,
+  'modules': instance.modules,
 };

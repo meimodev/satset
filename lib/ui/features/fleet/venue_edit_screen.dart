@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:satset/domain/models/venue_module.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
@@ -70,6 +71,12 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   );
 
   late String _planKey = widget.venue.plan;
+
+  /// Staged [[Modul]] set (ADR-0107 §9). Seeded from the stored `addOns`, never
+  /// from [Venue.hasModule] — a trial's implicit entitlement is a *read* rule and
+  /// baking it in here would write "everything" onto the document the moment the
+  /// operator converted the venue to a partner.
+  late Set<String> _modules = {...widget.venue.addOns};
   late DateTime? _trialStartAt = widget.venue.trialStartAt;
   late DateTime? _paidUntil = widget.venue.paidUntil;
   late bool _yearly = widget.venue.isYearly;
@@ -99,6 +106,12 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   /// has, not carry it invisibly on the document.
   DateTime? get _trialStartValue =>
       _planKey == venuePlanTrial ? _trialStartAt : null;
+
+  /// Only meaningful on a partner. Same argument as [_priceValue]: a trial holds
+  /// every module implicitly, so the control it never renders must not save what
+  /// it happened to be showing when the plan changed mid-session.
+  Set<String>? get _modulesValue =>
+      _planKey == venuePlanTrial ? null : _modules;
 
   /// A trial has no cycle to speak of, so it records the default rather than
   /// keeping whatever the venue held while it was a partner.
@@ -172,7 +185,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         _trialStartValue != v.trialStartAt ||
         _paidUntil != v.paidUntil ||
         _priceValue != v.priceMonthly ||
-        _cycleValue != v.billingCycle;
+        _cycleValue != v.billingCycle ||
+        (_modulesValue != null && !_sameModules(_modulesValue!, v.addOns));
   }
 
   Future<void> _save() async {
@@ -190,8 +204,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     final newCycle = _cycleValue;
     final newTrialStart = _trialStartValue;
 
+    final newModules = _modulesValue;
     final nameChanged = newName != v.name;
     final addressChanged = newAddress != v.address;
+    // Entitlement rides `updateVenue` beside identity, never `setVenueBilling`
+    // (ADR-0107 §9) — a module set carries no money and cannot disagree with a
+    // date, which is the only thing that callable's atomicity is for.
+    final modulesChanged =
+        newModules != null && !_sameModules(newModules, v.addOns);
     final planChanged = _planKey != v.plan;
     final trialStartChanged = newTrialStart != v.trialStartAt;
     final paidUntilChanged = _paidUntil != v.paidUntil;
@@ -204,18 +224,19 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         priceChanged ||
         cycleChanged;
 
-    if (!nameChanged && !addressChanged && !billingChanged) {
+    if (!nameChanged && !addressChanged && !modulesChanged && !billingChanged) {
       Navigator.of(context).pop();
       return;
     }
 
     setState(() => _busy = true);
     try {
-      if (nameChanged || addressChanged) {
+      if (nameChanged || addressChanged || modulesChanged) {
         await _svc.updateVenue(
           v.id,
           name: nameChanged ? newName : null,
           address: addressChanged ? newAddress : null,
+          addOns: modulesChanged ? newModules : null,
         );
       }
       if (billingChanged) {
@@ -340,6 +361,12 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                 const SizedBox(height: Sp.s4),
               ],
               _accessCard(sc, live),
+              const SizedBox(height: Sp.s6),
+              // Modules before subscription: what the venue *has*, then what it
+              // *pays* — the order the sales conversation happens in, and not
+              // inside the billing card, which would be the visual claim that a
+              // module is priced (ADR-0107 §5, §9).
+              _modulesCard(sc),
               const SizedBox(height: Sp.s6),
               _subscriptionCard(sc),
               const SizedBox(height: Sp.s6),
@@ -541,6 +568,79 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   /// There is no billing flag any more. The dates say it — which is the whole
   /// point, because a flag reading `paid` over a date three weeks gone looked
   /// healthy on every surface and billed nobody.
+  static bool _sameModules(Set<String> a, Set<String> b) =>
+      a.length == b.length && a.every(b.contains);
+
+  /// **[[Modul]]** — the à-la-carte entitlement set (ADR-0107).
+  ///
+  /// On a trial the toggles render on and inert, because a trial holds every
+  /// module implicitly and there is nothing here to decide. Staged like every
+  /// other *field* on this screen and committed on Save; only **removal**
+  /// confirms, because adding a module is the ordinary act and taking one away
+  /// is the one that surprises a venue mid-service.
+  Widget _modulesCard(SatColors sc) {
+    final trial = _planKey == venuePlanTrial;
+    final can = !_busy && !_offline && !trial;
+    return SatCard.titled(
+      title: context.l10n.fltModules,
+      tag: context.l10n.fltTagModules,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            trial ? context.l10n.fltModulesTrial : context.l10n.fltModulesHint,
+            style: SatType.bodyS(color: sc.textLo),
+          ),
+          const SizedBox(height: Sp.s3),
+          for (final key in venueModuleKeys) ...[
+            Row(
+              children: [
+                SatToggle(
+                  value: trial || _modules.contains(key),
+                  semanticLabel: _moduleLabel(key),
+                  onChanged: can ? (v) => _setModule(key, v) : null,
+                ),
+                const SizedBox(width: Sp.s2),
+                Expanded(
+                  child: Text(
+                    _moduleLabel(key),
+                    style: SatType.bodyM(color: sc.textHi),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: Sp.s2),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _moduleLabel(String key) => switch (key) {
+    moduleMembers => context.l10n.fltModuleMembers,
+    moduleSelfOrder => context.l10n.fltModuleSelfOrder,
+    // A venue holding a key this build has never heard of renders the key
+    // rather than nothing — the same fall-through every code resolver in
+    // `core/localization` takes, for the same reason.
+    _ => key,
+  };
+
+  void _setModule(String key, bool on) {
+    if (on) {
+      setState(() => _modules = {..._modules, key});
+      return;
+    }
+    // Removal only. The dialog names the **venue**, not the module, and states
+    // the freeze rule (ADR-0107 §7) where it lands — so no operator believes
+    // they have just deleted a member directory.
+    _confirm(
+      context.l10n.fltModuleOffTitle(_moduleLabel(key), _nameText),
+      context.l10n.fltModuleOffBody,
+      context.l10n.fltModuleOffYes,
+      () => setState(() => _modules = {..._modules}..remove(key)),
+    );
+  }
+
   Widget _subscriptionCard(SatColors sc) {
     final can = !_busy && !_offline;
     final trial = _planKey == venuePlanTrial;

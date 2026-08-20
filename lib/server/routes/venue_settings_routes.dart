@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import 'package:satset/domain/models/venue_module.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
@@ -179,6 +180,14 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             : const Value.absent(),
         soundPickup: body.containsKey('soundPickup')
             ? Value((body['soundPickup'] as String).trim())
+            : const Value.absent(),
+        // [[Modul]] (ADR-0107). Cloud-owned: the *only* legitimate writer is the
+        // host's venue-doc mirror, which patches through this route like any
+        // other client. No screen offers it, and a venue cannot buy itself a
+        // module by PATCHing one in — the mirror overwrites on the next
+        // snapshot, and the cloud doc is function-only.
+        modules: body.containsKey('modules')
+            ? Value(_modulesText(body['modules']))
             : const Value.absent(),
         // Membership (ADR-0091). Switching the program off leaves every row
         // standing — a balance is a debt to a guest, not a feature flag, so the
@@ -358,6 +367,19 @@ String _validMode(String m) => (m == 'fixed') ? 'fixed' : 'percent';
 
 /// An empty string clears a pointer — the sheets send `''` for "none" rather
 /// than omitting the key, which would mean "leave it alone".
+/// [[Modul]] on the wire is a list of keys; at rest it is one comma-joined
+/// string. Anything else — a string, a null, a stray type — reads as "no
+/// modules" rather than throwing: this field arrives from the host's own mirror,
+/// and a malformed patch must not take the settings route down with it.
+String? _modulesText(Object? raw) => switch (raw) {
+  final List l => joinModules(l.whereType<String>()),
+  final String s => joinModules(splitModules(s)),
+  // An explicit null restores "never mirrored", which is the state a venue is
+  // in before its cloud doc lands. Nothing sends it today; refusing it would
+  // make the column one-way.
+  _ => null,
+};
+
 String? _idOrNull(Object? raw) {
   if (raw is! String) return null;
   final t = raw.trim();
@@ -438,4 +460,8 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
   'guestMaxItems': s.guestMaxItems,
   'guestSessionHours': s.guestSessionHours,
   'soundGuestPending': s.soundGuestPending,
+  // [[Modul]] (ADR-0107) — a list on the wire, comma-joined at rest. Readable
+  // like the rest of this snapshot: a client has to know which modules the venue
+  // holds before it can decide whether to draw a locked tile.
+  'modules': s.modules == null ? null : splitModules(s.modules).toList(),
 };

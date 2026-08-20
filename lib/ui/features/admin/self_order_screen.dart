@@ -17,6 +17,7 @@ import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import '_common.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
 
 /// **[[Pesan mandiri]]** — the guest-order queue (ADR-0105, ADR-0106).
 ///
@@ -91,9 +92,7 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
       for (final o in state.pending)
         if (_matches(_filter, o.status)) o,
     ];
-    final zoneOf = {
-      for (final t in state.tables) t.id: t.zoneName,
-    };
+    final zoneOf = {for (final t in state.tables) t.id: t.zoneName};
     final alcoholIds = {
       for (final i in state.menu)
         if (i.alcohol) i.id,
@@ -103,7 +102,7 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
         if (o.status != 'pending' && _matches(_filter, o.status)) o,
     ];
 
-    if (!venue.guestOrderingEnabled && state.orders.isEmpty) {
+    if (!venue.guestOrderingOn && state.orders.isEmpty) {
       return Center(
         child: SatEmpty(
           icon: Icons.qr_code_2_outlined,
@@ -183,9 +182,7 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
         if (pending.isNotEmpty) ...[
           Row(
             children: [
-              Expanded(
-                child: SatSectionLabel(l10n.soTabQueue),
-              ),
+              Expanded(child: SatSectionLabel(l10n.soTabQueue)),
               SatButton.primary(
                 label: l10n.soAcceptAll,
                 size: SatButtonSize.sm,
@@ -349,7 +346,9 @@ class _GuestOrderCard extends ConsumerWidget {
                         ),
                         if (line.modifiers.isNotEmpty)
                           Text(
-                            [for (final m in line.modifiers) m.label].join(' · '),
+                            [
+                              for (final m in line.modifiers) m.label,
+                            ].join(' · '),
                             style: SatType.bodyS(color: sc.textMd),
                           ),
                         if ((line.note ?? '').isNotEmpty)
@@ -436,7 +435,11 @@ class _ReasonSheet extends StatelessWidget {
           ),
           for (final code in _rejectReasons)
             Padding(
-              padding: const EdgeInsets.only(left: Sp.s4, right: Sp.s4, bottom: Sp.s2),
+              padding: const EdgeInsets.only(
+                left: Sp.s4,
+                right: Sp.s4,
+                bottom: Sp.s2,
+              ),
               child: SatButton.outline(
                 label: _reasonLabel(context, code),
                 onTap: () => Navigator.of(context).pop(code),

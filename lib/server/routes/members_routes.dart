@@ -109,6 +109,24 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   // order, so a literal segment placed after the parameterised one is read as a
   // member whose id happens to be "debtors".
 
+  /// Venue-wide outstanding [[Piutang]], and **the one route here that neither
+  /// guard covers** (ADR-0107 §7).
+  ///
+  /// It exists so the fleet console can refuse to remove the Keanggotaan
+  /// [[Modul]] from a venue that is still owed money — which means it has to
+  /// answer precisely when the ordinary guards would 404: after an owner has
+  /// switched membership off, or with the debt program frozen, balances stand
+  /// either way. A gate here would make "nothing owed" and "cannot ask"
+  /// the same answer, and the refusal reads that answer as permission.
+  ///
+  /// Read-only, a single integer, and still behind the ordinary bearer.
+  r.get('/members/debt-total', (Request req) async {
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!canRead(a.$2)) return forbidden(Capability.manageMembers);
+    return json({'openDebt': await totalDebt(db)});
+  });
+
   /// Everyone who owes something, largest first, with FIFO-derived ageing.
   r.get('/members/debtors', (Request req) async {
     final off = await debtGuard();

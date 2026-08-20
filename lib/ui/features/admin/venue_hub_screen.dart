@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/domain/models/venue_module.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,6 +26,7 @@ import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/l10n/app_localizations.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
 
 class _HubSection {
   final String label;
@@ -38,6 +42,12 @@ class _HubSection {
   final String? phoneBadge;
   final bool Function(WidgetRef ref)? hasAlert;
 
+  /// The [[Modul]] this destination needs (ADR-0107), or null when it is part of
+  /// the base package. A venue that does not hold it gets a **locked tile here
+  /// and nowhere else**: the owner is the person the upsell is addressed to, and
+  /// a locked door in front of a waiter mid-rush is advertising inside a tool.
+  final String? module;
+
   const _HubSection({
     required this.label,
     required this.sub,
@@ -47,6 +57,7 @@ class _HubSection {
     this.badgeBuilder,
     this.phoneBadge,
     this.hasAlert,
+    this.module,
   });
 }
 
@@ -156,6 +167,7 @@ List<_HubSection> _sectionsFor(AppL10n l10n) => <_HubSection>[
     icon: Icons.qr_code_2_outlined,
     route: '/selforder-admin',
     tint: (sc) => sc.accent,
+    module: moduleSelfOrder,
     // On/off, not a backlog. The queue is a nav destination with its own badge
     // now (ADR-0106); what this hub owns is whether the feature is running at
     // all, and counting pending orders here would send an owner to the wrong
@@ -184,6 +196,7 @@ List<_HubSection> _sectionsFor(AppL10n l10n) => <_HubSection>[
     icon: Icons.badge_outlined,
     route: '/members',
     tint: (sc) => sc.violet,
+    module: moduleMembers,
     // The tile stands whether or not the program runs: a venue that has not
     // opted in still needs to find out the feature exists, and the screen
     // behind it says how to switch it on.
@@ -560,6 +573,30 @@ class _PhoneHub extends StatelessWidget {
   }
 }
 
+void _showLocked(BuildContext context) {
+  final sc = context.sat;
+  showSatDialog<void>(
+    context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: sc.bg1,
+      title: Text(
+        context.l10n.venueHubLocked,
+        style: SatType.h3(color: sc.textHi),
+      ),
+      content: Text(
+        context.l10n.venueHubLockedBody,
+        style: SatType.bodyM(color: sc.textMd),
+      ),
+      actions: [
+        SatButton.ghost(
+          label: context.l10n.close,
+          onTap: () => Navigator.pop(ctx),
+        ),
+      ],
+    ),
+  );
+}
+
 class _HubCard extends ConsumerWidget {
   final _HubSection section;
   final bool big;
@@ -573,18 +610,29 @@ class _HubCard extends ConsumerWidget {
     final iconBox = big ? 46.0 : 40.0;
     final iconSize = big ? 22.0 : 20.0;
 
-    final badgeText =
-        (!context.layout.useTabletShell && section.phoneBadge != null)
+    // Locked beats every other badge: a venue that cannot open the screen does
+    // not need to know how many rows are behind it.
+    final settings = ref.watch(venueSettingsProvider);
+    final locked =
+        section.module != null && !settings.hasModule(section.module!);
+    final badgeText = locked
+        ? context.l10n.venueHubLocked
+        : (!context.layout.useTabletShell && section.phoneBadge != null)
         ? section.phoneBadge
         : section.badgeBuilder?.call(ref);
-    final hasAlert = section.hasAlert?.call(ref) ?? false;
+    final hasAlert = !locked && (section.hasAlert?.call(ref) ?? false);
 
     return PressScale(
       child: Material(
         color: sc.bg2,
         borderRadius: SatR.a(radius),
         child: InkWell(
-          onTap: () => context.push(section.route),
+          // The lock is a sales surface, not a security boundary — the routes
+          // behind it are gated server-side regardless (ADR-0107 §3). Tapping
+          // says who to ask rather than doing nothing, which reads as broken.
+          onTap: locked
+              ? () => _showLocked(context)
+              : () => context.push(section.route),
           borderRadius: SatR.a(radius),
           child: Container(
             padding: EdgeInsets.all(big ? 16 : 14),
@@ -609,7 +657,11 @@ class _HubCard extends ConsumerWidget {
                         borderRadius: SatR.a(big ? 14 : 12),
                       ),
                       alignment: Alignment.center,
-                      child: Icon(section.icon, size: iconSize, color: tint),
+                      child: Icon(
+                        locked ? Icons.lock_outline_rounded : section.icon,
+                        size: iconSize,
+                        color: locked ? sc.textLo : tint,
+                      ),
                     ),
                     if (badgeText != null)
                       Flexible(

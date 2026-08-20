@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:satset/domain/models/venue_module.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -126,6 +127,12 @@ class Venue {
 
   /// `monthly` or `yearly`. Yearly is two months off — see [venuePriceTotal].
   final String billingCycle;
+
+  /// The [[Modul]] set the venue holds à la carte, beside — never inside — the
+  /// plan (ADR-0107). Persisted strings; see [venueModuleKeys]. Empty is the
+  /// ordinary state for a trial, which holds everything implicitly, so read this
+  /// through [hasModule] and never directly.
+  final Set<String> addOns;
   final DateTime? lastSeenAt;
   final bool fromCache;
   const Venue({
@@ -138,6 +145,7 @@ class Venue {
     required this.paidUntil,
     required this.priceMonthly,
     required this.billingCycle,
+    required this.addOns,
     required this.lastSeenAt,
     required this.fromCache,
   });
@@ -145,12 +153,19 @@ class Venue {
   bool get isActive => status == AdminStatus.active;
   bool get isTrial => plan == venuePlanTrial;
   bool get isYearly => billingCycle == venueCycleYearly;
+
+  /// Whether the venue may use [key]. **A trial holds every module implicitly**
+  /// (ADR-0107 §2) — the trial is the demonstration of the whole app, and the
+  /// decision it exists to produce is *which of these do I keep*. That rule lives
+  /// here and nowhere else: every other reader asks this method.
+  bool hasModule(String key) => isTrial || addOns.contains(key);
 }
 
 const venuePlanTrial = 'trial';
 const venuePlanPartner = 'partner';
 const venueCycleMonthly = 'monthly';
 const venueCycleYearly = 'yearly';
+
 
 /// Why a cold-boot admin session could not start. `superAdmin` means the cached
 /// session belongs to a fleet operator, which never auto-boots a local server;
@@ -273,6 +288,12 @@ class FirebaseAdminService {
       paidUntil: (d['paidUntil'] as Timestamp?)?.toDate(),
       priceMonthly: (d['priceMonthly'] as num?)?.toInt(),
       billingCycle: (d['billingCycle'] as String?)?.trim() ?? venueCycleMonthly,
+      // Unknown keys are kept rather than dropped: a console on an older build
+      // must not silently strip a module it has not heard of when it saves.
+      addOns: {
+        for (final m in (d['addOns'] as List<dynamic>? ?? const []))
+          if (m is String && m.trim().isNotEmpty) m.trim(),
+      },
       lastSeenAt: (d['lastSeenAt'] as Timestamp?)?.toDate(),
       fromCache: snap.metadata.isFromCache,
     );

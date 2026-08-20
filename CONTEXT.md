@@ -495,9 +495,24 @@ The commercial arrangement between a [[Venue (cloud)|venue]] and the operator, h
 
 **Dates are the only billing truth.** `billingStatus` was deleted in [ADR-0076](docs/adr/0076-two-plans-and-a-subscription-that-cuts-off.md) — it could disagree with `paidUntil`, and the disagreement it produced (`paid` with a date three weeks gone: healthy on every surface, billing nobody) was the worst state the console could hold. **lapsed** is `paidUntil < now`; **ending** is inside `fleetRenewWarn` (14 days) and still ahead. Both are shared code (`data/services/venue_billing.dart`) rather than duplicated per surface, so the operator's warning and the venue's warning can never be about different things, and they are mutually exclusive — a lapsed date is never also reported as ending.
 
-**`plan` selects the rules, not the features.** It decides which fields are meaningful and which [[Subscription cutoff]] applies. It still gates no feature inside the venue and the embedded server still knows nothing about it; there is no entitlement model.
+**`plan` selects the rules, not the features.** It decides which fields are meaningful and which [[Subscription cutoff]] applies. It gates no feature inside the venue and the embedded server knows nothing about it — entitlement is a second, orthogonal axis, carried by [[Modul (module)|modules]] (ADR-0107).
 
 _Avoid_: a `billingStatus` flag in any form (the dates say it); a plan that carries neither a price nor a term; reading `plan` as an entitlement; setting a price on a trial.
+
+### Modul (module)
+**ID · EN** — Modul · Module. States: aktif · on; terkunci · locked. _Not_ "paket"/"plan" — a [[Venue billing|plan]] is the commercial arrangement, a module is one feature the venue holds under it.
+
+A slice of the app a [[Venue (cloud)|venue]] holds or does not hold, sold **à la carte** beside the plan rather than as a tier. Held as `venues/{vid}.addOns` — a set of persisted string keys (`members`, `selfOrder`), same naming rule as [[Audit (venue audit log)|AuditKind]]: renaming one silently un-entitles every venue holding it. A **[[Venue billing|trial]] holds every module implicitly**, because a trial is the demonstration of the whole app.
+
+The **base package** — what a venue buying no modules gets — is floor, kitchen and till. Settlement is never a module: a restaurant that cannot take money is not a product.
+
+**A module is not a preference.** `addOns` says what the venue *may* have; the Pengaturan toggles beside it (`membersEnabled`, `guestOrderingEnabled`) say what the venue *wants*. Two facts, two fields, composed as AND at the one writer that already computes `enabled:` — so "they said no" stays distinguishable from "they can't", and re-entitling restores the owner's own choice rather than a default.
+
+Mirrored into local `VenueSettings` down the path cloud-owned identity already uses (ADR-0018), so **offline fails open**: the last known set keeps serving, with no staleness cutoff. Payment is enforced by [[Subscription cutoff]] and by nothing else.
+
+**Unentitled is invisible to staff and locked to the owner** — identical to a toggled-off feature everywhere a waiter or cashier can reach, and a greyed tile on the admin hub, where the buyer is. Losing a module **freezes** rather than deletes ([[Poin]]'s rule generalised); the console refuses to remove `members` while [[Piutang]] is outstanding, so a venue never loses the ability to collect its own debts.
+
+_Avoid_: a module that carries its own price or its own term (the plan carries both); a tier ladder; a staleness cutoff that revokes a module offline; gating reports or multi-device; a route that reads the module set for itself instead of going through the feature's own writer. See [ADR-0107](docs/adr/0107-a-module-is-an-entitlement-beside-the-plan.md).
 
 ### Subscription cutoff
 When an unpaid [[Venue billing|subscription]] actually stops a venue trading. An hourly scheduled function (`onSchedule`, riding the pattern `sweepExpiredTempPasswords` proved) flips `status` to `suspended` on any `active` venue past its cutoff:

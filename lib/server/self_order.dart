@@ -24,6 +24,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:satset/server/modules.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
@@ -70,7 +71,12 @@ typedef GuestRules = ({
 Future<GuestRules> guestRules(AppDatabase db) async {
   final s = await _settings(db);
   return (
-    enabled: s?.guestOrderingEnabled ?? false,
+    // Entitlement AND preference (ADR-0107 §3), same shape as `memberConfig`.
+    // Off here means the cleartext plane never binds at all — the module does
+    // not 403, it does not exist (ADR-0105).
+    enabled:
+        (s?.guestOrderingEnabled ?? false) &&
+        venueHasModule(s, moduleSelfOrder),
     noteEnabled: s?.guestNoteEnabled ?? true,
     hoursStartMin: s?.guestHoursStartMin ?? 0,
     hoursEndMin: s?.guestHoursEndMin ?? 0,

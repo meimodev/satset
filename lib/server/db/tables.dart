@@ -567,6 +567,26 @@ class VenueSettings extends Table {
   /// Sound id for [AlertEvent.guestPending]. Same shape as the sibling
   /// `sound*` columns.
   TextColumn get soundGuestPending => text().nullable()();
+
+  /// The **[[Modul]]** set this venue holds, comma-joined (ADR-0107).
+  ///
+  /// **Cloud-owned and mirrored down**, in the ADR-0018 sense: written only by
+  /// the host's venue-doc listener, editable on no screen, and read by the
+  /// features' own gate writers rather than by routes. Empty means "no module",
+  /// which is also what a device that has never seen its venue doc holds — the
+  /// mirror is the only thing that fills it.
+  ///
+  /// Deliberately **not** cleared when the cloud goes quiet: the last known set
+  /// keeps serving, because payment is enforced by the suspend sweep and never
+  /// by a feature going dark mid-service.
+  ///
+  /// **Nullable, and the null is load-bearing.** `NULL` means *never mirrored* —
+  /// an upgraded venue, a fresh seed, a device that has not reached its cloud
+  /// doc yet — and reads as **entitled to everything**, because a venue must not
+  /// lose a feature it was using to a schema migration. `''` is a real answer:
+  /// mirrored, and holds no module. Collapsing the two is how an offline
+  /// upgrade takes Keanggotaan off a venue that pays for it.
+  TextColumn get modules => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }

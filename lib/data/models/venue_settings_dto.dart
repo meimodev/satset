@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
+import 'package:satset/domain/models/venue_module.dart';
 
 part 'venue_settings_dto.freezed.dart';
 part 'venue_settings_dto.g.dart';
@@ -96,6 +97,15 @@ class VenueSettingsDto with _$VenueSettingsDto {
     @Default(20) int guestMaxItems,
     @Default(4) int guestSessionHours,
     @Default('chime') String soundGuestPending,
+
+    /// The [[Modul]] set the venue holds (ADR-0107). Cloud-owned and mirrored
+    /// down; no screen writes it.
+    ///
+    /// **Null means never mirrored** and reads as entitled to everything — an
+    /// empty list is the different, real answer "holds no module". A client that
+    /// draws a locked tile must check for null first, or an upgraded venue sees
+    /// padlocks on features it pays for.
+    List<String>? modules,
   }) = _VenueSettingsDto;
 
   factory VenueSettingsDto.fromJson(Map<String, dynamic> json) =>
@@ -116,4 +126,16 @@ extension VenueSettingsTaxCfg on VenueSettingsDto {
     serviceFixedAmount: serviceFixedAmount,
     taxAfterDiscount: taxAfterDiscount,
   );
+}
+
+/// Entitlement (ADR-0107) composed with the owner's switch — the pair a floor
+/// surface has to ask about, since a venue that did not buy the [[Modul]] must
+/// not be shown the affordance at all. `modules == null` is "never mirrored",
+/// which reads as entitled; the hub's locked tile is the one place the two
+/// halves are deliberately told apart.
+extension VenueSettingsModules on VenueSettingsDto {
+  bool hasModule(String key) => modules?.contains(key) ?? true;
+  bool get membersOn => membersEnabled && hasModule(moduleMembers);
+  bool get guestOrderingOn =>
+      guestOrderingEnabled && hasModule(moduleSelfOrder);
 }

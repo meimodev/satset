@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:satset/domain/models/venue_module.dart';
 import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -616,11 +617,11 @@ class AuthRepository extends StateNotifier<AuthState> {
       // which is why the venue paying the bill was the one party in the system
       // that could not see its own billing state. See [venueCloudDocProvider].
       ref.read(venueCloudDocProvider.notifier).state = venue;
-      // Cloud owns venue identity (ADR-0018): mirror name/address into the
-      // local VenueSettings. The 60s heartbeat rewrites `lastSeenAt`, which
-      // re-fires this snapshot, so a diff-guard keeps it a no-op when nothing
-      // changed.
-      await _mirrorVenueIdentity(venue);
+      // Cloud owns venue identity (ADR-0018) and entitlement (ADR-0107): mirror
+      // name/address and the module set into the local VenueSettings. The 60s
+      // heartbeat rewrites `lastSeenAt`, which re-fires this snapshot, so a
+      // diff-guard keeps it a no-op when nothing changed.
+      await _mirrorVenueCloudFields(venue);
     });
 
     // Each beat does two online-only writes that must freeze together when the
@@ -676,6 +677,17 @@ class AuthRepository extends StateNotifier<AuthState> {
           return null;
         }
       },
+      // Not a report figure — the fleet console reads it to refuse removing the
+      // Keanggotaan module from a venue still owed money (ADR-0107 §7).
+      fetchOpenDebt: () async {
+        try {
+          final raw = await api.getJson('/members/debt-total');
+          return ((raw as Map)['openDebt'] as num?)?.toInt();
+        } catch (e) {
+          SatLog.repo('ownerReport.openDebt fail $e');
+          return null;
+        }
+      },
     )..start();
   }
 
@@ -683,21 +695,33 @@ class AuthRepository extends StateNotifier<AuthState> {
   /// in-app name + receipts track the fleet-console value (ADR-0018). Only
   /// non-empty cloud values overwrite local, and only when they actually
   /// differ — so the heartbeat-driven snapshot churn doesn't spam patches.
-  Future<void> _mirrorVenueIdentity(Venue v) async {
+  Future<void> _mirrorVenueCloudFields(Venue v) async {
     final settings = ref.read(venueSettingsProvider);
     final nextName = v.name.trim();
     final nextAddr = v.address.trim();
     final needName = nextName.isNotEmpty && nextName != settings.displayName;
     final needAddr = nextAddr.isNotEmpty && nextAddr != settings.address;
-    if (!needName && !needAddr) return;
+    // [[Modul]] (ADR-0107). Mirrored from `hasModule`, not from the raw
+    // `addOns`, so a trial's implicit entitlement is resolved *here* and the
+    // server never has to know what a plan is.
+    // Null locally means "never mirrored", so the first snapshot always writes.
+    final nextModules = venueModuleKeys.where(v.hasModule).toList()..sort();
+    final held = settings.modules;
+    final needModules =
+        held == null || nextModules.join(',') != (held.toList()..sort()).join(',');
+    if (!needName && !needAddr && !needModules) return;
     try {
       await ref
           .read(venueSettingsProvider.notifier)
           .patch(
             displayName: needName ? nextName : null,
             address: needAddr ? nextAddr : null,
+            modules: needModules ? nextModules : null,
           );
-      SatLog.repo('venueIdentity.mirrored name=$needName addr=$needAddr');
+      SatLog.repo(
+        'venueCloud.mirrored name=$needName addr=$needAddr '
+        'modules=${needModules ? nextModules.join(',') : 'same'}',
+      );
     } catch (_) {
       // Server not up yet / offline — retried on the next venue snapshot.
     }

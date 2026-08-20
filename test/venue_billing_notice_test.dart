@@ -21,6 +21,7 @@ void main() {
     name: 'Warung',
     address: '',
     plan: plan,
+    addOns: const {},
     trialStartAt: null,
     paidUntil: paidUntil,
     priceMonthly: null,

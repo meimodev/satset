@@ -9,7 +9,9 @@
 //   - a staff route does not exist on it at all;
 //   - an unknown code, a deactivated table and a table opted out of self-order
 //     are one indistinguishable 404, so the QR cannot enumerate the floor;
-//   - with the venue flag off the page is not served.
+//   - with the venue flag off the page is not served, and the same holds when
+//     the venue is not entitled to the [[Modul]] at all (ADR-0107) — an
+//     unentitled venue is indistinguishable from one that never opted in.
 //
 // The flag also decides whether the socket binds at all, which lives in
 // `ServerRuntime._syncGuestPlane` — that half is exercised by booting the
@@ -36,6 +38,14 @@ void main() {
     db.venueSettings,
   )..where((x) => x.id.equals('default'))).write(
     VenueSettingsCompanion(guestOrderingEnabled: Value(on)),
+  );
+
+  /// Null `modules` (the setUp default) means "never mirrored", which reads as
+  /// entitled — so a test that wants the unentitled case has to say so.
+  Future<void> setModules(String csv) => (db.update(
+    db.venueSettings,
+  )..where((x) => x.id.equals('default'))).write(
+    VenueSettingsCompanion(modules: Value(csv)),
   );
 
   setUp(() async {
@@ -127,6 +137,18 @@ void main() {
     await setFlag(false);
     final res = await http.get(Uri.parse('$base/t/CODE0001'));
     expect(res.statusCode, 404);
+  });
+
+  test('an unentitled venue is served nothing either', () async {
+    // The venue *wants* self-order — self-order is the module it does not hold.
+    // Same 404 as never having opted in, because a guest must not be able to
+    // tell a venue that did not buy the feature from one that did not want it.
+    //
+    // In production the socket does not bind at all for either case, since
+    // `_syncGuestPlane` reads the same `guestRules().enabled` this asserts on;
+    // this test starts the plane by hand, so it asks the page instead.
+    await setModules('');
+    expect((await http.get(Uri.parse('$base/t/CODE0001'))).statusCode, 404);
   });
 
   test('the URL a printed QR carries is the plane\'s own', () {

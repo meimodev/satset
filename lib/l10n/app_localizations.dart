@@ -12499,6 +12499,72 @@ abstract class AppL10n {
   /// **'TAGIHAN'**
   String get fltTagBilling;
 
+  /// Badge on a Venue hub tile whose module the venue does not hold (ADR-0107).
+  ///
+  /// In id, this message translates to:
+  /// **'Terkunci'**
+  String get venueHubLocked;
+
+  /// Body of the dialog shown when an owner taps a locked module tile.
+  ///
+  /// In id, this message translates to:
+  /// **'Hubungi pengelola untuk mengaktifkan.'**
+  String get venueHubLockedBody;
+
+  /// Card title over the venue's a-la-carte module set (ADR-0107).
+  ///
+  /// In id, this message translates to:
+  /// **'Modul'**
+  String get fltModules;
+
+  /// Card tag over the module block.
+  ///
+  /// In id, this message translates to:
+  /// **'MODUL'**
+  String get fltTagModules;
+
+  /// Subtitle under the module card on a partner venue.
+  ///
+  /// In id, this message translates to:
+  /// **'Fitur yang dijual terpisah dari paket dasar.'**
+  String get fltModulesHint;
+
+  /// Subtitle under the module card on a trial, where the toggles are inert.
+  ///
+  /// In id, this message translates to:
+  /// **'Trial mencakup semua modul.'**
+  String get fltModulesTrial;
+
+  /// Name of the members module.
+  ///
+  /// In id, this message translates to:
+  /// **'Keanggotaan'**
+  String get fltModuleMembers;
+
+  /// Name of the self-order module.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesan mandiri'**
+  String get fltModuleSelfOrder;
+
+  /// Confirm dialog title when removing a module from a venue.
+  ///
+  /// In id, this message translates to:
+  /// **'Matikan {module} untuk {venue}?'**
+  String fltModuleOffTitle(String module, String venue);
+
+  /// Confirm dialog body: removing a module freezes the feature, it never deletes data.
+  ///
+  /// In id, this message translates to:
+  /// **'Data tersimpan, tampilan hilang.'**
+  String get fltModuleOffBody;
+
+  /// Confirm button on the module removal dialog.
+  ///
+  /// In id, this message translates to:
+  /// **'Matikan'**
+  String get fltModuleOffYes;
+
   /// Button: add a venue admin account.
   ///
   /// In id, this message translates to:

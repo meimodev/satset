@@ -25,6 +25,7 @@ import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_view_model.
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/l10n/app_localizations.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
 
 /// First path segment of [loc], e.g. `/menuadm` for `/menuadm/42`. Shell routes
 /// are matched on this rather than on `startsWith`, so a destination can never
@@ -181,7 +182,7 @@ class AppShell extends ConsumerWidget {
     // so the destination does not either — this is not a screen worth showing
     // empty. `takeOrder` because the one act on it is deciding a guest order.
     final showTamu = showGuestQueue(
-      guestOrderingEnabled: ref.watch(venueSettingsProvider).guestOrderingEnabled,
+      guestOrderingEnabled: ref.watch(venueSettingsProvider).guestOrderingOn,
       canTakeOrder: ref.watch(authStateProvider).has(Capability.takeOrder),
     );
     final guestPending = showTamu

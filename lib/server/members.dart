@@ -15,6 +15,7 @@ library;
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:satset/server/modules.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 import 'package:satset/domain/models/audit_kind.dart';
@@ -86,7 +87,11 @@ Future<MemberConfig> memberConfig(AppDatabase db) async {
     db.venueSettings,
   )..where((v) => v.id.equals('default'))).getSingleOrNull();
   return MemberConfig(
-    enabled: s?.membersEnabled ?? false,
+    // Entitlement AND preference, composed once (ADR-0107 §3): `membersEnabled`
+    // is what the venue *wants*, the module is what it *may have*. Kept as two
+    // facts so "they said no" stays distinguishable from "they can't", and so
+    // re-entitling restores the owner's own choice rather than a default.
+    enabled: (s?.membersEnabled ?? false) && venueHasModule(s, moduleMembers),
     pointsEnabled: s?.memberPointsEnabled ?? false,
     punchEnabled: s?.memberPunchEnabled ?? false,
     presetId: s?.memberPresetId,

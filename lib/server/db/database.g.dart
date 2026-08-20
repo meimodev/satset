@@ -9371,6 +9371,17 @@ class $VenueSettingsTable extends VenueSettings
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _modulesMeta = const VerificationMeta(
+    'modules',
+  );
+  @override
+  late final GeneratedColumn<String> modules = GeneratedColumn<String>(
+    'modules',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -9429,6 +9440,7 @@ class $VenueSettingsTable extends VenueSettings
     guestMaxItems,
     guestSessionHours,
     soundGuestPending,
+    modules,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9918,6 +9930,12 @@ class $VenueSettingsTable extends VenueSettings
         ),
       );
     }
+    if (data.containsKey('modules')) {
+      context.handle(
+        _modulesMeta,
+        modules.isAcceptableOrUnknown(data['modules']!, _modulesMeta),
+      );
+    }
     return context;
   }
 
@@ -10151,6 +10169,10 @@ class $VenueSettingsTable extends VenueSettings
         DriftSqlType.string,
         data['${effectivePrefix}sound_guest_pending'],
       ),
+      modules: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}modules'],
+      ),
     );
   }
 
@@ -10320,6 +10342,26 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   /// Sound id for [AlertEvent.guestPending]. Same shape as the sibling
   /// `sound*` columns.
   final String? soundGuestPending;
+
+  /// The **[[Modul]]** set this venue holds, comma-joined (ADR-0107).
+  ///
+  /// **Cloud-owned and mirrored down**, in the ADR-0018 sense: written only by
+  /// the host's venue-doc listener, editable on no screen, and read by the
+  /// features' own gate writers rather than by routes. Empty means "no module",
+  /// which is also what a device that has never seen its venue doc holds — the
+  /// mirror is the only thing that fills it.
+  ///
+  /// Deliberately **not** cleared when the cloud goes quiet: the last known set
+  /// keeps serving, because payment is enforced by the suspend sweep and never
+  /// by a feature going dark mid-service.
+  ///
+  /// **Nullable, and the null is load-bearing.** `NULL` means *never mirrored* —
+  /// an upgraded venue, a fresh seed, a device that has not reached its cloud
+  /// doc yet — and reads as **entitled to everything**, because a venue must not
+  /// lose a feature it was using to a schema migration. `''` is a real answer:
+  /// mirrored, and holds no module. Collapsing the two is how an offline
+  /// upgrade takes Keanggotaan off a venue that pays for it.
+  final String? modules;
   const VenueSetting({
     required this.id,
     required this.displayName,
@@ -10377,6 +10419,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     required this.guestMaxItems,
     required this.guestSessionHours,
     this.soundGuestPending,
+    this.modules,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -10445,6 +10488,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     if (!nullToAbsent || soundGuestPending != null) {
       map['sound_guest_pending'] = Variable<String>(soundGuestPending);
     }
+    if (!nullToAbsent || modules != null) {
+      map['modules'] = Variable<String>(modules);
+    }
     return map;
   }
 
@@ -10512,6 +10558,9 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       soundGuestPending: soundGuestPending == null && nullToAbsent
           ? const Value.absent()
           : Value(soundGuestPending),
+      modules: modules == null && nullToAbsent
+          ? const Value.absent()
+          : Value(modules),
     );
   }
 
@@ -10597,6 +10646,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       soundGuestPending: serializer.fromJson<String?>(
         json['soundGuestPending'],
       ),
+      modules: serializer.fromJson<String?>(json['modules']),
     );
   }
   @override
@@ -10659,6 +10709,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       'guestMaxItems': serializer.toJson<int>(guestMaxItems),
       'guestSessionHours': serializer.toJson<int>(guestSessionHours),
       'soundGuestPending': serializer.toJson<String?>(soundGuestPending),
+      'modules': serializer.toJson<String?>(modules),
     };
   }
 
@@ -10719,6 +10770,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     int? guestMaxItems,
     int? guestSessionHours,
     Value<String?> soundGuestPending = const Value.absent(),
+    Value<String?> modules = const Value.absent(),
   }) => VenueSetting(
     id: id ?? this.id,
     displayName: displayName ?? this.displayName,
@@ -10782,6 +10834,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     soundGuestPending: soundGuestPending.present
         ? soundGuestPending.value
         : this.soundGuestPending,
+    modules: modules.present ? modules.value : this.modules,
   );
   VenueSetting copyWithCompanion(VenueSettingsCompanion data) {
     return VenueSetting(
@@ -10939,6 +10992,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       soundGuestPending: data.soundGuestPending.present
           ? data.soundGuestPending.value
           : this.soundGuestPending,
+      modules: data.modules.present ? data.modules.value : this.modules,
     );
   }
 
@@ -11000,7 +11054,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           ..write('guestHoursEndMin: $guestHoursEndMin, ')
           ..write('guestMaxItems: $guestMaxItems, ')
           ..write('guestSessionHours: $guestSessionHours, ')
-          ..write('soundGuestPending: $soundGuestPending')
+          ..write('soundGuestPending: $soundGuestPending, ')
+          ..write('modules: $modules')
           ..write(')'))
         .toString();
   }
@@ -11063,6 +11118,7 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     guestMaxItems,
     guestSessionHours,
     soundGuestPending,
+    modules,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -11123,7 +11179,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           other.guestHoursEndMin == this.guestHoursEndMin &&
           other.guestMaxItems == this.guestMaxItems &&
           other.guestSessionHours == this.guestSessionHours &&
-          other.soundGuestPending == this.soundGuestPending);
+          other.soundGuestPending == this.soundGuestPending &&
+          other.modules == this.modules);
 }
 
 class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
@@ -11183,6 +11240,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
   final Value<int> guestMaxItems;
   final Value<int> guestSessionHours;
   final Value<String?> soundGuestPending;
+  final Value<String?> modules;
   final Value<int> rowid;
   const VenueSettingsCompanion({
     this.id = const Value.absent(),
@@ -11241,6 +11299,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.guestMaxItems = const Value.absent(),
     this.guestSessionHours = const Value.absent(),
     this.soundGuestPending = const Value.absent(),
+    this.modules = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VenueSettingsCompanion.insert({
@@ -11300,6 +11359,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.guestMaxItems = const Value.absent(),
     this.guestSessionHours = const Value.absent(),
     this.soundGuestPending = const Value.absent(),
+    this.modules = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id);
   static Insertable<VenueSetting> custom({
@@ -11359,6 +11419,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Expression<int>? guestMaxItems,
     Expression<int>? guestSessionHours,
     Expression<String>? soundGuestPending,
+    Expression<String>? modules,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -11430,6 +11491,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       if (guestMaxItems != null) 'guest_max_items': guestMaxItems,
       if (guestSessionHours != null) 'guest_session_hours': guestSessionHours,
       if (soundGuestPending != null) 'sound_guest_pending': soundGuestPending,
+      if (modules != null) 'modules': modules,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -11491,6 +11553,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Value<int>? guestMaxItems,
     Value<int>? guestSessionHours,
     Value<String?>? soundGuestPending,
+    Value<String?>? modules,
     Value<int>? rowid,
   }) {
     return VenueSettingsCompanion(
@@ -11554,6 +11617,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       guestMaxItems: guestMaxItems ?? this.guestMaxItems,
       guestSessionHours: guestSessionHours ?? this.guestSessionHours,
       soundGuestPending: soundGuestPending ?? this.soundGuestPending,
+      modules: modules ?? this.modules,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -11741,6 +11805,9 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     if (soundGuestPending.present) {
       map['sound_guest_pending'] = Variable<String>(soundGuestPending.value);
     }
+    if (modules.present) {
+      map['modules'] = Variable<String>(modules.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -11806,6 +11873,7 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
           ..write('guestMaxItems: $guestMaxItems, ')
           ..write('guestSessionHours: $guestSessionHours, ')
           ..write('soundGuestPending: $soundGuestPending, ')
+          ..write('modules: $modules, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -33076,6 +33144,7 @@ typedef $$VenueSettingsTableCreateCompanionBuilder =
       Value<int> guestMaxItems,
       Value<int> guestSessionHours,
       Value<String?> soundGuestPending,
+      Value<String?> modules,
       Value<int> rowid,
     });
 typedef $$VenueSettingsTableUpdateCompanionBuilder =
@@ -33136,6 +33205,7 @@ typedef $$VenueSettingsTableUpdateCompanionBuilder =
       Value<int> guestMaxItems,
       Value<int> guestSessionHours,
       Value<String?> soundGuestPending,
+      Value<String?> modules,
       Value<int> rowid,
     });
 
@@ -33425,6 +33495,11 @@ class $$VenueSettingsTableFilterComposer
 
   ColumnFilters<String> get soundGuestPending => $composableBuilder(
     column: $table.soundGuestPending,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modules => $composableBuilder(
+    column: $table.modules,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -33717,6 +33792,11 @@ class $$VenueSettingsTableOrderingComposer
     column: $table.soundGuestPending,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get modules => $composableBuilder(
+    column: $table.modules,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VenueSettingsTableAnnotationComposer
@@ -33993,6 +34073,9 @@ class $$VenueSettingsTableAnnotationComposer
     column: $table.soundGuestPending,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get modules =>
+      $composableBuilder(column: $table.modules, builder: (column) => column);
 }
 
 class $$VenueSettingsTableTableManager
@@ -34082,6 +34165,7 @@ class $$VenueSettingsTableTableManager
                 Value<int> guestMaxItems = const Value.absent(),
                 Value<int> guestSessionHours = const Value.absent(),
                 Value<String?> soundGuestPending = const Value.absent(),
+                Value<String?> modules = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion(
                 id: id,
@@ -34140,6 +34224,7 @@ class $$VenueSettingsTableTableManager
                 guestMaxItems: guestMaxItems,
                 guestSessionHours: guestSessionHours,
                 soundGuestPending: soundGuestPending,
+                modules: modules,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -34200,6 +34285,7 @@ class $$VenueSettingsTableTableManager
                 Value<int> guestMaxItems = const Value.absent(),
                 Value<int> guestSessionHours = const Value.absent(),
                 Value<String?> soundGuestPending = const Value.absent(),
+                Value<String?> modules = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VenueSettingsCompanion.insert(
                 id: id,
@@ -34258,6 +34344,7 @@ class $$VenueSettingsTableTableManager
                 guestMaxItems: guestMaxItems,
                 guestSessionHours: guestSessionHours,
                 soundGuestPending: soundGuestPending,
+                modules: modules,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

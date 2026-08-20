@@ -7844,6 +7844,41 @@ class AppL10nId extends AppL10n {
   String get fltTagBilling => 'TAGIHAN';
 
   @override
+  String get venueHubLocked => 'Terkunci';
+
+  @override
+  String get venueHubLockedBody => 'Hubungi pengelola untuk mengaktifkan.';
+
+  @override
+  String get fltModules => 'Modul';
+
+  @override
+  String get fltTagModules => 'MODUL';
+
+  @override
+  String get fltModulesHint => 'Fitur yang dijual terpisah dari paket dasar.';
+
+  @override
+  String get fltModulesTrial => 'Trial mencakup semua modul.';
+
+  @override
+  String get fltModuleMembers => 'Keanggotaan';
+
+  @override
+  String get fltModuleSelfOrder => 'Pesan mandiri';
+
+  @override
+  String fltModuleOffTitle(String module, String venue) {
+    return 'Matikan $module untuk $venue?';
+  }
+
+  @override
+  String get fltModuleOffBody => 'Data tersimpan, tampilan hilang.';
+
+  @override
+  String get fltModuleOffYes => 'Matikan';
+
+  @override
   String get fltAddAdmin => 'Tambah admin';
 
   @override

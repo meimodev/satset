@@ -80,6 +80,7 @@ class OwnerReportPublisher {
     required FirebaseFirestore firestore,
     required this.vid,
     required this.fetchSnapshot,
+    this.fetchOpenDebt,
   }) : _fs = firestore;
 
   final FirebaseFirestore _fs;
@@ -88,6 +89,15 @@ class OwnerReportPublisher {
   /// Returns the decoded `/reports/snapshot` JSON for [range], or null on
   /// failure (publish then skips that range rather than wiping a good one).
   final Future<Map<String, dynamic>?> Function(String range) fetchSnapshot;
+
+  /// Venue-wide outstanding [[Piutang]], or null when it cannot be read.
+  ///
+  /// Published beside the ranges rather than inside one because it is not a
+  /// report figure: the fleet plane reads it to refuse removing the Keanggotaan
+  /// [[Modul]] from a venue still owed money (ADR-0107 §7). Null omits the field
+  /// and the refusal reads absent as zero — a host that cannot answer must not
+  /// be able to block its own operator.
+  final Future<int?> Function()? fetchOpenDebt;
 
   Timer? _timer;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _reqSub;
@@ -127,6 +137,8 @@ class OwnerReportPublisher {
         if (json != null) payload[range] = encodeNestedForFirestore(json);
       }
       if (payload.isEmpty) return; // all ranges failed — keep the last good doc
+      final debt = await fetchOpenDebt?.call();
+      if (debt != null) payload['openDebt'] = debt;
       payload['generatedAt'] = FieldValue.serverTimestamp();
       await _reportDoc.set(payload);
       SatLog.repo(

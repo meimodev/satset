@@ -37,6 +37,7 @@ import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/labels.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/l10n/app_localizations.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
 
 /// Opens the bill surface. Hardware decides, as everywhere else (ADR-0049):
 ///
@@ -193,7 +194,7 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
               canRefund: ref.watch(authStateProvider).has(Capability.refund),
               debtEnabled: ref.watch(
                 venueSettingsProvider.select(
-                  (v) => v.membersEnabled && v.memberDebtEnabled,
+                  (v) => v.membersOn && v.memberDebtEnabled,
                 ),
               ),
               onCloseBill: () => _closeBill(context, ref, bill),
@@ -1186,7 +1187,7 @@ class _ReceiptCard extends ConsumerWidget {
                     r,
                     debtEnabled: ref.read(
                       venueSettingsProvider.select(
-                        (v) => v.membersEnabled && v.memberDebtEnabled,
+                        (v) => v.membersOn && v.memberDebtEnabled,
                       ),
                     ),
                   ),

@@ -60,6 +60,12 @@ class FleetService {
       trialStartAt: (m['trialStartAt'] as Timestamp?)?.toDate(),
       paidUntil: (m['paidUntil'] as Timestamp?)?.toDate(),
       priceMonthly: (m['priceMonthly'] as num?)?.toInt(),
+      // Unknown keys are kept, not dropped: a console on an older build must
+      // not silently strip a module it has not heard of when it saves.
+      addOns: {
+        for (final k in (m['addOns'] as List<dynamic>? ?? const []))
+          if (k is String && k.trim().isNotEmpty) k.trim(),
+      },
       billingCycle: (m['billingCycle'] as String?)?.trim() ?? venueCycleMonthly,
       lastSeenAt: (m['lastSeenAt'] as Timestamp?)?.toDate(),
       fromCache: d.metadata.isFromCache,
@@ -108,8 +114,20 @@ class FleetService {
     return (r['vid'] as String?) ?? '';
   }
 
-  Future<void> updateVenue(String vid, {String? name, String? address}) =>
-      _call('updateVenue', {'vid': vid, 'name': ?name, 'address': ?address});
+  /// Identity **and** entitlement (ADR-0107 §9): a module set carries no money
+  /// and cannot disagree with a date, so it rides here rather than on
+  /// [setVenueBilling], whose whole job is writing the fields that *can*.
+  Future<void> updateVenue(
+    String vid, {
+    String? name,
+    String? address,
+    Set<String>? addOns,
+  }) => _call('updateVenue', {
+    'vid': vid,
+    'name': ?name,
+    'address': ?address,
+    if (addOns != null) 'addOns': addOns.toList(),
+  });
 
   /// The kill switch.
   Future<void> setVenueStatus(String vid, AdminStatus status) =>

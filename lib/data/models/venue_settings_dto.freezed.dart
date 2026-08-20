@@ -107,6 +107,15 @@ mixin _$VenueSettingsDto {
   int get guestSessionHours => throw _privateConstructorUsedError;
   String get soundGuestPending => throw _privateConstructorUsedError;
 
+  /// The [[Modul]] set the venue holds (ADR-0107). Cloud-owned and mirrored
+  /// down; no screen writes it.
+  ///
+  /// **Null means never mirrored** and reads as entitled to everything — an
+  /// empty list is the different, real answer "holds no module". A client that
+  /// draws a locked tile must check for null first, or an upgraded venue sees
+  /// padlocks on features it pays for.
+  List<String>? get modules => throw _privateConstructorUsedError;
+
   /// Serializes this VenueSettingsDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -180,6 +189,7 @@ abstract class $VenueSettingsDtoCopyWith<$Res> {
     int guestMaxItems,
     int guestSessionHours,
     String soundGuestPending,
+    List<String>? modules,
   });
 }
 
@@ -253,6 +263,7 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
     Object? guestMaxItems = null,
     Object? guestSessionHours = null,
     Object? soundGuestPending = null,
+    Object? modules = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -476,6 +487,10 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
                 ? _value.soundGuestPending
                 : soundGuestPending // ignore: cast_nullable_to_non_nullable
                       as String,
+            modules: freezed == modules
+                ? _value.modules
+                : modules // ignore: cast_nullable_to_non_nullable
+                      as List<String>?,
           )
           as $Val,
     );
@@ -547,6 +562,7 @@ abstract class _$$VenueSettingsDtoImplCopyWith<$Res>
     int guestMaxItems,
     int guestSessionHours,
     String soundGuestPending,
+    List<String>? modules,
   });
 }
 
@@ -619,6 +635,7 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
     Object? guestMaxItems = null,
     Object? guestSessionHours = null,
     Object? soundGuestPending = null,
+    Object? modules = freezed,
   }) {
     return _then(
       _$VenueSettingsDtoImpl(
@@ -842,6 +859,10 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
             ? _value.soundGuestPending
             : soundGuestPending // ignore: cast_nullable_to_non_nullable
                   as String,
+        modules: freezed == modules
+            ? _value._modules
+            : modules // ignore: cast_nullable_to_non_nullable
+                  as List<String>?,
       ),
     );
   }
@@ -906,7 +927,8 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     this.guestMaxItems = 20,
     this.guestSessionHours = 4,
     this.soundGuestPending = 'chime',
-  });
+    final List<String>? modules,
+  }) : _modules = modules;
 
   factory _$VenueSettingsDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$VenueSettingsDtoImplFromJson(json);
@@ -1105,9 +1127,34 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
   @JsonKey()
   final String soundGuestPending;
 
+  /// The [[Modul]] set the venue holds (ADR-0107). Cloud-owned and mirrored
+  /// down; no screen writes it.
+  ///
+  /// **Null means never mirrored** and reads as entitled to everything — an
+  /// empty list is the different, real answer "holds no module". A client that
+  /// draws a locked tile must check for null first, or an upgraded venue sees
+  /// padlocks on features it pays for.
+  final List<String>? _modules;
+
+  /// The [[Modul]] set the venue holds (ADR-0107). Cloud-owned and mirrored
+  /// down; no screen writes it.
+  ///
+  /// **Null means never mirrored** and reads as entitled to everything — an
+  /// empty list is the different, real answer "holds no module". A client that
+  /// draws a locked tile must check for null first, or an upgraded venue sees
+  /// padlocks on features it pays for.
+  @override
+  List<String>? get modules {
+    final value = _modules;
+    if (value == null) return null;
+    if (_modules is EqualUnmodifiableListView) return _modules;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
   @override
   String toString() {
-    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, pickupTargetMins: $pickupTargetMins, ungreetedMins: $ungreetedMins, ungreetedEscalateMins: $ungreetedEscalateMins, longStayMins: $longStayMins, idleTableMins: $idleTableMins, reservationGraceMins: $reservationGraceMins, ungreetedAlertEnabled: $ungreetedAlertEnabled, pickupAlertEnabled: $pickupAlertEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue, soundUngreeted: $soundUngreeted, soundPickup: $soundPickup, membersEnabled: $membersEnabled, memberPointsEnabled: $memberPointsEnabled, memberPunchEnabled: $memberPunchEnabled, memberPresetId: $memberPresetId, memberEarnPerThousand: $memberEarnPerThousand, memberPointValue: $memberPointValue, memberRedeemMin: $memberRedeemMin, memberPunchItemId: $memberPunchItemId, memberPunchTarget: $memberPunchTarget, memberDebtEnabled: $memberDebtEnabled, memberDebtLimit: $memberDebtLimit, memberDebtOverdueDays: $memberDebtOverdueDays, guestOrderingEnabled: $guestOrderingEnabled, guestNoteEnabled: $guestNoteEnabled, guestHoursStartMin: $guestHoursStartMin, guestHoursEndMin: $guestHoursEndMin, guestMaxItems: $guestMaxItems, guestSessionHours: $guestSessionHours, soundGuestPending: $soundGuestPending)';
+    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, pickupTargetMins: $pickupTargetMins, ungreetedMins: $ungreetedMins, ungreetedEscalateMins: $ungreetedEscalateMins, longStayMins: $longStayMins, idleTableMins: $idleTableMins, reservationGraceMins: $reservationGraceMins, ungreetedAlertEnabled: $ungreetedAlertEnabled, pickupAlertEnabled: $pickupAlertEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue, soundUngreeted: $soundUngreeted, soundPickup: $soundPickup, membersEnabled: $membersEnabled, memberPointsEnabled: $memberPointsEnabled, memberPunchEnabled: $memberPunchEnabled, memberPresetId: $memberPresetId, memberEarnPerThousand: $memberEarnPerThousand, memberPointValue: $memberPointValue, memberRedeemMin: $memberRedeemMin, memberPunchItemId: $memberPunchItemId, memberPunchTarget: $memberPunchTarget, memberDebtEnabled: $memberDebtEnabled, memberDebtLimit: $memberDebtLimit, memberDebtOverdueDays: $memberDebtOverdueDays, guestOrderingEnabled: $guestOrderingEnabled, guestNoteEnabled: $guestNoteEnabled, guestHoursStartMin: $guestHoursStartMin, guestHoursEndMin: $guestHoursEndMin, guestMaxItems: $guestMaxItems, guestSessionHours: $guestSessionHours, soundGuestPending: $soundGuestPending, modules: $modules)';
   }
 
   @override
@@ -1220,7 +1267,8 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
             (identical(other.guestSessionHours, guestSessionHours) ||
                 other.guestSessionHours == guestSessionHours) &&
             (identical(other.soundGuestPending, soundGuestPending) ||
-                other.soundGuestPending == soundGuestPending));
+                other.soundGuestPending == soundGuestPending) &&
+            const DeepCollectionEquality().equals(other._modules, _modules));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1282,6 +1330,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     guestMaxItems,
     guestSessionHours,
     soundGuestPending,
+    const DeepCollectionEquality().hash(_modules),
   ]);
 
   /// Create a copy of VenueSettingsDto
@@ -1358,6 +1407,7 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
     final int guestMaxItems,
     final int guestSessionHours,
     final String soundGuestPending,
+    final List<String>? modules,
   }) = _$VenueSettingsDtoImpl;
 
   factory _VenueSettingsDto.fromJson(Map<String, dynamic> json) =
@@ -1497,6 +1547,16 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
   int get guestSessionHours;
   @override
   String get soundGuestPending;
+
+  /// The [[Modul]] set the venue holds (ADR-0107). Cloud-owned and mirrored
+  /// down; no screen writes it.
+  ///
+  /// **Null means never mirrored** and reads as entitled to everything — an
+  /// empty list is the different, real answer "holds no module". A client that
+  /// draws a locked tile must check for null first, or an upgraded venue sees
+  /// padlocks on features it pays for.
+  @override
+  List<String>? get modules;
 
   /// Create a copy of VenueSettingsDto
   /// with the given fields replaced by the non-null parameter values.

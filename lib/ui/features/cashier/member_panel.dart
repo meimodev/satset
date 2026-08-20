@@ -20,6 +20,7 @@ import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import 'package:satset/ui/features/admin/members_screen.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
 
 /// The [[Pelanggan (member)]] row on a live bill (ADR-0093).
 ///
@@ -43,7 +44,7 @@ class MemberPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cfg = ref.watch(venueSettingsProvider);
     // The venue never opted in, so there is no row to draw — not an empty one.
-    if (!cfg.membersEnabled) return const SizedBox.shrink();
+    if (!cfg.membersOn) return const SizedBox.shrink();
 
     final sc = context.sat;
     final l10n = context.l10n;
@@ -280,7 +281,8 @@ class _LookupSheetState extends ConsumerState<_LookupSheet> {
                   : ListView.separated(
                       shrinkWrap: true,
                       itemCount: results.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: Sp.s1h),
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: Sp.s1h),
                       itemBuilder: (_, i) => SatButton.outline(
                         label: '${results[i].name} · ${results[i].phone}',
                         onTap: () => Navigator.of(context).pop(results[i]),

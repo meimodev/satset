@@ -17,6 +17,7 @@ void main() {
     DateTime? paidUntil,
     int? priceMonthly,
     String billingCycle = venueCycleMonthly,
+    Set<String> addOns = const {},
     DateTime? lastSeenAt,
   }) => Venue(
     id: name,
@@ -24,6 +25,7 @@ void main() {
     name: name,
     address: '',
     plan: plan,
+    addOns: addOns,
     trialStartAt: trialStartAt,
     paidUntil: paidUntil,
     priceMonthly: priceMonthly,
