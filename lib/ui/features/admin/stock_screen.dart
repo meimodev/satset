@@ -207,6 +207,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                       firstCurve: satEaseOut,
                       secondCurve: satEaseOut,
                     ),
+                    if (!_opname) _belanjaCard(sc, list),
                     const SizedBox(height: Sp.s4),
                     _searchAndFilterBar(sc, list),
                     const SizedBox(height: Sp.s4),
@@ -222,6 +223,87 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // ---------------------------------------------------------------- Belanja
+  //
+  // The shopping list: everything sitting under its par, and how much to buy
+  // to get back to it. Read-only and derived — a par is a target, not an order,
+  // so nothing here writes and nothing is remembered between builds.
+  Widget _belanjaCard(SatColors sc, List<Ingredient> list) {
+    final short = [
+      for (final i in list)
+        if (i.shortfall > 0) i,
+    ]..sort((a, b) => a.name.compareTo(b.name));
+    if (short.isEmpty) return const SizedBox.shrink();
+
+    var total = 0;
+    for (final i in short) {
+      total += valueOf(i.shortfall, i.costMicro);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: Sp.s4),
+      child: Container(
+        padding: const EdgeInsets.all(Sp.s3),
+        decoration: SatBox.d(
+          color: sc.bg2,
+          borderRadius: SatR.a(14),
+          border: SatB.all(color: sc.info),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.shopping_basket_outlined,
+                  size: 16,
+                  color: sc.info,
+                ),
+                const SizedBox(width: Sp.s2),
+                Expanded(
+                  child: Text(
+                    context.l10n.stkBelanja,
+                    style: SatType.labelM(color: sc.textHi),
+                  ),
+                ),
+                Text(
+                  context.l10n.stkCountIngredients(short.length),
+                  style: SatType.monoS(color: sc.textLo),
+                ),
+              ],
+            ),
+            const SizedBox(height: Sp.s2),
+            for (final i in short)
+              Padding(
+                padding: const EdgeInsets.only(bottom: Sp.s1),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        i.name,
+                        style: SatType.bodyS(color: sc.textHi),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: Sp.s2),
+                    Text(
+                      formatQty(i.shortfall, i.unit),
+                      style: SatType.monoS(color: sc.info),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: Sp.s1),
+            Text(
+              context.l10n.stkBelanjaEstimate(formatIDR(total)),
+              style: SatType.caption(color: sc.textLo),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -808,6 +890,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                               ),
                               onSelected: (v) => switch (v) {
                                 'receive' => _receive(i),
+                                'waste' => _waste(i),
                                 'produce' => _produce(i),
                                 'ledger' => _ledger(i),
                                 'edit' => _editIngredient(i),
@@ -842,6 +925,19 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                       ],
                                     ),
                                   ),
+                                PopupMenuItem(
+                                  value: 'waste',
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.delete_outline,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: Sp.s2h),
+                                      Text(context.l10n.stkMenuWaste),
+                                    ],
+                                  ),
+                                ),
                                 PopupMenuItem(
                                   value: 'ledger',
                                   child: Row(
@@ -1308,6 +1404,83 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     }
   }
 
+  /// "Buang" — bin a bahan. The note is required: a waste row without a reason
+  /// is a number nobody can act on, and this is the one stock act with no
+  /// counterparty to explain it.
+  Future<void> _waste(Ingredient i) async {
+    final qtyCtrl = TextEditingController();
+    final noteCtrl = TextEditingController();
+    var unit = i.unit;
+
+    final ok = await showSatSheet<bool>(
+      context,
+      bare: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (_, setSheet) => _Sheet(
+          title: context.l10n.stkWasteTitle(i.name),
+          subtitle: context.l10n.stkWasteSub,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: SatField.decimal(
+                    controller: qtyCtrl,
+                    label: context.l10n.quantity,
+                    hint: '',
+                    autofocus: true,
+                    prefixIcon: Icons.numbers_outlined,
+                  ),
+                ),
+                const SizedBox(width: Sp.s2h),
+                SizedBox(
+                  width: 110,
+                  child: SatDropdown<StockUnit>(
+                    value: unit,
+                    options: [
+                      for (final u in entryUnitsFor(i.unit))
+                        SatOption(u, u.label),
+                    ],
+                    onChanged: (u) => setSheet(() => unit = u ?? unit),
+                  ),
+                ),
+              ],
+            ),
+            SatField.text(
+              controller: noteCtrl,
+              label: context.l10n.stkWasteNote,
+              hint: '',
+              helperText: context.l10n.stkWasteNoteHelper,
+              prefixIcon: Icons.notes_outlined,
+            ),
+          ],
+          onConfirm: () => Navigator.of(ctx).pop(true),
+        ),
+      ),
+    );
+    if (ok != true) return;
+    final amount = double.tryParse(qtyCtrl.text.replaceAll(',', '.'));
+    final note = noteCtrl.text.trim();
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
+    if (amount == null || amount <= 0) return;
+    if (note.isEmpty) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.stkWasteNoteRequired)));
+      return;
+    }
+    try {
+      final value = await ref
+          .read(stockApiProvider)
+          .waste(ingredientId: i.id, qty: unit.toBase(amount), note: note);
+      ref.invalidate(ingredientsProvider);
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.stkWasteOk(formatIDR(value)))),
+      );
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.stkFailed('$e'))));
+    }
+  }
+
   Future<void> _produce(Ingredient i) async {
     final ctrl = TextEditingController(text: '1');
     final ok = await showSatSheet<bool>(
@@ -1374,6 +1547,11 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           ? ''
           : _trim(existing!.unit.fromBase(existing.lowStockAt!)),
     );
+    final parCtrl = TextEditingController(
+      text: existing?.parLevel == null
+          ? ''
+          : _trim(existing!.unit.fromBase(existing.parLevel!)),
+    );
     final yieldCtrl = TextEditingController(
       text: existing?.batchYield == null
           ? ''
@@ -1430,6 +1608,13 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               prefixIcon: Icons.warning_amber_rounded,
             ),
             SatField.decimal(
+              controller: parCtrl,
+              label: context.l10n.stkParAt(unit.label),
+              hint: '',
+              helperText: context.l10n.stkParAtHelper,
+              prefixIcon: Icons.shopping_basket_outlined,
+            ),
+            SatField.decimal(
               controller: yieldCtrl,
               label: context.l10n.stkBatchYield(unit.label),
               hint: '',
@@ -1447,6 +1632,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     double? parse(TextEditingController c) =>
         double.tryParse(c.text.replaceAll(',', '.'));
     final low = parse(lowCtrl);
+    final par = parse(parCtrl);
     final batch = parse(yieldCtrl);
     final opening = parse(openingCtrl);
     if (!mounted) return;
@@ -1461,6 +1647,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               name: name,
               unit: unit,
               lowStockAt: low == null ? null : unit.toBase(low),
+              parLevel: par == null ? null : unit.toBase(par),
               batchYield: batch == null ? null : unit.toBase(batch),
             ),
             openingStock: existing == null && opening != null

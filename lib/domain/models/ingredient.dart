@@ -15,6 +15,11 @@ class Ingredient {
   /// Reorder threshold in milli-base units; null = no low-stock badge.
   final int? lowStockAt;
 
+  /// Top-up target in milli-base units; null = not stocked to a par, so this
+  /// ingredient never reaches the shopping list. A threshold decides when to
+  /// warn, a par decides how much to buy — they are different numbers.
+  final int? parLevel;
+
   /// Moving-average cost, micro-money per milli-base unit.
   final int costMicro;
 
@@ -39,6 +44,7 @@ class Ingredient {
     required this.unit,
     this.stockOnHand = 0,
     this.lowStockAt,
+    this.parLevel,
     this.costMicro = 0,
     this.batchYield,
     this.usedBy = const [],
@@ -49,6 +55,16 @@ class Ingredient {
   bool get isProduced => batchYield != null;
 
   bool get isLow => lowStockAt != null && stockOnHand <= lowStockAt!;
+
+  /// How far below par this ingredient sits, in milli-base units. Zero when it
+  /// has no par or is at or above it — the shopping list is everything with a
+  /// positive shortfall.
+  int get shortfall {
+    final par = parLevel;
+    if (par == null) return 0;
+    final gap = par - stockOnHand;
+    return gap > 0 ? gap : 0;
+  }
 
   /// Money value of the stock currently held.
   int get stockValue => valueOf(stockOnHand, costMicro);
@@ -61,6 +77,7 @@ class Ingredient {
     unit: stockUnitFromKey(j['unit'] as String),
     stockOnHand: (j['stockOnHand'] as num?)?.toInt() ?? 0,
     lowStockAt: (j['lowStockAt'] as num?)?.toInt(),
+    parLevel: (j['parLevel'] as num?)?.toInt(),
     costMicro: (j['costMicro'] as num?)?.toInt() ?? 0,
     batchYield: (j['batchYield'] as num?)?.toInt(),
     usedBy: _names(j['usedBy']),
@@ -74,6 +91,7 @@ class Ingredient {
     'unit': unit.name,
     'stockOnHand': stockOnHand,
     'lowStockAt': lowStockAt,
+    'parLevel': parLevel,
     'costMicro': costMicro,
     'batchYield': batchYield,
   };
@@ -83,6 +101,7 @@ class Ingredient {
     StockUnit? unit,
     int? stockOnHand,
     Object? lowStockAt = _unset,
+    Object? parLevel = _unset,
     int? costMicro,
     Object? batchYield = _unset,
   }) => Ingredient(
@@ -93,6 +112,7 @@ class Ingredient {
     lowStockAt: identical(lowStockAt, _unset)
         ? this.lowStockAt
         : lowStockAt as int?,
+    parLevel: identical(parLevel, _unset) ? this.parLevel : parLevel as int?,
     costMicro: costMicro ?? this.costMicro,
     batchYield: identical(batchYield, _unset)
         ? this.batchYield

@@ -286,6 +286,12 @@ class AppL10nEn extends AppL10n {
   String get auditTypeMemberChanged => 'Member';
 
   @override
+  String get auditTypeStockWasted => 'Waste';
+
+  @override
+  String get auditTypeOpenItemSold => 'Open item';
+
+  @override
   String get auditTypeStockCounted => 'Stocktake';
 
   @override
@@ -2320,6 +2326,16 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String auditOpenItemSold(String name, String price) {
+    return 'Open item — $name $price';
+  }
+
+  @override
+  String auditStockWasted(String what, String value) {
+    return 'Wasted $what — $value';
+  }
+
+  @override
   String auditStockCountClosed(num lines, String variance) {
     final intl.NumberFormat linesNumberFormat = intl.NumberFormat.compact(
       locale: localeName,
@@ -3720,6 +3736,33 @@ class AppL10nEn extends AppL10n {
   String get stkReceive => 'Receive';
 
   @override
+  String get stkMenuWaste => 'Waste';
+
+  @override
+  String stkWasteTitle(String name) {
+    return 'Waste $name';
+  }
+
+  @override
+  String get stkWasteSub =>
+      'Wasted stock leaves the ledger and its value is lost';
+
+  @override
+  String get stkWasteNote => 'Reason';
+
+  @override
+  String get stkWasteNoteHelper =>
+      'Required — a waste figure with no reason can\'t be acted on';
+
+  @override
+  String get stkWasteNoteRequired => 'A reason is required';
+
+  @override
+  String stkWasteOk(String value) {
+    return 'Waste recorded, value $value';
+  }
+
+  @override
   String get stkMenuReceive => 'Receive goods';
 
   @override
@@ -3847,6 +3890,23 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get stkLowAtHelper => 'Warn once stock drops below this';
+
+  @override
+  String stkParAt(String unit) {
+    return 'Par level ($unit, optional)';
+  }
+
+  @override
+  String get stkParAtHelper =>
+      'How much you want on hand; the shortfall goes on the shopping list';
+
+  @override
+  String get stkBelanja => 'Shopping list';
+
+  @override
+  String stkBelanjaEstimate(String amount) {
+    return 'Estimated spend $amount';
+  }
 
   @override
   String stkBatchYield(String unit) {
@@ -4592,6 +4652,37 @@ class AppL10nEn extends AppL10n {
   String get mieRecipeEmpty => 'No ingredients on this recipe yet.';
 
   @override
+  String get mieBuang => 'Waste';
+
+  @override
+  String mieBuangTitle(String name) {
+    return 'Waste $name';
+  }
+
+  @override
+  String get mieBuangSub =>
+      'The recipe\'s ingredients are deducted for every portion wasted';
+
+  @override
+  String get mieBuangNote => 'Reason';
+
+  @override
+  String get mieBuangNoteRequired => 'A reason is required';
+
+  @override
+  String mieBuangOk(String value) {
+    return 'Waste recorded, value $value';
+  }
+
+  @override
+  String get mieJualSatuan => 'Sold by unit';
+
+  @override
+  String mieJualSatuanDone(String name) {
+    return 'Ingredient “$name” created, recipe set to 1 pcs';
+  }
+
+  @override
   String get mieAddIngredient => 'Add ingredient';
 
   @override
@@ -4835,6 +4926,28 @@ class AppL10nEn extends AppL10n {
   String mnuZonePax(String zone, int pax) {
     return '$zone · $pax GUESTS';
   }
+
+  @override
+  String get mnuOpenItem => 'Open item';
+
+  @override
+  String get mnuOpenItemSub =>
+      'An off-menu line — you type the name and the price.';
+
+  @override
+  String get mnuOpenItemName => 'Item name';
+
+  @override
+  String get mnuOpenItemPrice => 'Price';
+
+  @override
+  String get mnuOpenItemNote => 'Reason';
+
+  @override
+  String get mnuOpenItemNoteHelper => 'Required — why this is not on the menu';
+
+  @override
+  String get mnuOpenItemAdd => 'Add';
 
   @override
   String get mnuAddItem => 'Add item';
@@ -7237,6 +7350,9 @@ class AppL10nEn extends AppL10n {
   String get capManageIngredients => 'Manage ingredients';
 
   @override
+  String get capSellOpenItem => 'Sell an open item';
+
+  @override
   String get capOverrideStock => 'Sell when out of stock';
 
   @override
@@ -7309,6 +7425,10 @@ class AppL10nEn extends AppL10n {
   @override
   String get capManageIngredientsDesc =>
       'Add and edit ingredients and their recipes.';
+
+  @override
+  String get capSellOpenItemDesc =>
+      'Type a line with its own name and price, with no menu row behind it.';
 
   @override
   String get capOverrideStockDesc =>

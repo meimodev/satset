@@ -88,6 +88,20 @@ AuditTone auditTone(AuditType t, SatColors sc) => switch (t) {
     bg: sc.warnSoft,
     fg: sc.warn,
   ),
+  // `urgent` is earned here and nowhere else in this switch: waste is value
+  // destroyed on purpose, which is the one stock act a reader should stop on.
+  AuditType.stockWasted => (
+    icon: Icons.delete_outline,
+    bg: sc.urgentSoft,
+    fg: sc.urgent,
+  ),
+  // `violet`: a sale, but not one the menu can account for — it should read as
+  // distinct from the ordinary order acts a reader scrolls past.
+  AuditType.openItemSold => (
+    icon: Icons.edit_note_outlined,
+    bg: sc.violetSoft,
+    fg: sc.violet,
+  ),
   // `info`: a guest ordering for themselves is a normal service event, not a
   // discrepancy and not money. It should read as traffic, not as a finding.
   AuditType.selfOrder => (

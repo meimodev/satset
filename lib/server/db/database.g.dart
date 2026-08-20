@@ -21093,6 +21093,17 @@ class $IngredientsTable extends Ingredients
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _parLevelMeta = const VerificationMeta(
+    'parLevel',
+  );
+  @override
+  late final GeneratedColumn<int> parLevel = GeneratedColumn<int>(
+    'par_level',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _costMicroMeta = const VerificationMeta(
     'costMicro',
   );
@@ -21134,6 +21145,7 @@ class $IngredientsTable extends Ingredients
     unit,
     stockOnHand,
     lowStockAt,
+    parLevel,
     costMicro,
     batchYield,
     archivedAt,
@@ -21189,6 +21201,12 @@ class $IngredientsTable extends Ingredients
         ),
       );
     }
+    if (data.containsKey('par_level')) {
+      context.handle(
+        _parLevelMeta,
+        parLevel.isAcceptableOrUnknown(data['par_level']!, _parLevelMeta),
+      );
+    }
     if (data.containsKey('cost_micro')) {
       context.handle(
         _costMicroMeta,
@@ -21236,6 +21254,10 @@ class $IngredientsTable extends Ingredients
         DriftSqlType.int,
         data['${effectivePrefix}low_stock_at'],
       ),
+      parLevel: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}par_level'],
+      ),
       costMicro: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}cost_micro'],
@@ -21275,6 +21297,12 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
   /// Reorder threshold in milli-base units. Null = no low-stock badge.
   final int? lowStockAt;
 
+  /// **Par level** — the quantity this ingredient should be topped back up to,
+  /// in milli-base units. Null = not stocked to a par, so it never appears on
+  /// the shopping list. Distinct from [lowStockAt], which only decides when to
+  /// warn: the threshold says "shout", the par says "buy this much".
+  final int? parLevel;
+
   /// Moving-average cost, in **micro-money per milli-base unit** (money × 1e6
   /// per storage unit) so that sub-rupiah per-gram costs survive integer
   /// storage. Cost of a quantity = `qty * costMicro ~/ 1000000`.
@@ -21292,6 +21320,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     required this.unit,
     required this.stockOnHand,
     this.lowStockAt,
+    this.parLevel,
     required this.costMicro,
     this.batchYield,
     this.archivedAt,
@@ -21305,6 +21334,9 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     map['stock_on_hand'] = Variable<int>(stockOnHand);
     if (!nullToAbsent || lowStockAt != null) {
       map['low_stock_at'] = Variable<int>(lowStockAt);
+    }
+    if (!nullToAbsent || parLevel != null) {
+      map['par_level'] = Variable<int>(parLevel);
     }
     map['cost_micro'] = Variable<int>(costMicro);
     if (!nullToAbsent || batchYield != null) {
@@ -21325,6 +21357,9 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
       lowStockAt: lowStockAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lowStockAt),
+      parLevel: parLevel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parLevel),
       costMicro: Value(costMicro),
       batchYield: batchYield == null && nullToAbsent
           ? const Value.absent()
@@ -21346,6 +21381,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
       unit: serializer.fromJson<String>(json['unit']),
       stockOnHand: serializer.fromJson<int>(json['stockOnHand']),
       lowStockAt: serializer.fromJson<int?>(json['lowStockAt']),
+      parLevel: serializer.fromJson<int?>(json['parLevel']),
       costMicro: serializer.fromJson<int>(json['costMicro']),
       batchYield: serializer.fromJson<int?>(json['batchYield']),
       archivedAt: serializer.fromJson<DateTime?>(json['archivedAt']),
@@ -21360,6 +21396,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
       'unit': serializer.toJson<String>(unit),
       'stockOnHand': serializer.toJson<int>(stockOnHand),
       'lowStockAt': serializer.toJson<int?>(lowStockAt),
+      'parLevel': serializer.toJson<int?>(parLevel),
       'costMicro': serializer.toJson<int>(costMicro),
       'batchYield': serializer.toJson<int?>(batchYield),
       'archivedAt': serializer.toJson<DateTime?>(archivedAt),
@@ -21372,6 +21409,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     String? unit,
     int? stockOnHand,
     Value<int?> lowStockAt = const Value.absent(),
+    Value<int?> parLevel = const Value.absent(),
     int? costMicro,
     Value<int?> batchYield = const Value.absent(),
     Value<DateTime?> archivedAt = const Value.absent(),
@@ -21381,6 +21419,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     unit: unit ?? this.unit,
     stockOnHand: stockOnHand ?? this.stockOnHand,
     lowStockAt: lowStockAt.present ? lowStockAt.value : this.lowStockAt,
+    parLevel: parLevel.present ? parLevel.value : this.parLevel,
     costMicro: costMicro ?? this.costMicro,
     batchYield: batchYield.present ? batchYield.value : this.batchYield,
     archivedAt: archivedAt.present ? archivedAt.value : this.archivedAt,
@@ -21396,6 +21435,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
       lowStockAt: data.lowStockAt.present
           ? data.lowStockAt.value
           : this.lowStockAt,
+      parLevel: data.parLevel.present ? data.parLevel.value : this.parLevel,
       costMicro: data.costMicro.present ? data.costMicro.value : this.costMicro,
       batchYield: data.batchYield.present
           ? data.batchYield.value
@@ -21414,6 +21454,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
           ..write('unit: $unit, ')
           ..write('stockOnHand: $stockOnHand, ')
           ..write('lowStockAt: $lowStockAt, ')
+          ..write('parLevel: $parLevel, ')
           ..write('costMicro: $costMicro, ')
           ..write('batchYield: $batchYield, ')
           ..write('archivedAt: $archivedAt')
@@ -21428,6 +21469,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     unit,
     stockOnHand,
     lowStockAt,
+    parLevel,
     costMicro,
     batchYield,
     archivedAt,
@@ -21441,6 +21483,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
           other.unit == this.unit &&
           other.stockOnHand == this.stockOnHand &&
           other.lowStockAt == this.lowStockAt &&
+          other.parLevel == this.parLevel &&
           other.costMicro == this.costMicro &&
           other.batchYield == this.batchYield &&
           other.archivedAt == this.archivedAt);
@@ -21452,6 +21495,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
   final Value<String> unit;
   final Value<int> stockOnHand;
   final Value<int?> lowStockAt;
+  final Value<int?> parLevel;
   final Value<int> costMicro;
   final Value<int?> batchYield;
   final Value<DateTime?> archivedAt;
@@ -21462,6 +21506,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     this.unit = const Value.absent(),
     this.stockOnHand = const Value.absent(),
     this.lowStockAt = const Value.absent(),
+    this.parLevel = const Value.absent(),
     this.costMicro = const Value.absent(),
     this.batchYield = const Value.absent(),
     this.archivedAt = const Value.absent(),
@@ -21473,6 +21518,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     required String unit,
     this.stockOnHand = const Value.absent(),
     this.lowStockAt = const Value.absent(),
+    this.parLevel = const Value.absent(),
     this.costMicro = const Value.absent(),
     this.batchYield = const Value.absent(),
     this.archivedAt = const Value.absent(),
@@ -21486,6 +21532,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     Expression<String>? unit,
     Expression<int>? stockOnHand,
     Expression<int>? lowStockAt,
+    Expression<int>? parLevel,
     Expression<int>? costMicro,
     Expression<int>? batchYield,
     Expression<DateTime>? archivedAt,
@@ -21497,6 +21544,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
       if (unit != null) 'unit': unit,
       if (stockOnHand != null) 'stock_on_hand': stockOnHand,
       if (lowStockAt != null) 'low_stock_at': lowStockAt,
+      if (parLevel != null) 'par_level': parLevel,
       if (costMicro != null) 'cost_micro': costMicro,
       if (batchYield != null) 'batch_yield': batchYield,
       if (archivedAt != null) 'archived_at': archivedAt,
@@ -21510,6 +21558,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     Value<String>? unit,
     Value<int>? stockOnHand,
     Value<int?>? lowStockAt,
+    Value<int?>? parLevel,
     Value<int>? costMicro,
     Value<int?>? batchYield,
     Value<DateTime?>? archivedAt,
@@ -21521,6 +21570,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
       unit: unit ?? this.unit,
       stockOnHand: stockOnHand ?? this.stockOnHand,
       lowStockAt: lowStockAt ?? this.lowStockAt,
+      parLevel: parLevel ?? this.parLevel,
       costMicro: costMicro ?? this.costMicro,
       batchYield: batchYield ?? this.batchYield,
       archivedAt: archivedAt ?? this.archivedAt,
@@ -21546,6 +21596,9 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     if (lowStockAt.present) {
       map['low_stock_at'] = Variable<int>(lowStockAt.value);
     }
+    if (parLevel.present) {
+      map['par_level'] = Variable<int>(parLevel.value);
+    }
     if (costMicro.present) {
       map['cost_micro'] = Variable<int>(costMicro.value);
     }
@@ -21569,6 +21622,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
           ..write('unit: $unit, ')
           ..write('stockOnHand: $stockOnHand, ')
           ..write('lowStockAt: $lowStockAt, ')
+          ..write('parLevel: $parLevel, ')
           ..write('costMicro: $costMicro, ')
           ..write('batchYield: $batchYield, ')
           ..write('archivedAt: $archivedAt, ')
@@ -38862,6 +38916,7 @@ typedef $$IngredientsTableCreateCompanionBuilder =
       required String unit,
       Value<int> stockOnHand,
       Value<int?> lowStockAt,
+      Value<int?> parLevel,
       Value<int> costMicro,
       Value<int?> batchYield,
       Value<DateTime?> archivedAt,
@@ -38874,6 +38929,7 @@ typedef $$IngredientsTableUpdateCompanionBuilder =
       Value<String> unit,
       Value<int> stockOnHand,
       Value<int?> lowStockAt,
+      Value<int?> parLevel,
       Value<int> costMicro,
       Value<int?> batchYield,
       Value<DateTime?> archivedAt,
@@ -38911,6 +38967,11 @@ class $$IngredientsTableFilterComposer
 
   ColumnFilters<int> get lowStockAt => $composableBuilder(
     column: $table.lowStockAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get parLevel => $composableBuilder(
+    column: $table.parLevel,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -38964,6 +39025,11 @@ class $$IngredientsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get parLevel => $composableBuilder(
+    column: $table.parLevel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get costMicro => $composableBuilder(
     column: $table.costMicro,
     builder: (column) => ColumnOrderings(column),
@@ -39007,6 +39073,9 @@ class $$IngredientsTableAnnotationComposer
     column: $table.lowStockAt,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get parLevel =>
+      $composableBuilder(column: $table.parLevel, builder: (column) => column);
 
   GeneratedColumn<int> get costMicro =>
       $composableBuilder(column: $table.costMicro, builder: (column) => column);
@@ -39058,6 +39127,7 @@ class $$IngredientsTableTableManager
                 Value<String> unit = const Value.absent(),
                 Value<int> stockOnHand = const Value.absent(),
                 Value<int?> lowStockAt = const Value.absent(),
+                Value<int?> parLevel = const Value.absent(),
                 Value<int> costMicro = const Value.absent(),
                 Value<int?> batchYield = const Value.absent(),
                 Value<DateTime?> archivedAt = const Value.absent(),
@@ -39068,6 +39138,7 @@ class $$IngredientsTableTableManager
                 unit: unit,
                 stockOnHand: stockOnHand,
                 lowStockAt: lowStockAt,
+                parLevel: parLevel,
                 costMicro: costMicro,
                 batchYield: batchYield,
                 archivedAt: archivedAt,
@@ -39080,6 +39151,7 @@ class $$IngredientsTableTableManager
                 required String unit,
                 Value<int> stockOnHand = const Value.absent(),
                 Value<int?> lowStockAt = const Value.absent(),
+                Value<int?> parLevel = const Value.absent(),
                 Value<int> costMicro = const Value.absent(),
                 Value<int?> batchYield = const Value.absent(),
                 Value<DateTime?> archivedAt = const Value.absent(),
@@ -39090,6 +39162,7 @@ class $$IngredientsTableTableManager
                 unit: unit,
                 stockOnHand: stockOnHand,
                 lowStockAt: lowStockAt,
+                parLevel: parLevel,
                 costMicro: costMicro,
                 batchYield: batchYield,
                 archivedAt: archivedAt,

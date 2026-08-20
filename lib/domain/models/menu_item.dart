@@ -1,5 +1,13 @@
 import 'modifier_group.dart';
 
+/// The reserved `itemId` every [[Item bebas]] line carries. **Persisted** in
+/// `tickets.item_id` on every off-menu sale ever made, so it may never be
+/// renamed — same rule as an `AuditKind`. No `menu_items` row has this id, and
+/// none should: the point of an open item is that there is no menu row behind
+/// it. Readers that key on the menu (menu engineering, the guest menu, resep
+/// explosion) must exclude it explicitly.
+const openItemId = 'item-bebas';
+
 class Variant {
   final String id;
   final String name;

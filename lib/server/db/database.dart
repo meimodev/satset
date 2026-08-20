@@ -78,7 +78,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 58;
+  int get schemaVersion => 59;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -1207,6 +1207,11 @@ class AppDatabase extends _$AppDatabase {
         // and a venue that genuinely holds no module records that as `''`,
         // which is a different answer. See ADR-0107.
         await _safeAddColumnOn('venue_settings', 'modules', type: 'TEXT');
+      }
+      if (from < 59) {
+        // Par level: the top-up target the shopping list subtracts from.
+        // Nullable — an ingredient nobody stocks to a par has no shortfall.
+        await _safeAddColumnOn('ingredients', 'par_level', type: 'INTEGER');
       }
     },
     onCreate: (m) async {

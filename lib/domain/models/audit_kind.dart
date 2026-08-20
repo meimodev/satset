@@ -99,9 +99,24 @@ enum AuditKind {
   /// opname document, and a flooded log is a log nobody reads.
   stockCountClosed,
 
+  /// Stock was thrown away. `{what}` (the bahan or the menu item, as named at
+  /// write time), `{value}` (pre-formatted rupiah, the cost of what was lost).
+  ///
+  /// One row per act, never per bahan: binning one portion of nasi goreng
+  /// explodes into five movements and is still one thing the cook did. The
+  /// *why* rides `reason` as free text, because a waste note is the cook's own
+  /// words and there is no closed set of them.
+  stockWasted,
+
   // ---------- pesan mandiri (ADR-0105) ----------
   /// `{table}` (the label frozen at write time), `{lines}` — a guest's order
   /// became real tickets. One row per accepted submission, never per line.
+  /// **[[Item bebas]]** — one line sold off-menu. Params: `{name}` (what the
+  /// seller typed), `{price}` (pre-formatted rupiah, unit price × qty). The
+  /// *why* rides `reason`, which the route requires: an unexplained arbitrary
+  /// price is the exact hole this row exists to close.
+  openItemSold,
+
   guestOrderAccepted,
 
   /// `{table}`, `{lines}`. The *why* rides `reason` as a code, where every

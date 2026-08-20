@@ -78,6 +78,9 @@ String auditText(AppL10n l, AuditEntry e) {
       s('variance'),
     ),
 
+    AuditKind.stockWasted => l.auditStockWasted(s('what'), s('value')),
+    AuditKind.openItemSold => l.auditOpenItemSold(s('name'), s('price')),
+
     AuditKind.guestOrderAccepted => l.auditGuestOrderAccepted(
       s('table'),
       int.tryParse(s('lines')) ?? 0,

@@ -122,6 +122,9 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       lowStockAt: body.containsKey('lowStockAt')
           ? Value((body['lowStockAt'] as num?)?.toInt())
           : const Value.absent(),
+      parLevel: body.containsKey('parLevel')
+          ? Value((body['parLevel'] as num?)?.toInt())
+          : const Value.absent(),
       batchYield: body.containsKey('batchYield')
           ? Value((body['batchYield'] as num?)?.toInt())
           : const Value.absent(),
@@ -227,6 +230,61 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     });
     await broadcastIfFlipped();
     return _json({'ok': true});
+  });
+
+  // ------------------------------------------------------------------ buang
+  //
+  // Two shapes, one writer. `ingredientId` bins a bahan directly; `itemId`
+  // (+ optional `variantId`) explodes the resep and bins what one portion
+  // consumes. An item with no resep is refused rather than silently binning
+  // nothing — the fix is [[Jual satuan]], and the client says so.
+  r.post('/stock/waste', (Request req) async {
+    final actor = await _actor(req, db, auth);
+    if (actor == null) return Response(401);
+    if (!actor.$2.contains(Capability.manageIngredients.name)) {
+      return _forbidden(Capability.manageIngredients);
+    }
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final qty = (body['qty'] as num?)?.toInt() ?? 0;
+    if (qty <= 0) return Response(400, body: 'qty must be positive');
+    final note = (body['note'] as String?)?.trim();
+
+    final Map<String, int> need;
+    final String label;
+    final ingredientId = body['ingredientId'] as String?;
+    if (ingredientId != null) {
+      final row = await (db.select(
+        db.ingredients,
+      )..where((i) => i.id.equals(ingredientId))).getSingleOrNull();
+      if (row == null) return Response.notFound('ingredient not found');
+      need = {ingredientId: qty};
+      label = row.name;
+    } else {
+      final itemId = body['itemId'] as String?;
+      if (itemId == null) return Response(400, body: 'ingredientId or itemId');
+      final item = await (db.select(
+        db.menuItems,
+      )..where((i) => i.id.equals(itemId))).getSingleOrNull();
+      if (item == null) return Response.notFound('item not found');
+      final recipes = (await loadRecipes(db, ownerId: itemId))[itemId];
+      final per = recipes?.resolve(
+        variantId: (body['variantId'] as String?) ?? '',
+      );
+      if (per == null || per.isEmpty) return Response(400, body: 'no_recipe');
+      need = {for (final e in per.entries) e.key: e.value * qty};
+      label = item.name;
+    }
+
+    final value = await wasteStock(
+      db,
+      qtyByIngredient: need,
+      sourceLabel: label,
+      userId: actor.$1,
+      note: note,
+      hub: hub,
+    );
+    await broadcastIfFlipped();
+    return _json({'ok': true, 'value': value});
   });
 
   // ------------------------------------------------------------ stok opname

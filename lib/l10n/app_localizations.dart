@@ -589,6 +589,18 @@ abstract class AppL10n {
   /// **'Pelanggan'**
   String get auditTypeMemberChanged;
 
+  /// CONTEXT.md: Buang · Waste.
+  ///
+  /// In id, this message translates to:
+  /// **'Buang'**
+  String get auditTypeStockWasted;
+
+  /// No description provided for @auditTypeOpenItemSold.
+  ///
+  /// In id, this message translates to:
+  /// **'Item bebas'**
+  String get auditTypeOpenItemSold;
+
   /// No description provided for @auditTypeStockCounted.
   ///
   /// In id, this message translates to:
@@ -3985,6 +3997,18 @@ abstract class AppL10n {
   /// **'Batalkan mutasi kas {amount}'**
   String auditCashReversed(String amount);
 
+  /// CONTEXT.md: Item bebas · Open item.
+  ///
+  /// In id, this message translates to:
+  /// **'Item bebas — {name} {price}'**
+  String auditOpenItemSold(String name, String price);
+
+  /// CONTEXT.md: Buang · Waste.
+  ///
+  /// In id, this message translates to:
+  /// **'Buang {what} — {value}'**
+  String auditStockWasted(String what, String value);
+
   /// No description provided for @auditStockCountClosed.
   ///
   /// In id, this message translates to:
@@ -5947,6 +5971,48 @@ abstract class AppL10n {
   /// **'Terima'**
   String get stkReceive;
 
+  /// CONTEXT.md: Buang · Waste.
+  ///
+  /// In id, this message translates to:
+  /// **'Buang'**
+  String get stkMenuWaste;
+
+  /// No description provided for @stkWasteTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Buang {name}'**
+  String stkWasteTitle(String name);
+
+  /// No description provided for @stkWasteSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Stok yang dibuang keluar dari catatan dan nilainya hilang'**
+  String get stkWasteSub;
+
+  /// No description provided for @stkWasteNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan'**
+  String get stkWasteNote;
+
+  /// No description provided for @stkWasteNoteHelper.
+  ///
+  /// In id, this message translates to:
+  /// **'Wajib diisi — tanpa alasan, angka buang tidak bisa ditindaklanjuti'**
+  String get stkWasteNoteHelper;
+
+  /// No description provided for @stkWasteNoteRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan wajib diisi'**
+  String get stkWasteNoteRequired;
+
+  /// No description provided for @stkWasteOk.
+  ///
+  /// In id, this message translates to:
+  /// **'Tercatat dibuang, nilai {value}'**
+  String stkWasteOk(String value);
+
   /// No description provided for @stkMenuReceive.
   ///
   /// In id, this message translates to:
@@ -6138,6 +6204,30 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Munculkan peringatan saat stok di bawah angka ini'**
   String get stkLowAtHelper;
+
+  /// CONTEXT.md: Stok par · Par level.
+  ///
+  /// In id, this message translates to:
+  /// **'Stok par ({unit}, opsional)'**
+  String stkParAt(String unit);
+
+  /// No description provided for @stkParAtHelper.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah yang ingin selalu tersedia; kekurangannya masuk daftar belanja'**
+  String get stkParAtHelper;
+
+  /// CONTEXT.md: Belanja · Shopping list.
+  ///
+  /// In id, this message translates to:
+  /// **'Belanja'**
+  String get stkBelanja;
+
+  /// No description provided for @stkBelanjaEstimate.
+  ///
+  /// In id, this message translates to:
+  /// **'Perkiraan belanja {amount}'**
+  String stkBelanjaEstimate(String amount);
 
   /// No description provided for @stkBatchYield.
   ///
@@ -7303,6 +7393,54 @@ abstract class AppL10n {
   /// **'Belum ada bahan pada resep ini.'**
   String get mieRecipeEmpty;
 
+  /// CONTEXT.md: Buang · Waste.
+  ///
+  /// In id, this message translates to:
+  /// **'Buang'**
+  String get mieBuang;
+
+  /// No description provided for @mieBuangTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Buang {name}'**
+  String mieBuangTitle(String name);
+
+  /// CONTEXT.md: bahan · Ingredient; resep · Recipe.
+  ///
+  /// In id, this message translates to:
+  /// **'Bahan sesuai resep akan dikurangi sebanyak porsi yang dibuang'**
+  String get mieBuangSub;
+
+  /// No description provided for @mieBuangNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan'**
+  String get mieBuangNote;
+
+  /// No description provided for @mieBuangNoteRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan wajib diisi'**
+  String get mieBuangNoteRequired;
+
+  /// No description provided for @mieBuangOk.
+  ///
+  /// In id, this message translates to:
+  /// **'Tercatat dibuang, nilai {value}'**
+  String mieBuangOk(String value);
+
+  /// CONTEXT.md: Jual satuan · Sold by unit.
+  ///
+  /// In id, this message translates to:
+  /// **'Jual satuan'**
+  String get mieJualSatuan;
+
+  /// CONTEXT.md: bahan · Ingredient; resep · Recipe.
+  ///
+  /// In id, this message translates to:
+  /// **'Bahan “{name}” dibuat, resep 1 pcs terisi'**
+  String mieJualSatuanDone(String name);
+
   /// No description provided for @mieAddIngredient.
   ///
   /// In id, this message translates to:
@@ -7680,6 +7818,48 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'{zone} · {pax} TAMU'**
   String mnuZonePax(String zone, int pax);
+
+  /// No description provided for @mnuOpenItem.
+  ///
+  /// In id, this message translates to:
+  /// **'Item bebas'**
+  String get mnuOpenItem;
+
+  /// No description provided for @mnuOpenItemSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Baris di luar menu — nama dan harga diketik sendiri.'**
+  String get mnuOpenItemSub;
+
+  /// No description provided for @mnuOpenItemName.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama item'**
+  String get mnuOpenItemName;
+
+  /// No description provided for @mnuOpenItemPrice.
+  ///
+  /// In id, this message translates to:
+  /// **'Harga'**
+  String get mnuOpenItemPrice;
+
+  /// No description provided for @mnuOpenItemNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan'**
+  String get mnuOpenItemNote;
+
+  /// No description provided for @mnuOpenItemNoteHelper.
+  ///
+  /// In id, this message translates to:
+  /// **'Wajib — kenapa item ini tidak ada di menu'**
+  String get mnuOpenItemNoteHelper;
+
+  /// No description provided for @mnuOpenItemAdd.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambahkan'**
+  String get mnuOpenItemAdd;
 
   /// No description provided for @mnuAddItem.
   ///
@@ -11359,6 +11539,12 @@ abstract class AppL10n {
   /// **'Kelola bahan'**
   String get capManageIngredients;
 
+  /// No description provided for @capSellOpenItem.
+  ///
+  /// In id, this message translates to:
+  /// **'Jual item bebas'**
+  String get capSellOpenItem;
+
   /// No description provided for @capOverrideStock.
   ///
   /// In id, this message translates to:
@@ -11490,6 +11676,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Tambah dan ubah bahan beserta resepnya.'**
   String get capManageIngredientsDesc;
+
+  /// No description provided for @capSellOpenItemDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Ketik satu baris dengan nama dan harga sendiri, tanpa baris menu.'**
+  String get capSellOpenItemDesc;
 
   /// No description provided for @capOverrideStockDesc.
   ///

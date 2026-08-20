@@ -85,6 +85,8 @@
   "auditTypeCashMovement": "Cash",
   "auditTypeDebtMovement": "Tab",
   "auditTypeMemberChanged": "Member",
+  "auditTypeStockWasted": "Waste",
+  "auditTypeOpenItemSold": "Open item",
   "auditTypeStockCounted": "Stocktake",
   "soTitle": "Self-order",
   "soSub": "Guests order from their own phone",
@@ -806,6 +808,18 @@
       }
     }
   },
+  "auditOpenItemSold": "Open item — {name} {price}",
+  "@auditOpenItemSold": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "auditStockWasted": "Wasted {what} \u2014 {value}",
   "auditStockCountClosed": "Stocktake closed — {lines, plural, =1{1 ingredient} other{{lines} ingredients}}, variance {variance}",
   "@auditStockCountClosed": {
     "placeholders": {
@@ -1299,6 +1313,13 @@
   "stkColPricePer": "PRICE / {unit}",
   "stkColLastReceived": "LAST RECEIVED",
   "stkReceive": "Receive",
+  "stkMenuWaste": "Waste",
+  "stkWasteTitle": "Waste {name}",
+  "stkWasteSub": "Wasted stock leaves the ledger and its value is lost",
+  "stkWasteNote": "Reason",
+  "stkWasteNoteHelper": "Required \u2014 a waste figure with no reason can't be acted on",
+  "stkWasteNoteRequired": "A reason is required",
+  "stkWasteOk": "Waste recorded, value {value}",
   "stkMenuReceive": "Receive goods",
   "stkMenuProduce": "Produce a batch",
   "stkMenuLedger": "Movement history",
@@ -1331,6 +1352,10 @@
   "stkOpeningHelper": "Recorded as the opening movement",
   "stkLowAt": "Low-stock threshold ({unit}, optional)",
   "stkLowAtHelper": "Warn once stock drops below this",
+  "stkParAt": "Par level ({unit}, optional)",
+  "stkParAtHelper": "How much you want on hand; the shortfall goes on the shopping list",
+  "stkBelanja": "Shopping list",
+  "stkBelanjaEstimate": "Estimated spend {amount}",
   "stkBatchYield": "Yield of 1 batch ({unit}, optional)",
   "stkBatchYieldHelper": "Fill this in if the ingredient is made in house, then build its recipe",
   "stkSaveOk": "Ingredient saved",
@@ -1525,6 +1550,14 @@
   "mieRecipeOptionHint": "A modifier recipe is added on top of whichever recipe applies.",
   "mieRecipeBaseHint": "Used when the item has no variants, or a variant has no recipe of its own.",
   "mieRecipeEmpty": "No ingredients on this recipe yet.",
+  "mieBuang": "Waste",
+  "mieBuangTitle": "Waste {name}",
+  "mieBuangSub": "The recipe's ingredients are deducted for every portion wasted",
+  "mieBuangNote": "Reason",
+  "mieBuangNoteRequired": "A reason is required",
+  "mieBuangOk": "Waste recorded, value {value}",
+  "mieJualSatuan": "Sold by unit",
+  "mieJualSatuanDone": "Ingredient \u201c{name}\u201d created, recipe set to 1 pcs",
   "mieAddIngredient": "Add ingredient",
   "mieIngredient": "Ingredient",
   "mieIngredientOption": "{name} ({unit})",
@@ -1588,6 +1621,13 @@
   "mnuTakeawayNoTable": "TAKEAWAY · NO TABLE",
   "mnuNoTablePickLater": "NO TABLE · PICK ONE WHEN SENDING",
   "mnuZonePax": "{zone} · {pax} GUESTS",
+  "mnuOpenItem": "Open item",
+  "mnuOpenItemSub": "An off-menu line — you type the name and the price.",
+  "mnuOpenItemName": "Item name",
+  "mnuOpenItemPrice": "Price",
+  "mnuOpenItemNote": "Reason",
+  "mnuOpenItemNoteHelper": "Required — why this is not on the menu",
+  "mnuOpenItemAdd": "Add",
   "mnuAddItem": "Add item",
   "mnuAddItemHint": "TAP TO CONFIGURE · LONG-PRESS TO ADD THE DEFAULT",
   "mnuPending": "{n, plural, =1{1 item} other{{n} items}} pending",
@@ -2306,6 +2346,7 @@
   "capMarkSoldOut": "Mark sold out",
   "capAdjustStock": "Adjust stock",
   "capManageIngredients": "Manage ingredients",
+  "capSellOpenItem": "Sell an open item",
   "capOverrideStock": "Sell when out of stock",
   "capManageMembers": "Manage members",
   "capManageMembersDesc": "Edit, merge and delete member records, and correct points by hand. A cashier does not need this to enrol or redeem.",
@@ -2328,6 +2369,7 @@
   "capMarkSoldOutDesc": "Flag an item sold out without touching ingredient stock.",
   "capAdjustStockDesc": "Record a stocktake, receive goods and log waste.",
   "capManageIngredientsDesc": "Add and edit ingredients and their recipes.",
+  "capSellOpenItemDesc": "Type a line with its own name and price, with no menu row behind it.",
   "capOverrideStockDesc": "Send an order even when an ingredient reads empty.",
   "capManageStaffDesc": "Add staff, assign roles and reset PINs.",
   "capManageRolesDesc": "Create roles and set the permissions they carry.",

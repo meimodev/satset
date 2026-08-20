@@ -20,7 +20,9 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
+import 'package:satset/domain/models/capability.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/features/admin/menu_admin_view_model.dart';
 import 'package:uuid/uuid.dart';
@@ -1105,9 +1107,15 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           style: SatType.bodyS(color: sc.urgent),
         ),
         data: (list) => list.isEmpty
-            ? Text(
-                context.l10n.mieNoIngredients,
-                style: SatType.bodyS(color: sc.textLo),
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.mieNoIngredients,
+                    style: SatType.bodyS(color: sc.textLo),
+                  ),
+                  _jualSatuanAction(sc, readOnly),
+                ],
               )
             : _recipeBody(sc, readOnly, list),
       ),
@@ -1167,6 +1175,8 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
           ),
         for (var i = 0; i < lines.length; i++)
           _recipeLineRow(sc, readOnly, pantry, byId, lines, i),
+        _jualSatuanAction(sc, readOnly),
+        _buangAction(sc, readOnly),
         if (!readOnly) ...[
           const SizedBox(height: Sp.s1h),
           Align(
@@ -1187,6 +1197,151 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
         ],
       ],
     );
+  }
+
+  /// "Jual satuan" — the bought-in case: a bottled drink or a packet of crisps
+  /// where the menu item *is* the stock item. Mints a `pcs` ingredient named
+  /// after the item and a base recipe line of one, then stops caring: from here
+  /// it is an ordinary ingredient with an ordinary recipe, received and counted
+  /// like everything else. Create-and-forget — there is no "off", because
+  /// removing the line is what undoes it.
+  Widget _jualSatuanAction(SatColors sc, bool readOnly) {
+    if (readOnly || !_recipes.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: Sp.s1h),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: SatButton.ghost(
+          label: context.l10n.mieJualSatuan,
+          icon: Icons.sell_outlined,
+          onTap: _makeJualSatuan,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _makeJualSatuan() async {
+    final name = _name.text.trim();
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
+    if (name.isEmpty) {
+      setState(() => _showErrors = true);
+      messenger.showSnackBar(SnackBar(content: Text(l10n.mieBlankNames)));
+      return;
+    }
+    final id = const Uuid().v4();
+    try {
+      await ref
+          .read(stockApiProvider)
+          .save(Ingredient(id: id, name: name, unit: StockUnit.pcs));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.mieSaveFailed('$e'))));
+      return;
+    }
+    ref.invalidate(ingredientsProvider);
+    if (!mounted) return;
+    // Base scope on purpose: a bought-in good does not vary by variant.
+    setState(() => _recipeScope = '');
+    _setLines('', [
+      RecipeLine(id: '', ingredientId: id, qty: StockUnit.pcs.perUnit),
+    ]);
+    messenger.showSnackBar(SnackBar(content: Text(l10n.mieJualSatuanDone(name))));
+  }
+
+  /// "Buang" from the menu side: bin one portion of *this dish*, exploding the
+  /// resep into its bahan. Only offered once a resep exists — with none there is
+  /// nothing to deduct, and the fix for that is [_jualSatuanAction], not a waste
+  /// row against nothing. Gated on `manageIngredients`, which the server demands
+  /// too: authoring a menu is not the same permission as moving stock.
+  Widget _buangAction(SatColors sc, bool readOnly) {
+    if (readOnly || _isNew || _recipes.isEmpty) return const SizedBox.shrink();
+    if (!ref.watch(authStateProvider).has(Capability.manageIngredients)) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: Sp.s1h),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: SatButton.ghost(
+          label: context.l10n.mieBuang,
+          icon: Icons.delete_outline,
+          onTap: _buang,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _buang() async {
+    final qtyCtrl = TextEditingController(text: '1');
+    final noteCtrl = TextEditingController();
+    // Base scope only: a waste of one portion is a waste of the dish, and
+    // asking which variant on a sheet nobody reads buys a wrong answer.
+    final ok = await showSatSheet<bool>(
+      context,
+      bare: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(Sp.s5, Sp.s3, Sp.s5, Sp.s5),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                context.l10n.mieBuangTitle(_name.text.trim()),
+                style: SatType.labelL(color: ctx.sat.textHi),
+              ),
+              const SizedBox(height: Sp.s1),
+              Text(
+                context.l10n.mieBuangSub,
+                style: SatType.bodyS(color: ctx.sat.textLo),
+              ),
+              const SizedBox(height: Sp.s3),
+              SatField.decimal(
+                controller: qtyCtrl,
+                label: context.l10n.quantity,
+                hint: '',
+                autofocus: true,
+                prefixIcon: Icons.numbers_outlined,
+              ),
+              const SizedBox(height: Sp.s2h),
+              SatField.text(
+                controller: noteCtrl,
+                label: context.l10n.mieBuangNote,
+                hint: '',
+                prefixIcon: Icons.notes_outlined,
+              ),
+              const SizedBox(height: Sp.s3),
+              SatButton.danger(
+                label: context.l10n.mieBuang,
+                icon: Icons.delete_outline,
+                onTap: () => Navigator.of(ctx).pop(true),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final qty = int.tryParse(qtyCtrl.text.trim()) ?? 0;
+    final note = noteCtrl.text.trim();
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
+    if (qty <= 0) return;
+    if (note.isEmpty) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.mieBuangNoteRequired)));
+      return;
+    }
+    try {
+      final value = await ref
+          .read(stockApiProvider)
+          .waste(itemId: widget.itemId, qty: qty, note: note);
+      ref.invalidate(ingredientsProvider);
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.mieBuangOk(formatIDR(value)))),
+      );
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.mieSaveFailed('$e'))));
+    }
   }
 
   Widget _recipeLineRow(

@@ -52,6 +52,7 @@ class DummyData {
         // A manager is exactly who spends from the box (§Kas kecil). Admin gets
         // it via `Capability.values`; every other role must ask for it.
         Capability.manageCash,
+        Capability.sellOpenItem,
       },
     ),
     // The cashier role CONTEXT.md described but the seed never created —
@@ -63,7 +64,12 @@ class DummyData {
       id: roleKasirId,
       name: 'Kasir',
       colorHex: 0xFF4DD487,
-      capabilities: const {Capability.settleBill, Capability.openDrawer},
+      capabilities: const {
+        Capability.settleBill,
+        Capability.openDrawer,
+        // The counter till types the odd unlisted line; a waiter does not.
+        Capability.sellOpenItem,
+      },
     ),
     Role(
       id: roleWaiterId,

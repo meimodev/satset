@@ -1080,6 +1080,12 @@ class Ingredients extends Table {
   /// Reorder threshold in milli-base units. Null = no low-stock badge.
   IntColumn get lowStockAt => integer().nullable()();
 
+  /// **Par level** — the quantity this ingredient should be topped back up to,
+  /// in milli-base units. Null = not stocked to a par, so it never appears on
+  /// the shopping list. Distinct from [lowStockAt], which only decides when to
+  /// warn: the threshold says "shout", the par says "buy this much".
+  IntColumn get parLevel => integer().nullable()();
+
   /// Moving-average cost, in **micro-money per milli-base unit** (money × 1e6
   /// per storage unit) so that sub-rupiah per-gram costs survive integer
   /// storage. Cost of a quantity = `qty * costMicro ~/ 1000000`.

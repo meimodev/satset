@@ -286,6 +286,12 @@ class AppL10nId extends AppL10n {
   String get auditTypeMemberChanged => 'Pelanggan';
 
   @override
+  String get auditTypeStockWasted => 'Buang';
+
+  @override
+  String get auditTypeOpenItemSold => 'Item bebas';
+
+  @override
   String get auditTypeStockCounted => 'Opname';
 
   @override
@@ -2309,6 +2315,16 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String auditOpenItemSold(String name, String price) {
+    return 'Item bebas — $name $price';
+  }
+
+  @override
+  String auditStockWasted(String what, String value) {
+    return 'Buang $what — $value';
+  }
+
+  @override
   String auditStockCountClosed(num lines, String variance) {
     final intl.NumberFormat linesNumberFormat = intl.NumberFormat.compact(
       locale: localeName,
@@ -3688,6 +3704,33 @@ class AppL10nId extends AppL10n {
   String get stkReceive => 'Terima';
 
   @override
+  String get stkMenuWaste => 'Buang';
+
+  @override
+  String stkWasteTitle(String name) {
+    return 'Buang $name';
+  }
+
+  @override
+  String get stkWasteSub =>
+      'Stok yang dibuang keluar dari catatan dan nilainya hilang';
+
+  @override
+  String get stkWasteNote => 'Alasan';
+
+  @override
+  String get stkWasteNoteHelper =>
+      'Wajib diisi — tanpa alasan, angka buang tidak bisa ditindaklanjuti';
+
+  @override
+  String get stkWasteNoteRequired => 'Alasan wajib diisi';
+
+  @override
+  String stkWasteOk(String value) {
+    return 'Tercatat dibuang, nilai $value';
+  }
+
+  @override
   String get stkMenuReceive => 'Terima barang';
 
   @override
@@ -3814,6 +3857,23 @@ class AppL10nId extends AppL10n {
   @override
   String get stkLowAtHelper =>
       'Munculkan peringatan saat stok di bawah angka ini';
+
+  @override
+  String stkParAt(String unit) {
+    return 'Stok par ($unit, opsional)';
+  }
+
+  @override
+  String get stkParAtHelper =>
+      'Jumlah yang ingin selalu tersedia; kekurangannya masuk daftar belanja';
+
+  @override
+  String get stkBelanja => 'Belanja';
+
+  @override
+  String stkBelanjaEstimate(String amount) {
+    return 'Perkiraan belanja $amount';
+  }
 
   @override
   String stkBatchYield(String unit) {
@@ -4550,6 +4610,37 @@ class AppL10nId extends AppL10n {
   String get mieRecipeEmpty => 'Belum ada bahan pada resep ini.';
 
   @override
+  String get mieBuang => 'Buang';
+
+  @override
+  String mieBuangTitle(String name) {
+    return 'Buang $name';
+  }
+
+  @override
+  String get mieBuangSub =>
+      'Bahan sesuai resep akan dikurangi sebanyak porsi yang dibuang';
+
+  @override
+  String get mieBuangNote => 'Alasan';
+
+  @override
+  String get mieBuangNoteRequired => 'Alasan wajib diisi';
+
+  @override
+  String mieBuangOk(String value) {
+    return 'Tercatat dibuang, nilai $value';
+  }
+
+  @override
+  String get mieJualSatuan => 'Jual satuan';
+
+  @override
+  String mieJualSatuanDone(String name) {
+    return 'Bahan “$name” dibuat, resep 1 pcs terisi';
+  }
+
+  @override
   String get mieAddIngredient => 'Tambah bahan';
 
   @override
@@ -4787,6 +4878,29 @@ class AppL10nId extends AppL10n {
   String mnuZonePax(String zone, int pax) {
     return '$zone · $pax TAMU';
   }
+
+  @override
+  String get mnuOpenItem => 'Item bebas';
+
+  @override
+  String get mnuOpenItemSub =>
+      'Baris di luar menu — nama dan harga diketik sendiri.';
+
+  @override
+  String get mnuOpenItemName => 'Nama item';
+
+  @override
+  String get mnuOpenItemPrice => 'Harga';
+
+  @override
+  String get mnuOpenItemNote => 'Alasan';
+
+  @override
+  String get mnuOpenItemNoteHelper =>
+      'Wajib — kenapa item ini tidak ada di menu';
+
+  @override
+  String get mnuOpenItemAdd => 'Tambahkan';
 
   @override
   String get mnuAddItem => 'Tambah item';
@@ -7141,6 +7255,9 @@ class AppL10nId extends AppL10n {
   String get capManageIngredients => 'Kelola bahan';
 
   @override
+  String get capSellOpenItem => 'Jual item bebas';
+
+  @override
   String get capOverrideStock => 'Jual saat stok habis';
 
   @override
@@ -7213,6 +7330,10 @@ class AppL10nId extends AppL10n {
   @override
   String get capManageIngredientsDesc =>
       'Tambah dan ubah bahan beserta resepnya.';
+
+  @override
+  String get capSellOpenItemDesc =>
+      'Ketik satu baris dengan nama dan harga sendiri, tanpa baris menu.';
 
   @override
   String get capOverrideStockDesc =>

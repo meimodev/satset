@@ -12,6 +12,11 @@ import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/domain/models/menu_item.dart';
 import 'package:satset/domain/models/venue_table.dart';
+import 'package:uuid/uuid.dart';
+import 'package:satset/domain/models/cart_item.dart';
+import 'package:satset/domain/models/course.dart';
+import 'package:satset/domain/models/capability.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/ui/features/menu/view_models/menu_view_model.dart';
@@ -29,6 +34,8 @@ import 'cart_line_actions.dart';
 import 'modifier_sheet.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+
+const _uuid = Uuid();
 
 class MenuScreen extends ConsumerStatefulWidget {
   final String tableId;
@@ -82,8 +89,28 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
     ref.read(menuSearchProvider.notifier).state = '';
   }
 
-  /// Shared by both layouts — the phone strip and the tablet header slot.
-  Widget _searchField(String query) => SatField.search(
+  /// Shared by both layouts — the phone strip and the tablet header slot. The
+  /// [[Item bebas]] action rides here rather than in the grid: it is not a menu
+  /// item and putting a tile among the tiles is how one gets tapped by mistake.
+  Widget _searchField(String query) {
+    final field = _searchBox(query);
+    if (!ref.watch(authStateProvider).has(Capability.sellOpenItem)) {
+      return field;
+    }
+    return Row(
+      children: [
+        Expanded(child: field),
+        const SizedBox(width: Sp.s2),
+        SatIconButton.outline(
+          icon: Icons.edit_note_outlined,
+          tooltip: context.l10n.mnuOpenItem,
+          onTap: _addOpenItem,
+        ),
+      ],
+    );
+  }
+
+  Widget _searchBox(String query) => SatField.search(
     controller: _search,
     hint: context.l10n.mnaSearchHint,
     suffix: query.isEmpty
@@ -463,6 +490,15 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         ],
       ),
     );
+  }
+
+  /// [[Item bebas]] — a line typed at the till. The note is mandatory client
+  /// side *and* server side: the route refuses a blank one, so hiding the
+  /// button is convenience and the 400 is the rule.
+  Future<void> _addOpenItem() async {
+    final line = await showOpenItemSheet(context);
+    if (line == null || !mounted) return;
+    ref.read(cartProvider(widget.tableId).notifier).add(line);
   }
 
   void _openItem(MenuItem item) {
@@ -1069,6 +1105,108 @@ Future<bool?> _confirmDiscard(BuildContext context, int items) {
             ],
           ),
         ),
+      );
+    },
+  );
+}
+
+
+/// The [[Item bebas]] composer. Returns the line to add, or null on dismiss.
+///
+/// Three required fields and no more: what it is, what it costs, and why it is
+/// not on the menu. Qty is deliberately absent — an off-menu line is one thing
+/// sold once, and the cart stepper covers the rest.
+Future<CartItem?> showOpenItemSheet(BuildContext context) {
+  final nameCtrl = TextEditingController();
+  final priceCtrl = TextEditingController();
+  final noteCtrl = TextEditingController();
+  return showSatSheet<CartItem>(
+    context,
+    builder: (ctx) {
+      final sc = ctx.sat;
+      var showErrors = false;
+      return StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final name = nameCtrl.text.trim();
+          final price =
+              int.tryParse(priceCtrl.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
+          final note = noteCtrl.text.trim();
+          return SafeArea(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                Sp.s5,
+                Sp.s3,
+                Sp.s5,
+                Sp.s5 + MediaQuery.viewInsetsOf(ctx).bottom,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      ctx.l10n.mnuOpenItem,
+                      style: SatType.labelL(color: sc.textHi),
+                    ),
+                    const SizedBox(height: Sp.s1),
+                    Text(
+                      ctx.l10n.mnuOpenItemSub,
+                      style: SatType.bodyS(color: sc.textLo),
+                    ),
+                    const SizedBox(height: Sp.s4),
+                    SatField.text(
+                      controller: nameCtrl,
+                      hint: ctx.l10n.mnuOpenItemName,
+                      autofocus: true,
+                      hasError: showErrors && name.isEmpty,
+                      onChanged: (_) => setSheetState(() {}),
+                    ),
+                    const SizedBox(height: Sp.s2h),
+                    SatField.money(
+                      controller: priceCtrl,
+                      hint: ctx.l10n.mnuOpenItemPrice,
+                      hasError: showErrors && price <= 0,
+                      onChanged: (_) => setSheetState(() {}),
+                    ),
+                    const SizedBox(height: Sp.s2h),
+                    SatField.text(
+                      controller: noteCtrl,
+                      hint: ctx.l10n.mnuOpenItemNote,
+                      helperText: ctx.l10n.mnuOpenItemNoteHelper,
+                      hasError: showErrors && note.isEmpty,
+                      onChanged: (_) => setSheetState(() {}),
+                    ),
+                    const SizedBox(height: Sp.s4h),
+                    SatButton.primary(
+                      label: ctx.l10n.mnuOpenItemAdd,
+                      onTap: () {
+                        if (name.isEmpty || price <= 0 || note.isEmpty) {
+                          setSheetState(() => showErrors = true);
+                          return;
+                        }
+                        Navigator.pop(
+                          ctx,
+                          CartItem(
+                            id: 'C${_uuid.v4()}',
+                            itemId: openItemId,
+                            name: name,
+                            variantId: '',
+                            variantName: '',
+                            note: note,
+                            // The one course that means "make it now": an
+                            // off-menu line has no station and no sequence.
+                            course: CourseId.fireNow,
+                            unitPrice: price,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       );
     },
   );

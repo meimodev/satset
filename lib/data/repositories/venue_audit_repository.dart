@@ -39,6 +39,8 @@ const auditFilterTypes = <AuditType>[
   // belongs to the opname document and the stock report section, and a tile
   // here would be a third place for one number to disagree with itself.
   AuditType.stockCounted,
+  AuditType.stockWasted,
+  AuditType.openItemSold,
   // Same reasoning: the counts live on the /selforder hero, and a tile here
   // would be a second place for one number to disagree with itself.
   AuditType.selfOrder,

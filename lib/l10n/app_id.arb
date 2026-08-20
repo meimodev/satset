@@ -107,6 +107,11 @@
   "auditTypeCashMovement": "Kas",
   "auditTypeDebtMovement": "Piutang",
   "auditTypeMemberChanged": "Pelanggan",
+  "auditTypeStockWasted": "Buang",
+  "auditTypeOpenItemSold": "Item bebas",
+  "@auditTypeStockWasted": {
+    "description": "CONTEXT.md: Buang \u00b7 Waste."
+  },
   "auditTypeStockCounted": "Opname",
   "soTitle": "Pesan mandiri",
   "soSub": "Tamu pesan sendiri dari HP",
@@ -1529,6 +1534,30 @@
       }
     }
   },
+  "auditOpenItemSold": "Item bebas — {name} {price}",
+  "@auditOpenItemSold": {
+    "description": "CONTEXT.md: Item bebas · Open item.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "auditStockWasted": "Buang {what} \u2014 {value}",
+  "@auditStockWasted": {
+    "description": "CONTEXT.md: Buang \u00b7 Waste.",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "auditStockCountClosed": "Tutup stok opname — {lines, plural, other{{lines} bahan}}, selisih {variance}",
   "@auditStockCountClosed": {
     "placeholders": {
@@ -2770,6 +2799,30 @@
   },
   "stkColLastReceived": "TERAKHIR TERIMA",
   "stkReceive": "Terima",
+  "stkMenuWaste": "Buang",
+  "@stkMenuWaste": {
+    "description": "CONTEXT.md: Buang \u00b7 Waste."
+  },
+  "stkWasteTitle": "Buang {name}",
+  "@stkWasteTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stkWasteSub": "Stok yang dibuang keluar dari catatan dan nilainya hilang",
+  "stkWasteNote": "Alasan",
+  "stkWasteNoteHelper": "Wajib diisi \u2014 tanpa alasan, angka buang tidak bisa ditindaklanjuti",
+  "stkWasteNoteRequired": "Alasan wajib diisi",
+  "stkWasteOk": "Tercatat dibuang, nilai {value}",
+  "@stkWasteOk": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "stkMenuReceive": "Terima barang",
   "stkMenuProduce": "Produksi batch",
   "stkMenuLedger": "Riwayat mutasi",
@@ -2896,6 +2949,28 @@
     }
   },
   "stkLowAtHelper": "Munculkan peringatan saat stok di bawah angka ini",
+  "stkParAt": "Stok par ({unit}, opsional)",
+  "@stkParAt": {
+    "description": "CONTEXT.md: Stok par \u00b7 Par level.",
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "stkParAtHelper": "Jumlah yang ingin selalu tersedia; kekurangannya masuk daftar belanja",
+  "stkBelanja": "Belanja",
+  "@stkBelanja": {
+    "description": "CONTEXT.md: Belanja \u00b7 Shopping list."
+  },
+  "stkBelanjaEstimate": "Perkiraan belanja {amount}",
+  "@stkBelanjaEstimate": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "stkBatchYield": "Hasil 1 batch ({unit}, opsional)",
   "@stkBatchYield": {
     "placeholders": {
@@ -3521,6 +3596,45 @@
   "mieRecipeOptionHint": "Resep modifier ditambahkan di atas resep yang berlaku.",
   "mieRecipeBaseHint": "Dipakai saat item tidak punya varian, atau varian belum punya resep sendiri.",
   "mieRecipeEmpty": "Belum ada bahan pada resep ini.",
+  "mieBuang": "Buang",
+  "@mieBuang": {
+    "description": "CONTEXT.md: Buang \u00b7 Waste."
+  },
+  "mieBuangTitle": "Buang {name}",
+  "@mieBuangTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mieBuangSub": "Bahan sesuai resep akan dikurangi sebanyak porsi yang dibuang",
+  "@mieBuangSub": {
+    "description": "CONTEXT.md: bahan \u00b7 Ingredient; resep \u00b7 Recipe."
+  },
+  "mieBuangNote": "Alasan",
+  "mieBuangNoteRequired": "Alasan wajib diisi",
+  "mieBuangOk": "Tercatat dibuang, nilai {value}",
+  "@mieBuangOk": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "mieJualSatuan": "Jual satuan",
+  "@mieJualSatuan": {
+    "description": "CONTEXT.md: Jual satuan \u00b7 Sold by unit."
+  },
+  "mieJualSatuanDone": "Bahan \u201c{name}\u201d dibuat, resep 1 pcs terisi",
+  "@mieJualSatuanDone": {
+    "description": "CONTEXT.md: bahan \u00b7 Ingredient; resep \u00b7 Recipe.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "mieAddIngredient": "Tambah bahan",
   "mieIngredient": "Bahan",
   "@mieIngredient": {
@@ -3686,6 +3800,13 @@
       }
     }
   },
+  "mnuOpenItem": "Item bebas",
+  "mnuOpenItemSub": "Baris di luar menu — nama dan harga diketik sendiri.",
+  "mnuOpenItemName": "Nama item",
+  "mnuOpenItemPrice": "Harga",
+  "mnuOpenItemNote": "Alasan",
+  "mnuOpenItemNoteHelper": "Wajib — kenapa item ini tidak ada di menu",
+  "mnuOpenItemAdd": "Tambahkan",
   "mnuAddItem": "Tambah item",
   "mnuAddItemHint": "KETUK UNTUK ATUR · TEKAN LAMA UNTUK TAMBAH DEFAULT",
   "mnuPending": "{n, plural, other{{n} item}} pending",
@@ -5284,6 +5405,7 @@
   "capMarkSoldOut": "Tandai habis",
   "capAdjustStock": "Sesuaikan stok",
   "capManageIngredients": "Kelola bahan",
+  "capSellOpenItem": "Jual item bebas",
   "capOverrideStock": "Jual saat stok habis",
   "capManageMembers": "Kelola pelanggan",
   "capManageMembersDesc": "Ubah, gabung, dan hapus data pelanggan, serta koreksi poin secara manual. Kasir tidak perlu ini untuk mendaftarkan atau menukar poin.",
@@ -5306,6 +5428,7 @@
   "capMarkSoldOutDesc": "Tandai item habis tanpa mengubah stok bahan.",
   "capAdjustStockDesc": "Catat opname, terima barang, dan buang bahan.",
   "capManageIngredientsDesc": "Tambah dan ubah bahan beserta resepnya.",
+  "capSellOpenItemDesc": "Ketik satu baris dengan nama dan harga sendiri, tanpa baris menu.",
   "capOverrideStockDesc": "Kirim pesanan meski bahan tercatat habis.",
   "capManageStaffDesc": "Tambah staf, atur peran, dan setel ulang PIN.",
   "capManageRolesDesc": "Buat peran dan atur izin yang dibawanya.",

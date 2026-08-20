@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import 'package:satset/domain/models/menu_item.dart' show openItemId;
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/cash.dart';
 import 'package:satset/server/debts.dart';
@@ -319,6 +320,11 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
     final byItem = <String, _ItemAgg>{};
     for (final t in tickets) {
       if (t.status == 'voided') continue;
+      // An [[Item bebas]] is revenue (Sales counts it above) but not menu
+      // engineering: every off-menu line shares one reserved id, so they would
+      // pile into a single fictitious "item" with no cost and therefore a 100%
+      // margin, at the top of the star list. There is no dish to rank.
+      if (t.itemId == openItemId) continue;
       final agg = byItem.putIfAbsent(t.itemId, () => _ItemAgg());
       agg.qty += t.qty;
       agg.revenue += t.price * t.qty;

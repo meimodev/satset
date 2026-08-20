@@ -48,6 +48,20 @@ enum AuditType {
   /// ledger, whereas a count overrides what that ledger says.
   stockCounted,
 
+  /// **Buang** — stock deliberately thrown away. Separate from [stockCounted]
+  /// because the two answer different questions: a count says the book was
+  /// wrong, waste says value was destroyed on purpose. Receiving and production
+  /// still do not audit — they add value and the ledger explains them — but
+  /// discretionary destruction is the one stock act with no counterparty, which
+  /// is exactly why it is worth a row naming who did it.
+  stockWasted,
+
+  /// **[[Item bebas]]** — a line sold with a name and a price typed at the
+  /// till, with no menu row behind it. Its own type because it is the one sale
+  /// nothing else in the system can explain afterwards: no menu id, no cost, no
+  /// resep, and therefore nothing to reconcile it against but this row.
+  openItemSold,
+
   /// **[[Pesan mandiri]]** (ADR-0105) — a guest order accepted or rejected, the
   /// table codes rotated, the whole feature switched on or off. **One** type for
   /// all of them, for the reason [cashMovement] is one: the reader auditing
@@ -111,6 +125,10 @@ bool isAdminAuditType(AuditType t) {
     // are the ones who run the pantry, and they hold `viewReports` long before
     // they hold `manageStaff`.
     case AuditType.stockCounted:
+    // Waste is read by whoever runs the pantry, same as a count.
+    case AuditType.stockWasted:
+    // An open item is a sale, and it is read by whoever reads the money.
+    case AuditType.openItemSold:
     // A waiter accepting a guest's order is order-taking, and the people who
     // read that queue back hold `viewReports`, not `manageStaff`.
     case AuditType.selfOrder:

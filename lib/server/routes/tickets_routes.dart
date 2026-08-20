@@ -20,6 +20,7 @@ import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/ticket_transitions.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 import 'package:satset/domain/models/audit_kind.dart';
+import 'package:satset/domain/models/menu_item.dart' show openItemId;
 
 Future<Response?> _requireCap(
   Request req,
@@ -458,6 +459,40 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final lines = (body['lines'] as List).cast<Map<String, dynamic>>();
     final actorId = body['actorId'] as String?;
 
+    // [[Item bebas]] — a line with no menu row behind it. Its own capability,
+    // because it is the one line whose price nobody but the seller chose, and
+    // its own guards, because the row it writes is the only record of the sale
+    // that will ever exist: no menu id to look up, no resep to explode, no cost
+    // to compare against. The note is mandatory for that reason.
+    final openLines = [
+      for (final l in lines)
+        if (l['itemId'] == openItemId) l,
+    ];
+    if (openLines.isNotEmpty) {
+      final denied = await _requireCap(
+        req,
+        db,
+        auth,
+        Capability.sellOpenItem,
+      );
+      if (denied != null) return denied;
+      for (final l in openLines) {
+        final price = (l['unitPrice'] as num?)?.toInt() ?? 0;
+        final name = (l['name'] as String?)?.trim() ?? '';
+        final note = (l['note'] as String?)?.trim() ?? '';
+        if (price <= 0 || name.isEmpty || note.isEmpty) {
+          return Response(
+            400,
+            body: jsonEncode({
+              'code': 'open_item_incomplete',
+              'message': 'item bebas butuh nama, harga dan catatan',
+            }),
+            headers: {'content-type': 'application/json'},
+          );
+        }
+      }
+    }
+
     // `overrideStock` is the pressure valve for the venue whose counts have
     // drifted: it sends anyway and still writes the movement, so the balance
     // goes negative as a visible "go do an opname" signal (ADR-0041).
@@ -523,6 +558,25 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       );
     }
     await broadcastSubmitted(db, hub, res, takeaway: takeaway);
+    // After the write, and only on a first submit — a replayed idempotency key
+    // returns above, so an offline backlog cannot double-log the sale.
+    for (final l in openLines) {
+      final qty = (l['qty'] as num?)?.toInt() ?? 1;
+      await writeAudit(
+        db,
+        type: AuditType.openItemSold,
+        kind: AuditKind.openItemSold,
+        params: {
+          'name': (l['name'] as String).trim(),
+          'price': auditRupiah(((l['unitPrice'] as num).toInt()) * qty),
+        },
+        tableId: takeaway ? null : tableId,
+        actorUserId: actorId,
+        reason: (l['note'] as String).trim(),
+        amountCents: ((l['unitPrice'] as num).toInt()) * qty,
+        hub: hub,
+      );
+    }
     return Response.ok(
       jsonEncode({
         'ticketIds': createdIds,

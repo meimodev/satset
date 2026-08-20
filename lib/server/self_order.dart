@@ -24,6 +24,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:satset/domain/models/menu_item.dart' show openItemId;
 import 'package:satset/server/modules.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
@@ -358,7 +359,11 @@ Future<GuestOrder> submitGuestOrder(
     final item = await (db.select(
       db.menuItems,
     )..where((i) => i.id.equals(itemId))).getSingleOrNull();
-    if (item == null || !item.guestVisible) {
+    // An [[Item bebas]] can never reach the guest plane. Today the lookup below
+    // already refuses it — no `menu_items` row carries the reserved id — but the
+    // guard is written out because "a guest may not name their own price" is a
+    // rule, not a side effect of how ids happen to be minted.
+    if (itemId == openItemId || item == null || !item.guestVisible) {
       throw const SelfOrderException('item_unavailable');
     }
     final qty = ((l['qty'] as num?)?.toInt() ?? 1).clamp(1, 99);

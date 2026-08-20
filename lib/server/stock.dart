@@ -4,10 +4,14 @@ import 'package:satset/core/time/sat_clock.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:satset/domain/models/audit_entry.dart' show AuditType;
+import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/domain/models/ingredient.dart' show StockReason;
 import 'package:satset/domain/models/stock_unit.dart';
 
+import 'audit_log.dart';
 import 'db/database.dart';
+import 'ws_hub.dart';
 
 const _uuid = Uuid();
 
@@ -596,6 +600,62 @@ Future<void> reverseTicketStock(
   }
 }
 
+// ------------------------------------------------------------------- buang
+
+/// "Buang" — **the** waste writer. Stock destroyed on purpose: a spoiled jug of
+/// milk, a dropped plate, a pastry nobody bought.
+///
+/// [qtyByIngredient] is positive milli-base quantities; the movements are
+/// written negative. Deliberately **not** clamped at zero, like every other
+/// movement (ADR-0041): binning more than the book says you held means the book
+/// was wrong, and hiding that is how it stays wrong.
+///
+/// One audit row per act, never per bahan — throwing away one portion of a dish
+/// explodes into five movements and is still one thing the cook did. Returns
+/// the money value destroyed, so the caller can show it back.
+Future<int> wasteStock(
+  AppDatabase db, {
+  required Map<String, int> qtyByIngredient,
+  required String sourceLabel,
+  required String? userId,
+  String? note,
+  WsHub? hub,
+}) async {
+  var value = 0;
+  await db.transaction(() async {
+    for (final e in qtyByIngredient.entries) {
+      if (e.value <= 0) continue;
+      final ing = await (db.select(
+        db.ingredients,
+      )..where((i) => i.id.equals(e.key))).getSingleOrNull();
+      if (ing == null) continue;
+      value += valueOf(e.value, ing.costMicro);
+      await writeMovement(
+        db,
+        ingredientId: e.key,
+        delta: -e.value,
+        reason: StockReason.waste,
+        sourceLabel: sourceLabel,
+        userId: userId,
+        note: note,
+      );
+    }
+  });
+  // Outside the transaction: `writeAudit` broadcasts, and a socket write has no
+  // business inside a database lock.
+  await writeAudit(
+    db,
+    type: AuditType.stockWasted,
+    kind: AuditKind.stockWasted,
+    params: {'what': sourceLabel, 'value': auditRupiah(value)},
+    actorUserId: userId,
+    reason: note,
+    amountCents: value,
+    hub: hub,
+  );
+  return value;
+}
+
 // ------------------------------------------------------- reverse recipe index
 
 /// The recipe links the stock list shows on every card, keyed by ingredient id.
@@ -672,6 +732,7 @@ Map<String, dynamic> ingredientRowToJson(IngredientRow i) => {
   'unit': i.unit,
   'stockOnHand': i.stockOnHand,
   'lowStockAt': i.lowStockAt,
+  'parLevel': i.parLevel,
   'costMicro': i.costMicro,
   'batchYield': i.batchYield,
 };

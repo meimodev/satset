@@ -8,6 +8,11 @@ enum Capability {
   modifyOrder(CapabilityGroup.orders),
   voidItem(CapabilityGroup.orders),
   compItem(CapabilityGroup.orders),
+  /// Sell an [[Item bebas]] — a line typed at the till with its own name and
+  /// price, no menu row behind it. Deliberately **not** on the waiter role: a
+  /// line nobody priced is a hole in the menu report, so it belongs to whoever
+  /// already answers for the money.
+  sellOpenItem(CapabilityGroup.orders),
   viewKds(CapabilityGroup.kitchen),
   openDrawer(CapabilityGroup.money),
   applyDiscount(CapabilityGroup.money),

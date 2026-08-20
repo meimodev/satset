@@ -72,6 +72,26 @@ class StockApi {
     });
   }
 
+  /// "Buang" — bin a bahan directly, or one portion of a menu item by
+  /// exploding its resep. Returns the money value destroyed.
+  Future<int> waste({
+    String? ingredientId,
+    String? itemId,
+    String? variantId,
+    required int qty,
+    String? note,
+  }) async {
+    SatLog.repo('stock.waste ${ingredientId ?? itemId} x$qty');
+    final raw = await _api.postJson('/stock/waste', {
+      'ingredientId': ?ingredientId,
+      'itemId': ?itemId,
+      'variantId': ?variantId,
+      'qty': qty,
+      'note': ?note,
+    });
+    return ((raw as Map)['value'] as num?)?.toInt() ?? 0;
+  }
+
   // ------------------------------------------------------------ stok opname
   //
   // A session, not a burst of adjustments (ADR-0096). Counts are **absolute**
