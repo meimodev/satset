@@ -1897,6 +1897,12 @@ abstract class AppL10n {
   /// **'akan dihapus permanen dari zona.'**
   String get zoneAdminDeleteTableConfirmSub;
 
+  /// No description provided for @tabMenu.
+  ///
+  /// In id, this message translates to:
+  /// **'Menu'**
+  String get tabMenu;
+
   /// No description provided for @tabMeja.
   ///
   /// In id, this message translates to:
@@ -12720,6 +12726,66 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Fitur yang dijual terpisah dari paket dasar.'**
   String get fltModulesHint;
+
+  /// No description provided for @fltModuleCounter.
+  ///
+  /// In id, this message translates to:
+  /// **'Mode kedai'**
+  String get fltModuleCounter;
+
+  /// No description provided for @fltCounterHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Enam saklar. Mencentang mode menyalakan semuanya; matikan yang tidak dipakai venue ini.'**
+  String get fltCounterHint;
+
+  /// No description provided for @fltCounterMenuHome.
+  ///
+  /// In id, this message translates to:
+  /// **'Menu jadi tab utama, denah disembunyikan'**
+  String get fltCounterMenuHome;
+
+  /// No description provided for @fltCounterAnonTakeaway.
+  ///
+  /// In id, this message translates to:
+  /// **'Bawa pulang tanpa nama tamu'**
+  String get fltCounterAnonTakeaway;
+
+  /// No description provided for @fltCounterSettleAfterSend.
+  ///
+  /// In id, this message translates to:
+  /// **'Kirim langsung buka panel bayar'**
+  String get fltCounterSettleAfterSend;
+
+  /// No description provided for @fltCounterSimpleKds.
+  ///
+  /// In id, this message translates to:
+  /// **'Dapur satu antrean, tanpa stasiun'**
+  String get fltCounterSimpleKds;
+
+  /// No description provided for @fltCounterQr.
+  ///
+  /// In id, this message translates to:
+  /// **'QR kode kedai'**
+  String get fltCounterQr;
+
+  /// No description provided for @fltCounterRingkas.
+  ///
+  /// In id, this message translates to:
+  /// **'Laporan ringkas satu halaman'**
+  String get fltCounterRingkas;
+
+  /// No description provided for @fltCounterRestartNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Saklar baru berlaku saat admin venue masuk lagi. QR kode kedai butuh server di-restart.'**
+  String get fltCounterRestartNote;
+
+  /// No description provided for @fltCounterOffBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Venue kembali ke bentuk restoran. Saklarnya disimpan, jadi menyalakan mode lagi mengembalikan seperti semula.'**
+  String get fltCounterOffBody;
 
   /// Name of the members module.
   ///

@@ -587,6 +587,15 @@ class VenueSettings extends Table {
   /// mirrored, and holds no module. Collapsing the two is how an offline
   /// upgrade takes Keanggotaan off a venue that pays for it.
   TextColumn get modules => text().nullable()();
+
+  /// **[[Kedai]] mode** switches (ADR-0109), the on ones comma-joined, mirrored
+  /// from `venues/{vid}.counterConfig`.
+  ///
+  /// Unlike [modules] the null here is **not** load-bearing, because a mode
+  /// fails closed: never mirrored, mirrored-empty and "every switch off" are
+  /// the same answer and are meant to be. A venue that has never phoned home is
+  /// a restaurant, which is the point.
+  TextColumn get counterConfig => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }

@@ -18,6 +18,11 @@ class TabletShell extends StatelessWidget {
   final int kitchenCount;
   final bool showKasir;
   final bool showTamu;
+
+  /// [[Kedai]] switch `menuHome` (ADR-0109): the home destination is the menu,
+  /// not the floor. Passed rather than read here so the rail stays a dumb
+  /// renderer — `showCounterHome` in app_shell.dart owns the decision.
+  final bool counterHome;
   final int guestPending;
   final Widget child;
   final List<String> crumbs;
@@ -29,6 +34,7 @@ class TabletShell extends StatelessWidget {
     required this.kitchenCount,
     this.showKasir = false,
     this.showTamu = false,
+    this.counterHome = false,
     this.guestPending = 0,
     required this.child,
     required this.crumbs,
@@ -47,6 +53,7 @@ class TabletShell extends StatelessWidget {
             kitchenCount: kitchenCount,
             showKasir: showKasir,
             showTamu: showTamu,
+            counterHome: counterHome,
             guestPending: guestPending,
           ),
           Expanded(
@@ -69,6 +76,11 @@ class TabletSideRail extends StatelessWidget {
   final int kitchenCount;
   final bool showKasir;
   final bool showTamu;
+
+  /// [[Kedai]] switch `menuHome` (ADR-0109): the home destination is the menu,
+  /// not the floor. Passed rather than read here so the rail stays a dumb
+  /// renderer — `showCounterHome` in app_shell.dart owns the decision.
+  final bool counterHome;
   final int guestPending;
   const TabletSideRail({
     super.key,
@@ -77,6 +89,7 @@ class TabletSideRail extends StatelessWidget {
     required this.kitchenCount,
     this.showKasir = false,
     this.showTamu = false,
+    this.counterHome = false,
     this.guestPending = 0,
   });
 
@@ -111,13 +124,22 @@ class TabletSideRail extends StatelessWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  _RailBtn(
-                    id: 'tables',
-                    label: context.l10n.tabMeja,
-                    icon: Icons.grid_view_rounded,
-                    route: '/tables',
-                    active: active,
-                  ),
+                  if (counterHome)
+                    _RailBtn(
+                      id: 'counter',
+                      label: context.l10n.tabMenu,
+                      icon: Icons.restaurant_menu_rounded,
+                      route: '/counter',
+                      active: active,
+                    )
+                  else
+                    _RailBtn(
+                      id: 'tables',
+                      label: context.l10n.tabMeja,
+                      icon: Icons.grid_view_rounded,
+                      route: '/tables',
+                      active: active,
+                    ),
                   _RailBtn(
                     id: 'kitchen',
                     label: context.l10n.tabAntrian,

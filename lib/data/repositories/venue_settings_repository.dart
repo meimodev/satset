@@ -119,6 +119,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     /// [[Modul]] (ADR-0107). Written by exactly one caller — the host's
     /// venue-doc mirror in `auth_repository`. No screen offers it.
     List<String>? modules,
+    List<String>? counterConfig,
 
     /// The two membership pointers. `''` clears one, a null leaves it alone —
     /// they are not optimistically applied, because "cleared" and "unchanged"
@@ -182,6 +183,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       guestSessionHours: guestSessionHours ?? state.guestSessionHours,
       soundGuestPending: soundGuestPending ?? state.soundGuestPending,
       modules: modules ?? state.modules,
+      counterConfig: counterConfig ?? state.counterConfig,
       memberDebtLimit: memberDebtLimit ?? state.memberDebtLimit,
       memberDebtOverdueDays:
           memberDebtOverdueDays ?? state.memberDebtOverdueDays,
@@ -240,6 +242,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         'guestSessionHours': ?guestSessionHours,
         'soundGuestPending': ?soundGuestPending,
         'modules': ?modules,
+        'counterConfig': ?counterConfig,
         'memberDebtLimit': ?memberDebtLimit,
         'memberDebtOverdueDays': ?memberDebtOverdueDays,
         'memberPresetId': ?memberPresetId,

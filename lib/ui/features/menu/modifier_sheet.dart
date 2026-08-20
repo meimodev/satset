@@ -10,6 +10,9 @@ import 'package:uuid/uuid.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/domain/models/venue_module.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/domain/models/cart_item.dart';
@@ -146,7 +149,16 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
     }
     _special = edit?.note ?? '';
     _noteCtl = TextEditingController(text: _special);
-    _course = edit?.course ?? Courses.fromCategory(widget.item.categoryId);
+    // [[Kedai]] switch `simpleKds` (ADR-0109): a counter has one pace, "now".
+    // Forced at the source rather than filtered at the KDS, because a line that
+    // was never paced is a line no one has to un-pace — the alternative leaves
+    // `held` tickets sitting behind a fire button the counter's rail no longer
+    // shows. An **edited** line keeps whatever course it already carries: the
+    // switch changes what gets typed next, never what is already in the cart.
+    _course = edit?.course ??
+        (ref.read(venueSettingsProvider).counterOn(counterSimpleKds)
+            ? CourseId.fireNow
+            : Courses.fromCategory(widget.item.categoryId));
     _qty = edit?.qty ?? 1;
   }
 
@@ -381,6 +393,11 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                         ],
                       ),
                     ),
+                  if (!ref.watch(
+                    venueSettingsProvider.select(
+                      (v) => v.counterOn(counterSimpleKds),
+                    ),
+                  ))
                   _ModGroup(
                     title: context.l10n.expColCourse,
                     tag: 'TIMING',

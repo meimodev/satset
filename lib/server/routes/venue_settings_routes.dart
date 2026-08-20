@@ -189,6 +189,12 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         modules: body.containsKey('modules')
             ? Value(_modulesText(body['modules']))
             : const Value.absent(),
+        // [[Kedai]] mode switches (ADR-0109), same transport and same mirror.
+        // Config, not entitlement — nothing here decides whether a caller may
+        // act, only what a screen defaults to.
+        counterConfig: body.containsKey('counterConfig')
+            ? Value(_modulesText(body['counterConfig']))
+            : const Value.absent(),
         // Membership (ADR-0091). Switching the program off leaves every row
         // standing — a balance is a debt to a guest, not a feature flag, so the
         // ledger freezes rather than clears.
@@ -464,4 +470,10 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
   // like the rest of this snapshot: a client has to know which modules the venue
   // holds before it can decide whether to draw a locked tile.
   'modules': s.modules == null ? null : splitModules(s.modules).toList(),
+  // The switches, same shape. Null and empty mean the same thing here — a mode
+  // fails closed — but the null is kept on the wire so the mirror's
+  // only-patch-when-different guard has a first write to make.
+  'counterConfig': s.counterConfig == null
+      ? null
+      : splitModules(s.counterConfig).toList(),
 };

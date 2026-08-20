@@ -133,6 +133,12 @@ class Venue {
   /// venue holds nothing, on every plan alike (ADR-0108); read this through
   /// [hasModule] and never directly.
   final Set<String> addOns;
+
+  /// The **[[Kedai]] mode** switches that are on (ADR-0109). Config, not
+  /// entitlement: `addOns` stays a pure answer to "what may this venue have"
+  /// and this answers "how is it set up". Meaningless without
+  /// [modeCounterService] in [addOns], which is why [counterOn] asks for both.
+  final Set<String> counterConfig;
   final DateTime? lastSeenAt;
   final bool fromCache;
   const Venue({
@@ -146,6 +152,7 @@ class Venue {
     required this.priceMonthly,
     required this.billingCycle,
     required this.addOns,
+    this.counterConfig = const {},
     required this.lastSeenAt,
     required this.fromCache,
   });
@@ -162,6 +169,11 @@ class Venue {
   /// rule. The rule lives here and nowhere else: every other reader asks this
   /// method.
   bool hasModule(String key) => addOns.contains(key);
+
+  /// Whether the [[Kedai]] switch [key] is on. Both halves, always: a switch
+  /// left set on a venue whose mode was unticked must not reshape anything.
+  bool counterOn(String key) =>
+      hasModule(modeCounterService) && counterConfig.contains(key);
 }
 
 const venuePlanTrial = 'trial';
@@ -296,6 +308,12 @@ class FirebaseAdminService {
       addOns: {
         for (final m in (d['addOns'] as List<dynamic>? ?? const []))
           if (m is String && m.trim().isNotEmpty) m.trim(),
+      },
+      // A map on the doc, a set here: the console writes every key with an
+      // explicit bool, and only the true ones are worth carrying.
+      counterConfig: {
+        for (final e in (d['counterConfig'] as Map<String, dynamic>? ?? const {}).entries)
+          if (e.value == true) e.key,
       },
       lastSeenAt: (d['lastSeenAt'] as Timestamp?)?.toDate(),
       fromCache: snap.metadata.isFromCache,

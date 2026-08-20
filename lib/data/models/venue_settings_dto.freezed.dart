@@ -116,6 +116,15 @@ mixin _$VenueSettingsDto {
   /// padlocks on features it pays for.
   List<String>? get modules => throw _privateConstructorUsedError;
 
+  /// The [[Kedai]] mode switches that are on (ADR-0109). Cloud-owned and
+  /// mirrored down beside [modules]; no screen writes it.
+  ///
+  /// **Null and empty mean the same thing** here, unlike [modules]: a mode
+  /// fails closed, so a venue that has never mirrored is a restaurant. Read
+  /// through [counterOn], which also ANDs the mode key itself — a switch
+  /// without the mode is half a shape.
+  List<String>? get counterConfig => throw _privateConstructorUsedError;
+
   /// Serializes this VenueSettingsDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -190,6 +199,7 @@ abstract class $VenueSettingsDtoCopyWith<$Res> {
     int guestSessionHours,
     String soundGuestPending,
     List<String>? modules,
+    List<String>? counterConfig,
   });
 }
 
@@ -264,6 +274,7 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
     Object? guestSessionHours = null,
     Object? soundGuestPending = null,
     Object? modules = freezed,
+    Object? counterConfig = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -491,6 +502,10 @@ class _$VenueSettingsDtoCopyWithImpl<$Res, $Val extends VenueSettingsDto>
                 ? _value.modules
                 : modules // ignore: cast_nullable_to_non_nullable
                       as List<String>?,
+            counterConfig: freezed == counterConfig
+                ? _value.counterConfig
+                : counterConfig // ignore: cast_nullable_to_non_nullable
+                      as List<String>?,
           )
           as $Val,
     );
@@ -563,6 +578,7 @@ abstract class _$$VenueSettingsDtoImplCopyWith<$Res>
     int guestSessionHours,
     String soundGuestPending,
     List<String>? modules,
+    List<String>? counterConfig,
   });
 }
 
@@ -636,6 +652,7 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
     Object? guestSessionHours = null,
     Object? soundGuestPending = null,
     Object? modules = freezed,
+    Object? counterConfig = freezed,
   }) {
     return _then(
       _$VenueSettingsDtoImpl(
@@ -863,6 +880,10 @@ class __$$VenueSettingsDtoImplCopyWithImpl<$Res>
             ? _value._modules
             : modules // ignore: cast_nullable_to_non_nullable
                   as List<String>?,
+        counterConfig: freezed == counterConfig
+            ? _value._counterConfig
+            : counterConfig // ignore: cast_nullable_to_non_nullable
+                  as List<String>?,
       ),
     );
   }
@@ -928,7 +949,9 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     this.guestSessionHours = 4,
     this.soundGuestPending = 'chime',
     final List<String>? modules,
-  }) : _modules = modules;
+    final List<String>? counterConfig,
+  }) : _modules = modules,
+       _counterConfig = counterConfig;
 
   factory _$VenueSettingsDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$VenueSettingsDtoImplFromJson(json);
@@ -1152,9 +1175,34 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     return EqualUnmodifiableListView(value);
   }
 
+  /// The [[Kedai]] mode switches that are on (ADR-0109). Cloud-owned and
+  /// mirrored down beside [modules]; no screen writes it.
+  ///
+  /// **Null and empty mean the same thing** here, unlike [modules]: a mode
+  /// fails closed, so a venue that has never mirrored is a restaurant. Read
+  /// through [counterOn], which also ANDs the mode key itself — a switch
+  /// without the mode is half a shape.
+  final List<String>? _counterConfig;
+
+  /// The [[Kedai]] mode switches that are on (ADR-0109). Cloud-owned and
+  /// mirrored down beside [modules]; no screen writes it.
+  ///
+  /// **Null and empty mean the same thing** here, unlike [modules]: a mode
+  /// fails closed, so a venue that has never mirrored is a restaurant. Read
+  /// through [counterOn], which also ANDs the mode key itself — a switch
+  /// without the mode is half a shape.
+  @override
+  List<String>? get counterConfig {
+    final value = _counterConfig;
+    if (value == null) return null;
+    if (_counterConfig is EqualUnmodifiableListView) return _counterConfig;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
   @override
   String toString() {
-    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, pickupTargetMins: $pickupTargetMins, ungreetedMins: $ungreetedMins, ungreetedEscalateMins: $ungreetedEscalateMins, longStayMins: $longStayMins, idleTableMins: $idleTableMins, reservationGraceMins: $reservationGraceMins, ungreetedAlertEnabled: $ungreetedAlertEnabled, pickupAlertEnabled: $pickupAlertEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue, soundUngreeted: $soundUngreeted, soundPickup: $soundPickup, membersEnabled: $membersEnabled, memberPointsEnabled: $memberPointsEnabled, memberPunchEnabled: $memberPunchEnabled, memberPresetId: $memberPresetId, memberEarnPerThousand: $memberEarnPerThousand, memberPointValue: $memberPointValue, memberRedeemMin: $memberRedeemMin, memberPunchItemId: $memberPunchItemId, memberPunchTarget: $memberPunchTarget, memberDebtEnabled: $memberDebtEnabled, memberDebtLimit: $memberDebtLimit, memberDebtOverdueDays: $memberDebtOverdueDays, guestOrderingEnabled: $guestOrderingEnabled, guestNoteEnabled: $guestNoteEnabled, guestHoursStartMin: $guestHoursStartMin, guestHoursEndMin: $guestHoursEndMin, guestMaxItems: $guestMaxItems, guestSessionHours: $guestSessionHours, soundGuestPending: $soundGuestPending, modules: $modules)';
+    return 'VenueSettingsDto(id: $id, displayName: $displayName, legalName: $legalName, address: $address, phone: $phone, receiptHeader: $receiptHeader, receiptFooter: $receiptFooter, receiptTagline: $receiptTagline, receiptSocial: $receiptSocial, receiptThankYou: $receiptThankYou, receiptQrUrl: $receiptQrUrl, receiptQrCaption: $receiptQrCaption, logoRev: $logoRev, taxEnabled: $taxEnabled, taxRateBps: $taxRateBps, serviceEnabled: $serviceEnabled, serviceMode: $serviceMode, serviceRateBps: $serviceRateBps, serviceFixedAmount: $serviceFixedAmount, taxAfterDiscount: $taxAfterDiscount, businessDayStartHour: $businessDayStartHour, prepTargetMins: $prepTargetMins, pickupTargetMins: $pickupTargetMins, ungreetedMins: $ungreetedMins, ungreetedEscalateMins: $ungreetedEscalateMins, longStayMins: $longStayMins, idleTableMins: $idleTableMins, reservationGraceMins: $reservationGraceMins, ungreetedAlertEnabled: $ungreetedAlertEnabled, pickupAlertEnabled: $pickupAlertEnabled, soundNewOrder: $soundNewOrder, soundReady: $soundReady, soundVoid: $soundVoid, soundOverdue: $soundOverdue, soundUngreeted: $soundUngreeted, soundPickup: $soundPickup, membersEnabled: $membersEnabled, memberPointsEnabled: $memberPointsEnabled, memberPunchEnabled: $memberPunchEnabled, memberPresetId: $memberPresetId, memberEarnPerThousand: $memberEarnPerThousand, memberPointValue: $memberPointValue, memberRedeemMin: $memberRedeemMin, memberPunchItemId: $memberPunchItemId, memberPunchTarget: $memberPunchTarget, memberDebtEnabled: $memberDebtEnabled, memberDebtLimit: $memberDebtLimit, memberDebtOverdueDays: $memberDebtOverdueDays, guestOrderingEnabled: $guestOrderingEnabled, guestNoteEnabled: $guestNoteEnabled, guestHoursStartMin: $guestHoursStartMin, guestHoursEndMin: $guestHoursEndMin, guestMaxItems: $guestMaxItems, guestSessionHours: $guestSessionHours, soundGuestPending: $soundGuestPending, modules: $modules, counterConfig: $counterConfig)';
   }
 
   @override
@@ -1268,7 +1316,11 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
                 other.guestSessionHours == guestSessionHours) &&
             (identical(other.soundGuestPending, soundGuestPending) ||
                 other.soundGuestPending == soundGuestPending) &&
-            const DeepCollectionEquality().equals(other._modules, _modules));
+            const DeepCollectionEquality().equals(other._modules, _modules) &&
+            const DeepCollectionEquality().equals(
+              other._counterConfig,
+              _counterConfig,
+            ));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1331,6 +1383,7 @@ class _$VenueSettingsDtoImpl implements _VenueSettingsDto {
     guestSessionHours,
     soundGuestPending,
     const DeepCollectionEquality().hash(_modules),
+    const DeepCollectionEquality().hash(_counterConfig),
   ]);
 
   /// Create a copy of VenueSettingsDto
@@ -1408,6 +1461,7 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
     final int guestSessionHours,
     final String soundGuestPending,
     final List<String>? modules,
+    final List<String>? counterConfig,
   }) = _$VenueSettingsDtoImpl;
 
   factory _VenueSettingsDto.fromJson(Map<String, dynamic> json) =
@@ -1557,6 +1611,16 @@ abstract class _VenueSettingsDto implements VenueSettingsDto {
   /// padlocks on features it pays for.
   @override
   List<String>? get modules;
+
+  /// The [[Kedai]] mode switches that are on (ADR-0109). Cloud-owned and
+  /// mirrored down beside [modules]; no screen writes it.
+  ///
+  /// **Null and empty mean the same thing** here, unlike [modules]: a mode
+  /// fails closed, so a venue that has never mirrored is a restaurant. Read
+  /// through [counterOn], which also ANDs the mode key itself — a switch
+  /// without the mode is half a shape.
+  @override
+  List<String>? get counterConfig;
 
   /// Create a copy of VenueSettingsDto
   /// with the given fields replaced by the non-null parameter values.

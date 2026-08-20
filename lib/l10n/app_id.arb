@@ -465,6 +465,7 @@
   "zoneAdminTableActiveSub": "Matikan untuk perbaikan tanpa menghapus.",
   "zoneAdminDeleteTableConfirmTitle": "Hapus meja?",
   "zoneAdminDeleteTableConfirmSub": "akan dihapus permanen dari zona.",
+  "tabMenu": "Menu",
   "tabMeja": "Meja",
   "tabPesanan": "Pesanan",
   "tabAntrian": "Antrian",
@@ -6165,6 +6166,16 @@
   "@fltModulesHint": {
     "description": "Subtitle under the module card. Same on every plan."
   },
+  "fltModuleCounter": "Mode kedai",
+  "fltCounterHint": "Enam saklar. Mencentang mode menyalakan semuanya; matikan yang tidak dipakai venue ini.",
+  "fltCounterMenuHome": "Menu jadi tab utama, denah disembunyikan",
+  "fltCounterAnonTakeaway": "Bawa pulang tanpa nama tamu",
+  "fltCounterSettleAfterSend": "Kirim langsung buka panel bayar",
+  "fltCounterSimpleKds": "Dapur satu antrean, tanpa stasiun",
+  "fltCounterQr": "QR kode kedai",
+  "fltCounterRingkas": "Laporan ringkas satu halaman",
+  "fltCounterRestartNote": "Saklar baru berlaku saat admin venue masuk lagi. QR kode kedai butuh server di-restart.",
+  "fltCounterOffBody": "Venue kembali ke bentuk restoran. Saklarnya disimpan, jadi menyalakan mode lagi mengembalikan seperti semula.",
   "fltModuleMembers": "Keanggotaan",
   "@fltModuleMembers": {
     "description": "Name of the members module."

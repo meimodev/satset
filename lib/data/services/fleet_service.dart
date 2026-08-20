@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/services/firebase_admin_service.dart';
+import 'package:satset/domain/models/venue_module.dart';
 import 'package:satset/domain/models/release_gate.dart';
 
 /// Cloud control plane for the super admin. READS go straight to Firestore
@@ -122,11 +123,19 @@ class FleetService {
     String? name,
     String? address,
     Set<String>? addOns,
+    Set<String>? counterConfig,
   }) => _call('updateVenue', {
     'vid': vid,
     'name': ?name,
     'address': ?address,
     if (addOns != null) 'addOns': addOns.toList(),
+    // Written whole, every key with an explicit bool (ADR-0109): a switch the
+    // operator unticked is a `false`, not an absence, or a console on an older
+    // build would read a key it never sent as "still on".
+    if (counterConfig != null)
+      'counterConfig': {
+        for (final k in counterSwitchKeys) k: counterConfig.contains(k),
+      },
   });
 
   /// The kill switch.

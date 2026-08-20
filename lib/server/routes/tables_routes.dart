@@ -128,9 +128,15 @@ const _takeawayChannels = {'bungkus', 'telepon', 'gofood', 'grab'};
 /// per-business-day [DailyCounters] (`Bawa pulang #N`). The lifecycle reuses
 /// ADR-0024's two axes with handover ("Serahkan") stamping `tableFreedAt` in
 /// place of table-close. See ADR-0026.
+/// A [[Bawa pulang]] visit. [guestName] is **optional**: the running
+/// `Bawa pulang #N` label already identifies the order, and a counter shop
+/// handing a number across a bar has no name to ask for (ADR-0109). A blank one
+/// is stored as null rather than as a placeholder — "no name" is a fact, and
+/// writing the words "Bawa pulang" into the name field is how a label starts
+/// reading as a person.
 Future<Visit> createTakeawayVisit(
   AppDatabase db, {
-  required String guestName,
+  String? guestName,
   String? guestNotes,
   String? actorId,
   String channel = 'bungkus',
@@ -175,7 +181,9 @@ Future<Visit> createTakeawayVisit(
             zoneId: const Value(''),
             pax: const Value(0),
             openedAt: Value(nowUtc),
-            guestName: Value(guestName),
+            guestName: Value(
+              (guestName ?? '').trim().isEmpty ? null : guestName!.trim(),
+            ),
             guestNotes: Value(guestNotes),
             lastActorId: Value(actorId),
             createdAt: nowUtc,

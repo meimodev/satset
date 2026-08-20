@@ -67,6 +67,9 @@ _$VenueSettingsDtoImpl _$$VenueSettingsDtoImplFromJson(
   modules: (json['modules'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
+  counterConfig: (json['counterConfig'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
 );
 
 Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
@@ -128,4 +131,5 @@ Map<String, dynamic> _$$VenueSettingsDtoImplToJson(
   'guestSessionHours': instance.guestSessionHours,
   'soundGuestPending': instance.soundGuestPending,
   'modules': instance.modules,
+  'counterConfig': instance.counterConfig,
 };

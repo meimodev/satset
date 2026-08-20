@@ -705,11 +705,20 @@ class AuthRepository extends StateNotifier<AuthState> {
     // `addOns`, so a trial's implicit entitlement is resolved *here* and the
     // server never has to know what a plan is.
     // Null locally means "never mirrored", so the first snapshot always writes.
-    final nextModules = venueModuleKeys.where(v.hasModule).toList()..sort();
+    // Mode keys ride the same array and the same column (ADR-0109) — one
+    // transport, two readings. Which reading applies is decided where the value
+    // is *read*, never here.
+    final nextModules = venueEntitlementKeys.where(v.hasModule).toList()..sort();
     final held = settings.modules;
     final needModules =
         held == null || nextModules.join(',') != (held.toList()..sort()).join(',');
-    if (!needName && !needAddr && !needModules) return;
+    // The switches, same only-patch-when-different guard.
+    final nextCounter = counterSwitchKeys.where(v.counterOn).toList()..sort();
+    final heldCounter = settings.counterConfig;
+    final needCounter =
+        heldCounter == null ||
+        nextCounter.join(',') != (heldCounter.toList()..sort()).join(',');
+    if (!needName && !needAddr && !needModules && !needCounter) return;
     try {
       await ref
           .read(venueSettingsProvider.notifier)
@@ -717,10 +726,12 @@ class AuthRepository extends StateNotifier<AuthState> {
             displayName: needName ? nextName : null,
             address: needAddr ? nextAddr : null,
             modules: needModules ? nextModules : null,
+            counterConfig: needCounter ? nextCounter : null,
           );
       SatLog.repo(
         'venueCloud.mirrored name=$needName addr=$needAddr '
-        'modules=${needModules ? nextModules.join(',') : 'same'}',
+        'modules=${needModules ? nextModules.join(',') : 'same'} '
+        'counter=${needCounter ? nextCounter.join(',') : 'same'}',
       );
     } catch (_) {
       // Server not up yet / offline — retried on the next venue snapshot.

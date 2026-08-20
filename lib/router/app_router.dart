@@ -44,6 +44,9 @@ import 'package:satset/ui/features/admin/system_screen.dart';
 import 'package:satset/ui/features/admin/staff_screen.dart';
 import 'package:satset/ui/features/cashier/cashier_screen.dart';
 import 'package:satset/ui/features/_book/book_screen.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/domain/models/venue_module.dart';
 
 /// Which capabilities open a location. **Any** of them is enough — a list
 /// rather than a single capability because one screen (`/kas`) is genuinely
@@ -55,6 +58,9 @@ List<Capability>? _capabilityFor(String loc) {
   if (loc.startsWith('/table/') ||
       loc.startsWith('/orders') ||
       loc.startsWith('/order/') ||
+      // The [[Kedai]] home tab (ADR-0109) — the same table-less draft flow
+      // `/order/new` opens, mounted inside the shell so the rail survives it.
+      loc.startsWith('/counter') ||
       loc.startsWith('/takeaway')) {
     return const [Capability.takeOrder];
   }
@@ -209,7 +215,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         // limit and put the venue's own admin in front of a bare English
         // "Page Not Found". See ADR-0078.
         final mode = prefs?.appMode() ?? AppMode.unset;
-        decision = mode == AppMode.server ? '/venue' : '/tables';
+        // A counter shop lands on its menu, not its floor (ADR-0109). Read,
+        // not watched: `redirect` re-runs off the refresh listenable, and a
+        // switch that arrives mid-session takes effect at the next sign-in —
+        // which is exactly what the console's restart note promises.
+        final counterHome = showCounterHome(
+          menuHomeEnabled: ref
+              .read(venueSettingsProvider)
+              .counterOn(counterMenuHome),
+          canTakeOrder: auth.has(Capability.takeOrder),
+        );
+        decision = mode == AppMode.server
+            ? '/venue'
+            : counterHome
+            ? '/counter'
+            : '/tables';
       } else if (loggedIn) {
         final needed = _capabilityFor(loc);
         // Fail-closed: none of the route's capabilities denies the route.
@@ -247,6 +267,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _, child) => AppShell(child: child),
         routes: [
           GoRoute(path: '/tables', builder: (_, _) => const TablesScreen()),
+          // [[Kedai]] home (ADR-0109). Deliberately the *same* screen and the
+          // same cart key as `/order/new` — a counter has one order pad, and a
+          // second draft flow with its own cart is how an order gets typed
+          // twice. What differs is only that this one lives inside the shell,
+          // so a cashier can reach the till without leaving the pad first.
+          GoRoute(
+            path: '/counter',
+            builder: (_, _) => Consumer(
+              builder: (_, ref, _) => MenuScreen(
+                tableId: ref.watch(draftOrderIdProvider),
+                tableless: true,
+              ),
+            ),
+          ),
           GoRoute(path: '/orders', builder: (_, _) => const OrdersScreen()),
           GoRoute(path: '/kitchen', builder: (_, _) => const KitchenScreen()),
           GoRoute(path: '/kasir', builder: (_, _) => const CashierScreen()),

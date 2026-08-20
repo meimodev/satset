@@ -1057,6 +1057,9 @@ class AppL10nEn extends AppL10n {
       'will be permanently removed from the zone.';
 
   @override
+  String get tabMenu => 'Menu';
+
+  @override
   String get tabMeja => 'Floor';
 
   @override
@@ -8080,6 +8083,39 @@ class AppL10nEn extends AppL10n {
   @override
   String get fltModulesHint =>
       'Features sold separately from the base package.';
+
+  @override
+  String get fltModuleCounter => 'Counter mode';
+
+  @override
+  String get fltCounterHint =>
+      'Six switches. Ticking the mode turns them all on; untick what this venue does not want.';
+
+  @override
+  String get fltCounterMenuHome => 'Menu is the home tab, floor hidden';
+
+  @override
+  String get fltCounterAnonTakeaway => 'Takeaway without a guest name';
+
+  @override
+  String get fltCounterSettleAfterSend => 'Commit opens the settle pane';
+
+  @override
+  String get fltCounterSimpleKds => 'One kitchen queue, no stations';
+
+  @override
+  String get fltCounterQr => 'Venue QR code';
+
+  @override
+  String get fltCounterRingkas => 'One-page summary report';
+
+  @override
+  String get fltCounterRestartNote =>
+      'Switches reach the floor at the venue\'s next admin sign-in. The venue QR needs a server restart.';
+
+  @override
+  String get fltCounterOffBody =>
+      'The venue goes back to its restaurant shape. The switches are kept, so turning the mode back on restores it.';
 
   @override
   String get fltModuleMembers => 'Membership';

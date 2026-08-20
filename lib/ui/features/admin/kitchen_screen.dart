@@ -15,6 +15,9 @@ import 'package:satset/ui/core/widgets/note_line.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/takeaway_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/domain/models/venue_module.dart';
 import 'package:satset/ui/core/state/tickers.dart';
 import 'package:satset/ui/features/admin/kitchen/kitchen_order.dart';
 import 'package:satset/ui/features/admin/kitchen/view_models/kitchen_orders.dart';
@@ -282,6 +285,9 @@ class _OrderCard extends ConsumerWidget {
     final warn = order.warn;
     final progress = order.total == 0 ? 0.0 : order.done / order.total;
     final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final simpleKds = ref.watch(
+      venueSettingsProvider.select((v) => v.counterOn(counterSimpleKds)),
+    );
     final tables = ref.watch(tablesProvider);
     final table = tables.where((t) => t.id == order.tableId).firstOrNull;
     // Resolve a table-less (takeaway) order's label via the visit instead of
@@ -328,7 +334,12 @@ class _OrderCard extends ConsumerWidget {
         children: [
           _CardHead(
             table: tableLabel,
-            courses: order.courses,
+            // Empty under `simpleKds` (ADR-0109): with one pace the caption
+            // is the same word on every card, which is a word the eye stops
+            // reading. Emptied at the source rather than branched inside the
+            // head — the head renders the courses it is given, and "which
+            // courses does this venue show" is not a painting decision.
+            courses: simpleKds ? const <Course>[] : order.courses,
             age: ageDur,
             clockStart: order.clockStart,
             sentAt: order.sentAt,

@@ -106,6 +106,15 @@ class VenueSettingsDto with _$VenueSettingsDto {
     /// draws a locked tile must check for null first, or an upgraded venue sees
     /// padlocks on features it pays for.
     List<String>? modules,
+
+    /// The [[Kedai]] mode switches that are on (ADR-0109). Cloud-owned and
+    /// mirrored down beside [modules]; no screen writes it.
+    ///
+    /// **Null and empty mean the same thing** here, unlike [modules]: a mode
+    /// fails closed, so a venue that has never mirrored is a restaurant. Read
+    /// through [counterOn], which also ANDs the mode key itself — a switch
+    /// without the mode is half a shape.
+    List<String>? counterConfig,
   }) = _VenueSettingsDto;
 
   factory VenueSettingsDto.fromJson(Map<String, dynamic> json) =>
@@ -135,6 +144,15 @@ extension VenueSettingsTaxCfg on VenueSettingsDto {
 /// halves are deliberately told apart.
 extension VenueSettingsModules on VenueSettingsDto {
   bool hasModule(String key) => modules?.contains(key) ?? true;
+
+  /// Whether this venue is a counter shop at all (ADR-0109). Fails **closed**,
+  /// which is the whole reason it is not [hasModule]: the fail-open that
+  /// protects a paid feature would reshape every unmirrored restaurant.
+  bool get counterMode => modules?.contains(modeCounterService) ?? false;
+
+  /// Whether [key] — one of `counterSwitchKeys` — is on.
+  bool counterOn(String key) =>
+      counterMode && (counterConfig?.contains(key) ?? false);
   bool get membersOn => membersEnabled && hasModule(moduleMembers);
   bool get guestOrderingOn =>
       guestOrderingEnabled && hasModule(moduleSelfOrder);

@@ -77,6 +77,12 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   /// longer bends the entitlement, so what the operator sees ticked here is what
   /// the floor renders, on a trial and on a partner alike.
   late Set<String> _modules = {...widget.venue.addOns};
+
+  /// Staged [[Kedai]] switches (ADR-0109). Seeded from the stored map, which
+  /// keeps its values while the mode is unticked — removing a mode **freezes**
+  /// its configuration rather than clearing it, the same rule a module follows
+  /// one level up, so a venue switched back on finds its shop as it left it.
+  late Set<String> _counter = {...widget.venue.counterConfig};
   late DateTime? _trialStartAt = widget.venue.trialStartAt;
   late DateTime? _paidUntil = widget.venue.paidUntil;
   late bool _yearly = widget.venue.isYearly;
@@ -186,7 +192,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         _paidUntil != v.paidUntil ||
         _priceValue != v.priceMonthly ||
         _cycleValue != v.billingCycle ||
-        !_sameModules(_modulesValue, v.addOns);
+        !_sameModules(_modulesValue, v.addOns) ||
+        !_sameModules(_counter, v.counterConfig);
   }
 
   Future<void> _save() async {
@@ -210,7 +217,9 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
     // Entitlement rides `updateVenue` beside identity, never `setVenueBilling`
     // (ADR-0107 §9) — a module set carries no money and cannot disagree with a
     // date, which is the only thing that callable's atomicity is for.
-    final modulesChanged = !_sameModules(newModules, v.addOns);
+    final modulesChanged =
+        !_sameModules(newModules, v.addOns) ||
+        !_sameModules(_counter, v.counterConfig);
     final planChanged = _planKey != v.plan;
     final trialStartChanged = newTrialStart != v.trialStartAt;
     final paidUntilChanged = _paidUntil != v.paidUntil;
@@ -236,6 +245,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           name: nameChanged ? newName : null,
           address: addressChanged ? newAddress : null,
           addOns: modulesChanged ? newModules : null,
+          counterConfig: modulesChanged ? _counter : null,
         );
       }
       if (billingChanged) {
@@ -609,7 +619,114 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             ),
             const SizedBox(height: Sp.s2),
           ],
+          _counterSection(sc, can),
         ],
+      ),
+    );
+  }
+
+  /// **[[Kedai]] mode** (ADR-0109) — one entitlement key and the six switches it
+  /// presets. It sits under the modules rather than in its own card because it
+  /// is written by the same callable in the same save; what makes it different
+  /// is only how its absence reads.
+  ///
+  /// Ticking the mode writes all six on. That is the **whole** of what "preset"
+  /// means here — nothing reads back "is this venue in the preset", so a cafe
+  /// with six seats can untick `menuHome` and keep its floor without landing on
+  /// a rung between two tiers.
+  Widget _counterSection(SatColors sc, bool can) {
+    final on = _modules.contains(modeCounterService);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: Sp.s2),
+        Row(
+          children: [
+            SatToggle(
+              value: on,
+              semanticLabel: context.l10n.fltModuleCounter,
+              onChanged: can ? _setCounterMode : null,
+            ),
+            const SizedBox(width: Sp.s2),
+            Expanded(
+              child: Text(
+                context.l10n.fltModuleCounter,
+                style: SatType.bodyM(color: sc.textHi),
+              ),
+            ),
+          ],
+        ),
+        if (on) ...[
+          const SizedBox(height: Sp.s2),
+          Text(
+            context.l10n.fltCounterHint,
+            style: SatType.bodyS(color: sc.textLo),
+          ),
+          const SizedBox(height: Sp.s2),
+          for (final key in counterSwitchKeys)
+            Padding(
+              padding: const EdgeInsets.only(left: Sp.s5, bottom: Sp.s2),
+              child: Row(
+                children: [
+                  SatToggle(
+                    value: _counter.contains(key),
+                    semanticLabel: _counterLabel(key),
+                    onChanged: can
+                        ? (v) => setState(() {
+                            _counter = {..._counter};
+                            if (v) {
+                              _counter.add(key);
+                            } else {
+                              _counter.remove(key);
+                            }
+                          })
+                        : null,
+                  ),
+                  const SizedBox(width: Sp.s2),
+                  Expanded(
+                    child: Text(
+                      _counterLabel(key),
+                      style: SatType.bodyS(color: sc.textMd),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Text(
+            context.l10n.fltCounterRestartNote,
+            style: SatType.bodyS(color: sc.warn),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _counterLabel(String key) => switch (key) {
+    counterMenuHome => context.l10n.fltCounterMenuHome,
+    counterAnonTakeaway => context.l10n.fltCounterAnonTakeaway,
+    counterSettleAfterSend => context.l10n.fltCounterSettleAfterSend,
+    counterSimpleKds => context.l10n.fltCounterSimpleKds,
+    counterQr => context.l10n.fltCounterQr,
+    counterRingkasReport => context.l10n.fltCounterRingkas,
+    _ => key,
+  };
+
+  /// The preset, and the only place it exists. On: every switch. Off: the mode
+  /// key alone, leaving the switches staged so re-entitling restores the shop.
+  void _setCounterMode(bool on) {
+    if (on) {
+      setState(() {
+        _modules = {..._modules, modeCounterService};
+        _counter = {...counterSwitchKeys};
+      });
+      return;
+    }
+    _confirm(
+      context.l10n.fltModuleOffTitle(context.l10n.fltModuleCounter, _nameText),
+      context.l10n.fltCounterOffBody,
+      context.l10n.fltModuleOffYes,
+      () => setState(
+        () => _modules = {..._modules}..remove(modeCounterService),
       ),
     );
   }

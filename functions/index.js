@@ -40,6 +40,30 @@ const CYCLES = ["monthly", "yearly"];
 // stores none, so an empty array on a trial means nothing at all.
 const MODULES = ["members", "selfOrder"];
 
+// Kedai mode (ADR-0109). A key of a different kind: it does not unlock a
+// feature, it reshapes the app into a counter shop. It rides the same `addOns`
+// array — one transport — but it is **outside** the trial's implicit grant,
+// because a trial demos the restaurant product. The client reads it through a
+// separate fail-closed resolver; see venueHasMode in lib/server/modules.dart.
+const MODE_MODULES = ["counterService"];
+
+// Everything `addOns` may contain. Must stay equal to `venueEntitlementKeys` in
+// lib/domain/models/venue_module.dart.
+const ALL_MODULES = [...MODULES, ...MODE_MODULES];
+
+// The switches Kedai mode is made of. Persisted keys, unrenameable, stored as a
+// map of explicit booleans on the venue doc so a key nobody has ticked is
+// distinguishable from one this build has not heard of. Must stay equal to
+// `counterSwitchKeys` in lib/domain/models/venue_module.dart.
+const COUNTER_SWITCHES = [
+  "menuHome",
+  "anonTakeaway",
+  "settleAfterSend",
+  "simpleKds",
+  "counterQr",
+  "ringkasReport",
+];
+
 // How long a partner keeps trading past its term before the cutoff sweep
 // suspends it. A trial gets none of this — going dark on the stated date is what
 // a trial is for. Must stay equal to `fleetGraceAfterLapse` in
@@ -604,11 +628,25 @@ exports.updateVenue = onCall(async (request) => {
   if (Array.isArray(request.data.addOns)) {
     const addOns = [...new Set(request.data.addOns.map((m) => String(m).trim()))];
     for (const m of addOns) {
-      if (!MODULES.includes(m)) {
-        throw new HttpsError("invalid-argument", `addOns must be a subset of ${MODULES}.`);
+      if (!ALL_MODULES.includes(m)) {
+        throw new HttpsError("invalid-argument", `addOns must be a subset of ${ALL_MODULES}.`);
       }
     }
     patch.addOns = addOns;
+  }
+  // The switches (ADR-0109 §3). Config, not entitlement: written whole, every
+  // key with an explicit bool, so unticking one is a value and not an absence.
+  // Kept independent of `addOns` on purpose — unticking the mode freezes the
+  // switches rather than clearing them, which is the module rule one level down.
+  if (request.data.counterConfig && typeof request.data.counterConfig === "object") {
+    const cfg = {};
+    for (const [k, v] of Object.entries(request.data.counterConfig)) {
+      if (!COUNTER_SWITCHES.includes(k)) {
+        throw new HttpsError("invalid-argument", `counterConfig keys must be a subset of ${COUNTER_SWITCHES}.`);
+      }
+      cfg[k] = v === true;
+    }
+    patch.counterConfig = cfg;
   }
   if (Object.keys(patch).length === 0) {
     throw new HttpsError("invalid-argument", "Nothing to update.");

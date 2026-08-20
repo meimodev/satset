@@ -1054,6 +1054,9 @@ class AppL10nId extends AppL10n {
       'akan dihapus permanen dari zona.';
 
   @override
+  String get tabMenu => 'Menu';
+
+  @override
   String get tabMeja => 'Meja';
 
   @override
@@ -7978,6 +7981,39 @@ class AppL10nId extends AppL10n {
 
   @override
   String get fltModulesHint => 'Fitur yang dijual terpisah dari paket dasar.';
+
+  @override
+  String get fltModuleCounter => 'Mode kedai';
+
+  @override
+  String get fltCounterHint =>
+      'Enam saklar. Mencentang mode menyalakan semuanya; matikan yang tidak dipakai venue ini.';
+
+  @override
+  String get fltCounterMenuHome => 'Menu jadi tab utama, denah disembunyikan';
+
+  @override
+  String get fltCounterAnonTakeaway => 'Bawa pulang tanpa nama tamu';
+
+  @override
+  String get fltCounterSettleAfterSend => 'Kirim langsung buka panel bayar';
+
+  @override
+  String get fltCounterSimpleKds => 'Dapur satu antrean, tanpa stasiun';
+
+  @override
+  String get fltCounterQr => 'QR kode kedai';
+
+  @override
+  String get fltCounterRingkas => 'Laporan ringkas satu halaman';
+
+  @override
+  String get fltCounterRestartNote =>
+      'Saklar baru berlaku saat admin venue masuk lagi. QR kode kedai butuh server di-restart.';
+
+  @override
+  String get fltCounterOffBody =>
+      'Venue kembali ke bentuk restoran. Saklarnya disimpan, jadi menyalakan mode lagi mengembalikan seperti semula.';
 
   @override
   String get fltModuleMembers => 'Keanggotaan';

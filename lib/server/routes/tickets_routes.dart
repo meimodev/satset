@@ -251,9 +251,7 @@ Future<SubmitOrderResult> submitOrder(
       } else {
         final v = await createTakeawayVisit(
           db,
-          guestName: (guestName != null && guestName.isNotEmpty)
-              ? guestName
-              : 'Bawa pulang',
+          guestName: guestName,
           actorId: actorId,
           // ADR-0066. Defaults to a walk-in wanting it wrapped, which is what
           // every takeaway was before the channel existed.

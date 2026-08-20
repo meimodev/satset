@@ -26,6 +26,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/domain/models/venue_module.dart';
 
 /// First path segment of [loc], e.g. `/menuadm` for `/menuadm/42`. Shell routes
 /// are matched on this rather than on `startsWith`, so a destination can never
@@ -48,6 +49,7 @@ String _firstSegment(String loc) {
 /// and it is asked for by tests and by `redirect` where no locale exists.
 /// Naming is [railLabel]'s job.
 const _railRoutes = <String, String>{
+  '/counter': 'counter',
   '/tables': 'tables',
   '/orders': 'orders',
   '/kitchen': 'kitchen',
@@ -59,6 +61,7 @@ const _railRoutes = <String, String>{
 /// The name a rail destination goes by — the same entry the rail button renders,
 /// so the trail and the rail cannot disagree about what a destination is called.
 String? railLabel(AppL10n l10n, String railId) => switch (railId) {
+  'counter' => l10n.tabMenu,
   'tables' => l10n.tabMeja,
   'orders' => l10n.tabPesanan,
   'kitchen' => l10n.tabAntrian,
@@ -94,6 +97,22 @@ bool showGuestQueue({
   required bool guestOrderingEnabled,
   required bool canTakeOrder,
 }) => guestOrderingEnabled && canTakeOrder;
+
+/// Whether the home destination is the menu rather than the floor — the
+/// [[Kedai]] switch `menuHome` (ADR-0109).
+///
+/// **Hide, don't refuse.** `/tables` stays a legal route and every table row
+/// stays written; what the switch changes is which destination the rail offers
+/// and where a sign-in lands. A counter shop with four stools can still be
+/// walked to its floor by a deep link, and flipping the switch back finds the
+/// tables exactly as they were.
+///
+/// [canTakeOrder] because the destination *is* the order pad: showing it to a
+/// cashier who cannot open an order buys a tab that 403s.
+bool showCounterHome({
+  required bool menuHomeEnabled,
+  required bool canTakeOrder,
+}) => menuHomeEnabled && canTakeOrder;
 
 /// Which rail item owns [loc].
 String activeTabFor(String loc) => _railRoutes[_firstSegment(loc)] ?? 'venue';
@@ -188,6 +207,12 @@ class AppShell extends ConsumerWidget {
     final guestPending = showTamu
         ? ref.watch(selfOrderProvider).pending.length
         : 0;
+    final counterHome = showCounterHome(
+      menuHomeEnabled: ref.watch(
+        venueSettingsProvider.select((v) => v.counterOn(counterMenuHome)),
+      ),
+      canTakeOrder: ref.watch(authStateProvider).has(Capability.takeOrder),
+    );
     final userName = ref.watch(
       authStateProvider.select((s) => s.user?.name ?? ''),
     );
@@ -200,6 +225,7 @@ class AppShell extends ConsumerWidget {
           kitchenCount: kitchenCount,
           showKasir: showKasir,
           showTamu: showTamu,
+          counterHome: counterHome,
           guestPending: guestPending,
           crumbs: crumbsFor(context.l10n, loc, userName),
           child: Column(
@@ -239,6 +265,7 @@ class AppShell extends ConsumerWidget {
                       readyCount: ready,
                       showKasir: showKasir,
                       showTamu: showTamu,
+                      counterHome: counterHome,
                       guestPending: guestPending,
                     ),
                   ),
@@ -257,12 +284,14 @@ class _FloatingTabBar extends StatelessWidget {
   final int readyCount;
   final bool showKasir;
   final bool showTamu;
+  final bool counterHome;
   final int guestPending;
   const _FloatingTabBar({
     required this.active,
     required this.readyCount,
     this.showKasir = false,
     this.showTamu = false,
+    this.counterHome = false,
     this.guestPending = 0,
   });
 
@@ -291,13 +320,26 @@ class _FloatingTabBar extends StatelessWidget {
       padding: const EdgeInsets.all(Sp.s1),
       child: Row(
         children: [
-          _Tab(
-            id: 'tables',
-            label: context.l10n.tabMeja,
-            icon: Icons.grid_view_rounded,
-            active: active == 'tables',
-            onTap: () => context.go('/tables'),
-          ),
+          // One slot, two destinations (ADR-0109): the home tab is the floor
+          // or the menu, never both — a counter shop that keeps its floor tab
+          // has learned two ways to start an order and picks the wrong one
+          // under pressure.
+          if (counterHome)
+            _Tab(
+              id: 'counter',
+              label: context.l10n.tabMenu,
+              icon: Icons.restaurant_menu_rounded,
+              active: active == 'counter',
+              onTap: () => context.go('/counter'),
+            )
+          else
+            _Tab(
+              id: 'tables',
+              label: context.l10n.tabMeja,
+              icon: Icons.grid_view_rounded,
+              active: active == 'tables',
+              onTap: () => context.go('/tables'),
+            ),
           _Tab(
             id: 'orders',
             label: context.l10n.tabPesanan,

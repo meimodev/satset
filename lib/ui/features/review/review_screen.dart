@@ -20,6 +20,9 @@ import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/domain/models/capability.dart';
+import 'package:satset/domain/models/venue_module.dart';
+import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/ui/features/menu/cart_line_actions.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
@@ -318,6 +321,9 @@ class ReviewScreen extends ConsumerWidget {
                           if (context.mounted) {
                             context.go('/takeaway/$takeawayVisitId');
                           }
+                          if (context.mounted) {
+                            await _settleAfterSend(context, ref, vid);
+                          }
                           return;
                         }
 
@@ -327,7 +333,12 @@ class ReviewScreen extends ConsumerWidget {
                           final choice = await _chooseCommit(context);
                           if (choice == null || !context.mounted) return;
                           if (choice == _Commit.takeaway) {
-                            final ta = await _askTakeawayDetails(context);
+                            final ta = await _askTakeawayDetails(
+                              context,
+                              nameOptional: ref
+                                  .read(venueSettingsProvider)
+                                  .counterOn(counterAnonTakeaway),
+                            );
                             if (ta == null || !context.mounted) return;
                             final vid = await vm.submitTakeaway(
                               cart,
@@ -339,6 +350,9 @@ class ReviewScreen extends ConsumerWidget {
                             if (vid == null || vid.isEmpty) return;
                             ref.read(cartProvider(tableId).notifier).clear();
                             if (context.mounted) context.go('/takeaway/$vid');
+                            if (context.mounted) {
+                              await _settleAfterSend(context, ref, vid);
+                            }
                             return;
                           }
                           // Dine-in: pick the destination table, seat it, then
@@ -391,6 +405,13 @@ class ReviewScreen extends ConsumerWidget {
                               '/table/${pick.tableId}/sent?stations=$stations',
                             );
                           }
+                          if (context.mounted) {
+                            await _settleAfterSend(
+                              context,
+                              ref,
+                              _visitOf(ref, pick.tableId),
+                            );
+                          }
                           return;
                         }
 
@@ -406,6 +427,13 @@ class ReviewScreen extends ConsumerWidget {
                         if (context.mounted) {
                           context.push(
                             '/table/$tableId/sent?stations=$stations',
+                          );
+                        }
+                        if (context.mounted) {
+                          await _settleAfterSend(
+                            context,
+                            ref,
+                            _visitOf(ref, tableId),
                           );
                         }
                       },
@@ -519,8 +547,42 @@ class _CommitTile extends StatelessWidget {
   }
 }
 
-/// What the takeaway prompt collects: the guest name (the visit's only handle,
-/// required) plus how the order reached us and whether it is already paid.
+/// The [[Kedai]] switch `settleAfterSend` (ADR-0109): a counter takes the money
+/// as part of ordering, so committing opens the bill instead of ending at the
+/// sent confirmation.
+///
+/// It **pushes over** the destination rather than replacing it. Closing the pane
+/// leaves the user exactly where an unswitched venue would have landed, so the
+/// switch changes what happens next and never what is reachable — and a cashier
+/// who decides mid-tap that this one pays later just backs out.
+///
+/// Gated on [Capability.settleBill] as well as the switch: a waiter who cannot
+/// settle must not be handed a pane whose every button would 403. Silent when
+/// [visitId] is null — a visit the floor cache has not caught up with yet is a
+/// reason to skip the pane, never to block the order that was already written.
+Future<void> _settleAfterSend(
+  BuildContext context,
+  WidgetRef ref,
+  String? visitId,
+) async {
+  if (visitId == null || visitId.isEmpty) return;
+  final cfg = ref.read(venueSettingsProvider);
+  if (!cfg.counterOn(counterSettleAfterSend)) return;
+  if (!ref.read(authStateProvider).has(Capability.settleBill)) return;
+  await openCashierBill(context, visitId: visitId);
+}
+
+/// The visit currently seated at [tableId], or null if the floor cache has not
+/// seen it yet. Read, never awaited — see [_settleAfterSend].
+String? _visitOf(WidgetRef ref, String tableId) {
+  for (final t in ref.read(tablesProvider)) {
+    if (t.id == tableId) return t.currentVisitId;
+  }
+  return null;
+}
+
+/// What the takeaway prompt collects: the guest name (the visit's handle when
+/// it has one) plus how the order reached us and whether it is already paid.
 typedef _TakeawayDetails = ({String guestName, String channel, bool prepaid});
 
 /// Prompt for the guest name and the [[Kanal (channel)]] (ADR-0066).
@@ -531,7 +593,16 @@ typedef _TakeawayDetails = ({String guestName, String channel, bool prepaid});
 /// offered only for the aggregator channels — a walk-in cannot have prepaid,
 /// and an aggregator order can still be cash-on-delivery, so it is a separate
 /// question rather than derived.
-Future<_TakeawayDetails?> _askTakeawayDetails(BuildContext context) {
+///
+/// [nameOptional] is the [[Kedai]] switch `anonTakeaway` (ADR-0109). A counter
+/// shop calls a number, not a name, so demanding one is a keystroke per order
+/// that buys nothing. It relaxes the gate rather than hiding the field: an
+/// aggregator courier still turns up with a name worth typing, and the same
+/// venue takes both kinds of order across one shift.
+Future<_TakeawayDetails?> _askTakeawayDetails(
+  BuildContext context, {
+  bool nameOptional = false,
+}) {
   final sc = context.sat;
   final ctrl = TextEditingController();
   var channel = SatChannel.bungkus;
@@ -617,7 +688,7 @@ Future<_TakeawayDetails?> _askTakeawayDetails(BuildContext context) {
               label: ctx.l10n.revContinue,
               onTap: () {
                 final v = ctrl.text.trim();
-                if (v.isEmpty) return;
+                if (v.isEmpty && !nameOptional) return;
                 Navigator.of(
                   ctx,
                 ).pop((guestName: v, channel: channel.id, prepaid: prepaid));

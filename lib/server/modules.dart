@@ -29,3 +29,21 @@ export 'package:satset/domain/models/venue_module.dart';
 /// a feature going dark. `''` is a real answer and means no module.
 bool venueHasModule(VenueSetting? s, String key) =>
     s?.modules == null || splitModules(s!.modules).contains(key);
+
+/// Whether the venue is in **[[Kedai]] mode** for [key] (ADR-0109).
+///
+/// **Unknown reads as off**, and that is the whole reason this is not
+/// [venueHasModule]. The fail-open above protects a feature a venue *paid for*
+/// from a cold boot; applied to a mode key the same reading would boot every
+/// restaurant that has not yet mirrored as a counter shop — floor hidden, KDS
+/// flattened — under a working shift. Two questions, two functions, no shared
+/// default.
+bool venueHasMode(VenueSetting? s, String key) =>
+    splitModules(s?.modules).contains(key);
+
+/// Whether the [[Kedai]] switch [key] is on. Off unless mode is held **and**
+/// the switch was mirrored: a switch is meaningless without the mode, and
+/// asking about it separately is how a half-mirrored venue gets half a shape.
+bool counterSwitchOn(VenueSetting? s, String key) =>
+    venueHasMode(s, modeCounterService) &&
+    splitModules(s?.counterConfig).contains(key);
