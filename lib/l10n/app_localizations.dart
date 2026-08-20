@@ -1099,6 +1099,150 @@ abstract class AppL10n {
   /// **'Mati'**
   String get soHubBadgeOff;
 
+  /// No description provided for @vdayTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka & tutup kedai'**
+  String get vdayTitle;
+
+  /// No description provided for @vdaySub.
+  ///
+  /// In id, this message translates to:
+  /// **'Urutan buka pagi dan tutup malam, satu layar.'**
+  String get vdaySub;
+
+  /// No description provided for @vdayTagDay.
+  ///
+  /// In id, this message translates to:
+  /// **'HARI'**
+  String get vdayTagDay;
+
+  /// No description provided for @vdayFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal. Coba lagi.'**
+  String get vdayFailed;
+
+  /// No description provided for @vdayOpenTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka kedai'**
+  String get vdayOpenTitle;
+
+  /// No description provided for @vdayOpenBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan modal awal ke kas kecil, lalu catat kedai dibuka.'**
+  String get vdayOpenBody;
+
+  /// No description provided for @vdayFloatLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Modal awal'**
+  String get vdayFloatLabel;
+
+  /// No description provided for @vdayOpenAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka kedai'**
+  String get vdayOpenAction;
+
+  /// No description provided for @vdayCloseTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tutup kedai'**
+  String get vdayCloseTitle;
+
+  /// No description provided for @vdayCloseBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Hitung uang di kas kecil, lihat selisihnya, baca laporan, lalu catat kedai ditutup. Tagihan yang masih terbuka tidak menghalangi.'**
+  String get vdayCloseBody;
+
+  /// No description provided for @vdayCountedLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Uang dihitung'**
+  String get vdayCountedLabel;
+
+  /// No description provided for @vdayCloseAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Tutup kedai'**
+  String get vdayCloseAction;
+
+  /// No description provided for @vdayReadReport.
+  ///
+  /// In id, this message translates to:
+  /// **'Baca laporan'**
+  String get vdayReadReport;
+
+  /// No description provided for @vdayNoteLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan (opsional)'**
+  String get vdayNoteLabel;
+
+  /// No description provided for @vdayVarianceNone.
+  ///
+  /// In id, this message translates to:
+  /// **'Cocok dengan catatan.'**
+  String get vdayVarianceNone;
+
+  /// No description provided for @vdayVariance.
+  ///
+  /// In id, this message translates to:
+  /// **'Selisih {amount}.'**
+  String vdayVariance(String amount);
+
+  /// No description provided for @vdayLedgerSays.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan kas kecil: {amount}'**
+  String vdayLedgerSays(String amount);
+
+  /// No description provided for @vdayFloatNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Modal awal'**
+  String get vdayFloatNote;
+
+  /// No description provided for @vdayCountNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Hitung tutup kedai'**
+  String get vdayCountNote;
+
+  /// No description provided for @venueHubDayTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka & tutup kedai'**
+  String get venueHubDayTitle;
+
+  /// No description provided for @venueHubDaySub.
+  ///
+  /// In id, this message translates to:
+  /// **'Modal awal, hitung kas, catat hari'**
+  String get venueHubDaySub;
+
+  /// No description provided for @auditTypeVenueDay.
+  ///
+  /// In id, this message translates to:
+  /// **'Buka/tutup kedai'**
+  String get auditTypeVenueDay;
+
+  /// No description provided for @auditVenueOpened.
+  ///
+  /// In id, this message translates to:
+  /// **'Kedai dibuka'**
+  String get auditVenueOpened;
+
+  /// No description provided for @auditVenueClosed.
+  ///
+  /// In id, this message translates to:
+  /// **'Kedai ditutup'**
+  String get auditVenueClosed;
+
   /// No description provided for @auditTypeSelfOrder.
   ///
   /// In id, this message translates to:

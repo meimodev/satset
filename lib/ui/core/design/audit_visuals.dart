@@ -102,6 +102,14 @@ AuditTone auditTone(AuditType t, SatColors sc) => switch (t) {
     bg: sc.violetSoft,
     fg: sc.violet,
   ),
+  // `success`: opening and closing the shop is the day working as intended.
+  // The only finding a reader takes from these rows is a *missing* one, which
+  // is a gap in the sequence rather than a coloured row in it.
+  AuditType.venueDay => (
+    icon: Icons.storefront_outlined,
+    bg: sc.successSoft,
+    fg: sc.success,
+  ),
   // `info`: a guest ordering for themselves is a normal service event, not a
   // discrepancy and not money. It should read as traffic, not as a finding.
   AuditType.selfOrder => (

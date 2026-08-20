@@ -108,15 +108,15 @@ enum AuditKind {
   /// words and there is no closed set of them.
   stockWasted,
 
-  // ---------- pesan mandiri (ADR-0105) ----------
-  /// `{table}` (the label frozen at write time), `{lines}` — a guest's order
-  /// became real tickets. One row per accepted submission, never per line.
   /// **[[Item bebas]]** — one line sold off-menu. Params: `{name}` (what the
   /// seller typed), `{price}` (pre-formatted rupiah, unit price × qty). The
   /// *why* rides `reason`, which the route requires: an unexplained arbitrary
   /// price is the exact hole this row exists to close.
   openItemSold,
 
+  // ---------- pesan mandiri (ADR-0105) ----------
+  /// `{table}` (the label frozen at write time), `{lines}` — a guest's order
+  /// became real tickets. One row per accepted submission, never per line.
   guestOrderAccepted,
 
   /// `{table}`, `{lines}`. The *why* rides `reason` as a code, where every
@@ -195,6 +195,16 @@ enum AuditKind {
   /// `{name}`, `{changes}` — the `+cap,-cap` diff, which is a list of
   /// capability identifiers and stays as-is in both languages.
   roleCapabilityChanged,
+
+  /// **Buka kedai** (ADR-0111). No params. The float that went in is a
+  /// [[Kas kecil]] row of its own; this says only that the shop opened, and by
+  /// whom — which is the fact no other row carries.
+  venueOpened,
+
+  /// **Tutup kedai** (ADR-0111). No params, for the same reason: the count and
+  /// its variance are the `cashCounted` row, and duplicating the number here
+  /// would give the log two places to disagree about it.
+  venueClosed,
 
   /// The sample seed ran (ADR-0073). No params.
   sampleDataLoaded,

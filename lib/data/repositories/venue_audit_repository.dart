@@ -41,6 +41,9 @@ const auditFilterTypes = <AuditType>[
   AuditType.stockCounted,
   AuditType.stockWasted,
   AuditType.openItemSold,
+  // Filterable so an owner can read the week's opens and closes as a
+  // sequence — which is the only way a *missing* one shows up.
+  AuditType.venueDay,
   // Same reasoning: the counts live on the /selforder hero, and a tile here
   // would be a second place for one number to disagree with itself.
   AuditType.selfOrder,

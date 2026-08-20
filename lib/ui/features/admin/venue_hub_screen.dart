@@ -179,6 +179,16 @@ List<_HubSection> _sectionsFor(AppL10n l10n) => <_HubSection>[
           : l.soHubBadgeOff;
     },
   ),
+  // Deliberately no badge. Nothing derives "is the shop open right now" from
+  // the audit pair (ADR-0111), and a tile reading Buka/Tutup would be exactly
+  // the state this design refused to store.
+  _HubSection(
+    label: l10n.venueHubDayTitle,
+    sub: l10n.venueHubDaySub,
+    icon: Icons.wb_twilight_rounded,
+    route: '/venue-day',
+    tint: (sc) => sc.success,
+  ),
   _HubSection(
     label: l10n.kasTitle,
     sub: l10n.kasHubSubtitle,

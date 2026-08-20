@@ -62,6 +62,13 @@ enum AuditType {
   /// resep, and therefore nothing to reconcile it against but this row.
   openItemSold,
 
+  /// **Buka / tutup kedai** (ADR-0111) — the venue day. **One** type for both
+  /// ends of it: a reader asking "was the shop opened and closed properly this
+  /// week" wants the pairs together, and two types would make that two filters
+  /// and a mental join. There is no entity behind it — these rows *are* the
+  /// record, so a day with two opens or none is visible rather than impossible.
+  venueDay,
+
   /// **[[Pesan mandiri]]** (ADR-0105) — a guest order accepted or rejected, the
   /// table codes rotated, the whole feature switched on or off. **One** type for
   /// all of them, for the reason [cashMovement] is one: the reader auditing
@@ -129,6 +136,10 @@ bool isAdminAuditType(AuditType t) {
     case AuditType.stockWasted:
     // An open item is a sale, and it is read by whoever reads the money.
     case AuditType.openItemSold:
+    // Opening and closing the shop is the owner's ritual, and the person who
+    // reads it back is the one holding the reports — not necessarily the one
+    // who may edit staff.
+    case AuditType.venueDay:
     // A waiter accepting a guest's order is order-taking, and the people who
     // read that queue back hold `viewReports`, not `manageStaff`.
     case AuditType.selfOrder:

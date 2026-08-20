@@ -622,6 +622,84 @@ class AppL10nId extends AppL10n {
   String get soHubBadgeOff => 'Mati';
 
   @override
+  String get vdayTitle => 'Buka & tutup kedai';
+
+  @override
+  String get vdaySub => 'Urutan buka pagi dan tutup malam, satu layar.';
+
+  @override
+  String get vdayTagDay => 'HARI';
+
+  @override
+  String get vdayFailed => 'Gagal. Coba lagi.';
+
+  @override
+  String get vdayOpenTitle => 'Buka kedai';
+
+  @override
+  String get vdayOpenBody =>
+      'Masukkan modal awal ke kas kecil, lalu catat kedai dibuka.';
+
+  @override
+  String get vdayFloatLabel => 'Modal awal';
+
+  @override
+  String get vdayOpenAction => 'Buka kedai';
+
+  @override
+  String get vdayCloseTitle => 'Tutup kedai';
+
+  @override
+  String get vdayCloseBody =>
+      'Hitung uang di kas kecil, lihat selisihnya, baca laporan, lalu catat kedai ditutup. Tagihan yang masih terbuka tidak menghalangi.';
+
+  @override
+  String get vdayCountedLabel => 'Uang dihitung';
+
+  @override
+  String get vdayCloseAction => 'Tutup kedai';
+
+  @override
+  String get vdayReadReport => 'Baca laporan';
+
+  @override
+  String get vdayNoteLabel => 'Catatan (opsional)';
+
+  @override
+  String get vdayVarianceNone => 'Cocok dengan catatan.';
+
+  @override
+  String vdayVariance(String amount) {
+    return 'Selisih $amount.';
+  }
+
+  @override
+  String vdayLedgerSays(String amount) {
+    return 'Catatan kas kecil: $amount';
+  }
+
+  @override
+  String get vdayFloatNote => 'Modal awal';
+
+  @override
+  String get vdayCountNote => 'Hitung tutup kedai';
+
+  @override
+  String get venueHubDayTitle => 'Buka & tutup kedai';
+
+  @override
+  String get venueHubDaySub => 'Modal awal, hitung kas, catat hari';
+
+  @override
+  String get auditTypeVenueDay => 'Buka/tutup kedai';
+
+  @override
+  String get auditVenueOpened => 'Kedai dibuka';
+
+  @override
+  String get auditVenueClosed => 'Kedai ditutup';
+
+  @override
   String get auditTypeSelfOrder => 'Pesan mandiri';
 
   @override

@@ -39,6 +39,7 @@ import 'package:satset/ui/features/admin/self_order_admin_screen.dart';
 import 'package:satset/ui/features/admin/self_order_screen.dart';
 import 'package:satset/ui/features/admin/opname_screen.dart';
 import 'package:satset/ui/features/admin/members_screen.dart';
+import 'package:satset/ui/features/admin/venue_day_screen.dart';
 import 'package:satset/ui/features/admin/venue_settings_screen.dart';
 import 'package:satset/ui/features/admin/system_screen.dart';
 import 'package:satset/ui/features/admin/staff_screen.dart';
@@ -65,6 +66,15 @@ List<Capability>? _capabilityFor(String loc) {
     return const [Capability.takeOrder];
   }
   if (loc.startsWith('/venue-settings')) return const [Capability.editSettings];
+  // Buka / tutup kedai (ADR-0111). Two authorities, and the two the act is
+  // actually made of: `openDrawer` opens, `closeShift` closes. Either one opens
+  // the screen — the person who unlocks in the morning and the person who
+  // counts at night are often not the same — and each half renders only for
+  // whoever holds it. Matched **before** the bare `/venue` arm below, which is
+  // a prefix of this path and would otherwise put it behind `manageStaff`.
+  if (loc.startsWith('/venue-day')) {
+    return const [Capability.openDrawer, Capability.closeShift];
+  }
   if (loc.startsWith('/alerts')) return const [Capability.editSettings];
   if (loc.startsWith('/stock')) return const [Capability.manageIngredients];
   if (loc.startsWith('/reports')) return const [Capability.viewReports];
@@ -299,6 +309,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen()),
           GoRoute(path: '/audit', builder: (_, _) => const AuditScreen()),
           GoRoute(path: '/kas', builder: (_, _) => const KasScreen()),
+          GoRoute(
+            path: '/venue-day',
+            builder: (_, _) => const VenueDayScreen(),
+          ),
           GoRoute(
             path: '/selforder',
             builder: (_, _) => const SelfOrderScreen(),

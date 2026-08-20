@@ -627,6 +627,85 @@ class AppL10nEn extends AppL10n {
   String get soHubBadgeOff => 'Off';
 
   @override
+  String get vdayTitle => 'Open & close shop';
+
+  @override
+  String get vdaySub =>
+      'The morning open and the evening close, on one screen.';
+
+  @override
+  String get vdayTagDay => 'DAY';
+
+  @override
+  String get vdayFailed => 'Failed. Try again.';
+
+  @override
+  String get vdayOpenTitle => 'Open shop';
+
+  @override
+  String get vdayOpenBody =>
+      'Put the starting float into petty cash, then record the shop as open.';
+
+  @override
+  String get vdayFloatLabel => 'Starting float';
+
+  @override
+  String get vdayOpenAction => 'Open shop';
+
+  @override
+  String get vdayCloseTitle => 'Close shop';
+
+  @override
+  String get vdayCloseBody =>
+      'Count the petty cash, see the variance, read the report, then record the shop as closed. Open bills do not block it.';
+
+  @override
+  String get vdayCountedLabel => 'Counted';
+
+  @override
+  String get vdayCloseAction => 'Close shop';
+
+  @override
+  String get vdayReadReport => 'Read report';
+
+  @override
+  String get vdayNoteLabel => 'Note (optional)';
+
+  @override
+  String get vdayVarianceNone => 'Matches the ledger.';
+
+  @override
+  String vdayVariance(String amount) {
+    return 'Off by $amount.';
+  }
+
+  @override
+  String vdayLedgerSays(String amount) {
+    return 'Petty cash ledger: $amount';
+  }
+
+  @override
+  String get vdayFloatNote => 'Starting float';
+
+  @override
+  String get vdayCountNote => 'Closing count';
+
+  @override
+  String get venueHubDayTitle => 'Open & close shop';
+
+  @override
+  String get venueHubDaySub => 'Float, cash count, record the day';
+
+  @override
+  String get auditTypeVenueDay => 'Open/close shop';
+
+  @override
+  String get auditVenueOpened => 'Shop opened';
+
+  @override
+  String get auditVenueClosed => 'Shop closed';
+
+  @override
   String get auditTypeSelfOrder => 'Self-order';
 
   @override

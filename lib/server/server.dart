@@ -37,6 +37,7 @@ import 'routes/self_order_routes.dart';
 import 'routes/settlement_routes.dart';
 import 'routes/tables_routes.dart';
 import 'routes/tickets_routes.dart';
+import 'routes/venue_day_routes.dart';
 import 'routes/venue_settings_routes.dart';
 import 'guest/guest_plane.dart';
 import 'self_order.dart' show guestRules;
@@ -353,6 +354,7 @@ class ServerRuntime {
     r.mount('/', reservationsRoutes(db, hub, auth).call);
     r.mount('/', settlementRoutes(db, hub, auth).call);
     r.mount('/', cashRoutes(db, hub, auth).call);
+    r.mount('/', venueDayRoutes(db, hub, auth).call);
     r.mount('/', membersRoutes(db, hub, auth).call);
     r.mount('/', selfOrderRoutes(db, hub, auth).call);
 

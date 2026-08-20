@@ -85,6 +85,7 @@ String? venueHubCrumb(AppL10n l10n, String path) => switch (path) {
   '/system' => l10n.venueHubSectionSystem,
   '/staff' => l10n.crumbStafAkun,
   '/selforder-admin' => l10n.soAdminTitle,
+  '/venue-day' => l10n.vdayTitle,
   _ => null,
 };
 
