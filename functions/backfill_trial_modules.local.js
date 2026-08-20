@@ -23,6 +23,7 @@
 //
 // Run once:
 //   gcloud auth application-default login         # interactive, one time
+//   node functions/backfill_trial_modules.local.js --dry    # read-only, prints the plan
 //   node functions/backfill_trial_modules.local.js
 //
 // Idempotent. Safe to re-run.
@@ -30,6 +31,7 @@ const admin = require("firebase-admin");
 
 // Keep in step with MODULES in index.js.
 const MODULES = ["members", "selfOrder"];
+const DRY = process.argv.includes("--dry");
 
 admin.initializeApp({ projectId: "satset-3a795" });
 const db = admin.firestore();
@@ -39,6 +41,7 @@ const db = admin.firestore();
   let written = 0;
   let already = 0;
   let failed = 0;
+  console.log(`${DRY ? "DRY RUN — no writes. " : ""}trials=${snap.size}`);
   for (const doc of snap.docs) {
     const had = doc.get("addOns") || [];
     const same =
@@ -48,19 +51,24 @@ const db = admin.firestore();
       console.log(`  · ${doc.id}  ${doc.get("name") || "—"}  already full`);
       continue;
     }
+    const change = `[${had.join(",")}] → [${MODULES.join(",")}]`;
+    if (DRY) {
+      written++;
+      console.log(`  ~ ${doc.id}  ${doc.get("name") || "—"}  would write ${change}`);
+      continue;
+    }
     try {
       await doc.ref.update({ addOns: [...MODULES] });
       written++;
-      console.log(
-        `  ✓ ${doc.id}  ${doc.get("name") || "—"}  [${had.join(",")}] → [${MODULES.join(",")}]`,
-      );
+      console.log(`  ✓ ${doc.id}  ${doc.get("name") || "—"}  ${change}`);
     } catch (e) {
       failed++;
       console.log(`  ✗ ${doc.id}  ${e.message}`);
     }
   }
   console.log(
-    `\nDone. trials=${snap.size} written=${written} already=${already} failed=${failed}`,
+    `\nDone${DRY ? " (dry)" : ""}. trials=${snap.size} ` +
+      `${DRY ? "would write" : "written"}=${written} already=${already} failed=${failed}`,
   );
   process.exit(failed === 0 ? 0 : 1);
 })().catch((e) => {
