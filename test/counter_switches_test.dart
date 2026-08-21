@@ -5,7 +5,7 @@
 // actually does once the resolver has said yes, which is the part a refactor
 // can quietly undo while every gate test still passes.
 //
-// Two switches are held here:
+// All four floor switches are held here:
 //
 //   - `menuHome` — where a signed-in counter cashier lands. The predicate is
 //     shared by the router's redirect and the tablet rail, so both follow it.
@@ -14,6 +14,13 @@
 //     KDS: a line that was never paced is a line nobody has to un-pace. And an
 //     **edited** line keeps the course it already carries — the switch changes
 //     what gets typed next, never what is already in the cart.
+//   - `settleAfterSend` — a counter takes the money as part of ordering, so
+//     committing opens the bill. Three things must all be true first, and the
+//     capability is one of them: a waiter who cannot settle must not be handed
+//     a pane whose every button would 403.
+//   - `anonTakeaway` — a counter calls a number, not a name. It **relaxes** the
+//     gate rather than hiding the field: the same venue takes aggregator orders
+//     across the same shift, and those turn up with a name worth typing.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,6 +36,7 @@ import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/menu/modifier_sheet.dart';
+import 'package:satset/ui/features/review/review_screen.dart';
 import 'package:satset/ui/features/shell/app_shell.dart';
 
 /// A venue whose mode key is mirrored on, holding exactly [on].
@@ -190,6 +198,106 @@ void main() {
       expect(find.text(l10n.expColCourse), findsOneWidget);
       await tapFoot(tester, l10n, false);
       expect(added.single.course, CourseId.mains);
+    });
+  });
+
+  group('settleAfterSend — the bill opens, if all three agree', () {
+    test('a counter cashier is handed the bill', () {
+      expect(
+        shouldSettleAfterSend(visitId: 'v1', settleOn: true, canSettle: true),
+        true,
+      );
+    });
+
+    test('a waiter who cannot settle is not handed a 403', () {
+      expect(
+        shouldSettleAfterSend(visitId: 'v1', settleOn: true, canSettle: false),
+        false,
+      );
+    });
+
+    test('without the switch the send ends at the confirmation', () {
+      expect(
+        shouldSettleAfterSend(visitId: 'v1', settleOn: false, canSettle: true),
+        false,
+      );
+    });
+
+    test(
+      'a visit the floor cache has not seen yet is skipped, not blocked',
+      () {
+        // The order is already written; a missing visit is a reason to skip the
+        // pane, never to hold up the line.
+        for (final id in [null, '']) {
+          expect(
+            shouldSettleAfterSend(visitId: id, settleOn: true, canSettle: true),
+            false,
+            reason: 'visitId ${id == null ? 'null' : 'empty'}',
+          );
+        }
+      },
+    );
+  });
+
+  group('anonTakeaway — a number, not a name', () {
+    late AppL10n l10n;
+    setUpAll(
+      () async => l10n = await AppL10n.delegate.load(const Locale('id')),
+    );
+
+    /// Opens the takeaway prompt and returns whatever it pops.
+    Future<List<TakeawayDetails?>> ask(
+      WidgetTester tester, {
+      required bool nameOptional,
+      String type = '',
+    }) async {
+      final out = <TakeawayDetails?>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('id'),
+          localizationsDelegates: AppL10n.localizationsDelegates,
+          supportedLocales: AppL10n.supportedLocales,
+          theme: satTheme(SatTheme.neonTerang),
+          home: Scaffold(
+            body: Builder(
+              builder: (ctx) => TextButton(
+                onPressed: () async => out.add(
+                  await askTakeawayDetails(ctx, nameOptional: nameOptional),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      if (type.isNotEmpty) {
+        await tester.enterText(find.byType(TextField), type);
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(find.text(l10n.revContinue));
+      await tester.pumpAndSettle();
+      return out;
+    }
+
+    testWidgets('a restaurant still wants the name', (tester) async {
+      final out = await ask(tester, nameOptional: false);
+      expect(out, isEmpty, reason: 'the prompt stays open rather than popping');
+      expect(find.text(l10n.revCommitTakeaway), findsOneWidget);
+    });
+
+    testWidgets('a counter takes the order without one', (tester) async {
+      final out = await ask(tester, nameOptional: true);
+      expect(out.single?.guestName, '');
+      expect(find.text(l10n.revCommitTakeaway), findsNothing);
+    });
+
+    testWidgets('the field is relaxed, not removed', (tester) async {
+      // The same counter shop takes an aggregator order an hour later, and
+      // that one arrives with a courier worth naming.
+      final out = await ask(tester, nameOptional: true, type: 'Budi');
+      expect(out.single?.guestName, 'Budi');
     });
   });
 }

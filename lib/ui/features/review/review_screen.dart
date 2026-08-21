@@ -326,7 +326,7 @@ class ReviewScreen extends ConsumerWidget {
                           final choice = await _chooseCommit(context);
                           if (choice == null || !context.mounted) return;
                           if (choice == _Commit.takeaway) {
-                            final ta = await _askTakeawayDetails(
+                            final ta = await askTakeawayDetails(
                               context,
                               nameOptional: ref
                                   .read(venueSettingsProvider)
@@ -558,12 +558,24 @@ Future<void> _settleAfterSend(
   WidgetRef ref,
   String? visitId,
 ) async {
-  if (visitId == null || visitId.isEmpty) return;
-  final cfg = ref.read(venueSettingsProvider);
-  if (!cfg.counterOn(counterSettleAfterSend)) return;
-  if (!ref.read(authStateProvider).has(Capability.settleBill)) return;
-  await openCashierBill(context, visitId: visitId);
+  if (!shouldSettleAfterSend(
+    visitId: visitId,
+    settleOn: ref.read(venueSettingsProvider).counterOn(counterSettleAfterSend),
+    canSettle: ref.read(authStateProvider).has(Capability.settleBill),
+  )) {
+    return;
+  }
+  await openCashierBill(context, visitId: visitId!);
 }
+
+/// The three things that must all be true before the pane opens — pulled out
+/// of [_settleAfterSend] so the rule can be read (and held) without a screen.
+@visibleForTesting
+bool shouldSettleAfterSend({
+  required String? visitId,
+  required bool settleOn,
+  required bool canSettle,
+}) => visitId != null && visitId.isNotEmpty && settleOn && canSettle;
 
 /// The visit currently seated at [tableId], or null if the floor cache has not
 /// seen it yet. Read, never awaited — see [_settleAfterSend].
@@ -576,7 +588,7 @@ String? _visitOf(WidgetRef ref, String tableId) {
 
 /// What the takeaway prompt collects: the guest name (the visit's handle when
 /// it has one) plus how the order reached us and whether it is already paid.
-typedef _TakeawayDetails = ({String guestName, String channel, bool prepaid});
+typedef TakeawayDetails = ({String guestName, String channel, bool prepaid});
 
 /// Prompt for the guest name and the [[Kanal (channel)]] (ADR-0066).
 ///
@@ -592,7 +604,8 @@ typedef _TakeawayDetails = ({String guestName, String channel, bool prepaid});
 /// that buys nothing. It relaxes the gate rather than hiding the field: an
 /// aggregator courier still turns up with a name worth typing, and the same
 /// venue takes both kinds of order across one shift.
-Future<_TakeawayDetails?> _askTakeawayDetails(
+@visibleForTesting
+Future<TakeawayDetails?> askTakeawayDetails(
   BuildContext context, {
   bool nameOptional = false,
 }) {
@@ -600,7 +613,7 @@ Future<_TakeawayDetails?> _askTakeawayDetails(
   final ctrl = TextEditingController();
   var channel = SatChannel.bungkus;
   var prepaid = false;
-  return showSatDialog<_TakeawayDetails>(
+  return showSatDialog<TakeawayDetails>(
     context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) {
