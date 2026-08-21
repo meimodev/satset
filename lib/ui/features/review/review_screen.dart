@@ -634,65 +634,70 @@ Future<TakeawayDetails?> askTakeawayDetails(
             ctx.l10n.revCommitTakeaway,
             style: SatType.bodyM(color: sc.textHi),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                ctx.l10n.revChannel,
-                style: SatType.labelS(color: sc.textLo),
-              ),
-              const SizedBox(height: Sp.s2),
-              Wrap(
-                spacing: Sp.s2,
-                runSpacing: Sp.s2,
-                children: [
-                  for (final c in SatChannel.values)
-                    SatChip.select(
-                      label: c.label,
-                      selected: channel == c,
-                      onTap: () => setState(() {
-                        channel = c;
-                        // A walk-in cannot be prepaid; clear it rather than
-                        // carry a stale yes onto the new channel.
-                        if (c != SatChannel.gofood && c != SatChannel.grab) {
-                          prepaid = false;
-                        }
-                      }),
-                    ),
-                ],
-              ),
-              const SizedBox(height: Sp.s3h),
-              Text(
-                ctx.l10n.revGuestOrCourier,
-                style: SatType.labelS(color: sc.textLo),
-              ),
-              const SizedBox(height: Sp.s2),
-              SatField.text(
-                controller: ctrl,
-                hint: ctx.l10n.revGuestHint,
-                autofocus: true,
-                capitalization: TextCapitalization.words,
-              ),
-              if (aggregator) ...[
-                const SizedBox(height: Sp.s2h),
-                Row(
+          // Landscape plus the soft keyboard leaves this dialog less height
+          // than its own content, and an overflowed dialog hides the field it
+          // is asking about. Scroll instead, like the other tall dialogs.
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ctx.l10n.revChannel,
+                  style: SatType.labelS(color: sc.textLo),
+                ),
+                const SizedBox(height: Sp.s2),
+                Wrap(
+                  spacing: Sp.s2,
+                  runSpacing: Sp.s2,
                   children: [
-                    Expanded(
-                      child: Text(
-                        ctx.l10n.revPrepaid,
-                        style: SatType.bodyS(color: sc.textHi),
+                    for (final c in SatChannel.values)
+                      SatChip.select(
+                        label: c.label,
+                        selected: channel == c,
+                        onTap: () => setState(() {
+                          channel = c;
+                          // A walk-in cannot be prepaid; clear it rather than
+                          // carry a stale yes onto the new channel.
+                          if (c != SatChannel.gofood && c != SatChannel.grab) {
+                            prepaid = false;
+                          }
+                        }),
                       ),
-                    ),
-                    SatToggle(
-                      value: prepaid,
-                      semanticLabel: ctx.l10n.revPrepaid,
-                      onChanged: (v) => setState(() => prepaid = v),
-                    ),
                   ],
                 ),
+                const SizedBox(height: Sp.s3h),
+                Text(
+                  ctx.l10n.revGuestOrCourier,
+                  style: SatType.labelS(color: sc.textLo),
+                ),
+                const SizedBox(height: Sp.s2),
+                SatField.text(
+                  controller: ctrl,
+                  hint: ctx.l10n.revGuestHint,
+                  autofocus: true,
+                  capitalization: TextCapitalization.words,
+                ),
+                if (aggregator) ...[
+                  const SizedBox(height: Sp.s2h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          ctx.l10n.revPrepaid,
+                          style: SatType.bodyS(color: sc.textHi),
+                        ),
+                      ),
+                      SatToggle(
+                        value: prepaid,
+                        semanticLabel: ctx.l10n.revPrepaid,
+                        onChanged: (v) => setState(() => prepaid = v),
+                      ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
           actions: [
             SatButton.ghost(
