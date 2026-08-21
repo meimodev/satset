@@ -1453,21 +1453,35 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               prefixIcon: Icons.notes_outlined,
             ),
           ],
-          onConfirm: () => Navigator.of(ctx).pop(true),
+          // Refuse *inside* the sheet, so a rejected save keeps what was typed:
+          // popping first and validating after threw the quantity away and left
+          // the reason to be retyped from an empty form.
+          onConfirm: () {
+            final entered = double.tryParse(qtyCtrl.text.replaceAll(',', '.'));
+            final messenger = ScaffoldMessenger.of(ctx);
+            if (entered == null || entered <= 0) {
+              messenger.showSnackBar(
+                SnackBar(content: Text(ctx.l10n.stkWasteQtyRequired)),
+              );
+              return;
+            }
+            if (noteCtrl.text.trim().isEmpty) {
+              messenger.showSnackBar(
+                SnackBar(content: Text(ctx.l10n.stkWasteNoteRequired)),
+              );
+              return;
+            }
+            Navigator.of(ctx).pop(true);
+          },
         ),
       ),
     );
     if (ok != true) return;
-    final amount = double.tryParse(qtyCtrl.text.replaceAll(',', '.'));
+    final amount = double.parse(qtyCtrl.text.replaceAll(',', '.'));
     final note = noteCtrl.text.trim();
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     final l10n = context.l10n;
-    if (amount == null || amount <= 0) return;
-    if (note.isEmpty) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.stkWasteNoteRequired)));
-      return;
-    }
     try {
       final value = await ref
           .read(stockApiProvider)

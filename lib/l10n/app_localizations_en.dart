@@ -3884,6 +3884,9 @@ class AppL10nEn extends AppL10n {
   String get stkWasteNoteRequired => 'A reason is required';
 
   @override
+  String get stkWasteQtyRequired => 'A quantity is required';
+
+  @override
   String stkWasteOk(String value) {
     return 'Waste recorded, value $value';
   }

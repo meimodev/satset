@@ -6235,6 +6235,12 @@ abstract class AppL10n {
   /// **'Alasan wajib diisi'**
   String get stkWasteNoteRequired;
 
+  /// No description provided for @stkWasteQtyRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah wajib diisi'**
+  String get stkWasteQtyRequired;
+
   /// No description provided for @stkWasteOk.
   ///
   /// In id, this message translates to:

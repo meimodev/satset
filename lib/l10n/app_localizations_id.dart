@@ -3851,6 +3851,9 @@ class AppL10nId extends AppL10n {
   String get stkWasteNoteRequired => 'Alasan wajib diisi';
 
   @override
+  String get stkWasteQtyRequired => 'Jumlah wajib diisi';
+
+  @override
   String stkWasteOk(String value) {
     return 'Tercatat dibuang, nilai $value';
   }

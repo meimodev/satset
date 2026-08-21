@@ -2857,6 +2857,7 @@
   "stkWasteNote": "Alasan",
   "stkWasteNoteHelper": "Wajib diisi \u2014 tanpa alasan, angka buang tidak bisa ditindaklanjuti",
   "stkWasteNoteRequired": "Alasan wajib diisi",
+  "stkWasteQtyRequired": "Jumlah wajib diisi",
   "stkWasteOk": "Tercatat dibuang, nilai {value}",
   "@stkWasteOk": {
     "placeholders": {

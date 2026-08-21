@@ -1361,6 +1361,7 @@
   "stkWasteNote": "Reason",
   "stkWasteNoteHelper": "Required \u2014 a waste figure with no reason can't be acted on",
   "stkWasteNoteRequired": "A reason is required",
+  "stkWasteQtyRequired": "A quantity is required",
   "stkWasteOk": "Waste recorded, value {value}",
   "stkMenuReceive": "Receive goods",
   "stkMenuProduce": "Produce a batch",
