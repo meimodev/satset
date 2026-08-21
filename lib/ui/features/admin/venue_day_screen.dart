@@ -171,7 +171,7 @@ class _VenueDayScreenState extends ConsumerState<VenueDayScreen> {
                       return Text(
                         diff == 0
                             ? l10n.vdayVarianceNone
-                            : l10n.vdayVariance(formatIDR(diff.abs())),
+                            : l10n.vdayVariance(formatIDR(diff)),
                         style: SatType.bodyS(
                           color: diff == 0 ? sc.success : sc.warn,
                         ),
