@@ -565,7 +565,16 @@ Future<void> _settleAfterSend(
   )) {
     return;
   }
-  await openCashierBill(context, visitId: visitId!);
+  // Every caller has just `go`ne to the destination, and GoRouter rebuilds its
+  // page list on the next frame — a route pushed inside this one is discarded
+  // by that reconcile, which is why the pane never appeared. Wait for the
+  // frame, then push over whatever it landed on. The root navigator is held
+  // across the gap because `context` belongs to the review screen the `go`
+  // just disposed; its own context outlives every route under it.
+  final nav = Navigator.of(context, rootNavigator: true);
+  await WidgetsBinding.instance.endOfFrame;
+  if (!nav.mounted) return;
+  await openCashierBill(nav.context, visitId: visitId!);
 }
 
 /// The three things that must all be true before the pane opens — pulled out

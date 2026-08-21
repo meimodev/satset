@@ -238,13 +238,16 @@ class _CounterCodeCard extends ConsumerWidget {
                   l10n.soCounterSub,
                   style: SatType.bodyS(color: sc.textLo),
                 ),
+                const SizedBox(height: Sp.s1),
+                // Same line the table card carries. A QR nobody can read back
+                // is a QR nobody can check against the page it opens, and this
+                // is the one code in the venue that is not written on a table.
+                Text(
+                  url ?? l10n.soNoHost,
+                  style: SatType.monoS(color: sc.textLo),
+                ),
                 const SizedBox(height: Sp.s3),
-                if (url == null)
-                  Text(
-                    l10n.soNoHost,
-                    style: SatType.bodyS(color: sc.warn),
-                  )
-                else
+                if (url != null)
                   SatButton.outline(
                     label: l10n.soPrint,
                     icon: Icons.print_rounded,

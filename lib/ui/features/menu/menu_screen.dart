@@ -15,6 +15,7 @@ import 'package:satset/domain/models/venue_table.dart';
 import 'package:uuid/uuid.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/course.dart';
+import 'package:satset/core/localization/labels.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
@@ -799,7 +800,7 @@ class _TabletCartPane extends ConsumerWidget {
 
     final byCourse = <String, List<int>>{};
     for (var i = 0; i < cart.length; i++) {
-      final cid = cart[i].course.toString().split('.').last;
+      final cid = Courses.byId(cart[i].course).serialId;
       byCourse.putIfAbsent(cid, () => []).add(i);
     }
 
@@ -866,7 +867,10 @@ class _TabletCartPane extends ConsumerWidget {
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: Sp.s2),
                           child: Text(
-                            entry.key.toUpperCase(),
+                            courseLabel(
+                              context.l10n,
+                              entry.key,
+                            ).toUpperCase(),
                             style: SatType.caption(color: sc.textMd),
                           ),
                         ),
