@@ -5748,7 +5748,7 @@ class AppL10nId extends AppL10n {
 
   @override
   String get tkwHandoverBlocked =>
-      'Bisa diserahkan setelah semua item siap/disajikan.';
+      'Bisa diserahkan setelah semua item ditandai disajikan.';
 
   @override
   String get tkwHandedOver => 'Sudah diserahkan ke tamu.';

@@ -5811,7 +5811,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get tkwHandoverBlocked =>
-      'You can hand over once every item is ready or served.';
+      'You can hand over once every item is marked served.';
 
   @override
   String get tkwHandedOver => 'Handed over to the guest.';

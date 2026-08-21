@@ -1863,7 +1863,7 @@
   "tkwErrNoTickets": "No items to hand over yet.",
   "tkwHandoverFailed": "Couldn't hand it over: {error}",
   "tkwHandover": "Hand over",
-  "tkwHandoverBlocked": "You can hand over once every item is ready or served.",
+  "tkwHandoverBlocked": "You can hand over once every item is marked served.",
   "tkwHandedOver": "Handed over to the guest.",
   "mvtTitle": "Move table {table}",
   "mvtSubtitle": "{count, plural, =1{Pick a free table · 1 guest} other{Pick a free table · {count} guests}}",

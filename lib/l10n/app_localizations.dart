@@ -9250,7 +9250,7 @@ abstract class AppL10n {
   /// No description provided for @tkwHandoverBlocked.
   ///
   /// In id, this message translates to:
-  /// **'Bisa diserahkan setelah semua item siap/disajikan.'**
+  /// **'Bisa diserahkan setelah semua item ditandai disajikan.'**
   String get tkwHandoverBlocked;
 
   /// No description provided for @tkwHandedOver.

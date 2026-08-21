@@ -4309,7 +4309,7 @@
     }
   },
   "tkwHandover": "Serahkan",
-  "tkwHandoverBlocked": "Bisa diserahkan setelah semua item siap/disajikan.",
+  "tkwHandoverBlocked": "Bisa diserahkan setelah semua item ditandai disajikan.",
   "tkwHandedOver": "Sudah diserahkan ke tamu.",
   "mvtTitle": "Pindahkan meja {table}",
   "@mvtTitle": {
