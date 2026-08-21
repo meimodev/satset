@@ -152,6 +152,14 @@ class _RouterRefresh extends ChangeNotifier {
   }
 }
 
+/// Whether this session's home is the [[Kedai]] menu rather than the floor
+/// (ADR-0109). Read, not watched — `redirect` is not a build, and it re-runs
+/// off the refresh listenable, which venue settings feed.
+bool counterHome(Ref ref, AuthState auth) => showCounterHome(
+  menuHomeEnabled: ref.read(venueSettingsProvider).counterOn(counterMenuHome),
+  canTakeOrder: auth.has(Capability.takeOrder),
+);
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = _RouterRefresh();
   // Re-evaluate redirects when auth or prefs change without re-creating the
@@ -160,6 +168,15 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen(authStateProvider, (_, _) => refresh.bump());
   ref.listen(prefsServiceProvider, (_, _) => refresh.bump());
   ref.listen(apiConfigProvider, (_, _) => refresh.bump());
+  // A freshly paired client signs in before `/venue/settings` has answered, so
+  // the counter switch is false for a beat. Bump when it lands or the venue
+  // would sit on a floor it does not use until the next navigation.
+  //
+  // The *status* provider, deliberately, not the settings themselves:
+  // `VenueSettingsRepository` fetches once from its constructor and gives up
+  // when nothing is paired yet, so listening to it here would build it at app
+  // start — before pairing — and leave the venue on defaults forever.
+  ref.listen(venueSettingsStatusProvider, (_, _) => refresh.bump());
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
@@ -225,22 +242,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         // limit and put the venue's own admin in front of a bare English
         // "Page Not Found". See ADR-0078.
         final mode = prefs?.appMode() ?? AppMode.unset;
-        // A counter shop lands on its menu, not its floor (ADR-0109). Read,
-        // not watched: `redirect` re-runs off the refresh listenable, and a
-        // switch that arrives mid-session takes effect at the next sign-in —
-        // which is exactly what the console's restart note promises.
-        final counterHome = showCounterHome(
-          menuHomeEnabled: ref
-              .read(venueSettingsProvider)
-              .counterOn(counterMenuHome),
-          canTakeOrder: auth.has(Capability.takeOrder),
-        );
         decision = mode == AppMode.server
             ? '/venue'
-            : counterHome
+            : counterHome(ref, auth)
             ? '/counter'
             : '/tables';
       } else if (loggedIn) {
+        // A counter shop has no floor (ADR-0109): its home tab is the menu and
+        // nothing offers `/tables`. Anything still pointing there — an order
+        // flow's back fallback, a stale deep link, or the landing decision
+        // above taken in the beat before venue settings arrived on a freshly
+        // paired client — belongs on the menu instead.
+        if (loc == '/tables' && counterHome(ref, auth)) {
+          decision = '/counter';
+        }
         final needed = _capabilityFor(loc);
         // Fail-closed: none of the route's capabilities denies the route.
         if (needed != null && !needed.any(auth.has)) {
@@ -288,6 +303,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               builder: (_, ref, _) => MenuScreen(
                 tableId: ref.watch(draftOrderIdProvider),
                 tableless: true,
+                inShell: true,
               ),
             ),
           ),

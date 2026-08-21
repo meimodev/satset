@@ -49,11 +49,18 @@ class MenuScreen extends ConsumerStatefulWidget {
   /// Set when adding items to an existing takeaway (Bawa pulang) visit:
   /// [tableId] is the takeaway visit id and submit appends to it. See ADR-0026.
   final String? takeawayVisitId;
+
+  /// Set when this screen *is* a shell tab (the [[Kedai]] home, ADR-0109)
+  /// rather than a page pushed on top of one. The shell already draws the top
+  /// bar, and there is nothing above a home tab to go back to, so the phone
+  /// layout's own bar would be a second bar with a dead arrow.
+  final bool inShell;
   const MenuScreen({
     super.key,
     required this.tableId,
     this.tableless = false,
     this.takeawayVisitId,
+    this.inShell = false,
   });
 
   @override
@@ -403,20 +410,21 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         children: [
           Column(
             children: [
-              SatAppBar(
-                onBack: _handleBack,
-                crumbs: widget.tableless
-                    ? (_isTakeaway
-                          ? [
-                              context.l10n.crumbBawaPulang,
-                              context.l10n.crumbTambahItem,
-                            ]
-                          : [
-                              context.l10n.crumbPesananBaru,
-                              context.l10n.crumbTambahItem,
-                            ])
-                    : [table!.displayName, context.l10n.crumbTambahItem],
-              ),
+              if (!widget.inShell)
+                SatAppBar(
+                  onBack: _handleBack,
+                  crumbs: widget.tableless
+                      ? (_isTakeaway
+                            ? [
+                                context.l10n.crumbBawaPulang,
+                                context.l10n.crumbTambahItem,
+                              ]
+                            : [
+                                context.l10n.crumbPesananBaru,
+                                context.l10n.crumbTambahItem,
+                              ])
+                      : [table!.displayName, context.l10n.crumbTambahItem],
+                ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
                 child: Column(
@@ -867,10 +875,7 @@ class _TabletCartPane extends ConsumerWidget {
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: Sp.s2),
                           child: Text(
-                            courseLabel(
-                              context.l10n,
-                              entry.key,
-                            ).toUpperCase(),
+                            courseLabel(context.l10n, entry.key).toUpperCase(),
                             style: SatType.caption(color: sc.textMd),
                           ),
                         ),
@@ -1113,7 +1118,6 @@ Future<bool?> _confirmDiscard(BuildContext context, int items) {
     },
   );
 }
-
 
 /// The [[Item bebas]] composer. Returns the line to add, or null on dismiss.
 ///
