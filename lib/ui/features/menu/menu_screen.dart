@@ -359,7 +359,12 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                       child: _CatTabs(active: _cat, onChange: _selectCategory),
                     ),
                   Expanded(
-                    child: noMatches
+                    // The grid gets its own ground so a white card has an edge
+                    // to sit against — see `satCardGround`, which only steps
+                    // down on a light palette.
+                    child: ColoredBox(
+                      color: satCardGround(sc),
+                      child: noMatches
                         ? _noMatches(query)
                         : LayoutBuilder(
                             builder: (context, constraints) {
@@ -389,6 +394,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                               );
                             },
                           ),
+                    ),
                   ),
                 ],
               ),
@@ -451,7 +457,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 const SizedBox(height: Sp.s2),
               ],
               Expanded(
-                child: noMatches
+                child: ColoredBox(
+                  color: satCardGround(sc),
+                  child: noMatches
                     ? _noMatches(query)
                     : Center(
                         child: ConstrainedBox(
@@ -480,6 +488,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                           ),
                         ),
                       ),
+                ),
               ),
             ],
           ),
@@ -592,7 +601,7 @@ class _ItemCard extends ConsumerWidget {
     final sc = context.sat;
     final tagsById = ref.watch(menuTagsByIdProvider);
     final disabled = item.unavailable;
-    return Opacity(
+    final card = Opacity(
       opacity: disabled ? 0.4 : 1,
       child: Material(
         // Glow tints a card that already has something in the cart with the
@@ -633,25 +642,6 @@ class _ItemCard extends ConsumerWidget {
                           initialsSize: 30,
                         ),
                       ),
-                      if (item.unavailable)
-                        Positioned(
-                          left: 8,
-                          top: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: Sp.s2,
-                              vertical: Sp.s1,
-                            ),
-                            decoration: SatBox.d(
-                              color: satMediaScrim,
-                              borderRadius: SatR.a(999),
-                            ),
-                            child: Text(
-                              "HABIS",
-                              style: SatType.monoS(color: sc.urgent),
-                            ),
-                          ),
-                        ),
                       if (inCart > 0)
                         Positioned(
                           right: 8,
@@ -724,6 +714,33 @@ class _ItemCard extends ConsumerWidget {
           ),
         ),
       ),
+    );
+    if (!disabled) return card;
+    // The badge that says *why* the card is dimmed sits outside the `Opacity`.
+    // At 0.4 the one element carrying the state was the faintest thing on the
+    // card, and dark-red-on-scrim was already the weakest pairing in the grid.
+    return Stack(
+      children: [
+        card,
+        Positioned(
+          left: Sp.s2,
+          top: Sp.s2,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Sp.s2,
+              vertical: Sp.s1,
+            ),
+            decoration: SatBox.d(
+              color: sc.urgent,
+              borderRadius: SatR.a(999),
+            ),
+            child: Text(
+              "HABIS",
+              style: SatType.monoS(color: onFill(sc.urgent)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

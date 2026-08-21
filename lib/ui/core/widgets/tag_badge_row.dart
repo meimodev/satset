@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/domain/models/menu_tag.dart';
@@ -32,10 +33,22 @@ class TagBadgeRow extends StatelessWidget {
         children: [
           for (final id in ids)
             Container(
-              width: 14,
-              height: 14,
-              decoration: SatBox.d(color: bg, borderRadius: SatR.a(4)),
-              alignment: Alignment.center,
+              // Sized to its content, not to a square: a two-character code in
+              // 10px mono is wider than the 14px box this used to be, and it
+              // spilled out of the fill on every card. Padding does the sizing
+              // and there is no `alignment` — an Align inside a loose Wrap cell
+              // expands to the full row instead of hugging the code.
+              padding: const EdgeInsets.symmetric(
+                horizontal: Sp.s1,
+                vertical: Sp.sHair,
+              ),
+              // The `*Soft` tokens sit near 11% alpha, which is a banner wash —
+              // at chip size on white it reads as nothing. Doubling keeps the
+              // hue and leaves the opaque palettes (neoKertas) untouched.
+              decoration: SatBox.d(
+                color: bg.withValues(alpha: (bg.a * 2).clamp(0.0, 1.0)),
+                borderRadius: SatR.a(4),
+              ),
               child: Text(
                 tagsById[id]?.code ?? '?',
                 style: SatType.caption(color: fg),

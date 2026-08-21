@@ -563,6 +563,18 @@ const Color _inkOnLight = Color(0xFF0B0B0F);
 Color onFill(Color c) =>
     c.computeLuminance() > 0.45 ? _inkOnLight : const Color(0xFFFFFFFF);
 
+/// True when the active palette is a light one. Asks the ground rather than
+/// the theme name so a seventh palette gets the right answer for free.
+bool satLightPalette(SatColors sc) => sc.bg0.computeLuminance() > 0.45;
+
+/// The ground a grid of cards sits on. A light palette puts `bg2` at white and
+/// `bg0` a shade off it, so a card on `bg0` has about 1.05:1 to separate with —
+/// stepping the ground down to `bg4` gives it an edge without the border the
+/// Glow skin deliberately does not draw. A dark palette already has the delta
+/// and stays on `bg0`; `bg4` there is *lighter* than the card and would read as
+/// a well rather than a ground.
+Color satCardGround(SatColors sc) => satLightPalette(sc) ? sc.bg4 : sc.bg0;
+
 /// A darker sibling of [c], for the far end of an avatar/badge gradient.
 /// Blends toward black rather than reducing lightness so a saturated hue keeps
 /// its identity instead of going muddy.

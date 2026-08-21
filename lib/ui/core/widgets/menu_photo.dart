@@ -74,7 +74,12 @@ class MenuPhoto extends ConsumerWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [sc.bg3, sc.bg4],
+          // A light palette's `bg3`/`bg4` pair straddles `bg0`, so a photoless
+          // card used to paint its top half in the ground colour and vanish.
+          // Light steps *up* from the card surface; dark keeps the ramp.
+          colors: satLightPalette(sc)
+              ? [sc.bg1, sc.bg3]
+              : [sc.bg3, sc.bg4],
         ),
       ),
       alignment: Alignment.center,
