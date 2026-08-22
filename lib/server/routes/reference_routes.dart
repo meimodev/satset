@@ -730,6 +730,12 @@ Router referenceRoutes(AppDatabase db, WsHub? hub, ServerAuth auth) {
       );
     }
     if (body.containsKey('disabled') && prev.disabled != row.disabled) {
+      if (row.disabled) {
+        // Disabling is meant to take the device out of service, so the token
+        // already on it has to go. Without this the bearer stays valid until
+        // it expires — up to twelve hours of a "disabled" member ordering.
+        await auth.revokeAllFor(row.id);
+      }
       await _emitAudit(
         db,
         hub,

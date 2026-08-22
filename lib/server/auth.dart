@@ -174,7 +174,14 @@ class ServerAuth {
   }
 
   /// Resolve a bearer token to a user row. Returns null when the token is
-  /// missing, expired, revoked, or malformed.
+  /// missing, expired, revoked, malformed, or belongs to a disabled user.
+  ///
+  /// The disabled check is not redundant with the one in [signInWithPin].
+  /// That one stops a disabled member getting a *new* token; this one stops
+  /// the token they already hold, which otherwise stays good for the rest of
+  /// its twelve hours. [revokeAllFor] closes the same hole from the other
+  /// side, but a session row is not the only way a token can be presented, so
+  /// the check lives here too — the row is the cache, the flag is the truth.
   Future<User?> resolveBearer(String? token) async {
     if (token == null || token.isEmpty) return null;
     try {
@@ -186,13 +193,20 @@ class ServerAuth {
       db.sessions,
     )..where((s) => s.token.equals(token))).getSingleOrNull();
     if (s == null || s.expiresAt.isBefore(DateTime.now())) return null;
-    return (db.select(
-      db.users,
-    )..where((u) => u.id.equals(s.userId))).getSingleOrNull();
+    return (db.select(db.users)
+          ..where((u) => u.id.equals(s.userId) & u.disabled.equals(false)))
+        .getSingleOrNull();
   }
 
   Future<void> revoke(String token) async {
     await (db.delete(db.sessions)..where((s) => s.token.equals(token))).go();
+  }
+
+  /// Drop every live session a user holds. Called when they are disabled, so
+  /// the device in their hand stops working now rather than whenever its
+  /// token happens to expire.
+  Future<void> revokeAllFor(String userId) async {
+    await (db.delete(db.sessions)..where((s) => s.userId.equals(userId))).go();
   }
 
   static String generateSecret() => const Uuid().v4();
