@@ -98,9 +98,6 @@ dev_dependencies:
   json_serializable: ^6.8.0
   drift_dev: ^2.20.3
 
-  # Native integration testing
-  patrol: ^4.6.1
-
   # App launcher icon generation
   flutter_launcher_icons: ^0.14.1
 
@@ -172,8 +169,3 @@ flutter_launcher_icons:
   adaptive_icon_background: "#EE8F3B"
   adaptive_icon_foreground: "assets/icon/icon.png"
 
-# Patrol native UI test config — driven by patrol_cli.
-patrol:
-  app_name: SatSet
-  android:
-    package_name: id.activid.satset
