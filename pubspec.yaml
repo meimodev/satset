@@ -45,6 +45,9 @@ dependencies:
   basic_utils: ^5.7.0
   dart_jsonwebtoken: ^2.14.1
   crypto: ^3.0.5
+  # Already here transitively (dart_jsonwebtoken). Named directly for
+  # PBKDF2 in lib/server/pin.dart — see ADR-0112.
+  pointycastle: ^3.9.1
 
   # Logging
   logging: ^1.2.0

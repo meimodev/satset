@@ -176,6 +176,8 @@ enum AuditKind {
 
   // ---------- staff & roles ----------
   /// `{name}`.
+  /// A wrong PIN, and which try it was. ADR-0112.
+  signInFailed,
   staffCreated,
   staffDeleted,
   staffDisabled,

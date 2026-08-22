@@ -1327,6 +1327,12 @@ abstract class AppL10n {
   /// **'PIN reset'**
   String get auditTypeStaffPinReset;
 
+  /// No description provided for @auditTypeSignInFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'PIN gagal'**
+  String get auditTypeSignInFailed;
+
   /// No description provided for @auditTypeRoleCreated.
   ///
   /// In id, this message translates to:
@@ -4314,6 +4320,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'PIN {name} diubah'**
   String auditStaffPinSet(String name);
+
+  /// No description provided for @auditSignInFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'PIN salah di {device} · percobaan ke-{attempt}'**
+  String auditSignInFailed(String device, String attempt);
 
   /// No description provided for @auditStaffPinReset.
   ///

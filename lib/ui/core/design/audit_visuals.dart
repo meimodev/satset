@@ -157,6 +157,14 @@ AuditTone auditTone(AuditType t, SatColors sc) => switch (t) {
     bg: sc.infoSoft,
     fg: sc.info,
   ),
+  // `warn`, not `urgent`: one wrong PIN is a fat finger, and colouring it red
+  // would spend the scarce hue on the most ordinary row in the log. A run of
+  // them is the finding, and a run of amber reads as one.
+  AuditType.signInFailed => (
+    icon: Icons.lock_person_outlined,
+    bg: sc.warnSoft,
+    fg: sc.warn,
+  ),
   AuditType.staffPinReset => (
     icon: Icons.lock_reset,
     bg: sc.warnSoft,

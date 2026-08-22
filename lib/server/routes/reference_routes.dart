@@ -3,7 +3,6 @@ import 'package:satset/server/routes/tables_routes.dart' show tableRowToJson;
 import 'package:satset/core/log/sat_log.dart';
 import 'dart:async';
 
-import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -25,11 +24,13 @@ import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/db/seed.dart';
 import 'package:satset/server/db/seed_history.dart';
+import 'package:satset/server/pin.dart' as pin_lib;
 import 'package:satset/server/seed_job.dart';
 import 'package:satset/server/ws_hub.dart';
 
-String _hashPin(String pin) =>
-    sha256.convert(utf8.encode('satset.v1::$pin')).toString();
+/// One hasher for the whole server (ADR-0112). This file used to carry its
+/// own copy of the digest, as did the seed.
+String _hashPin(String pin) => pin_lib.hashPin(pin);
 
 const _uuid = Uuid();
 
@@ -1131,10 +1132,10 @@ Future<bool> _pinCollision(
   String pin, {
   required String? exceptId,
 }) async {
-  final hash = _hashPin(pin);
-  final hit = await (db.select(
-    db.users,
-  )..where((u) => u.pinHash.equals(hash))).get();
+  // Disabled staff count: their PIN is still theirs, and handing it to
+  // somebody else would make the audit trail ambiguous the day they come
+  // back. A salted hash cannot be matched, so this verifies (ADR-0112).
+  final hit = await pin_lib.usersForPin(db, pin, onlyEnabled: false);
   return hit.any((u) => u.id != exceptId);
 }
 

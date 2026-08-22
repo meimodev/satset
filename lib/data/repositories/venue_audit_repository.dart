@@ -47,6 +47,10 @@ const auditFilterTypes = <AuditType>[
   // Same reasoning: the counts live on the /selforder hero, and a tile here
   // would be a second place for one number to disagree with itself.
   AuditType.selfOrder,
+  // Filterable so an owner can read a run of them as a run — one wrong PIN is
+  // a fat finger, forty in a minute is somebody in the corner guessing, and
+  // the only way to tell is to see them together.
+  AuditType.signInFailed,
 ];
 
 typedef AuditTally = ({int count, int amount});

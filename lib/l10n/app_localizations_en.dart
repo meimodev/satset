@@ -749,6 +749,9 @@ class AppL10nEn extends AppL10n {
   String get auditTypeStaffPinReset => 'PIN reset';
 
   @override
+  String get auditTypeSignInFailed => 'Failed PIN';
+
+  @override
   String get auditTypeRoleCreated => 'Role +';
 
   @override
@@ -2578,6 +2581,11 @@ class AppL10nEn extends AppL10n {
   @override
   String auditStaffPinSet(String name) {
     return 'PIN changed for $name';
+  }
+
+  @override
+  String auditSignInFailed(String device, String attempt) {
+    return 'Wrong PIN on $device · attempt $attempt';
   }
 
   @override

@@ -320,6 +320,7 @@
   "auditTypeStaffRoleChanged": "Peran",
   "auditTypeStaffPinSet": "PIN",
   "auditTypeStaffPinReset": "PIN reset",
+  "auditTypeSignInFailed": "PIN gagal",
   "auditTypeRoleCreated": "Peran +",
   "auditTypeRoleRenamed": "Peran ubah",
   "auditTypeRoleDeleted": "Peran −",
@@ -1796,6 +1797,17 @@
   "@auditStaffPinSet": {
     "placeholders": {
       "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditSignInFailed": "PIN salah di {device} · percobaan ke-{attempt}",
+  "@auditSignInFailed": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      },
+      "attempt": {
         "type": "String"
       }
     }
