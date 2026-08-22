@@ -87,7 +87,12 @@ dependencies:
   # See docs/adr/0030-client-side-range-scoped-export.md.
   pdf: ^3.11.1
   printing: ^5.13.3
-  share_plus: ^10.1.2
+  # share_plus 13 pulls win32 6, which forces package_info_plus to 10 and AGP
+  # to 8.12.1 — the three move together or not at all. An earlier attempt at
+  # this bump failed with `Unresolved reference 'ShareSuccessManager'`, which
+  # was a stale generated registrant from the half-reverted attempt before it,
+  # not an incompatibility; a `flutter clean` is what the error actually wanted.
+  share_plus: ^13.3.0
 
   # Hands the "lupa password" request to the developer's WhatsApp (ADR-0059).
   url_launcher: ^6.3.1
@@ -111,7 +116,7 @@ dependencies:
   # record advertises. open_filex hands the downloaded APK to Android's package
   # installer; it ships its own FileProvider, so there is no authority to
   # declare here.
-  package_info_plus: ^8.1.1
+  package_info_plus: ^10.2.1
   open_filex: ^4.5.0
 
 dev_dependencies:

@@ -104,10 +104,15 @@ Future<void> shareExportBytes({
   final dir = await getTemporaryDirectory();
   final file = File('${dir.path}/$filename');
   await file.writeAsBytes(bytes, flush: true);
-  await Share.shareXFiles(
-    [XFile(file.path, mimeType: mime, name: filename)],
-    subject: subject,
-    text: text,
+  // share_plus 13 replaced the static `Share.shareXFiles` helpers with one
+  // `SharePlus.instance.share(ShareParams(...))` call. Same sheet, same file,
+  // one entry point instead of six overloads.
+  await SharePlus.instance.share(
+    ShareParams(
+      files: [XFile(file.path, mimeType: mime, name: filename)],
+      subject: subject,
+      text: text,
+    ),
   );
 }
 
