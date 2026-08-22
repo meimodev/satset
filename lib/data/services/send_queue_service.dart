@@ -467,6 +467,10 @@ IntentSender apiIntentSender(ApiClient api) => (intent) async {
       return (raw as Map).cast<String, dynamic>();
     case SendIntentKind.seatTable:
       final raw = await api.postJson('/tables/${intent.tableId}/seat', {
+        // The intent id, same as the submit path uses. A retry after a lost
+        // reply then reads back the first attempt's answer instead of the
+        // 409 that would refuse every order queued behind this seat.
+        'idempotencyKey': intent.id,
         'pax': (intent.payload['pax'] as num?)?.toInt() ?? 1,
         'actorId': intent.actorId,
         'guestName': ?intent.payload['guestName'] as String?,
