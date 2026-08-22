@@ -68,29 +68,33 @@ class PrinterDiscoveryService {
       try {
         for (final type in _types) {
           final d = BonsoirDiscovery(type: type);
-          await d.ready;
+          await d.initialize();
           discoveries.add(d);
           final sub = d.eventStream?.listen(
             (ev) {
-              final svc = ev.service;
-              switch (ev.type) {
-                case BonsoirDiscoveryEventType.discoveryServiceFound:
-                  if (svc != null) {
-                    unawaited(svc.resolve(d.serviceResolver));
-                  }
-                case BonsoirDiscoveryEventType.discoveryServiceResolved:
-                  if (svc is ResolvedBonsoirService) {
-                    final host = svc.host;
-                    if (host == null || host.isEmpty) return;
-                    final port = svc.port == 0 ? 9100 : svc.port;
-                    final p = DiscoveredPrinter(
-                      name: svc.name.trim().isEmpty ? host : svc.name.trim(),
-                      host: host,
-                      port: port,
-                    );
-                    if (seen.add(p.key) && !controller.isClosed) {
-                      controller.add(p);
-                    }
+              // bonsoir 7: an event is a sealed class, and a resolved service
+              // carries `hostAddresses` (a list) instead of one nullable
+              // `host`. A printer that answers on several addresses is fine —
+              // take the first non-empty one and let dedup by host:port sort
+              // out the rest.
+              switch (ev) {
+                case BonsoirDiscoveryServiceFoundEvent():
+                  unawaited(ev.service.resolve(d.serviceResolver));
+                case BonsoirDiscoveryServiceResolvedEvent():
+                  final svc = ev.service;
+                  final host = svc.hostAddresses.firstWhere(
+                    (a) => a.isNotEmpty,
+                    orElse: () => '',
+                  );
+                  if (host.isEmpty) return;
+                  final port = svc.port == 0 ? 9100 : svc.port;
+                  final p = DiscoveredPrinter(
+                    name: svc.name.trim().isEmpty ? host : svc.name.trim(),
+                    host: host,
+                    port: port,
+                  );
+                  if (seen.add(p.key) && !controller.isClosed) {
+                    controller.add(p);
                   }
                 default:
                   break;

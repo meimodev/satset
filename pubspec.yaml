@@ -49,19 +49,30 @@ dependencies:
   http: ^1.2.2
 
   # Storage / prefs
-  flutter_secure_storage: ^9.2.2
+  # Deliberately v10, not v11, and this is a two-release migration rather than
+  # a stale pin. v11 REMOVES the ciphers v9 wrote with (RSA/PKCS1 and
+  # AES-CBC/PKCS7); v10 is the release that migrates them to OAEP and AES-GCM.
+  # Going 9 -> 11 in one step leaves everything this store holds unreadable on
+  # every device already in the field: the session JWT, the device id, the
+  # device cert/key PEMs, and the server fingerprint that IS the pairing trust
+  # anchor (ADR-0080). That is not a logout, it is a re-pair of every handset
+  # and tablet in every venue, and nothing in the app would report why.
+  #
+  # So: ship v10, let it migrate on first launch, and raise this to ^11 in a
+  # LATER release once the fleet has run v10 at least once.
+  flutter_secure_storage: ^10.3.1
   shared_preferences: ^2.3.2
 
   # Discovery / pairing
-  bonsoir: ^5.1.10
+  bonsoir: ^7.1.0
 
   # TLS / JWT / crypto
-  basic_utils: ^5.7.0
-  dart_jsonwebtoken: ^2.14.1
+  basic_utils: ^5.8.2
+  dart_jsonwebtoken: ^3.4.1
   crypto: ^3.0.5
   # Already here transitively (dart_jsonwebtoken). Named directly for
   # PBKDF2 in lib/server/pin.dart — see ADR-0112.
-  pointycastle: ^3.9.1
+  pointycastle: ^4.0.0
 
   # Logging
   logging: ^1.2.0
