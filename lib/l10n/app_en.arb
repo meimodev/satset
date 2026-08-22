@@ -2525,6 +2525,8 @@
   "stkReasonProduce": "Production",
   "noteLabel": "Note",
   "tblZoneReadyCount": "{n} ready",
+  "tblZoneAlarmCrit": "{n, plural, =1{1 table critical} other{{n} tables critical}}",
+  "tblZoneAlarmWarn": "{n, plural, =1{1 table needs attention} other{{n} tables need attention}}",
   "tkwStatusHandedOver": "Handed over",
   "tkwStatusReady": "Ready",
   "tkwStatusInProgress": "In progress",

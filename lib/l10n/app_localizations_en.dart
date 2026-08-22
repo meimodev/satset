@@ -7968,6 +7968,28 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String tblZoneAlarmCrit(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tables critical',
+      one: '1 table critical',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tblZoneAlarmWarn(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tables need attention',
+      one: '1 table needs attention',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get tkwStatusHandedOver => 'Handed over';
 
   @override

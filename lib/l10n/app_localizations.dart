@@ -12589,6 +12589,18 @@ abstract class AppL10n {
   /// **'{n} siap'**
   String tblZoneReadyCount(int n);
 
+  /// Zone chip alarm, worst tier: tables stuck past the critical threshold.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} meja kritis}}'**
+  String tblZoneAlarmCrit(int n);
+
+  /// Zone chip alarm, lower tier: tables stuck past the warning threshold.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} meja perlu perhatian}}'**
+  String tblZoneAlarmWarn(int n);
+
   /// Takeaway status: handed to the guest.
   ///
   /// In id, this message translates to:

@@ -5837,6 +5837,24 @@
       }
     }
   },
+  "tblZoneAlarmCrit": "{n, plural, other{{n} meja kritis}}",
+  "@tblZoneAlarmCrit": {
+    "description": "Zone chip alarm, worst tier: tables stuck past the critical threshold.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tblZoneAlarmWarn": "{n, plural, other{{n} meja perlu perhatian}}",
+  "@tblZoneAlarmWarn": {
+    "description": "Zone chip alarm, lower tier: tables stuck past the warning threshold.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "tkwStatusHandedOver": "Diserahkan",
   "@tkwStatusHandedOver": {
     "description": "Takeaway status: handed to the guest."

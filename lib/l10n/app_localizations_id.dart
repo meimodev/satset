@@ -7868,6 +7868,26 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String tblZoneAlarmCrit(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n meja kritis',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tblZoneAlarmWarn(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n meja perlu perhatian',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get tkwStatusHandedOver => 'Diserahkan';
 
   @override
