@@ -5209,6 +5209,7 @@
   "admissionUnreachable": "Tidak bisa menghubungi server identitas. Periksa koneksi internet lalu coba lagi.",
   "admissionCancel": "Batal",
   "sendQueueFull": "Antrean kirim penuh — sambungkan dulu ke server sebelum pesan lagi",
+  "sendQueueCorrupt": "Antrean kirim rusak dan tidak bisa dibaca. Pesanan yang tertahan di dalamnya tidak terkirim — periksa meja yang belum dapat pesanannya.",
   "sendQueuePending": "{count, plural, other{{count} pesanan menunggu terkirim}}",
   "@sendQueuePending": {
     "placeholders": {

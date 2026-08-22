@@ -7043,6 +7043,10 @@ class AppL10nEn extends AppL10n {
       'Send queue is full — reconnect to the server before taking more orders';
 
   @override
+  String get sendQueueCorrupt =>
+      'The send queue was unreadable and could not be replayed. Any orders held in it were not sent — check the tables still waiting.';
+
+  @override
   String sendQueuePending(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -2178,6 +2178,7 @@
   "admissionUnreachable": "Could not reach the identity server. Check the internet connection and try again.",
   "admissionCancel": "Cancel",
   "sendQueueFull": "Send queue is full — reconnect to the server before taking more orders",
+  "sendQueueCorrupt": "The send queue was unreadable and could not be replayed. Any orders held in it were not sent — check the tables still waiting.",
   "sendQueuePending": "{count, plural, =1{1 order waiting to send} other{{count} orders waiting to send}}",
   "@sendQueuePending": {
     "placeholders": {

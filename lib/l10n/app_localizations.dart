@@ -11053,6 +11053,12 @@ abstract class AppL10n {
   /// **'Antrean kirim penuh — sambungkan dulu ke server sebelum pesan lagi'**
   String get sendQueueFull;
 
+  /// No description provided for @sendQueueCorrupt.
+  ///
+  /// In id, this message translates to:
+  /// **'Antrean kirim rusak dan tidak bisa dibaca. Pesanan yang tertahan di dalamnya tidak terkirim — periksa meja yang belum dapat pesanannya.'**
+  String get sendQueueCorrupt;
+
   /// No description provided for @sendQueuePending.
   ///
   /// In id, this message translates to:

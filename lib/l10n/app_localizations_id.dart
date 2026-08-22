@@ -6956,6 +6956,10 @@ class AppL10nId extends AppL10n {
       'Antrean kirim penuh — sambungkan dulu ke server sebelum pesan lagi';
 
   @override
+  String get sendQueueCorrupt =>
+      'Antrean kirim rusak dan tidak bisa dibaca. Pesanan yang tertahan di dalamnya tidak terkirim — periksa meja yang belum dapat pesanannya.';
+
+  @override
   String sendQueuePending(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
