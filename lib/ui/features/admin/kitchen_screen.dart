@@ -288,17 +288,23 @@ class _OrderCard extends ConsumerWidget {
     final simpleKds = ref.watch(
       venueSettingsProvider.select((v) => v.counterOn(counterSimpleKds)),
     );
-    final tables = ref.watch(tablesProvider);
-    final table = tables.where((t) => t.id == order.tableId).firstOrNull;
+    // Selecting the *label* rather than the row: a `VenueTable` has no value
+    // equality, so selecting the object would re-fire on every emission and
+    // narrow nothing. A String does, which is why this is worth doing.
+    final tableName = ref.watch(
+      tablesProvider.select(
+        (l) => l.where((t) => t.id == order.tableId).firstOrNull?.displayName,
+      ),
+    );
     // Resolve a table-less (takeaway) order's label via the visit instead of
     // showing the raw visit id. See ADR-0026.
     final tableLabel =
-        table?.displayName ??
-        ref
-            .watch(takeawayVisitsProvider)
-            .where((v) => v.id == order.tableId)
-            .map((v) => v.label)
-            .firstOrNull ??
+        tableName ??
+        ref.watch(
+          takeawayVisitsProvider.select(
+            (l) => l.where((v) => v.id == order.tableId).firstOrNull?.label,
+          ),
+        ) ??
         order.tableId;
 
     final ring = SatShape.glow ? (late ? 3.0 : (warn ? 2.0 : 0.0)) : 0.0;
