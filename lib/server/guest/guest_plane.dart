@@ -43,6 +43,7 @@ class GuestPlane {
     if (_http != null) return;
     final handler = const Pipeline()
         .addMiddleware(_guestOnly())
+        .addMiddleware(_stampCaller())
         .addHandler(guestRoutes(db, hub).call);
     _http = await shelf_io.serve(handler, InternetAddress.anyIPv4, port);
     SatLog.srv('guest plane listening on :$port (cleartext)');
@@ -81,13 +82,32 @@ Future<String?> guestLanHost() async {
 /// CORS for the page itself and nothing else. The staff API is not reachable
 /// from this handler at all — it is a different [Router] on a different socket
 /// — so this middleware is about browsers, not about authorisation.
-Middleware _guestOnly() => (inner) => (req) async {
-  if (req.method == 'OPTIONS') {
-    return Response.ok('', headers: _cors);
-  }
-  final res = await inner(req);
-  return res.change(headers: {...res.headers, ..._cors});
-};
+Middleware _guestOnly() =>
+    (inner) => (req) async {
+      if (req.method == 'OPTIONS') {
+        return Response.ok('', headers: _cors);
+      }
+      final res = await inner(req);
+      return res.change(headers: {...res.headers, ..._cors});
+    };
+
+/// Puts the caller's address in the request context as `guest.ip`, which is
+/// what the router's rate buckets key on.
+///
+/// It lives here rather than in the router because the address is a property
+/// of the *socket*, and the router is deliberately socket-agnostic — a route
+/// test builds a [Request] by hand and there is no connection behind it. An
+/// absent stamp is read as "nothing to key on", never as a shared key.
+///
+/// No `x-forwarded-for` is consulted. There is no proxy on a LAN, and honouring
+/// a header the caller writes would hand every bucket a free reset.
+Middleware _stampCaller() =>
+    (inner) => (req) {
+      final info =
+          req.context['shelf.io.connection_info'] as HttpConnectionInfo?;
+      final ip = info?.remoteAddress.address;
+      return inner(ip == null ? req : req.change(context: {'guest.ip': ip}));
+    };
 
 const _cors = {
   'access-control-allow-origin': '*',
