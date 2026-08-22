@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import 'db/database.dart';
 import 'pin.dart' as pin_lib;
 import 'shift.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 /// Server-side auth helpers. Verifies PINs, issues HS256 JWTs, validates
 /// bearer tokens, persists sessions for revocation.
@@ -52,7 +53,7 @@ class ServerAuth {
       seconds: steps >= 6 ? pinMaxBackoff.inSeconds : 1 << steps,
     );
     final capped = delay > pinMaxBackoff ? pinMaxBackoff : delay;
-    final waited = (now ?? DateTime.now()).difference(f.last);
+    final waited = (now ?? SatClock.realNow()).difference(f.last);
     final left = capped - waited;
     return left > Duration.zero ? left : null;
   }
@@ -61,7 +62,7 @@ class ServerAuth {
   int notePinFailure(String deviceId, {DateTime? now}) {
     final f = _pinFails[deviceId];
     final count = (f?.count ?? 0) + 1;
-    _pinFails[deviceId] = (count: count, last: now ?? DateTime.now());
+    _pinFails[deviceId] = (count: count, last: now ?? SatClock.realNow());
     return count;
   }
 
@@ -112,7 +113,7 @@ class ServerAuth {
     final user = await userForPin(pin);
     if (user == null) return null;
 
-    final now = DateTime.now();
+    final now = SatClock.realNow();
     final expiry = now.add(tokenTtl);
     final jwt = JWT({
       'sub': user.id,
@@ -198,7 +199,7 @@ class ServerAuth {
     final user = await (db.select(
       db.users,
     )..where((u) => u.id.equals(userId))).getSingle();
-    final now = DateTime.now();
+    final now = SatClock.realNow();
     final expiry = now.add(tokenTtl);
     final jwt = JWT({
       'sub': user.id,
@@ -257,7 +258,7 @@ class ServerAuth {
     final s = await (db.select(
       db.sessions,
     )..where((s) => s.token.equals(token))).getSingleOrNull();
-    if (s == null || s.expiresAt.isBefore(DateTime.now())) return null;
+    if (s == null || s.expiresAt.isBefore(SatClock.realNow())) return null;
     return (db.select(db.users)
           ..where((u) => u.id.equals(s.userId) & u.disabled.equals(false)))
         .getSingleOrNull();

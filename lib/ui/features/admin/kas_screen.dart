@@ -28,6 +28,7 @@ import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import '_common.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 /// "Kas kecil" — the petty cash box (§Kas kecil).
 ///
@@ -172,7 +173,7 @@ class _KasScreenState extends ConsumerState<KasScreen> {
     final at = state.lastCountAt;
     if (at == null) return l10n.kasNeverCounted;
     return l10n.kasLastCount(
-      formatElapsed(l10n, DateTime.now().difference(at)),
+      formatElapsed(l10n, SatClock.now().difference(at)),
     );
   }
 

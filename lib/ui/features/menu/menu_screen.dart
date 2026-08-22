@@ -367,25 +367,33 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                                 constraints.maxWidth,
                                 minTileWidth: 175,
                               );
-                              return GridView.count(
-                                crossAxisCount: dynamicCols,
-                                mainAxisSpacing: 10,
-                                crossAxisSpacing: 10,
-                                childAspectRatio: 0.70,
+                              // .builder, not .count: `children:` builds every
+                              // card in the category up front, and a real venue
+                              // menu is not the seed's 42 items. Off-screen
+                              // cards cost nothing here.
+                              return GridView.builder(
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: dynamicCols,
+                                      mainAxisSpacing: 10,
+                                      crossAxisSpacing: 10,
+                                      childAspectRatio: 0.70,
+                                    ),
                                 padding: const EdgeInsets.fromLTRB(
                                   28,
                                   14,
                                   28,
                                   28,
                                 ),
-                                children: [
-                                  for (final it in items)
-                                    _ItemCard(
-                                      item: it,
-                                      inCart: inCartQty[it.id] ?? 0,
-                                      onTap: () => _openItem(it),
-                                    ),
-                                ],
+                                itemCount: items.length,
+                                itemBuilder: (context, i) {
+                                  final it = items[i];
+                                  return _ItemCard(
+                                    item: it,
+                                    inCart: inCartQty[it.id] ?? 0,
+                                    onTap: () => _openItem(it),
+                                  );
+                                },
                               );
                             },
                           ),
@@ -458,25 +466,29 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                           constraints: BoxConstraints(
                             maxWidth: l.contentMaxWidth,
                           ),
-                          child: GridView.count(
-                            crossAxisCount: cols,
-                            mainAxisSpacing: 8,
-                            crossAxisSpacing: 8,
-                            childAspectRatio: 0.74,
+                          child: GridView.builder(
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: cols,
+                                  mainAxisSpacing: 8,
+                                  crossAxisSpacing: 8,
+                                  childAspectRatio: 0.74,
+                                ),
                             padding: EdgeInsets.fromLTRB(
                               16,
                               4,
                               16,
                               l.bottomInset + 80,
                             ),
-                            children: [
-                              for (final it in items)
-                                _ItemCard(
-                                  item: it,
-                                  inCart: inCartQty[it.id] ?? 0,
-                                  onTap: () => _openItem(it),
-                                ),
-                            ],
+                            itemCount: items.length,
+                            itemBuilder: (context, i) {
+                              final it = items[i];
+                              return _ItemCard(
+                                item: it,
+                                inCart: inCartQty[it.id] ?? 0,
+                                onTap: () => _openItem(it),
+                              );
+                            },
                           ),
                         ),
                       ),

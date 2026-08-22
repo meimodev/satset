@@ -20,6 +20,7 @@ import 'package:satset/server/ws_hub.dart';
 import 'database.dart';
 import 'seed_data.dart' as seed;
 import 'seed_history_mix.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 /// Every row the fabricated month writes carries this id prefix. ADR-0073
 /// keeps ADR-0052 §4's rule — clearing deletes by tag and never truncates a
@@ -241,7 +242,7 @@ Future<void> seedHistory(
   final priceOf = {for (final m in menu) m.id: m.price};
   final nameOf = {for (final m in menu) m.id: m.name};
 
-  final today = DateTime.now();
+  final today = SatClock.now();
   var seq = 0;
   String nextId(String kind) => '$samplePrefix$kind-${seq++}';
 
@@ -954,7 +955,7 @@ const _discountRate = 0.04;
 /// it cannot be seen to work. Scattered across the month at plausible instants
 /// so the venue-wide log reads like a venue somebody actually ran.
 Future<void> seedAdminAudit(AppDatabase db, Random rng) async {
-  final today = DateTime.now();
+  final today = SatClock.now();
   final staff = await db.select(db.users).get();
   if (staff.isEmpty) return;
   // By role, not by position: on a venue with no Firebase admin row yet the

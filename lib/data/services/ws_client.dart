@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:satset/core/time/sat_clock.dart';
 import 'dart:convert';
 
@@ -43,6 +44,29 @@ class WsClient {
   /// re-advertising the first time we asked.
   static bool shouldRelocate(int attempt) =>
       attempt > 0 && attempt % relocateAfter == 0;
+
+  /// How long to wait before retry number [attempt], jittered.
+  ///
+  /// The base is the usual doubling, 200ms to a 10s ceiling. The jitter is
+  /// what stops a venue reconnecting in lockstep: the server here is a tablet,
+  /// every handset lost the socket at the same instant when it rebooted, and
+  /// an undithered backoff means all of them come back on the same tick
+  /// forever — a thundering herd against the one device that also has to serve
+  /// the floor. Spreading the retries costs nothing and removes the spike.
+  ///
+  /// Jitter is **subtractive** (0.5x to 1.0x of the base) so it can only make
+  /// a retry sooner, never later. That keeps the documented ceiling true and
+  /// keeps `relocateAfter` attempts inside the half-minute its doc claims.
+  ///
+  /// [roll] is the injection seam: a test pins the ends of the range instead
+  /// of asserting about a random number.
+  static Duration backoffFor(int attempt, {double? roll}) {
+    final base = (200 * (1 << attempt.clamp(0, 6))).clamp(200, 10000);
+    final r = roll ?? _rng.nextDouble();
+    return Duration(milliseconds: (base * (0.5 + 0.5 * r)).round());
+  }
+
+  static final _rng = Random();
 
   final ApiConfig config;
   final SecureStorageService _storage;
@@ -152,9 +176,7 @@ class WsClient {
     if (_disposed) return;
     _sub?.cancel();
     _channel?.sink.close();
-    final delay = Duration(
-      milliseconds: (200 * (1 << _attempt.clamp(0, 6))).clamp(200, 10000),
-    );
+    final delay = backoffFor(_attempt);
     SatLog.ws('reconnect in ${delay.inMilliseconds}ms attempt=$_attempt');
     // Retrying the same address forever is only right while the address is
     // still right. A server that took a new DHCP lease is up, reachable and

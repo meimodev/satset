@@ -175,7 +175,7 @@ Router guestRoutes(AppDatabase db, WsHub hub) {
       'tableId': t.tableId,
       'tableLabel': t.label,
       'counter': t.counter,
-      'open': withinServiceHours(rules, DateTime.now()),
+      'open': withinServiceHours(rules, SatClock.now()),
       'noteEnabled': rules.noteEnabled,
       'maxItems': rules.maxItems,
       // Whether the stempel box is worth drawing at all (ADR-0110). A

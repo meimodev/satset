@@ -8,6 +8,7 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/cash_entry.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 /// How many ledger rows a page carries. Paged by **growing limit** (ADR-0079)
 /// rather than by cursor: the box is small, and a growing limit means an
@@ -220,7 +221,7 @@ CashEntry cashEntryFromJson(Map<String, dynamic> j) => CashEntry(
   hasPhoto: j['hasPhoto'] == true,
   actorUserId: j['actorUserId'] as String?,
   actorName: j['actorName'] as String?,
-  at: DateTime.tryParse(j['at'] as String? ?? '')?.toLocal() ?? DateTime.now(),
+  at: DateTime.tryParse(j['at'] as String? ?? '')?.toLocal() ?? SatClock.now(),
 );
 
 /// A refusal, as the sheets need it: the server's code plus — on

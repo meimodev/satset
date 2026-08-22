@@ -11,6 +11,7 @@ import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/error_bus_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/audit_entry.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 /// How far back the venue log reaches. The default is deliberately narrow:
 /// opening on "everything" makes the first paint a full-history scan, and the
@@ -75,7 +76,7 @@ class VenueAuditFilters {
 
   /// Start of the window in local time, or null for [AuditWindow.all].
   DateTime? get from {
-    final now = DateTime.now();
+    final now = SatClock.now();
     final midnight = DateTime(now.year, now.month, now.day);
     return switch (window) {
       AuditWindow.today => midnight,

@@ -37,3 +37,30 @@ Deletion is the only truthful reading. Those rows are guest orders no waiter app
 - **Remap `pendingReview` rows to `voided` instead of deleting.** Defensible, and it preserves the evidence a guest once ordered. Rejected as more machinery than the case earns: these rows never touched money or the kitchen, and there is no report that reads them.
 - **Keep `/pair/claim` as the multicast-blocked fallback.** Rejected: nothing in the UI called it, so it was untested code standing in for a venue we have not met. Reintroducing it is cheap if one turns up.
 - **Keep the floor alert on `prepTargetMins`.** Rejected: it would preserve a signal whose name and copy were both about guest review, inviting the same confusion under a new threshold.
+
+## Amendment — 2026-08-22
+
+The fingerprint is the server's **identity**, not merely the pairing handshake's
+trust anchor. That distinction was implicit and it is what a paired handset
+needs in order to survive its host changing address.
+
+A venue tablet gets its LAN address from a router that hands out leases, so the
+host moves — a reboot, a lease expiry, a switch to the other access point — and
+the stored `apiConfig` points at nothing. The device is still paired: the
+operator did prove LAN presence once, the server has the `Devices` row, and the
+certificate has not changed. Only the *address* is stale. Making a human re-run
+discovery for that is asking them to re-prove something nothing has cast doubt
+on.
+
+So: when the client's requests to the stored host fail repeatedly, it re-browses
+mDNS (`mdns_browser_service`, the same code pairing uses) and adopts a candidate
+**only if the candidate's fingerprint equals the stored one**. A different
+fingerprint is a different server and is refused, which is the whole reason this
+is safe to do without a person — the check is the same pin ADR-0080 already
+relies on, asked again.
+
+This does not restore a pairing path for a venue whose Wi-Fi blocks multicast.
+Discovery still has to work for re-discovery to work; the consequence recorded
+above stands unchanged. It also does not widen what pairing proves: a stranger
+who can answer on the LAN still cannot be adopted, because they cannot present
+the pinned certificate.

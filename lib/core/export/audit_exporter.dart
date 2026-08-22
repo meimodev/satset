@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/core/export/export_share.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 /// Hand the venue audit log to the Android share sheet as CSV.
 ///
@@ -18,7 +19,7 @@ import 'package:satset/data/services/api_client.dart';
 /// a truncated record carrying the word "lengkap".
 Future<void> exportAuditCsv(WidgetRef ref, {required String path}) async {
   final raw = await ref.read(apiClientProvider).getBytes(path);
-  final stamp = DateTime.now();
+  final stamp = SatClock.now();
   String two(int n) => n.toString().padLeft(2, '0');
   final name =
       'satset-audit-${stamp.year}${two(stamp.month)}${two(stamp.day)}'

@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 
 import 'package:satset/data/repositories/reports_repository.dart';
 import 'package:satset/l10n/app_localizations.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 /// File flavour the user picks in the export sheet (ADR-0030).
 enum ExportFormat { csv, pdf }
@@ -84,7 +85,7 @@ String exportFilename({
   DateTime? from,
   DateTime? to,
 }) {
-  final t = at ?? DateTime.now();
+  final t = at ?? SatClock.now();
   String two(int n) => n.toString().padLeft(2, '0');
   final stamp =
       '${t.year}${two(t.month)}${two(t.day)}-${two(t.hour)}${two(t.minute)}';

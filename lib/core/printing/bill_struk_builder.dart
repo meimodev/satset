@@ -5,6 +5,7 @@ import 'package:satset/core/printing/bill_struk_data.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/l10n/app_localizations.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 /// Assembles a [BillStrukData] for the MONEY document from either source — the
 /// typed [Bill] on a client, or the raw settlement bill map on the server —
@@ -46,7 +47,7 @@ class BillStrukBuilder {
     tableLabel: '',
     pax: 0,
     memberName: memberName,
-    at: at ?? DateTime.now(),
+    at: at ?? SatClock.now(),
     kind: BillDocKind.debtCollection,
     lines: const [],
     subtotal: amount,
@@ -98,7 +99,7 @@ class BillStrukBuilder {
                 bill.member!.member.punchProgress,
                 bill.member!.punchTarget,
               ),
-        at: DateTime.now(),
+        at: SatClock.now(),
         kind: BillDocKind.wholeBill,
         lines: [
           for (final l in bill.lines)
@@ -165,7 +166,7 @@ class BillStrukBuilder {
               bill.member!.member.punchProgress,
               bill.member!.punchTarget,
             ),
-      at: DateTime.now(),
+      at: SatClock.now(),
       kind: even ? BillDocKind.evenReceipt : BillDocKind.itemizedReceipt,
       // "Tamu A", not a bare "A" — the guest reads this line to know the slip
       // in their hand is theirs. A part spec reads as "Bagian 1/3"; anything
@@ -365,7 +366,7 @@ class BillStrukBuilder {
         memberName: memberName,
         memberPoints: memberPoints,
         memberPunch: memberPunch,
-        at: DateTime.now(),
+        at: SatClock.now(),
         kind: BillDocKind.wholeBill,
         lines: [
           for (final l in billLines)
@@ -464,7 +465,7 @@ class BillStrukBuilder {
       memberName: memberName,
       memberPoints: memberPoints,
       memberPunch: memberPunch,
-      at: DateTime.now(),
+      at: SatClock.now(),
       kind: even ? BillDocKind.evenReceipt : BillDocKind.itemizedReceipt,
       docLabel: receiptTitle(l, (rec['label'] as String?) ?? ''),
       lines: lines,

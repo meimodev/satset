@@ -25,6 +25,7 @@ import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import '_common.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 /// "Pelanggan" — the [[Pelanggan (member)]] directory (ADR-0091).
 ///
@@ -148,7 +149,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                 onTap: () => ref
                     .read(membersProvider.notifier)
                     .filterByBirthdayMonth(
-                      month == null ? DateTime.now().month : null,
+                      month == null ? SatClock.now().month : null,
                     ),
               ),
               if (debtOn) ...[
@@ -1127,7 +1128,7 @@ class _MemberFormSheetState extends ConsumerState<MemberFormSheet> {
       !_busy;
 
   Future<void> _pickBirthday() async {
-    final now = DateTime.now();
+    final now = SatClock.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: _birthday ?? DateTime(now.year - 25, now.month, now.day),
