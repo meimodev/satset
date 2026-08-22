@@ -6846,6 +6846,10 @@ class AppL10nId extends AppL10n {
   String get authWrongPin => 'PIN salah. Coba lagi.';
 
   @override
+  String get authDeviceRevoked =>
+      'Perangkat ini sudah tidak terhubung ke venue. Minta admin memasangkannya lagi.';
+
+  @override
   String get authWrongCredentials => 'Email atau password salah.';
 
   @override

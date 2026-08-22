@@ -28,6 +28,19 @@ Router authRoutes(ServerAuth auth) {
         headers: {'content-type': 'application/json'},
       );
     }
+    // A device the admin revoked is out of service, and a correct PIN does
+    // not put it back. Checked before the PIN so a revoked device cannot use
+    // this door to probe which PINs are live.
+    if (await auth.deviceRevoked(deviceId)) {
+      return Response(
+        403,
+        body: jsonEncode({
+          'code': 'device_revoked',
+          'message': 'device revoked',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
+    }
     final session = await auth.signInWithPin(pin: pin, deviceId: deviceId);
     if (session == null) {
       return Response(

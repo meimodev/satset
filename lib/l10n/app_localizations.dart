@@ -10861,6 +10861,12 @@ abstract class AppL10n {
   /// **'PIN salah. Coba lagi.'**
   String get authWrongPin;
 
+  /// No description provided for @authDeviceRevoked.
+  ///
+  /// In id, this message translates to:
+  /// **'Perangkat ini sudah tidak terhubung ke venue. Minta admin memasangkannya lagi.'**
+  String get authDeviceRevoked;
+
   /// No description provided for @authWrongCredentials.
   ///
   /// In id, this message translates to:

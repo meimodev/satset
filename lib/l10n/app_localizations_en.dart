@@ -6933,6 +6933,10 @@ class AppL10nEn extends AppL10n {
   String get authWrongPin => 'Wrong PIN. Try again.';
 
   @override
+  String get authDeviceRevoked =>
+      'This device is no longer paired with the venue. Ask an admin to pair it again.';
+
+  @override
   String get authWrongCredentials => 'Wrong email or password.';
 
   @override

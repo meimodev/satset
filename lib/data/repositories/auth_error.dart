@@ -11,6 +11,10 @@ import 'package:satset/l10n/app_localizations.dart';
 /// message stays generic so it never reveals which field was wrong.
 String authErrorMessage(AppL10n l, Object error, {required bool pin}) {
   if (error is ApiException) {
+    // The one 4xx worth naming. A revoked device is not a wrong PIN, and
+    // telling the waiter it is sends them round the room trying PINs that
+    // were never going to work on this handset.
+    if (error.code == 'device_revoked') return l.authDeviceRevoked;
     if (error.statusCode >= 500) return l.authServerTrouble;
     // 401 (and any other 4xx on a login call) means the credentials were
     // rejected. Stay generic — don't confirm which field was valid.

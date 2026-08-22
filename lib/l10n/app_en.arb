@@ -2146,6 +2146,7 @@
   "vrsCompDesc": "Comped for the guest · recorded apart from a void",
   "authServerTrouble": "The server is having trouble. Try again in a moment.",
   "authWrongPin": "Wrong PIN. Try again.",
+  "authDeviceRevoked": "This device is no longer paired with the venue. Ask an admin to pair it again.",
   "authWrongCredentials": "Wrong email or password.",
   "authNoConnection": "Couldn't reach the server. Check Wi-Fi and try again.",
   "authInvalidEmail": "That email isn't valid.",

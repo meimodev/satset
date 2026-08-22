@@ -26,6 +26,21 @@ class ServerAuth {
   String hashPassword(String pw) =>
       sha256.convert(utf8.encode('satset.v1.pw::$pw')).toString();
 
+  /// Whether a device the admin took out of service is asking for something.
+  ///
+  /// Revoking a device drops the sessions it holds, which is the whole of what
+  /// revocation used to mean — the device could sign in again with any valid
+  /// PIN a second later, or re-pair through `/pair/auto-claim` and get a fresh
+  /// row. Both doors ask this now. An id with no row at all is *not* revoked:
+  /// the host device signs in before it has ever paired with itself.
+  Future<bool> deviceRevoked(String deviceId) async {
+    if (deviceId.isEmpty) return false;
+    final dev = await (db.select(
+      db.devices,
+    )..where((d) => d.id.equals(deviceId))).getSingleOrNull();
+    return dev?.revoked ?? false;
+  }
+
   /// Returns a fresh session row on success, or null if the PIN does not
   /// match an active user.
   Future<Session?> signInWithPin({

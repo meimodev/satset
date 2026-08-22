@@ -5160,6 +5160,7 @@
   "vrsCompDesc": "Digratiskan untuk tamu · tercatat terpisah dari pembatalan",
   "authServerTrouble": "Server lagi bermasalah. Coba lagi sebentar.",
   "authWrongPin": "PIN salah. Coba lagi.",
+  "authDeviceRevoked": "Perangkat ini sudah tidak terhubung ke venue. Minta admin memasangkannya lagi.",
   "authWrongCredentials": "Email atau password salah.",
   "authNoConnection": "Gagal terhubung ke server. Cek Wi-Fi lalu coba lagi.",
   "authInvalidEmail": "Email tidak valid.",
