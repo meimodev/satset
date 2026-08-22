@@ -35,6 +35,7 @@ import 'cart_line_actions.dart';
 import 'modifier_sheet.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 const _uuid = Uuid();
 
@@ -227,7 +228,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(),
+              const SatSpinner(),
               const SizedBox(height: Sp.s3),
               Text(
                 context.l10n.tblLoadingMenu,

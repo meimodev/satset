@@ -101,6 +101,41 @@ void main() {
     );
   });
 
+  // A busy indicator is one bit of information, and it had grown eight
+  // hand-rolled sizes to carry it: 13, 16, 18, 22, 22, 24, 28 — one of them an
+  // oval nobody chose. `SatSpinner` exists to end that, and only holds while a
+  // screen cannot reach past it.
+  //
+  // A **determinate** ring is not this. It carries a number rather than a bit,
+  // so it is exempted by name, not by shape.
+  test('no raw CircularProgressIndicator outside sat_spinner.dart', () {
+    /// Sites that draw a real progress *value*, not a busy state.
+    const determinate = {'lib/ui/features/me/me_screen.dart'};
+
+    final hits = <String>[];
+    for (final file in files) {
+      if (file.path.contains('/core/widgets/sat_spinner.dart')) continue;
+      if (file.path.contains('/features/_book/')) continue;
+      if (determinate.any(file.path.contains)) continue;
+      final src = file.readAsStringSync();
+      for (final m in RegExp(
+        r'\bCircularProgressIndicator\s*\(',
+      ).allMatches(src)) {
+        hits.add('${file.path}:${_lineOf(src, m.start)}');
+      }
+    }
+    expect(
+      hits,
+      isEmpty,
+      reason:
+          'Use SatSpinner — core/widgets/sat_spinner.dart. xs inside a '
+          'control, sm inline, md standalone. A whole-screen wait with a '
+          'shape to promise wants SkeletonCard instead, which shows what is '
+          'coming rather than only that something is.\n'
+          '${hits.join('\n')}',
+    );
+  });
+
   // The Material bans above only catch a screen that *names* FilledButton or
   // TextField. They said nothing about a private `_FilledBtn` drawing the same
   // pill out of a Container — which is how five of them survived the first

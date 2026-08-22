@@ -3,8 +3,17 @@ import 'package:flutter/material.dart';
 import '../design/colors.dart';
 import '../design/spacing.dart';
 
-/// Two sizes, because there turned out to be exactly two jobs (ADR-0055).
+/// Three sizes, because there turned out to be exactly three jobs (ADR-0055).
 enum SatSpinnerSize {
+  /// Inside a control: in a button, beside caption text, in a field's suffix.
+  ///
+  /// Added when the raw `CircularProgressIndicator` sites were swept up: five
+  /// of them sat in a hand-rolled `SizedBox(width: Sp.s4, height: 16)` next to
+  /// a line of caption text, where [sm] would be visibly larger than the words
+  /// beside it. That is a real third job, not a fourth arbitrary number — the
+  /// sizes this replaced were 28, 24, 22 and 22, one of which was an oval.
+  xs,
+
   /// Inline: beside a row's trailing edge, inside a card, next to a label.
   sm,
 
@@ -33,6 +42,7 @@ class SatSpinner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = switch (size) {
+      SatSpinnerSize.xs => Sp.s4,
       SatSpinnerSize.sm => Sp.s6,
       SatSpinnerSize.md => Sp.s7,
     };

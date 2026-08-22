@@ -20,6 +20,7 @@ import 'package:satset/ui/features/fleet/_fleet_widgets.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// Everything a super admin does to one venue, opened from a Fleet console
 /// tile: its **access** (the kill switch), its **subscription**
@@ -725,9 +726,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       context.l10n.fltModuleOffTitle(context.l10n.fltModuleCounter, _nameText),
       context.l10n.fltCounterOffBody,
       context.l10n.fltModuleOffYes,
-      () => setState(
-        () => _modules = {..._modules}..remove(modeCounterService),
-      ),
+      () =>
+          setState(() => _modules = {..._modules}..remove(modeCounterService)),
     );
   }
 
@@ -892,9 +892,7 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           ] else if (loading)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: Sp.s5),
-              child: Center(
-                child: CircularProgressIndicator(color: sc.accentText),
-              ),
+              child: Center(child: SatSpinner()),
             )
           else if (rows.isEmpty)
             Padding(

@@ -24,6 +24,7 @@ import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import '_common.dart';
 import 'package:satset/core/time/sat_clock.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// The stok opname archive (ADR-0096).
 ///
@@ -97,7 +98,8 @@ class _OpnameScreenState extends ConsumerState<OpnameScreen> {
         ),
         Expanded(
           child: async.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () =>
+                const Center(child: SatSpinner(size: SatSpinnerSize.md)),
             error: (e, _) => Center(
               child: SatEmpty(
                 icon: Icons.error_outline,
@@ -314,7 +316,7 @@ class _Document extends ConsumerWidget {
     final async = ref.watch(stockCountProvider(countId));
 
     return async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: SatSpinner(size: SatSpinnerSize.md)),
       error: (e, _) => Center(
         child: SatEmpty(
           icon: Icons.error_outline,

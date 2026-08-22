@@ -36,6 +36,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 const _uuid = Uuid();
 
@@ -611,15 +612,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
                     ],
                   ),
                 ),
-                if (_scanning)
-                  SizedBox(
-                    width: Sp.s4,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: sc.accentText,
-                    ),
-                  ),
+                if (_scanning) SatSpinner(size: SatSpinnerSize.xs),
               ],
             ),
             const SizedBox(height: Sp.s3h),
@@ -658,16 +651,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
 
             if (_busy) ...[
               const SizedBox(height: Sp.s3h),
-              Center(
-                child: SizedBox(
-                  width: Sp.s6,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: sc.accentText,
-                  ),
-                ),
-              ),
+              const Center(child: SatSpinner()),
             ],
           ],
         ),

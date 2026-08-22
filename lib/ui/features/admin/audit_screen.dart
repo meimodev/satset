@@ -23,6 +23,7 @@ import '_common.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/features/admin/audit_labels.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// The venue-wide integrity log (ADR-0072).
 ///
@@ -368,7 +369,7 @@ class _AuditTable extends StatelessWidget {
               child: const SizedBox(
                 width: Sp.s4h,
                 height: Sp.s4h,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: SatSpinner(),
               ),
             ),
           ),
@@ -522,7 +523,7 @@ class _AuditProofPage extends ConsumerWidget {
               context.l10n.ppfUnavailable,
               style: SatType.bodyM(color: satMediaInk),
             )
-          : const CircularProgressIndicator(color: satMediaInk),
+          : const SatSpinner(color: satMediaInk),
     ),
   );
 }

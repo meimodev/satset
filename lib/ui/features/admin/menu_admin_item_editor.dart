@@ -29,6 +29,7 @@ import 'package:uuid/uuid.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// Full sectioned editor for one menu item.
 /// Used in tablet right pane and phone full-screen route.
@@ -1100,7 +1101,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
       child: pantry.when(
         loading: () => const Padding(
           padding: EdgeInsets.symmetric(vertical: Sp.s3),
-          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          child: Center(child: SatSpinner()),
         ),
         error: (e, _) => Text(
           context.l10n.mieIngredientsLoadFailed('$e'),
@@ -1245,7 +1246,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     _setLines('', [
       RecipeLine(id: '', ingredientId: id, qty: StockUnit.pcs.perUnit),
     ]);
-    messenger.showSnackBar(SnackBar(content: Text(l10n.mieJualSatuanDone(name))));
+    messenger.showSnackBar(
+      SnackBar(content: Text(l10n.mieJualSatuanDone(name))),
+    );
   }
 
   /// "Buang" from the menu side: bin one portion of *this dish*, exploding the
@@ -1328,7 +1331,9 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     final l10n = context.l10n;
     if (qty <= 0) return;
     if (note.isEmpty) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.mieBuangNoteRequired)));
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.mieBuangNoteRequired)),
+      );
       return;
     }
     try {

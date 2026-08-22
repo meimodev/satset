@@ -22,6 +22,7 @@ import 'package:satset/ui/features/admin/widgets/receipt_preview.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 class VenueSettingsScreen extends ConsumerStatefulWidget {
   const VenueSettingsScreen({super.key});
@@ -658,14 +659,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
             ),
             const SizedBox(width: Sp.s2h),
             if (_logoBusy)
-              SizedBox(
-                width: Sp.s4h,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: sc.accentText,
-                ),
-              )
+              const SatSpinner(size: SatSpinnerSize.xs)
             else ...[
               _logoBtn(
                 sc,
@@ -1460,7 +1454,8 @@ class _KeanggotaanCard extends ConsumerWidget {
               label: l10n.vstMembersPunch,
               hint: l10n.vstMembersPunchHint,
               on: s.memberPunchEnabled,
-              onToggle: () => n.patch(memberPunchEnabled: !s.memberPunchEnabled),
+              onToggle: () =>
+                  n.patch(memberPunchEnabled: !s.memberPunchEnabled),
             ),
             if (s.memberPunchEnabled) ...[
               const SizedBox(height: Sp.s3),

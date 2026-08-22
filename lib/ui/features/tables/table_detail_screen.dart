@@ -43,6 +43,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 // Motion tuning. Refined, calm — easeOutQuart per design tokens, no bounce.
 // Mirrors the constants in tables_screen.dart so the grid → detail transition
@@ -366,7 +367,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(),
+              const SatSpinner(),
               const SizedBox(height: Sp.s3),
               Text(
                 context.l10n.tblLoadingMenu,

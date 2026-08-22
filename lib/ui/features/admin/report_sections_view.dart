@@ -16,6 +16,7 @@ import '_common.dart';
 import 'report_stock_section.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/core/time/sat_clock.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// The full reports rendering — five sections (sales / staff / menu / bahan /
 /// ops) with their section-toggle tabs and staff sort. Extracted from
@@ -303,14 +304,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: Sp.s3h,
-            height: 13,
-            child: CircularProgressIndicator(
-              strokeWidth: 1.8,
-              valueColor: AlwaysStoppedAnimation(sc.accentText),
-            ),
-          ),
+          const SatSpinner(size: SatSpinnerSize.xs),
           const SizedBox(width: Sp.s2h),
           Text(
             context.l10n.rptUpdating,
