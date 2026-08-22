@@ -211,14 +211,23 @@ Future<void> chargeDebt(
   )..where((x) => x.id.equals(memberId))).getSingleOrNull();
   if (m == null) throw const DebtException('not_found');
   final limit = creditLimitFor(m.debtLimit, cfg);
-  final balance = await memberDebt(db, memberId);
-  if (balance + amount > limit) {
-    // Carries both numbers so the till can say "Rp 120.000 of Rp 500.000 used"
-    // instead of a bare refusal the cashier has to go and interpret.
-    throw DebtException('debt_limit_exceeded', balance: balance, limit: limit);
-  }
   await _post(
     db,
+    // Read and written as one step (ADR-0100). Two tills closing two bills
+    // onto the same tab could each read a balance that clears the limit and
+    // both land, which is how a credit limit stops being one.
+    guard: () async {
+      final balance = await memberDebt(db, memberId);
+      if (balance + amount > limit) {
+        // Carries both numbers so the till can say "Rp 120.000 of Rp 500.000
+        // used" instead of a bare refusal the cashier has to interpret.
+        throw DebtException(
+          'debt_limit_exceeded',
+          balance: balance,
+          limit: limit,
+        );
+      }
+    },
     memberId: memberId,
     kind: MemberDebtKind.charge,
     delta: amount,
@@ -271,14 +280,19 @@ Future<void> payDebt(
     db.members,
   )..where((x) => x.id.equals(memberId))).getSingleOrNull();
   if (m == null) throw const DebtException('not_found');
-  final balance = await memberDebt(db, memberId);
-  if (amount > balance) {
-    // A payment beyond the balance is always a typo or a mis-selected member —
-    // the guest cannot owe less than nothing. Refusing is what surfaces which.
-    throw DebtException('overpayment', balance: balance);
-  }
   await _post(
     db,
+    // Same rule as the charge: the balance is `SUM(delta)`, so the check only
+    // means anything while the row it is checking against cannot change.
+    guard: () async {
+      final balance = await memberDebt(db, memberId);
+      if (amount > balance) {
+        // A payment beyond the balance is always a typo or a mis-selected
+        // member — the guest cannot owe less than nothing. Refusing is what
+        // surfaces which.
+        throw DebtException('overpayment', balance: balance);
+      }
+    },
     memberId: memberId,
     kind: MemberDebtKind.payment,
     delta: -amount,
@@ -393,8 +407,9 @@ Future<void> reverseChargeForPayment(
   WsHub? hub,
 }) async {
   final t = db.memberDebts;
-  final rows = await (db.select(t)..where((x) => x.paymentId.equals(paymentId)))
-      .get();
+  final rows = await (db.select(
+    t,
+  )..where((x) => x.paymentId.equals(paymentId))).get();
   final charge = rows
       .where((r) => r.kind == MemberDebtKind.charge.name)
       .firstOrNull;
@@ -448,41 +463,55 @@ Future<void> _post(
   WsHub? hub,
   DateTime? at,
   String? idPrefix,
+
+  /// A refusal to run *inside* the transaction, immediately before the row
+  /// lands. The credit limit and the overpayment check are both `SUM(delta)`
+  /// reads with no `CHECK` behind them, so they only hold if the read and the
+  /// insert are one step (ADR-0100) — and they can only be one step if the
+  /// caller hands its guard down here rather than running it first.
+  Future<void> Function()? guard,
 }) async {
   final id = '${idPrefix ?? ''}${_uuid.v4()}';
   final actor = await resolveActor(db, actorUserId);
   final when = at ?? SatClock.now();
-  await db.into(db.memberDebts).insert(
-    MemberDebtsCompanion.insert(
-      id: id,
-      memberId: memberId,
-      kind: kind.name,
-      delta: delta,
-      at: when,
-      paymentId: Value(paymentId),
-      visitId: Value(visitId),
-      billLabel: Value(billLabel),
-      method: Value(method),
-      note: Value(note),
-      photo: Value(photo),
-      actorUserId: Value(actorUserId),
-      actorName: Value(actor?.name),
-    ),
-  );
-  await writeAudit(
-    db,
-    type: AuditType.debtMovement,
-    kind: auditKind,
-    params: auditParams,
-    actorUserId: actorUserId,
-    reason: note,
-    amountCents: amountCents,
-    hub: hub,
-    at: at,
-    idPrefix: idPrefix,
-  );
+  await db.transaction(() async {
+    if (guard != null) await guard();
+    await db
+        .into(db.memberDebts)
+        .insert(
+          MemberDebtsCompanion.insert(
+            id: id,
+            memberId: memberId,
+            kind: kind.name,
+            delta: delta,
+            at: when,
+            paymentId: Value(paymentId),
+            visitId: Value(visitId),
+            billLabel: Value(billLabel),
+            method: Value(method),
+            note: Value(note),
+            photo: Value(photo),
+            actorUserId: Value(actorUserId),
+            actorName: Value(actor?.name),
+          ),
+        );
+    await writeAudit(
+      db,
+      type: AuditType.debtMovement,
+      kind: auditKind,
+      params: auditParams,
+      actorUserId: actorUserId,
+      reason: note,
+      amountCents: amountCents,
+      hub: hub,
+      at: at,
+      idPrefix: idPrefix,
+    );
+  });
   // The directory row and the till panel both render the balance, so every
   // movement re-broadcasts the member rather than inventing a second event.
+  // Outside the transaction on purpose: a rolled-back movement must not have
+  // already told every till a new balance.
   await broadcastMemberDebt(db, memberId, hub);
 }
 
@@ -533,9 +562,12 @@ Map<String, dynamic> debtJson(MemberDebt d) => {
 /// knows, it just has to be walked in order.
 Future<List<Debtor>> listDebtors(AppDatabase db) async {
   final t = db.memberDebts;
-  final ledger = await (db.select(t)
-        ..orderBy([(x) => OrderingTerm.asc(x.at), (x) => OrderingTerm.asc(x.id)]))
-      .get();
+  final ledger =
+      await (db.select(t)..orderBy([
+            (x) => OrderingTerm.asc(x.at),
+            (x) => OrderingTerm.asc(x.id),
+          ]))
+          .get();
   final byMember = <String, List<rows.MemberDebt>>{};
   for (final r in ledger) {
     byMember.putIfAbsent(r.memberId, () => []).add(r);
@@ -568,7 +600,11 @@ Future<List<Debtor>> listDebtors(AppDatabase db) async {
   return out;
 }
 
-typedef _Walk = ({int balance, DateTime? oldestUnpaidAt, DateTime? lastPaymentAt});
+typedef _Walk = ({
+  int balance,
+  DateTime? oldestUnpaidAt,
+  DateTime? lastPaymentAt,
+});
 
 /// Apply every negative movement to the outstanding charges oldest-first.
 ///
