@@ -11161,6 +11161,12 @@ abstract class AppL10n {
   /// **'{what} tidak dikirim — {why}'**
   String tktNotSent(String what, String why);
 
+  /// Footer under a paged log (venue audit, petty cash) once paging stops at its row cap. Says the list was truncated, not that the log ended.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{Berhenti di {n} baris. Persempit rentang atau ekspor untuk catatan lengkap.}}'**
+  String logCapNotice(int n);
+
   /// No description provided for @auditLoadFailed.
   ///
   /// In id, this message translates to:

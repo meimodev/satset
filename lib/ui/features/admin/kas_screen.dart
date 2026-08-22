@@ -158,6 +158,20 @@ class _KasScreenState extends ConsumerState<KasScreen> {
                       ),
                     ),
                   ),
+                if (state.capped)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Sp.s7,
+                        vertical: Sp.s4,
+                      ),
+                      child: Text(
+                        l10n.logCapNotice(kCashMaxLoaded),
+                        textAlign: TextAlign.center,
+                        style: SatType.caption(color: context.sat.textDim),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

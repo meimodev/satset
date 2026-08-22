@@ -16,6 +16,16 @@ import 'package:satset/core/time/sat_clock.dart';
 /// from under the reader.
 const _kCashPage = 50;
 
+/// Where the growing limit stops growing.
+///
+/// A growing limit re-reads the whole window every page, which is the price
+/// ADR-0079 pays for being able to prepend an incoming row without shifting an
+/// offset. That price is fine at two or three pages and silly at twenty: the
+/// tenth `loadMore` on a busy box re-transfers five hundred rows to append
+/// fifty. The box is small by design, so a reader who reaches this is looking
+/// for something a filter would find faster.
+const kCashMaxLoaded = 500;
+
 class CashState {
   final List<CashEntry> entries;
 
@@ -37,6 +47,11 @@ class CashState {
     this.hasMore = false,
     this.error,
   });
+
+  /// Whether paging stopped at [kCashMaxLoaded] rather than at the end of the
+  /// ledger. The two look identical from the bottom of a list, and only one of
+  /// them means the box has no older movements.
+  bool get capped => entries.length >= kCashMaxLoaded;
 
   /// When the box was last verified against the notes inside it — the second
   /// most useful fact the header carries after the balance itself.
@@ -105,6 +120,7 @@ class CashRepository extends StateNotifier<CashState> {
   /// reversal stamped onto an older row visible without a second request.
   Future<void> loadMore() async {
     if (state.loading || state.loadingMore || !state.hasMore) return;
+    if (_limit >= kCashMaxLoaded) return;
     _limit += _kCashPage;
     state = state.copyWith(loadingMore: true);
     await _fetch();
@@ -126,7 +142,7 @@ class CashRepository extends StateNotifier<CashState> {
         balance: (raw['balance'] as num?)?.toInt() ?? 0,
         loading: false,
         loadingMore: false,
-        hasMore: entries.length >= _limit,
+        hasMore: entries.length >= _limit && _limit < kCashMaxLoaded,
       );
       SatLog.repo('cash.loaded n=${entries.length} balance=${state.balance}');
     } catch (e) {

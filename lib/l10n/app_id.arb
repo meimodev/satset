@@ -5272,6 +5272,16 @@
       }
     }
   },
+  "logCapNotice": "{n, plural, other{Berhenti di {n} baris. Persempit rentang atau ekspor untuk catatan lengkap.}}",
+  "@logCapNotice": {
+    "description": "Footer under a paged log (venue audit, petty cash) once paging stops at its row cap. Says the list was truncated, not that the log ended.",
+    "placeholders": {
+      "n": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
   "auditLoadFailed": "Gagal memuat audit",
   "capTakeOrder": "Ambil pesanan",
   "capModifyOrder": "Ubah pesanan",

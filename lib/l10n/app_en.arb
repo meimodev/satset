@@ -2224,6 +2224,7 @@
   "tktOutOfStock": "out of stock",
   "tktOutOfStockNamed": "out of stock: {names}",
   "tktNotSent": "{what} wasn't sent — {why}",
+  "logCapNotice": "{n, plural, =1{Stopped at 1 row. Narrow the range or export for the full record.} other{Stopped at {n} rows. Narrow the range or export for the full record.}}",
   "auditLoadFailed": "Couldn't load the audit log",
   "capTakeOrder": "Take order",
   "capModifyOrder": "Modify order",

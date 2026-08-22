@@ -7133,6 +7133,23 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String logCapNotice(int n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other:
+          'Stopped at $nString rows. Narrow the range or export for the full record.',
+      one: 'Stopped at 1 row. Narrow the range or export for the full record.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get auditLoadFailed => 'Couldn\'t load the audit log';
 
   @override

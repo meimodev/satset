@@ -102,6 +102,18 @@ class VenueAuditFilters {
   int get hashCode => Object.hash(window, types.length);
 }
 
+/// Rows one reader may accumulate before paging stops.
+///
+/// Twenty pages. Nothing is dropped from the head to make room: a manager
+/// mid-read must not have the row under their finger move, which is the same
+/// reason WebSocket rows are held in [VenueAuditState.pending] rather than
+/// spliced in. So the only honest cap is to stop fetching and say so.
+///
+/// The complete record already has a path that is not this screen —
+/// `/audit/venue.csv` is unpaged on purpose — so the cap costs a reader
+/// nothing but a narrower filter.
+const kAuditMaxLoaded = 1000;
+
 class VenueAuditState {
   final List<AuditEntry> items;
 
@@ -127,7 +139,14 @@ class VenueAuditState {
     this.filters = const VenueAuditFilters(),
   });
 
-  bool get hasMore => nextCursor != null;
+  bool get hasMore => nextCursor != null && !capped;
+
+  bool get capped => nextCursor != null && items.length >= kAuditMaxLoaded;
+
+  /// Whether the reader has hit [kAuditMaxLoaded] with more rows still behind
+  /// the cursor. Distinct from "no more rows": one means the log ended, the
+  /// other means this screen stopped fetching, and telling a manager the wrong
+  /// one of those is telling them the venue did less than it did.
 
   VenueAuditState copyWith({
     List<AuditEntry>? items,
@@ -225,6 +244,7 @@ class VenueAuditRepository extends StateNotifier<VenueAuditState> {
   Future<void> loadMore() async {
     final cursor = state.nextCursor;
     if (cursor == null || state.loadingMore || state.loading) return;
+    if (state.items.length >= kAuditMaxLoaded) return;
     state = state.copyWith(loadingMore: true);
     try {
       final raw =

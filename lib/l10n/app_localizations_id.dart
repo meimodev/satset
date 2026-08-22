@@ -7041,6 +7041,22 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String logCapNotice(int n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other:
+          'Berhenti di $nString baris. Persempit rentang atau ekspor untuk catatan lengkap.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get auditLoadFailed => 'Gagal memuat audit';
 
   @override
