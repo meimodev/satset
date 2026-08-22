@@ -7,7 +7,7 @@ part 'pair_dto.g.dart';
 /// row. `serverPublicKey` is reserved for a future signed-payload/mTLS flow and
 /// is currently empty (ADR-0003).
 @freezed
-class PairClaimResponseDto with _$PairClaimResponseDto {
+abstract class PairClaimResponseDto with _$PairClaimResponseDto {
   const factory PairClaimResponseDto({
     required String deviceToken,
     required String fingerprint,

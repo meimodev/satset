@@ -6,60 +6,50 @@ part of 'menu_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$MenuSnapshotDtoImpl _$$MenuSnapshotDtoImplFromJson(
-  Map<String, dynamic> json,
-) => _$MenuSnapshotDtoImpl(
-  version: (json['version'] as num).toInt(),
-  categories: (json['categories'] as List<dynamic>)
-      .map((e) => MenuCategoryDto.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  items: (json['items'] as List<dynamic>)
-      .map((e) => MenuItemDto.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  tags:
-      (json['tags'] as List<dynamic>?)
-          ?.map((e) => MenuTagDto.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      const <MenuTagDto>[],
-);
-
-Map<String, dynamic> _$$MenuSnapshotDtoImplToJson(
-  _$MenuSnapshotDtoImpl instance,
-) => <String, dynamic>{
-  'version': instance.version,
-  'categories': instance.categories,
-  'items': instance.items,
-  'tags': instance.tags,
-};
-
-_$MenuCategoryDtoImpl _$$MenuCategoryDtoImplFromJson(
-  Map<String, dynamic> json,
-) => _$MenuCategoryDtoImpl(
-  id: json['id'] as String,
-  name: json['name'] as String,
-);
-
-Map<String, dynamic> _$$MenuCategoryDtoImplToJson(
-  _$MenuCategoryDtoImpl instance,
-) => <String, dynamic>{'id': instance.id, 'name': instance.name};
-
-_$VariantDtoImpl _$$VariantDtoImplFromJson(Map<String, dynamic> json) =>
-    _$VariantDtoImpl(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      price: (json['price'] as num).toInt(),
+_MenuSnapshotDto _$MenuSnapshotDtoFromJson(Map<String, dynamic> json) =>
+    _MenuSnapshotDto(
+      version: (json['version'] as num).toInt(),
+      categories: (json['categories'] as List<dynamic>)
+          .map((e) => MenuCategoryDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      items: (json['items'] as List<dynamic>)
+          .map((e) => MenuItemDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      tags:
+          (json['tags'] as List<dynamic>?)
+              ?.map((e) => MenuTagDto.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <MenuTagDto>[],
     );
 
-Map<String, dynamic> _$$VariantDtoImplToJson(_$VariantDtoImpl instance) =>
+Map<String, dynamic> _$MenuSnapshotDtoToJson(_MenuSnapshotDto instance) =>
+    <String, dynamic>{
+      'version': instance.version,
+      'categories': instance.categories,
+      'items': instance.items,
+      'tags': instance.tags,
+    };
+
+_MenuCategoryDto _$MenuCategoryDtoFromJson(Map<String, dynamic> json) =>
+    _MenuCategoryDto(id: json['id'] as String, name: json['name'] as String);
+
+Map<String, dynamic> _$MenuCategoryDtoToJson(_MenuCategoryDto instance) =>
+    <String, dynamic>{'id': instance.id, 'name': instance.name};
+
+_VariantDto _$VariantDtoFromJson(Map<String, dynamic> json) => _VariantDto(
+  id: json['id'] as String,
+  name: json['name'] as String,
+  price: (json['price'] as num).toInt(),
+);
+
+Map<String, dynamic> _$VariantDtoToJson(_VariantDto instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
       'price': instance.price,
     };
 
-_$MenuItemDtoImpl _$$MenuItemDtoImplFromJson(
-  Map<String, dynamic> json,
-) => _$MenuItemDtoImpl(
+_MenuItemDto _$MenuItemDtoFromJson(Map<String, dynamic> json) => _MenuItemDto(
   id: json['id'] as String,
   name: json['name'] as String,
   categoryId: json['categoryId'] as String,
@@ -98,7 +88,7 @@ _$MenuItemDtoImpl _$$MenuItemDtoImplFromJson(
       const <String>[],
 );
 
-Map<String, dynamic> _$$MenuItemDtoImplToJson(_$MenuItemDtoImpl instance) =>
+Map<String, dynamic> _$MenuItemDtoToJson(_MenuItemDto instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
@@ -118,16 +108,15 @@ Map<String, dynamic> _$$MenuItemDtoImplToJson(_$MenuItemDtoImpl instance) =>
       'soldOutOptionIds': instance.soldOutOptionIds,
     };
 
-_$MenuTagDtoImpl _$$MenuTagDtoImplFromJson(Map<String, dynamic> json) =>
-    _$MenuTagDtoImpl(
-      id: json['id'] as String,
-      kind: json['kind'] as String,
-      name: json['name'] as String,
-      code: json['code'] as String? ?? '',
-      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
-    );
+_MenuTagDto _$MenuTagDtoFromJson(Map<String, dynamic> json) => _MenuTagDto(
+  id: json['id'] as String,
+  kind: json['kind'] as String,
+  name: json['name'] as String,
+  code: json['code'] as String? ?? '',
+  sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
+);
 
-Map<String, dynamic> _$$MenuTagDtoImplToJson(_$MenuTagDtoImpl instance) =>
+Map<String, dynamic> _$MenuTagDtoToJson(_MenuTagDto instance) =>
     <String, dynamic>{
       'id': instance.id,
       'kind': instance.kind,
@@ -136,42 +125,40 @@ Map<String, dynamic> _$$MenuTagDtoImplToJson(_$MenuTagDtoImpl instance) =>
       'sortOrder': instance.sortOrder,
     };
 
-_$ModifierOptionDtoImpl _$$ModifierOptionDtoImplFromJson(
-  Map<String, dynamic> json,
-) => _$ModifierOptionDtoImpl(
-  id: json['id'] as String,
-  name: json['name'] as String,
-  priceDelta: (json['priceDelta'] as num?)?.toInt() ?? 0,
-);
+_ModifierOptionDto _$ModifierOptionDtoFromJson(Map<String, dynamic> json) =>
+    _ModifierOptionDto(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      priceDelta: (json['priceDelta'] as num?)?.toInt() ?? 0,
+    );
 
-Map<String, dynamic> _$$ModifierOptionDtoImplToJson(
-  _$ModifierOptionDtoImpl instance,
-) => <String, dynamic>{
-  'id': instance.id,
-  'name': instance.name,
-  'priceDelta': instance.priceDelta,
-};
+Map<String, dynamic> _$ModifierOptionDtoToJson(_ModifierOptionDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'priceDelta': instance.priceDelta,
+    };
 
-_$ModifierGroupDtoImpl _$$ModifierGroupDtoImplFromJson(
-  Map<String, dynamic> json,
-) => _$ModifierGroupDtoImpl(
-  id: json['id'] as String,
-  name: json['name'] as String,
-  required: json['required'] as bool? ?? false,
-  multi: json['multi'] as bool? ?? false,
-  options:
-      (json['options'] as List<dynamic>?)
-          ?.map((e) => ModifierOptionDto.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      const <ModifierOptionDto>[],
-);
+_ModifierGroupDto _$ModifierGroupDtoFromJson(Map<String, dynamic> json) =>
+    _ModifierGroupDto(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      required: json['required'] as bool? ?? false,
+      multi: json['multi'] as bool? ?? false,
+      options:
+          (json['options'] as List<dynamic>?)
+              ?.map(
+                (e) => ModifierOptionDto.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <ModifierOptionDto>[],
+    );
 
-Map<String, dynamic> _$$ModifierGroupDtoImplToJson(
-  _$ModifierGroupDtoImpl instance,
-) => <String, dynamic>{
-  'id': instance.id,
-  'name': instance.name,
-  'required': instance.required,
-  'multi': instance.multi,
-  'options': instance.options,
-};
+Map<String, dynamic> _$ModifierGroupDtoToJson(_ModifierGroupDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'required': instance.required,
+      'multi': instance.multi,
+      'options': instance.options,
+    };

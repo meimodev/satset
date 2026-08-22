@@ -6,66 +6,61 @@ part of 'ticket_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$TicketModifierDtoImpl _$$TicketModifierDtoImplFromJson(
-  Map<String, dynamic> json,
-) => _$TicketModifierDtoImpl(
-  groupId: json['groupId'] as String? ?? '',
-  optionId: json['optionId'] as String? ?? '',
-  label: json['label'] as String? ?? '',
-  priceDelta: (json['priceDelta'] as num?)?.toInt() ?? 0,
-);
-
-Map<String, dynamic> _$$TicketModifierDtoImplToJson(
-  _$TicketModifierDtoImpl instance,
-) => <String, dynamic>{
-  'groupId': instance.groupId,
-  'optionId': instance.optionId,
-  'label': instance.label,
-  'priceDelta': instance.priceDelta,
-};
-
-_$TicketDtoImpl _$$TicketDtoImplFromJson(Map<String, dynamic> json) =>
-    _$TicketDtoImpl(
-      id: json['id'] as String,
-      tableId: json['tableId'] as String,
-      visitId: json['visitId'] as String?,
-      itemId: json['itemId'] as String,
-      name: json['name'] as String,
-      variantName: json['variantName'] as String? ?? '',
-      course: json['course'] as String,
-      qty: (json['qty'] as num?)?.toInt() ?? 1,
-      modifiers:
-          (json['modifiers'] as List<dynamic>?)
-              ?.map(
-                (e) => TicketModifierDto.fromJson(e as Map<String, dynamic>),
-              )
-              .toList() ??
-          const <TicketModifierDto>[],
-      note: json['note'] as String?,
-      price: (json['price'] as num).toInt(),
-      status: json['status'] as String,
-      sentAt: DateTime.parse(json['sentAt'] as String),
-      capturedAt: json['capturedAt'] == null
-          ? null
-          : DateTime.parse(json['capturedAt'] as String),
-      replayedByUserId: json['replayedByUserId'] as String?,
-      firedAt: json['firedAt'] == null
-          ? null
-          : DateTime.parse(json['firedAt'] as String),
-      readyAt: json['readyAt'] == null
-          ? null
-          : DateTime.parse(json['readyAt'] as String),
-      servedAt: json['servedAt'] == null
-          ? null
-          : DateTime.parse(json['servedAt'] as String),
-      voidReason: json['voidReason'] as String?,
-      voidReasonCode: json['voidReasonCode'] as String?,
-      voidApprovedBy: json['voidApprovedBy'] as String?,
-      createdByUserId: json['createdByUserId'] as String?,
-      voidedByUserId: json['voidedByUserId'] as String?,
+_TicketModifierDto _$TicketModifierDtoFromJson(Map<String, dynamic> json) =>
+    _TicketModifierDto(
+      groupId: json['groupId'] as String? ?? '',
+      optionId: json['optionId'] as String? ?? '',
+      label: json['label'] as String? ?? '',
+      priceDelta: (json['priceDelta'] as num?)?.toInt() ?? 0,
     );
 
-Map<String, dynamic> _$$TicketDtoImplToJson(_$TicketDtoImpl instance) =>
+Map<String, dynamic> _$TicketModifierDtoToJson(_TicketModifierDto instance) =>
+    <String, dynamic>{
+      'groupId': instance.groupId,
+      'optionId': instance.optionId,
+      'label': instance.label,
+      'priceDelta': instance.priceDelta,
+    };
+
+_TicketDto _$TicketDtoFromJson(Map<String, dynamic> json) => _TicketDto(
+  id: json['id'] as String,
+  tableId: json['tableId'] as String,
+  visitId: json['visitId'] as String?,
+  itemId: json['itemId'] as String,
+  name: json['name'] as String,
+  variantName: json['variantName'] as String? ?? '',
+  course: json['course'] as String,
+  qty: (json['qty'] as num?)?.toInt() ?? 1,
+  modifiers:
+      (json['modifiers'] as List<dynamic>?)
+          ?.map((e) => TicketModifierDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <TicketModifierDto>[],
+  note: json['note'] as String?,
+  price: (json['price'] as num).toInt(),
+  status: json['status'] as String,
+  sentAt: DateTime.parse(json['sentAt'] as String),
+  capturedAt: json['capturedAt'] == null
+      ? null
+      : DateTime.parse(json['capturedAt'] as String),
+  replayedByUserId: json['replayedByUserId'] as String?,
+  firedAt: json['firedAt'] == null
+      ? null
+      : DateTime.parse(json['firedAt'] as String),
+  readyAt: json['readyAt'] == null
+      ? null
+      : DateTime.parse(json['readyAt'] as String),
+  servedAt: json['servedAt'] == null
+      ? null
+      : DateTime.parse(json['servedAt'] as String),
+  voidReason: json['voidReason'] as String?,
+  voidReasonCode: json['voidReasonCode'] as String?,
+  voidApprovedBy: json['voidApprovedBy'] as String?,
+  createdByUserId: json['createdByUserId'] as String?,
+  voidedByUserId: json['voidedByUserId'] as String?,
+);
+
+Map<String, dynamic> _$TicketDtoToJson(_TicketDto instance) =>
     <String, dynamic>{
       'id': instance.id,
       'tableId': instance.tableId,
@@ -92,16 +87,16 @@ Map<String, dynamic> _$$TicketDtoImplToJson(_$TicketDtoImpl instance) =>
       'voidedByUserId': instance.voidedByUserId,
     };
 
-_$TicketTransitionRequestDtoImpl _$$TicketTransitionRequestDtoImplFromJson(
+_TicketTransitionRequestDto _$TicketTransitionRequestDtoFromJson(
   Map<String, dynamic> json,
-) => _$TicketTransitionRequestDtoImpl(
+) => _TicketTransitionRequestDto(
   status: json['status'] as String,
   voidReason: json['voidReason'] as String?,
   voidReasonCode: json['voidReasonCode'] as String?,
 );
 
-Map<String, dynamic> _$$TicketTransitionRequestDtoImplToJson(
-  _$TicketTransitionRequestDtoImpl instance,
+Map<String, dynamic> _$TicketTransitionRequestDtoToJson(
+  _TicketTransitionRequestDto instance,
 ) => <String, dynamic>{
   'status': instance.status,
   'voidReason': instance.voidReason,

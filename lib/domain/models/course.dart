@@ -12,7 +12,7 @@ part 'course.freezed.dart';
 enum CourseId { drinksNow, starters, mains, sides, desserts, fireNow }
 
 @freezed
-class Course with _$Course {
+abstract class Course with _$Course {
   const Course._();
 
   const factory Course({required CourseId id}) = _Course;

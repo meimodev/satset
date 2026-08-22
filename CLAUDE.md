@@ -18,7 +18,7 @@ Stack: `flutter_riverpod`, `go_router`, `intl`, `uuid`, `freezed`, `json_seriali
 - `lib/domain/models/**` — domain models (selective; some are plain Dart)
 - `lib/server/db/**` — Drift schema + DAOs
 
-Generated `*.g.dart`, `*.freezed.dart`, Drift outputs excluded from analyzer. Run `tool/codegen.sh` (= `dart run build_runner build --delete-conflicting-outputs`) after editing those.
+Generated `*.g.dart`, `*.freezed.dart`, Drift outputs excluded from analyzer. Run `tool/codegen.sh` (= `dart run build_runner build --release`) after editing those.
 
 Localization is a **separate generator**, not part of `build_runner`: `lib/l10n/*.arb` → `flutter gen-l10n` → `lib/l10n/app_localizations*.dart`, configured by `l10n.yaml`. Output is committed and analyzer-excluded, so tests and CI need no generate step.
 

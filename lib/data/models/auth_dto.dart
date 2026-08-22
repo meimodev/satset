@@ -10,7 +10,7 @@ part 'auth_dto.freezed.dart';
 part 'auth_dto.g.dart';
 
 @freezed
-class PinLoginRequestDto with _$PinLoginRequestDto {
+abstract class PinLoginRequestDto with _$PinLoginRequestDto {
   const factory PinLoginRequestDto({
     required String pin,
     required String deviceId,
@@ -21,7 +21,7 @@ class PinLoginRequestDto with _$PinLoginRequestDto {
 }
 
 @freezed
-class AdminLoginRequestDto with _$AdminLoginRequestDto {
+abstract class AdminLoginRequestDto with _$AdminLoginRequestDto {
   const factory AdminLoginRequestDto({
     required String email,
     required String password,
@@ -33,7 +33,7 @@ class AdminLoginRequestDto with _$AdminLoginRequestDto {
 }
 
 @freezed
-class SessionDto with _$SessionDto {
+abstract class SessionDto with _$SessionDto {
   const factory SessionDto({
     required String token,
     required String userId,
@@ -47,7 +47,7 @@ class SessionDto with _$SessionDto {
 }
 
 @freezed
-class MeDto with _$MeDto {
+abstract class MeDto with _$MeDto {
   const factory MeDto({
     required String userId,
     required String name,

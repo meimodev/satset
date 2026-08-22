@@ -53,7 +53,7 @@ TicketStatus ticketStatusFromKey(String? raw) => switch (raw) {
 /// Immutable ticket aggregate. `copyWith`, equality, and `hashCode` come
 /// from Freezed.
 @freezed
-class Ticket with _$Ticket {
+abstract class Ticket with _$Ticket {
   const Ticket._();
 
   /// When the kitchen's clock starts for this line: the fire if it was held,

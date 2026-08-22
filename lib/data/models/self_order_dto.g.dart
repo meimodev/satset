@@ -6,46 +6,42 @@ part of 'self_order_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$GuestLineModDtoImpl _$$GuestLineModDtoImplFromJson(
-  Map<String, dynamic> json,
-) => _$GuestLineModDtoImpl(label: json['label'] as String? ?? '');
+_GuestLineModDto _$GuestLineModDtoFromJson(Map<String, dynamic> json) =>
+    _GuestLineModDto(label: json['label'] as String? ?? '');
 
-Map<String, dynamic> _$$GuestLineModDtoImplToJson(
-  _$GuestLineModDtoImpl instance,
-) => <String, dynamic>{'label': instance.label};
+Map<String, dynamic> _$GuestLineModDtoToJson(_GuestLineModDto instance) =>
+    <String, dynamic>{'label': instance.label};
 
-_$GuestOrderLineDtoImpl _$$GuestOrderLineDtoImplFromJson(
-  Map<String, dynamic> json,
-) => _$GuestOrderLineDtoImpl(
-  id: json['id'] as String,
-  itemId: json['itemId'] as String,
-  name: json['name'] as String,
-  variantName: json['variantName'] as String? ?? '',
-  qty: (json['qty'] as num?)?.toInt() ?? 1,
-  note: json['note'] as String?,
-  unitPrice: (json['unitPrice'] as num?)?.toInt() ?? 0,
-  modifiers:
-      (json['modifiers'] as List<dynamic>?)
-          ?.map((e) => GuestLineModDto.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      const [],
-);
+_GuestOrderLineDto _$GuestOrderLineDtoFromJson(Map<String, dynamic> json) =>
+    _GuestOrderLineDto(
+      id: json['id'] as String,
+      itemId: json['itemId'] as String,
+      name: json['name'] as String,
+      variantName: json['variantName'] as String? ?? '',
+      qty: (json['qty'] as num?)?.toInt() ?? 1,
+      note: json['note'] as String?,
+      unitPrice: (json['unitPrice'] as num?)?.toInt() ?? 0,
+      modifiers:
+          (json['modifiers'] as List<dynamic>?)
+              ?.map((e) => GuestLineModDto.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+    );
 
-Map<String, dynamic> _$$GuestOrderLineDtoImplToJson(
-  _$GuestOrderLineDtoImpl instance,
-) => <String, dynamic>{
-  'id': instance.id,
-  'itemId': instance.itemId,
-  'name': instance.name,
-  'variantName': instance.variantName,
-  'qty': instance.qty,
-  'note': instance.note,
-  'unitPrice': instance.unitPrice,
-  'modifiers': instance.modifiers,
-};
+Map<String, dynamic> _$GuestOrderLineDtoToJson(_GuestOrderLineDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'itemId': instance.itemId,
+      'name': instance.name,
+      'variantName': instance.variantName,
+      'qty': instance.qty,
+      'note': instance.note,
+      'unitPrice': instance.unitPrice,
+      'modifiers': instance.modifiers,
+    };
 
-_$GuestOrderDtoImpl _$$GuestOrderDtoImplFromJson(Map<String, dynamic> json) =>
-    _$GuestOrderDtoImpl(
+_GuestOrderDto _$GuestOrderDtoFromJson(Map<String, dynamic> json) =>
+    _GuestOrderDto(
       id: json['id'] as String,
       tableId: json['tableId'] as String,
       tableLabel: json['tableLabel'] as String?,
@@ -67,7 +63,7 @@ _$GuestOrderDtoImpl _$$GuestOrderDtoImplFromJson(Map<String, dynamic> json) =>
           const [],
     );
 
-Map<String, dynamic> _$$GuestOrderDtoImplToJson(_$GuestOrderDtoImpl instance) =>
+Map<String, dynamic> _$GuestOrderDtoToJson(_GuestOrderDto instance) =>
     <String, dynamic>{
       'id': instance.id,
       'tableId': instance.tableId,
@@ -82,8 +78,8 @@ Map<String, dynamic> _$$GuestOrderDtoImplToJson(_$GuestOrderDtoImpl instance) =>
       'lines': instance.lines,
     };
 
-_$GuestTableDtoImpl _$$GuestTableDtoImplFromJson(Map<String, dynamic> json) =>
-    _$GuestTableDtoImpl(
+_GuestTableDto _$GuestTableDtoFromJson(Map<String, dynamic> json) =>
+    _GuestTableDto(
       id: json['id'] as String,
       label: json['label'] as String?,
       zoneId: json['zoneId'] as String? ?? '',
@@ -93,7 +89,7 @@ _$GuestTableDtoImpl _$$GuestTableDtoImplFromJson(Map<String, dynamic> json) =>
       enabled: json['enabled'] as bool? ?? true,
     );
 
-Map<String, dynamic> _$$GuestTableDtoImplToJson(_$GuestTableDtoImpl instance) =>
+Map<String, dynamic> _$GuestTableDtoToJson(_GuestTableDto instance) =>
     <String, dynamic>{
       'id': instance.id,
       'label': instance.label,
@@ -104,56 +100,52 @@ Map<String, dynamic> _$$GuestTableDtoImplToJson(_$GuestTableDtoImpl instance) =>
       'enabled': instance.enabled,
     };
 
-_$GuestCategoryDtoImpl _$$GuestCategoryDtoImplFromJson(
-  Map<String, dynamic> json,
-) => _$GuestCategoryDtoImpl(
-  id: json['id'] as String,
-  name: json['name'] as String,
-  fromMin: (json['fromMin'] as num?)?.toInt(),
-  toMin: (json['toMin'] as num?)?.toInt(),
-);
+_GuestCategoryDto _$GuestCategoryDtoFromJson(Map<String, dynamic> json) =>
+    _GuestCategoryDto(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      fromMin: (json['fromMin'] as num?)?.toInt(),
+      toMin: (json['toMin'] as num?)?.toInt(),
+    );
 
-Map<String, dynamic> _$$GuestCategoryDtoImplToJson(
-  _$GuestCategoryDtoImpl instance,
-) => <String, dynamic>{
-  'id': instance.id,
-  'name': instance.name,
-  'fromMin': instance.fromMin,
-  'toMin': instance.toMin,
-};
+Map<String, dynamic> _$GuestCategoryDtoToJson(_GuestCategoryDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'fromMin': instance.fromMin,
+      'toMin': instance.toMin,
+    };
 
-_$GuestMenuItemDtoImpl _$$GuestMenuItemDtoImplFromJson(
-  Map<String, dynamic> json,
-) => _$GuestMenuItemDtoImpl(
-  id: json['id'] as String,
-  name: json['name'] as String,
-  categoryId: json['categoryId'] as String? ?? '',
-  description: json['description'] as String? ?? '',
-  basePrice: (json['basePrice'] as num?)?.toInt() ?? 0,
-  featured: json['featured'] as bool? ?? false,
-  visible: json['visible'] as bool? ?? true,
-  soldOut: json['soldOut'] as bool? ?? false,
-  alcohol: json['alcohol'] as bool? ?? false,
-  stockOverride: json['stockOverride'] as String? ?? 'auto',
-);
+_GuestMenuItemDto _$GuestMenuItemDtoFromJson(Map<String, dynamic> json) =>
+    _GuestMenuItemDto(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      categoryId: json['categoryId'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      basePrice: (json['basePrice'] as num?)?.toInt() ?? 0,
+      featured: json['featured'] as bool? ?? false,
+      visible: json['visible'] as bool? ?? true,
+      soldOut: json['soldOut'] as bool? ?? false,
+      alcohol: json['alcohol'] as bool? ?? false,
+      stockOverride: json['stockOverride'] as String? ?? 'auto',
+    );
 
-Map<String, dynamic> _$$GuestMenuItemDtoImplToJson(
-  _$GuestMenuItemDtoImpl instance,
-) => <String, dynamic>{
-  'id': instance.id,
-  'name': instance.name,
-  'categoryId': instance.categoryId,
-  'description': instance.description,
-  'basePrice': instance.basePrice,
-  'featured': instance.featured,
-  'visible': instance.visible,
-  'soldOut': instance.soldOut,
-  'alcohol': instance.alcohol,
-  'stockOverride': instance.stockOverride,
-};
+Map<String, dynamic> _$GuestMenuItemDtoToJson(_GuestMenuItemDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'categoryId': instance.categoryId,
+      'description': instance.description,
+      'basePrice': instance.basePrice,
+      'featured': instance.featured,
+      'visible': instance.visible,
+      'soldOut': instance.soldOut,
+      'alcohol': instance.alcohol,
+      'stockOverride': instance.stockOverride,
+    };
 
-_$GuestStatsDtoImpl _$$GuestStatsDtoImplFromJson(Map<String, dynamic> json) =>
-    _$GuestStatsDtoImpl(
+_GuestStatsDto _$GuestStatsDtoFromJson(Map<String, dynamic> json) =>
+    _GuestStatsDto(
       total: (json['total'] as num?)?.toInt() ?? 0,
       pending: (json['pending'] as num?)?.toInt() ?? 0,
       accepted: (json['accepted'] as num?)?.toInt() ?? 0,
@@ -162,7 +154,7 @@ _$GuestStatsDtoImpl _$$GuestStatsDtoImplFromJson(Map<String, dynamic> json) =>
       medianWaitSecs: (json['medianWaitSecs'] as num?)?.toInt() ?? 0,
     );
 
-Map<String, dynamic> _$$GuestStatsDtoImplToJson(_$GuestStatsDtoImpl instance) =>
+Map<String, dynamic> _$GuestStatsDtoToJson(_GuestStatsDto instance) =>
     <String, dynamic>{
       'total': instance.total,
       'pending': instance.pending,

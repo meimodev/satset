@@ -822,17 +822,35 @@ class AppDatabase extends _$AppDatabase {
         // alternative is hand-rolling the same rebuild in raw SQL.
         //
         // `newColumns` is not optional here: the rebuild copies every column of
-        // the NEW schema out of the OLD table, so without naming `visit_id` as
-        // new it selects a column that does not exist yet and the whole
-        // migration fails on `no such column: visit_id`. Nullable, so it needs
-        // no transformer — every pre-existing row is receipt-scoped.
+        // the NEW schema out of the OLD table, so a column the old table has
+        // never heard of has to be named or the whole migration dies on
+        // `no such column`. That means **every** column added to `discounts`
+        // after v42 belongs in this list, not just the one this branch was
+        // written for — the list is relative to the schema as it stands today,
+        // not as it stood when the branch shipped.
+        //
+        // `visit_id` is nullable, so it needs no transformer: every
+        // pre-existing row is receipt-scoped. `source` (ADR-0094) carries a
+        // `manual` default, which is likewise the right answer for every row
+        // that predates the concept — the three-way contest between a
+        // cashier's promo, a member preset and a redemption did not exist yet,
+        // so all of them are a cashier's promo.
         await m.alterTable(
           // ignore: experimental_member_use
-          TableMigration(discounts, newColumns: [discounts.visitId]),
+          TableMigration(
+            discounts,
+            newColumns: [discounts.visitId, discounts.source],
+          ),
         );
-        // The snapshot mirrors the live row, so it relaxes the same way.
-        // ignore: experimental_member_use
-        await m.alterTable(TableMigration(tableSessionDiscounts));
+        // The snapshot mirrors the live row, so it relaxes the same way — and
+        // gains the same column, for the same reason.
+        await m.alterTable(
+          // ignore: experimental_member_use
+          TableMigration(
+            tableSessionDiscounts,
+            newColumns: [tableSessionDiscounts.source],
+          ),
+        );
         // The order-scope index gained a `receipt_id IS NOT NULL` clause, so it
         // has to be replaced rather than left alone — CREATE IF NOT EXISTS
         // would keep the old definition and let a second bill discount through.
@@ -1142,7 +1160,11 @@ class AppDatabase extends _$AppDatabase {
           'guest_stock_override',
           type: "TEXT NOT NULL DEFAULT 'auto'",
         );
-        await _safeAddColumnOn('menu_items', 'guest_override_at', type: 'INTEGER');
+        await _safeAddColumnOn(
+          'menu_items',
+          'guest_override_at',
+          type: 'INTEGER',
+        );
         await _safeAddColumnOn(
           'venue_settings',
           'guest_ordering_enabled',
@@ -1189,10 +1211,10 @@ class AppDatabase extends _$AppDatabase {
           "SELECT id FROM venue_tables WHERE guest_code = ''",
         ).get();
         for (final r in rows) {
-          await customStatement('UPDATE venue_tables SET guest_code = ? WHERE id = ?', [
-            mintGuestCode(),
-            r.read<String>('id'),
-          ]);
+          await customStatement(
+            'UPDATE venue_tables SET guest_code = ? WHERE id = ?',
+            [mintGuestCode(), r.read<String>('id')],
+          );
         }
       }
 

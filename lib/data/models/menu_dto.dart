@@ -4,7 +4,7 @@ part 'menu_dto.freezed.dart';
 part 'menu_dto.g.dart';
 
 @freezed
-class MenuSnapshotDto with _$MenuSnapshotDto {
+abstract class MenuSnapshotDto with _$MenuSnapshotDto {
   const factory MenuSnapshotDto({
     required int version,
     required List<MenuCategoryDto> categories,
@@ -17,7 +17,7 @@ class MenuSnapshotDto with _$MenuSnapshotDto {
 }
 
 @freezed
-class MenuCategoryDto with _$MenuCategoryDto {
+abstract class MenuCategoryDto with _$MenuCategoryDto {
   const factory MenuCategoryDto({required String id, required String name}) =
       _MenuCategoryDto;
 
@@ -26,7 +26,7 @@ class MenuCategoryDto with _$MenuCategoryDto {
 }
 
 @freezed
-class VariantDto with _$VariantDto {
+abstract class VariantDto with _$VariantDto {
   const factory VariantDto({
     required String id,
     required String name,
@@ -38,7 +38,7 @@ class VariantDto with _$VariantDto {
 }
 
 @freezed
-class MenuItemDto with _$MenuItemDto {
+abstract class MenuItemDto with _$MenuItemDto {
   const factory MenuItemDto({
     required String id,
     required String name,
@@ -68,7 +68,7 @@ class MenuItemDto with _$MenuItemDto {
 }
 
 @freezed
-class MenuTagDto with _$MenuTagDto {
+abstract class MenuTagDto with _$MenuTagDto {
   const factory MenuTagDto({
     required String id,
     required String kind,
@@ -82,7 +82,7 @@ class MenuTagDto with _$MenuTagDto {
 }
 
 @freezed
-class ModifierOptionDto with _$ModifierOptionDto {
+abstract class ModifierOptionDto with _$ModifierOptionDto {
   const factory ModifierOptionDto({
     required String id,
     required String name,
@@ -94,7 +94,7 @@ class ModifierOptionDto with _$ModifierOptionDto {
 }
 
 @freezed
-class ModifierGroupDto with _$ModifierGroupDto {
+abstract class ModifierGroupDto with _$ModifierGroupDto {
   const factory ModifierGroupDto({
     required String id,
     required String name,

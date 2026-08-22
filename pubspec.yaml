@@ -19,12 +19,26 @@ dependencies:
   path: ^1.9.0
 
   # Models / codegen runtime
-  freezed_annotation: ^2.4.4
-  json_annotation: ^4.9.0
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.12.0
 
   # Persistence (server-side)
-  drift: ^2.20.3
-  sqlite3_flutter_libs: ^0.5.24
+  #
+  # `drift` is pinned exact, not caret-ranged. drift_dev 2.34.1+ requires
+  # analyzer ^13 and freezed 3.2.5 caps analyzer at 12, so the toolchain can
+  # only sit at drift_dev 2.34.0 — and drift_dev 2.34.0's migration verifier is
+  # written against drift 2.34.0's `drift3_preview` surface. Let drift float to
+  # 2.34.3 and `test/schema_migration_test.dart` stops compiling, which is a
+  # confusing way to learn that two packages from the same author disagree.
+  # Unpin once freezed supports analyzer 13.
+  drift: 2.34.0
+  # Direct, not transitive, because it replaced a direct dependency:
+  # `sqlite3_flutter_libs` is EOL (its last release is literally `0.6.0+eol`,
+  # description "Not used anymore"). sqlite3 3.x builds the native library
+  # itself through Dart's native-asset hooks, so `libsqlite3.so` reaches the
+  # APK without a Flutter plugin in between — verified in the release APK for
+  # all three ABIs, which is the only place this can be checked.
+  sqlite3: ^3.4.0
   path_provider: ^2.1.4
 
   # LAN transport
@@ -97,9 +111,9 @@ dev_dependencies:
 
   # Codegen
   build_runner: ^2.4.13
-  freezed: ^2.5.7
-  json_serializable: ^6.8.0
-  drift_dev: ^2.20.3
+  freezed: ^3.2.5
+  json_serializable: ^6.12.0
+  drift_dev: ^2.34.0
 
   # App launcher icon generation
   flutter_launcher_icons: ^0.14.1
