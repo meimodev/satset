@@ -155,6 +155,10 @@
       }
     }
   },
+  "soFailStock": "Not enough stock. The order stays in the queue.",
+  "soFailDecided": "Somebody else already decided this order.",
+  "soFailGone": "That order is gone.",
+  "soFailOther": "Could not act on the guest order.",
   "soRejectTitle": "Reason for rejecting",
   "soReasonHabis": "Out of stock",
   "soReasonGantiMenu": "Menu changed",

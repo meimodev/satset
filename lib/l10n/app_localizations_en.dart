@@ -425,6 +425,18 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String get soFailStock => 'Not enough stock. The order stays in the queue.';
+
+  @override
+  String get soFailDecided => 'Somebody else already decided this order.';
+
+  @override
+  String get soFailGone => 'That order is gone.';
+
+  @override
+  String get soFailOther => 'Could not act on the guest order.';
+
+  @override
   String get soRejectTitle => 'Reason for rejecting';
 
   @override

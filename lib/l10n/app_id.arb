@@ -180,6 +180,10 @@
       }
     }
   },
+  "soFailStock": "Stok tidak cukup. Pesanan tetap di antrean.",
+  "soFailDecided": "Pesanan ini sudah diputuskan orang lain.",
+  "soFailGone": "Pesanan itu sudah tidak ada.",
+  "soFailOther": "Gagal memproses pesanan tamu.",
   "soRejectTitle": "Alasan menolak",
   "soReasonHabis": "Bahan habis",
   "soReasonGantiMenu": "Menu diganti",

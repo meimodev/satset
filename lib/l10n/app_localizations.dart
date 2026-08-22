@@ -775,6 +775,30 @@ abstract class AppL10n {
   /// **'{n, plural, other{{n} pesanan gagal diterima.}}'**
   String soAcceptFailed(num n);
 
+  /// No description provided for @soFailStock.
+  ///
+  /// In id, this message translates to:
+  /// **'Stok tidak cukup. Pesanan tetap di antrean.'**
+  String get soFailStock;
+
+  /// No description provided for @soFailDecided.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan ini sudah diputuskan orang lain.'**
+  String get soFailDecided;
+
+  /// No description provided for @soFailGone.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan itu sudah tidak ada.'**
+  String get soFailGone;
+
+  /// No description provided for @soFailOther.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal memproses pesanan tamu.'**
+  String get soFailOther;
+
   /// No description provided for @soRejectTitle.
   ///
   /// In id, this message translates to:

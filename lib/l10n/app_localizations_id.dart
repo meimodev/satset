@@ -423,6 +423,18 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String get soFailStock => 'Stok tidak cukup. Pesanan tetap di antrean.';
+
+  @override
+  String get soFailDecided => 'Pesanan ini sudah diputuskan orang lain.';
+
+  @override
+  String get soFailGone => 'Pesanan itu sudah tidak ada.';
+
+  @override
+  String get soFailOther => 'Gagal memproses pesanan tamu.';
+
+  @override
   String get soRejectTitle => 'Alasan menolak';
 
   @override

@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/core/localization/report_copy.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/self_order_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/error_bus_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 
 class SelfOrderState {
@@ -49,8 +52,10 @@ class SelfOrderState {
   });
 
   /// What the hub badge counts and what the queue tab opens on.
-  List<GuestOrderDto> get pending =>
-      [for (final o in orders) if (o.status == 'pending') o];
+  List<GuestOrderDto> get pending => [
+    for (final o in orders)
+      if (o.status == 'pending') o,
+  ];
 
   SelfOrderState copyWith({
     List<GuestOrderDto>? orders,
@@ -142,31 +147,32 @@ class SelfOrderRepository extends StateNotifier<SelfOrderState> {
   /// Accepting runs the ordinary order path server-side, which can partially
   /// fail on stock — so the whole snapshot is re-read rather than patched in
   /// place. A queue of a few rows does not earn optimistic bookkeeping.
-  Future<void> accept(String id) =>
-      _act(() => _ref.read(apiClientProvider).postJson(
-            '/selforder/orders/$id/accept',
-            const <String, dynamic>{},
-          ));
+  Future<void> accept(String id) => _act(
+    () => _ref
+        .read(apiClientProvider)
+        .postJson('/selforder/orders/$id/accept', const <String, dynamic>{}),
+  );
 
-  Future<void> reject(String id, String reasonCode) =>
-      _act(() => _ref.read(apiClientProvider).postJson(
-            '/selforder/orders/$id/reject',
-            {'reasonCode': reasonCode},
-          ));
+  Future<void> reject(String id, String reasonCode) => _act(
+    () => _ref.read(apiClientProvider).postJson(
+      '/selforder/orders/$id/reject',
+      {'reasonCode': reasonCode},
+    ),
+  );
 
-  Future<void> acceptAll() =>
-      _act(() => _ref.read(apiClientProvider).postJson(
-            '/selforder/orders/accept-all',
-            const <String, dynamic>{},
-          ));
+  Future<void> acceptAll() => _act(
+    () => _ref
+        .read(apiClientProvider)
+        .postJson('/selforder/orders/accept-all', const <String, dynamic>{}),
+  );
 
   /// Kills every printed QR in the venue. The confirm lives on the screen; by
   /// the time this runs the owner has already said yes.
-  Future<void> rotateCodes() =>
-      _act(() => _ref.read(apiClientProvider).postJson(
-            '/selforder/codes/rotate',
-            const <String, dynamic>{},
-          ));
+  Future<void> rotateCodes() => _act(
+    () => _ref
+        .read(apiClientProvider)
+        .postJson('/selforder/codes/rotate', const <String, dynamic>{}),
+  );
 
   Future<void> setItemGuest(
     String id, {
@@ -174,32 +180,50 @@ class SelfOrderRepository extends StateNotifier<SelfOrderState> {
     bool? featured,
     bool? alcohol,
     String? stockOverride,
-  }) => _act(() => _ref.read(apiClientProvider).patchJson(
-        '/selforder/items/$id',
-        {
-          'guestVisible': ?visible,
-          'guestFeatured': ?featured,
-          'alcohol': ?alcohol,
-          'guestStockOverride': ?stockOverride,
-        },
-      ));
+  }) => _act(
+    () => _ref.read(apiClientProvider).patchJson('/selforder/items/$id', {
+      'guestVisible': ?visible,
+      'guestFeatured': ?featured,
+      'alcohol': ?alcohol,
+      'guestStockOverride': ?stockOverride,
+    }),
+  );
 
   /// Set or clear a category's [[Jam tayang]]. Both null clears it; the server
   /// refuses a half-window, so the pair travels together.
-  Future<void> setCategoryWindow(String id, {int? fromMin, int? toMin}) =>
-      _act(() => _ref.read(apiClientProvider).patchJson(
-            '/selforder/categories/$id',
-            {'fromMin': fromMin, 'toMin': toMin},
-          ));
+  Future<void> setCategoryWindow(String id, {int? fromMin, int? toMin}) => _act(
+    () => _ref.read(apiClientProvider).patchJson('/selforder/categories/$id', {
+      'fromMin': fromMin,
+      'toMin': toMin,
+    }),
+  );
 
-  Future<void> setTableEnabled(String id, bool enabled) =>
-      _act(() => _ref.read(apiClientProvider).patchJson(
-            '/selforder/tables/$id',
-            {'enabled': enabled},
-          ));
+  Future<void> setTableEnabled(String id, bool enabled) => _act(
+    () => _ref.read(apiClientProvider).patchJson('/selforder/tables/$id', {
+      'enabled': enabled,
+    }),
+  );
 
+  /// Every write on this screen, and the one place they are allowed to fail.
+  ///
+  /// Nothing here used to catch, so a refused accept became an unhandled async
+  /// error: no snackbar, no log, and `refresh()` never ran — the row stayed
+  /// drawn as pending and the only evidence was that pressing the button did
+  /// nothing. Now the code is resolved to a sentence and pushed to the error
+  /// bus (ADR-0103), and the reload happens either way, because after a
+  /// failure the local snapshot is the thing least worth trusting.
   Future<void> _act(Future<dynamic> Function() call) async {
-    await call();
+    try {
+      await call();
+    } on ApiException catch (e) {
+      SatLog.repo('selforder.act fail ${e.statusCode} ${e.code}');
+      _ref
+          .read(errorBusServiceProvider)
+          .push(
+            guestDecisionFailureText(_ref.read(l10nProvider), e.code),
+            code: e.code,
+          );
+    }
     await refresh();
   }
 
