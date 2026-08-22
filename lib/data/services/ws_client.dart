@@ -12,6 +12,7 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
+import 'package:satset/data/services/server_relocator.dart';
 
 /// Lifecycle stages reported by [WsClient.connState]. The UI top bar reads
 /// this; repositories use [WsClient.events] instead.
@@ -21,8 +22,27 @@ enum WsConnState { connecting, open, closed }
 ///
 /// Repositories subscribe to [events] for server-pushed updates.
 class WsClient {
-  WsClient({required this.config, required SecureStorageService storage})
-    : _storage = storage;
+  WsClient({
+    required this.config,
+    required SecureStorageService storage,
+    this.onProbablyMoved,
+  }) : _storage = storage;
+
+  /// Consecutive failed connects before the host is presumed to have *moved*
+  /// rather than to be down. With the capped backoff that is roughly half a
+  /// minute of silence — long enough that a real reboot has usually finished,
+  /// short enough that a DHCP lease change does not end the shift.
+  static const relocateAfter = 5;
+
+  /// Called every [relocateAfter] failures. Wired to the mDNS re-discovery in
+  /// [wsClientProvider]; null in tests and anywhere the address is fixed.
+  final Future<void> Function()? onProbablyMoved;
+
+  /// Whether this many consecutive failures is enough to go looking. Every
+  /// [relocateAfter]th, not just the first: the host may not have finished
+  /// re-advertising the first time we asked.
+  static bool shouldRelocate(int attempt) =>
+      attempt > 0 && attempt % relocateAfter == 0;
 
   final ApiConfig config;
   final SecureStorageService _storage;
@@ -136,6 +156,11 @@ class WsClient {
       milliseconds: (200 * (1 << _attempt.clamp(0, 6))).clamp(200, 10000),
     );
     SatLog.ws('reconnect in ${delay.inMilliseconds}ms attempt=$_attempt');
+    // Retrying the same address forever is only right while the address is
+    // still right. A server that took a new DHCP lease is up, reachable and
+    // invisible to this loop, so every N failures the handset asks the LAN
+    // where the certificate it trusts is now living.
+    if (shouldRelocate(_attempt)) unawaited(onProbablyMoved?.call());
     _reconnect?.cancel();
     _reconnect = Timer(delay, start);
   }
@@ -157,7 +182,11 @@ final wsClientProvider = Provider<WsClient>((ref) {
     throw StateError('ApiConfig not initialised.');
   }
   final storage = ref.watch(secureStorageServiceProvider);
-  final c = WsClient(config: cfg, storage: storage);
+  final c = WsClient(
+    config: cfg,
+    storage: storage,
+    onProbablyMoved: () => relocateServer(ref),
+  );
   c.start();
   ref.onDispose(c.dispose);
   return c;

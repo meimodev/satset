@@ -91,14 +91,34 @@ class MdnsBrowserService {
   Future<DiscoveredServer?> findVenueHost(
     String venueId, {
     Duration window = const Duration(seconds: 3),
-  }) async {
-    if (venueId.isEmpty) return null;
+  }) => venueId.isEmpty
+      ? Future.value()
+      : _scan((s) => s.venueId == venueId, window);
+
+  /// One-shot scan for the server holding [fingerprint], wherever it now
+  /// lives. This is how a paired handset finds a host that changed address —
+  /// the certificate is the identity, so a match is the *same* server on a new
+  /// IP and not a different one (ADR-0080).
+  Future<DiscoveredServer?> findFingerprintHost(
+    String fingerprint, {
+    Duration window = const Duration(seconds: 3),
+  }) {
+    final want = fingerprint.toLowerCase();
+    return want.isEmpty
+        ? Future.value()
+        : _scan((s) => s.fingerprint.toLowerCase() == want, window);
+  }
+
+  Future<DiscoveredServer?> _scan(
+    bool Function(DiscoveredServer) match,
+    Duration window,
+  ) async {
     await start();
     try {
       final deadline = SatClock.now().add(window);
       while (SatClock.now().isBefore(deadline)) {
         for (final s in current) {
-          if (s.venueId == venueId) return s;
+          if (match(s)) return s;
         }
         await Future<void>.delayed(const Duration(milliseconds: 250));
       }
