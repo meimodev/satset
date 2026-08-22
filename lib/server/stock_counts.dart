@@ -94,9 +94,9 @@ Future<StockCountLineRow?> recordCountLine(
 
     final existing =
         await (db.select(db.stockCountLines)..where(
-              (l) => l.countId.equals(countId) & l.ingredientId.equals(
-                ingredientId,
-              ),
+              (l) =>
+                  l.countId.equals(countId) &
+                  l.ingredientId.equals(ingredientId),
             ))
             .getSingleOrNull();
 
@@ -114,9 +114,9 @@ Future<StockCountLineRow?> recordCountLine(
       at: at ?? SatClock.now(),
     );
     await db.into(db.stockCountLines).insertOnConflictUpdate(line);
-    return (db.select(db.stockCountLines)
-          ..where((l) => l.id.equals(line.id.value)))
-        .getSingleOrNull();
+    return (db.select(
+      db.stockCountLines,
+    )..where((l) => l.id.equals(line.id.value))).getSingleOrNull();
   });
 }
 
@@ -157,9 +157,13 @@ typedef CloseCountResult = ({
 /// Close the session: write one movement per non-zero variance, stamp the
 /// header, and post **one** audit row.
 ///
-/// Assumes it is called inside a `db.transaction` — the movements, the header
-/// stamp and the audit row are one act, and a partial close would leave stock
-/// moved with nothing saying why.
+/// Opens its own `db.transaction` — the movements, the header stamp and the
+/// audit row are one act, and a partial close would leave stock moved with
+/// nothing saying why. It used to *assume* a caller had wrapped it, which is
+/// the same rule ADR-0100 restated for the ledgers: a writer whose guard reads
+/// what it is about to write opens the transaction itself rather than trusting
+/// four call sites to remember. The one-shot `/stock/count` route wraps open,
+/// lines and close together and still may — drift nests this as a savepoint.
 ///
 /// Returns null if the session is unknown or already closed. Never reopens: the
 /// ledger already has the movements, and closing twice would double them.
@@ -171,69 +175,75 @@ Future<CloseCountResult?> closeCount(
   DateTime? at,
   String? idPrefix,
 }) async {
-  final session = await countById(db, countId);
-  if (session == null || session.closedAt != null) return null;
+  return db.transaction(() async {
+    // Re-read inside the transaction, for the reason the ledgers do: "already
+    // closed" is the guard, and a guard that reads outside the transaction it
+    // protects is two closes both seeing an open session and both writing the
+    // movements.
+    final session = await countById(db, countId);
+    if (session == null || session.closedAt != null) return null;
 
-  final lines = await countLines(db, countId);
-  final when = at ?? SatClock.now();
-  final deltas = <String, int>{};
-  var varianceValue = 0;
-  var movements = 0;
+    final lines = await countLines(db, countId);
+    final when = at ?? SatClock.now();
+    final deltas = <String, int>{};
+    var varianceValue = 0;
+    var movements = 0;
 
-  for (final line in lines) {
-    final delta = line.countedQty - line.expectedQty;
-    deltas[line.ingredientId] = delta;
-    // Valued at the cost frozen on the line, not today's moving average — a
-    // session read a year from now reports the rupiah it reported at close.
-    varianceValue += valueOf(delta, line.costMicro);
-    // A zero-variance line is a fact somebody established and it stays in
-    // [StockCountLines]. It writes no movement, because nothing moved.
-    if (delta == 0) continue;
-    movements++;
-    await writeMovement(
-      db,
-      ingredientId: line.ingredientId,
-      delta: delta,
-      reason: StockReason.adjust,
-      userId: closedBy ?? session.userId,
-      sourceLabel: 'Opname',
-      note: line.note ?? session.note,
-      countId: countId,
-      costMicro: line.costMicro,
-      at: when,
-      id: idPrefix == null ? null : '$idPrefix${_uuid.v4()}',
+    for (final line in lines) {
+      final delta = line.countedQty - line.expectedQty;
+      deltas[line.ingredientId] = delta;
+      // Valued at the cost frozen on the line, not today's moving average — a
+      // session read a year from now reports the rupiah it reported at close.
+      varianceValue += valueOf(delta, line.costMicro);
+      // A zero-variance line is a fact somebody established and it stays in
+      // [StockCountLines]. It writes no movement, because nothing moved.
+      if (delta == 0) continue;
+      movements++;
+      await writeMovement(
+        db,
+        ingredientId: line.ingredientId,
+        delta: delta,
+        reason: StockReason.adjust,
+        userId: closedBy ?? session.userId,
+        sourceLabel: 'Opname',
+        note: line.note ?? session.note,
+        countId: countId,
+        costMicro: line.costMicro,
+        at: when,
+        id: idPrefix == null ? null : '$idPrefix${_uuid.v4()}',
+      );
+    }
+
+    await (db.update(db.stockCounts)..where((c) => c.id.equals(countId))).write(
+      StockCountsCompanion(
+        closedAt: Value(when),
+        closedBy: Value(closedBy ?? session.userId),
+      ),
     );
-  }
 
-  await (db.update(db.stockCounts)..where((c) => c.id.equals(countId))).write(
-    StockCountsCompanion(
-      closedAt: Value(when),
-      closedBy: Value(closedBy ?? session.userId),
-    ),
-  );
+    await writeAudit(
+      db,
+      type: AuditType.stockCounted,
+      kind: AuditKind.stockCountClosed,
+      params: {
+        'lines': '${lines.length}',
+        'variance': auditRupiah(varianceValue),
+      },
+      actorUserId: closedBy ?? session.userId,
+      reason: session.note,
+      amountCents: varianceValue,
+      hub: hub,
+      at: at,
+      idPrefix: idPrefix,
+    );
 
-  await writeAudit(
-    db,
-    type: AuditType.stockCounted,
-    kind: AuditKind.stockCountClosed,
-    params: {
-      'lines': '${lines.length}',
-      'variance': auditRupiah(varianceValue),
-    },
-    actorUserId: closedBy ?? session.userId,
-    reason: session.note,
-    amountCents: varianceValue,
-    hub: hub,
-    at: at,
-    idPrefix: idPrefix,
-  );
-
-  return (
-    lines: lines.length,
-    movements: movements,
-    varianceValue: varianceValue,
-    deltas: deltas,
-  );
+    return (
+      lines: lines.length,
+      movements: movements,
+      varianceValue: varianceValue,
+      deltas: deltas,
+    );
+  });
 }
 
 // ------------------------------------------------------------------- reads
@@ -301,7 +311,11 @@ Map<String, dynamic> countRowToJson(
   if (lines != null) ...{
     'lines': [
       for (final l in lines)
-        countLineRowToJson(l, name: names[l.ingredientId], unit: units[l.ingredientId]),
+        countLineRowToJson(
+          l,
+          name: names[l.ingredientId],
+          unit: units[l.ingredientId],
+        ),
     ],
     'lineCount': lines.length,
     'varianceValue': lines.fold<int>(

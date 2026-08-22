@@ -6,7 +6,14 @@
 //   3. a sale during the walk does not land in the variance;
 //   4. closing twice does not double the movements.
 //
+// The fourth is a guard — `closedAt != null` — and a guard is only real inside
+// the transaction it protects (ADR-0100). `closeCount` used to *assume* a
+// caller had wrapped it, so every call below opens with no wrapper of its own:
+// that is the contract now, and the last test in the file pins it.
+//
 // See docs/adr/0096-an-opname-is-a-document-not-a-burst-of-adjustments.md.
+import 'dart:io';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -48,10 +55,9 @@ void main() {
 
   tearDown(() => db.close());
 
-  Future<int> onHand(String id) async =>
-      (await (db.select(
-        db.ingredients,
-      )..where((i) => i.id.equals(id))).getSingle()).stockOnHand;
+  Future<int> onHand(String id) async => (await (db.select(
+    db.ingredients,
+  )..where((i) => i.id.equals(id))).getSingle()).stockOnHand;
 
   Future<List<StockMovementRow>> movements() =>
       db.select(db.stockMovements).get();
@@ -64,9 +70,7 @@ void main() {
       ingredientId: 'beras',
       counted: StockUnit.kg.toBase(10), // exactly what was expected
     );
-    final result = await db.transaction(
-      () => closeCount(db, countId: countId),
-    );
+    final result = await closeCount(db, countId: countId);
 
     // The count says somebody looked; the ledger says nothing moved.
     expect(result!.lines, 1);
@@ -76,25 +80,28 @@ void main() {
     expect(await movements(), isEmpty);
   });
 
-  test('nothing moves until close, and the movement carries the count', () async {
-    final countId = await openCount(db);
-    await recordCountLine(
-      db,
-      countId: countId,
-      ingredientId: 'beras',
-      counted: StockUnit.kg.toBase(9),
-    );
-    expect(await onHand('beras'), StockUnit.kg.toBase(10));
-    expect(await movements(), isEmpty);
+  test(
+    'nothing moves until close, and the movement carries the count',
+    () async {
+      final countId = await openCount(db);
+      await recordCountLine(
+        db,
+        countId: countId,
+        ingredientId: 'beras',
+        counted: StockUnit.kg.toBase(9),
+      );
+      expect(await onHand('beras'), StockUnit.kg.toBase(10));
+      expect(await movements(), isEmpty);
 
-    await db.transaction(() => closeCount(db, countId: countId));
+      await closeCount(db, countId: countId);
 
-    expect(await onHand('beras'), StockUnit.kg.toBase(9));
-    final rows = await movements();
-    expect(rows, hasLength(1));
-    expect(rows.single.reason, StockReason.adjust.name);
-    expect(rows.single.countId, countId);
-  });
+      expect(await onHand('beras'), StockUnit.kg.toBase(9));
+      final rows = await movements();
+      expect(rows, hasLength(1));
+      expect(rows.single.reason, StockReason.adjust.name);
+      expect(rows.single.countId, countId);
+    },
+  );
 
   test('a sale during the walk does not land in the variance', () async {
     final countId = await openCount(db);
@@ -119,9 +126,7 @@ void main() {
 
     // 14:40 — close. The expectation was frozen at entry, so the variance is
     // zero: the three portions are the sale's business, not the counter's.
-    final result = await db.transaction(
-      () => closeCount(db, countId: countId),
-    );
+    final result = await closeCount(db, countId: countId);
     expect(result!.deltas['ayam'], 0);
     expect(result.varianceValue, 0);
     expect(await onHand('ayam'), StockUnit.pcs.toBase(5));
@@ -135,10 +140,8 @@ void main() {
       ingredientId: 'beras',
       counted: StockUnit.kg.toBase(7),
     );
-    await db.transaction(() => closeCount(db, countId: countId));
-    final second = await db.transaction(
-      () => closeCount(db, countId: countId),
-    );
+    await closeCount(db, countId: countId);
+    final second = await closeCount(db, countId: countId);
 
     expect(second, isNull);
     expect(await movements(), hasLength(1));
@@ -202,5 +205,20 @@ void main() {
 
     expect(both.every((l) => l != null), isTrue);
     expect(await countLines(db, countId), hasLength(1));
+  });
+
+  test('closeCount opens its own transaction rather than assuming one', () {
+    // The doc comment used to say "assumes it is called inside a
+    // db.transaction", which put a guard's correctness in four call sites.
+    final src = File('lib/server/stock_counts.dart').readAsStringSync();
+    final body = src.substring(
+      src.indexOf('Future<CloseCountResult?> closeCount('),
+    );
+    expect(body, contains('return db.transaction('));
+    expect(
+      body.indexOf('await countById(db, countId)'),
+      greaterThan(body.indexOf('return db.transaction(')),
+      reason: 'the "already closed" read has to be inside the wrap',
+    );
   });
 }
