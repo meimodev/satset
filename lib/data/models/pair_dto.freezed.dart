@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,214 +9,275 @@ part of 'pair_dto.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
-
-PairClaimResponseDto _$PairClaimResponseDtoFromJson(Map<String, dynamic> json) {
-  return _PairClaimResponseDto.fromJson(json);
-}
 
 /// @nodoc
 mixin _$PairClaimResponseDto {
-  String get deviceToken => throw _privateConstructorUsedError;
-  String get fingerprint => throw _privateConstructorUsedError;
-  String get serverPublicKey => throw _privateConstructorUsedError;
+
+ String get deviceToken; String get fingerprint; String get serverPublicKey;
+/// Create a copy of PairClaimResponseDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PairClaimResponseDtoCopyWith<PairClaimResponseDto> get copyWith => _$PairClaimResponseDtoCopyWithImpl<PairClaimResponseDto>(this as PairClaimResponseDto, _$identity);
 
   /// Serializes this PairClaimResponseDto to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  Map<String, dynamic> toJson();
 
-  /// Create a copy of PairClaimResponseDto
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $PairClaimResponseDtoCopyWith<PairClaimResponseDto> get copyWith =>
-      throw _privateConstructorUsedError;
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PairClaimResponseDto&&(identical(other.deviceToken, deviceToken) || other.deviceToken == deviceToken)&&(identical(other.fingerprint, fingerprint) || other.fingerprint == fingerprint)&&(identical(other.serverPublicKey, serverPublicKey) || other.serverPublicKey == serverPublicKey));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,deviceToken,fingerprint,serverPublicKey);
+
+@override
+String toString() {
+  return 'PairClaimResponseDto(deviceToken: $deviceToken, fingerprint: $fingerprint, serverPublicKey: $serverPublicKey)';
+}
+
+
 }
 
 /// @nodoc
-abstract class $PairClaimResponseDtoCopyWith<$Res> {
-  factory $PairClaimResponseDtoCopyWith(
-    PairClaimResponseDto value,
-    $Res Function(PairClaimResponseDto) then,
-  ) = _$PairClaimResponseDtoCopyWithImpl<$Res, PairClaimResponseDto>;
-  @useResult
-  $Res call({String deviceToken, String fingerprint, String serverPublicKey});
-}
+abstract mixin class $PairClaimResponseDtoCopyWith<$Res>  {
+  factory $PairClaimResponseDtoCopyWith(PairClaimResponseDto value, $Res Function(PairClaimResponseDto) _then) = _$PairClaimResponseDtoCopyWithImpl;
+@useResult
+$Res call({
+ String deviceToken, String fingerprint, String serverPublicKey
+});
 
+
+
+
+}
 /// @nodoc
-class _$PairClaimResponseDtoCopyWithImpl<
-  $Res,
-  $Val extends PairClaimResponseDto
->
+class _$PairClaimResponseDtoCopyWithImpl<$Res>
     implements $PairClaimResponseDtoCopyWith<$Res> {
-  _$PairClaimResponseDtoCopyWithImpl(this._value, this._then);
+  _$PairClaimResponseDtoCopyWithImpl(this._self, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+  final PairClaimResponseDto _self;
+  final $Res Function(PairClaimResponseDto) _then;
 
-  /// Create a copy of PairClaimResponseDto
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? deviceToken = null,
-    Object? fingerprint = null,
-    Object? serverPublicKey = null,
-  }) {
-    return _then(
-      _value.copyWith(
-            deviceToken: null == deviceToken
-                ? _value.deviceToken
-                : deviceToken // ignore: cast_nullable_to_non_nullable
-                      as String,
-            fingerprint: null == fingerprint
-                ? _value.fingerprint
-                : fingerprint // ignore: cast_nullable_to_non_nullable
-                      as String,
-            serverPublicKey: null == serverPublicKey
-                ? _value.serverPublicKey
-                : serverPublicKey // ignore: cast_nullable_to_non_nullable
-                      as String,
-          )
-          as $Val,
-    );
-  }
+/// Create a copy of PairClaimResponseDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? deviceToken = null,Object? fingerprint = null,Object? serverPublicKey = null,}) {
+  return _then(_self.copyWith(
+deviceToken: null == deviceToken ? _self.deviceToken : deviceToken // ignore: cast_nullable_to_non_nullable
+as String,fingerprint: null == fingerprint ? _self.fingerprint : fingerprint // ignore: cast_nullable_to_non_nullable
+as String,serverPublicKey: null == serverPublicKey ? _self.serverPublicKey : serverPublicKey // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
 }
 
-/// @nodoc
-abstract class _$$PairClaimResponseDtoImplCopyWith<$Res>
-    implements $PairClaimResponseDtoCopyWith<$Res> {
-  factory _$$PairClaimResponseDtoImplCopyWith(
-    _$PairClaimResponseDtoImpl value,
-    $Res Function(_$PairClaimResponseDtoImpl) then,
-  ) = __$$PairClaimResponseDtoImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({String deviceToken, String fingerprint, String serverPublicKey});
 }
 
-/// @nodoc
-class __$$PairClaimResponseDtoImplCopyWithImpl<$Res>
-    extends _$PairClaimResponseDtoCopyWithImpl<$Res, _$PairClaimResponseDtoImpl>
-    implements _$$PairClaimResponseDtoImplCopyWith<$Res> {
-  __$$PairClaimResponseDtoImplCopyWithImpl(
-    _$PairClaimResponseDtoImpl _value,
-    $Res Function(_$PairClaimResponseDtoImpl) _then,
-  ) : super(_value, _then);
 
-  /// Create a copy of PairClaimResponseDto
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? deviceToken = null,
-    Object? fingerprint = null,
-    Object? serverPublicKey = null,
-  }) {
-    return _then(
-      _$PairClaimResponseDtoImpl(
-        deviceToken: null == deviceToken
-            ? _value.deviceToken
-            : deviceToken // ignore: cast_nullable_to_non_nullable
-                  as String,
-        fingerprint: null == fingerprint
-            ? _value.fingerprint
-            : fingerprint // ignore: cast_nullable_to_non_nullable
-                  as String,
-        serverPublicKey: null == serverPublicKey
-            ? _value.serverPublicKey
-            : serverPublicKey // ignore: cast_nullable_to_non_nullable
-                  as String,
-      ),
-    );
-  }
+/// Adds pattern-matching-related methods to [PairClaimResponseDto].
+extension PairClaimResponseDtoPatterns on PairClaimResponseDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PairClaimResponseDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PairClaimResponseDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PairClaimResponseDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PairClaimResponseDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PairClaimResponseDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PairClaimResponseDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String deviceToken,  String fingerprint,  String serverPublicKey)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PairClaimResponseDto() when $default != null:
+return $default(_that.deviceToken,_that.fingerprint,_that.serverPublicKey);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String deviceToken,  String fingerprint,  String serverPublicKey)  $default,) {final _that = this;
+switch (_that) {
+case _PairClaimResponseDto():
+return $default(_that.deviceToken,_that.fingerprint,_that.serverPublicKey);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String deviceToken,  String fingerprint,  String serverPublicKey)?  $default,) {final _that = this;
+switch (_that) {
+case _PairClaimResponseDto() when $default != null:
+return $default(_that.deviceToken,_that.fingerprint,_that.serverPublicKey);case _:
+  return null;
+
+}
+}
+
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$PairClaimResponseDtoImpl implements _PairClaimResponseDto {
-  const _$PairClaimResponseDtoImpl({
-    required this.deviceToken,
-    required this.fingerprint,
-    required this.serverPublicKey,
-  });
 
-  factory _$PairClaimResponseDtoImpl.fromJson(Map<String, dynamic> json) =>
-      _$$PairClaimResponseDtoImplFromJson(json);
+class _PairClaimResponseDto implements PairClaimResponseDto {
+  const _PairClaimResponseDto({required this.deviceToken, required this.fingerprint, required this.serverPublicKey});
+  factory _PairClaimResponseDto.fromJson(Map<String, dynamic> json) => _$PairClaimResponseDtoFromJson(json);
 
-  @override
-  final String deviceToken;
-  @override
-  final String fingerprint;
-  @override
-  final String serverPublicKey;
+@override final  String deviceToken;
+@override final  String fingerprint;
+@override final  String serverPublicKey;
 
-  @override
-  String toString() {
-    return 'PairClaimResponseDto(deviceToken: $deviceToken, fingerprint: $fingerprint, serverPublicKey: $serverPublicKey)';
-  }
+/// Create a copy of PairClaimResponseDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PairClaimResponseDtoCopyWith<_PairClaimResponseDto> get copyWith => __$PairClaimResponseDtoCopyWithImpl<_PairClaimResponseDto>(this, _$identity);
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$PairClaimResponseDtoImpl &&
-            (identical(other.deviceToken, deviceToken) ||
-                other.deviceToken == deviceToken) &&
-            (identical(other.fingerprint, fingerprint) ||
-                other.fingerprint == fingerprint) &&
-            (identical(other.serverPublicKey, serverPublicKey) ||
-                other.serverPublicKey == serverPublicKey));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode =>
-      Object.hash(runtimeType, deviceToken, fingerprint, serverPublicKey);
-
-  /// Create a copy of PairClaimResponseDto
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$PairClaimResponseDtoImplCopyWith<_$PairClaimResponseDtoImpl>
-  get copyWith =>
-      __$$PairClaimResponseDtoImplCopyWithImpl<_$PairClaimResponseDtoImpl>(
-        this,
-        _$identity,
-      );
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$PairClaimResponseDtoImplToJson(this);
-  }
+@override
+Map<String, dynamic> toJson() {
+  return _$PairClaimResponseDtoToJson(this, );
 }
 
-abstract class _PairClaimResponseDto implements PairClaimResponseDto {
-  const factory _PairClaimResponseDto({
-    required final String deviceToken,
-    required final String fingerprint,
-    required final String serverPublicKey,
-  }) = _$PairClaimResponseDtoImpl;
-
-  factory _PairClaimResponseDto.fromJson(Map<String, dynamic> json) =
-      _$PairClaimResponseDtoImpl.fromJson;
-
-  @override
-  String get deviceToken;
-  @override
-  String get fingerprint;
-  @override
-  String get serverPublicKey;
-
-  /// Create a copy of PairClaimResponseDto
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$PairClaimResponseDtoImplCopyWith<_$PairClaimResponseDtoImpl>
-  get copyWith => throw _privateConstructorUsedError;
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PairClaimResponseDto&&(identical(other.deviceToken, deviceToken) || other.deviceToken == deviceToken)&&(identical(other.fingerprint, fingerprint) || other.fingerprint == fingerprint)&&(identical(other.serverPublicKey, serverPublicKey) || other.serverPublicKey == serverPublicKey));
 }
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,deviceToken,fingerprint,serverPublicKey);
+
+@override
+String toString() {
+  return 'PairClaimResponseDto(deviceToken: $deviceToken, fingerprint: $fingerprint, serverPublicKey: $serverPublicKey)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PairClaimResponseDtoCopyWith<$Res> implements $PairClaimResponseDtoCopyWith<$Res> {
+  factory _$PairClaimResponseDtoCopyWith(_PairClaimResponseDto value, $Res Function(_PairClaimResponseDto) _then) = __$PairClaimResponseDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String deviceToken, String fingerprint, String serverPublicKey
+});
+
+
+
+
+}
+/// @nodoc
+class __$PairClaimResponseDtoCopyWithImpl<$Res>
+    implements _$PairClaimResponseDtoCopyWith<$Res> {
+  __$PairClaimResponseDtoCopyWithImpl(this._self, this._then);
+
+  final _PairClaimResponseDto _self;
+  final $Res Function(_PairClaimResponseDto) _then;
+
+/// Create a copy of PairClaimResponseDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? deviceToken = null,Object? fingerprint = null,Object? serverPublicKey = null,}) {
+  return _then(_PairClaimResponseDto(
+deviceToken: null == deviceToken ? _self.deviceToken : deviceToken // ignore: cast_nullable_to_non_nullable
+as String,fingerprint: null == fingerprint ? _self.fingerprint : fingerprint // ignore: cast_nullable_to_non_nullable
+as String,serverPublicKey: null == serverPublicKey ? _self.serverPublicKey : serverPublicKey // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+// dart format on

@@ -686,57 +686,110 @@ Router tablesRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final denied = await _requireCap(req, db, auth, Capability.takeOrder);
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-    final row = await (db.select(
-      db.venueTables,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
-    if (row == null) return Response.notFound('table not found');
-    if (row.status != 'available') {
-      return Response(
-        409,
-        body: jsonEncode({
-          'code': 'already_seated',
-          'message': 'table is already in use',
-          'table': _toJson(row),
-        }),
-        headers: {'content-type': 'application/json'},
-      );
-    }
     final paxIn = (body['pax'] as num?)?.toInt();
-    final pax = paxIn == null
-        ? row.pax
-        : paxIn.clamp(0, row.capacity < 1 ? 1 : row.capacity);
     final actorId = body['actorId'] as String?;
     final actorName = body['actorName'] as String?;
     final guestName = body['guestName'] as String?;
     final guestNotes = body['guestNotes'] as String?;
     final reservationId = body['reservationId'] as String?;
     final acquireLock = body['acquireLock'] == true;
+    // Optional, and sent by the offline queue (ADR-0090). A replayed seat
+    // whose first attempt committed but whose response never made it back
+    // otherwise reads as `already_seated` — the drain treats that as a
+    // refusal and refuses every order queued behind it, so a waiter's whole
+    // backlog dies because the network dropped one reply.
+    final idem = (body['idempotencyKey'] as String?) ?? '';
     final now = SatClock.now();
-    await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
-      VenueTablesCompanion(
-        status: const Value('occupied'),
-        pax: Value(pax),
-        openedAt: Value(row.openedAt ?? now.toUtc()),
-        lastActorId: actorId == null ? const Value.absent() : Value(actorId),
-        guestName: Value(guestName),
-        guestNotes: Value(guestNotes),
-        reservationId: Value(reservationId),
-        lockedBy: acquireLock && actorId != null
-            ? Value(actorId)
-            : const Value.absent(),
-        lockedByName: acquireLock && actorId != null
-            ? Value(actorName)
-            : const Value.absent(),
-        lockedAt: acquireLock && actorId != null
-            ? Value(now)
-            : const Value.absent(),
-        lockExpiresAt: acquireLock && actorId != null
-            ? Value(now.add(const Duration(seconds: 7)))
-            : const Value.absent(),
-      ),
-    );
-    // A seated table always has a live visit (the bill keys off it). ADR-0024.
-    await ensureVisit(db, id, actorId: actorId);
+
+    String? replayed;
+    Response? refused;
+    await db.transaction(() async {
+      if (idem.isNotEmpty) {
+        final prior = await (db.select(
+          db.idempotency,
+        )..where((k) => k.key.equals(idem))).getSingleOrNull();
+        if (prior != null) {
+          replayed = prior.responseJson;
+          return;
+        }
+      }
+      // Read and write in one step, for the reason the ledgers do (ADR-0100):
+      // "available" is the guard, and two handsets reading it outside the
+      // transaction both seat the same table.
+      final row = await (db.select(
+        db.venueTables,
+      )..where((t) => t.id.equals(id))).getSingleOrNull();
+      if (row == null) {
+        refused = Response.notFound('table not found');
+        return;
+      }
+      if (row.status != 'available') {
+        refused = Response(
+          409,
+          body: jsonEncode({
+            'code': 'already_seated',
+            'message': 'table is already in use',
+            'table': _toJson(row),
+          }),
+          headers: {'content-type': 'application/json'},
+        );
+        return;
+      }
+      final pax = paxIn == null
+          ? row.pax
+          : paxIn.clamp(0, row.capacity < 1 ? 1 : row.capacity);
+      await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
+        VenueTablesCompanion(
+          status: const Value('occupied'),
+          pax: Value(pax),
+          openedAt: Value(row.openedAt ?? now.toUtc()),
+          lastActorId: actorId == null ? const Value.absent() : Value(actorId),
+          guestName: Value(guestName),
+          guestNotes: Value(guestNotes),
+          reservationId: Value(reservationId),
+          lockedBy: acquireLock && actorId != null
+              ? Value(actorId)
+              : const Value.absent(),
+          lockedByName: acquireLock && actorId != null
+              ? Value(actorName)
+              : const Value.absent(),
+          lockedAt: acquireLock && actorId != null
+              ? Value(now)
+              : const Value.absent(),
+          lockExpiresAt: acquireLock && actorId != null
+              ? Value(now.add(const Duration(seconds: 7)))
+              : const Value.absent(),
+        ),
+      );
+      // A seated table always has a live visit (the bill keys off it).
+      // ADR-0024.
+      await ensureVisit(db, id, actorId: actorId);
+      if (idem.isNotEmpty) {
+        final seated = await (db.select(
+          db.venueTables,
+        )..where((t) => t.id.equals(id))).getSingle();
+        // Same table the submit path uses, and the claim commits with the
+        // seat: a key that exists is a seat that happened.
+        await db
+            .into(db.idempotency)
+            .insert(
+              IdempotencyCompanion.insert(
+                key: idem,
+                responseJson: jsonEncode(_toJson(seated)),
+                createdAt: now,
+              ),
+            );
+      }
+    });
+    // A replay says what the first attempt said and touches nothing — no
+    // second broadcast, because nothing changed.
+    if (replayed != null) {
+      return Response.ok(
+        replayed,
+        headers: {'content-type': 'application/json'},
+      );
+    }
+    if (refused != null) return refused!;
     return _broadcast(db, hub, id);
   });
 

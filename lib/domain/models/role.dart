@@ -8,7 +8,7 @@ part 'role.freezed.dart';
 /// in `lib/ui/core/design/role_visuals.dart` so this layer carries no
 /// Flutter imports.
 @freezed
-class Role with _$Role {
+abstract class Role with _$Role {
   const Role._();
 
   const factory Role({

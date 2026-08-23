@@ -775,6 +775,30 @@ abstract class AppL10n {
   /// **'{n, plural, other{{n} pesanan gagal diterima.}}'**
   String soAcceptFailed(num n);
 
+  /// No description provided for @soFailStock.
+  ///
+  /// In id, this message translates to:
+  /// **'Stok tidak cukup. Pesanan tetap di antrean.'**
+  String get soFailStock;
+
+  /// No description provided for @soFailDecided.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan ini sudah diputuskan orang lain.'**
+  String get soFailDecided;
+
+  /// No description provided for @soFailGone.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan itu sudah tidak ada.'**
+  String get soFailGone;
+
+  /// No description provided for @soFailOther.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal memproses pesanan tamu.'**
+  String get soFailOther;
+
   /// No description provided for @soRejectTitle.
   ///
   /// In id, this message translates to:
@@ -1326,6 +1350,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'PIN reset'**
   String get auditTypeStaffPinReset;
+
+  /// No description provided for @auditTypeSignInFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'PIN gagal'**
+  String get auditTypeSignInFailed;
 
   /// No description provided for @auditTypeRoleCreated.
   ///
@@ -4314,6 +4344,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'PIN {name} diubah'**
   String auditStaffPinSet(String name);
+
+  /// No description provided for @auditSignInFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'PIN salah di {device} · percobaan ke-{attempt}'**
+  String auditSignInFailed(String device, String attempt);
 
   /// No description provided for @auditStaffPinReset.
   ///
@@ -10861,6 +10897,12 @@ abstract class AppL10n {
   /// **'PIN salah. Coba lagi.'**
   String get authWrongPin;
 
+  /// No description provided for @authDeviceRevoked.
+  ///
+  /// In id, this message translates to:
+  /// **'Perangkat ini sudah tidak terhubung ke venue. Minta admin memasangkannya lagi.'**
+  String get authDeviceRevoked;
+
   /// No description provided for @authWrongCredentials.
   ///
   /// In id, this message translates to:
@@ -11011,6 +11053,12 @@ abstract class AppL10n {
   /// **'Antrean kirim penuh — sambungkan dulu ke server sebelum pesan lagi'**
   String get sendQueueFull;
 
+  /// No description provided for @sendQueueCorrupt.
+  ///
+  /// In id, this message translates to:
+  /// **'Antrean kirim rusak dan tidak bisa dibaca. Pesanan yang tertahan di dalamnya tidak terkirim — periksa meja yang belum dapat pesanannya.'**
+  String get sendQueueCorrupt;
+
   /// No description provided for @sendQueuePending.
   ///
   /// In id, this message translates to:
@@ -11112,6 +11160,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'{what} tidak dikirim — {why}'**
   String tktNotSent(String what, String why);
+
+  /// Footer under a paged log (venue audit, petty cash) once paging stops at its row cap. Says the list was truncated, not that the log ended.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{Berhenti di {n} baris. Persempit rentang atau ekspor untuk catatan lengkap.}}'**
+  String logCapNotice(int n);
 
   /// No description provided for @auditLoadFailed.
   ///
@@ -12540,6 +12594,18 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'{n} siap'**
   String tblZoneReadyCount(int n);
+
+  /// Zone chip alarm, worst tier: tables stuck past the critical threshold.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} meja kritis}}'**
+  String tblZoneAlarmCrit(int n);
+
+  /// Zone chip alarm, lower tier: tables stuck past the warning threshold.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} meja perlu perhatian}}'**
+  String tblZoneAlarmWarn(int n);
 
   /// Takeaway status: handed to the guest.
   ///

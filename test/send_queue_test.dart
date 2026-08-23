@@ -16,6 +16,7 @@ import 'package:satset/data/services/send_queue_service.dart';
 /// must hold.
 void main() {
   late PrefsService prefs;
+  var corrupted = false;
 
   Future<PrefsService> freshPrefs([Map<String, Object> seed = const {}]) async {
     SharedPreferences.setMockInitialValues(seed);
@@ -348,6 +349,58 @@ void main() {
   /// mounted, and the shell watches this provider. `wsClientProvider` throws
   /// rather than returning null without a config, so an unguarded `watch` here
   /// paints a red frame on the way to `/pin`.
+  /// A backlog that will not parse used to be deleted on sight. It is still
+  /// the orders a waiter took while the handset was cut off: unreplayable, but
+  /// not nothing. So it moves aside instead, and somebody is told.
+  group('a backlog that cannot be read', () {
+    Future<SendQueue> loadFrom(String blob) async {
+      final p = await freshPrefs({'satset.send_queue': blob});
+      return SendQueue(
+        prefs: p,
+        send: (_) async => const {},
+        onCorrupt: () => corrupted = true,
+      );
+    }
+
+    test('is set aside verbatim rather than deleted', () async {
+      const blob = '{not json at all';
+      final p = await freshPrefs({'satset.send_queue': blob});
+      final q = SendQueue(prefs: p, send: (_) async => const {});
+      addTearDown(q.dispose);
+
+      expect(q.state, isEmpty, reason: 'nothing in it can be replayed');
+      // The write is fire-and-forget, so let the microtasks run.
+      await Future<void>.delayed(Duration.zero);
+      expect(p.sendQueueQuarantineJson(), blob);
+      expect(
+        p.sendQueueJson(),
+        isNull,
+        reason: 'and it does not stay where it will be re-read every boot',
+      );
+    });
+
+    test('is announced, not swallowed', () async {
+      corrupted = false;
+      final q = await loadFrom('[{"kind":');
+      addTearDown(q.dispose);
+      expect(corrupted, isTrue);
+    });
+
+    test('a queue that parses says nothing and quarantines nothing', () async {
+      corrupted = false;
+      final p = await freshPrefs({'satset.send_queue': '[]'});
+      final q = SendQueue(
+        prefs: p,
+        send: (_) async => const {},
+        onCorrupt: () => corrupted = true,
+      );
+      addTearDown(q.dispose);
+
+      expect(corrupted, isFalse);
+      expect(p.sendQueueQuarantineJson(), isNull);
+    });
+  });
+
   test('drain trigger is inert without an ApiConfig', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);

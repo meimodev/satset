@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 
 import 'package:satset/data/repositories/reports_repository.dart';
 import 'package:satset/l10n/app_localizations.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 /// File flavour the user picks in the export sheet (ADR-0030).
 enum ExportFormat { csv, pdf }
@@ -84,7 +85,7 @@ String exportFilename({
   DateTime? from,
   DateTime? to,
 }) {
-  final t = at ?? DateTime.now();
+  final t = at ?? SatClock.now();
   String two(int n) => n.toString().padLeft(2, '0');
   final stamp =
       '${t.year}${two(t.month)}${two(t.day)}-${two(t.hour)}${two(t.minute)}';
@@ -103,10 +104,15 @@ Future<void> shareExportBytes({
   final dir = await getTemporaryDirectory();
   final file = File('${dir.path}/$filename');
   await file.writeAsBytes(bytes, flush: true);
-  await Share.shareXFiles(
-    [XFile(file.path, mimeType: mime, name: filename)],
-    subject: subject,
-    text: text,
+  // share_plus 13 replaced the static `Share.shareXFiles` helpers with one
+  // `SharePlus.instance.share(ShareParams(...))` call. Same sheet, same file,
+  // one entry point instead of six overloads.
+  await SharePlus.instance.share(
+    ShareParams(
+      files: [XFile(file.path, mimeType: mime, name: filename)],
+      subject: subject,
+      text: text,
+    ),
   );
 }
 

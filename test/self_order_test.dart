@@ -22,8 +22,10 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:satset/core/time/sat_clock.dart';
+import 'package:satset/domain/models/stock_unit.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/self_order.dart';
+import 'package:satset/server/stock.dart';
 import 'package:satset/server/ws_hub.dart';
 
 /// Records what the room was told. `submitOrder` only writes, so an accept that
@@ -31,8 +33,7 @@ import 'package:satset/server/ws_hub.dart';
 class _RecordingHub extends WsHub {
   final types = <String>[];
   @override
-  void broadcast(String type, Map<String, dynamic> payload) =>
-      types.add(type);
+  void broadcast(String type, Map<String, dynamic> payload) => types.add(type);
 }
 
 void main() {
@@ -100,8 +101,7 @@ void main() {
   Future<GuestSession> open() async =>
       openGuestSession(db, tableId: 't1', ttlHours: 4);
 
-  Future<VenueTable> tbl() async =>
-      (await tableForGuestCode(db, 'CODE0001'))!;
+  Future<VenueTable> tbl() async => (await tableForGuestCode(db, 'CODE0001'))!;
 
   // -------------------------------------------------------------------------
   // codes
@@ -176,7 +176,9 @@ void main() {
 
     // The table is freed and reused: the phone on the windowsill loses.
     await (db.update(db.venueTables)..where((t) => t.id.equals('t1'))).write(
-      VenueTablesCompanion(openedAt: Value(s.startedAt.add(const Duration(minutes: 1)))),
+      VenueTablesCompanion(
+        openedAt: Value(s.startedAt.add(const Duration(minutes: 1))),
+      ),
     );
     expect(await liveGuestSession(db, s.id), isNull);
   });
@@ -264,7 +266,11 @@ void main() {
         ],
       ),
       throwsA(
-        isA<SelfOrderException>().having((e) => e.code, 'code', 'item_unavailable'),
+        isA<SelfOrderException>().having(
+          (e) => e.code,
+          'code',
+          'item_unavailable',
+        ),
       ),
     );
   });
@@ -277,25 +283,38 @@ void main() {
 
     expect(
       () => submit(const []),
-      throwsA(isA<SelfOrderException>().having((e) => e.code, 'code', 'empty_order')),
+      throwsA(
+        isA<SelfOrderException>().having((e) => e.code, 'code', 'empty_order'),
+      ),
     );
     expect(
       () => submit([
         for (var i = 0; i < 4; i++) {'itemId': 'nasgor', 'qty': 1},
       ]),
       throwsA(
-        isA<SelfOrderException>().having((e) => e.code, 'code', 'too_many_items'),
+        isA<SelfOrderException>().having(
+          (e) => e.code,
+          'code',
+          'too_many_items',
+        ),
       ),
     );
 
-    await (db.update(db.venueSettings)..where((x) => x.id.equals('default')))
-        .write(const VenueSettingsCompanion(guestOrderingEnabled: Value(false)));
+    await (db.update(
+      db.venueSettings,
+    )..where((x) => x.id.equals('default'))).write(
+      const VenueSettingsCompanion(guestOrderingEnabled: Value(false)),
+    );
     expect(
       () => submit([
         {'itemId': 'nasgor', 'qty': 1},
       ]),
       throwsA(
-        isA<SelfOrderException>().having((e) => e.code, 'code', 'self_order_off'),
+        isA<SelfOrderException>().having(
+          (e) => e.code,
+          'code',
+          'self_order_off',
+        ),
       ),
     );
   });
@@ -330,7 +349,11 @@ void main() {
         ],
       ),
       throwsA(
-        isA<SelfOrderException>().having((e) => e.code, 'code', 'modifier_required'),
+        isA<SelfOrderException>().having(
+          (e) => e.code,
+          'code',
+          'modifier_required',
+        ),
       ),
     );
   });
@@ -348,22 +371,22 @@ void main() {
     ],
   );
 
-  test('a hidden item stays visible to staff, or it can never come back',
-      () async {
-    await (db.update(db.menuItems)..where((i) => i.id.equals('nasgor'))).write(
-      const MenuItemsCompanion(guestVisible: Value(false)),
-    );
-    final guest = await guestMenuJson(db);
-    expect(
-      [for (final i in guest['items'] as List) (i as Map)['id']],
-      isNot(contains('nasgor')),
-    );
-    final staff = await guestMenuJson(db, includeHidden: true);
-    final row = (staff['items'] as List)
-        .cast<Map<String, dynamic>>()
-        .firstWhere((i) => i['id'] == 'nasgor');
-    expect(row['visible'], isFalse);
-  });
+  test(
+    'a hidden item stays visible to staff, or it can never come back',
+    () async {
+      await (db.update(db.menuItems)..where((i) => i.id.equals('nasgor')))
+          .write(const MenuItemsCompanion(guestVisible: Value(false)));
+      final guest = await guestMenuJson(db);
+      expect([
+        for (final i in guest['items'] as List) (i as Map)['id'],
+      ], isNot(contains('nasgor')));
+      final staff = await guestMenuJson(db, includeHidden: true);
+      final row = (staff['items'] as List)
+          .cast<Map<String, dynamic>>()
+          .firstWhere((i) => i['id'] == 'nasgor');
+      expect(row['visible'], isFalse);
+    },
+  );
 
   test('the chip row lists only categories that hold something', () async {
     // `all` is the staff menu's all-items tab, filed under by nothing. Emitted
@@ -448,7 +471,13 @@ void main() {
     await acceptGuestOrder(db, orderId: o.id, actorId: 'u1');
     expect(
       () => acceptGuestOrder(db, orderId: o.id, actorId: 'u2'),
-      throwsA(isA<SelfOrderException>().having((e) => e.code, 'code', 'already_decided')),
+      throwsA(
+        isA<SelfOrderException>().having(
+          (e) => e.code,
+          'code',
+          'already_decided',
+        ),
+      ),
     );
     expect(await db.select(db.tickets).get(), hasLength(1));
   });
@@ -466,13 +495,78 @@ void main() {
     expect(await db.select(db.tickets).get(), isEmpty);
   });
 
+  test('a refused accept puts the intent back on the queue', () async {
+    // The claim used to commit on its own, so anything that threw between it
+    // and the ticket left the order sitting at `accepted` with no food behind
+    // it. A compensating `_release` covered the one failure somebody had
+    // thought of; a rollback covers the rest, which is why it is gone.
+    await db
+        .into(db.ingredients)
+        .insert(
+          IngredientsCompanion.insert(
+            id: 'beras',
+            name: 'Beras',
+            unit: 'kg',
+            stockOnHand: const Value(0),
+          ),
+        );
+    await db.transaction(
+      () => writeRecipes(db, 'nasgor', {
+        'base': [
+          {'ingredientId': 'beras', 'qty': StockUnit.g.toBase(200)},
+        ],
+      }),
+    );
+
+    final o = await pending();
+    await expectLater(
+      acceptGuestOrder(db, orderId: o.id, actorId: 'u1'),
+      throwsA(
+        isA<SelfOrderException>().having(
+          (e) => e.code,
+          'code',
+          'accept_rejected_by_stock',
+        ),
+      ),
+    );
+
+    final after = await (db.select(
+      db.guestOrders,
+    )..where((g) => g.id.equals(o.id))).getSingle();
+    expect(
+      after.status,
+      'pending',
+      reason: 'the claim rolled back with the rest of the act',
+    );
+    expect(after.decidedAt, isNull);
+    expect(await db.select(db.tickets).get(), isEmpty);
+    expect(
+      await db.select(db.auditEntries).get(),
+      isEmpty,
+      reason: 'nothing happened, so nothing is in the log',
+    );
+
+    // And it can be accepted for real once the bahan is back.
+    await (db.update(db.ingredients)..where((i) => i.id.equals('beras'))).write(
+      IngredientsCompanion(stockOnHand: Value(StockUnit.kg.toBase(5))),
+    );
+    final ok = await acceptGuestOrder(db, orderId: o.id, actorId: 'u1');
+    expect(ok.order.status, 'accepted');
+  });
+
   test('a guest may cancel while pending, and not after', () async {
     final o = await pending();
     final c = await cancelGuestOrder(db, orderId: o.id, sessionId: o.sessionId);
     expect(c.status, 'cancelled');
     expect(
       () => acceptGuestOrder(db, orderId: o.id, actorId: 'u1'),
-      throwsA(isA<SelfOrderException>().having((e) => e.code, 'code', 'already_decided')),
+      throwsA(
+        isA<SelfOrderException>().having(
+          (e) => e.code,
+          'code',
+          'already_decided',
+        ),
+      ),
     );
   });
 }

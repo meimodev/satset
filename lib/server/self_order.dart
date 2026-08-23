@@ -140,11 +140,8 @@ Future<String?> counterGuestCode(AppDatabase db, {bool mint = false}) async {
   if (have.isNotEmpty) return have;
   if (!mint) return null;
   final code = mintGuestCode();
-  await (db.update(
-    db.venueSettings,
-  )..where((x) => x.id.equals('default'))).write(
-    VenueSettingsCompanion(counterGuestCode: Value(code)),
-  );
+  await (db.update(db.venueSettings)..where((x) => x.id.equals('default')))
+      .write(VenueSettingsCompanion(counterGuestCode: Value(code)));
   return code;
 }
 
@@ -264,8 +261,7 @@ Future<GuestSession?> liveGuestSession(AppDatabase db, String id) async {
     db.venueTables,
   )..where((x) => x.id.equals(s.tableId))).getSingleOrNull();
   if (t == null) return null;
-  final locked =
-      t.billClosedAt != null && t.billClosedAt!.isAfter(s.startedAt);
+  final locked = t.billClosedAt != null && t.billClosedAt!.isAfter(s.startedAt);
   if (locked) return null;
   final reopened = t.openedAt != null && t.openedAt!.isAfter(s.startedAt);
   if (!reopened) return s;
@@ -345,12 +341,15 @@ Future<Map<String, dynamic>> guestMenuJson(
     for (final c in cats)
       if (c.guestFromMin case final f?)
         if (c.guestToMin case final t?)
-          if (f <= t ? (nowMin < f || nowMin >= t) : (nowMin < f && nowMin >= t))
+          if (f <= t
+              ? (nowMin < f || nowMin >= t)
+              : (nowMin < f && nowMin >= t))
             c.id,
   };
 
   Map<String, dynamic> itemJson(MenuItem i) {
-    final override = i.guestOverrideAt != null && !i.guestOverrideAt!.isBefore(today)
+    final override =
+        i.guestOverrideAt != null && !i.guestOverrideAt!.isBefore(today)
         ? i.guestStockOverride
         : 'auto';
     // Outside its category's window an item is sold out, not hidden — and it
@@ -460,7 +459,8 @@ Future<GuestOrder> submitGuestOrder(
     // Price from the menu, never from the phone. A variant's `price` is
     // absolute; an option's `priceDelta` adds to it — the same arithmetic the
     // staff modifier sheet does, held here so the two cannot drift.
-    final variants = (jsonDecode(item.variantsJson) as List).cast<Map<String, dynamic>>();
+    final variants = (jsonDecode(item.variantsJson) as List)
+        .cast<Map<String, dynamic>>();
     final wantVariant = l['variantId'] as String?;
     final variant = variants.isEmpty
         ? null
@@ -471,7 +471,8 @@ Future<GuestOrder> submitGuestOrder(
     var unit = (variant?['price'] as num?)?.toInt() ?? item.basePrice;
 
     final optionIds = ((l['optionIds'] as List?) ?? const []).cast<String>();
-    final groups = (jsonDecode(item.modifierGroupsJson) as List).cast<Map<String, dynamic>>();
+    final groups = (jsonDecode(item.modifierGroupsJson) as List)
+        .cast<Map<String, dynamic>>();
     final chosen = <Map<String, dynamic>>[];
     for (final g in groups) {
       final opts = (g['options'] as List).cast<Map<String, dynamic>>();
@@ -504,7 +505,10 @@ Future<GuestOrder> submitGuestOrder(
         note: Value(
           note == null || note.isEmpty
               ? null
-              : note.substring(0, note.length > _noteMax ? _noteMax : note.length),
+              : note.substring(
+                  0,
+                  note.length > _noteMax ? _noteMax : note.length,
+                ),
         ),
         unitPrice: unit,
       ),
@@ -549,72 +553,85 @@ acceptGuestOrder(
   required String actorId,
   WsHub? hub,
 }) async {
-  final claimed = await _claim(db, orderId);
-  final lines = await (db.select(
-    db.guestOrderLines,
-  )..where((l) => l.orderId.equals(orderId))).get();
+  // Claim and submit are one act (ADR-0100's rule, arriving here). The claim
+  // used to commit on its own and `submitOrder` ran after it, so anything that
+  // threw in between — a stock refusal is only the tidy case; a disk error, a
+  // constraint, a bug — left the intent sitting at `accepted` with no food
+  // behind it and no way back onto the queue. The compensating `_release` only
+  // covered the one failure somebody had thought of. A rollback covers all of
+  // them, so `_release` is gone.
+  final result = await db.transaction(() async {
+    final claimed = await _claim(db, orderId);
+    final lines = await (db.select(
+      db.guestOrderLines,
+    )..where((l) => l.orderId.equals(orderId))).get();
 
-  final result = await submitOrder(
-    db,
-    tableId: claimed.tableId,
-    // A counter order belongs to whoever is standing there, not to a table, so
-    // it becomes its own `Bawa pulang #N` bill — the same writer the till uses
-    // for a walk-in, with no name to ask for across a bar (ADR-0109).
-    takeaway: claimed.tableId.isEmpty,
-    // The intent's own id: a double-tapped Terima on two tablets replays the
-    // same claim rather than firing the food twice.
-    idem: 'guest-$orderId',
-    actorId: actorId,
-    lines: [
-      for (final l in lines)
-        {
-          'itemId': l.itemId,
-          'name': l.name,
-          'variantName': l.variantName,
-          'course': l.course,
-          'qty': l.qty,
-          'modifiers': jsonDecode(l.modifiersJson),
-          'note': l.note,
-          'unitPrice': l.unitPrice,
-        },
-    ],
-  );
+    final result = await submitOrder(
+      db,
+      tableId: claimed.tableId,
+      // A counter order belongs to whoever is standing there, not to a table, so
+      // it becomes its own `Bawa pulang #N` bill — the same writer the till uses
+      // for a walk-in, with no name to ask for across a bar (ADR-0109).
+      takeaway: claimed.tableId.isEmpty,
+      // The intent's own id: a double-tapped Terima on two tablets replays the
+      // same claim rather than firing the food twice.
+      idem: 'guest-$orderId',
+      actorId: actorId,
+      lines: [
+        for (final l in lines)
+          {
+            'itemId': l.itemId,
+            'name': l.name,
+            'variantName': l.variantName,
+            'course': l.course,
+            'qty': l.qty,
+            'modifiers': jsonDecode(l.modifiersJson),
+            'note': l.note,
+            'unitPrice': l.unitPrice,
+          },
+      ],
+    );
 
-  if (result.createdIds.isEmpty) {
-    // Nothing was written, so the intent goes back on the queue rather than
-    // dying as "accepted" with no food behind it.
-    await _release(db, orderId);
-    throw const SelfOrderException('accept_rejected_by_stock');
-  }
+    if (result.createdIds.isEmpty) {
+      // Nothing was written. Throwing rolls the claim back, so the intent is
+      // on the queue again by the time the caller sees the code.
+      throw const SelfOrderException('accept_rejected_by_stock');
+    }
 
+    final now = SatClock.now();
+    await (db.update(db.guestOrders)..where((o) => o.id.equals(orderId))).write(
+      GuestOrdersCompanion(
+        status: const Value('accepted'),
+        decidedAt: Value(now),
+        decidedByUserId: Value(actorId),
+        visitId: Value(result.visitId),
+        ticketIdsJson: Value(jsonEncode(result.createdIds)),
+      ),
+    );
+    await writeAudit(
+      db,
+      type: AuditType.selfOrder,
+      kind: AuditKind.guestOrderAccepted,
+      params: {
+        'table': result.tableRow?.label ?? claimed.tableId,
+        'lines': '${lines.length}',
+      },
+      tableId: claimed.tableId,
+      actorUserId: actorId,
+      hub: hub,
+    );
+    return result;
+  });
+
+  // Everything below is fan-out, and it happens after the commit on purpose:
+  // a rolled-back accept must not have already put tickets on the KDS.
+  //
   // The same fan-out `POST /orders` does. Without it the tickets exist and no
   // screen knows: the KDS stays empty and the bill stays short until someone
   // refetches by hand.
   if (hub != null) await broadcastSubmitted(db, hub, result);
 
-  final now = SatClock.now();
-  await (db.update(db.guestOrders)..where((o) => o.id.equals(orderId))).write(
-    GuestOrdersCompanion(
-      status: const Value('accepted'),
-      decidedAt: Value(now),
-      decidedByUserId: Value(actorId),
-      visitId: Value(result.visitId),
-      ticketIdsJson: Value(jsonEncode(result.createdIds)),
-    ),
-  );
   final saved = await _byId(db, orderId);
-  await writeAudit(
-    db,
-    type: AuditType.selfOrder,
-    kind: AuditKind.guestOrderAccepted,
-    params: {
-      'table': result.tableRow?.label ?? claimed.tableId,
-      'lines': '${lines.length}',
-    },
-    tableId: claimed.tableId,
-    actorUserId: actorId,
-    hub: hub,
-  );
   hub?.broadcast(
     WsEventTypes.guestOrderDecided,
     await guestOrderJson(db, saved, staffView: true),
@@ -704,18 +721,14 @@ Future<GuestOrder> _claim(
   String to = 'accepted',
 }) => db.transaction(() async {
   final row = await _byId(db, id);
-  if (row.status != 'pending') throw const SelfOrderException('already_decided');
-  await (db.update(db.guestOrders)..where(
-        (o) => o.id.equals(id) & o.status.equals('pending'),
-      ))
+  if (row.status != 'pending') {
+    throw const SelfOrderException('already_decided');
+  }
+  await (db.update(db.guestOrders)
+        ..where((o) => o.id.equals(id) & o.status.equals('pending')))
       .write(GuestOrdersCompanion(status: Value(to)));
   return row;
 });
-
-Future<void> _release(AppDatabase db, String id) =>
-    (db.update(db.guestOrders)..where((o) => o.id.equals(id))).write(
-      const GuestOrdersCompanion(status: Value('pending')),
-    );
 
 // ---------------------------------------------------------------------------
 // reading
@@ -807,8 +820,7 @@ Future<Map<String, dynamic>> guestOrderStats(AppDatabase db) async {
   final accepted = rows.where((o) => o.status == 'accepted').toList();
   final waits = [
     for (final o in accepted)
-      if (o.decidedAt != null)
-        o.decidedAt!.difference(o.submittedAt).inSeconds,
+      if (o.decidedAt != null) o.decidedAt!.difference(o.submittedAt).inSeconds,
   ]..sort();
   return {
     'total': rows.length,

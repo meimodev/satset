@@ -98,7 +98,7 @@ it is not.
 | `SatSheetHeader` | `sat_sheet_header.dart` | Top of a bottom sheet: padding, leading slot, and the close button with its tooltip. |
 | `PulseDot` | `pulse_dot.dart` | Status dot that breathes while something needs attention. Reduced motion holds it at the **midpoint**, not the trough — a dot frozen at its dimmest reads as "off". `pulse: false` is the plain dot with the same glow — reachability is a fact, not a request for attention. |
 | `SatInlineError` | `sat_inline_error.dart` | The red line under a field or under a form: glyph, gap, wrapping message. `center: true` is the form-level variant. Reach for this over `SatField`'s `errorText`, which hands the line to Material and prints it without the glyph. |
-| `SatSpinner` | `sat_spinner.dart` | The busy indicator, `sm` (inline) or `md` (alone on a screen). Two sizes because there are two jobs. A whole-screen wait with a known shape wants `SkeletonCard` instead. |
+| `SatSpinner` | `sat_spinner.dart` | The busy indicator: `xs` (inside a control, beside caption text), `sm` (inline), `md` (alone on a screen). Three sizes because there are three jobs — a raw `CircularProgressIndicator` outside this file is banned, except a **determinate** ring, which carries a number rather than a bit. A whole-screen wait with a known shape wants `SkeletonCard` instead. |
 
 ### Type roles — `SatType`
 

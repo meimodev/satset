@@ -92,3 +92,42 @@ knowing about if a listener is ever made to trust the event's contents.
 `stock_counts.dart` — the fourth one-writer module — is not in scope here.
 Its invariant is a session lifecycle, not a derived balance, and `closeCount`
 already runs as one unit.
+
+## Amendment — 2026-08-22
+
+The rule was written for `cash.dart` and the two points writers that had
+guards at the time. A whole-app audit found four more places it had never
+reached, and one of them was a whole file.
+
+**`members.dart`.** `_post` read the balance and then inserted, so the
+non-negative floor held only for `spendPoints` and `earnPointsForVisit` — the
+two callers that happened to bring their own transaction. The hand adjustment
+and both reversals had none. `_post` now opens its own; drift makes the inner
+one a savepoint inside the outer, so the callers that already wrapped are
+unchanged. `deleteMember` read the debt balance and then deleted the person,
+and `mergeMembers` repointed five tables and deleted a row with nothing holding
+the six writes together — a fold that stops halfway leaves points naming one
+person and debt naming another. Both are wrapped.
+
+**`debts.dart` had no transaction anywhere in the file.** It is the newest of
+the family and was written after this ADR, which is the uncomfortable part: the
+rule existed and did not travel. Its two guards are the credit limit and the
+overpayment check, and the credit limit is the one guard in this codebase
+standing between a venue and money it will not get back — two tills closing two
+bills onto the same tab could each read a balance that clears the limit.
+
+The fix there takes a different shape, because the guards live in the callers
+rather than in `_post`: `_post` takes a `guard` callback and runs it inside its
+transaction, and `chargeDebt` and `payDebt` hand their refusal down instead of
+running it first. One transaction site in the file, and the hub broadcast stays
+outside it — a rolled-back movement must not have already told every till a new
+balance.
+
+**The rule, restated so it travels:** a writer that reads a derived value and
+then writes based on what it read opens the transaction *itself*. Not its
+caller. A guard that has to be handed down to reach the transaction is handed
+down.
+
+`test/member_writer_atomicity_test.dart` asserts the boundary in the source of
+both files, because a race cannot be staged honestly in a single-isolate test —
+what can be pinned is where the `db.transaction` sits.

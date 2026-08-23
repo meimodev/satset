@@ -67,3 +67,25 @@ server does not have, and adding one is the actual cost, not the rule.
 Earning at close means a guest who pays and lingers does not see their points
 until the cashier closes the bill. The receipt prints the earned figure at that
 moment, which is when they are handed it anyway.
+
+## Amendment — 2026-08-22
+
+ADR-0100 says a ledger guard is only real inside a transaction, because a
+balance that is `SUM(delta)` cannot be held by a `CHECK` constraint — the guard
+lives entirely in Dart, and Dart that reads a balance and then writes against it
+outside a transaction is guarding against nothing.
+
+That rule was written for `cash.dart` and the two points writers that had it.
+The whole-app audit found `members.dart` had places it never reached: `_post`
+read the balance and inserted after it, and `deleteMember` and `mergeMembers`
+each did several writes that are one act — an anonymise that half-happened, or a
+merge that moved the points but not the debt, is a worse state than either end.
+
+All three now open their own `db.transaction`. Drift's nested transactions are
+savepoints, so a writer that wraps itself stays correct when a caller has
+already wrapped it, which is what makes "every ledger writer wraps itself" a
+rule that can be stated once instead of a call-graph fact each caller has to
+remember.
+
+The invariants are unchanged. What changed is that they are now enforced where
+they were only asserted.

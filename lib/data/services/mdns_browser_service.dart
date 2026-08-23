@@ -73,7 +73,7 @@ class MdnsBrowserService {
       _localAddrs = const {};
     }
     final d = BonsoirDiscovery(type: serviceType);
-    await d.ready;
+    await d.initialize();
     _discovery = d;
     _sub = d.eventStream?.listen(
       _onEvent,
@@ -91,14 +91,34 @@ class MdnsBrowserService {
   Future<DiscoveredServer?> findVenueHost(
     String venueId, {
     Duration window = const Duration(seconds: 3),
-  }) async {
-    if (venueId.isEmpty) return null;
+  }) => venueId.isEmpty
+      ? Future.value()
+      : _scan((s) => s.venueId == venueId, window);
+
+  /// One-shot scan for the server holding [fingerprint], wherever it now
+  /// lives. This is how a paired handset finds a host that changed address —
+  /// the certificate is the identity, so a match is the *same* server on a new
+  /// IP and not a different one (ADR-0080).
+  Future<DiscoveredServer?> findFingerprintHost(
+    String fingerprint, {
+    Duration window = const Duration(seconds: 3),
+  }) {
+    final want = fingerprint.toLowerCase();
+    return want.isEmpty
+        ? Future.value()
+        : _scan((s) => s.fingerprint.toLowerCase() == want, window);
+  }
+
+  Future<DiscoveredServer?> _scan(
+    bool Function(DiscoveredServer) match,
+    Duration window,
+  ) async {
     await start();
     try {
       final deadline = SatClock.now().add(window);
       while (SatClock.now().isBefore(deadline)) {
         for (final s in current) {
-          if (s.venueId == venueId) return s;
+          if (match(s)) return s;
         }
         await Future<void>.delayed(const Duration(milliseconds: 250));
       }
@@ -132,31 +152,48 @@ class MdnsBrowserService {
     await _controller.close();
   }
 
+  // bonsoir 7 replaced the `BonsoirDiscoveryEventType` enum with a sealed
+  // class per event, so this is a type switch rather than a value one. The
+  // shape is the same and the arms are still exhaustive — the analyzer says so
+  // on a sealed hierarchy, which is why the `unknown` arm is a real class here
+  // rather than a default.
   void _onEvent(BonsoirDiscoveryEvent ev) {
-    final svc = ev.service;
-    switch (ev.type) {
-      case BonsoirDiscoveryEventType.discoveryServiceFound:
-        if (svc != null) {
-          unawaited(svc.resolve(_discovery!.serviceResolver));
-        }
-      case BonsoirDiscoveryEventType.discoveryServiceResolved:
-        if (svc is ResolvedBonsoirService) _handleResolved(svc);
-      case BonsoirDiscoveryEventType.discoveryServiceLost:
-        if (svc != null && _byName.remove(svc.name) != null) {
+    switch (ev) {
+      case BonsoirDiscoveryServiceFoundEvent():
+        unawaited(ev.service.resolve(_discovery!.serviceResolver));
+      case BonsoirDiscoveryServiceResolvedEvent():
+        _handleResolved(ev.service);
+      // New in bonsoir 7 — v5 had no such event. Folded in rather than
+      // ignored: it is a re-resolve of a service already on the list, which is
+      // exactly what a host changing address looks like, and _handleResolved
+      // is idempotent. Two arms rather than one because a shared arm promotes
+      // only to the sealed supertype, whose service is nullable.
+      case BonsoirDiscoveryServiceUpdatedEvent():
+        _handleResolved(ev.service);
+      case BonsoirDiscoveryServiceLostEvent():
+        if (_byName.remove(ev.service.name) != null) {
           _emit();
         }
-      case BonsoirDiscoveryEventType.discoveryServiceResolveFailed:
-      case BonsoirDiscoveryEventType.discoveryStarted:
-      case BonsoirDiscoveryEventType.discoveryStopped:
-      case BonsoirDiscoveryEventType.unknown:
+      case BonsoirDiscoveryServiceResolveFailedEvent():
+      case BonsoirDiscoveryStartedEvent():
+      case BonsoirDiscoveryStoppedEvent():
+      case BonsoirDiscoveryUnknownEvent():
         break;
     }
   }
 
-  void _handleResolved(ResolvedBonsoirService svc) {
-    final host = svc.host;
-    if (host == null || host.isEmpty) return;
-    if (_isLocalHost(host)) return; // hide own broadcast
+  /// bonsoir 7 folded `ResolvedBonsoirService` back into [BonsoirService] and
+  /// replaced its single nullable `host` with `hostAddresses`, a list — a
+  /// service legitimately answers on several. Take the first address that is
+  /// not our own broadcast rather than the first address full stop: on a host
+  /// that is also running the server, the loopback entry can sort ahead of the
+  /// LAN one, and taking it blindly hides the very server we are looking for.
+  void _handleResolved(BonsoirService svc) {
+    final host = svc.hostAddresses.firstWhere(
+      (a) => a.isNotEmpty && !_isLocalHost(a),
+      orElse: () => '',
+    );
+    if (host.isEmpty) return;
     final attrs = svc.attributes;
     final fp = (attrs['fp'] ?? '').trim().toLowerCase();
     final hasExplicitLabel = (attrs['label'] ?? '').trim().isNotEmpty;

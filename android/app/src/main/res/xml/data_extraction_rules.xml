@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nothing leaves the host tablet. `android:allowBackup="false"` already refuses
+  cloud and adb backup, but from API 31 that attribute stopped covering
+  device-to-device transfer — which is exactly the channel that would clone a
+  venue's bills, PIN hashes and TLS key onto a handset nobody at the venue
+  controls.
+
+  Both sections exclude the whole app rather than naming directories: the
+  contents of this app's data dir are the venue, and an allowlist is the shape
+  that silently gains a hole the day a new store is added.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

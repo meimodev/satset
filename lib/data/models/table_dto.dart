@@ -4,7 +4,7 @@ part 'table_dto.freezed.dart';
 part 'table_dto.g.dart';
 
 @freezed
-class TableDto with _$TableDto {
+abstract class TableDto with _$TableDto {
   const factory TableDto({
     required String id,
     required String zoneId,
@@ -34,7 +34,7 @@ class TableDto with _$TableDto {
 }
 
 @freezed
-class UpdateTablePaxDto with _$UpdateTablePaxDto {
+abstract class UpdateTablePaxDto with _$UpdateTablePaxDto {
   const factory UpdateTablePaxDto({required int pax}) = _UpdateTablePaxDto;
 
   factory UpdateTablePaxDto.fromJson(Map<String, dynamic> json) =>
@@ -42,7 +42,7 @@ class UpdateTablePaxDto with _$UpdateTablePaxDto {
 }
 
 @freezed
-class UpdateTableHandlerDto with _$UpdateTableHandlerDto {
+abstract class UpdateTableHandlerDto with _$UpdateTableHandlerDto {
   const factory UpdateTableHandlerDto({required String userId}) =
       _UpdateTableHandlerDto;
 

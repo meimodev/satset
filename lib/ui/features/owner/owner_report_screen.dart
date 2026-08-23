@@ -18,6 +18,7 @@ import 'package:satset/ui/features/admin/report_sections_view.dart';
 import 'package:satset/ui/features/owner/owner_money_audit_block.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// Read-only, off-site report view for an [[Owner]] (ADR-0036). Diverts here at
 /// login (`role == 'owner'`), reads the host-published snapshot from
@@ -73,7 +74,8 @@ class _OwnerReportScreenState extends ConsumerState<OwnerReportScreen> {
             _header(context, vid, async.valueOrNull),
             Expanded(
               child: async.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () =>
+                    const Center(child: SatSpinner(size: SatSpinnerSize.md)),
                 error: (e, _) => _message(
                   context,
                   context.l10n.ownRptLoadFailed,

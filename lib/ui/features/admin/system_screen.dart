@@ -35,6 +35,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/localization/report_copy.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 class SystemScreen extends ConsumerStatefulWidget {
   const SystemScreen({super.key});
@@ -744,11 +745,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
       builder: (_) => AlertDialog(
         content: Row(
           children: [
-            const SizedBox(
-              width: Sp.s6,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
+            const SizedBox(width: Sp.s6, height: 22, child: SatSpinner()),
             const SizedBox(width: Sp.s4),
             Text(context.l10n.sysSearchingPrinters),
           ],

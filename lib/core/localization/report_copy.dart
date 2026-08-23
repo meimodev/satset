@@ -108,3 +108,17 @@ String sendFailureText(AppL10n l, String? code) => switch (code) {
   'blocked' => l.sendFailBlocked,
   _ => l.sendFailOther,
 };
+
+/// Why the host refused a decision on a guest order (ADR-0105). Same shape as
+/// [sendFailureText] and for the same reason: the server sends a code, the
+/// words are composed here, and an unknown code still renders a sentence.
+///
+/// Accepting can genuinely fail — the stock refusal rolls the whole accept
+/// back, so the intent is still on the queue and whoever pressed the button
+/// has to be told that rather than left looking at a row that did not move.
+String guestDecisionFailureText(AppL10n l, String? code) => switch (code) {
+  'accept_rejected_by_stock' => l.soFailStock,
+  'already_decided' => l.soFailDecided,
+  'not_found' => l.soFailGone,
+  _ => l.soFailOther,
+};

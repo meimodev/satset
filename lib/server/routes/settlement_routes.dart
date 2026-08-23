@@ -465,14 +465,10 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   /// the capability.
   Future<String?> resolveStepUp(String? pin) async {
     if (pin == null || pin.isEmpty) return null;
-    final approver =
-        await (db.select(db.users)..where(
-              (u) =>
-                  u.pinHash.equals(auth.hashPin(pin)) &
-                  u.disabled.equals(false) &
-                  u.pinHash.equals('').not(),
-            ))
-            .getSingleOrNull();
+    // Salted hashes cannot be looked up by value, so this verifies rather
+    // than matches (ADR-0112). `userForPin` is null on no match *and* on an
+    // ambiguous one, which is the fail-closed this step-up already wanted.
+    final approver = await auth.userForPin(pin);
     if (approver == null) return null;
     final role = await (db.select(
       db.roles,

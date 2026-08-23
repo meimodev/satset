@@ -6,16 +6,16 @@ part of 'pair_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$PairClaimResponseDtoImpl _$$PairClaimResponseDtoImplFromJson(
+_PairClaimResponseDto _$PairClaimResponseDtoFromJson(
   Map<String, dynamic> json,
-) => _$PairClaimResponseDtoImpl(
+) => _PairClaimResponseDto(
   deviceToken: json['deviceToken'] as String,
   fingerprint: json['fingerprint'] as String,
   serverPublicKey: json['serverPublicKey'] as String,
 );
 
-Map<String, dynamic> _$$PairClaimResponseDtoImplToJson(
-  _$PairClaimResponseDtoImpl instance,
+Map<String, dynamic> _$PairClaimResponseDtoToJson(
+  _PairClaimResponseDto instance,
 ) => <String, dynamic>{
   'deviceToken': instance.deviceToken,
   'fingerprint': instance.fingerprint,

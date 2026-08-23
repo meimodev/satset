@@ -367,6 +367,23 @@ class ServerRuntime {
       final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
       final deviceId = (body['deviceId'] as String?) ?? '';
       if (deviceId.isEmpty) return Response(409, body: 'auto-claim failed');
+      // A revoked device does not get to re-pair its way back in. The upsert
+      // below leaves `revoked` alone — the companion never names the column —
+      // so without this the row stayed revoked while the handler answered 200
+      // and the client believed it was paired, which is the worst of both.
+      final prior = await (db.select(
+        db.devices,
+      )..where((d) => d.id.equals(deviceId))).getSingleOrNull();
+      if (prior != null && prior.revoked) {
+        return Response(
+          403,
+          body: jsonEncode({
+            'code': 'device_revoked',
+            'message': 'device revoked',
+          }),
+          headers: {'content-type': 'application/json'},
+        );
+      }
       await db
           .into(db.devices)
           .insertOnConflictUpdate(

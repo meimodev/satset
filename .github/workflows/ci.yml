@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: "3.41.9"
+
+jobs:
+  # Analyze + unit tests + the release build. The release build is the gate
+  # that matters most: `patrol` sat in dev_dependencies for months emitting a
+  # plugin registration that only a release build fails on, so analyze and
+  # test both stayed green while the APK could not be cut at all.
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Release build (runs R8)
+        run: flutter build apk --release
+
+  # Goldens are renderer- and platform-sensitive (see dart_test.yaml), so they
+  # get their own pinned image rather than riding along with the Linux job.
+  #
+  # Non-blocking on purpose, for now: the committed goldens were generated on a
+  # developer Mac, not on this runner image, so the first run here may well red
+  # on sub-pixel drift that says nothing about any change. Regenerate once on
+  # this image (`flutter test --tags golden --run-skipped --update-goldens`),
+  # commit the result, then delete continue-on-error to make the lock real.
+  goldens:
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Goldens
+        run: flutter test --tags golden --run-skipped
+
+      - name: Upload failure diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-failures
+          path: "**/failures/**"
+          if-no-files-found: ignore

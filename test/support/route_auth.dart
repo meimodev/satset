@@ -24,12 +24,17 @@ class TestCaller {
 
 /// Seed a role holding [caps] (every capability by default), a user on it, and
 /// sign in. Returns the auth helper the router wants plus the bearer token.
+/// [pin] defaults to one derived from [userId], because `signInWithPin` looks
+/// a user up *by PIN hash* with `getSingleOrNull` — two users sharing a PIN
+/// makes sign-in throw for both of them, not merely pick the wrong one. A test
+/// that signs in two callers must give them different PINs.
 Future<TestCaller> signInForTest(
   AppDatabase db, {
   Set<Capability>? caps,
   String userId = 'test-user',
-  String pin = '9999',
+  String? pin,
 }) async {
+  pin ??= '${userId.hashCode.abs() % 900000 + 100000}';
   final auth = ServerAuth(db, secret: 'test-secret');
   final granted = caps ?? Capability.values.toSet();
   await db

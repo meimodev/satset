@@ -23,6 +23,8 @@ import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import '_common.dart';
+import 'package:satset/core/time/sat_clock.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// The stok opname archive (ADR-0096).
 ///
@@ -43,7 +45,7 @@ import '_common.dart';
 /// screen spins forever against a server answering 200 every 30ms. A day
 /// boundary is also the only precision an archive of weekly counts can use.
 (String, String) opnameRange(int days, {DateTime? now}) {
-  final today = DateUtils.dateOnly(now ?? DateTime.now());
+  final today = DateUtils.dateOnly(now ?? SatClock.now());
   return (
     today.subtract(Duration(days: days)).toIso8601String(),
     today.add(const Duration(days: 1)).toIso8601String(),
@@ -96,7 +98,8 @@ class _OpnameScreenState extends ConsumerState<OpnameScreen> {
         ),
         Expanded(
           child: async.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () =>
+                const Center(child: SatSpinner(size: SatSpinnerSize.md)),
             error: (e, _) => Center(
               child: SatEmpty(
                 icon: Icons.error_outline,
@@ -313,7 +316,7 @@ class _Document extends ConsumerWidget {
     final async = ref.watch(stockCountProvider(countId));
 
     return async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: SatSpinner(size: SatSpinnerSize.md)),
       error: (e, _) => Center(
         child: SatEmpty(
           icon: Icons.error_outline,
@@ -511,7 +514,11 @@ class _LineRow extends StatelessWidget {
 }
 
 class _OpnKpi extends StatelessWidget {
-  const _OpnKpi({required this.label, required this.value, required this.color});
+  const _OpnKpi({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
   final String label;
   final String value;
   final Color color;
@@ -521,10 +528,7 @@ class _OpnKpi extends StatelessWidget {
     final sc = context.sat;
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: Sp.s3,
-          vertical: Sp.s2,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
         decoration: SatBox.d(
           color: sc.bg2,
           borderRadius: SatR.card,

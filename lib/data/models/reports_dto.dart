@@ -4,7 +4,7 @@ part 'reports_dto.freezed.dart';
 part 'reports_dto.g.dart';
 
 @freezed
-class ReportsSnapshotDto with _$ReportsSnapshotDto {
+abstract class ReportsSnapshotDto with _$ReportsSnapshotDto {
   const factory ReportsSnapshotDto({
     required String generatedAt,
     required String rangeFrom,
@@ -15,6 +15,7 @@ class ReportsSnapshotDto with _$ReportsSnapshotDto {
     required StaffSectionDto staff,
     required MenuSectionDto menu,
     required OpsSectionDto ops,
+
     /// Money-shaped audit rows for the off-site owner (ADR-0086), who has
     /// no route to the venue log. Empty on the admin's own snapshot, which
     /// reads the live log instead.
@@ -50,7 +51,7 @@ class ReportsSnapshotDto with _$ReportsSnapshotDto {
 }
 
 @freezed
-class FilterOptionsDto with _$FilterOptionsDto {
+abstract class FilterOptionsDto with _$FilterOptionsDto {
   const factory FilterOptionsDto({
     @Default(<NamedIdDto>[]) List<NamedIdDto> servers,
     @Default(<NamedIdDto>[]) List<NamedIdDto> zones,
@@ -62,7 +63,7 @@ class FilterOptionsDto with _$FilterOptionsDto {
 }
 
 @freezed
-class NamedIdDto with _$NamedIdDto {
+abstract class NamedIdDto with _$NamedIdDto {
   const factory NamedIdDto({required String id, required String name}) =
       _NamedIdDto;
 
@@ -71,7 +72,7 @@ class NamedIdDto with _$NamedIdDto {
 }
 
 @freezed
-class KpiTileDto with _$KpiTileDto {
+abstract class KpiTileDto with _$KpiTileDto {
   const factory KpiTileDto({
     /// Stable id for the tile, rendered by `kpiLabel`/`kpiSub` at read time
     /// (ADR-0085). [label] and [sub] survive only as the fallback for a code
@@ -95,7 +96,7 @@ class KpiTileDto with _$KpiTileDto {
 }
 
 @freezed
-class SalesSectionDto with _$SalesSectionDto {
+abstract class SalesSectionDto with _$SalesSectionDto {
   const factory SalesSectionDto({
     @Default(<KpiTileDto>[]) List<KpiTileDto> kpis,
     @Default(<CoverDayDto>[]) List<CoverDayDto> coverTrend,
@@ -116,7 +117,7 @@ class SalesSectionDto with _$SalesSectionDto {
 
 /// Dine-in vs takeaway (Bawa pulang) split for the sales section. See ADR-0026.
 @freezed
-class TakeawaySplitDto with _$TakeawaySplitDto {
+abstract class TakeawaySplitDto with _$TakeawaySplitDto {
   const factory TakeawaySplitDto({
     @Default(0) int count,
     @Default(0) int net,
@@ -129,7 +130,7 @@ class TakeawaySplitDto with _$TakeawaySplitDto {
 }
 
 @freezed
-class CoverDayDto with _$CoverDayDto {
+abstract class CoverDayDto with _$CoverDayDto {
   const factory CoverDayDto({
     /// ISO weekday, 1 = Monday. Spelled by [formatWeekdayShort] at read time.
     @Default(1) int dow,
@@ -142,7 +143,7 @@ class CoverDayDto with _$CoverDayDto {
 }
 
 @freezed
-class StaffSectionDto with _$StaffSectionDto {
+abstract class StaffSectionDto with _$StaffSectionDto {
   const factory StaffSectionDto({
     @Default(<StaffRowDto>[]) List<StaffRowDto> rows,
     @Default(<StaffUpsellDto>[]) List<StaffUpsellDto> upsell,
@@ -153,7 +154,7 @@ class StaffSectionDto with _$StaffSectionDto {
 }
 
 @freezed
-class StaffRowDto with _$StaffRowDto {
+abstract class StaffRowDto with _$StaffRowDto {
   const factory StaffRowDto({
     required String id,
     required String name,
@@ -170,7 +171,7 @@ class StaffRowDto with _$StaffRowDto {
 }
 
 @freezed
-class StaffUpsellDto with _$StaffUpsellDto {
+abstract class StaffUpsellDto with _$StaffUpsellDto {
   const factory StaffUpsellDto({
     required String id,
     required String name,
@@ -182,7 +183,7 @@ class StaffUpsellDto with _$StaffUpsellDto {
 }
 
 @freezed
-class MenuSectionDto with _$MenuSectionDto {
+abstract class MenuSectionDto with _$MenuSectionDto {
   const factory MenuSectionDto({
     @Default(<MenuItemRowDto>[]) List<MenuItemRowDto> top,
     @Default(<MenuItemRowDto>[]) List<MenuItemRowDto> slow,
@@ -197,7 +198,7 @@ class MenuSectionDto with _$MenuSectionDto {
 }
 
 @freezed
-class MenuItemRowDto with _$MenuItemRowDto {
+abstract class MenuItemRowDto with _$MenuItemRowDto {
   const factory MenuItemRowDto({
     required String itemId,
     required String name,
@@ -212,7 +213,7 @@ class MenuItemRowDto with _$MenuItemRowDto {
 }
 
 @freezed
-class ModifierAttachDto with _$ModifierAttachDto {
+abstract class ModifierAttachDto with _$ModifierAttachDto {
   const factory ModifierAttachDto({
     required String group,
     @Default(0.0) double rate,
@@ -223,7 +224,7 @@ class ModifierAttachDto with _$ModifierAttachDto {
 }
 
 @freezed
-class CategoryShareDto with _$CategoryShareDto {
+abstract class CategoryShareDto with _$CategoryShareDto {
   const factory CategoryShareDto({
     required String id,
     required String name,
@@ -236,7 +237,7 @@ class CategoryShareDto with _$CategoryShareDto {
 }
 
 @freezed
-class MatrixItemDto with _$MatrixItemDto {
+abstract class MatrixItemDto with _$MatrixItemDto {
   const factory MatrixItemDto({
     required String itemId,
     required String name,
@@ -250,7 +251,7 @@ class MatrixItemDto with _$MatrixItemDto {
 }
 
 @freezed
-class BasketPairDto with _$BasketPairDto {
+abstract class BasketPairDto with _$BasketPairDto {
   const factory BasketPairDto({
     required String itemA,
     required String itemB,
@@ -263,7 +264,7 @@ class BasketPairDto with _$BasketPairDto {
 }
 
 @freezed
-class OpsSectionDto with _$OpsSectionDto {
+abstract class OpsSectionDto with _$OpsSectionDto {
   const factory OpsSectionDto({
     @Default(<KpiTileDto>[]) List<KpiTileDto> kpis,
     @Default(SpeedSectionDto()) SpeedSectionDto speed,
@@ -287,7 +288,7 @@ class OpsSectionDto with _$OpsSectionDto {
 /// snapshot published by an older host (ADR-0036 — host and owner can be on
 /// different builds) still parses instead of blanking the section.
 @freezed
-class SpeedSectionDto with _$SpeedSectionDto {
+abstract class SpeedSectionDto with _$SpeedSectionDto {
   const factory SpeedSectionDto({
     @Default(0) int prepMedianMin,
     @Default(0) int pickupMedianMin,
@@ -312,7 +313,7 @@ class SpeedSectionDto with _$SpeedSectionDto {
 }
 
 @freezed
-class SpeedItemDto with _$SpeedItemDto {
+abstract class SpeedItemDto with _$SpeedItemDto {
   const factory SpeedItemDto({
     @Default('') String itemId,
     @Default('') String name,
@@ -325,7 +326,7 @@ class SpeedItemDto with _$SpeedItemDto {
 }
 
 @freezed
-class StationRowDto with _$StationRowDto {
+abstract class StationRowDto with _$StationRowDto {
   const factory StationRowDto({
     // The station code only — its words come from `stationLabel` at read time
     // (ADR-0085). The server stopped sending a `label` and this stayed
@@ -340,7 +341,7 @@ class StationRowDto with _$StationRowDto {
 }
 
 @freezed
-class ReservationStatsDto with _$ReservationStatsDto {
+abstract class ReservationStatsDto with _$ReservationStatsDto {
   const factory ReservationStatsDto({
     @Default(0) int booked,
     @Default(0) int seated,
@@ -353,7 +354,7 @@ class ReservationStatsDto with _$ReservationStatsDto {
 }
 
 @freezed
-class VoidReasonDto with _$VoidReasonDto {
+abstract class VoidReasonDto with _$VoidReasonDto {
   const factory VoidReasonDto({
     required String code,
     @Default('') String label,
@@ -378,7 +379,7 @@ class VoidReasonDto with _$VoidReasonDto {
 /// [byCategory] is keyed by `CashCategory.name` — a code, not a word, resolved
 /// at read time (ADR-0085).
 @freezed
-class KasSectionDto with _$KasSectionDto {
+abstract class KasSectionDto with _$KasSectionDto {
   const factory KasSectionDto({
     @Default(0) int opening,
     @Default(0) int inflow,
@@ -403,7 +404,7 @@ class KasSectionDto with _$KasSectionDto {
 /// else, because its length is an artefact of the boundary rather than a
 /// measurement (ADR-0097).
 @freezed
-class JamKerjaSectionDto with _$JamKerjaSectionDto {
+abstract class JamKerjaSectionDto with _$JamKerjaSectionDto {
   const factory JamKerjaSectionDto({
     @Default(<JamKerjaRowDto>[]) List<JamKerjaRowDto> staff,
 
@@ -422,7 +423,7 @@ class JamKerjaSectionDto with _$JamKerjaSectionDto {
 
 /// One staff member's attendance over the window.
 @freezed
-class JamKerjaRowDto with _$JamKerjaRowDto {
+abstract class JamKerjaRowDto with _$JamKerjaRowDto {
   const factory JamKerjaRowDto({
     required String id,
     required String name,
@@ -459,7 +460,7 @@ class JamKerjaRowDto with _$JamKerjaRowDto {
 /// standing liability, because points never expire (ADR-0095) — a window's view
 /// of what the venue owes would always understate it.
 @freezed
-class MembersSectionDto with _$MembersSectionDto {
+abstract class MembersSectionDto with _$MembersSectionDto {
   const factory MembersSectionDto({
     /// False ⇒ the venue does not run a program, and the section is not drawn.
     @Default(false) bool enabled,
@@ -504,7 +505,7 @@ class MembersSectionDto with _$MembersSectionDto {
 ///
 /// [byMethod] is keyed by payment-method code, resolved at read time (ADR-0085).
 @freezed
-class PiutangSectionDto with _$PiutangSectionDto {
+abstract class PiutangSectionDto with _$PiutangSectionDto {
   const factory PiutangSectionDto({
     /// False ⇒ the venue runs no tabs, and the section is not drawn.
     @Default(false) bool enabled,
@@ -536,7 +537,7 @@ class PiutangSectionDto with _$PiutangSectionDto {
 /// One member who owes. [oldestUnpaidAt] is derived FIFO at read time — there
 /// is no due-date column and no invoice allocation (ADR-0098).
 @freezed
-class DebtorRowDto with _$DebtorRowDto {
+abstract class DebtorRowDto with _$DebtorRowDto {
   const factory DebtorRowDto({
     @Default('') String memberId,
     @Default('') String name,
@@ -553,7 +554,7 @@ class DebtorRowDto with _$DebtorRowDto {
 /// One member on the window's spend leaderboard. [name] is null when the member
 /// has since been deleted — the trade stands, the person does not (ADR-0092).
 @freezed
-class MemberTopRowDto with _$MemberTopRowDto {
+abstract class MemberTopRowDto with _$MemberTopRowDto {
   const factory MemberTopRowDto({
     @Default('') String memberId,
     String? name,
@@ -579,7 +580,7 @@ class MemberTopRowDto with _$MemberTopRowDto {
 /// photos off-site"); an owner who sees a figure they dislike names the row for
 /// the on-site admin to open.
 @freezed
-class MoneyAuditSectionDto with _$MoneyAuditSectionDto {
+abstract class MoneyAuditSectionDto with _$MoneyAuditSectionDto {
   const factory MoneyAuditSectionDto({
     @Default(<MoneyAuditRowDto>[]) List<MoneyAuditRowDto> rows,
 
@@ -600,7 +601,7 @@ class MoneyAuditSectionDto with _$MoneyAuditSectionDto {
 /// No `paymentId`: the photo it would name is unreachable from off-site, and
 /// an indicator that cannot be tapped is worse than none.
 @freezed
-class MoneyAuditRowDto with _$MoneyAuditRowDto {
+abstract class MoneyAuditRowDto with _$MoneyAuditRowDto {
   const factory MoneyAuditRowDto({
     required String id,
     required String type,
@@ -618,7 +619,7 @@ class MoneyAuditRowDto with _$MoneyAuditRowDto {
 }
 
 @freezed
-class StaffVoidDto with _$StaffVoidDto {
+abstract class StaffVoidDto with _$StaffVoidDto {
   const factory StaffVoidDto({
     required String id,
     required String name,

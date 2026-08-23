@@ -6,7 +6,7 @@ part 'zone.freezed.dart';
 /// admin-picker presets) live in `lib/ui/core/design/zone_visuals.dart`.
 /// This layer carries no Flutter imports.
 @freezed
-class Zone with _$Zone {
+abstract class Zone with _$Zone {
   const factory Zone({
     required String id,
     required String name,

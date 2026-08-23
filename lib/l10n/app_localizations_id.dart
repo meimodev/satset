@@ -423,6 +423,18 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String get soFailStock => 'Stok tidak cukup. Pesanan tetap di antrean.';
+
+  @override
+  String get soFailDecided => 'Pesanan ini sudah diputuskan orang lain.';
+
+  @override
+  String get soFailGone => 'Pesanan itu sudah tidak ada.';
+
+  @override
+  String get soFailOther => 'Gagal memproses pesanan tamu.';
+
+  @override
   String get soRejectTitle => 'Alasan menolak';
 
   @override
@@ -741,6 +753,9 @@ class AppL10nId extends AppL10n {
 
   @override
   String get auditTypeStaffPinReset => 'PIN reset';
+
+  @override
+  String get auditTypeSignInFailed => 'PIN gagal';
 
   @override
   String get auditTypeRoleCreated => 'Peran +';
@@ -2562,6 +2577,11 @@ class AppL10nId extends AppL10n {
   @override
   String auditStaffPinSet(String name) {
     return 'PIN $name diubah';
+  }
+
+  @override
+  String auditSignInFailed(String device, String attempt) {
+    return 'PIN salah di $device · percobaan ke-$attempt';
   }
 
   @override
@@ -6846,6 +6866,10 @@ class AppL10nId extends AppL10n {
   String get authWrongPin => 'PIN salah. Coba lagi.';
 
   @override
+  String get authDeviceRevoked =>
+      'Perangkat ini sudah tidak terhubung ke venue. Minta admin memasangkannya lagi.';
+
+  @override
   String get authWrongCredentials => 'Email atau password salah.';
 
   @override
@@ -6932,6 +6956,10 @@ class AppL10nId extends AppL10n {
       'Antrean kirim penuh — sambungkan dulu ke server sebelum pesan lagi';
 
   @override
+  String get sendQueueCorrupt =>
+      'Antrean kirim rusak dan tidak bisa dibaca. Pesanan yang tertahan di dalamnya tidak terkirim — periksa meja yang belum dapat pesanannya.';
+
+  @override
   String sendQueuePending(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7010,6 +7038,22 @@ class AppL10nId extends AppL10n {
   @override
   String tktNotSent(String what, String why) {
     return '$what tidak dikirim — $why';
+  }
+
+  @override
+  String logCapNotice(int n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other:
+          'Berhenti di $nString baris. Persempit rentang atau ekspor untuk catatan lengkap.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -7837,6 +7881,26 @@ class AppL10nId extends AppL10n {
   @override
   String tblZoneReadyCount(int n) {
     return '$n siap';
+  }
+
+  @override
+  String tblZoneAlarmCrit(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n meja kritis',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tblZoneAlarmWarn(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n meja perlu perhatian',
+    );
+    return '$_temp0';
   }
 
   @override

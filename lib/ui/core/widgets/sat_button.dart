@@ -5,6 +5,7 @@ import '../design/motion.dart';
 import '../design/skin.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// Size steps from the design sheet: small `h32 · r10 · 12pt`, default
 /// `h44 · r14 · 13pt`, large CTA `h52 · r16 · 15pt`.
@@ -177,7 +178,7 @@ class SatButton extends StatelessWidget {
           SizedBox(
             width: _iconSize,
             height: _iconSize,
-            child: CircularProgressIndicator(strokeWidth: 2, color: ink),
+            child: SatSpinner(color: ink),
           ),
           SizedBox(width: Sp.s2),
         ] else if (icon != null) ...[

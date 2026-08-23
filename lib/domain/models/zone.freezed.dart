@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,242 +9,279 @@ part of 'zone.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
-
 /// @nodoc
 mixin _$Zone {
-  String get id => throw _privateConstructorUsedError;
-  String get name => throw _privateConstructorUsedError;
-  String get short => throw _privateConstructorUsedError;
 
-  /// 0xAARRGGBB hex. UI wraps this in `Color(...)`.
-  int get colorHex => throw _privateConstructorUsedError;
+ String get id; String get name; String get short;/// 0xAARRGGBB hex. UI wraps this in `Color(...)`.
+ int get colorHex;/// Stable key (e.g. `tableRestaurant`). UI maps it to an `IconData`.
+ String get iconKey;
+/// Create a copy of Zone
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ZoneCopyWith<Zone> get copyWith => _$ZoneCopyWithImpl<Zone>(this as Zone, _$identity);
 
-  /// Stable key (e.g. `tableRestaurant`). UI maps it to an `IconData`.
-  String get iconKey => throw _privateConstructorUsedError;
 
-  /// Create a copy of Zone
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $ZoneCopyWith<Zone> get copyWith => throw _privateConstructorUsedError;
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Zone&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.short, short) || other.short == short)&&(identical(other.colorHex, colorHex) || other.colorHex == colorHex)&&(identical(other.iconKey, iconKey) || other.iconKey == iconKey));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,id,name,short,colorHex,iconKey);
+
+@override
+String toString() {
+  return 'Zone(id: $id, name: $name, short: $short, colorHex: $colorHex, iconKey: $iconKey)';
+}
+
+
 }
 
 /// @nodoc
-abstract class $ZoneCopyWith<$Res> {
-  factory $ZoneCopyWith(Zone value, $Res Function(Zone) then) =
-      _$ZoneCopyWithImpl<$Res, Zone>;
-  @useResult
-  $Res call({
-    String id,
-    String name,
-    String short,
-    int colorHex,
-    String iconKey,
-  });
-}
+abstract mixin class $ZoneCopyWith<$Res>  {
+  factory $ZoneCopyWith(Zone value, $Res Function(Zone) _then) = _$ZoneCopyWithImpl;
+@useResult
+$Res call({
+ String id, String name, String short, int colorHex, String iconKey
+});
 
+
+
+
+}
 /// @nodoc
-class _$ZoneCopyWithImpl<$Res, $Val extends Zone>
+class _$ZoneCopyWithImpl<$Res>
     implements $ZoneCopyWith<$Res> {
-  _$ZoneCopyWithImpl(this._value, this._then);
+  _$ZoneCopyWithImpl(this._self, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+  final Zone _self;
+  final $Res Function(Zone) _then;
 
-  /// Create a copy of Zone
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? name = null,
-    Object? short = null,
-    Object? colorHex = null,
-    Object? iconKey = null,
-  }) {
-    return _then(
-      _value.copyWith(
-            id: null == id
-                ? _value.id
-                : id // ignore: cast_nullable_to_non_nullable
-                      as String,
-            name: null == name
-                ? _value.name
-                : name // ignore: cast_nullable_to_non_nullable
-                      as String,
-            short: null == short
-                ? _value.short
-                : short // ignore: cast_nullable_to_non_nullable
-                      as String,
-            colorHex: null == colorHex
-                ? _value.colorHex
-                : colorHex // ignore: cast_nullable_to_non_nullable
-                      as int,
-            iconKey: null == iconKey
-                ? _value.iconKey
-                : iconKey // ignore: cast_nullable_to_non_nullable
-                      as String,
-          )
-          as $Val,
-    );
-  }
+/// Create a copy of Zone
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? short = null,Object? colorHex = null,Object? iconKey = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,short: null == short ? _self.short : short // ignore: cast_nullable_to_non_nullable
+as String,colorHex: null == colorHex ? _self.colorHex : colorHex // ignore: cast_nullable_to_non_nullable
+as int,iconKey: null == iconKey ? _self.iconKey : iconKey // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [Zone].
+extension ZonePatterns on Zone {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _Zone value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _Zone() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _Zone value)  $default,){
+final _that = this;
+switch (_that) {
+case _Zone():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _Zone value)?  $default,){
+final _that = this;
+switch (_that) {
+case _Zone() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String short,  int colorHex,  String iconKey)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _Zone() when $default != null:
+return $default(_that.id,_that.name,_that.short,_that.colorHex,_that.iconKey);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String short,  int colorHex,  String iconKey)  $default,) {final _that = this;
+switch (_that) {
+case _Zone():
+return $default(_that.id,_that.name,_that.short,_that.colorHex,_that.iconKey);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String short,  int colorHex,  String iconKey)?  $default,) {final _that = this;
+switch (_that) {
+case _Zone() when $default != null:
+return $default(_that.id,_that.name,_that.short,_that.colorHex,_that.iconKey);case _:
+  return null;
+
+}
+}
+
 }
 
 /// @nodoc
-abstract class _$$ZoneImplCopyWith<$Res> implements $ZoneCopyWith<$Res> {
-  factory _$$ZoneImplCopyWith(
-    _$ZoneImpl value,
-    $Res Function(_$ZoneImpl) then,
-  ) = __$$ZoneImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({
-    String id,
-    String name,
-    String short,
-    int colorHex,
-    String iconKey,
-  });
+
+
+class _Zone implements Zone {
+  const _Zone({required this.id, required this.name, required this.short, this.colorHex = 0xFFFF9233, this.iconKey = 'tableRestaurant'});
+  
+
+@override final  String id;
+@override final  String name;
+@override final  String short;
+/// 0xAARRGGBB hex. UI wraps this in `Color(...)`.
+@override@JsonKey() final  int colorHex;
+/// Stable key (e.g. `tableRestaurant`). UI maps it to an `IconData`.
+@override@JsonKey() final  String iconKey;
+
+/// Create a copy of Zone
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ZoneCopyWith<_Zone> get copyWith => __$ZoneCopyWithImpl<_Zone>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Zone&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.short, short) || other.short == short)&&(identical(other.colorHex, colorHex) || other.colorHex == colorHex)&&(identical(other.iconKey, iconKey) || other.iconKey == iconKey));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,id,name,short,colorHex,iconKey);
+
+@override
+String toString() {
+  return 'Zone(id: $id, name: $name, short: $short, colorHex: $colorHex, iconKey: $iconKey)';
+}
+
+
 }
 
 /// @nodoc
-class __$$ZoneImplCopyWithImpl<$Res>
-    extends _$ZoneCopyWithImpl<$Res, _$ZoneImpl>
-    implements _$$ZoneImplCopyWith<$Res> {
-  __$$ZoneImplCopyWithImpl(_$ZoneImpl _value, $Res Function(_$ZoneImpl) _then)
-    : super(_value, _then);
+abstract mixin class _$ZoneCopyWith<$Res> implements $ZoneCopyWith<$Res> {
+  factory _$ZoneCopyWith(_Zone value, $Res Function(_Zone) _then) = __$ZoneCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String name, String short, int colorHex, String iconKey
+});
 
-  /// Create a copy of Zone
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? name = null,
-    Object? short = null,
-    Object? colorHex = null,
-    Object? iconKey = null,
-  }) {
-    return _then(
-      _$ZoneImpl(
-        id: null == id
-            ? _value.id
-            : id // ignore: cast_nullable_to_non_nullable
-                  as String,
-        name: null == name
-            ? _value.name
-            : name // ignore: cast_nullable_to_non_nullable
-                  as String,
-        short: null == short
-            ? _value.short
-            : short // ignore: cast_nullable_to_non_nullable
-                  as String,
-        colorHex: null == colorHex
-            ? _value.colorHex
-            : colorHex // ignore: cast_nullable_to_non_nullable
-                  as int,
-        iconKey: null == iconKey
-            ? _value.iconKey
-            : iconKey // ignore: cast_nullable_to_non_nullable
-                  as String,
-      ),
-    );
-  }
+
+
+
 }
-
 /// @nodoc
+class __$ZoneCopyWithImpl<$Res>
+    implements _$ZoneCopyWith<$Res> {
+  __$ZoneCopyWithImpl(this._self, this._then);
 
-class _$ZoneImpl implements _Zone {
-  const _$ZoneImpl({
-    required this.id,
-    required this.name,
-    required this.short,
-    this.colorHex = 0xFFFF9233,
-    this.iconKey = 'tableRestaurant',
-  });
+  final _Zone _self;
+  final $Res Function(_Zone) _then;
 
-  @override
-  final String id;
-  @override
-  final String name;
-  @override
-  final String short;
-
-  /// 0xAARRGGBB hex. UI wraps this in `Color(...)`.
-  @override
-  @JsonKey()
-  final int colorHex;
-
-  /// Stable key (e.g. `tableRestaurant`). UI maps it to an `IconData`.
-  @override
-  @JsonKey()
-  final String iconKey;
-
-  @override
-  String toString() {
-    return 'Zone(id: $id, name: $name, short: $short, colorHex: $colorHex, iconKey: $iconKey)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$ZoneImpl &&
-            (identical(other.id, id) || other.id == id) &&
-            (identical(other.name, name) || other.name == name) &&
-            (identical(other.short, short) || other.short == short) &&
-            (identical(other.colorHex, colorHex) ||
-                other.colorHex == colorHex) &&
-            (identical(other.iconKey, iconKey) || other.iconKey == iconKey));
-  }
-
-  @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, name, short, colorHex, iconKey);
-
-  /// Create a copy of Zone
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$ZoneImplCopyWith<_$ZoneImpl> get copyWith =>
-      __$$ZoneImplCopyWithImpl<_$ZoneImpl>(this, _$identity);
+/// Create a copy of Zone
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? short = null,Object? colorHex = null,Object? iconKey = null,}) {
+  return _then(_Zone(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,short: null == short ? _self.short : short // ignore: cast_nullable_to_non_nullable
+as String,colorHex: null == colorHex ? _self.colorHex : colorHex // ignore: cast_nullable_to_non_nullable
+as int,iconKey: null == iconKey ? _self.iconKey : iconKey // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
 }
 
-abstract class _Zone implements Zone {
-  const factory _Zone({
-    required final String id,
-    required final String name,
-    required final String short,
-    final int colorHex,
-    final String iconKey,
-  }) = _$ZoneImpl;
 
-  @override
-  String get id;
-  @override
-  String get name;
-  @override
-  String get short;
-
-  /// 0xAARRGGBB hex. UI wraps this in `Color(...)`.
-  @override
-  int get colorHex;
-
-  /// Stable key (e.g. `tableRestaurant`). UI maps it to an `IconData`.
-  @override
-  String get iconKey;
-
-  /// Create a copy of Zone
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$ZoneImplCopyWith<_$ZoneImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
+
+// dart format on

@@ -14,7 +14,7 @@ class ReservationStatusKey {
 }
 
 @freezed
-class ReservationDto with _$ReservationDto {
+abstract class ReservationDto with _$ReservationDto {
   const factory ReservationDto({
     required String id,
     required String name,
@@ -38,7 +38,7 @@ class ReservationDto with _$ReservationDto {
 }
 
 @freezed
-class CreateReservationDto with _$CreateReservationDto {
+abstract class CreateReservationDto with _$CreateReservationDto {
   const factory CreateReservationDto({
     required String name,
     String? phone,
@@ -55,7 +55,7 @@ class CreateReservationDto with _$CreateReservationDto {
 }
 
 @freezed
-class PatchReservationDto with _$PatchReservationDto {
+abstract class PatchReservationDto with _$PatchReservationDto {
   const factory PatchReservationDto({
     String? name,
     String? phone,

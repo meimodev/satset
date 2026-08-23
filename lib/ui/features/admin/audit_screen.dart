@@ -23,6 +23,7 @@ import '_common.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/features/admin/audit_labels.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// The venue-wide integrity log (ADR-0072).
 ///
@@ -126,6 +127,7 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
                       sliver: _AuditTable(
                         items: state.items,
                         loadingMore: state.loadingMore,
+                        capped: state.capped,
                       ),
                     ),
                 ],
@@ -234,7 +236,9 @@ class _AuditToolbarState extends ConsumerState<_AuditToolbar> {
       await exportAuditCsv(ref, path: repo.csvPath());
     } catch (_) {
       if (mounted) {
-        ref.read(errorBusServiceProvider).push(ref.read(l10nProvider).auditExportFailed);
+        ref
+            .read(errorBusServiceProvider)
+            .push(ref.read(l10nProvider).auditExportFailed);
       }
     } finally {
       if (mounted) setState(() => _exporting = false);
@@ -290,7 +294,15 @@ class _AuditTiles extends StatelessWidget {
 class _AuditTable extends StatelessWidget {
   final List<AuditEntry> items;
   final bool loadingMore;
-  const _AuditTable({required this.items, required this.loadingMore});
+
+  /// Paging stopped at the row cap with rows still behind the cursor. Told
+  /// apart from "the log ended" on purpose — see [kAuditMaxLoaded].
+  final bool capped;
+  const _AuditTable({
+    required this.items,
+    required this.loadingMore,
+    required this.capped,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -326,6 +338,25 @@ class _AuditTable extends StatelessWidget {
             last: i == items.length - 1 && !loadingMore,
           ),
         ),
+        if (capped)
+          SliverToBoxAdapter(
+            child: Container(
+              decoration: SatBox.d(
+                color: sc.bg2,
+                border: SatB.all(color: sc.border0),
+              ),
+              padding: const EdgeInsets.symmetric(
+                vertical: Sp.s4,
+                horizontal: Sp.s5,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                context.l10n.logCapNotice(kAuditMaxLoaded),
+                textAlign: TextAlign.center,
+                style: SatType.caption(color: sc.textDim),
+              ),
+            ),
+          ),
         if (loadingMore)
           SliverToBoxAdapter(
             child: Container(
@@ -338,7 +369,7 @@ class _AuditTable extends StatelessWidget {
               child: const SizedBox(
                 width: Sp.s4h,
                 height: Sp.s4h,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: SatSpinner(),
               ),
             ),
           ),
@@ -481,7 +512,10 @@ class _AuditProofPage extends ConsumerWidget {
     appBar: AppBar(
       backgroundColor: satMediaChrome,
       iconTheme: const IconThemeData(color: satMediaInk),
-      title: Text(context.l10n.ppfTitle, style: SatType.labelL(color: satMediaInk)),
+      title: Text(
+        context.l10n.ppfTitle,
+        style: SatType.labelL(color: satMediaInk),
+      ),
     ),
     body: Center(
       child: failed
@@ -489,7 +523,7 @@ class _AuditProofPage extends ConsumerWidget {
               context.l10n.ppfUnavailable,
               style: SatType.bodyM(color: satMediaInk),
             )
-          : const CircularProgressIndicator(color: satMediaInk),
+          : const SatSpinner(color: satMediaInk),
     ),
   );
 }

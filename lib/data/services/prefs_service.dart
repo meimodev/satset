@@ -25,6 +25,7 @@ class PrefsService {
   /// that captured it. Survives a restart on purpose — a dead battery must not
   /// cost the venue a bill.
   static const _kSendQueue = 'satset.send_queue';
+  static const _kSendQueueQuarantine = 'satset.send_queue.quarantine';
 
   /// Bumped from `satset.theme` when Neon Terang became the shipped default
   /// (ADR-0057). A device carrying the old key finds nothing under the new one,
@@ -123,6 +124,22 @@ class PrefsService {
     v == null
         ? await _p.remove(_kSendQueue)
         : await _p.setString(_kSendQueue, v);
+  }
+
+  /// The last backlog that would not parse, kept verbatim.
+  ///
+  /// A queue that cannot be decoded still *is* the orders a handset took while
+  /// it was cut off. Deleting it makes the app boot; it also makes those
+  /// orders unrecoverable and unexaminable, and nobody ever finds out what
+  /// shape they were in. So the blob moves aside instead of going away — one
+  /// slot, overwritten by the next corruption, because the interesting one is
+  /// the one that just happened.
+  String? sendQueueQuarantineJson() => _p.getString(_kSendQueueQuarantine);
+
+  Future<void> setSendQueueQuarantineJson(String? v) async {
+    v == null
+        ? await _p.remove(_kSendQueueQuarantine)
+        : await _p.setString(_kSendQueueQuarantine, v);
   }
 
   /// Device-local look (ADR-0045). Deliberately not per-user and not per-venue:

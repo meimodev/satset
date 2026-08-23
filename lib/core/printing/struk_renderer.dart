@@ -3,6 +3,7 @@ import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:satset/core/printing/printer_branding.dart';
 import 'package:satset/core/printing/struk_data.dart';
 import 'package:satset/l10n/app_localizations.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 /// The single, shared ESC/POS renderer. Turns a [StrukData] into printer bytes
 /// for a 58mm thermal roll. Used by BOTH the server (venue printers) and a
@@ -166,7 +167,7 @@ class StrukRenderer {
     );
     out.addAll(
       g.text(
-        _clock(DateTime.now()),
+        _clock(SatClock.now()),
         styles: const PosStyles(align: PosAlign.center),
       ),
     );

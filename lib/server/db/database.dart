@@ -78,7 +78,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 62;
+  int get schemaVersion => 63;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -158,8 +158,16 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+    // Every branch is gated on both ends: `from < N` because the venue has
+    // not had it yet, and `to >= N` because it was asked for. In production
+    // `to` is always [schemaVersion], so the upper bound never changes what
+    // runs — it exists so `test/schema_migration_test.dart` can replay one
+    // branch at a time. Without it a fixture for an early transform has to
+    // survive every later branch, including the v27 one that deliberately
+    // wipes transactional data, and there is no version of that test which
+    // asserts anything.
     onUpgrade: (m, from, to) async {
-      if (from < 2) {
+      if (from < 2 && to >= 2) {
         // Idempotent: a previous failed migration may have already
         // added one or both columns before crashing. Tolerate the
         // "duplicate column" SQL error on re-run.
@@ -170,14 +178,14 @@ class AppDatabase extends _$AppDatabase {
           'ON users(email) WHERE email IS NOT NULL',
         );
       }
-      if (from < 3) {
+      if (from < 3 && to >= 3) {
         await _safeDropColumn('on_duty');
       }
-      if (from < 4) {
+      if (from < 4 && to >= 4) {
         await _safeAddColumn('avatar_color_hex', type: 'INTEGER');
         await _backfillAvatarColors();
       }
-      if (from < 5) {
+      if (from < 5 && to >= 5) {
         await _safeAddColumnOn('venue_tables', 'locked_by', type: 'TEXT');
         await _safeAddColumnOn('venue_tables', 'locked_by_name', type: 'TEXT');
         await _safeAddColumnOn('venue_tables', 'locked_at', type: 'INTEGER');
@@ -187,16 +195,16 @@ class AppDatabase extends _$AppDatabase {
           type: 'INTEGER',
         );
       }
-      if (from < 6) {
+      if (from < 6 && to >= 6) {
         await _safeAddColumnOn('venue_tables', 'opened_at', type: 'INTEGER');
       }
-      if (from < 7) {
+      if (from < 7 && to >= 7) {
         // Wipe stale demo table + ticket seed; the app now requires
         // tables to be created via the admin floor editor.
         await customStatement('DELETE FROM tickets');
         await customStatement('DELETE FROM venue_tables');
       }
-      if (from < 8) {
+      if (from < 8 && to >= 8) {
         await _safeAddColumnOn(
           'venue_tables',
           'capacity',
@@ -210,13 +218,13 @@ class AppDatabase extends _$AppDatabase {
         );
         await customStatement('UPDATE venue_tables SET pax = 1 WHERE pax > 1');
       }
-      if (from < 9) {
+      if (from < 9 && to >= 9) {
         await m.createTable(venueSettings);
         await customStatement(
           "INSERT OR IGNORE INTO venue_settings(id) VALUES('default')",
         );
       }
-      if (from < 10) {
+      if (from < 10 && to >= 10) {
         await _safeAddColumnOn(
           'venue_settings',
           'display_name',
@@ -248,18 +256,18 @@ class AppDatabase extends _$AppDatabase {
           type: "TEXT NOT NULL DEFAULT ''",
         );
       }
-      if (from < 11) {
+      if (from < 11 && to >= 11) {
         await m.createTable(printers);
       }
-      if (from < 12) {
+      if (from < 12 && to >= 12) {
         await _safeAddColumnOn('tickets', 'created_by_user_id', type: 'TEXT');
       }
-      if (from < 13) {
+      if (from < 13 && to >= 13) {
         await m.createTable(tableSessions);
         await m.createTable(tableSessionTickets);
         await m.createTable(tableSessionCourses);
       }
-      if (from < 14) {
+      if (from < 14 && to >= 14) {
         await _safeAddColumnOn(
           'menu_items',
           'cost',
@@ -300,7 +308,7 @@ class AppDatabase extends _$AppDatabase {
           "ELSE 'other' END WHERE void_reason_code IS NULL",
         );
       }
-      if (from < 15) {
+      if (from < 15 && to >= 15) {
         await _safeAddColumnOn(
           'venue_settings',
           'business_day_start_hour',
@@ -308,17 +316,17 @@ class AppDatabase extends _$AppDatabase {
         );
         await m.createTable(reservations);
       }
-      if (from < 16) {
+      if (from < 16 && to >= 16) {
         await _safeAddColumnOn('venue_tables', 'guest_name', type: 'TEXT');
         await _safeAddColumnOn('venue_tables', 'guest_notes', type: 'TEXT');
         await _safeAddColumnOn('venue_tables', 'reservation_id', type: 'TEXT');
       }
-      if (from < 17) {
+      if (from < 17 && to >= 17) {
         // Wipe seeded reservations; reservations are now created entirely
         // via the UI flow.
         await customStatement('DELETE FROM reservations');
       }
-      if (from < 18) {
+      if (from < 18 && to >= 18) {
         await _safeAddColumnOn('tickets', 'voided_by_user_id', type: 'TEXT');
         await _safeAddColumnOn(
           'table_session_tickets',
@@ -326,12 +334,12 @@ class AppDatabase extends _$AppDatabase {
           type: 'TEXT',
         );
       }
-      if (from < 19) {
+      if (from < 19 && to >= 19) {
         await _safeDropColumnOn('menu_items', 'station');
         await _safeDropColumnOn('tickets', 'station');
         await _safeDropColumnOn('table_session_tickets', 'station');
       }
-      if (from < 20) {
+      if (from < 20 && to >= 20) {
         // Modifier groups become per-item private, embedded as JSON on the
         // item. Backfill from the now-removed shared ModifierGroups table,
         // resolving each item's id list, then drop the table + id column.
@@ -345,7 +353,7 @@ class AppDatabase extends _$AppDatabase {
         await _safeDropColumnOn('menu_items', 'modifier_group_ids_json');
         await customStatement('DROP TABLE IF EXISTS modifier_groups');
       }
-      if (from < 21) {
+      if (from < 21 && to >= 21) {
         // Rename auto_eighty_six_at_zero → auto_sold_out_at_zero
         // (add + copy + drop; DROP no-ops on pre-3.35 SQLite, leaving a
         // harmless dead column). See docs/adr/0010 + the "Habis" rename.
@@ -375,7 +383,7 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(menuTags);
         await _seedMenuTags();
       }
-      if (from < 22) {
+      if (from < 22 && to >= 22) {
         // Modifier snapshots become structured objects
         // ({groupId, optionId, label, priceDelta}) on both the live and
         // closed-session ticket tables. Rewrite any legacy bare-string
@@ -383,7 +391,7 @@ class AppDatabase extends _$AppDatabase {
         await _migrateModifierSnapshots('tickets');
         await _migrateModifierSnapshots('table_session_tickets');
       }
-      if (from < 23) {
+      if (from < 23 && to >= 23) {
         // Ticket lifecycle timestamps for speed-of-service + a unified,
         // configurable service target. No backfill: pre-v23 rows never
         // captured ready/served events, so they stay NULL and drop out of
@@ -406,7 +414,7 @@ class AppDatabase extends _$AppDatabase {
           type: 'INTEGER NOT NULL DEFAULT 15',
         );
       }
-      if (from < 24) {
+      if (from < 24 && to >= 24) {
         // Item note column renamed special_instructions → note (single
         // canonical name across all layers). Add + copy + drop; DROP
         // no-ops on pre-3.35 SQLite, leaving a harmless dead column.
@@ -427,7 +435,7 @@ class AppDatabase extends _$AppDatabase {
           'special_instructions',
         );
       }
-      if (from < 25) {
+      if (from < 25 && to >= 25) {
         // Menu item photos: JPEG blob + monotonic rev for cache-busting.
         // See docs/adr/0014-menu-photo-blob-and-pinned-byte-fetch.md.
         await _safeAddColumnOn('menu_items', 'photo', type: 'BLOB');
@@ -437,7 +445,7 @@ class AppDatabase extends _$AppDatabase {
           type: 'INTEGER NOT NULL DEFAULT 0',
         );
       }
-      if (from < 26) {
+      if (from < 26 && to >= 26) {
         // Firebase admin identity. Per-uid local user rows are
         // auto-provisioned on first Firebase sign-in (audit identity);
         // capabilities stay local. See ADR-0015.
@@ -447,7 +455,7 @@ class AppDatabase extends _$AppDatabase {
           'ON users(firebase_uid) WHERE firebase_uid IS NOT NULL',
         );
       }
-      if (from < 27) {
+      if (from < 27 && to >= 27) {
         // Demo seed is gone (ADR-0017): the server no longer auto-loads
         // sample data, admin is Firebase-only (no PIN admin), and the
         // generic restaurant set is now prompted. Wipe the old auto-seeded
@@ -471,7 +479,7 @@ class AppDatabase extends _$AppDatabase {
         // roles are removed (the generic seed re-creates waiter/kitchen).
         await customStatement("DELETE FROM roles WHERE id != 'role-admin'");
       }
-      if (from < 28) {
+      if (from < 28 && to >= 28) {
         // Two-phase settlement + split bills (ADR-0023). New live tables
         // for receipts/payments and their session snapshots; tax/service
         // amounts added to TableSessions (netTotal redefined — pre-v28
@@ -492,7 +500,7 @@ class AppDatabase extends _$AppDatabase {
           type: 'INTEGER NOT NULL DEFAULT 0',
         );
       }
-      if (from < 29) {
+      if (from < 29 && to >= 29) {
         // Visit decoupled from table; bill-close (cashier) snapshots, not
         // table-close (waiter). New live Visits table; visitId on tickets/
         // receipts; current_visit_id on tables; loss/cashier on sessions.
@@ -524,14 +532,14 @@ class AppDatabase extends _$AppDatabase {
         );
         await _backfillVisits();
       }
-      if (from < 30) {
+      if (from < 30 && to >= 30) {
         // Mandatory proof photo on non-cash payments (ADR-0025). Nullable
         // JPEG blob on live payments and their session snapshot; no backfill
         // (pre-feature payments stay photo-less).
         await _safeAddColumnOn('payments', 'photo', type: 'BLOB');
         await _safeAddColumnOn('table_session_payments', 'photo', type: 'BLOB');
       }
-      if (from < 31) {
+      if (from < 31 && to >= 31) {
         // Table-less orders: takeaway visits (ADR-0026). A `kind` column on
         // live + snapshot visits (default dineIn leaves all existing rows
         // untouched) and a daily counter table for the takeaway pickup
@@ -548,7 +556,7 @@ class AppDatabase extends _$AppDatabase {
         );
         await m.createTable(dailyCounters);
       }
-      if (from < 32) {
+      if (from < 32 && to >= 32) {
         // Guest QR self-ordering (ADR-0027/0028). Venue master toggle +
         // per-table opt-in, both default off (no venue auto-exposed).
         await _safeAddColumnOn(
@@ -562,7 +570,7 @@ class AppDatabase extends _$AppDatabase {
           type: 'INTEGER NOT NULL DEFAULT 0',
         );
       }
-      if (from < 33) {
+      if (from < 33 && to >= 33) {
         // Receipt branding block (ADR-0033): a shared logo + extra text
         // lines + a footer QR on the venue settings row. Logo is a nullable
         // JPEG blob with a monotonic rev (mirrors the menu-photo pattern).
@@ -598,7 +606,7 @@ class AppDatabase extends _$AppDatabase {
           type: 'INTEGER NOT NULL DEFAULT 0',
         );
       }
-      if (from < 34) {
+      if (from < 34 && to >= 34) {
         // Selectable per-event alert sounds (ADR-0035). Each column holds a
         // preset id; defaults reproduce ADR-0007's original fixed cues.
         await _safeAddColumnOn(
@@ -622,7 +630,7 @@ class AppDatabase extends _$AppDatabase {
           type: "TEXT NOT NULL DEFAULT 'alert'",
         );
       }
-      if (from < 35) {
+      if (from < 35 && to >= 35) {
         // Cashier-stage catalog discounts (ADR-0037/0038/0039).
         await m.createTable(discountPresets);
         await m.createTable(discounts);
@@ -661,7 +669,7 @@ class AppDatabase extends _$AppDatabase {
           type: 'INTEGER NOT NULL DEFAULT 1',
         );
       }
-      if (from < 36) {
+      if (from < 36 && to >= 36) {
         // Ingredient-level inventory (ADR-0040/0041). Stock moves off the
         // per-item counter and onto ingredients + recipes.
         await m.createTable(ingredients);
@@ -673,7 +681,7 @@ class AppDatabase extends _$AppDatabase {
         await _safeDropColumnOn('menu_items', 'auto_sold_out_at_zero');
         await backfillInventoryCapabilities();
       }
-      if (from < 37) {
+      if (from < 37 && to >= 37) {
         // Configurable service timings (ADR-0043/0044).
         //
         // `menu_items.prep_time` existed since v1 but nothing consumed it.
@@ -756,7 +764,7 @@ class AppDatabase extends _$AppDatabase {
           type: "TEXT NOT NULL DEFAULT 'chime'",
         );
       }
-      if (from < 38) {
+      if (from < 38 && to >= 38) {
         // Floor staleness (ADR-0048). Every other threshold the stale
         // banner reads already existed; only the unreviewed guest order
         // had none.
@@ -766,11 +774,11 @@ class AppDatabase extends _$AppDatabase {
           type: 'INTEGER NOT NULL DEFAULT 6',
         );
       }
-      if (from < 39) {
+      if (from < 39 && to >= 39) {
         // Demo clock + seed-job state (ADR-0053).
         await m.createTable(demoStates);
       }
-      if (from < 40) {
+      if (from < 40 && to >= 40) {
         // Guest orders get their own cue (ADR-0064). Existing venues inherit
         // the doorbell default, so the cue is live the moment they upgrade —
         // a guest order arriving silently was the bug this fixes.
@@ -780,7 +788,7 @@ class AppDatabase extends _$AppDatabase {
           type: "TEXT NOT NULL DEFAULT 'doorbell'",
         );
       }
-      if (from < 41) {
+      if (from < 41 && to >= 41) {
         // Badge codes were abbreviated from the English tag id while the name
         // beside them was Indonesian — a card read `SH` for `Kerang`. Force
         // every seeded code onto the Indonesian abbreviation; an admin's own
@@ -788,7 +796,7 @@ class AppDatabase extends _$AppDatabase {
         // result on every device.
         await _fixMenuTagCodes();
       }
-      if (from < 42) {
+      if (from < 42 && to >= 42) {
         // The cashier reconciliation pass (ADR-0066..0070).
         //
         // Takeaway channel + prepaid, on the live visit and frozen into its
@@ -814,17 +822,35 @@ class AppDatabase extends _$AppDatabase {
         // alternative is hand-rolling the same rebuild in raw SQL.
         //
         // `newColumns` is not optional here: the rebuild copies every column of
-        // the NEW schema out of the OLD table, so without naming `visit_id` as
-        // new it selects a column that does not exist yet and the whole
-        // migration fails on `no such column: visit_id`. Nullable, so it needs
-        // no transformer — every pre-existing row is receipt-scoped.
+        // the NEW schema out of the OLD table, so a column the old table has
+        // never heard of has to be named or the whole migration dies on
+        // `no such column`. That means **every** column added to `discounts`
+        // after v42 belongs in this list, not just the one this branch was
+        // written for — the list is relative to the schema as it stands today,
+        // not as it stood when the branch shipped.
+        //
+        // `visit_id` is nullable, so it needs no transformer: every
+        // pre-existing row is receipt-scoped. `source` (ADR-0094) carries a
+        // `manual` default, which is likewise the right answer for every row
+        // that predates the concept — the three-way contest between a
+        // cashier's promo, a member preset and a redemption did not exist yet,
+        // so all of them are a cashier's promo.
         await m.alterTable(
           // ignore: experimental_member_use
-          TableMigration(discounts, newColumns: [discounts.visitId]),
+          TableMigration(
+            discounts,
+            newColumns: [discounts.visitId, discounts.source],
+          ),
         );
-        // The snapshot mirrors the live row, so it relaxes the same way.
-        // ignore: experimental_member_use
-        await m.alterTable(TableMigration(tableSessionDiscounts));
+        // The snapshot mirrors the live row, so it relaxes the same way — and
+        // gains the same column, for the same reason.
+        await m.alterTable(
+          // ignore: experimental_member_use
+          TableMigration(
+            tableSessionDiscounts,
+            newColumns: [tableSessionDiscounts.source],
+          ),
+        );
         // The order-scope index gained a `receipt_id IS NOT NULL` clause, so it
         // has to be replaced rather than left alone — CREATE IF NOT EXISTS
         // would keep the old definition and let a second bill discount through.
@@ -837,7 +863,7 @@ class AppDatabase extends _$AppDatabase {
         }
         await _createDiscountIndexes();
       }
-      if (from < 43) {
+      if (from < 43 && to >= 43) {
         // The venue audit log (ADR-0072) needs two things the personal feed
         // never did: a summable amount, and attribution that survives the
         // actor being renamed or deleted.
@@ -864,7 +890,7 @@ class AppDatabase extends _$AppDatabase {
           type: 'TEXT',
         );
       }
-      if (from < 44) {
+      if (from < 44 && to >= 44) {
         // The sample seed absorbs the demo seed (ADR-0073). The demo clock is
         // gone, so `anchor_at` goes with it; `prompt_answered` replaces the
         // in-memory "Nanti" with a venue-wide, permanent answer.
@@ -894,7 +920,7 @@ class AppDatabase extends _$AppDatabase {
         }
         await customStatement('DELETE FROM demo_states');
       }
-      if (from < 45) {
+      if (from < 45 && to >= 45) {
         // Guest QR self-ordering is gone (ADR-0080), and with it the venue
         // master switch, the per-table opt-in, the review threshold and the
         // arrival cue.
@@ -920,13 +946,13 @@ class AppDatabase extends _$AppDatabase {
         // device row directly, so the single-use token table has no reader.
         await customStatement('DROP TABLE IF EXISTS pair_tokens');
       }
-      if (from < 46) {
+      if (from < 46 && to >= 46) {
         // Indexes only — no column or table changes, so this migration is safe
         // to re-run and safe to reach a device that skipped intermediate
         // versions. `IF NOT EXISTS` throughout.
         await _createLookupIndexes();
       }
-      if (from < 47) {
+      if (from < 47 && to >= 47) {
         // An audit event is structured, not a sentence (ADR-0085). `kind` says
         // which sentence the row is, `params` holds the values that fill it;
         // the words are composed at read time in the reader's language.
@@ -954,7 +980,7 @@ class AppDatabase extends _$AppDatabase {
           "WHERE label LIKE 'Bagian %'",
         );
       }
-      if (from < 48) {
+      if (from < 48 && to >= 48) {
         // A proof photo is reached from the audit trail, not the reports card
         // (ADR-0086). The column is the reference *and* the has-photo flag —
         // it is written only when an image exists.
@@ -965,14 +991,14 @@ class AppDatabase extends _$AppDatabase {
         // simply show no indicator.
         await _safeAddColumnOn('audit_entries', 'payment_id', type: 'TEXT');
       }
-      if (from < 49) {
+      if (from < 49 && to >= 49) {
         // The petty cash box (§Kas kecil). A new table, so nothing to backfill
         // and nothing to migrate: an upgrading venue starts at a balance of
         // zero, which is the honest answer — the app has never known what was
         // in the box.
         await m.createTable(cashEntries);
       }
-      if (from < 50) {
+      if (from < 50 && to >= 50) {
         // An offline order is an intent, not a row (ADR-0090). Both columns
         // stay null for every line the venue has ever taken, and for every
         // ordinary line it takes from here — they are written only when a
@@ -981,7 +1007,7 @@ class AppDatabase extends _$AppDatabase {
         await _safeAddColumnOn('tickets', 'captured_at', type: 'INTEGER');
         await _safeAddColumnOn('tickets', 'replayed_by_user_id', type: 'TEXT');
       }
-      if (from < 51) {
+      if (from < 51 && to >= 51) {
         // Membership (ADR-0091..0095). Two new tables, so nothing to backfill:
         // an upgrading venue starts with an empty directory, which is the
         // honest answer — the app has never known who its regulars are.
@@ -1065,14 +1091,14 @@ class AppDatabase extends _$AppDatabase {
       // 54 re-checks both. The checks inside are what make re-running them
       // harmless, which is also why a version number is never trusted as
       // evidence that a table exists.
-      if (from < 54) {
+      if (from < 54 && to >= 54) {
         await _ensureStockCountTables(m);
         await _ensureShiftsTable(m);
       }
       // [[Piutang]] — the member debt ledger (ADR-0098). Guarded the same way
       // 54 is: a version number is evidence of nothing, so the table check and
       // every column add are re-runnable.
-      if (from < 55) {
+      if (from < 55 && to >= 55) {
         if (!await _hasTable('member_debts')) {
           await m.createTable(memberDebts);
         }
@@ -1099,7 +1125,7 @@ class AppDatabase extends _$AppDatabase {
       }
 
       // v56 — [[Pesan mandiri]] returns as an intent, not a ticket (ADR-0105).
-      if (from < 56) {
+      if (from < 56 && to >= 56) {
         if (!await _hasTable('guest_sessions')) {
           await m.createTable(guestSessions);
         }
@@ -1134,7 +1160,11 @@ class AppDatabase extends _$AppDatabase {
           'guest_stock_override',
           type: "TEXT NOT NULL DEFAULT 'auto'",
         );
-        await _safeAddColumnOn('menu_items', 'guest_override_at', type: 'INTEGER');
+        await _safeAddColumnOn(
+          'menu_items',
+          'guest_override_at',
+          type: 'INTEGER',
+        );
         await _safeAddColumnOn(
           'venue_settings',
           'guest_ordering_enabled',
@@ -1181,10 +1211,10 @@ class AppDatabase extends _$AppDatabase {
           "SELECT id FROM venue_tables WHERE guest_code = ''",
         ).get();
         for (final r in rows) {
-          await customStatement('UPDATE venue_tables SET guest_code = ? WHERE id = ?', [
-            mintGuestCode(),
-            r.read<String>('id'),
-          ]);
+          await customStatement(
+            'UPDATE venue_tables SET guest_code = ? WHERE id = ?',
+            [mintGuestCode(), r.read<String>('id')],
+          );
         }
       }
 
@@ -1193,14 +1223,14 @@ class AppDatabase extends _$AppDatabase {
       // backfilled by category: a venue's category names are its own, and
       // guessing which of them mean alcohol is how a soft drink acquires an
       // age check nobody asked for. The owner ticks the boxes once.
-      if (from < 57) {
+      if (from < 57 && to >= 57) {
         await _safeAddColumnOn(
           'menu_items',
           'alcohol',
           type: 'INTEGER NOT NULL DEFAULT 0',
         );
       }
-      if (from < 58) {
+      if (from < 58 && to >= 58) {
         // NULL, not '': entitlement is cloud-owned and nothing has mirrored yet
         // at migration time. NULL reads as entitled, so an existing venue keeps
         // every feature it was using until its own venue doc says otherwise —
@@ -1208,12 +1238,12 @@ class AppDatabase extends _$AppDatabase {
         // which is a different answer. See ADR-0107.
         await _safeAddColumnOn('venue_settings', 'modules', type: 'TEXT');
       }
-      if (from < 59) {
+      if (from < 59 && to >= 59) {
         // Par level: the top-up target the shopping list subtracts from.
         // Nullable — an ingredient nobody stocks to a par has no shortfall.
         await _safeAddColumnOn('ingredients', 'par_level', type: 'INTEGER');
       }
-      if (from < 62) {
+      if (from < 62 && to >= 62) {
         // A category's guest window ([[Jam tayang]]). Both nullable, and no
         // backfill: category names are venue-authored, and guessing which of
         // them mean breakfast is how lunch acquires an opening time.
@@ -1228,7 +1258,7 @@ class AppDatabase extends _$AppDatabase {
           type: 'INTEGER',
         );
       }
-      if (from < 61) {
+      if (from < 61 && to >= 61) {
         // The counter's own guest code (ADR-0109). Nullable and *not* minted
         // here: a code is a printed thing, and handing every existing venue one
         // at upgrade time would mean a live QR nobody chose to publish.
@@ -1238,7 +1268,7 @@ class AppDatabase extends _$AppDatabase {
           type: 'TEXT',
         );
       }
-      if (from < 60) {
+      if (from < 60 && to >= 60) {
         // Kedai mode switches. Nullable and fail-closed: an existing venue
         // reads every switch off, which is a restaurant (ADR-0109).
         await _safeAddColumnOn(
@@ -1246,6 +1276,28 @@ class AppDatabase extends _$AppDatabase {
           'counter_config',
           type: 'TEXT',
         );
+      }
+      if (from < 63 && to >= 63) {
+        // Repair three columns that reached upgraded venues without the
+        // constraints a fresh install gets. `_safeAddColumnOn` takes a raw
+        // type string, and the two guest-ordering flags were added as bare
+        // `INTEGER NOT NULL DEFAULT n` — no `CHECK (x IN (0, 1))` — while
+        // `sound_guest_pending` arrived without its `DEFAULT NULL`. Nothing
+        // wrote a bad value (drift only ever binds 0 or 1), but a migrated
+        // venue and a fresh one had different schemas, which is the thing
+        // `test/schema_migration_test.dart` exists to refuse.
+        //
+        // SQLite cannot add a CHECK to a live column, so both tables are
+        // rebuilt from the declared schema. Small tables — venue_settings
+        // holds one row and venue_tables holds a floor's worth — and the
+        // column sets are unchanged, so every value copies across by name.
+        // ignore: experimental_member_use
+        await m.alterTable(TableMigration(venueSettings));
+        // ignore: experimental_member_use
+        await m.alterTable(TableMigration(venueTables));
+        // The rebuild drops the indexes that hung off venue_tables.
+        await _createGuestIndexes();
+        await _createLookupIndexes();
       }
     },
     onCreate: (m) async {

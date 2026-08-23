@@ -5,6 +5,7 @@ import 'package:basic_utils/basic_utils.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:satset/core/time/sat_clock.dart';
 
 /// Self-signed leaf cert and SHA-256 fingerprint for the in-app server.
 class ServerTls {
@@ -26,11 +27,11 @@ class ServerTls {
 
   /// Cert NotBefore (issued at). UTC.
   DateTime get certIssuedAt =>
-      _parsed.tbsCertificate?.validity.notBefore ?? DateTime.now();
+      _parsed.tbsCertificate?.validity.notBefore ?? SatClock.realNow();
 
   /// Cert NotAfter (expires at). UTC.
   DateTime get certExpiry =>
-      _parsed.tbsCertificate?.validity.notAfter ?? DateTime.now();
+      _parsed.tbsCertificate?.validity.notAfter ?? SatClock.realNow();
 
   /// Load existing material or generate a new self-signed pair.
   static Future<ServerTls> loadOrCreate() async {

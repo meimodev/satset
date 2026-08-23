@@ -603,7 +603,7 @@ class _TablesZoneRow extends ConsumerWidget {
                       // beside it. "3 siap" and "2 stuck" compete for the same
                       // glance, and only one of them is a thing to go do.
                       if (alarm.any)
-                        _ZoneAlarmBadge(crit: alarm.crit, warn: alarm.warn)
+                        ZoneAlarmBadge(crit: alarm.crit, warn: alarm.warn)
                       else
                         AnimatedDefaultTextStyle(
                           duration: dur,
@@ -631,10 +631,18 @@ class _TablesZoneRow extends ConsumerWidget {
 /// pill in a strip of red pills stops being seen — the movement is what pulls
 /// the eye across the room, and `PulseDot` holds at its midpoint under reduced
 /// motion rather than going dark.
-class _ZoneAlarmBadge extends StatelessWidget {
+///
+/// The two tiers used to differ by **fill colour alone**, which is the one
+/// thing the design principles say a state may never do: red and amber at 20px
+/// across a dim room, on a strip that is mostly moving, is not a distinction a
+/// waiter can make in the half-second they give it — and to a red-green
+/// colourblind reader it is not a distinction at all. So the tier now also
+/// carries a glyph, and the words ride the semantics label, where a screen
+/// reader gets the whole sentence rather than a bare number.
+class ZoneAlarmBadge extends StatelessWidget {
   final int crit;
   final int warn;
-  const _ZoneAlarmBadge({required this.crit, required this.warn});
+  const ZoneAlarmBadge({super.key, required this.crit, required this.warn});
 
   @override
   Widget build(BuildContext context) {
@@ -642,23 +650,41 @@ class _ZoneAlarmBadge extends StatelessWidget {
     final isCrit = crit > 0;
     final tone = isCrit ? sc.urgent : sc.warn;
     final ink = sc.inkOn(tone);
-    return Container(
-      constraints: const BoxConstraints(minWidth: 22),
-      height: 20,
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s1h),
-      decoration: SatBox.d(color: tone, borderRadius: SatR.pill),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ponytail: one pulse period for both tiers. The source blips crit at
-          // 1.1s and warn at 2.2s; PulseDot has a single cycle, and the fill
-          // colour already separates the tiers. Split it only if the two ever
-          // appear side by side often enough for the rhythm to carry meaning.
-          PulseDot(color: ink),
-          const SizedBox(width: Sp.s1h),
-          Text('${isCrit ? crit : warn}', style: SatType.caption(color: ink)),
-        ],
+    final n = isCrit ? crit : warn;
+    return Semantics(
+      liveRegion: true,
+      label: isCrit
+          ? context.l10n.tblZoneAlarmCrit(n)
+          : context.l10n.tblZoneAlarmWarn(n),
+      excludeSemantics: true,
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 22),
+        height: 20,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: Sp.s1h),
+        decoration: SatBox.d(color: tone, borderRadius: SatR.pill),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ponytail: one pulse period for both tiers. The source blips crit
+            // at 1.1s and warn at 2.2s; PulseDot has a single cycle, and the
+            // glyph beside it already separates the tiers. Split it only if the
+            // two ever appear side by side often enough for the rhythm to
+            // carry meaning.
+            PulseDot(color: ink),
+            const SizedBox(width: Sp.s1),
+            // Shape, not hue. `priority_high` reads as a shout at a glance;
+            // `schedule` reads as "this has been sitting" — which is exactly
+            // what the two tiers mean.
+            Icon(
+              isCrit ? Icons.priority_high : Icons.schedule,
+              size: 12,
+              color: ink,
+            ),
+            const SizedBox(width: Sp.s1),
+            Text('$n', style: SatType.caption(color: ink)),
+          ],
+        ),
       ),
     );
   }

@@ -74,6 +74,12 @@ enum AuditType {
   /// all of them, for the reason [cashMovement] is one: the reader auditing
   /// self-order wants the feature's whole story in one filter, not four.
   selfOrder,
+  /// A PIN that opened nothing (ADR-0112). Its own type rather than a kind
+  /// under the staff ones, because it is the only row in the log written by
+  /// somebody the venue could not identify — a reader asking "is anybody
+  /// standing in the corner guessing" wants exactly these and none of the
+  /// deliberate acts around them.
+  signInFailed,
   staffCreated,
   staffDeleted,
   staffDisabled,
@@ -92,6 +98,7 @@ enum AuditType {
 /// non-managers in the audit feed.
 bool isAdminAuditType(AuditType t) {
   switch (t) {
+    case AuditType.signInFailed:
     case AuditType.staffCreated:
     case AuditType.staffDeleted:
     case AuditType.staffDisabled:

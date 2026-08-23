@@ -377,9 +377,7 @@ void main() {
       // Nothing moves until close: the walk is a draft (ADR-0096).
       expect(await onHand('beras'), StockUnit.kg.toBase(20));
 
-      final result = await db.transaction(
-        () => closeCount(db, countId: countId),
-      );
+      final result = await closeCount(db, countId: countId);
       expect(result!.deltas['beras'], StockUnit.kg.toBase(-1));
       expect(await onHand('beras'), StockUnit.kg.toBase(19));
     },
