@@ -183,7 +183,7 @@ class MemberPanel extends ConsumerWidget {
   Future<void> _lookup(BuildContext context, WidgetRef ref) async {
     final picked = await showSatSheet<MemberDto>(
       context,
-      builder: (_) => const _LookupSheet(),
+      builder: (_) => const MemberLookupSheet(),
     );
     if (picked == null) return;
     await run(() => repo.attachMember(bill.visitId, picked.id));
@@ -205,14 +205,15 @@ class MemberPanel extends ConsumerWidget {
 
 /// Find the guest, or enrol them on the spot. One sheet, because at the till
 /// "who are you" and "let's sign you up" are the same thirty seconds.
-class _LookupSheet extends ConsumerStatefulWidget {
-  const _LookupSheet();
+@visibleForTesting
+class MemberLookupSheet extends ConsumerStatefulWidget {
+  const MemberLookupSheet({super.key});
 
   @override
-  ConsumerState<_LookupSheet> createState() => _LookupSheetState();
+  ConsumerState<MemberLookupSheet> createState() => _LookupSheetState();
 }
 
-class _LookupSheetState extends ConsumerState<_LookupSheet> {
+class _LookupSheetState extends ConsumerState<MemberLookupSheet> {
   final _q = TextEditingController();
   Timer? _debounce;
 
@@ -269,25 +270,32 @@ class _LookupSheetState extends ConsumerState<_LookupSheet> {
               onChanged: _onQuery,
             ),
             const SizedBox(height: Sp.s3),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 280),
-              child: results.isEmpty
-                  ? Center(
-                      child: Text(
-                        l10n.memEmptyTitle,
-                        style: SatType.bodyS(color: sc.textLo),
+            // `Flexible` makes the 280 a ceiling instead of a floor. The sheet
+            // already takes the keyboard inset, but a fixed-height list plus a
+            // fixed button cannot both fit the ~half screen a raised keyboard
+            // leaves — and it is the Daftar button, at the bottom, that gets
+            // pushed out, which is the one thing this sheet exists to offer.
+            Flexible(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 280),
+                child: results.isEmpty
+                    ? Center(
+                        child: Text(
+                          l10n.memEmptyTitle,
+                          style: SatType.bodyS(color: sc.textLo),
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: results.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: Sp.s1h),
+                        itemBuilder: (_, i) => SatButton.outline(
+                          label: '${results[i].name} · ${results[i].phone}',
+                          onTap: () => Navigator.of(context).pop(results[i]),
+                        ),
                       ),
-                    )
-                  : ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: results.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(height: Sp.s1h),
-                      itemBuilder: (_, i) => SatButton.outline(
-                        label: '${results[i].name} · ${results[i].phone}',
-                        onTap: () => Navigator.of(context).pop(results[i]),
-                      ),
-                    ),
+              ),
             ),
             const SizedBox(height: Sp.s3),
             SatButton.primary(
