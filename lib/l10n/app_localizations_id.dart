@@ -8361,6 +8361,19 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String venueHubBadgeVenueTax(String tax) {
+    return 'Pajak $tax%';
+  }
+
+  @override
+  String venueHubBadgeVenueSvc(String svc) {
+    return 'Service $svc%';
+  }
+
+  @override
+  String get venueHubBadgeVenueNone => 'Tanpa pajak & service';
+
+  @override
   String get venueHubLanActive => 'LAN AKTIF';
 
   @override

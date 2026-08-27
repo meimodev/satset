@@ -6525,6 +6525,28 @@
       }
     }
   },
+  "venueHubBadgeVenueTax": "Pajak {tax}%",
+  "@venueHubBadgeVenueTax": {
+    "description": "Venue settings card badge when only tax is charged",
+    "placeholders": {
+      "tax": {
+        "type": "String"
+      }
+    }
+  },
+  "venueHubBadgeVenueSvc": "Service {svc}%",
+  "@venueHubBadgeVenueSvc": {
+    "description": "Venue settings card badge when only service is charged",
+    "placeholders": {
+      "svc": {
+        "type": "String"
+      }
+    }
+  },
+  "venueHubBadgeVenueNone": "Tanpa pajak & service",
+  "@venueHubBadgeVenueNone": {
+    "description": "Venue settings card badge when the venue charges neither"
+  },
   "venueHubLanActive": "LAN AKTIF",
   "@venueHubLanActive": {
     "description": "Venue header chip when the LAN server is reachable"

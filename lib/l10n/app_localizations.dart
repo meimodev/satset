@@ -13357,6 +13357,24 @@ abstract class AppL10n {
   /// **'Pajak {tax}% · Service {svc}%'**
   String venueHubBadgeVenue(String tax, String svc);
 
+  /// Venue settings card badge when only tax is charged
+  ///
+  /// In id, this message translates to:
+  /// **'Pajak {tax}%'**
+  String venueHubBadgeVenueTax(String tax);
+
+  /// Venue settings card badge when only service is charged
+  ///
+  /// In id, this message translates to:
+  /// **'Service {svc}%'**
+  String venueHubBadgeVenueSvc(String svc);
+
+  /// Venue settings card badge when the venue charges neither
+  ///
+  /// In id, this message translates to:
+  /// **'Tanpa pajak & service'**
+  String get venueHubBadgeVenueNone;
+
   /// Venue header chip when the LAN server is reachable
   ///
   /// In id, this message translates to:

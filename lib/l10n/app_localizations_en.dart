@@ -8467,6 +8467,19 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String venueHubBadgeVenueTax(String tax) {
+    return 'Tax $tax%';
+  }
+
+  @override
+  String venueHubBadgeVenueSvc(String svc) {
+    return 'Service $svc%';
+  }
+
+  @override
+  String get venueHubBadgeVenueNone => 'No tax or service';
+
+  @override
   String get venueHubLanActive => 'LAN ACTIVE';
 
   @override

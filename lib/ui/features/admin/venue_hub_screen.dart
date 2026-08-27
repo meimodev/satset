@@ -114,11 +114,23 @@ List<_HubSection> _sectionsFor(AppL10n l10n) => <_HubSection>[
     icon: Icons.storefront_outlined,
     route: '/venue-settings',
     tint: (sc) => sc.violet,
+    // The rate columns keep their value while their switch is off, so reading
+    // them bare badged a venue that charges nothing with the 11% / 5% defaults
+    // it had never turned on. Four keys rather than one with blanks: the two
+    // switches are independent, so tax-on-service-off is a real venue, and a
+    // sentence assembled from fragments here would be Indonesian in Dart
+    // (ADR-0085).
     badgeBuilder: (ref) {
       final v = ref.watch(venueSettingsProvider);
+      final l = ref.read(l10nProvider);
       final tax = (v.taxRateBps / 100.0).toStringAsFixed(0);
       final svc = (v.serviceRateBps / 100.0).toStringAsFixed(0);
-      return ref.read(l10nProvider).venueHubBadgeVenue(tax, svc);
+      return switch ((v.taxEnabled, v.serviceEnabled)) {
+        (true, true) => l.venueHubBadgeVenue(tax, svc),
+        (true, false) => l.venueHubBadgeVenueTax(tax),
+        (false, true) => l.venueHubBadgeVenueSvc(svc),
+        (false, false) => l.venueHubBadgeVenueNone,
+      };
     },
   ),
   _HubSection(
