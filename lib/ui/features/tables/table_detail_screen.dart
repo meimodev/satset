@@ -352,8 +352,12 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
 
     // The context pane reads menu metadata (allergens) — surface load state
     // explicitly rather than rendering against an empty cache.
+    // ...but a cache that loaded once is worth more than a spinner or a dead
+    // end. Offline is this app's ordinary state, and the table's own tickets
+    // come from a different provider: only an *empty* cache leaves nothing to
+    // draw. See design principle 6.
     final menuStatus = ref.watch(menuStatusProvider);
-    if (menuStatus.isLoading) {
+    if (menuStatus.isLoading && menuItems.isEmpty) {
       return Scaffold(
         backgroundColor: sc.bg0,
         body: Center(
@@ -371,7 +375,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         ),
       );
     }
-    if (menuStatus.hasError) {
+    if (menuStatus.hasError && menuItems.isEmpty) {
       return Scaffold(
         backgroundColor: sc.bg0,
         body: Center(
@@ -729,10 +733,15 @@ class _TableDetailHeader extends ConsumerWidget {
                     ),
                     if (elapsedStr != null) ...[
                       const SizedBox(width: Sp.s2),
-                      SatChip.tag(
-                        icon: Icons.access_time,
-                        label: elapsedStr,
-                        size: SatChipSize.sm,
+                      // Flexible, because this label grows all shift: the chip
+                      // ellipsizes once the row runs out, instead of painting
+                      // the overflow stripe over the header.
+                      Flexible(
+                        child: SatChip.tag(
+                          icon: Icons.access_time,
+                          label: elapsedStr,
+                          size: SatChipSize.sm,
+                        ),
                       ),
                     ],
                   ],
