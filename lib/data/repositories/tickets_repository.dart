@@ -269,7 +269,12 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     // fails, because the failure costs 8s of `requestTimeout` and a waiter
     // mid-rush pays that on every tap.
     if (ref.read(wsConnStateProvider) != WsConnState.open) {
-      await _enqueueOrder(tableId: tableId, lines: lines, actorId: actorId);
+      await _enqueueOrder(
+        tableId: tableId,
+        lines: lines,
+        actorId: actorId,
+        idempotencyKey: idempotencyKey,
+      );
       return const [];
     }
     final api = ref.read(apiClientProvider);
@@ -293,7 +298,12 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       // The socket said open and the request still did not land. This is the
       // gap between the two signals, and it is the reason there is no global
       // offline flag to disagree with.
-      await _enqueueOrder(tableId: tableId, lines: lines, actorId: actorId);
+      await _enqueueOrder(
+        tableId: tableId,
+        lines: lines,
+        actorId: actorId,
+        idempotencyKey: idempotencyKey,
+      );
       return const [];
     }
     final res = SubmitOrderResponseDto.fromJson(
@@ -315,6 +325,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   Future<void> _enqueueOrder({
     required String tableId,
     required List<CartLineDto> lines,
+    required String idempotencyKey,
     String? actorId,
   }) async {
     final visitId = ref
@@ -326,6 +337,10 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       await ref
           .read(sendQueueProvider.notifier)
           .enqueue(
+            // The key the timed-out POST already carried. If that request did
+            // land, the replay reads the host's stored answer instead of
+            // ordering the food twice.
+            id: idempotencyKey,
             kind: SendIntentKind.submitOrder,
             tableId: tableId,
             actorId: actorId ?? '',

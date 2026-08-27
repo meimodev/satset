@@ -248,16 +248,24 @@ class SendQueue extends StateNotifier<List<SendIntent>> {
   ///
   /// Throws [SendQueueFull] at [maxIntents] — the caller must surface that,
   /// never swallow it.
+  ///
+  /// [id] is the idempotency key the act will be replayed under. Pass the one
+  /// the failed attempt already used: a POST that timed out may still have
+  /// landed, and a fresh key would order the food a second time. Capturing the
+  /// same key twice is a no-op, for the same reason.
   Future<SendIntent> enqueue({
     required SendIntentKind kind,
     required String tableId,
     required String actorId,
     required Map<String, dynamic> payload,
     String? expectedVisitId,
+    String? id,
   }) async {
+    final existing = state.where((i) => i.id == id).firstOrNull;
+    if (existing != null) return existing;
     if (state.length >= maxIntents) throw const SendQueueFull();
     final intent = SendIntent(
-      id: _uuid.v4(),
+      id: id ?? _uuid.v4(),
       kind: kind,
       tableId: tableId,
       expectedVisitId: expectedVisitId,

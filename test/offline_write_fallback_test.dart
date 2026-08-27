@@ -94,6 +94,38 @@ void main() {
     );
   });
 
+  test('the queued order replays under the key the attempt used', () async {
+    // A POST that timed out may still have landed. The replay has to carry the
+    // *same* idempotency key, or the host writes the order a second time —
+    // which is the one failure a waiter cannot see and the kitchen cooks.
+    const line = CartLineDto(
+      itemId: 'item-1',
+      name: 'Nasi goreng',
+      variantId: '',
+      variantName: '',
+      modifiers: [],
+      note: null,
+      course: 'mains',
+      qty: 1,
+      unitPrice: 25000,
+    );
+    await container.read(ticketsProvider.notifier).submitOrder(
+      tableId: 'meja-7',
+      idempotencyKey: 'key-abc',
+      lines: const [line],
+    );
+    expect(container.read(sendQueueProvider).single.id, 'key-abc');
+
+    // And capturing that same key again — a retry of the same tap — adds
+    // nothing: one order captured is one order sent.
+    await container.read(ticketsProvider.notifier).submitOrder(
+      tableId: 'meja-7',
+      idempotencyKey: 'key-abc',
+      lines: const [line],
+    );
+    expect(container.read(sendQueueProvider), hasLength(1));
+  });
+
   test('both surface on the table they were captured for', () async {
     await container.read(tablesProvider.notifier).seat('meja-7', pax: 2);
     await container.read(ticketsProvider.notifier).submitOrder(
