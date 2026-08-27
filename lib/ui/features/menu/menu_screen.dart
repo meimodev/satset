@@ -68,7 +68,9 @@ class MenuScreen extends ConsumerStatefulWidget {
 }
 
 class _MenuScreenState extends ConsumerState<MenuScreen> {
-  String _cat = 'mains';
+  // 'all', not a category id: a venue whose menu has no category by that name
+  // — or items filed under none — used to open on an empty grid.
+  String _cat = 'all';
   final _search = TextEditingController();
 
   @override
@@ -540,16 +542,19 @@ class _CatTabs extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final cats = ref.watch(menuCategoriesProvider);
+    // The first chip is the way back to the whole menu, and the way orphan
+    // items (filed under no category) stay reachable at all.
+    final ids = ['all', for (final c in cats) c.id];
+    final names = [context.l10n.mnaAll, for (final c in cats) c.name];
     return SizedBox(
       height: Sp.s9,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
-        itemCount: cats.length,
+        itemCount: ids.length,
         separatorBuilder: (_, _) => const SizedBox(width: Sp.s1h),
         itemBuilder: (_, i) {
-          final c = cats[i];
-          final isActive = active == c.id;
+          final isActive = active == ids[i];
           // The selected category is the accent, flat, in every skin — every
           // palette pairs its own `accentInk` with it, so this stays legible
           // from lembut's amber through Glow's lime.
@@ -560,7 +565,7 @@ class _CatTabs extends ConsumerWidget {
           final glow = SatShape.glow;
           return PressScale(
             child: GestureDetector(
-              onTap: () => onChange(c.id),
+              onTap: () => onChange(ids[i]),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: Sp.s3h,
@@ -572,7 +577,7 @@ class _CatTabs extends ConsumerWidget {
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  c.name,
+                  names[i],
                   style: (glow
                       ? SatType.labelM(color: isActive ? activeInk : sc.textMd)
                       : SatType.bodyM(color: isActive ? activeInk : sc.textMd)),

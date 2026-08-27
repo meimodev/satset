@@ -2692,6 +2692,10 @@ class AppL10nId extends AppL10n {
   String get cshErrNoLines => 'Meja tidak punya pesanan.';
 
   @override
+  String get cshErrOffline =>
+      'Pembayaran tidak terkirim — perangkat tidak terhubung ke server. Tagihan belum dibayar.';
+
+  @override
   String cshErrGeneric(String code) {
     return 'Operasi gagal ($code).';
   }

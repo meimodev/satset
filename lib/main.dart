@@ -26,6 +26,17 @@ import 'package:satset/server/server.dart';
 /// so it has to tolerate a null.
 FirebaseCrashlytics? _crashlytics;
 
+/// A LAN app loses its server routinely — a waiter walks out of Wi-Fi range,
+/// the host tablet sleeps. Those throw `SocketException` (and `http`'s
+/// `ClientException` wrapping one), which is expected operation, not a crash.
+/// Recording them as fatals buries the real ones under the venue's dead spots.
+bool _isTransport(Object e) =>
+    e is SocketException ||
+    e is HandshakeException ||
+    e is HttpException ||
+    e is TimeoutException ||
+    e.toString().contains('SocketException');
+
 Future<void> main() async {
   runZonedGuarded<Future<void>>(
     () async {
@@ -67,7 +78,7 @@ Future<void> main() async {
       };
       PlatformDispatcher.instance.onError = (e, st) {
         SatLog.err('platform', e, st);
-        crashlytics.recordError(e, st, fatal: true);
+        if (!_isTransport(e)) crashlytics.recordError(e, st, fatal: true);
         return false;
       };
 
@@ -188,7 +199,7 @@ Future<void> main() async {
     },
     (e, st) {
       SatLog.err('zoned', e, st);
-      _crashlytics?.recordError(e, st, fatal: true);
+      if (!_isTransport(e)) _crashlytics?.recordError(e, st, fatal: true);
     },
   );
 }

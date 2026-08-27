@@ -144,9 +144,18 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
       if (mounted) setState(() => _error = null);
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = _msg(ref.read(l10nProvider), e));
-    } finally {
-      ref.invalidate(billDetailProvider(widget.visitId));
+    } catch (_) {
+      // Transport failure — the server never answered. Uncaught, this escaped
+      // to the zone: the cashier got no error line, the refetch below failed
+      // too, and the whole sheet collapsed to `Gagal memuat tagihan` with the
+      // money path's outcome unstated. Nothing landed, so there is nothing to
+      // refetch: keep the bill on screen and say the payment did not go.
+      if (mounted) {
+        setState(() => _error = ref.read(l10nProvider).cshErrOffline);
+      }
+      return;
     }
+    ref.invalidate(billDetailProvider(widget.visitId));
   }
 
   @override

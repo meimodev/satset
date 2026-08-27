@@ -994,6 +994,7 @@
   "cshErrForbidden": "Needs manager approval (write-off).",
   "cshErrReasonRequired": "A write-off reason is required.",
   "cshErrNoLines": "The table has no orders.",
+  "cshErrOffline": "Payment not sent — this device cannot reach the server. The bill is still unpaid.",
   "cshErrGeneric": "Operation failed ({code}).",
   "cshReceipts": "Receipts",
   "cshUnassignedCount": "{n, plural, one{{n} item not assigned to a receipt} other{{n} items not assigned to a receipt}}",

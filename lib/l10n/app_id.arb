@@ -1957,6 +1957,7 @@
   "cshErrForbidden": "Perlu persetujuan manajer (tak tertagih).",
   "cshErrReasonRequired": "Alasan tak tertagih wajib diisi.",
   "cshErrNoLines": "Meja tidak punya pesanan.",
+  "cshErrOffline": "Pembayaran tidak terkirim — perangkat tidak terhubung ke server. Tagihan belum dibayar.",
   "cshErrGeneric": "Operasi gagal ({code}).",
   "@cshErrGeneric": {
     "placeholders": {

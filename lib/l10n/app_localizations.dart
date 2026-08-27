@@ -4513,6 +4513,12 @@ abstract class AppL10n {
   /// **'Meja tidak punya pesanan.'**
   String get cshErrNoLines;
 
+  /// No description provided for @cshErrOffline.
+  ///
+  /// In id, this message translates to:
+  /// **'Pembayaran tidak terkirim — perangkat tidak terhubung ke server. Tagihan belum dibayar.'**
+  String get cshErrOffline;
+
   /// No description provided for @cshErrGeneric.
   ///
   /// In id, this message translates to:

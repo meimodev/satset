@@ -2708,6 +2708,10 @@ class AppL10nEn extends AppL10n {
   String get cshErrNoLines => 'The table has no orders.';
 
   @override
+  String get cshErrOffline =>
+      'Payment not sent — this device cannot reach the server. The bill is still unpaid.';
+
+  @override
   String cshErrGeneric(String code) {
     return 'Operation failed ($code).';
   }
