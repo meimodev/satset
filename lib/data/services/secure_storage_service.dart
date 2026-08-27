@@ -5,7 +5,17 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// device-cert material. Repositories must not touch these keys directly.
 class SecureStorageService {
   SecureStorageService([FlutterSecureStorage? backend])
-    : _s = backend ?? const FlutterSecureStorage();
+    : _s =
+          backend ??
+          // A Keystore key that no longer matches its ciphertext (reinstall,
+          // restore, signer change) makes every read throw BAD_DECRYPT — and
+          // the first read happens before `runApp`, so the app boots to a
+          // black screen with no way out. `resetOnError` wipes the unreadable
+          // store and returns null instead: the device re-pairs and signs in,
+          // which is the only thing it could have done anyway.
+          const FlutterSecureStorage(
+            aOptions: AndroidOptions(resetOnError: true),
+          );
 
   final FlutterSecureStorage _s;
 

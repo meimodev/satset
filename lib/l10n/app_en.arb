@@ -2120,7 +2120,7 @@
   "modAllergenLine": "Contains {tags} — confirm with the guest",
   "rptSubNet": "{sessions, plural, =1{1 session} other{{sessions} sessions}} · {covers, plural, =1{1 guest} other{{covers} guests}}",
   "rptSubGross": "{count, plural, =1{1 transaction} other{{count} transactions}}",
-  "rptSubTaxService": "PB1 11% · Svc 7% (est)",
+  "rptSubTaxService": "Tax & service collected",
   "rptSubVoid": "{count, plural, =1{1 voided item} other{{count} voided items}}",
   "rptSubTurnTime": "How long guests sit",
   "rptSubPrep": "Median sent → ready",

@@ -10708,7 +10708,7 @@ abstract class AppL10n {
   /// No description provided for @rptSubTaxService.
   ///
   /// In id, this message translates to:
-  /// **'PB1 11% · Svc 7% (est)'**
+  /// **'Pajak & service tertagih'**
   String get rptSubTaxService;
 
   /// No description provided for @rptSubVoid.

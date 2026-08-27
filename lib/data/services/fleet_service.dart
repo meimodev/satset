@@ -67,6 +67,16 @@ class FleetService {
         for (final k in (m['addOns'] as List<dynamic>? ?? const []))
           if (k is String && k.trim().isNotEmpty) k.trim(),
       },
+      // A map on the doc, a set here — same reading as
+      // `FirebaseAdminService._venueFromSnap`. Dropping it here is not a
+      // display bug: the editor hydrates `_counter` from this set, so an
+      // unread config renders as six off switches and `Simpan` writes every
+      // one of them back as an explicit `false`.
+      counterConfig: {
+        for (final e
+            in (m['counterConfig'] as Map<String, dynamic>? ?? const {}).entries)
+          if (e.value == true) e.key,
+      },
       billingCycle: (m['billingCycle'] as String?)?.trim() ?? venueCycleMonthly,
       lastSeenAt: (m['lastSeenAt'] as Timestamp?)?.toDate(),
       fromCache: d.metadata.isFromCache,

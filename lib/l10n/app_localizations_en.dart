@@ -6843,7 +6843,7 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
-  String get rptSubTaxService => 'PB1 11% · Svc 7% (est)';
+  String get rptSubTaxService => 'Tax & service collected';
 
   @override
   String rptSubVoid(int count) {

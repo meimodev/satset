@@ -5117,7 +5117,7 @@
       }
     }
   },
-  "rptSubTaxService": "PB1 11% · Svc 7% (est)",
+  "rptSubTaxService": "Pajak & service tertagih",
   "rptSubVoid": "{count, plural, other{{count} item void}}",
   "@rptSubVoid": {
     "placeholders": {

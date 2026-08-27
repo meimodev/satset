@@ -6757,7 +6757,7 @@ class AppL10nId extends AppL10n {
   }
 
   @override
-  String get rptSubTaxService => 'PB1 11% · Svc 7% (est)';
+  String get rptSubTaxService => 'Pajak & service tertagih';
 
   @override
   String rptSubVoid(int count) {

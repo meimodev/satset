@@ -209,7 +209,15 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
     final net = sessions.fold<int>(0, (a, s) => a + s.settledTotal);
     final covers = sessions.fold<int>(0, (a, s) => a + s.pax);
     final sessionCount = sessions.length;
-    final taxService = (net * 0.18).round();
+    // The real settled figures, not an estimate. `taxAmount` / `serviceAmount`
+    // are frozen at settlement by `bill_math.dart` and sit on the very rows
+    // this fold already walks, so the cheap-estimate reason ADR-0032 §1 gave
+    // for `net * 0.18` never held — and the estimate was unconditional, which
+    // billed a venue with both charges switched off for tax it never took.
+    final taxService = sessions.fold<int>(
+      0,
+      (a, s) => a + s.taxAmount + s.serviceAmount,
+    );
     // Codes and amounts, not sentences: the reader renders these (ADR-0085).
     // The compact rupiah these used to carry abbreviated *Indonesian* words.
     final salesKpis = [
@@ -1252,11 +1260,12 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
   });
 
   // Accounting export feed (ADR-0032). Bookkeeping view of the same window the
-  // report screen shows: revenue summary on REAL settled figures (session
-  // taxAmount / serviceAmount, never the cosmetic 18% KPI), payment-method
-  // breakdown incl. cash with refunds on their own line, void/refund write-offs,
-  // and a per-calendar-day breakdown for ledger posting. Window uses the same
-  // range rule as the snapshot (not closedAt accrual). viewReports-gated.
+  // report screen shows: revenue summary on the real settled figures — session
+  // taxAmount / serviceAmount, the same ones the sales KPI now reads —
+  // payment-method breakdown incl. cash with refunds on their own line,
+  // void/refund write-offs, and a per-calendar-day breakdown for ledger
+  // posting. Window uses the same range rule as the snapshot (not closedAt
+  // accrual). viewReports-gated.
   r.get('/reports/accounting', (Request req) async {
     final denied = await _requireCap(req, db, auth, Capability.viewReports);
     if (denied != null) return denied;
