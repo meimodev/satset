@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 
@@ -27,6 +28,11 @@ class ReceiptPreviewData {
   final String qrUrl;
   final String qrCaption;
 
+  /// What the venue actually charges. The preview prints the tax and service
+  /// lines the same way settlement computes them — a venue that charges
+  /// neither must not see a tax line on its own receipt.
+  final TaxServiceConfig charges;
+
   const ReceiptPreviewData({
     this.logoBytes,
     this.venueName = '',
@@ -39,6 +45,14 @@ class ReceiptPreviewData {
     this.thankYou = '',
     this.qrUrl = '',
     this.qrCaption = '',
+    this.charges = const TaxServiceConfig(
+      taxEnabled: false,
+      taxRateBps: 0,
+      serviceEnabled: false,
+      serviceMode: 'percent',
+      serviceRateBps: 0,
+      serviceFixedAmount: 0,
+    ),
   });
 }
 
@@ -57,6 +71,7 @@ class ReceiptPreview extends StatelessWidget {
     final d = data;
     // Same fallback the renderers use (`bill_struk_renderer`, `struk_renderer`)
     // — a preview that invents its own sign-off is a preview of nothing.
+    final money = computeBreakdown(113000, d.charges);
     final thanks = d.thankYou.trim().isEmpty
         ? context.l10n.strukThanks
         : d.thankYou.trim();
@@ -125,10 +140,22 @@ class ReceiptPreview extends StatelessWidget {
           _line('1× Es Teh', formatIDR(8000)),
           _line('1× Ayam Bakar', formatIDR(45000)),
           _dashes(),
-          _line(context.l10n.strukSubtotal, formatIDR(113000)),
-          _line('${context.l10n.strukTax} 11%', formatIDR(12430)),
+          _line(context.l10n.strukSubtotal, formatIDR(money.subtotal)),
+          if (money.serviceAmount > 0)
+            _line(
+              d.charges.serviceMode == 'fixed'
+                  ? context.l10n.strukService
+                  : '${context.l10n.strukService} '
+                        '${_pct(d.charges.serviceRateBps)}',
+              formatIDR(money.serviceAmount),
+            ),
+          if (money.taxAmount > 0)
+            _line(
+              '${context.l10n.strukTax} ${_pct(d.charges.taxRateBps)}',
+              formatIDR(money.taxAmount),
+            ),
           const SizedBox(height: 2),
-          _line(context.l10n.strukTotal, formatIDR(125430), strong: true),
+          _line(context.l10n.strukTotal, formatIDR(money.total), strong: true),
           _dashes(),
           if (d.footer.trim().isNotEmpty) ...[
             _center(d.footer.trim(), size: 10.5, color: _inkLo),
@@ -208,6 +235,12 @@ class ReceiptPreview extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// `1100` → `11%`, `250` → `2.5%`.
+  static String _pct(int bps) {
+    final v = bps / 100.0;
+    return '${v.toStringAsFixed(v == v.roundToDouble() ? 0 : 2)}%';
   }
 
   Widget _dashes() => Padding(

@@ -105,6 +105,17 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.jamKerja => l10n.rptSecJamKerja,
   };
 
+  /// A tab whose section can never draw is a dead control: the venue runs no
+  /// member program, keeps no tabs, or the build shows no stock. The blocks
+  /// below already refuse to render those — the tab row has to agree, or the
+  /// reader taps a name and the report answers with nothing.
+  bool _available(_Section s) => switch (s) {
+    _Section.bahan => widget.showStock,
+    _Section.members => widget.snapshot.members.enabled,
+    _Section.piutang => widget.snapshot.piutang.enabled,
+    _ => true,
+  };
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -128,7 +139,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
       ),
       child: Row(
         children: [
-          for (final s in _Section.values)
+          for (final s in _Section.values.where(_available))
             Expanded(
               child: GestureDetector(
                 onTap: () => setState(() {

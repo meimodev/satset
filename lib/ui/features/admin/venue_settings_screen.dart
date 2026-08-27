@@ -774,6 +774,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
         thankYou: _receiptThankYou.text,
         qrUrl: _receiptQrUrl.text,
         qrCaption: _receiptQrCaption.text,
+        charges: s.toTaxServiceConfig(),
       ),
     );
   }
