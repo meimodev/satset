@@ -1519,6 +1519,7 @@
   "tblFinishServiceQ": "Finish service?",
   "tblReleaseBody": "Nothing was ordered. Clear table {table}?",
   "tblFinishBody": "Every ticket is done. Clear table {table} for the next guests? The bill stays with the cashier until it is paid.",
+  "tblFinishBodyPaid": "Every ticket is done. Clear table {table} for the next guests? The bill is already paid.",
   "tblCloseFailed": "Couldn't close the table: {error}",
   "tblEmptyPhone": "Nothing here yet — tap \"Add to order\" to start.",
   "tblContextTitle": "Table context",

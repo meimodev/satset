@@ -4467,6 +4467,11 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String tblFinishBodyPaid(String table) {
+    return 'Semua tiket telah selesai. Kosongkan meja $table untuk tamu berikutnya? Tagihan sudah lunas.';
+  }
+
+  @override
   String tblCloseFailed(String error) {
     return 'Gagal menutup meja: $error';
   }

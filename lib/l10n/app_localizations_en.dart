@@ -4507,6 +4507,11 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String tblFinishBodyPaid(String table) {
+    return 'Every ticket is done. Clear table $table for the next guests? The bill is already paid.';
+  }
+
+  @override
   String tblCloseFailed(String error) {
     return 'Couldn\'t close the table: $error';
   }

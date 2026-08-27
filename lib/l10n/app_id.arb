@@ -3438,6 +3438,15 @@
       }
     }
   },
+  "tblFinishBodyPaid": "Semua tiket telah selesai. Kosongkan meja {table} untuk tamu berikutnya? Tagihan sudah lunas.",
+  "@tblFinishBodyPaid": {
+    "description": "Clear-table confirmation when the bill is already settled",
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
   "tblCloseFailed": "Gagal menutup meja: {error}",
   "@tblCloseFailed": {
     "placeholders": {

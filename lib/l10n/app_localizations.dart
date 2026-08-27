@@ -7183,6 +7183,12 @@ abstract class AppL10n {
   /// **'Semua tiket telah selesai. Kosongkan meja {table} untuk tamu berikutnya? Tagihan tetap di kasir sampai dibayar.'**
   String tblFinishBody(String table);
 
+  /// Clear-table confirmation when the bill is already settled
+  ///
+  /// In id, this message translates to:
+  /// **'Semua tiket telah selesai. Kosongkan meja {table} untuk tamu berikutnya? Tagihan sudah lunas.'**
+  String tblFinishBodyPaid(String table);
+
   /// No description provided for @tblCloseFailed.
   ///
   /// In id, this message translates to:

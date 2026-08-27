@@ -435,8 +435,13 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                 : context.l10n.tblFinishServiceQ,
           ),
           content: Text(
+            // A settled table gets told so. The unpaid copy sends the waiter to
+            // chase a bill the guest already paid — and `'partial'` keeps that
+            // copy, because part-paid still owes something at the till.
             isEmptyClose
                 ? context.l10n.tblReleaseBody(table.displayName)
+                : (table.billClosed || table.moneyState == 'paid')
+                ? context.l10n.tblFinishBodyPaid(table.displayName)
                 : context.l10n.tblFinishBody(table.displayName),
           ),
           actions: [
@@ -573,9 +578,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                             children: [
                               PendingOrdersBlock(tableId: table.id),
                               for (final (i, cid)
-                                  in Courses.all
-                                      .map((c) => c.id)
-                                      .indexed)
+                                  in Courses.all.map((c) => c.id).indexed)
                                 if (grouped[cid] != null &&
                                     grouped[cid]!.isNotEmpty)
                                   Reveal(
@@ -1547,9 +1550,7 @@ class _TabletSplit extends StatelessWidget {
                                 children: [
                                   PendingOrdersBlock(tableId: table.id),
                                   for (final (i, cid)
-                                      in Courses.all
-                                          .map((c) => c.id)
-                                          .indexed)
+                                      in Courses.all.map((c) => c.id).indexed)
                                     if (grouped[cid] != null &&
                                         grouped[cid]!.isNotEmpty)
                                       Reveal(
