@@ -615,7 +615,7 @@
   "expAccountingCsvTitle": "SatSet Accounting Report",
   "expAccountingTitle": "Accounting Report",
   "expAccountingHeader": "Accounting Report · {range}",
-  "expAccountingNote": "Tax & service are the real figures from settled sessions, not the 18% estimate shown on screen. The range follows the same rule as the on-screen report (ADR-0032).",
+  "expAccountingNote": "Tax & service are the real figures from settled sessions, the same ones shown on screen. The range follows the same rule as the on-screen report (ADR-0032).",
   "expSessionCount": "Sessions",
   "expMetaSessionCount": "Sessions: {n}",
   "expRevenueSummary": "Revenue Summary",

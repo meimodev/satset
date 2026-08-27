@@ -338,7 +338,7 @@ total   = subtotal + service + tax
 Takeaway sessions count toward sales/menu/payments but are excluded from per-cover, turn-time and occupancy metrics.
 
 ### Sections
-- **Sales** — Net (Σ session net), Gross (Σ subtotal), an estimated Tax+Service tile (cosmetic `net × 0.18`, explicitly *not* the configured rates), Void amount + voided-line count; weekday cover trend this-week vs last-week; hourly revenue histogram (11:00–22:00); takeaway vs dine-in split.
+- **Sales** — Net (Σ session net), Gross (Σ subtotal), a Tax+Service tile (the settled `taxAmount` + `serviceAmount` the venue actually collected), Void amount + voided-line count; weekday cover trend this-week vs last-week; hourly revenue histogram (11:00–22:00); takeaway vs dine-in split.
 - **Staff** — per-waiter covers, items, average ticket, void %, net, session count, sorted by net; upsell rate = % of sessions containing both a starter and a main.
 - **Menu** — top 5 / slowest 5 by revenue with margin %; modifier attach rates; category mix this-week vs last-week; a **menu-engineering quadrant matrix** (star / plowhorse / puzzle / dog by popularity × margin); top-10 **basket pairs** (co-occurring items within a session).
 - **Ops** — average turn time (dine-in only), median prep and median pickup minutes, reservation funnel; **speed section** with `prepMedianMin`, `pickupMedianMin`, `slaPct` against `prepTargetMins`, sample size, and the 5 slowest items; a 7×12 weekday×hour session heatmap; void reasons with lost rupiah; **void-by-staff** as a separate axis from session ownership.
@@ -346,7 +346,7 @@ Takeaway sessions count toward sales/menu/payments but are excluded from per-cov
 - **Filter options** — full unfiltered lists of servers, zones and categories so dropdowns never truncate themselves.
 
 ### Accounting report (ADR-0032)
-`GET /reports/accounting` — bookkeeping figures from **real settled session columns**, deliberately not the sales screen's 18% estimate:
+`GET /reports/accounting` — bookkeeping figures from the **real settled session columns**, the same ones the sales screen reports:
 - Revenue block: gross, void, service, tax, net, collected, refunded, session count.
 - Per-method: charged / refunded / net with counts.
 - Voids per reason with lost rupiah.

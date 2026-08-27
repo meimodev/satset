@@ -1731,7 +1731,7 @@ class AppL10nId extends AppL10n {
 
   @override
   String get expAccountingNote =>
-      'Pajak & service = nilai riil dari sesi terselesaikan (bukan estimasi 18% di layar). Rentang mengikuti aturan yang sama dengan laporan di layar (ADR-0032).';
+      'Pajak & service = nilai riil dari sesi terselesaikan, sama dengan angka di layar. Rentang mengikuti aturan yang sama dengan laporan di layar (ADR-0032).';
 
   @override
   String get expSessionCount => 'Jumlah sesi';

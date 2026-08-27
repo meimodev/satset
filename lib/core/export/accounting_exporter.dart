@@ -13,7 +13,7 @@ import 'package:satset/ui/core/design/format.dart';
 /// CSV + PDF builders for the accounting export (ADR-0032). A bookkeeping view
 /// of the chosen window: revenue summary on real settled figures, payment
 /// method breakdown, void/refund write-offs, and a per-day breakdown. Tax and
-/// service are the settled session figures, NOT the screen's 18% estimate.
+/// service are the settled session figures — the same ones the screen shows.
 ///
 /// Column headers and section titles follow the exporting device's language
 /// (ADR-0083); every amount inside them stays `Rp 14.500` (ADR-0084). The

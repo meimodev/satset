@@ -864,7 +864,7 @@
       }
     }
   },
-  "expAccountingNote": "Pajak & service = nilai riil dari sesi terselesaikan (bukan estimasi 18% di layar). Rentang mengikuti aturan yang sama dengan laporan di layar (ADR-0032).",
+  "expAccountingNote": "Pajak & service = nilai riil dari sesi terselesaikan, sama dengan angka di layar. Rentang mengikuti aturan yang sama dengan laporan di layar (ADR-0032).",
   "@expAccountingNote": {
     "description": "Footnote under the accounting revenue summary. ADR-0032."
   },

@@ -3028,7 +3028,7 @@ abstract class AppL10n {
   /// Footnote under the accounting revenue summary. ADR-0032.
   ///
   /// In id, this message translates to:
-  /// **'Pajak & service = nilai riil dari sesi terselesaikan (bukan estimasi 18% di layar). Rentang mengikuti aturan yang sama dengan laporan di layar (ADR-0032).'**
+  /// **'Pajak & service = nilai riil dari sesi terselesaikan, sama dengan angka di layar. Rentang mengikuti aturan yang sama dengan laporan di layar (ADR-0032).'**
   String get expAccountingNote;
 
   /// No description provided for @expSessionCount.

@@ -1743,7 +1743,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get expAccountingNote =>
-      'Tax & service are the real figures from settled sessions, not the 18% estimate shown on screen. The range follows the same rule as the on-screen report (ADR-0032).';
+      'Tax & service are the real figures from settled sessions, the same ones shown on screen. The range follows the same rule as the on-screen report (ADR-0032).';
 
   @override
   String get expSessionCount => 'Sessions';
