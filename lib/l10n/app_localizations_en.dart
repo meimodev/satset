@@ -3415,11 +3415,10 @@ class AppL10nEn extends AppL10n {
   String get rptReservationConv => 'Reservation conversion';
 
   @override
-  String get rptReservationNoModule => 'No reservation module yet';
+  String get rptReservationEmpty => 'No reservations yet';
 
   @override
-  String get rptReservationNoModuleBody =>
-      'Turn on the reservation module (P3) to see conversion.';
+  String get rptReservationEmptyBody => 'No reservations in this range.';
 
   @override
   String rptReservationSub(int booked, int seated, int noShow) {

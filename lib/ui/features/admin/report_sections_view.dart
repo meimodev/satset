@@ -1846,12 +1846,14 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
   Widget _reservationConv(BuildContext context, ReservationStatsDto r) {
     final sc = context.sat;
     final booked = r.booked;
+    // Zero bookings is an empty window, not a missing feature — reservations
+    // ship, and a quiet week said so by offering to turn them on.
     if (booked == 0) {
       return _card(
         context,
         context.l10n.rptReservationConv,
-        sub: context.l10n.rptReservationNoModule,
-        child: _emptyChunk(context, context.l10n.rptReservationNoModuleBody),
+        sub: context.l10n.rptReservationEmpty,
+        child: _emptyChunk(context, context.l10n.rptReservationEmptyBody),
       );
     }
     final seatedPct = r.seated / booked;

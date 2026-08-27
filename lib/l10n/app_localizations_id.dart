@@ -3390,11 +3390,10 @@ class AppL10nId extends AppL10n {
   String get rptReservationConv => 'Konversi reservasi';
 
   @override
-  String get rptReservationNoModule => 'Belum ada modul reservasi';
+  String get rptReservationEmpty => 'Belum ada reservasi';
 
   @override
-  String get rptReservationNoModuleBody =>
-      'Aktifkan modul reservasi (P3) untuk melihat konversi.';
+  String get rptReservationEmptyBody => 'Tidak ada reservasi di rentang ini.';
 
   @override
   String rptReservationSub(int booked, int seated, int noShow) {

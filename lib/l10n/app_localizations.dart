@@ -5593,17 +5593,17 @@ abstract class AppL10n {
   /// **'Konversi reservasi'**
   String get rptReservationConv;
 
-  /// No description provided for @rptReservationNoModule.
+  /// No description provided for @rptReservationEmpty.
   ///
   /// In id, this message translates to:
-  /// **'Belum ada modul reservasi'**
-  String get rptReservationNoModule;
+  /// **'Belum ada reservasi'**
+  String get rptReservationEmpty;
 
-  /// No description provided for @rptReservationNoModuleBody.
+  /// No description provided for @rptReservationEmptyBody.
   ///
   /// In id, this message translates to:
-  /// **'Aktifkan modul reservasi (P3) untuk melihat konversi.'**
-  String get rptReservationNoModuleBody;
+  /// **'Tidak ada reservasi di rentang ini.'**
+  String get rptReservationEmptyBody;
 
   /// No description provided for @rptReservationSub.
   ///

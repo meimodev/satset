@@ -2559,8 +2559,8 @@
   "rptHeatQuiet": "SEPI",
   "rptHeatBusy": "PADAT",
   "rptReservationConv": "Konversi reservasi",
-  "rptReservationNoModule": "Belum ada modul reservasi",
-  "rptReservationNoModuleBody": "Aktifkan modul reservasi (P3) untuk melihat konversi.",
+  "rptReservationEmpty": "Belum ada reservasi",
+  "rptReservationEmptyBody": "Tidak ada reservasi di rentang ini.",
   "rptReservationSub": "{booked} dipesan · {seated} duduk · {noShow} no-show",
   "@rptReservationSub": {
     "placeholders": {
