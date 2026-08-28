@@ -4,11 +4,13 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/core/time/business_day.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/error_bus_service.dart';
 import 'package:satset/data/services/prefs_service.dart';
 
 const _uuid = Uuid();
@@ -154,8 +156,10 @@ class SendReport {
 
   const SendReport({required this.outcomes, this.interrupted = false});
 
-  List<SendOutcome> get failures =>
-      [for (final o in outcomes) if (o.needsAttention) o];
+  List<SendOutcome> get failures => [
+    for (final o in outcomes)
+      if (o.needsAttention) o,
+  ];
 
   bool get isEmpty => outcomes.isEmpty;
 }
@@ -167,8 +171,7 @@ class SendQueueFull implements Exception {
 
 /// Delivers one intent to the host. Injected so the drain can be tested
 /// without HTTP, and so the queue never learns what an `ApiClient` is.
-typedef IntentSender =
-    Future<Map<String, dynamic>> Function(SendIntent intent);
+typedef IntentSender = Future<Map<String, dynamic>> Function(SendIntent intent);
 
 /// The device-local **Antrean kirim**: a FIFO of intents a terputus handset
 /// captured, replayed through the ordinary routes when the host comes back.
@@ -188,12 +191,24 @@ class SendQueue extends StateNotifier<List<SendIntent>> {
     FutureOr<PrefsService>? prefs,
     required this.send,
     this.businessDayStartHour = 4,
+    this.onCorrupt,
   }) : _prefs = prefs is PrefsService ? prefs : null,
-       super(prefs is PrefsService ? _load(prefs) : const []) {
-    if (prefs is Future<PrefsService>) {
+       super(const []) {
+    // Loading in the body rather than the initialiser list, so `_load` can
+    // reach `onCorrupt` and `_prefs`. Nothing can be listening yet, so the
+    // assignment is indistinguishable from having started at that value.
+    if (prefs is PrefsService) {
+      state = _load(prefs);
+    } else if (prefs is Future<PrefsService>) {
       unawaited(_hydrate(prefs));
     }
   }
+
+  /// Told when a stored backlog could not be parsed.
+  /// Wired to the error bus by the provider: orders were captured
+  /// and cannot be replayed, and the person holding the handset is the only
+  /// one who can do anything about that.
+  final void Function()? onCorrupt;
 
   /// Adopt the stored backlog once prefs resolve.
   Future<void> _hydrate(Future<PrefsService> pending) async {
@@ -222,7 +237,7 @@ class SendQueue extends StateNotifier<List<SendIntent>> {
 
   bool _draining = false;
 
-  static List<SendIntent> _load(PrefsService? prefs) {
+  List<SendIntent> _load(PrefsService? prefs) {
     final raw = prefs?.sendQueueJson();
     if (raw == null || raw.isEmpty) return const [];
     try {
@@ -231,9 +246,18 @@ class SendQueue extends StateNotifier<List<SendIntent>> {
           ?SendIntent.fromJson((e as Map).cast<String, dynamic>()),
       ];
     } catch (_) {
-      // A queue we cannot parse is a queue from an older build. Nothing can be
-      // replayed from it, and wedging every boot on it helps no one.
-      SatLog.repo('sendQueue.load corrupt — dropped');
+      // A queue we cannot parse cannot be replayed, and wedging every boot on
+      // it helps no one — so it comes out of the way. But it is still the
+      // orders somebody took while the handset was cut off, so it moves aside
+      // rather than being deleted: quarantined verbatim under its own key,
+      // where a support session can read it back off the device.
+      //
+      // And it is said out loud. Silently dropping a backlog is how a venue
+      // finds out at close that a table's food was never ordered.
+      SatLog.repo('sendQueue.load corrupt — quarantined ${raw.length}B');
+      unawaited(prefs!.setSendQueueQuarantineJson(raw));
+      unawaited(prefs.setSendQueueJson(null));
+      onCorrupt?.call();
       return const [];
     }
   }
@@ -291,13 +315,19 @@ class SendQueue extends StateNotifier<List<SendIntent>> {
     if (lines.isEmpty) return discard(intentId);
     state = [
       for (final i in state)
-        if (i.id == intentId) i.copyWith(payload: {...i.payload, 'lines': lines}) else i,
+        if (i.id == intentId)
+          i.copyWith(payload: {...i.payload, 'lines': lines})
+        else
+          i,
     ];
     await _persist();
   }
 
   Future<void> discard(String intentId) async {
-    state = [for (final i in state) if (i.id != intentId) i];
+    state = [
+      for (final i in state)
+        if (i.id != intentId) i,
+    ];
     await _persist();
   }
 
@@ -310,12 +340,16 @@ class SendQueue extends StateNotifier<List<SendIntent>> {
   }
 
   /// The intents captured on this device that belong to [actorId].
-  List<SendIntent> forActor(String actorId) =>
-      [for (final i in state) if (i.actorId == actorId) i];
+  List<SendIntent> forActor(String actorId) => [
+    for (final i in state)
+      if (i.actorId == actorId) i,
+  ];
 
   /// Everything the queue is holding for a table, in capture order.
-  List<SendIntent> forTable(String tableId) =>
-      [for (final i in state) if (i.tableId == tableId) i];
+  List<SendIntent> forTable(String tableId) => [
+    for (final i in state)
+      if (i.tableId == tableId) i,
+  ];
 
   bool get isEmpty => state.isEmpty;
 
@@ -441,6 +475,10 @@ IntentSender apiIntentSender(ApiClient api) => (intent) async {
       return (raw as Map).cast<String, dynamic>();
     case SendIntentKind.seatTable:
       final raw = await api.postJson('/tables/${intent.tableId}/seat', {
+        // The intent id, same as the submit path uses. A retry after a lost
+        // reply then reads back the first attempt's answer instead of the
+        // 409 that would refuse every order queued behind this seat.
+        'idempotencyKey': intent.id,
         'pax': (intent.payload['pax'] as num?)?.toInt() ?? 1,
         'actorId': intent.actorId,
         'guestName': ?intent.payload['guestName'] as String?,
@@ -453,27 +491,31 @@ IntentSender apiIntentSender(ApiClient api) => (intent) async {
 /// The device's send queue. Null-safe before prefs resolve: the queue simply
 /// starts empty and persists nothing, which is the correct behaviour for the
 /// handful of frames before boot completes.
-final sendQueueProvider =
-    StateNotifierProvider<SendQueue, List<SendIntent>>((ref) {
-      // The future, not the value: watching `prefsServiceProvider` would
-      // rebuild — and dispose — this queue the moment prefs resolve, taking any
-      // order captured in the meantime with it.
-      final prefs = ref.read(prefsServiceProvider.future);
-      // Read, not watch: a settings change must not rebuild the queue and drop
-      // an in-flight drain. The hour only matters at expiry, and a venue that
-      // moves its rollover mid-shift can wait for the next boot.
-      final hour = ref.read(venueSettingsProvider).businessDayStartHour;
-      return SendQueue(
-        prefs: prefs,
-        businessDayStartHour: hour,
-        send: (intent) async {
-          // Resolved per call: the ApiClient is replaced whenever pairing
-          // changes, and a queue that captured a stale one would post at the
-          // old host.
-          return apiIntentSender(ref.read(apiClientProvider))(intent);
-        },
-      );
-    });
+final sendQueueProvider = StateNotifierProvider<SendQueue, List<SendIntent>>((
+  ref,
+) {
+  // The future, not the value: watching `prefsServiceProvider` would
+  // rebuild — and dispose — this queue the moment prefs resolve, taking any
+  // order captured in the meantime with it.
+  final prefs = ref.read(prefsServiceProvider.future);
+  // Read, not watch: a settings change must not rebuild the queue and drop
+  // an in-flight drain. The hour only matters at expiry, and a venue that
+  // moves its rollover mid-shift can wait for the next boot.
+  final hour = ref.read(venueSettingsProvider).businessDayStartHour;
+  return SendQueue(
+    prefs: prefs,
+    businessDayStartHour: hour,
+    onCorrupt: () => ref
+        .read(errorBusServiceProvider)
+        .push(ref.read(l10nProvider).sendQueueCorrupt, code: 'queue_corrupt'),
+    send: (intent) async {
+      // Resolved per call: the ApiClient is replaced whenever pairing
+      // changes, and a queue that captured a stale one would post at the
+      // old host.
+      return apiIntentSender(ref.read(apiClientProvider))(intent);
+    },
+  );
+});
 
 /// The last drain's result, for the surface that has to show it. Null until a
 /// drain has run; cleared once the waiter has acknowledged it.
@@ -484,13 +526,12 @@ final sendReportProvider = StateProvider<SendReport?>((_) => null);
 /// A pesanan tertunda is rendered **from the queue**, never faked into the
 /// ticket map: it is not a ticket, the kitchen has never seen it, and a bill
 /// must not be able to reach it (ADR-0090).
-final pendingOrdersForTableProvider =
-    Provider.family<List<SendIntent>, String>((ref, tableId) {
-      final queue = ref.watch(sendQueueProvider);
-      return [
-        for (final i in queue)
-          if (i.tableId == tableId && i.kind == SendIntentKind.submitOrder) i,
-      ];
-    });
-
-
+final pendingOrdersForTableProvider = Provider.family<List<SendIntent>, String>(
+  (ref, tableId) {
+    final queue = ref.watch(sendQueueProvider);
+    return [
+      for (final i in queue)
+        if (i.tableId == tableId && i.kind == SendIntentKind.submitOrder) i,
+    ];
+  },
+);

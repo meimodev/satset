@@ -6,7 +6,7 @@ part 'venue_settings_dto.freezed.dart';
 part 'venue_settings_dto.g.dart';
 
 @freezed
-class VenueSettingsDto with _$VenueSettingsDto {
+abstract class VenueSettingsDto with _$VenueSettingsDto {
   const factory VenueSettingsDto({
     @Default('default') String id,
     @Default('Warung Sebelah') String displayName,

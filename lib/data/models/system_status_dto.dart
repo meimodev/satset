@@ -4,7 +4,7 @@ part 'system_status_dto.freezed.dart';
 part 'system_status_dto.g.dart';
 
 @freezed
-class SystemStatusDto with _$SystemStatusDto {
+abstract class SystemStatusDto with _$SystemStatusDto {
   const factory SystemStatusDto({
     required DateTime startedAt,
     @Default(0) int uptimeMs,
@@ -25,7 +25,7 @@ class SystemStatusDto with _$SystemStatusDto {
 }
 
 @freezed
-class KdsStationDto with _$KdsStationDto {
+abstract class KdsStationDto with _$KdsStationDto {
   const factory KdsStationDto({
     required String station,
     @Default(0) int pendingTickets,
@@ -37,7 +37,7 @@ class KdsStationDto with _$KdsStationDto {
 }
 
 @freezed
-class QueueDepthDto with _$QueueDepthDto {
+abstract class QueueDepthDto with _$QueueDepthDto {
   const factory QueueDepthDto({
     @Default(0) int total,
     @Default(<String, int>{}) Map<String, int> byStation,

@@ -22,6 +22,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/core/localization/labels.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 enum _StockFilter { all, low, negative, produced }
 
@@ -157,7 +158,8 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         ),
         Expanded(
           child: async.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () =>
+                const Center(child: SatSpinner(size: SatSpinnerSize.md)),
             error: (e, _) => _Message(
               context.l10n.stkLoadFailed('$e'),
               color: sc.urgent,
@@ -257,11 +259,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.shopping_basket_outlined,
-                  size: 16,
-                  color: sc.info,
-                ),
+                Icon(Icons.shopping_basket_outlined, size: 16, color: sc.info),
                 const SizedBox(width: Sp.s2),
                 Expanded(
                   child: Text(
@@ -740,11 +738,11 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                   // it, and the variance is then worth nothing
                                   // (ADR-0096). Revealed the moment it closes.
                                   Text(
-                                    _blindWalk
-                                        ? '••••'
-                                        : i.onHandLabel,
+                                    _blindWalk ? '••••' : i.onHandLabel,
                                     style: SatType.monoM(
-                                      color: _blindWalk ? sc.textLo : statusColor,
+                                      color: _blindWalk
+                                          ? sc.textLo
+                                          : statusColor,
                                     ),
                                   ),
                                 ],
@@ -865,7 +863,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                 _blindWalk
                                     ? Text(
                                         context.l10n.stkCounted,
-                                        style: SatType.caption(color: sc.textLo),
+                                        style: SatType.caption(
+                                          color: sc.textLo,
+                                        ),
                                       )
                                     : _varianceDeltaBadge(sc, i, physicalCount),
                               ],
@@ -1856,7 +1856,7 @@ class _LedgerSheet extends ConsumerWidget {
                 child: async.when(
                   loading: () => const Padding(
                     padding: EdgeInsets.all(Sp.s6),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(child: SatSpinner(size: SatSpinnerSize.md)),
                   ),
                   error: (e, _) => _Message(
                     context.l10n.stkLedgerLoadFailed('$e'),

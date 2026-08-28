@@ -5,7 +5,7 @@ part 'ws_event_dto.g.dart';
 
 /// WS envelope. `v` is the schema version; bump when payload shape changes.
 @freezed
-class WsEventDto with _$WsEventDto {
+abstract class WsEventDto with _$WsEventDto {
   const factory WsEventDto({
     @Default(1) int v,
     required String type,
@@ -57,6 +57,7 @@ class WsEventTypes {
   /// Payload `{id}`. Fires on a delete and on the losing half of a merge, which
   /// look identical from the directory's side.
   static const memberDeleted = 'member.deleted';
+
   /// A guest submitted an order on the cleartext plane (ADR-0105). Payload is
   /// the whole intent, so the staff queue renders without a refetch — and so
   /// the alert sound has something to name.
@@ -91,6 +92,7 @@ class WsEventTypes {
   /// payment/refund recorded, or a receipt reopened. Carries the tableId so the
   /// cashier list + any open bill detail re-fetch. See ADR-0023.
   static const billUpdated = 'bill.updated';
+
   /// The [[Release gate]] changed in the cloud (ADR-0087). Payload is the gate
   /// itself — `{min, recommended, latest}`, any key absent. Only the host reads
   /// Firebase, so this is how a client hears that a floor moved without waiting

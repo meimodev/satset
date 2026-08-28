@@ -1,6 +1,7 @@
 import 'package:satset/core/printing/struk_data.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 /// Client-side assembly of a [StrukData] from domain tickets + venue settings.
 /// The server has its own assembly from Drift rows; both produce the same shape
@@ -45,7 +46,7 @@ class StrukBuilder {
       pax: pax,
       guestName: guestName,
       guestNote: guestNote,
-      at: at ?? DateTime.now(),
+      at: at ?? SatClock.now(),
       lines: linesFromTickets(tickets),
     );
   }

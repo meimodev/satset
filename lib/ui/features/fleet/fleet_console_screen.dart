@@ -20,6 +20,7 @@ import 'package:satset/ui/features/fleet/venue_edit_screen.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// The super admin's cloud control plane. Reads venues live from Firestore;
 /// every mutation goes through a Cloud Function. Lives outside the app shell (a
@@ -276,8 +277,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
     bool offline,
   ) {
     return venues.when(
-      loading: () =>
-          Center(child: CircularProgressIndicator(color: sc.accentText)),
+      loading: () => Center(child: SatSpinner(size: SatSpinnerSize.md)),
       error: (e, _) => _errorBox(sc, e),
       data: (list) {
         if (list.isEmpty) {

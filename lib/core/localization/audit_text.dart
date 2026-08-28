@@ -138,6 +138,7 @@ String auditText(AppL10n l, AuditEntry e) {
     AuditKind.staffEnabled => l.auditStaffEnabled(s('name')),
     AuditKind.staffPinSet => l.auditStaffPinSet(s('name')),
     AuditKind.staffPinReset => l.auditStaffPinReset(s('name')),
+    AuditKind.signInFailed => l.auditSignInFailed(s('device'), s('attempt')),
     AuditKind.staffRoleChanged => l.auditStaffRoleChanged(
       s('name'),
       s('from'),

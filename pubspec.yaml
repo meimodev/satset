@@ -19,12 +19,26 @@ dependencies:
   path: ^1.9.0
 
   # Models / codegen runtime
-  freezed_annotation: ^2.4.4
-  json_annotation: ^4.9.0
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.12.0
 
   # Persistence (server-side)
-  drift: ^2.20.3
-  sqlite3_flutter_libs: ^0.5.24
+  #
+  # `drift` is pinned exact, not caret-ranged. drift_dev 2.34.1+ requires
+  # analyzer ^13 and freezed 3.2.5 caps analyzer at 12, so the toolchain can
+  # only sit at drift_dev 2.34.0 — and drift_dev 2.34.0's migration verifier is
+  # written against drift 2.34.0's `drift3_preview` surface. Let drift float to
+  # 2.34.3 and `test/schema_migration_test.dart` stops compiling, which is a
+  # confusing way to learn that two packages from the same author disagree.
+  # Unpin once freezed supports analyzer 13.
+  drift: 2.34.0
+  # Direct, not transitive, because it replaced a direct dependency:
+  # `sqlite3_flutter_libs` is EOL (its last release is literally `0.6.0+eol`,
+  # description "Not used anymore"). sqlite3 3.x builds the native library
+  # itself through Dart's native-asset hooks, so `libsqlite3.so` reaches the
+  # APK without a Flutter plugin in between — verified in the release APK for
+  # all three ABIs, which is the only place this can be checked.
+  sqlite3: ^3.4.0
   path_provider: ^2.1.4
 
   # LAN transport
@@ -35,16 +49,30 @@ dependencies:
   http: ^1.2.2
 
   # Storage / prefs
-  flutter_secure_storage: ^9.2.2
+  # Deliberately v10, not v11, and this is a two-release migration rather than
+  # a stale pin. v11 REMOVES the ciphers v9 wrote with (RSA/PKCS1 and
+  # AES-CBC/PKCS7); v10 is the release that migrates them to OAEP and AES-GCM.
+  # Going 9 -> 11 in one step leaves everything this store holds unreadable on
+  # every device already in the field: the session JWT, the device id, the
+  # device cert/key PEMs, and the server fingerprint that IS the pairing trust
+  # anchor (ADR-0080). That is not a logout, it is a re-pair of every handset
+  # and tablet in every venue, and nothing in the app would report why.
+  #
+  # So: ship v10, let it migrate on first launch, and raise this to ^11 in a
+  # LATER release once the fleet has run v10 at least once.
+  flutter_secure_storage: ^10.3.1
   shared_preferences: ^2.3.2
 
   # Discovery / pairing
-  bonsoir: ^5.1.10
+  bonsoir: ^7.1.0
 
   # TLS / JWT / crypto
-  basic_utils: ^5.7.0
-  dart_jsonwebtoken: ^2.14.1
+  basic_utils: ^5.8.2
+  dart_jsonwebtoken: ^3.4.1
   crypto: ^3.0.5
+  # Already here transitively (dart_jsonwebtoken). Named directly for
+  # PBKDF2 in lib/server/pin.dart — see ADR-0112.
+  pointycastle: ^4.0.0
 
   # Logging
   logging: ^1.2.0
@@ -59,7 +87,12 @@ dependencies:
   # See docs/adr/0030-client-side-range-scoped-export.md.
   pdf: ^3.11.1
   printing: ^5.13.3
-  share_plus: ^10.1.2
+  # share_plus 13 pulls win32 6, which forces package_info_plus to 10 and AGP
+  # to 8.12.1 — the three move together or not at all. An earlier attempt at
+  # this bump failed with `Unresolved reference 'ShareSuccessManager'`, which
+  # was a stale generated registrant from the half-reverted attempt before it,
+  # not an incompatibility; a `flutter clean` is what the error actually wanted.
+  share_plus: ^13.3.0
 
   # Hands the "lupa password" request to the developer's WhatsApp (ADR-0059).
   url_launcher: ^6.3.1
@@ -83,7 +116,7 @@ dependencies:
   # record advertises. open_filex hands the downloaded APK to Android's package
   # installer; it ships its own FileProvider, so there is no authority to
   # declare here.
-  package_info_plus: ^8.1.1
+  package_info_plus: ^10.2.1
   open_filex: ^4.5.0
 
 dev_dependencies:
@@ -94,12 +127,9 @@ dev_dependencies:
 
   # Codegen
   build_runner: ^2.4.13
-  freezed: ^2.5.7
-  json_serializable: ^6.8.0
-  drift_dev: ^2.20.3
-
-  # Native integration testing
-  patrol: ^4.6.1
+  freezed: ^3.2.5
+  json_serializable: ^6.12.0
+  drift_dev: ^2.34.0
 
   # App launcher icon generation
   flutter_launcher_icons: ^0.14.1
@@ -172,8 +202,3 @@ flutter_launcher_icons:
   adaptive_icon_background: "#EE8F3B"
   adaptive_icon_foreground: "assets/icon/icon.png"
 
-# Patrol native UI test config — driven by patrol_cli.
-patrol:
-  app_name: SatSet
-  android:
-    package_name: id.activid.satset

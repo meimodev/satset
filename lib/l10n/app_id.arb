@@ -180,6 +180,10 @@
       }
     }
   },
+  "soFailStock": "Stok tidak cukup. Pesanan tetap di antrean.",
+  "soFailDecided": "Pesanan ini sudah diputuskan orang lain.",
+  "soFailGone": "Pesanan itu sudah tidak ada.",
+  "soFailOther": "Gagal memproses pesanan tamu.",
   "soRejectTitle": "Alasan menolak",
   "soReasonHabis": "Bahan habis",
   "soReasonGantiMenu": "Menu diganti",
@@ -320,6 +324,7 @@
   "auditTypeStaffRoleChanged": "Peran",
   "auditTypeStaffPinSet": "PIN",
   "auditTypeStaffPinReset": "PIN reset",
+  "auditTypeSignInFailed": "PIN gagal",
   "auditTypeRoleCreated": "Peran +",
   "auditTypeRoleRenamed": "Peran ubah",
   "auditTypeRoleDeleted": "Peran −",
@@ -1796,6 +1801,17 @@
   "@auditStaffPinSet": {
     "placeholders": {
       "name": {
+        "type": "String"
+      }
+    }
+  },
+  "auditSignInFailed": "PIN salah di {device} · percobaan ke-{attempt}",
+  "@auditSignInFailed": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      },
+      "attempt": {
         "type": "String"
       }
     }
@@ -5170,6 +5186,7 @@
   "vrsCompDesc": "Digratiskan untuk tamu · tercatat terpisah dari pembatalan",
   "authServerTrouble": "Server lagi bermasalah. Coba lagi sebentar.",
   "authWrongPin": "PIN salah. Coba lagi.",
+  "authDeviceRevoked": "Perangkat ini sudah tidak terhubung ke venue. Minta admin memasangkannya lagi.",
   "authWrongCredentials": "Email atau password salah.",
   "authNoConnection": "Gagal terhubung ke server. Cek Wi-Fi lalu coba lagi.",
   "authInvalidEmail": "Email tidak valid.",
@@ -5202,6 +5219,7 @@
   "admissionUnreachable": "Tidak bisa menghubungi server identitas. Periksa koneksi internet lalu coba lagi.",
   "admissionCancel": "Batal",
   "sendQueueFull": "Antrean kirim penuh — sambungkan dulu ke server sebelum pesan lagi",
+  "sendQueueCorrupt": "Antrean kirim rusak dan tidak bisa dibaca. Pesanan yang tertahan di dalamnya tidak terkirim — periksa meja yang belum dapat pesanannya.",
   "sendQueuePending": "{count, plural, other{{count} pesanan menunggu terkirim}}",
   "@sendQueuePending": {
     "placeholders": {
@@ -5261,6 +5279,16 @@
       },
       "why": {
         "type": "String"
+      }
+    }
+  },
+  "logCapNotice": "{n, plural, other{Berhenti di {n} baris. Persempit rentang atau ekspor untuk catatan lengkap.}}",
+  "@logCapNotice": {
+    "description": "Footer under a paged log (venue audit, petty cash) once paging stops at its row cap. Says the list was truncated, not that the log ended.",
+    "placeholders": {
+      "n": {
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -5823,6 +5851,24 @@
   "tblZoneReadyCount": "{n} siap",
   "@tblZoneReadyCount": {
     "description": "Zone chip counter: items ready at the pass in this zone.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tblZoneAlarmCrit": "{n, plural, other{{n} meja kritis}}",
+  "@tblZoneAlarmCrit": {
+    "description": "Zone chip alarm, worst tier: tables stuck past the critical threshold.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tblZoneAlarmWarn": "{n, plural, other{{n} meja perlu perhatian}}",
+  "@tblZoneAlarmWarn": {
+    "description": "Zone chip alarm, lower tier: tables stuck past the warning threshold.",
     "placeholders": {
       "n": {
         "type": "int"

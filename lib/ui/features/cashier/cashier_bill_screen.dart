@@ -38,6 +38,7 @@ import 'package:satset/core/localization/labels.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// Opens the bill surface. Hardware decides, as everywhere else (ADR-0049):
 ///
@@ -189,7 +190,8 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
           ),
         Expanded(
           child: billAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () =>
+                const Center(child: SatSpinner(size: SatSpinnerSize.md)),
             error: (e, _) => Center(
               child: Text(
                 context.l10n.cshLoadFailed,
@@ -2421,7 +2423,7 @@ class PastBillDetailScreen extends ConsumerWidget {
     future: future,
     builder: (context, snap) {
       if (snap.connectionState != ConnectionState.done) {
-        return const Center(child: CircularProgressIndicator());
+        return const Center(child: SatSpinner(size: SatSpinnerSize.md));
       }
       if (snap.hasError || snap.data == null) {
         return Center(

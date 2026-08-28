@@ -4,7 +4,7 @@ part 'printer_dto.freezed.dart';
 part 'printer_dto.g.dart';
 
 @freezed
-class PrinterDto with _$PrinterDto {
+abstract class PrinterDto with _$PrinterDto {
   const factory PrinterDto({
     required String id,
     required String label,

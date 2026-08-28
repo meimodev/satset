@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 
 import 'package:satset/server/self_order.dart' show mintMissingGuestCodes;
 
 import 'package:satset/domain/models/capability.dart';
 
+import '../pin.dart' as pin_lib;
 import '../stock.dart';
 import '../ws_hub.dart';
 import 'database.dart';
@@ -330,9 +330,10 @@ Future<void> _seedInventory(AppDatabase db) async {
 String _hex(int v) =>
     '#${v.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
 
-String _hashPin(String pin) {
-  return sha256.convert(utf8.encode('satset.v1::$pin')).toString();
-}
+/// One hasher for the whole server (ADR-0112). Seeded staff get salted
+/// hashes like everybody else — a seeded venue must not be the one place a
+/// PIN is stored the old way.
+String _hashPin(String pin) => pin_lib.hashPin(pin);
 
 /// Backfill `voidItem` onto the waiter role for installs seeded before
 /// self-served voids (ADR-0006). Idempotent: no-op once present or if the

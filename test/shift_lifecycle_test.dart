@@ -217,13 +217,15 @@ void main() {
   );
 
   test(
-    'a database stamped 52 without the table repairs itself at 53',
+    'a database stamped 52 without the table repairs itself at 54',
     () async {
       // Exactly what a device that ran the intermediate build presents: the
       // current-ish version, and no `shifts` in it. Left unrepaired, every read
-      // of the table 500s forever, because no version arm is left to run.
+      // of the table 500s forever. The arm that repairs it is 54 — 52 and 53
+      // are the two lineages that disagreed, so neither can be trusted to have
+      // run.
       await db.customStatement('DROP TABLE shifts');
-      await db.migration.onUpgrade(db.createMigrator(), 52, 53);
+      await db.migration.onUpgrade(db.createMigrator(), 52, 54);
 
       expect(await rowsOf('maya'), isEmpty);
       await openShift(db, 'maya');
@@ -242,7 +244,7 @@ void main() {
       'UPDATE users SET shift_started_at = ? WHERE id = ?',
       [started.millisecondsSinceEpoch ~/ 1000, 'maya'],
     );
-    await db.migration.onUpgrade(db.createMigrator(), 51, 53);
+    await db.migration.onUpgrade(db.createMigrator(), 51, 54);
 
     final row = (await rowsOf('maya')).single;
     expect(

@@ -6,7 +6,7 @@ part 'ticket_dto.g.dart';
 /// Wire shape of one snapshotted add-on on a sent line. See
 /// docs/adr/0011-ticket-modifier-snapshot.md.
 @freezed
-class TicketModifierDto with _$TicketModifierDto {
+abstract class TicketModifierDto with _$TicketModifierDto {
   const factory TicketModifierDto({
     @Default('') String groupId,
     @Default('') String optionId,
@@ -19,7 +19,7 @@ class TicketModifierDto with _$TicketModifierDto {
 }
 
 @freezed
-class TicketDto with _$TicketDto {
+abstract class TicketDto with _$TicketDto {
   const factory TicketDto({
     required String id,
     required String tableId,
@@ -63,7 +63,7 @@ class TicketDto with _$TicketDto {
 }
 
 @freezed
-class TicketTransitionRequestDto with _$TicketTransitionRequestDto {
+abstract class TicketTransitionRequestDto with _$TicketTransitionRequestDto {
   const factory TicketTransitionRequestDto({
     required String status,
     String? voidReason,

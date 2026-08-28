@@ -20,6 +20,7 @@ import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import 'package:satset/ui/features/admin/members_screen.dart';
 import 'package:satset/ui/features/cashier/widgets/settle_pane.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// Take money against a [[Piutang]] tab (ADR-0098).
 ///
@@ -117,7 +118,9 @@ class _DebtorPickerState extends ConsumerState<_DebtorPicker> {
                 future: _load,
                 builder: (_, snap) {
                   if (snap.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(
+                      child: SatSpinner(size: SatSpinnerSize.md),
+                    );
                   }
                   final rows = _filter(snap.data ?? const []);
                   if (rows.isEmpty) {

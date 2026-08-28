@@ -24,6 +24,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// What an export covers. All kinds share one sheet and one **Ekspor** entry
 /// (ADR-0030 / ADR-0031 / ADR-0032); the user picks the kind via the **Jenis**
@@ -299,14 +300,7 @@ class _ExportSheetState extends ConsumerState<_ExportSheet> {
             ? Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
-                    width: Sp.s4,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation(sc.accentText),
-                    ),
-                  ),
+                  SatSpinner(size: SatSpinnerSize.xs),
                   const SizedBox(width: Sp.s2h),
                   Text(
                     context.l10n.exportPreparing,

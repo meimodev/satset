@@ -85,3 +85,29 @@ correction, not a workaround.
 The `_hasCap` helper in `tickets_routes.dart` loses its "a bypass that silently
 switches itself on is the wrong default" comment, because the situation it
 guarded against can no longer arise. The reasoning survives here.
+
+## Amendment — 2026-08-22
+
+A non-null `ServerAuth` says a route can *identify* its caller. It said nothing
+about the answer staying true, and it needs to: authorization here is a **live
+read**, never a snapshot frozen into a token.
+
+The token is a twelve-hour JWT carrying a user id and a device id. Both of the
+facts that revoke access — a member being disabled, a device being revoked —
+live in rows the token cannot see, so a fired employee kept working until their
+token expired, on a handset already in their hand. "We disabled them" and "they
+are out" were up to twelve hours apart.
+
+So `resolveBearer` joins the live `disabled` flag on every request rather than
+trusting the claim it was minted from, and both doors — the staff API and the
+WebSocket upgrade — re-ask `revoked` for the device rather than only checking it
+at pairing. Neither is a new mechanism; both are the same question the sign-in
+already asked, asked again at the point where it matters.
+
+The cost is one indexed lookup per request, on a server that is a tablet on a
+LAN serving a handful of handsets. The alternative — a short token lifetime —
+buys the same freshness at the price of re-authenticating a waiter mid-rush, and
+still leaves a window.
+
+This is the other half of the invariant: a route factory takes a non-null
+`ServerAuth`, and that auth owes the caller an answer that is true *now*.

@@ -4,7 +4,7 @@ part 'device_dto.freezed.dart';
 part 'device_dto.g.dart';
 
 @freezed
-class DeviceDto with _$DeviceDto {
+abstract class DeviceDto with _$DeviceDto {
   const factory DeviceDto({
     required String id,
     required String label,

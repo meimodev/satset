@@ -23,6 +23,8 @@ import 'package:satset/ui/features/cashier/debt_collect_sheet.dart';
 import 'package:satset/ui/features/cashier/widgets/bill_card.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/core/time/sat_clock.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// Which slice of the venue's money the cashier is looking at.
 ///
@@ -183,7 +185,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 
   List<PastBillSummary> _inRange(List<PastBillSummary> rows) {
     if (_range == _Range.tujuhHari) return rows;
-    final now = DateTime.now();
+    final now = SatClock.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
     return [
       for (final r in rows)
@@ -204,7 +206,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
       return const [
         SliverFillRemaining(
           hasScrollBody: false,
-          child: Center(child: CircularProgressIndicator()),
+          child: Center(child: SatSpinner(size: SatSpinnerSize.md)),
         ),
       ];
     }
@@ -307,7 +309,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.only(bottom: Sp.s6),
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(child: SatSpinner(size: SatSpinnerSize.md)),
           ),
         ),
       // Scrolled to the ceiling with older bills still behind it. Says where

@@ -32,6 +32,7 @@ String auditTypeLabel(AppL10n l10n, AuditType t) => switch (t) {
   AuditType.selfOrder => l10n.auditTypeSelfOrder,
   AuditType.menuKilled => l10n.auditTypeMenuKilled,
   AuditType.menuRestored => l10n.auditTypeMenuRestored,
+  AuditType.signInFailed => l10n.auditTypeSignInFailed,
   AuditType.staffCreated => l10n.auditTypeStaffCreated,
   AuditType.staffDeleted => l10n.auditTypeStaffDeleted,
   AuditType.staffDisabled => l10n.auditTypeStaffDisabled,

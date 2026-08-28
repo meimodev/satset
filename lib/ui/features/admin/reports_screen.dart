@@ -23,6 +23,7 @@ import 'package:satset/ui/features/admin/report_sections_view.dart';
 import '_common.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// Admin → Reports. Owns the report **chrome** — range pills, server/zone/
 /// category filters, export, freshness — and delegates the five-section
@@ -176,14 +177,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       iconSize: 20,
       tooltip: context.l10n.a11yRefresh,
       icon: loading
-          ? SizedBox(
-              width: Sp.s4,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(sc.accentText),
-              ),
-            )
+          ? SatSpinner(size: SatSpinnerSize.xs)
           : Icon(Icons.refresh, color: sc.textMd),
     );
   }

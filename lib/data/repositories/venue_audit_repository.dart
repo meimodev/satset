@@ -11,6 +11,7 @@ import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/error_bus_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/audit_entry.dart';
+import 'package:satset/core/time/sat_clock.dart';
 
 /// How far back the venue log reaches. The default is deliberately narrow:
 /// opening on "everything" makes the first paint a full-history scan, and the
@@ -47,6 +48,10 @@ const auditFilterTypes = <AuditType>[
   // Same reasoning: the counts live on the /selforder hero, and a tile here
   // would be a second place for one number to disagree with itself.
   AuditType.selfOrder,
+  // Filterable so an owner can read a run of them as a run — one wrong PIN is
+  // a fat finger, forty in a minute is somebody in the corner guessing, and
+  // the only way to tell is to see them together.
+  AuditType.signInFailed,
 ];
 
 typedef AuditTally = ({int count, int amount});
@@ -71,7 +76,7 @@ class VenueAuditFilters {
 
   /// Start of the window in local time, or null for [AuditWindow.all].
   DateTime? get from {
-    final now = DateTime.now();
+    final now = SatClock.now();
     final midnight = DateTime(now.year, now.month, now.day);
     return switch (window) {
       AuditWindow.today => midnight,
@@ -96,6 +101,18 @@ class VenueAuditFilters {
   @override
   int get hashCode => Object.hash(window, types.length);
 }
+
+/// Rows one reader may accumulate before paging stops.
+///
+/// Twenty pages. Nothing is dropped from the head to make room: a manager
+/// mid-read must not have the row under their finger move, which is the same
+/// reason WebSocket rows are held in [VenueAuditState.pending] rather than
+/// spliced in. So the only honest cap is to stop fetching and say so.
+///
+/// The complete record already has a path that is not this screen —
+/// `/audit/venue.csv` is unpaged on purpose — so the cap costs a reader
+/// nothing but a narrower filter.
+const kAuditMaxLoaded = 1000;
 
 class VenueAuditState {
   final List<AuditEntry> items;
@@ -122,7 +139,14 @@ class VenueAuditState {
     this.filters = const VenueAuditFilters(),
   });
 
-  bool get hasMore => nextCursor != null;
+  bool get hasMore => nextCursor != null && !capped;
+
+  bool get capped => nextCursor != null && items.length >= kAuditMaxLoaded;
+
+  /// Whether the reader has hit [kAuditMaxLoaded] with more rows still behind
+  /// the cursor. Distinct from "no more rows": one means the log ended, the
+  /// other means this screen stopped fetching, and telling a manager the wrong
+  /// one of those is telling them the venue did less than it did.
 
   VenueAuditState copyWith({
     List<AuditEntry>? items,
@@ -220,6 +244,7 @@ class VenueAuditRepository extends StateNotifier<VenueAuditState> {
   Future<void> loadMore() async {
     final cursor = state.nextCursor;
     if (cursor == null || state.loadingMore || state.loading) return;
+    if (state.items.length >= kAuditMaxLoaded) return;
     state = state.copyWith(loadingMore: true);
     try {
       final raw =

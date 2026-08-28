@@ -425,6 +425,18 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String get soFailStock => 'Not enough stock. The order stays in the queue.';
+
+  @override
+  String get soFailDecided => 'Somebody else already decided this order.';
+
+  @override
+  String get soFailGone => 'That order is gone.';
+
+  @override
+  String get soFailOther => 'Could not act on the guest order.';
+
+  @override
   String get soRejectTitle => 'Reason for rejecting';
 
   @override
@@ -747,6 +759,9 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get auditTypeStaffPinReset => 'PIN reset';
+
+  @override
+  String get auditTypeSignInFailed => 'Failed PIN';
 
   @override
   String get auditTypeRoleCreated => 'Role +';
@@ -2578,6 +2593,11 @@ class AppL10nEn extends AppL10n {
   @override
   String auditStaffPinSet(String name) {
     return 'PIN changed for $name';
+  }
+
+  @override
+  String auditSignInFailed(String device, String attempt) {
+    return 'Wrong PIN on $device · attempt $attempt';
   }
 
   @override
@@ -6941,6 +6961,10 @@ class AppL10nEn extends AppL10n {
   String get authWrongPin => 'Wrong PIN. Try again.';
 
   @override
+  String get authDeviceRevoked =>
+      'This device is no longer paired with the venue. Ask an admin to pair it again.';
+
+  @override
   String get authWrongCredentials => 'Wrong email or password.';
 
   @override
@@ -7027,6 +7051,10 @@ class AppL10nEn extends AppL10n {
       'Send queue is full — reconnect to the server before taking more orders';
 
   @override
+  String get sendQueueCorrupt =>
+      'The send queue was unreadable and could not be replayed. Any orders held in it were not sent — check the tables still waiting.';
+
+  @override
   String sendQueuePending(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7110,6 +7138,23 @@ class AppL10nEn extends AppL10n {
   @override
   String tktNotSent(String what, String why) {
     return '$what wasn\'t sent — $why';
+  }
+
+  @override
+  String logCapNotice(int n) {
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other:
+          'Stopped at $nString rows. Narrow the range or export for the full record.',
+      one: 'Stopped at 1 row. Narrow the range or export for the full record.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -7945,6 +7990,28 @@ class AppL10nEn extends AppL10n {
   @override
   String tblZoneReadyCount(int n) {
     return '$n ready';
+  }
+
+  @override
+  String tblZoneAlarmCrit(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tables critical',
+      one: '1 table critical',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tblZoneAlarmWarn(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tables need attention',
+      one: '1 table needs attention',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -473,25 +473,35 @@ Future<void> deleteMember(
     db.members,
   )..where((m) => m.id.equals(id))).getSingleOrNull();
   if (row == null) throw const MemberException('not_found');
-  // ...but a live [[Piutang]] balance IS money, and deleting it would erase a
-  // receivable with no record of the amount (ADR-0098). Refuse, so the owner
-  // has to say which it was — collected, or given up on. Both are routes.
-  final owed = await memberDebt(db, id);
-  if (owed != 0) throw const MemberException('has_outstanding_debt');
-  await (db.delete(db.memberPoints)..where((p) => p.memberId.equals(id))).go();
-  // The debt ledger stays. The balance is zero, so nothing is owed to anyone —
-  // but a `charge` or a `writeOff` is money that moved, and dropping the rows
-  // would rewrite last month's bad-debt total from a delete button. Same rule
-  // as the bills: the person goes, the trade stays counted.
-  await (db.delete(db.members)..where((m) => m.id.equals(id))).go();
-  await writeAudit(
-    db,
-    type: AuditType.memberChanged,
-    kind: AuditKind.memberDeleted,
-    params: {'name': row.name},
-    actorUserId: actorUserId,
-    hub: hub,
-  );
+  // Check and delete are one atomic step (ADR-0100). The debt balance is
+  // `SUM(delta)` like every other ledger here, so the guard below is Dart and
+  // nothing else — a charge landing between the read and the delete would take
+  // a live receivable out with the person, which is the one outcome this
+  // function exists to refuse.
+  await db.transaction(() async {
+    // ...because a live [[Piutang]] balance IS money, and deleting it would
+    // erase a receivable with no record of the amount (ADR-0098). Refuse, so
+    // the owner has to say which it was — collected, or given up on. Both are
+    // routes.
+    final owed = await memberDebt(db, id);
+    if (owed != 0) throw const MemberException('has_outstanding_debt');
+    await (db.delete(
+      db.memberPoints,
+    )..where((p) => p.memberId.equals(id))).go();
+    // The debt ledger stays. The balance is zero, so nothing is owed to anyone
+    // — but a `charge` or a `writeOff` is money that moved, and dropping the
+    // rows would rewrite last month's bad-debt total from a delete button.
+    // Same rule as the bills: the person goes, the trade stays counted.
+    await (db.delete(db.members)..where((m) => m.id.equals(id))).go();
+    await writeAudit(
+      db,
+      type: AuditType.memberChanged,
+      kind: AuditKind.memberDeleted,
+      params: {'name': row.name},
+      actorUserId: actorUserId,
+      hub: hub,
+    );
+  });
   hub?.broadcast(WsEventTypes.memberDeleted, {'id': id});
 }
 
@@ -516,28 +526,36 @@ Future<Member> mergeMembers(
     db.members,
   )..where((m) => m.id.equals(toId))).getSingleOrNull();
   if (from == null || to == null) throw const MemberException('not_found');
-  await (db.update(db.memberPoints)..where((p) => p.memberId.equals(fromId)))
-      .write(MemberPointsCompanion(memberId: Value(toId)));
-  // The [[Piutang]] ledger repoints for the same reason the points one does:
-  // the balance is `SUM(delta)`, so a fold needs nothing reconciled (ADR-0098).
-  await (db.update(db.memberDebts)..where((p) => p.memberId.equals(fromId)))
-      .write(MemberDebtsCompanion(memberId: Value(toId)));
-  await (db.update(db.tableSessions)..where((s) => s.memberId.equals(fromId)))
-      .write(TableSessionsCompanion(memberId: Value(toId)));
-  await (db.update(db.visits)..where((v) => v.memberId.equals(fromId))).write(
-    VisitsCompanion(memberId: Value(toId)),
-  );
-  await (db.update(db.reservations)..where((x) => x.memberId.equals(fromId)))
-      .write(ReservationsCompanion(memberId: Value(toId)));
-  await (db.delete(db.members)..where((m) => m.id.equals(fromId))).go();
-  await writeAudit(
-    db,
-    type: AuditType.memberChanged,
-    kind: AuditKind.memberMerged,
-    params: {'from': from.name, 'to': to.name},
-    actorUserId: actorUserId,
-    hub: hub,
-  );
+  // Six writes are one act (ADR-0100). A fold that stops halfway has repointed
+  // some of the person's history and not the rest — points moved, debt did
+  // not, and both balances are `SUM(delta)` over rows that now name two
+  // different people. There is no repair for that from the outside, so it
+  // either all lands or none of it does.
+  await db.transaction(() async {
+    await (db.update(db.memberPoints)..where((p) => p.memberId.equals(fromId)))
+        .write(MemberPointsCompanion(memberId: Value(toId)));
+    // The [[Piutang]] ledger repoints for the same reason the points one does:
+    // the balance is `SUM(delta)`, so a fold needs nothing reconciled
+    // (ADR-0098).
+    await (db.update(db.memberDebts)..where((p) => p.memberId.equals(fromId)))
+        .write(MemberDebtsCompanion(memberId: Value(toId)));
+    await (db.update(db.tableSessions)..where((s) => s.memberId.equals(fromId)))
+        .write(TableSessionsCompanion(memberId: Value(toId)));
+    await (db.update(db.visits)..where((v) => v.memberId.equals(fromId))).write(
+      VisitsCompanion(memberId: Value(toId)),
+    );
+    await (db.update(db.reservations)..where((x) => x.memberId.equals(fromId)))
+        .write(ReservationsCompanion(memberId: Value(toId)));
+    await (db.delete(db.members)..where((m) => m.id.equals(fromId))).go();
+    await writeAudit(
+      db,
+      type: AuditType.memberChanged,
+      kind: AuditKind.memberMerged,
+      params: {'from': from.name, 'to': to.name},
+      actorUserId: actorUserId,
+      hub: hub,
+    );
+  });
   final member = (await getMember(db, toId))!;
   _broadcast(hub, member);
   hub?.broadcast(WsEventTypes.memberDeleted, {'id': fromId});
@@ -801,29 +819,38 @@ Future<void> _post(
 }) async {
   // Every path but a redemption reaches here without a balance check, so the
   // floor is enforced once, here, rather than trusted to four callers.
-  if (delta < 0) {
-    final balance = await memberPoints(db, memberId);
-    if (balance + delta < 0) {
-      throw MemberException('insufficient_points', points: balance);
+  //
+  // And it wraps itself (ADR-0100). The balance is `SUM(delta)`, so no `CHECK`
+  // can hold the floor and the guard lives entirely in Dart — which makes it
+  // worth nothing unless the read and the insert are one step. `spendPoints`
+  // and `earnPointsForVisit` bring their own transaction; this one nests as a
+  // savepoint inside theirs, and is the whole transaction for the hand
+  // adjustment and the two reversals, which had none.
+  await db.transaction(() async {
+    if (delta < 0) {
+      final balance = await memberPoints(db, memberId);
+      if (balance + delta < 0) {
+        throw MemberException('insufficient_points', points: balance);
+      }
     }
-  }
-  final actor = await resolveActor(db, actorUserId);
-  await db
-      .into(db.memberPoints)
-      .insert(
-        MemberPointsCompanion.insert(
-          id: '${idPrefix ?? ''}${_uuid.v4()}',
-          memberId: memberId,
-          kind: kind.name,
-          delta: delta,
-          at: at ?? SatClock.now(),
-          visitId: Value(visitId),
-          baseAmount: Value(baseAmount),
-          note: Value(note),
-          actorUserId: Value(actorUserId),
-          actorName: Value(actor?.name),
-        ),
-      );
+    final actor = await resolveActor(db, actorUserId);
+    await db
+        .into(db.memberPoints)
+        .insert(
+          MemberPointsCompanion.insert(
+            id: '${idPrefix ?? ''}${_uuid.v4()}',
+            memberId: memberId,
+            kind: kind.name,
+            delta: delta,
+            at: at ?? SatClock.now(),
+            visitId: Value(visitId),
+            baseAmount: Value(baseAmount),
+            note: Value(note),
+            actorUserId: Value(actorUserId),
+            actorName: Value(actor?.name),
+          ),
+        );
+  });
 }
 
 /// Ledger rows for one member, newest first, paged by growing limit (ADR-0079).

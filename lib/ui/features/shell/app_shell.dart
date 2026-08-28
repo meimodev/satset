@@ -197,22 +197,30 @@ class AppShell extends ConsumerWidget {
     final l = context.layout;
 
     final activeTab = activeTabFor(loc);
-    final showKasir = ref.watch(authStateProvider).has(Capability.settleBill);
+    final showKasir = ref.watch(
+      authStateProvider.select((s) => s.has(Capability.settleBill)),
+    );
     // [[Pesan mandiri]] (ADR-0106). Off means the guest socket does not exist,
     // so the destination does not either — this is not a screen worth showing
     // empty. `takeOrder` because the one act on it is deciding a guest order.
     final showTamu = showGuestQueue(
-      guestOrderingEnabled: ref.watch(venueSettingsProvider).guestOrderingOn,
-      canTakeOrder: ref.watch(authStateProvider).has(Capability.takeOrder),
+      guestOrderingEnabled: ref.watch(
+        venueSettingsProvider.select((v) => v.guestOrderingOn),
+      ),
+      canTakeOrder: ref.watch(
+        authStateProvider.select((s) => s.has(Capability.takeOrder)),
+      ),
     );
     final guestPending = showTamu
-        ? ref.watch(selfOrderProvider).pending.length
+        ? ref.watch(selfOrderProvider.select((s) => s.pending.length))
         : 0;
     final counterHome = showCounterHome(
       menuHomeEnabled: ref.watch(
         venueSettingsProvider.select((v) => v.counterOn(counterMenuHome)),
       ),
-      canTakeOrder: ref.watch(authStateProvider).has(Capability.takeOrder),
+      canTakeOrder: ref.watch(
+        authStateProvider.select((s) => s.has(Capability.takeOrder)),
+      ),
     );
     final userName = ref.watch(
       authStateProvider.select((s) => s.user?.name ?? ''),

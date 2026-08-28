@@ -436,10 +436,14 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     if (!actor.$2.contains(Capability.manageIngredients.name)) {
       return _forbidden(Capability.manageIngredients);
     }
-    CloseCountResult? result;
-    await db.transaction(() async {
-      result = await closeCount(db, countId: id, closedBy: actor.$1, hub: hub);
-    });
+    // No wrapper here any more: `closeCount` opens its own, which is what lets
+    // this read like the one call it is.
+    final result = await closeCount(
+      db,
+      countId: id,
+      closedBy: actor.$1,
+      hub: hub,
+    );
     if (result == null) {
       return Response(
         409,
@@ -451,8 +455,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final row = await countById(db, id);
     return _json({
       ...countRowToJson(row!, lines: await countLines(db, id)),
-      'movements': result!.movements,
-      'deltas': result!.deltas,
+      'movements': result.movements,
+      'deltas': result.deltas,
     });
   });
 

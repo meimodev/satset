@@ -407,9 +407,7 @@ class _MePhone extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-              child: _EndShiftButton(
-                onPressed: onEndShift,
-              ),
+              child: _EndShiftButton(onPressed: onEndShift),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
@@ -500,9 +498,7 @@ class _MeTablet extends StatelessWidget {
                     children: [
                       _Identity(m: m, big: true, showShiftLine: false),
                       const SizedBox(height: Sp.s3h),
-                      _EndShiftButton(
-                        onPressed: onEndShift,
-                              ),
+                      _EndShiftButton(onPressed: onEndShift),
                       const SizedBox(height: Sp.s3h),
                       _MyPendingCard(tableNames: tableNames),
                       _KpiGrid(m: m, columns: 4),
@@ -572,9 +568,9 @@ class _MyPendingCard extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    l.sendQueueCapturedAt(formatClockId(
-                      i.capturedAt.toIso8601String(),
-                    )),
+                    l.sendQueueCapturedAt(
+                      formatClockId(i.capturedAt.toIso8601String()),
+                    ),
                     style: SatType.bodyS(color: sc.textDim),
                   ),
                 ],
@@ -696,6 +692,10 @@ class _Identity extends StatelessWidget {
             SizedBox(
               width: size + 12,
               height: size + 12,
+              // Not a busy spinner and deliberately not `SatSpinner`: this
+              // ring is **determinate**, and the arc is the datum — how far
+              // through their shift the person is. `SatSpinner` carries one
+              // bit (something is happening); this carries a number.
               child: CircularProgressIndicator(
                 value: m.shiftProgress,
                 strokeWidth: 3,

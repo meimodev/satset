@@ -19,7 +19,11 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    id("com.android.application") version "8.11.1" apply false
+    // 8.12.1 is a floor, not a preference: package_info_plus 9 raised its
+    // minimum AGP to exactly this, and share_plus 13 drags package_info_plus
+    // up with it through win32 6. Lowering this again means pinning both
+    // packages back down.
+    id("com.android.application") version "8.12.1" apply false
     id("org.jetbrains.kotlin.android") version "2.2.20" apply false
     // Firebase (processes android/app/google-services.json).
     id("com.google.gms.google-services") version "4.4.2" apply false

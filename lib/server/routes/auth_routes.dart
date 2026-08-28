@@ -4,6 +4,9 @@ import 'package:satset/core/time/sat_clock.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import 'package:satset/domain/models/audit_entry.dart';
+import 'package:satset/domain/models/audit_kind.dart';
+import 'package:satset/server/audit_log.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/shift.dart';
 
@@ -28,14 +31,58 @@ Router authRoutes(ServerAuth auth) {
         headers: {'content-type': 'application/json'},
       );
     }
+    // A device the admin revoked is out of service, and a correct PIN does
+    // not put it back. Checked before the PIN so a revoked device cannot use
+    // this door to probe which PINs are live.
+    if (await auth.deviceRevoked(deviceId)) {
+      return Response(
+        403,
+        body: jsonEncode({
+          'code': 'device_revoked',
+          'message': 'device revoked',
+        }),
+        headers: {'content-type': 'application/json'},
+      );
+    }
+    // Guessing costs time, and the time doubles (ADR-0112). Asked before the
+    // PIN is verified, so a device serving out its wait cannot keep the host
+    // tablet busy hashing — the scan is O(staff) PBKDF2 rounds, which is the
+    // one expensive thing on this route.
+    final wait = auth.pinThrottle(deviceId);
+    if (wait != null) {
+      return Response(
+        429,
+        body: jsonEncode({
+          'code': 'too_many_attempts',
+          'message': 'too many attempts',
+          'retryAfterMs': wait.inMilliseconds,
+        }),
+        headers: {
+          'content-type': 'application/json',
+          'retry-after': '${(wait.inMilliseconds / 1000).ceil()}',
+        },
+      );
+    }
     final session = await auth.signInWithPin(pin: pin, deviceId: deviceId);
     if (session == null) {
+      final attempt = auth.notePinFailure(deviceId);
+      // Audited without an actor, because a wrong PIN names nobody — that is
+      // the whole reason the row exists. The device and the attempt number are
+      // what make a run of them legible; the PIN tried is never written.
+      await writeAudit(
+        auth.db,
+        type: AuditType.signInFailed,
+        kind: AuditKind.signInFailed,
+        params: {'device': deviceId, 'attempt': '$attempt'},
+      );
       return Response(
         401,
         body: jsonEncode({'code': 'invalid_pin', 'message': 'PIN salah'}),
         headers: {'content-type': 'application/json'},
       );
     }
+    // Somebody who knows the PIN is not guessing.
+    auth.notePinSuccess(deviceId);
     final me = await auth.resolveBearer(session.token);
     final role = me == null
         ? null

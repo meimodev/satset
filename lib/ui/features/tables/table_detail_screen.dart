@@ -43,6 +43,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 // Motion tuning. Refined, calm — easeOutQuart per design tokens, no bounce.
 // Mirrors the constants in tables_screen.dart so the grid → detail transition
@@ -227,9 +228,16 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       (z) => z.id == table.zoneId,
       orElse: () => const Zone(id: '', name: '', short: ''),
     );
-    final auth = ref.watch(authStateProvider);
-    final user = auth.user;
-    final actorId = user?.id;
+    final auth = ref.watch(
+      authStateProvider.select(
+        (s) => (
+          id: s.user?.id,
+          name: s.user?.name,
+          canTakeOrder: s.has(Capability.takeOrder),
+        ),
+      ),
+    );
+    final actorId = auth.id;
 
     // Lock state: derived from server-pushed table row, so a WS update from
     // any client flips this screen between editable / read-only without
@@ -265,18 +273,17 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     final hasPending = ref
         .watch(pendingOrdersForTableProvider(table.id))
         .isNotEmpty;
-    final canSeat =
-        isKosong && auth.has(Capability.takeOrder) && !lockedByOther;
+    final canSeat = isKosong && auth.canTakeOrder && !lockedByOther;
     // Gate by capability, not role enum: admins also have takeOrder and need
     // to be able to correct guest counts during testing/coverage.
-    final canEditGuests = auth.has(Capability.takeOrder) && !readOnly;
+    final canEditGuests = auth.canTakeOrder && !readOnly;
 
     Future<void> onSeat() async {
       if (!canSeat || actorId == null) return;
       try {
         await ref
             .read(tablesProvider.notifier)
-            .seat(_tableId, pax: 1, userId: actorId, userName: user?.name);
+            .seat(_tableId, pax: 1, userId: actorId, userName: auth.name);
         // The status flip from `available` → `occupied` triggers the
         // tablesProvider listener above, which schedules the auto-acquire.
         // No explicit lock call here.
@@ -364,7 +371,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(),
+              const SatSpinner(),
               const SizedBox(height: Sp.s3),
               Text(
                 context.l10n.tblLoadingMenu,
@@ -1702,13 +1709,17 @@ class _ContextPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
-    final auth = ref.watch(authStateProvider);
-    final actorId = auth.user?.id;
+    final auth = ref.watch(
+      authStateProvider.select(
+        (s) => (id: s.user?.id, canTakeOrder: s.has(Capability.takeOrder)),
+      ),
+    );
+    final actorId = auth.id;
     // Move is offered only on a live table the caller may operate and that
     // isn't actively held by someone else. Server re-checks the lock anyway.
     final canMove =
         table.status != TableStatus.available &&
-        auth.has(Capability.takeOrder) &&
+        auth.canTakeOrder &&
         !table.isLockedByOther(actorId);
     final router = GoRouter.of(context);
     final navigator = Navigator.of(context);

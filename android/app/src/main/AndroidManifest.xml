@@ -31,9 +31,19 @@
          this. Only ever exercised on the Main Device. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
 
+    <!-- The host tablet's data directory *is* the venue: the Drift database
+         with every bill, the JWT signing secret, the staff PIN hashes and the
+         TLS key. None of that may leave the device through a channel nobody
+         at the venue asked for.
+
+         `allowBackup` shuts the cloud/adb door. On API 31+ it no longer covers
+         device-to-device transfer, which is its own rules file — so both are
+         set, and `@xml/data_extraction_rules` says no to both halves. -->
     <application
         android:label="SatSet"
         android:name="${applicationName}"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

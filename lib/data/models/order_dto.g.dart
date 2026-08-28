@@ -6,40 +6,37 @@ part of 'order_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$CartModifierDtoImpl _$$CartModifierDtoImplFromJson(
-  Map<String, dynamic> json,
-) => _$CartModifierDtoImpl(
-  groupId: json['groupId'] as String,
-  optionId: json['optionId'] as String,
-  label: json['label'] as String,
-  priceDelta: (json['priceDelta'] as num).toInt(),
-);
-
-Map<String, dynamic> _$$CartModifierDtoImplToJson(
-  _$CartModifierDtoImpl instance,
-) => <String, dynamic>{
-  'groupId': instance.groupId,
-  'optionId': instance.optionId,
-  'label': instance.label,
-  'priceDelta': instance.priceDelta,
-};
-
-_$CartLineDtoImpl _$$CartLineDtoImplFromJson(Map<String, dynamic> json) =>
-    _$CartLineDtoImpl(
-      itemId: json['itemId'] as String,
-      name: json['name'] as String,
-      variantId: json['variantId'] as String,
-      variantName: json['variantName'] as String,
-      modifiers: (json['modifiers'] as List<dynamic>)
-          .map((e) => CartModifierDto.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      note: json['note'] as String?,
-      course: json['course'] as String,
-      qty: (json['qty'] as num).toInt(),
-      unitPrice: (json['unitPrice'] as num).toInt(),
+_CartModifierDto _$CartModifierDtoFromJson(Map<String, dynamic> json) =>
+    _CartModifierDto(
+      groupId: json['groupId'] as String,
+      optionId: json['optionId'] as String,
+      label: json['label'] as String,
+      priceDelta: (json['priceDelta'] as num).toInt(),
     );
 
-Map<String, dynamic> _$$CartLineDtoImplToJson(_$CartLineDtoImpl instance) =>
+Map<String, dynamic> _$CartModifierDtoToJson(_CartModifierDto instance) =>
+    <String, dynamic>{
+      'groupId': instance.groupId,
+      'optionId': instance.optionId,
+      'label': instance.label,
+      'priceDelta': instance.priceDelta,
+    };
+
+_CartLineDto _$CartLineDtoFromJson(Map<String, dynamic> json) => _CartLineDto(
+  itemId: json['itemId'] as String,
+  name: json['name'] as String,
+  variantId: json['variantId'] as String,
+  variantName: json['variantName'] as String,
+  modifiers: (json['modifiers'] as List<dynamic>)
+      .map((e) => CartModifierDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  note: json['note'] as String?,
+  course: json['course'] as String,
+  qty: (json['qty'] as num).toInt(),
+  unitPrice: (json['unitPrice'] as num).toInt(),
+);
+
+Map<String, dynamic> _$CartLineDtoToJson(_CartLineDto instance) =>
     <String, dynamic>{
       'itemId': instance.itemId,
       'name': instance.name,
@@ -52,9 +49,9 @@ Map<String, dynamic> _$$CartLineDtoImplToJson(_$CartLineDtoImpl instance) =>
       'unitPrice': instance.unitPrice,
     };
 
-_$SubmitOrderRequestDtoImpl _$$SubmitOrderRequestDtoImplFromJson(
+_SubmitOrderRequestDto _$SubmitOrderRequestDtoFromJson(
   Map<String, dynamic> json,
-) => _$SubmitOrderRequestDtoImpl(
+) => _SubmitOrderRequestDto(
   tableId: json['tableId'] as String,
   idempotencyKey: json['idempotencyKey'] as String,
   lines: (json['lines'] as List<dynamic>)
@@ -63,8 +60,8 @@ _$SubmitOrderRequestDtoImpl _$$SubmitOrderRequestDtoImplFromJson(
   actorId: json['actorId'] as String?,
 );
 
-Map<String, dynamic> _$$SubmitOrderRequestDtoImplToJson(
-  _$SubmitOrderRequestDtoImpl instance,
+Map<String, dynamic> _$SubmitOrderRequestDtoToJson(
+  _SubmitOrderRequestDto instance,
 ) => <String, dynamic>{
   'tableId': instance.tableId,
   'idempotencyKey': instance.idempotencyKey,
@@ -72,9 +69,9 @@ Map<String, dynamic> _$$SubmitOrderRequestDtoImplToJson(
   'actorId': instance.actorId,
 };
 
-_$SubmitOrderResponseDtoImpl _$$SubmitOrderResponseDtoImplFromJson(
+_SubmitOrderResponseDto _$SubmitOrderResponseDtoFromJson(
   Map<String, dynamic> json,
-) => _$SubmitOrderResponseDtoImpl(
+) => _SubmitOrderResponseDto(
   ticketIds: (json['ticketIds'] as List<dynamic>)
       .map((e) => e as String)
       .toList(),
@@ -86,32 +83,30 @@ _$SubmitOrderResponseDtoImpl _$$SubmitOrderResponseDtoImplFromJson(
       const <RejectedLineDto>[],
 );
 
-Map<String, dynamic> _$$SubmitOrderResponseDtoImplToJson(
-  _$SubmitOrderResponseDtoImpl instance,
+Map<String, dynamic> _$SubmitOrderResponseDtoToJson(
+  _SubmitOrderResponseDto instance,
 ) => <String, dynamic>{
   'ticketIds': instance.ticketIds,
   'visitId': instance.visitId,
   'rejected': instance.rejected,
 };
 
-_$RejectedLineDtoImpl _$$RejectedLineDtoImplFromJson(
-  Map<String, dynamic> json,
-) => _$RejectedLineDtoImpl(
-  itemId: json['itemId'] as String,
-  name: json['name'] as String? ?? '',
-  variantName: json['variantName'] as String? ?? '',
-  ingredients:
-      (json['ingredients'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList() ??
-      const <String>[],
-);
+_RejectedLineDto _$RejectedLineDtoFromJson(Map<String, dynamic> json) =>
+    _RejectedLineDto(
+      itemId: json['itemId'] as String,
+      name: json['name'] as String? ?? '',
+      variantName: json['variantName'] as String? ?? '',
+      ingredients:
+          (json['ingredients'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
+    );
 
-Map<String, dynamic> _$$RejectedLineDtoImplToJson(
-  _$RejectedLineDtoImpl instance,
-) => <String, dynamic>{
-  'itemId': instance.itemId,
-  'name': instance.name,
-  'variantName': instance.variantName,
-  'ingredients': instance.ingredients,
-};
+Map<String, dynamic> _$RejectedLineDtoToJson(_RejectedLineDto instance) =>
+    <String, dynamic>{
+      'itemId': instance.itemId,
+      'name': instance.name,
+      'variantName': instance.variantName,
+      'ingredients': instance.ingredients,
+    };

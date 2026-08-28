@@ -11,3 +11,12 @@ tags:
   # the default run; there is no default-exclude in dart_test.yaml.
   golden:
     skip: "run explicitly: flutter test --tags golden --run-skipped"
+
+  # Timing measurements against a real file-backed database. Excluded from
+  # `flutter test` for the same reason goldens are: the number depends on the
+  # machine, and a slow CI runner failing on a stopwatch says nothing about the
+  # change. Run deliberately:
+  #
+  #   flutter test --tags bench --run-skipped
+  bench:
+    skip: "run explicitly: flutter test --tags bench --run-skipped"

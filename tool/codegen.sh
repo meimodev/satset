@@ -6,6 +6,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-dart run build_runner build \
-  --delete-conflicting-outputs \
-  --release
+# `--delete-conflicting-outputs` was removed in build_runner 2.15 — it now
+# warns and ignores it rather than failing, which is the quiet kind of stale
+# flag that survives for years. Conflicting outputs are resolved by the
+# builder itself now; there is nothing to pass.
+dart run build_runner build --release

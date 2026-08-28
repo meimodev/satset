@@ -9,6 +9,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
 /// The report's ingredient view: what was used, what was thrown away, what the
 /// pantry is worth, and how far the counts drifted.
@@ -32,10 +33,8 @@ class ReportStockSection extends ConsumerWidget {
     final sc = context.sat;
     final async = ref.watch(stockReportProvider((rangeFrom, rangeTo)));
     return async.when(
-      loading: () => const SizedBox(
-        height: 90,
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      ),
+      loading: () =>
+          const SizedBox(height: 90, child: Center(child: SatSpinner())),
       error: (e, _) => Text(
         context.l10n.rptStockFailed('$e'),
         style: SatType.bodyS(color: sc.warn),

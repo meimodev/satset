@@ -7,7 +7,7 @@ part 'order_dto.g.dart';
 /// (it holds the menu); the server stores them verbatim. See
 /// docs/adr/0011-ticket-modifier-snapshot.md.
 @freezed
-class CartModifierDto with _$CartModifierDto {
+abstract class CartModifierDto with _$CartModifierDto {
   const factory CartModifierDto({
     required String groupId,
     required String optionId,
@@ -20,7 +20,7 @@ class CartModifierDto with _$CartModifierDto {
 }
 
 @freezed
-class CartLineDto with _$CartLineDto {
+abstract class CartLineDto with _$CartLineDto {
   const factory CartLineDto({
     required String itemId,
     required String name,
@@ -38,7 +38,7 @@ class CartLineDto with _$CartLineDto {
 }
 
 @freezed
-class SubmitOrderRequestDto with _$SubmitOrderRequestDto {
+abstract class SubmitOrderRequestDto with _$SubmitOrderRequestDto {
   const factory SubmitOrderRequestDto({
     required String tableId,
     required String idempotencyKey,
@@ -51,7 +51,7 @@ class SubmitOrderRequestDto with _$SubmitOrderRequestDto {
 }
 
 @freezed
-class SubmitOrderResponseDto with _$SubmitOrderResponseDto {
+abstract class SubmitOrderResponseDto with _$SubmitOrderResponseDto {
   const factory SubmitOrderResponseDto({
     required List<String> ticketIds,
 
@@ -71,7 +71,7 @@ class SubmitOrderResponseDto with _$SubmitOrderResponseDto {
 }
 
 @freezed
-class RejectedLineDto with _$RejectedLineDto {
+abstract class RejectedLineDto with _$RejectedLineDto {
   const factory RejectedLineDto({
     required String itemId,
     @Default('') String name,
