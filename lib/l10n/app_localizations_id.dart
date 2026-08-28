@@ -5029,17 +5029,6 @@ class AppL10nId extends AppL10n {
   }
 
   @override
-  String get mnuTakeawayNoTable => 'BAWA PULANG · TANPA MEJA';
-
-  @override
-  String get mnuNoTablePickLater => 'TANPA MEJA · PILIH MEJA SAAT KIRIM';
-
-  @override
-  String mnuZonePax(String zone, int pax) {
-    return '$zone · $pax TAMU';
-  }
-
-  @override
   String get mnuOpenItem => 'Item bebas';
 
   @override

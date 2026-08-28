@@ -5078,17 +5078,6 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
-  String get mnuTakeawayNoTable => 'TAKEAWAY · NO TABLE';
-
-  @override
-  String get mnuNoTablePickLater => 'NO TABLE · PICK ONE WHEN SENDING';
-
-  @override
-  String mnuZonePax(String zone, int pax) {
-    return '$zone · $pax GUESTS';
-  }
-
-  @override
   String get mnuOpenItem => 'Open item';
 
   @override

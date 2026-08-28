@@ -359,18 +359,10 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                                       ),
                                 style: SatType.h3(color: sc.textHi),
                               ),
-                              const SizedBox(height: Sp.sHair),
-                              Text(
-                                widget.tableless
-                                    ? (_isTakeaway
-                                          ? context.l10n.mnuTakeawayNoTable
-                                          : context.l10n.mnuNoTablePickLater)
-                                    : context.l10n.mnuZonePax(
-                                        table!.zoneId.toUpperCase(),
-                                        table.pax,
-                                      ),
-                                style: SatType.monoS(color: sc.textLo),
-                              ),
+                              // No subtitle: zone and pax are already on the
+                              // table screen this was pushed from, and the line
+                              // was the only thing making this header two rows
+                              // tall.
                             ],
                           ),
                         ),
@@ -659,6 +651,11 @@ class _ItemCard extends ConsumerWidget {
         // shadow is blurred and has no such problem, so it comes off Material.
         elevation: SatShape.glow ? 3 : 0,
         shadowColor: SatShape.glow ? SatShape.lift.first.color : null,
+        // Clipped: the cart-count badge sits in the photo Stack, and without a
+        // clip it paints across the rounded corner and reads as a chip lying
+        // beside the card rather than on it. The elevation shadow is painted by
+        // [Material] outside this clip, so it survives.
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: disabled ? null : onTap,
           borderRadius: SatR.a(22),
@@ -687,8 +684,10 @@ class _ItemCard extends ConsumerWidget {
                       ),
                       if (inCart > 0)
                         Positioned(
-                          right: 8,
-                          top: 8,
+                          // Clear of the 22dp corner arc — at 8 the pill
+                          // straddles the curve.
+                          right: Sp.s3,
+                          top: Sp.s3,
                           child: Container(
                             constraints: const BoxConstraints(
                               minWidth: 28,
@@ -766,8 +765,11 @@ class _ItemCard extends ConsumerWidget {
       children: [
         card,
         Positioned(
-          left: Sp.s2,
-          top: Sp.s2,
+          // Same inset as the cart badge opposite it: the corner arc is what
+          // both have to clear, and this one cannot be clipped — it is outside
+          // the `Opacity`, so it is outside the card's clip too.
+          left: Sp.s3,
+          top: Sp.s3,
           child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: Sp.s2,

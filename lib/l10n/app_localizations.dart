@@ -8089,24 +8089,6 @@ abstract class AppL10n {
   /// **'Tambah ke Meja {table}'**
   String mnuAddToTable(String table);
 
-  /// No description provided for @mnuTakeawayNoTable.
-  ///
-  /// In id, this message translates to:
-  /// **'BAWA PULANG · TANPA MEJA'**
-  String get mnuTakeawayNoTable;
-
-  /// No description provided for @mnuNoTablePickLater.
-  ///
-  /// In id, this message translates to:
-  /// **'TANPA MEJA · PILIH MEJA SAAT KIRIM'**
-  String get mnuNoTablePickLater;
-
-  /// No description provided for @mnuZonePax.
-  ///
-  /// In id, this message translates to:
-  /// **'{zone} · {pax} TAMU'**
-  String mnuZonePax(String zone, int pax);
-
   /// No description provided for @mnuOpenItem.
   ///
   /// In id, this message translates to:

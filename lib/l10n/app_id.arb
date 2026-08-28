@@ -3857,19 +3857,6 @@
       }
     }
   },
-  "mnuTakeawayNoTable": "BAWA PULANG · TANPA MEJA",
-  "mnuNoTablePickLater": "TANPA MEJA · PILIH MEJA SAAT KIRIM",
-  "mnuZonePax": "{zone} · {pax} TAMU",
-  "@mnuZonePax": {
-    "placeholders": {
-      "zone": {
-        "type": "String"
-      },
-      "pax": {
-        "type": "int"
-      }
-    }
-  },
   "mnuOpenItem": "Item bebas",
   "mnuOpenItemSub": "Baris di luar menu — nama dan harga diketik sendiri.",
   "mnuOpenItemName": "Nama item",

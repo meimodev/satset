@@ -137,7 +137,14 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
   MenuSnapshot _toDomain(MenuSnapshotDto d) {
     return MenuSnapshot(
       categories: [
-        for (final c in d.categories) MenuCategory(id: c.id, name: c.name),
+        // `all` is the UI's sentinel for "the whole menu" — every chip row
+        // prepends it and `filterMenuItems` reads it as "no category filter".
+        // A venue seeded before Aug 2026 has a *stored* category with that id,
+        // which showed up as a second "Semua" chip that filtered nothing. It is
+        // dropped here rather than migrated away: one place, and it repairs
+        // venues that already have the row without touching their data.
+        for (final c in d.categories)
+          if (c.id != 'all') MenuCategory(id: c.id, name: c.name),
       ],
       items: [for (final i in d.items) _itemFromDto(i)],
       tags: [

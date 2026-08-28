@@ -86,7 +86,9 @@ class DummyData {
   ];
 
   static const categories = <MenuCategory>[
-    MenuCategory(id: 'all', name: 'Semua'),
+    // No `all` row: that id is the UI's sentinel for the whole menu, so a
+    // stored category using it renders as a duplicate chip that filters
+    // nothing. See the guard in `menu_repository._toDomain`.
     MenuCategory(id: 'starters', name: 'Pembuka'),
     MenuCategory(id: 'mains', name: 'Utama'),
     MenuCategory(id: 'sides', name: 'Pendamping'),
