@@ -16,6 +16,7 @@ class Users extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -23,6 +24,7 @@ class Users extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> initials = GeneratedColumn<String>(
     'initials',
@@ -30,6 +32,7 @@ class Users extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> roleId = GeneratedColumn<String>(
     'role_id',
@@ -37,6 +40,7 @@ class Users extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> zoneAssigned = GeneratedColumn<String>(
     'zone_assigned',
@@ -44,6 +48,7 @@ class Users extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> pinHash = GeneratedColumn<String>(
     'pin_hash',
@@ -51,6 +56,7 @@ class Users extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> email = GeneratedColumn<String>(
     'email',
@@ -58,6 +64,7 @@ class Users extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> passwordHash = GeneratedColumn<String>(
     'password_hash',
@@ -65,6 +72,7 @@ class Users extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> firebaseUid = GeneratedColumn<String>(
     'firebase_uid',
@@ -72,16 +80,15 @@ class Users extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<bool> disabled = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> disabled = GeneratedColumn<int>(
     'disabled',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("disabled" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (disabled IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> avatarColorHex = GeneratedColumn<int>(
@@ -90,6 +97,7 @@ class Users extends Table with TableInfo {
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -121,6 +129,11 @@ class Users extends Table with TableInfo {
   Users createAlias(String alias) {
     return Users(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Roles extends Table with TableInfo {
@@ -134,6 +147,7 @@ class Roles extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -141,6 +155,7 @@ class Roles extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> colorHex = GeneratedColumn<String>(
     'color_hex',
@@ -148,6 +163,7 @@ class Roles extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'#C08AFF\'',
     defaultValue: const CustomExpression('\'#C08AFF\''),
   );
   late final GeneratedColumn<String> capabilitiesJson = GeneratedColumn<String>(
@@ -156,6 +172,7 @@ class Roles extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'[]\'',
     defaultValue: const CustomExpression('\'[]\''),
   );
   @override
@@ -176,6 +193,11 @@ class Roles extends Table with TableInfo {
   Roles createAlias(String alias) {
     return Roles(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Zones extends Table with TableInfo {
@@ -189,6 +211,7 @@ class Zones extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -196,6 +219,7 @@ class Zones extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> short = GeneratedColumn<String>(
     'short',
@@ -203,6 +227,7 @@ class Zones extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> colorHex = GeneratedColumn<String>(
     'color_hex',
@@ -210,6 +235,7 @@ class Zones extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'#FF9233\'',
     defaultValue: const CustomExpression('\'#FF9233\''),
   );
   late final GeneratedColumn<String> iconKey = GeneratedColumn<String>(
@@ -218,6 +244,7 @@ class Zones extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'table_restaurant\'',
     defaultValue: const CustomExpression('\'table_restaurant\''),
   );
   late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
@@ -226,6 +253,7 @@ class Zones extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   @override
@@ -253,6 +281,11 @@ class Zones extends Table with TableInfo {
   Zones createAlias(String alias) {
     return Zones(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class VenueTables extends Table with TableInfo {
@@ -266,6 +299,7 @@ class VenueTables extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> zoneId = GeneratedColumn<String>(
     'zone_id',
@@ -273,6 +307,7 @@ class VenueTables extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> label = GeneratedColumn<String>(
     'label',
@@ -280,6 +315,7 @@ class VenueTables extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> pax = GeneratedColumn<int>(
     'pax',
@@ -287,6 +323,7 @@ class VenueTables extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 2',
     defaultValue: const CustomExpression('2'),
   );
   late final GeneratedColumn<int> capacity = GeneratedColumn<int>(
@@ -295,17 +332,16 @@ class VenueTables extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 2',
     defaultValue: const CustomExpression('2'),
   );
-  late final GeneratedColumn<bool> active = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> active = GeneratedColumn<int>(
     'active',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("active" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 1 CHECK (active IN (0, 1))',
     defaultValue: const CustomExpression('1'),
   );
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
@@ -314,6 +350,7 @@ class VenueTables extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'available\'',
     defaultValue: const CustomExpression('\'available\''),
   );
   late final GeneratedColumn<int> openAmount = GeneratedColumn<int>(
@@ -322,6 +359,7 @@ class VenueTables extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> readyCount = GeneratedColumn<int>(
@@ -330,6 +368,7 @@ class VenueTables extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> lastActorId = GeneratedColumn<String>(
@@ -338,6 +377,7 @@ class VenueTables extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> lockedBy = GeneratedColumn<String>(
     'locked_by',
@@ -345,6 +385,7 @@ class VenueTables extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> lockedByName = GeneratedColumn<String>(
     'locked_by_name',
@@ -352,28 +393,31 @@ class VenueTables extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> lockedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> lockedAt = GeneratedColumn<int>(
     'locked_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> lockExpiresAt =
-      GeneratedColumn<DateTime>(
-        'lock_expires_at',
-        aliasedName,
-        true,
-        type: DriftSqlType.dateTime,
-        requiredDuringInsert: false,
-      );
-  late final GeneratedColumn<DateTime> openedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> lockExpiresAt = GeneratedColumn<int>(
+    'lock_expires_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL',
+  );
+  late final GeneratedColumn<int> openedAt = GeneratedColumn<int>(
     'opened_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> guestName = GeneratedColumn<String>(
     'guest_name',
@@ -381,6 +425,7 @@ class VenueTables extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> guestNotes = GeneratedColumn<String>(
     'guest_notes',
@@ -388,6 +433,7 @@ class VenueTables extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> reservationId = GeneratedColumn<String>(
     'reservation_id',
@@ -395,6 +441,7 @@ class VenueTables extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> currentVisitId = GeneratedColumn<String>(
     'current_visit_id',
@@ -402,13 +449,15 @@ class VenueTables extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> billClosedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> billClosedAt = GeneratedColumn<int>(
     'bill_closed_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> moneyState = GeneratedColumn<String>(
     'money_state',
@@ -416,16 +465,16 @@ class VenueTables extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<bool> guestOrderingEnabled = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> guestOrderingEnabled = GeneratedColumn<int>(
     'guest_ordering_enabled',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("guest_ordering_enabled" IN (0, 1))',
-    ),
+    $customConstraints:
+        'NOT NULL DEFAULT 1 CHECK (guest_ordering_enabled IN (0, 1))',
     defaultValue: const CustomExpression('1'),
   );
   late final GeneratedColumn<String> guestCode = GeneratedColumn<String>(
@@ -434,6 +483,7 @@ class VenueTables extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   @override
@@ -478,6 +528,11 @@ class VenueTables extends Table with TableInfo {
   VenueTables createAlias(String alias) {
     return VenueTables(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Visits extends Table with TableInfo {
@@ -491,6 +546,7 @@ class Visits extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> tableId = GeneratedColumn<String>(
     'table_id',
@@ -498,6 +554,7 @@ class Visits extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> tableLabel = GeneratedColumn<String>(
     'table_label',
@@ -505,6 +562,7 @@ class Visits extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> zoneId = GeneratedColumn<String>(
     'zone_id',
@@ -512,6 +570,7 @@ class Visits extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<int> pax = GeneratedColumn<int>(
@@ -520,14 +579,16 @@ class Visits extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
-  late final GeneratedColumn<DateTime> openedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> openedAt = GeneratedColumn<int>(
     'opened_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> guestName = GeneratedColumn<String>(
     'guest_name',
@@ -535,6 +596,7 @@ class Visits extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> guestNotes = GeneratedColumn<String>(
     'guest_notes',
@@ -542,6 +604,7 @@ class Visits extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> reservationId = GeneratedColumn<String>(
     'reservation_id',
@@ -549,6 +612,7 @@ class Visits extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> lastActorId = GeneratedColumn<String>(
     'last_actor_id',
@@ -556,6 +620,7 @@ class Visits extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
     'member_id',
@@ -563,20 +628,23 @@ class Visits extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> tableFreedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> tableFreedAt = GeneratedColumn<int>(
     'table_freed_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> billClosedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> billClosedAt = GeneratedColumn<int>(
     'bill_closed_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> billClosedBy = GeneratedColumn<String>(
     'bill_closed_by',
@@ -584,6 +652,7 @@ class Visits extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> lossAmount = GeneratedColumn<int>(
     'loss_amount',
@@ -591,14 +660,16 @@ class Visits extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
     'created_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> kind = GeneratedColumn<String>(
     'kind',
@@ -606,6 +677,7 @@ class Visits extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'dineIn\'',
     defaultValue: const CustomExpression('\'dineIn\''),
   );
   late final GeneratedColumn<String> channel = GeneratedColumn<String>(
@@ -614,17 +686,16 @@ class Visits extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
-  late final GeneratedColumn<bool> prepaid = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> prepaid = GeneratedColumn<int>(
     'prepaid',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("prepaid" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (prepaid IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
   @override
@@ -665,6 +736,11 @@ class Visits extends Table with TableInfo {
   Visits createAlias(String alias) {
     return Visits(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class MenuCategories extends Table with TableInfo {
@@ -678,6 +754,7 @@ class MenuCategories extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -685,6 +762,7 @@ class MenuCategories extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
     'sort_order',
@@ -692,6 +770,7 @@ class MenuCategories extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> guestFromMin = GeneratedColumn<int>(
@@ -700,6 +779,7 @@ class MenuCategories extends Table with TableInfo {
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> guestToMin = GeneratedColumn<int>(
     'guest_to_min',
@@ -707,6 +787,7 @@ class MenuCategories extends Table with TableInfo {
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -732,6 +813,11 @@ class MenuCategories extends Table with TableInfo {
   MenuCategories createAlias(String alias) {
     return MenuCategories(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class MenuItems extends Table with TableInfo {
@@ -745,6 +831,7 @@ class MenuItems extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -752,6 +839,7 @@ class MenuItems extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
     'category_id',
@@ -759,6 +847,7 @@ class MenuItems extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> description = GeneratedColumn<String>(
     'description',
@@ -766,6 +855,7 @@ class MenuItems extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<int> basePrice = GeneratedColumn<int>(
@@ -774,6 +864,7 @@ class MenuItems extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> cost = GeneratedColumn<int>(
     'cost',
@@ -781,6 +872,7 @@ class MenuItems extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> prepTime = GeneratedColumn<int>(
@@ -789,6 +881,7 @@ class MenuItems extends Table with TableInfo {
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> variantsJson = GeneratedColumn<String>(
     'variants_json',
@@ -796,6 +889,7 @@ class MenuItems extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'[]\'',
     defaultValue: const CustomExpression('\'[]\''),
   );
   late final GeneratedColumn<String> modifierGroupsJson =
@@ -805,6 +899,7 @@ class MenuItems extends Table with TableInfo {
         false,
         type: DriftSqlType.string,
         requiredDuringInsert: false,
+        $customConstraints: 'NOT NULL DEFAULT \'[]\'',
         defaultValue: const CustomExpression('\'[]\''),
       );
   late final GeneratedColumn<String> allergensJson = GeneratedColumn<String>(
@@ -813,6 +908,7 @@ class MenuItems extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'[]\'',
     defaultValue: const CustomExpression('\'[]\''),
   );
   late final GeneratedColumn<String> dietaryJson = GeneratedColumn<String>(
@@ -821,17 +917,16 @@ class MenuItems extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'[]\'',
     defaultValue: const CustomExpression('\'[]\''),
   );
-  late final GeneratedColumn<bool> unavailable = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> unavailable = GeneratedColumn<int>(
     'unavailable',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("unavailable" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (unavailable IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<i2.Uint8List> photo =
@@ -841,6 +936,7 @@ class MenuItems extends Table with TableInfo {
         true,
         type: DriftSqlType.blob,
         requiredDuringInsert: false,
+        $customConstraints: 'NULL',
       );
   late final GeneratedColumn<int> photoRev = GeneratedColumn<int>(
     'photo_rev',
@@ -848,39 +944,34 @@ class MenuItems extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
-  late final GeneratedColumn<bool> alcohol = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> alcohol = GeneratedColumn<int>(
     'alcohol',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("alcohol" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (alcohol IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
-  late final GeneratedColumn<bool> guestVisible = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> guestVisible = GeneratedColumn<int>(
     'guest_visible',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("guest_visible" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 1 CHECK (guest_visible IN (0, 1))',
     defaultValue: const CustomExpression('1'),
   );
-  late final GeneratedColumn<bool> guestFeatured = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> guestFeatured = GeneratedColumn<int>(
     'guest_featured',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("guest_featured" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (guest_featured IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> guestStockOverride =
@@ -890,16 +981,17 @@ class MenuItems extends Table with TableInfo {
         false,
         type: DriftSqlType.string,
         requiredDuringInsert: false,
+        $customConstraints: 'NOT NULL DEFAULT \'auto\'',
         defaultValue: const CustomExpression('\'auto\''),
       );
-  late final GeneratedColumn<DateTime> guestOverrideAt =
-      GeneratedColumn<DateTime>(
-        'guest_override_at',
-        aliasedName,
-        true,
-        type: DriftSqlType.dateTime,
-        requiredDuringInsert: false,
-      );
+  late final GeneratedColumn<int> guestOverrideAt = GeneratedColumn<int>(
+    'guest_override_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -938,6 +1030,11 @@ class MenuItems extends Table with TableInfo {
   MenuItems createAlias(String alias) {
     return MenuItems(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class MenuTags extends Table with TableInfo {
@@ -951,6 +1048,7 @@ class MenuTags extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> kind = GeneratedColumn<String>(
     'kind',
@@ -958,6 +1056,7 @@ class MenuTags extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -965,6 +1064,7 @@ class MenuTags extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> code = GeneratedColumn<String>(
     'code',
@@ -972,6 +1072,7 @@ class MenuTags extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
@@ -980,6 +1081,7 @@ class MenuTags extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   @override
@@ -1000,6 +1102,11 @@ class MenuTags extends Table with TableInfo {
   MenuTags createAlias(String alias) {
     return MenuTags(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Tickets extends Table with TableInfo {
@@ -1013,6 +1120,7 @@ class Tickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> tableId = GeneratedColumn<String>(
     'table_id',
@@ -1020,6 +1128,7 @@ class Tickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> visitId = GeneratedColumn<String>(
     'visit_id',
@@ -1027,6 +1136,7 @@ class Tickets extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
     'item_id',
@@ -1034,6 +1144,7 @@ class Tickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -1041,6 +1152,7 @@ class Tickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> variantName = GeneratedColumn<String>(
     'variant_name',
@@ -1048,6 +1160,7 @@ class Tickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> course = GeneratedColumn<String>(
@@ -1056,6 +1169,7 @@ class Tickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> qty = GeneratedColumn<int>(
     'qty',
@@ -1063,6 +1177,7 @@ class Tickets extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 1',
     defaultValue: const CustomExpression('1'),
   );
   late final GeneratedColumn<String> modifiersJson = GeneratedColumn<String>(
@@ -1071,6 +1186,7 @@ class Tickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'[]\'',
     defaultValue: const CustomExpression('\'[]\''),
   );
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
@@ -1079,6 +1195,7 @@ class Tickets extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> price = GeneratedColumn<int>(
     'price',
@@ -1086,6 +1203,7 @@ class Tickets extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
     'status',
@@ -1093,20 +1211,23 @@ class Tickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> sentAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> sentAt = GeneratedColumn<int>(
     'sent_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> capturedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> capturedAt = GeneratedColumn<int>(
     'captured_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> replayedByUserId = GeneratedColumn<String>(
     'replayed_by_user_id',
@@ -1114,27 +1235,31 @@ class Tickets extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> firedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> firedAt = GeneratedColumn<int>(
     'fired_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> readyAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> readyAt = GeneratedColumn<int>(
     'ready_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> servedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> servedAt = GeneratedColumn<int>(
     'served_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> voidReason = GeneratedColumn<String>(
     'void_reason',
@@ -1142,6 +1267,7 @@ class Tickets extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> voidReasonCode = GeneratedColumn<String>(
     'void_reason_code',
@@ -1149,6 +1275,7 @@ class Tickets extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> voidApprovedBy = GeneratedColumn<String>(
     'void_approved_by',
@@ -1156,6 +1283,7 @@ class Tickets extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> createdByUserId = GeneratedColumn<String>(
     'created_by_user_id',
@@ -1163,6 +1291,7 @@ class Tickets extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> voidedByUserId = GeneratedColumn<String>(
     'voided_by_user_id',
@@ -1170,6 +1299,7 @@ class Tickets extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -1213,6 +1343,11 @@ class Tickets extends Table with TableInfo {
   Tickets createAlias(String alias) {
     return Tickets(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Sessions extends Table with TableInfo {
@@ -1226,6 +1361,7 @@ class Sessions extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> userId = GeneratedColumn<String>(
     'user_id',
@@ -1233,6 +1369,7 @@ class Sessions extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
     'device_id',
@@ -1240,20 +1377,23 @@ class Sessions extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> issuedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> issuedAt = GeneratedColumn<int>(
     'issued_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> expiresAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> expiresAt = GeneratedColumn<int>(
     'expires_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -1279,6 +1419,11 @@ class Sessions extends Table with TableInfo {
   Sessions createAlias(String alias) {
     return Sessions(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(token)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Devices extends Table with TableInfo {
@@ -1292,6 +1437,7 @@ class Devices extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> label = GeneratedColumn<String>(
     'label',
@@ -1299,6 +1445,7 @@ class Devices extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> publicKeyPem = GeneratedColumn<String>(
     'public_key_pem',
@@ -1306,23 +1453,23 @@ class Devices extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> pairedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> pairedAt = GeneratedColumn<int>(
     'paired_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<bool> revoked = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> revoked = GeneratedColumn<int>(
     'revoked',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("revoked" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (revoked IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
   @override
@@ -1349,6 +1496,11 @@ class Devices extends Table with TableInfo {
   Devices createAlias(String alias) {
     return Devices(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Idempotency extends Table with TableInfo {
@@ -1362,6 +1514,7 @@ class Idempotency extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> responseJson = GeneratedColumn<String>(
     'response_json',
@@ -1369,13 +1522,15 @@ class Idempotency extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
     'created_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [key, responseJson, createdAt];
@@ -1395,6 +1550,11 @@ class Idempotency extends Table with TableInfo {
   Idempotency createAlias(String alias) {
     return Idempotency(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY("key")'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class AuditEntries extends Table with TableInfo {
@@ -1408,6 +1568,7 @@ class AuditEntries extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> type = GeneratedColumn<String>(
     'type',
@@ -1415,6 +1576,7 @@ class AuditEntries extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
     'title',
@@ -1422,6 +1584,7 @@ class AuditEntries extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> tableId = GeneratedColumn<String>(
     'table_id',
@@ -1429,13 +1592,15 @@ class AuditEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> at = GeneratedColumn<int>(
     'at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> approvedBy = GeneratedColumn<String>(
     'approved_by',
@@ -1443,6 +1608,7 @@ class AuditEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> reason = GeneratedColumn<String>(
     'reason',
@@ -1450,6 +1616,7 @@ class AuditEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> actorUserId = GeneratedColumn<String>(
     'actor_user_id',
@@ -1457,6 +1624,7 @@ class AuditEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> amountCents = GeneratedColumn<int>(
     'amount_cents',
@@ -1464,6 +1632,7 @@ class AuditEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> actorName = GeneratedColumn<String>(
     'actor_name',
@@ -1471,6 +1640,7 @@ class AuditEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> actorRoleName = GeneratedColumn<String>(
     'actor_role_name',
@@ -1478,6 +1648,7 @@ class AuditEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> kind = GeneratedColumn<String>(
     'kind',
@@ -1485,6 +1656,7 @@ class AuditEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> params = GeneratedColumn<String>(
     'params',
@@ -1492,6 +1664,7 @@ class AuditEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> paymentId = GeneratedColumn<String>(
     'payment_id',
@@ -1499,6 +1672,7 @@ class AuditEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -1533,6 +1707,11 @@ class AuditEntries extends Table with TableInfo {
   AuditEntries createAlias(String alias) {
     return AuditEntries(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class VenueSettings extends Table with TableInfo {
@@ -1546,6 +1725,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
     'display_name',
@@ -1553,6 +1733,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'Warung Sebelah\'',
     defaultValue: const CustomExpression('\'Warung Sebelah\''),
   );
   late final GeneratedColumn<String> legalName = GeneratedColumn<String>(
@@ -1561,6 +1742,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> address = GeneratedColumn<String>(
@@ -1569,6 +1751,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> phone = GeneratedColumn<String>(
@@ -1577,6 +1760,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> receiptHeader = GeneratedColumn<String>(
@@ -1585,6 +1769,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> receiptFooter = GeneratedColumn<String>(
@@ -1593,6 +1778,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> receiptTagline = GeneratedColumn<String>(
@@ -1601,6 +1787,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> receiptSocial = GeneratedColumn<String>(
@@ -1609,6 +1796,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> receiptThankYou = GeneratedColumn<String>(
@@ -1617,6 +1805,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> receiptQrUrl = GeneratedColumn<String>(
@@ -1625,6 +1814,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> receiptQrCaption = GeneratedColumn<String>(
@@ -1633,6 +1823,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<i2.Uint8List> logo = GeneratedColumn<i2.Uint8List>(
@@ -1641,6 +1832,7 @@ class VenueSettings extends Table with TableInfo {
     true,
     type: DriftSqlType.blob,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> logoRev = GeneratedColumn<int>(
     'logo_rev',
@@ -1648,17 +1840,16 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
-  late final GeneratedColumn<bool> taxEnabled = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> taxEnabled = GeneratedColumn<int>(
     'tax_enabled',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("tax_enabled" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (tax_enabled IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> taxRateBps = GeneratedColumn<int>(
@@ -1667,17 +1858,16 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 1100',
     defaultValue: const CustomExpression('1100'),
   );
-  late final GeneratedColumn<bool> serviceEnabled = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> serviceEnabled = GeneratedColumn<int>(
     'service_enabled',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("service_enabled" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (service_enabled IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> serviceMode = GeneratedColumn<String>(
@@ -1686,6 +1876,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'percent\'',
     defaultValue: const CustomExpression('\'percent\''),
   );
   late final GeneratedColumn<int> serviceRateBps = GeneratedColumn<int>(
@@ -1694,6 +1885,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 500',
     defaultValue: const CustomExpression('500'),
   );
   late final GeneratedColumn<int> serviceFixedAmount = GeneratedColumn<int>(
@@ -1702,17 +1894,17 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
-  late final GeneratedColumn<bool> taxAfterDiscount = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> taxAfterDiscount = GeneratedColumn<int>(
     'tax_after_discount',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("tax_after_discount" IN (0, 1))',
-    ),
+    $customConstraints:
+        'NOT NULL DEFAULT 1 CHECK (tax_after_discount IN (0, 1))',
     defaultValue: const CustomExpression('1'),
   );
   late final GeneratedColumn<int> businessDayStartHour = GeneratedColumn<int>(
@@ -1721,6 +1913,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 4',
     defaultValue: const CustomExpression('4'),
   );
   late final GeneratedColumn<int> prepTargetMins = GeneratedColumn<int>(
@@ -1729,6 +1922,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 15',
     defaultValue: const CustomExpression('15'),
   );
   late final GeneratedColumn<int> pickupTargetMins = GeneratedColumn<int>(
@@ -1737,6 +1931,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 4',
     defaultValue: const CustomExpression('4'),
   );
   late final GeneratedColumn<int> ungreetedMins = GeneratedColumn<int>(
@@ -1745,6 +1940,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 7',
     defaultValue: const CustomExpression('7'),
   );
   late final GeneratedColumn<int> ungreetedEscalateMins = GeneratedColumn<int>(
@@ -1753,6 +1949,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 5',
     defaultValue: const CustomExpression('5'),
   );
   late final GeneratedColumn<int> longStayMins = GeneratedColumn<int>(
@@ -1761,6 +1958,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 90',
     defaultValue: const CustomExpression('90'),
   );
   late final GeneratedColumn<int> idleTableMins = GeneratedColumn<int>(
@@ -1769,6 +1967,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 20',
     defaultValue: const CustomExpression('20'),
   );
   late final GeneratedColumn<int> reservationGraceMins = GeneratedColumn<int>(
@@ -1777,29 +1976,27 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 15',
     defaultValue: const CustomExpression('15'),
   );
-  late final GeneratedColumn<bool> ungreetedAlertEnabled =
-      GeneratedColumn<bool>(
-        'ungreeted_alert_enabled',
-        aliasedName,
-        false,
-        type: DriftSqlType.bool,
-        requiredDuringInsert: false,
-        defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'CHECK ("ungreeted_alert_enabled" IN (0, 1))',
-        ),
-        defaultValue: const CustomExpression('1'),
-      );
-  late final GeneratedColumn<bool> pickupAlertEnabled = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> ungreetedAlertEnabled = GeneratedColumn<int>(
+    'ungreeted_alert_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints:
+        'NOT NULL DEFAULT 1 CHECK (ungreeted_alert_enabled IN (0, 1))',
+    defaultValue: const CustomExpression('1'),
+  );
+  late final GeneratedColumn<int> pickupAlertEnabled = GeneratedColumn<int>(
     'pickup_alert_enabled',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("pickup_alert_enabled" IN (0, 1))',
-    ),
+    $customConstraints:
+        'NOT NULL DEFAULT 1 CHECK (pickup_alert_enabled IN (0, 1))',
     defaultValue: const CustomExpression('1'),
   );
   late final GeneratedColumn<String> soundNewOrder = GeneratedColumn<String>(
@@ -1808,6 +2005,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'alert\'',
     defaultValue: const CustomExpression('\'alert\''),
   );
   late final GeneratedColumn<String> soundReady = GeneratedColumn<String>(
@@ -1816,6 +2014,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'chime\'',
     defaultValue: const CustomExpression('\'chime\''),
   );
   late final GeneratedColumn<String> soundVoid = GeneratedColumn<String>(
@@ -1824,6 +2023,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'alert\'',
     defaultValue: const CustomExpression('\'alert\''),
   );
   late final GeneratedColumn<String> soundOverdue = GeneratedColumn<String>(
@@ -1832,6 +2032,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'alert\'',
     defaultValue: const CustomExpression('\'alert\''),
   );
   late final GeneratedColumn<String> soundUngreeted = GeneratedColumn<String>(
@@ -1840,6 +2041,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'chime\'',
     defaultValue: const CustomExpression('\'chime\''),
   );
   late final GeneratedColumn<String> soundPickup = GeneratedColumn<String>(
@@ -1848,39 +2050,36 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'chime\'',
     defaultValue: const CustomExpression('\'chime\''),
   );
-  late final GeneratedColumn<bool> membersEnabled = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> membersEnabled = GeneratedColumn<int>(
     'members_enabled',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("members_enabled" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 1 CHECK (members_enabled IN (0, 1))',
     defaultValue: const CustomExpression('1'),
   );
-  late final GeneratedColumn<bool> memberPointsEnabled = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> memberPointsEnabled = GeneratedColumn<int>(
     'member_points_enabled',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("member_points_enabled" IN (0, 1))',
-    ),
+    $customConstraints:
+        'NOT NULL DEFAULT 0 CHECK (member_points_enabled IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
-  late final GeneratedColumn<bool> memberPunchEnabled = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> memberPunchEnabled = GeneratedColumn<int>(
     'member_punch_enabled',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("member_punch_enabled" IN (0, 1))',
-    ),
+    $customConstraints:
+        'NOT NULL DEFAULT 0 CHECK (member_punch_enabled IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> memberPresetId = GeneratedColumn<String>(
@@ -1889,6 +2088,7 @@ class VenueSettings extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> memberEarnPerThousand = GeneratedColumn<int>(
     'member_earn_per_thousand',
@@ -1896,6 +2096,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 1',
     defaultValue: const CustomExpression('1'),
   );
   late final GeneratedColumn<int> memberPointValue = GeneratedColumn<int>(
@@ -1904,6 +2105,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 1000',
     defaultValue: const CustomExpression('1000'),
   );
   late final GeneratedColumn<int> memberRedeemMin = GeneratedColumn<int>(
@@ -1912,6 +2114,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 10',
     defaultValue: const CustomExpression('10'),
   );
   late final GeneratedColumn<String> memberPunchItemId =
@@ -1921,6 +2124,7 @@ class VenueSettings extends Table with TableInfo {
         true,
         type: DriftSqlType.string,
         requiredDuringInsert: false,
+        $customConstraints: 'NULL',
       );
   late final GeneratedColumn<int> memberPunchTarget = GeneratedColumn<int>(
     'member_punch_target',
@@ -1928,17 +2132,17 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 10',
     defaultValue: const CustomExpression('10'),
   );
-  late final GeneratedColumn<bool> memberDebtEnabled = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> memberDebtEnabled = GeneratedColumn<int>(
     'member_debt_enabled',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("member_debt_enabled" IN (0, 1))',
-    ),
+    $customConstraints:
+        'NOT NULL DEFAULT 0 CHECK (member_debt_enabled IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> memberDebtLimit = GeneratedColumn<int>(
@@ -1947,6 +2151,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> memberDebtOverdueDays = GeneratedColumn<int>(
@@ -1955,28 +2160,27 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 30',
     defaultValue: const CustomExpression('30'),
   );
-  late final GeneratedColumn<bool> guestOrderingEnabled = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> guestOrderingEnabled = GeneratedColumn<int>(
     'guest_ordering_enabled',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("guest_ordering_enabled" IN (0, 1))',
-    ),
+    $customConstraints:
+        'NOT NULL DEFAULT 0 CHECK (guest_ordering_enabled IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
-  late final GeneratedColumn<bool> guestNoteEnabled = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> guestNoteEnabled = GeneratedColumn<int>(
     'guest_note_enabled',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("guest_note_enabled" IN (0, 1))',
-    ),
+    $customConstraints:
+        'NOT NULL DEFAULT 1 CHECK (guest_note_enabled IN (0, 1))',
     defaultValue: const CustomExpression('1'),
   );
   late final GeneratedColumn<int> guestHoursStartMin = GeneratedColumn<int>(
@@ -1985,6 +2189,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> guestHoursEndMin = GeneratedColumn<int>(
@@ -1993,6 +2198,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> guestMaxItems = GeneratedColumn<int>(
@@ -2001,6 +2207,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 20',
     defaultValue: const CustomExpression('20'),
   );
   late final GeneratedColumn<int> guestSessionHours = GeneratedColumn<int>(
@@ -2009,6 +2216,7 @@ class VenueSettings extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 4',
     defaultValue: const CustomExpression('4'),
   );
   late final GeneratedColumn<String> soundGuestPending =
@@ -2018,6 +2226,7 @@ class VenueSettings extends Table with TableInfo {
         true,
         type: DriftSqlType.string,
         requiredDuringInsert: false,
+        $customConstraints: 'NULL',
       );
   late final GeneratedColumn<String> modules = GeneratedColumn<String>(
     'modules',
@@ -2025,6 +2234,7 @@ class VenueSettings extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> counterConfig = GeneratedColumn<String>(
     'counter_config',
@@ -2032,6 +2242,7 @@ class VenueSettings extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> counterGuestCode = GeneratedColumn<String>(
     'counter_guest_code',
@@ -2039,6 +2250,7 @@ class VenueSettings extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -2118,6 +2330,11 @@ class VenueSettings extends Table with TableInfo {
   VenueSettings createAlias(String alias) {
     return VenueSettings(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Printers extends Table with TableInfo {
@@ -2131,6 +2348,7 @@ class Printers extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> label = GeneratedColumn<String>(
     'label',
@@ -2138,6 +2356,7 @@ class Printers extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> host = GeneratedColumn<String>(
     'host',
@@ -2145,6 +2364,7 @@ class Printers extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> port = GeneratedColumn<int>(
     'port',
@@ -2152,6 +2372,7 @@ class Printers extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 9100',
     defaultValue: const CustomExpression('9100'),
   );
   late final GeneratedColumn<String> kind = GeneratedColumn<String>(
@@ -2160,32 +2381,33 @@ class Printers extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'escpos\'',
     defaultValue: const CustomExpression('\'escpos\''),
   );
-  late final GeneratedColumn<bool> enabled = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> enabled = GeneratedColumn<int>(
     'enabled',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("enabled" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1))',
     defaultValue: const CustomExpression('1'),
   );
-  late final GeneratedColumn<DateTime> lastSeenAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> lastSeenAt = GeneratedColumn<int>(
     'last_seen_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
     'created_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -2214,6 +2436,11 @@ class Printers extends Table with TableInfo {
   Printers createAlias(String alias) {
     return Printers(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class TableSessions extends Table with TableInfo {
@@ -2227,6 +2454,7 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> tableId = GeneratedColumn<String>(
     'table_id',
@@ -2234,6 +2462,7 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> tableLabel = GeneratedColumn<String>(
     'table_label',
@@ -2241,6 +2470,7 @@ class TableSessions extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> zoneId = GeneratedColumn<String>(
     'zone_id',
@@ -2248,6 +2478,7 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> pax = GeneratedColumn<int>(
     'pax',
@@ -2255,21 +2486,24 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
-  late final GeneratedColumn<DateTime> openedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> openedAt = GeneratedColumn<int>(
     'opened_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> closedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> closedAt = GeneratedColumn<int>(
     'closed_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> durationSec = GeneratedColumn<int>(
     'duration_sec',
@@ -2277,6 +2511,7 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> actorUserId = GeneratedColumn<String>(
@@ -2285,6 +2520,7 @@ class TableSessions extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> subtotal = GeneratedColumn<int>(
     'subtotal',
@@ -2292,6 +2528,7 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> voidAmount = GeneratedColumn<int>(
@@ -2300,6 +2537,7 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> serviceAmount = GeneratedColumn<int>(
@@ -2308,6 +2546,7 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> taxAmount = GeneratedColumn<int>(
@@ -2316,6 +2555,7 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> netTotal = GeneratedColumn<int>(
@@ -2324,6 +2564,7 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> discountAmount = GeneratedColumn<int>(
@@ -2332,6 +2573,7 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> settledTotal = GeneratedColumn<int>(
@@ -2340,6 +2582,7 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> ticketCount = GeneratedColumn<int>(
@@ -2348,6 +2591,7 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> lossAmount = GeneratedColumn<int>(
@@ -2356,6 +2600,7 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> billClosedBy = GeneratedColumn<String>(
@@ -2364,6 +2609,7 @@ class TableSessions extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> kind = GeneratedColumn<String>(
     'kind',
@@ -2371,6 +2617,7 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'dineIn\'',
     defaultValue: const CustomExpression('\'dineIn\''),
   );
   late final GeneratedColumn<String> channel = GeneratedColumn<String>(
@@ -2379,17 +2626,16 @@ class TableSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
-  late final GeneratedColumn<bool> prepaid = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> prepaid = GeneratedColumn<int>(
     'prepaid',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("prepaid" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (prepaid IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
@@ -2398,6 +2644,7 @@ class TableSessions extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -2441,6 +2688,11 @@ class TableSessions extends Table with TableInfo {
   TableSessions createAlias(String alias) {
     return TableSessions(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class TableSessionTickets extends Table with TableInfo {
@@ -2454,6 +2706,7 @@ class TableSessionTickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
     'session_id',
@@ -2461,6 +2714,7 @@ class TableSessionTickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> ticketId = GeneratedColumn<String>(
     'ticket_id',
@@ -2468,6 +2722,7 @@ class TableSessionTickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
     'item_id',
@@ -2475,6 +2730,7 @@ class TableSessionTickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -2482,6 +2738,7 @@ class TableSessionTickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> variantName = GeneratedColumn<String>(
     'variant_name',
@@ -2489,6 +2746,7 @@ class TableSessionTickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> course = GeneratedColumn<String>(
@@ -2497,6 +2755,7 @@ class TableSessionTickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> qty = GeneratedColumn<int>(
     'qty',
@@ -2504,6 +2763,7 @@ class TableSessionTickets extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 1',
     defaultValue: const CustomExpression('1'),
   );
   late final GeneratedColumn<String> modifiersJson = GeneratedColumn<String>(
@@ -2512,6 +2772,7 @@ class TableSessionTickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'[]\'',
     defaultValue: const CustomExpression('\'[]\''),
   );
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
@@ -2520,6 +2781,7 @@ class TableSessionTickets extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> price = GeneratedColumn<int>(
     'price',
@@ -2527,6 +2789,7 @@ class TableSessionTickets extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
     'status',
@@ -2534,34 +2797,39 @@ class TableSessionTickets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> sentAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> sentAt = GeneratedColumn<int>(
     'sent_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> firedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> firedAt = GeneratedColumn<int>(
     'fired_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> readyAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> readyAt = GeneratedColumn<int>(
     'ready_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> servedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> servedAt = GeneratedColumn<int>(
     'served_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> voidReason = GeneratedColumn<String>(
     'void_reason',
@@ -2569,6 +2837,7 @@ class TableSessionTickets extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> voidReasonCode = GeneratedColumn<String>(
     'void_reason_code',
@@ -2576,6 +2845,7 @@ class TableSessionTickets extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> voidApprovedBy = GeneratedColumn<String>(
     'void_approved_by',
@@ -2583,6 +2853,7 @@ class TableSessionTickets extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> createdByUserId = GeneratedColumn<String>(
     'created_by_user_id',
@@ -2590,6 +2861,7 @@ class TableSessionTickets extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> voidedByUserId = GeneratedColumn<String>(
     'voided_by_user_id',
@@ -2597,6 +2869,7 @@ class TableSessionTickets extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -2638,6 +2911,11 @@ class TableSessionTickets extends Table with TableInfo {
   TableSessionTickets createAlias(String alias) {
     return TableSessionTickets(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class TableSessionCourses extends Table with TableInfo {
@@ -2651,6 +2929,7 @@ class TableSessionCourses extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
     'session_id',
@@ -2658,6 +2937,7 @@ class TableSessionCourses extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> courseId = GeneratedColumn<String>(
     'course_id',
@@ -2665,20 +2945,23 @@ class TableSessionCourses extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> firedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> firedAt = GeneratedColumn<int>(
     'fired_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> servedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> servedAt = GeneratedColumn<int>(
     'served_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> ticketCount = GeneratedColumn<int>(
     'ticket_count',
@@ -2686,6 +2969,7 @@ class TableSessionCourses extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   @override
@@ -2713,6 +2997,11 @@ class TableSessionCourses extends Table with TableInfo {
   TableSessionCourses createAlias(String alias) {
     return TableSessionCourses(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Reservations extends Table with TableInfo {
@@ -2726,6 +3015,7 @@ class Reservations extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -2733,6 +3023,7 @@ class Reservations extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> phone = GeneratedColumn<String>(
     'phone',
@@ -2740,6 +3031,7 @@ class Reservations extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> partySize = GeneratedColumn<int>(
     'party_size',
@@ -2747,14 +3039,16 @@ class Reservations extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 1',
     defaultValue: const CustomExpression('1'),
   );
-  late final GeneratedColumn<DateTime> expectedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> expectedAt = GeneratedColumn<int>(
     'expected_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
     'status',
@@ -2762,6 +3056,7 @@ class Reservations extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'pending\'',
     defaultValue: const CustomExpression('\'pending\''),
   );
   late final GeneratedColumn<String> zoneId = GeneratedColumn<String>(
@@ -2770,6 +3065,7 @@ class Reservations extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> tableId = GeneratedColumn<String>(
     'table_id',
@@ -2777,6 +3073,7 @@ class Reservations extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
     'notes',
@@ -2784,6 +3081,7 @@ class Reservations extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
     'member_id',
@@ -2791,27 +3089,31 @@ class Reservations extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
     'created_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
     'updated_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> seatedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> seatedAt = GeneratedColumn<int>(
     'seated_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -2845,6 +3147,11 @@ class Reservations extends Table with TableInfo {
   Reservations createAlias(String alias) {
     return Reservations(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Receipts extends Table with TableInfo {
@@ -2858,6 +3165,7 @@ class Receipts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> tableId = GeneratedColumn<String>(
     'table_id',
@@ -2865,6 +3173,7 @@ class Receipts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> visitId = GeneratedColumn<String>(
     'visit_id',
@@ -2872,6 +3181,7 @@ class Receipts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> mode = GeneratedColumn<String>(
     'mode',
@@ -2879,6 +3189,7 @@ class Receipts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'itemized\'',
     defaultValue: const CustomExpression('\'itemized\''),
   );
   late final GeneratedColumn<String> label = GeneratedColumn<String>(
@@ -2887,6 +3198,7 @@ class Receipts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<int> subtotal = GeneratedColumn<int>(
@@ -2895,6 +3207,7 @@ class Receipts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> discountAmount = GeneratedColumn<int>(
@@ -2903,6 +3216,7 @@ class Receipts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> serviceAmount = GeneratedColumn<int>(
@@ -2911,6 +3225,7 @@ class Receipts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> taxAmount = GeneratedColumn<int>(
@@ -2919,6 +3234,7 @@ class Receipts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> total = GeneratedColumn<int>(
@@ -2927,6 +3243,7 @@ class Receipts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
@@ -2935,14 +3252,16 @@ class Receipts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'unpaid\'',
     defaultValue: const CustomExpression('\'unpaid\''),
   );
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
     'created_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -2975,6 +3294,11 @@ class Receipts extends Table with TableInfo {
   Receipts createAlias(String alias) {
     return Receipts(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class ReceiptLines extends Table with TableInfo {
@@ -2988,6 +3312,7 @@ class ReceiptLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> receiptId = GeneratedColumn<String>(
     'receipt_id',
@@ -2995,6 +3320,7 @@ class ReceiptLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> ticketId = GeneratedColumn<String>(
     'ticket_id',
@@ -3002,6 +3328,7 @@ class ReceiptLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> qtyUnits = GeneratedColumn<int>(
     'qty_units',
@@ -3009,6 +3336,7 @@ class ReceiptLines extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 1',
     defaultValue: const CustomExpression('1'),
   );
   @override
@@ -3029,6 +3357,11 @@ class ReceiptLines extends Table with TableInfo {
   ReceiptLines createAlias(String alias) {
     return ReceiptLines(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Payments extends Table with TableInfo {
@@ -3042,6 +3375,7 @@ class Payments extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> receiptId = GeneratedColumn<String>(
     'receipt_id',
@@ -3049,6 +3383,7 @@ class Payments extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> method = GeneratedColumn<String>(
     'method',
@@ -3056,6 +3391,7 @@ class Payments extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> amount = GeneratedColumn<int>(
     'amount',
@@ -3063,16 +3399,15 @@ class Payments extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<bool> isRefund = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> isRefund = GeneratedColumn<int>(
     'is_refund',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_refund" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (is_refund IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> tenderedAmount = GeneratedColumn<int>(
@@ -3081,6 +3416,7 @@ class Payments extends Table with TableInfo {
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> cashierUserId = GeneratedColumn<String>(
     'cashier_user_id',
@@ -3088,6 +3424,7 @@ class Payments extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
     'note',
@@ -3095,13 +3432,15 @@ class Payments extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> at = GeneratedColumn<int>(
     'at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<i2.Uint8List> photo =
       GeneratedColumn<i2.Uint8List>(
@@ -3110,6 +3449,7 @@ class Payments extends Table with TableInfo {
         true,
         type: DriftSqlType.blob,
         requiredDuringInsert: false,
+        $customConstraints: 'NULL',
       );
   @override
   List<GeneratedColumn> get $columns => [
@@ -3140,6 +3480,11 @@ class Payments extends Table with TableInfo {
   Payments createAlias(String alias) {
     return Payments(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class TableSessionReceipts extends Table with TableInfo {
@@ -3153,6 +3498,7 @@ class TableSessionReceipts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
     'session_id',
@@ -3160,6 +3506,7 @@ class TableSessionReceipts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> receiptId = GeneratedColumn<String>(
     'receipt_id',
@@ -3167,6 +3514,7 @@ class TableSessionReceipts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> mode = GeneratedColumn<String>(
     'mode',
@@ -3174,6 +3522,7 @@ class TableSessionReceipts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'itemized\'',
     defaultValue: const CustomExpression('\'itemized\''),
   );
   late final GeneratedColumn<String> label = GeneratedColumn<String>(
@@ -3182,6 +3531,7 @@ class TableSessionReceipts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<int> subtotal = GeneratedColumn<int>(
@@ -3190,6 +3540,7 @@ class TableSessionReceipts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> discountAmount = GeneratedColumn<int>(
@@ -3198,6 +3549,7 @@ class TableSessionReceipts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> serviceAmount = GeneratedColumn<int>(
@@ -3206,6 +3558,7 @@ class TableSessionReceipts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> taxAmount = GeneratedColumn<int>(
@@ -3214,6 +3567,7 @@ class TableSessionReceipts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> total = GeneratedColumn<int>(
@@ -3222,6 +3576,7 @@ class TableSessionReceipts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
@@ -3230,6 +3585,7 @@ class TableSessionReceipts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'unpaid\'',
     defaultValue: const CustomExpression('\'unpaid\''),
   );
   @override
@@ -3262,6 +3618,11 @@ class TableSessionReceipts extends Table with TableInfo {
   TableSessionReceipts createAlias(String alias) {
     return TableSessionReceipts(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class TableSessionPayments extends Table with TableInfo {
@@ -3275,6 +3636,7 @@ class TableSessionPayments extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
     'session_id',
@@ -3282,6 +3644,7 @@ class TableSessionPayments extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> receiptId = GeneratedColumn<String>(
     'receipt_id',
@@ -3289,6 +3652,7 @@ class TableSessionPayments extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> method = GeneratedColumn<String>(
     'method',
@@ -3296,6 +3660,7 @@ class TableSessionPayments extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> amount = GeneratedColumn<int>(
     'amount',
@@ -3303,16 +3668,15 @@ class TableSessionPayments extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<bool> isRefund = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> isRefund = GeneratedColumn<int>(
     'is_refund',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_refund" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (is_refund IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> cashierUserId = GeneratedColumn<String>(
@@ -3321,13 +3685,15 @@ class TableSessionPayments extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> at = GeneratedColumn<int>(
     'at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<i2.Uint8List> photo =
       GeneratedColumn<i2.Uint8List>(
@@ -3336,6 +3702,7 @@ class TableSessionPayments extends Table with TableInfo {
         true,
         type: DriftSqlType.blob,
         requiredDuringInsert: false,
+        $customConstraints: 'NULL',
       );
   @override
   List<GeneratedColumn> get $columns => [
@@ -3365,6 +3732,11 @@ class TableSessionPayments extends Table with TableInfo {
   TableSessionPayments createAlias(String alias) {
     return TableSessionPayments(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class DiscountPresets extends Table with TableInfo {
@@ -3378,6 +3750,7 @@ class DiscountPresets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -3385,6 +3758,7 @@ class DiscountPresets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> scope = GeneratedColumn<String>(
     'scope',
@@ -3392,6 +3766,7 @@ class DiscountPresets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'order\'',
     defaultValue: const CustomExpression('\'order\''),
   );
   late final GeneratedColumn<String> kind = GeneratedColumn<String>(
@@ -3400,6 +3775,7 @@ class DiscountPresets extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'percent\'',
     defaultValue: const CustomExpression('\'percent\''),
   );
   late final GeneratedColumn<int> value = GeneratedColumn<int>(
@@ -3408,17 +3784,16 @@ class DiscountPresets extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
-  late final GeneratedColumn<bool> active = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> active = GeneratedColumn<int>(
     'active',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("active" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 1 CHECK (active IN (0, 1))',
     defaultValue: const CustomExpression('1'),
   );
   late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
@@ -3427,6 +3802,7 @@ class DiscountPresets extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   @override
@@ -3455,6 +3831,11 @@ class DiscountPresets extends Table with TableInfo {
   DiscountPresets createAlias(String alias) {
     return DiscountPresets(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Discounts extends Table with TableInfo {
@@ -3468,6 +3849,7 @@ class Discounts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> receiptId = GeneratedColumn<String>(
     'receipt_id',
@@ -3475,6 +3857,7 @@ class Discounts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> visitId = GeneratedColumn<String>(
     'visit_id',
@@ -3482,6 +3865,7 @@ class Discounts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> ticketId = GeneratedColumn<String>(
     'ticket_id',
@@ -3489,6 +3873,7 @@ class Discounts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> source = GeneratedColumn<String>(
     'source',
@@ -3496,6 +3881,7 @@ class Discounts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'manual\'',
     defaultValue: const CustomExpression('\'manual\''),
   );
   late final GeneratedColumn<String> presetId = GeneratedColumn<String>(
@@ -3504,6 +3890,7 @@ class Discounts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -3511,6 +3898,7 @@ class Discounts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> kind = GeneratedColumn<String>(
     'kind',
@@ -3518,6 +3906,7 @@ class Discounts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> value = GeneratedColumn<int>(
     'value',
@@ -3525,6 +3914,7 @@ class Discounts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> amount = GeneratedColumn<int>(
@@ -3533,6 +3923,7 @@ class Discounts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> byUserId = GeneratedColumn<String>(
@@ -3541,6 +3932,7 @@ class Discounts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> approvedByUserId = GeneratedColumn<String>(
     'approved_by_user_id',
@@ -3548,13 +3940,15 @@ class Discounts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> at = GeneratedColumn<int>(
     'at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -3588,6 +3982,11 @@ class Discounts extends Table with TableInfo {
   Discounts createAlias(String alias) {
     return Discounts(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class TableSessionDiscounts extends Table with TableInfo {
@@ -3601,6 +4000,7 @@ class TableSessionDiscounts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
     'session_id',
@@ -3608,6 +4008,7 @@ class TableSessionDiscounts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> receiptId = GeneratedColumn<String>(
     'receipt_id',
@@ -3615,6 +4016,7 @@ class TableSessionDiscounts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> ticketId = GeneratedColumn<String>(
     'ticket_id',
@@ -3622,6 +4024,7 @@ class TableSessionDiscounts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> presetId = GeneratedColumn<String>(
     'preset_id',
@@ -3629,6 +4032,7 @@ class TableSessionDiscounts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -3636,6 +4040,7 @@ class TableSessionDiscounts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> kind = GeneratedColumn<String>(
     'kind',
@@ -3643,6 +4048,7 @@ class TableSessionDiscounts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> value = GeneratedColumn<int>(
     'value',
@@ -3650,6 +4056,7 @@ class TableSessionDiscounts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> amount = GeneratedColumn<int>(
@@ -3658,6 +4065,7 @@ class TableSessionDiscounts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> source = GeneratedColumn<String>(
@@ -3666,6 +4074,7 @@ class TableSessionDiscounts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'manual\'',
     defaultValue: const CustomExpression('\'manual\''),
   );
   late final GeneratedColumn<String> byUserId = GeneratedColumn<String>(
@@ -3674,6 +4083,7 @@ class TableSessionDiscounts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> approvedByUserId = GeneratedColumn<String>(
     'approved_by_user_id',
@@ -3681,13 +4091,15 @@ class TableSessionDiscounts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> at = GeneratedColumn<int>(
     'at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -3721,6 +4133,11 @@ class TableSessionDiscounts extends Table with TableInfo {
   TableSessionDiscounts createAlias(String alias) {
     return TableSessionDiscounts(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class DailyCounters extends Table with TableInfo {
@@ -3734,6 +4151,7 @@ class DailyCounters extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> takeawayNext = GeneratedColumn<int>(
     'takeaway_next',
@@ -3741,6 +4159,7 @@ class DailyCounters extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 1',
     defaultValue: const CustomExpression('1'),
   );
   @override
@@ -3761,6 +4180,11 @@ class DailyCounters extends Table with TableInfo {
   DailyCounters createAlias(String alias) {
     return DailyCounters(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(date_str)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Ingredients extends Table with TableInfo {
@@ -3774,6 +4198,7 @@ class Ingredients extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -3781,6 +4206,7 @@ class Ingredients extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> unit = GeneratedColumn<String>(
     'unit',
@@ -3788,6 +4214,7 @@ class Ingredients extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> stockOnHand = GeneratedColumn<int>(
     'stock_on_hand',
@@ -3795,6 +4222,7 @@ class Ingredients extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> lowStockAt = GeneratedColumn<int>(
@@ -3803,6 +4231,7 @@ class Ingredients extends Table with TableInfo {
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> parLevel = GeneratedColumn<int>(
     'par_level',
@@ -3810,6 +4239,7 @@ class Ingredients extends Table with TableInfo {
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> costMicro = GeneratedColumn<int>(
     'cost_micro',
@@ -3817,6 +4247,7 @@ class Ingredients extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> batchYield = GeneratedColumn<int>(
@@ -3825,13 +4256,15 @@ class Ingredients extends Table with TableInfo {
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> archivedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> archivedAt = GeneratedColumn<int>(
     'archived_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -3861,6 +4294,11 @@ class Ingredients extends Table with TableInfo {
   Ingredients createAlias(String alias) {
     return Ingredients(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class RecipeLines extends Table with TableInfo {
@@ -3874,6 +4312,7 @@ class RecipeLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> ownerKind = GeneratedColumn<String>(
     'owner_kind',
@@ -3881,6 +4320,7 @@ class RecipeLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
     'owner_id',
@@ -3888,6 +4328,7 @@ class RecipeLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> variantId = GeneratedColumn<String>(
     'variant_id',
@@ -3895,6 +4336,7 @@ class RecipeLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> optionId = GeneratedColumn<String>(
@@ -3903,6 +4345,7 @@ class RecipeLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> ingredientId = GeneratedColumn<String>(
@@ -3911,6 +4354,7 @@ class RecipeLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> qty = GeneratedColumn<int>(
     'qty',
@@ -3918,6 +4362,7 @@ class RecipeLines extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -3945,6 +4390,11 @@ class RecipeLines extends Table with TableInfo {
   RecipeLines createAlias(String alias) {
     return RecipeLines(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class StockMovements extends Table with TableInfo {
@@ -3958,6 +4408,7 @@ class StockMovements extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> ingredientId = GeneratedColumn<String>(
     'ingredient_id',
@@ -3965,6 +4416,7 @@ class StockMovements extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> delta = GeneratedColumn<int>(
     'delta',
@@ -3972,6 +4424,7 @@ class StockMovements extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> reason = GeneratedColumn<String>(
     'reason',
@@ -3979,6 +4432,7 @@ class StockMovements extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> ticketId = GeneratedColumn<String>(
     'ticket_id',
@@ -3986,6 +4440,7 @@ class StockMovements extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> sourceLabel = GeneratedColumn<String>(
     'source_label',
@@ -3993,6 +4448,7 @@ class StockMovements extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> userId = GeneratedColumn<String>(
@@ -4001,6 +4457,7 @@ class StockMovements extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
     'note',
@@ -4008,6 +4465,7 @@ class StockMovements extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> costMicro = GeneratedColumn<int>(
     'cost_micro',
@@ -4015,6 +4473,7 @@ class StockMovements extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> batchId = GeneratedColumn<String>(
@@ -4023,6 +4482,7 @@ class StockMovements extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> countId = GeneratedColumn<String>(
     'count_id',
@@ -4030,13 +4490,15 @@ class StockMovements extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> at = GeneratedColumn<int>(
     'at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -4069,6 +4531,11 @@ class StockMovements extends Table with TableInfo {
   StockMovements createAlias(String alias) {
     return StockMovements(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class StockCounts extends Table with TableInfo {
@@ -4082,6 +4549,7 @@ class StockCounts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> userId = GeneratedColumn<String>(
     'user_id',
@@ -4089,6 +4557,7 @@ class StockCounts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> closedBy = GeneratedColumn<String>(
     'closed_by',
@@ -4096,6 +4565,7 @@ class StockCounts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> scope = GeneratedColumn<String>(
     'scope',
@@ -4103,17 +4573,16 @@ class StockCounts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'partial\'',
     defaultValue: const CustomExpression('\'partial\''),
   );
-  late final GeneratedColumn<bool> blind = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> blind = GeneratedColumn<int>(
     'blind',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("blind" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 1 CHECK (blind IN (0, 1))',
     defaultValue: const CustomExpression('1'),
   );
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
@@ -4122,20 +4591,23 @@ class StockCounts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> startedAt = GeneratedColumn<int>(
     'started_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> closedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> closedAt = GeneratedColumn<int>(
     'closed_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -4164,6 +4636,11 @@ class StockCounts extends Table with TableInfo {
   StockCounts createAlias(String alias) {
     return StockCounts(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class StockCountLines extends Table with TableInfo {
@@ -4177,6 +4654,7 @@ class StockCountLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> countId = GeneratedColumn<String>(
     'count_id',
@@ -4184,6 +4662,7 @@ class StockCountLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> ingredientId = GeneratedColumn<String>(
     'ingredient_id',
@@ -4191,6 +4670,7 @@ class StockCountLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> expectedQty = GeneratedColumn<int>(
     'expected_qty',
@@ -4198,6 +4678,7 @@ class StockCountLines extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> countedQty = GeneratedColumn<int>(
     'counted_qty',
@@ -4205,6 +4686,7 @@ class StockCountLines extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> costMicro = GeneratedColumn<int>(
     'cost_micro',
@@ -4212,6 +4694,7 @@ class StockCountLines extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
@@ -4220,13 +4703,15 @@ class StockCountLines extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> at = GeneratedColumn<int>(
     'at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -4255,6 +4740,11 @@ class StockCountLines extends Table with TableInfo {
   StockCountLines createAlias(String alias) {
     return StockCountLines(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class CashEntries extends Table with TableInfo {
@@ -4268,6 +4758,7 @@ class CashEntries extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> kind = GeneratedColumn<String>(
     'kind',
@@ -4275,6 +4766,7 @@ class CashEntries extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> delta = GeneratedColumn<int>(
     'delta',
@@ -4282,6 +4774,7 @@ class CashEntries extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> category = GeneratedColumn<String>(
     'category',
@@ -4289,6 +4782,7 @@ class CashEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
     'note',
@@ -4296,6 +4790,7 @@ class CashEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> reversesId = GeneratedColumn<String>(
     'reverses_id',
@@ -4303,6 +4798,7 @@ class CashEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> reversedById = GeneratedColumn<String>(
     'reversed_by_id',
@@ -4310,6 +4806,7 @@ class CashEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> countedAmount = GeneratedColumn<int>(
     'counted_amount',
@@ -4317,6 +4814,7 @@ class CashEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<i2.Uint8List> photo =
       GeneratedColumn<i2.Uint8List>(
@@ -4325,6 +4823,7 @@ class CashEntries extends Table with TableInfo {
         true,
         type: DriftSqlType.blob,
         requiredDuringInsert: false,
+        $customConstraints: 'NULL',
       );
   late final GeneratedColumn<String> actorUserId = GeneratedColumn<String>(
     'actor_user_id',
@@ -4332,6 +4831,7 @@ class CashEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> actorName = GeneratedColumn<String>(
     'actor_name',
@@ -4339,13 +4839,15 @@ class CashEntries extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> at = GeneratedColumn<int>(
     'at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -4378,6 +4880,11 @@ class CashEntries extends Table with TableInfo {
   CashEntries createAlias(String alias) {
     return CashEntries(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Members extends Table with TableInfo {
@@ -4391,6 +4898,7 @@ class Members extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -4398,6 +4906,7 @@ class Members extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> phone = GeneratedColumn<String>(
     'phone',
@@ -4405,6 +4914,7 @@ class Members extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> code = GeneratedColumn<String>(
     'code',
@@ -4412,6 +4922,7 @@ class Members extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
@@ -4420,20 +4931,23 @@ class Members extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> birthday = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> birthday = GeneratedColumn<int>(
     'birthday',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> joinedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> joinedAt = GeneratedColumn<int>(
     'joined_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> debtLimit = GeneratedColumn<int>(
     'debt_limit',
@@ -4441,6 +4955,7 @@ class Members extends Table with TableInfo {
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -4469,6 +4984,11 @@ class Members extends Table with TableInfo {
   Members createAlias(String alias) {
     return Members(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class MemberPoints extends Table with TableInfo {
@@ -4482,6 +5002,7 @@ class MemberPoints extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
     'member_id',
@@ -4489,6 +5010,7 @@ class MemberPoints extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> kind = GeneratedColumn<String>(
     'kind',
@@ -4496,6 +5018,7 @@ class MemberPoints extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> delta = GeneratedColumn<int>(
     'delta',
@@ -4503,6 +5026,7 @@ class MemberPoints extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> visitId = GeneratedColumn<String>(
     'visit_id',
@@ -4510,6 +5034,7 @@ class MemberPoints extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> baseAmount = GeneratedColumn<int>(
     'base_amount',
@@ -4517,6 +5042,7 @@ class MemberPoints extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
@@ -4525,6 +5051,7 @@ class MemberPoints extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> actorUserId = GeneratedColumn<String>(
     'actor_user_id',
@@ -4532,6 +5059,7 @@ class MemberPoints extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> actorName = GeneratedColumn<String>(
     'actor_name',
@@ -4539,13 +5067,15 @@ class MemberPoints extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> at = GeneratedColumn<int>(
     'at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -4576,6 +5106,11 @@ class MemberPoints extends Table with TableInfo {
   MemberPoints createAlias(String alias) {
     return MemberPoints(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class MemberDebts extends Table with TableInfo {
@@ -4589,6 +5124,7 @@ class MemberDebts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
     'member_id',
@@ -4596,6 +5132,7 @@ class MemberDebts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> kind = GeneratedColumn<String>(
     'kind',
@@ -4603,6 +5140,7 @@ class MemberDebts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<int> delta = GeneratedColumn<int>(
     'delta',
@@ -4610,6 +5148,7 @@ class MemberDebts extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> paymentId = GeneratedColumn<String>(
     'payment_id',
@@ -4617,6 +5156,7 @@ class MemberDebts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> visitId = GeneratedColumn<String>(
     'visit_id',
@@ -4624,6 +5164,7 @@ class MemberDebts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> billLabel = GeneratedColumn<String>(
     'bill_label',
@@ -4631,6 +5172,7 @@ class MemberDebts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> method = GeneratedColumn<String>(
@@ -4639,6 +5181,7 @@ class MemberDebts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
     'note',
@@ -4646,6 +5189,7 @@ class MemberDebts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<i2.Uint8List> photo =
       GeneratedColumn<i2.Uint8List>(
@@ -4654,6 +5198,7 @@ class MemberDebts extends Table with TableInfo {
         true,
         type: DriftSqlType.blob,
         requiredDuringInsert: false,
+        $customConstraints: 'NULL',
       );
   late final GeneratedColumn<String> actorUserId = GeneratedColumn<String>(
     'actor_user_id',
@@ -4661,6 +5206,7 @@ class MemberDebts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> actorName = GeneratedColumn<String>(
     'actor_name',
@@ -4668,13 +5214,15 @@ class MemberDebts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> at = GeneratedColumn<int>(
     'at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -4708,6 +5256,11 @@ class MemberDebts extends Table with TableInfo {
   MemberDebts createAlias(String alias) {
     return MemberDebts(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class Shifts extends Table with TableInfo {
@@ -4721,6 +5274,7 @@ class Shifts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> userId = GeneratedColumn<String>(
     'user_id',
@@ -4728,20 +5282,23 @@ class Shifts extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> startedAt = GeneratedColumn<int>(
     'started_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> endedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> endedAt = GeneratedColumn<int>(
     'ended_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> endedBy = GeneratedColumn<String>(
     'ended_by',
@@ -4749,15 +5306,16 @@ class Shifts extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
-  late final GeneratedColumn<DateTime> lastActivityAt =
-      GeneratedColumn<DateTime>(
-        'last_activity_at',
-        aliasedName,
-        true,
-        type: DriftSqlType.dateTime,
-        requiredDuringInsert: false,
-      );
+  late final GeneratedColumn<int> lastActivityAt = GeneratedColumn<int>(
+    'last_activity_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -4783,6 +5341,11 @@ class Shifts extends Table with TableInfo {
   Shifts createAlias(String alias) {
     return Shifts(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class DemoStates extends Table with TableInfo {
@@ -4796,17 +5359,16 @@ class DemoStates extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'default\'',
     defaultValue: const CustomExpression('\'default\''),
   );
-  late final GeneratedColumn<bool> complete = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> complete = GeneratedColumn<int>(
     'complete',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("complete" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (complete IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> daysDone = GeneratedColumn<int>(
@@ -4815,6 +5377,7 @@ class DemoStates extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   late final GeneratedColumn<int> daysTotal = GeneratedColumn<int>(
@@ -4823,17 +5386,25 @@ class DemoStates extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
-  late final GeneratedColumn<bool> promptAnswered = GeneratedColumn<bool>(
+  late final GeneratedColumn<int> promptAnswered = GeneratedColumn<int>(
     'prompt_answered',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("prompt_answered" IN (0, 1))',
-    ),
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (prompt_answered IN (0, 1))',
+    defaultValue: const CustomExpression('0'),
+  );
+  late final GeneratedColumn<int> failed = GeneratedColumn<int>(
+    'failed',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (failed IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
   @override
@@ -4843,6 +5414,7 @@ class DemoStates extends Table with TableInfo {
     daysDone,
     daysTotal,
     promptAnswered,
+    failed,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4860,6 +5432,11 @@ class DemoStates extends Table with TableInfo {
   DemoStates createAlias(String alias) {
     return DemoStates(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class GuestSessions extends Table with TableInfo {
@@ -4873,6 +5450,7 @@ class GuestSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> tableId = GeneratedColumn<String>(
     'table_id',
@@ -4880,27 +5458,31 @@ class GuestSessions extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> startedAt = GeneratedColumn<int>(
     'started_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> expiresAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> expiresAt = GeneratedColumn<int>(
     'expires_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> closedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> closedAt = GeneratedColumn<int>(
     'closed_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -4926,6 +5508,11 @@ class GuestSessions extends Table with TableInfo {
   GuestSessions createAlias(String alias) {
     return GuestSessions(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class GuestOrders extends Table with TableInfo {
@@ -4939,6 +5526,7 @@ class GuestOrders extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
     'session_id',
@@ -4946,6 +5534,7 @@ class GuestOrders extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> tableId = GeneratedColumn<String>(
     'table_id',
@@ -4953,6 +5542,7 @@ class GuestOrders extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
     'status',
@@ -4960,21 +5550,24 @@ class GuestOrders extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'pending\'',
     defaultValue: const CustomExpression('\'pending\''),
   );
-  late final GeneratedColumn<DateTime> submittedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> submittedAt = GeneratedColumn<int>(
     'submitted_at',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<DateTime> decidedAt = GeneratedColumn<DateTime>(
+  late final GeneratedColumn<int> decidedAt = GeneratedColumn<int>(
     'decided_at',
     aliasedName,
     true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> decidedByUserId = GeneratedColumn<String>(
     'decided_by_user_id',
@@ -4982,6 +5575,7 @@ class GuestOrders extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> rejectReasonCode = GeneratedColumn<String>(
     'reject_reason_code',
@@ -4989,6 +5583,7 @@ class GuestOrders extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> visitId = GeneratedColumn<String>(
     'visit_id',
@@ -4996,6 +5591,7 @@ class GuestOrders extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<String> ticketIdsJson = GeneratedColumn<String>(
     'ticket_ids_json',
@@ -5003,6 +5599,7 @@ class GuestOrders extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'[]\'',
     defaultValue: const CustomExpression('\'[]\''),
   );
   late final GeneratedColumn<int> subtotal = GeneratedColumn<int>(
@@ -5011,6 +5608,7 @@ class GuestOrders extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
     defaultValue: const CustomExpression('0'),
   );
   @override
@@ -5043,6 +5641,11 @@ class GuestOrders extends Table with TableInfo {
   GuestOrders createAlias(String alias) {
     return GuestOrders(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
 class GuestOrderLines extends Table with TableInfo {
@@ -5056,6 +5659,7 @@ class GuestOrderLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> orderId = GeneratedColumn<String>(
     'order_id',
@@ -5063,6 +5667,7 @@ class GuestOrderLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
     'item_id',
@@ -5070,6 +5675,7 @@ class GuestOrderLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
@@ -5077,6 +5683,7 @@ class GuestOrderLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   late final GeneratedColumn<String> variantName = GeneratedColumn<String>(
     'variant_name',
@@ -5084,6 +5691,7 @@ class GuestOrderLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
     defaultValue: const CustomExpression('\'\''),
   );
   late final GeneratedColumn<String> course = GeneratedColumn<String>(
@@ -5092,6 +5700,7 @@ class GuestOrderLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'mains\'',
     defaultValue: const CustomExpression('\'mains\''),
   );
   late final GeneratedColumn<int> qty = GeneratedColumn<int>(
@@ -5100,6 +5709,7 @@ class GuestOrderLines extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 1',
     defaultValue: const CustomExpression('1'),
   );
   late final GeneratedColumn<String> modifiersJson = GeneratedColumn<String>(
@@ -5108,6 +5718,7 @@ class GuestOrderLines extends Table with TableInfo {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'[]\'',
     defaultValue: const CustomExpression('\'[]\''),
   );
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
@@ -5116,6 +5727,7 @@ class GuestOrderLines extends Table with TableInfo {
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    $customConstraints: 'NULL',
   );
   late final GeneratedColumn<int> unitPrice = GeneratedColumn<int>(
     'unit_price',
@@ -5123,6 +5735,7 @@ class GuestOrderLines extends Table with TableInfo {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -5153,10 +5766,15 @@ class GuestOrderLines extends Table with TableInfo {
   GuestOrderLines createAlias(String alias) {
     return GuestOrderLines(attachedDatabase, alias);
   }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
 }
 
-class DatabaseAtV63 extends GeneratedDatabase {
-  DatabaseAtV63(QueryExecutor e) : super(e);
+class DatabaseAtV64 extends GeneratedDatabase {
+  DatabaseAtV64(QueryExecutor e) : super(e);
   late final Users users = Users(this);
   late final Roles roles = Roles(this);
   late final Zones zones = Zones(this);
@@ -5257,5 +5875,5 @@ class DatabaseAtV63 extends GeneratedDatabase {
     guestOrderLines,
   ];
   @override
-  int get schemaVersion => 63;
+  int get schemaVersion => 64;
 }

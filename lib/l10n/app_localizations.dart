@@ -1453,6 +1453,12 @@ abstract class AppL10n {
   /// **'Pemuatan contoh data gagal. Data yang sempat masuk tidak utuh — hapus dulu sebelum mencoba lagi.'**
   String get venueHubSeedBodyFailed;
 
+  /// No description provided for @venueHubSeedBodyTraded.
+  ///
+  /// In id, this message translates to:
+  /// **'Venue ini sudah punya riwayat pesanan asli. Contoh data tidak bisa dimuat lagi — hapus sisa contoh data yang ada, lalu lewati.'**
+  String get venueHubSeedBodyTraded;
+
   /// No description provided for @venueHubSeedBodyLoaded.
   ///
   /// In id, this message translates to:

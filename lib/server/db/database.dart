@@ -78,7 +78,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 63;
+  int get schemaVersion => 64;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -1298,6 +1298,20 @@ class AppDatabase extends _$AppDatabase {
         // The rebuild drops the indexes that hung off venue_tables.
         await _createGuestIndexes();
         await _createLookupIndexes();
+      }
+      if (from < 64 && to >= 64) {
+        // `demo_states.failed` — the seed job's verdict, persisted so it
+        // survives a restart (ADR-0073 addendum). Rebuilt rather than
+        // `_safeAddColumnOn`'d for the v63 reason: that helper takes a raw
+        // type string, and a boolean added as a bare `INTEGER NOT NULL
+        // DEFAULT 0` lacks the `CHECK ("failed" IN (0, 1))` a fresh install
+        // gets — the exact schema divergence the migration test refuses.
+        // One row, no indexes, and every existing column copies across by
+        // name, so the rebuild is the cheap way to be provably identical.
+        // ignore: experimental_member_use
+        await m.alterTable(
+          TableMigration(demoStates, newColumns: [demoStates.failed]),
+        );
       }
     },
     onCreate: (m) async {

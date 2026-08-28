@@ -150,6 +150,10 @@ class GenericSeedController extends StateNotifier<GenericSeedState> {
         hasSampleData: res['hasSampleData'] == true,
         seedIncomplete: res['seedIncomplete'] == true,
         promptAnswered: res['promptAnswered'] == true,
+        // Read from the host, not carried over from `onProgress`: the live
+        // broadcast is gone after a restart, and a crashed job that reads as
+        // merely interrupted is the wrong sentence on the right dialog.
+        failed: res['failed'] == true,
         daysDone: (res['daysDone'] as num?)?.toInt() ?? 0,
         daysTotal: (res['daysTotal'] as num?)?.toInt() ?? 0,
       );

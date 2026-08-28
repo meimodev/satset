@@ -813,6 +813,10 @@ class AppL10nId extends AppL10n {
       'Pemuatan contoh data gagal. Data yang sempat masuk tidak utuh — hapus dulu sebelum mencoba lagi.';
 
   @override
+  String get venueHubSeedBodyTraded =>
+      'Venue ini sudah punya riwayat pesanan asli. Contoh data tidak bisa dimuat lagi — hapus sisa contoh data yang ada, lalu lewati.';
+
+  @override
   String get venueHubSeedBodyLoaded =>
       'Venue ini memakai contoh data. Hapus untuk membuang riwayat penjualan buatan; zona, meja, menu dan staf tetap ada.';
 

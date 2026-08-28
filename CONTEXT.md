@@ -640,14 +640,25 @@ The **blocking dialog** an empty venue meets on the Venue Hub: *Muat contoh data
 
 It is answered on **completion or on skip, never on tap**. A job takes minutes and cannot be resumed, so a host that is backgrounded or reclaimed mid-run leaves the question genuinely unanswered: the dialog returns on the next boot, sees the incomplete marker, and offers **Hapus & muat ulang**. Progress lives inside the same dialog — a bar, `hari 12/30`, and the instruction to keep the app open — because leaving is what kills the job.
 
+Declining a **broken** job — [[Interrupted seed · Failed seed|terhenti or gagal]] — clears before it skips. Declining sample data must never leave sample data behind: a partial month left standing reads as real trade in the reports, and has already cost the venue its eligibility to seed.
+
 Because skipping is permanent, **Admin → Sistem carries the same dialog as a permanent action**. Without it one tap would put the sample data out of reach forever. _Avoid_: an escapable prompt; writing the answer when the job starts; a Venue Hub banner carrying progress in parallel; expecting a client-mode device to see it (the hub is server mode — seeding is a host act).
+
+### Interrupted seed · Failed seed
+**ID · EN** — Terhenti · Interrupted; Gagal · Failed. Two words, two states — a job the venue *walked away from* and a job that *broke*. Neither is "error"; the venue is never told a job merely "did not work".
+
+A seed that never reached its last day, in the two ways that happens. **Interrupted** is the host being backgrounded, reclaimed or force-quit mid-run — nobody's fault, nothing threw. **Failed** is the job itself breaking. Both leave the same wreckage (a partial month standing, the question unanswered) and both take the same recovery, so the distinction buys exactly one thing: an honest sentence. A venue told "gagal" when it was merely closed early will hunt for a bug that is not there.
+
+The pair is a **property of the venue, not of a running app** — a failed job that is only remembered while the process lives becomes an interrupted one the moment the app relaunches, which is the wrong word surviving longer than the right one. _Avoid_: collapsing them into one "error" state; treating either as a venue that holds no sample data (it holds a partial month, which is worse than none).
 
 ### Seed clear (Hapus contoh data)
 **ID · EN** — Hapus contoh data · Clear sample data. _Not_ "Reset" or "Wipe" in either language — it deletes the fabricated month only, and the menu stays standing.
 
 Deleting the fabricated month and **nothing else**: the invented bills, tickets, sesi meja, receipts, payments, stock movements and audit rows go; zones, tables, menu, staff and bahan stay standing. What an owner actually wants — keep the menu, lose the fake sales — and a zone or an item they do not want, they delete by hand.
 
-Deletes strictly **by tag**, never by truncating a table, so an order the venue took for real after seeding survives it. Stock balances are recomputed from the surviving ledger rather than patched, because a balance that no longer equals the sum of its movements is the exact breakage ADR-0041 exists to prevent. A cleared venue passes the guard again and can be re-seeded. _Avoid_: using "clear" to mean wiping the DB; expecting it to remove the zones and menu too.
+Deletes strictly **by tag**, never by truncating a table, so an order the venue took for real after seeding survives it. Stock balances are recomputed from the surviving ledger rather than patched, because a balance that no longer equals the sum of its movements is the exact breakage ADR-0041 exists to prevent.
+
+A venue that holds **only** fabricated rows passes the guard again after a clear and can be re-seeded. A venue that has **traded for real** does not, and never will: the guard trips on rows carrying no tag, which is precisely what the clear cannot reach. That is a one-way door by design, not a gap — the [[Seed prompt (mandatory first run)|prompt]] says so rather than offering a reload that can only refuse. _Avoid_: using "clear" to mean wiping the DB; expecting it to remove the zones and menu too; describing it as an undo that restores the venue's eligibility to seed.
 
 ### Struk (cetak struk meja)
 **ID · EN** — Cetak struk meja · Print order slip. The document is an **order slip**, never a "receipt" — it carries no money. "verifikasi pesanan" · "check your order".

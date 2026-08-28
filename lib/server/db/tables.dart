@@ -1488,6 +1488,13 @@ class DemoStates extends Table {
   BoolColumn get promptAnswered =>
       boolean().withDefault(const Constant(false))();
 
+  /// The last job ended in an **error**, not an interruption. Persisted so the
+  /// verdict survives a restart: without it the only carrier is the live
+  /// `seed.progress` broadcast, and a relaunched app reads a crashed job as
+  /// merely interrupted. Reset by [SeedJob.begin], [SeedJob.clear] and
+  /// [SeedJob.markComplete] — a new attempt never inherits the old verdict.
+  BoolColumn get failed => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {id};
 }

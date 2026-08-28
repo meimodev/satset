@@ -819,6 +819,10 @@ class AppL10nEn extends AppL10n {
       'Loading sample data failed. What made it in is incomplete — clear it before trying again.';
 
   @override
+  String get venueHubSeedBodyTraded =>
+      'This venue already has real order history. Sample data cannot be loaded again — clear what is left of it, then skip.';
+
+  @override
   String get venueHubSeedBodyLoaded =>
       'This venue is running on sample data. Clear it to drop the invented sales history; zones, tables, menu and staff stay.';
 

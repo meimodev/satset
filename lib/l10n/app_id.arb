@@ -348,6 +348,7 @@
   "venueHubSeedBodyDone": "Contoh data siap. Laporan, catatan audit dan riwayat stok sudah terisi.",
   "venueHubSeedBodyIncomplete": "Pemuatan contoh data terhenti sebelum selesai. Data yang ada tidak utuh — hapus dulu sebelum memuat ulang.",
   "venueHubSeedBodyFailed": "Pemuatan contoh data gagal. Data yang sempat masuk tidak utuh — hapus dulu sebelum mencoba lagi.",
+  "venueHubSeedBodyTraded": "Venue ini sudah punya riwayat pesanan asli. Contoh data tidak bisa dimuat lagi — hapus sisa contoh data yang ada, lalu lewati.",
   "venueHubSeedBodyLoaded": "Venue ini memakai contoh data. Hapus untuk membuang riwayat penjualan buatan; zona, meja, menu dan staf tetap ada.",
   "venueHubSeedBtnLoad": "Muat contoh data",
   "venueHubSeedBtnSkip": "Lewati",

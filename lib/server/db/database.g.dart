@@ -27266,6 +27266,19 @@ class $DemoStatesTable extends DemoStates
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _failedMeta = const VerificationMeta('failed');
+  @override
+  late final GeneratedColumn<bool> failed = GeneratedColumn<bool>(
+    'failed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("failed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -27273,6 +27286,7 @@ class $DemoStatesTable extends DemoStates
     daysDone,
     daysTotal,
     promptAnswered,
+    failed,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -27316,6 +27330,12 @@ class $DemoStatesTable extends DemoStates
         ),
       );
     }
+    if (data.containsKey('failed')) {
+      context.handle(
+        _failedMeta,
+        failed.isAcceptableOrUnknown(data['failed']!, _failedMeta),
+      );
+    }
     return context;
   }
 
@@ -27345,6 +27365,10 @@ class $DemoStatesTable extends DemoStates
         DriftSqlType.bool,
         data['${effectivePrefix}prompt_answered'],
       )!,
+      failed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}failed'],
+      )!,
     );
   }
 
@@ -27373,12 +27397,20 @@ class DemoState extends DataClass implements Insertable<DemoState> {
   /// interrupted job means the question went unanswered, so the prompt fires
   /// again and offers to clear the partial data (ADR-0073).
   final bool promptAnswered;
+
+  /// The last job ended in an **error**, not an interruption. Persisted so the
+  /// verdict survives a restart: without it the only carrier is the live
+  /// `seed.progress` broadcast, and a relaunched app reads a crashed job as
+  /// merely interrupted. Reset by [SeedJob.begin], [SeedJob.clear] and
+  /// [SeedJob.markComplete] — a new attempt never inherits the old verdict.
+  final bool failed;
   const DemoState({
     required this.id,
     required this.complete,
     required this.daysDone,
     required this.daysTotal,
     required this.promptAnswered,
+    required this.failed,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -27388,6 +27420,7 @@ class DemoState extends DataClass implements Insertable<DemoState> {
     map['days_done'] = Variable<int>(daysDone);
     map['days_total'] = Variable<int>(daysTotal);
     map['prompt_answered'] = Variable<bool>(promptAnswered);
+    map['failed'] = Variable<bool>(failed);
     return map;
   }
 
@@ -27398,6 +27431,7 @@ class DemoState extends DataClass implements Insertable<DemoState> {
       daysDone: Value(daysDone),
       daysTotal: Value(daysTotal),
       promptAnswered: Value(promptAnswered),
+      failed: Value(failed),
     );
   }
 
@@ -27412,6 +27446,7 @@ class DemoState extends DataClass implements Insertable<DemoState> {
       daysDone: serializer.fromJson<int>(json['daysDone']),
       daysTotal: serializer.fromJson<int>(json['daysTotal']),
       promptAnswered: serializer.fromJson<bool>(json['promptAnswered']),
+      failed: serializer.fromJson<bool>(json['failed']),
     );
   }
   @override
@@ -27423,6 +27458,7 @@ class DemoState extends DataClass implements Insertable<DemoState> {
       'daysDone': serializer.toJson<int>(daysDone),
       'daysTotal': serializer.toJson<int>(daysTotal),
       'promptAnswered': serializer.toJson<bool>(promptAnswered),
+      'failed': serializer.toJson<bool>(failed),
     };
   }
 
@@ -27432,12 +27468,14 @@ class DemoState extends DataClass implements Insertable<DemoState> {
     int? daysDone,
     int? daysTotal,
     bool? promptAnswered,
+    bool? failed,
   }) => DemoState(
     id: id ?? this.id,
     complete: complete ?? this.complete,
     daysDone: daysDone ?? this.daysDone,
     daysTotal: daysTotal ?? this.daysTotal,
     promptAnswered: promptAnswered ?? this.promptAnswered,
+    failed: failed ?? this.failed,
   );
   DemoState copyWithCompanion(DemoStatesCompanion data) {
     return DemoState(
@@ -27448,6 +27486,7 @@ class DemoState extends DataClass implements Insertable<DemoState> {
       promptAnswered: data.promptAnswered.present
           ? data.promptAnswered.value
           : this.promptAnswered,
+      failed: data.failed.present ? data.failed.value : this.failed,
     );
   }
 
@@ -27458,14 +27497,15 @@ class DemoState extends DataClass implements Insertable<DemoState> {
           ..write('complete: $complete, ')
           ..write('daysDone: $daysDone, ')
           ..write('daysTotal: $daysTotal, ')
-          ..write('promptAnswered: $promptAnswered')
+          ..write('promptAnswered: $promptAnswered, ')
+          ..write('failed: $failed')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, complete, daysDone, daysTotal, promptAnswered);
+      Object.hash(id, complete, daysDone, daysTotal, promptAnswered, failed);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -27474,7 +27514,8 @@ class DemoState extends DataClass implements Insertable<DemoState> {
           other.complete == this.complete &&
           other.daysDone == this.daysDone &&
           other.daysTotal == this.daysTotal &&
-          other.promptAnswered == this.promptAnswered);
+          other.promptAnswered == this.promptAnswered &&
+          other.failed == this.failed);
 }
 
 class DemoStatesCompanion extends UpdateCompanion<DemoState> {
@@ -27483,6 +27524,7 @@ class DemoStatesCompanion extends UpdateCompanion<DemoState> {
   final Value<int> daysDone;
   final Value<int> daysTotal;
   final Value<bool> promptAnswered;
+  final Value<bool> failed;
   final Value<int> rowid;
   const DemoStatesCompanion({
     this.id = const Value.absent(),
@@ -27490,6 +27532,7 @@ class DemoStatesCompanion extends UpdateCompanion<DemoState> {
     this.daysDone = const Value.absent(),
     this.daysTotal = const Value.absent(),
     this.promptAnswered = const Value.absent(),
+    this.failed = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DemoStatesCompanion.insert({
@@ -27498,6 +27541,7 @@ class DemoStatesCompanion extends UpdateCompanion<DemoState> {
     this.daysDone = const Value.absent(),
     this.daysTotal = const Value.absent(),
     this.promptAnswered = const Value.absent(),
+    this.failed = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   static Insertable<DemoState> custom({
@@ -27506,6 +27550,7 @@ class DemoStatesCompanion extends UpdateCompanion<DemoState> {
     Expression<int>? daysDone,
     Expression<int>? daysTotal,
     Expression<bool>? promptAnswered,
+    Expression<bool>? failed,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -27514,6 +27559,7 @@ class DemoStatesCompanion extends UpdateCompanion<DemoState> {
       if (daysDone != null) 'days_done': daysDone,
       if (daysTotal != null) 'days_total': daysTotal,
       if (promptAnswered != null) 'prompt_answered': promptAnswered,
+      if (failed != null) 'failed': failed,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -27524,6 +27570,7 @@ class DemoStatesCompanion extends UpdateCompanion<DemoState> {
     Value<int>? daysDone,
     Value<int>? daysTotal,
     Value<bool>? promptAnswered,
+    Value<bool>? failed,
     Value<int>? rowid,
   }) {
     return DemoStatesCompanion(
@@ -27532,6 +27579,7 @@ class DemoStatesCompanion extends UpdateCompanion<DemoState> {
       daysDone: daysDone ?? this.daysDone,
       daysTotal: daysTotal ?? this.daysTotal,
       promptAnswered: promptAnswered ?? this.promptAnswered,
+      failed: failed ?? this.failed,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -27554,6 +27602,9 @@ class DemoStatesCompanion extends UpdateCompanion<DemoState> {
     if (promptAnswered.present) {
       map['prompt_answered'] = Variable<bool>(promptAnswered.value);
     }
+    if (failed.present) {
+      map['failed'] = Variable<bool>(failed.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -27568,6 +27619,7 @@ class DemoStatesCompanion extends UpdateCompanion<DemoState> {
           ..write('daysDone: $daysDone, ')
           ..write('daysTotal: $daysTotal, ')
           ..write('promptAnswered: $promptAnswered, ')
+          ..write('failed: $failed, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -42107,6 +42159,7 @@ typedef $$DemoStatesTableCreateCompanionBuilder =
       Value<int> daysDone,
       Value<int> daysTotal,
       Value<bool> promptAnswered,
+      Value<bool> failed,
       Value<int> rowid,
     });
 typedef $$DemoStatesTableUpdateCompanionBuilder =
@@ -42116,6 +42169,7 @@ typedef $$DemoStatesTableUpdateCompanionBuilder =
       Value<int> daysDone,
       Value<int> daysTotal,
       Value<bool> promptAnswered,
+      Value<bool> failed,
       Value<int> rowid,
     });
 
@@ -42150,6 +42204,11 @@ class $$DemoStatesTableFilterComposer
 
   ColumnFilters<bool> get promptAnswered => $composableBuilder(
     column: $table.promptAnswered,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get failed => $composableBuilder(
+    column: $table.failed,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -42187,6 +42246,11 @@ class $$DemoStatesTableOrderingComposer
     column: $table.promptAnswered,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get failed => $composableBuilder(
+    column: $table.failed,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DemoStatesTableAnnotationComposer
@@ -42214,6 +42278,9 @@ class $$DemoStatesTableAnnotationComposer
     column: $table.promptAnswered,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get failed =>
+      $composableBuilder(column: $table.failed, builder: (column) => column);
 }
 
 class $$DemoStatesTableTableManager
@@ -42252,6 +42319,7 @@ class $$DemoStatesTableTableManager
                 Value<int> daysDone = const Value.absent(),
                 Value<int> daysTotal = const Value.absent(),
                 Value<bool> promptAnswered = const Value.absent(),
+                Value<bool> failed = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DemoStatesCompanion(
                 id: id,
@@ -42259,6 +42327,7 @@ class $$DemoStatesTableTableManager
                 daysDone: daysDone,
                 daysTotal: daysTotal,
                 promptAnswered: promptAnswered,
+                failed: failed,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -42268,6 +42337,7 @@ class $$DemoStatesTableTableManager
                 Value<int> daysDone = const Value.absent(),
                 Value<int> daysTotal = const Value.absent(),
                 Value<bool> promptAnswered = const Value.absent(),
+                Value<bool> failed = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DemoStatesCompanion.insert(
                 id: id,
@@ -42275,6 +42345,7 @@ class $$DemoStatesTableTableManager
                 daysDone: daysDone,
                 daysTotal: daysTotal,
                 promptAnswered: promptAnswered,
+                failed: failed,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

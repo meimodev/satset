@@ -56,6 +56,8 @@ class _SeedDataDialogState extends ConsumerState<_SeedDataDialog> {
 
     final phase = st.phase;
     final running = st.seeding;
+    final broken =
+        phase == SeedPromptPhase.incomplete || phase == SeedPromptPhase.failed;
 
     return PopScope(
       // The Android back button is the last way out of a "mandatory" dialog.
@@ -74,6 +76,13 @@ class _SeedDataDialogState extends ConsumerState<_SeedDataDialog> {
                   switch (true) {
                     _ when _finished => context.l10n.venueHubSeedBodyDone,
                     _ when running => context.l10n.venueHubSeedBodyRunning,
+                    // Outranks both broken arms: "clear and retry" is a lie on
+                    // a venue that has traded, because the clear deletes by
+                    // `contoh-` tag and the guard trips on real rows it can
+                    // never reach. Say why instead of offering a button whose
+                    // only outcome is a 409 (ADR-0052 §3).
+                    _ when broken && !st.canSeed =>
+                      context.l10n.venueHubSeedBodyTraded,
                     _ when phase == SeedPromptPhase.failed =>
                       context.l10n.venueHubSeedBodyFailed,
                     _ when phase == SeedPromptPhase.incomplete =>
@@ -106,7 +115,13 @@ class _SeedDataDialogState extends ConsumerState<_SeedDataDialog> {
             ],
           ],
         ),
-        actions: _actions(context, st, ctrl, running: running),
+        actions: _actions(
+          context,
+          st,
+          ctrl,
+          running: running,
+          broken: broken,
+        ),
       ),
     );
   }
@@ -116,6 +131,7 @@ class _SeedDataDialogState extends ConsumerState<_SeedDataDialog> {
     GenericSeedState st,
     GenericSeedController ctrl, {
     required bool running,
+    required bool broken,
   }) {
     // Nothing to offer while the job runs: leaving is what breaks it.
     if (running) return const [];
@@ -129,19 +145,21 @@ class _SeedDataDialogState extends ConsumerState<_SeedDataDialog> {
       ];
     }
 
-    final broken =
-        st.phase == SeedPromptPhase.incomplete ||
-        st.phase == SeedPromptPhase.failed;
-
     return [
       SatButton.ghost(
         label: context.l10n.venueHubSeedBtnSkip,
         onTap: st.loading
             ? null
-            : () async {
+            : () => _run(() async {
+                // Declining must never leave sample data behind. A broken job
+                // has already written part of a month; skipping straight out
+                // would file those fabricated bills as real trade — and they
+                // have tripped the seed guard, so nothing can re-seed over
+                // them afterwards (ADR-0053 §9).
+                if (broken) await ctrl.clear();
                 await ctrl.skip();
                 if (context.mounted) Navigator.of(context).pop();
-              },
+              }),
       ),
       if (st.hasSampleData || broken)
         SatButton.danger(
@@ -153,7 +171,13 @@ class _SeedDataDialogState extends ConsumerState<_SeedDataDialog> {
               ? null
               : () => _run(() async {
                   await ctrl.clear();
-                  if (broken) await _start(ctrl);
+                  // Re-read after the clear: `canSeed` is what the retry needs
+                  // and the clear is what may have freed it. A venue that has
+                  // genuinely traded still fails `canSeedSample`, so the retry
+                  // is skipped and the body explains why rather than 409-ing.
+                  if (broken && ref.read(genericSeedProvider).canSeed) {
+                    await _start(ctrl);
+                  }
                 }),
         ),
       if (!st.hasSampleData && !broken)

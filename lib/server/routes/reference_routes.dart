@@ -1002,6 +1002,9 @@ Router referenceRoutes(AppDatabase db, WsHub? hub, ServerAuth auth) {
       // Written on skip or on a completed seed, never on tap — an interrupted
       // job means the question went unanswered and the prompt fires again.
       'promptAnswered': await SeedJob.promptAnswered(db),
+      // Persisted, not inferred from the live broadcast: a relaunched app
+      // must still be able to tell a crash from an interruption.
+      'failed': await SeedJob.hasFailed(db),
       'daysDone': done,
       'daysTotal': total,
     });
@@ -1049,7 +1052,9 @@ Router referenceRoutes(AppDatabase db, WsHub? hub, ServerAuth auth) {
         } catch (e, st) {
           SatLog.err('sample seed', e, st);
           // The incomplete marker stays set and the prompt stays unanswered,
-          // so the dialog returns offering clear-and-retry.
+          // so the dialog returns offering clear-and-retry. The verdict is
+          // written down as well as broadcast, so it outlives this process.
+          await SeedJob.markFailed(db);
           hub?.broadcast(WsEventTypes.seedProgress, const {'failed': true});
         }
       }),

@@ -316,6 +316,7 @@
   "venueHubSeedBodyDone": "Sample data is ready. Reports, audit log and stock history are populated.",
   "venueHubSeedBodyIncomplete": "Loading sample data stopped before it finished. What is there is incomplete — clear it before loading again.",
   "venueHubSeedBodyFailed": "Loading sample data failed. What made it in is incomplete — clear it before trying again.",
+  "venueHubSeedBodyTraded": "This venue already has real order history. Sample data cannot be loaded again — clear what is left of it, then skip.",
   "venueHubSeedBodyLoaded": "This venue is running on sample data. Clear it to drop the invented sales history; zones, tables, menu and staff stay.",
   "venueHubSeedBtnLoad": "Load sample data",
   "venueHubSeedBtnSkip": "Skip",
