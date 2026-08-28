@@ -174,6 +174,7 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
       autoSoldOut: i.autoSoldOut,
       soldOutVariantIds: List<String>.of(i.soldOutVariantIds),
       soldOutOptionIds: List<String>.of(i.soldOutOptionIds),
+      popQty: i.popQty,
     );
   }
 

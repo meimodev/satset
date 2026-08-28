@@ -74,6 +74,20 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   String _cat = 'all';
   final _search = TextEditingController();
 
+  /// [[Menu populer]] rank, frozen at the first menu this screen sees
+  /// (ADR-0113).
+  ///
+  /// Captured once, never re-read: `menuUpdated` fires on a stock flip, and a
+  /// grid that re-sorts itself between the look and the tap is worse than a
+  /// grid whose order is a minute stale. An item that arrives after that first
+  /// snapshot is absent here and lands at the bottom, which is where an
+  /// untraded item belongs.
+  ///
+  /// Not `initState`: the screen can mount while the menu is still loading, and
+  /// freezing an empty map there would leave the grid alphabetical for the life
+  /// of the order.
+  Map<String, int>? _rank;
+
   @override
   void initState() {
     super.initState();
@@ -217,7 +231,18 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
     final menuStatus = ref.watch(menuStatusProvider);
     final allItems = ref.watch(menuItemsProvider);
     final query = ref.watch(menuSearchProvider);
-    final items = filterMenuItems(allItems, categoryId: _cat, query: query);
+    if (_rank == null && allItems.isNotEmpty) {
+      _rank = {
+        for (final i in allItems)
+          if (i.popQty > 0) i.id: i.popQty,
+      };
+    }
+    final items = filterMenuItems(
+      allItems,
+      categoryId: _cat,
+      query: query,
+      rank: _rank,
+    );
     // A live query ignores the category entirely, so the chip row is hidden
     // while searching rather than left showing a filter that is not applied.
     final searching = query.trim().isNotEmpty;

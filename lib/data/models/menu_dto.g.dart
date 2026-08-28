@@ -86,6 +86,7 @@ _MenuItemDto _$MenuItemDtoFromJson(Map<String, dynamic> json) => _MenuItemDto(
           ?.map((e) => e as String)
           .toList() ??
       const <String>[],
+  popQty: (json['popQty'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$MenuItemDtoToJson(_MenuItemDto instance) =>
@@ -106,6 +107,7 @@ Map<String, dynamic> _$MenuItemDtoToJson(_MenuItemDto instance) =>
       'autoSoldOut': instance.autoSoldOut,
       'soldOutVariantIds': instance.soldOutVariantIds,
       'soldOutOptionIds': instance.soldOutOptionIds,
+      'popQty': instance.popQty,
     };
 
 _MenuTagDto _$MenuTagDtoFromJson(Map<String, dynamic> json) => _MenuTagDto(

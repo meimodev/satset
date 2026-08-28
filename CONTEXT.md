@@ -1081,6 +1081,21 @@ The flag does **not** hide the item or block the order — it badges the row on 
 
 _Avoid_: refusing the order automatically; inferring it from a category name; treating the badge as a legal control rather than a prompt to a person.
 
+### Menu populer (Popular menu)
+**ID · EN** — Menu populer · Popular menu.
+
+The order the order-flow menu grid renders in: **lines sold in the last 30 business days**, highest first (ADR-0113). Summed from `tickets.qty` per item on every `/menu` snapshot and shipped as `popQty` — derived like [[Habis / Sold out (menu item out of stock)|Habis]]'s automatic half, never stored, so a void un-ranks what it reverses and nothing needs backfilling.
+
+Qty, not revenue — deliberately not the Reports ranking, which answers a menu-engineering question with money. A waiter reaching for a tile wants the thing the room orders. Every status but `voided` counts, `held` and `draft` included: popularity is what a guest asked for, not what the bill kept.
+
+An item with no line in the window is **unranked**, and unranked items sit at the bottom in **alphabetical** order — a fresh venue is therefore alphabetical, not insertion-ordered. There is no "new item" pin.
+
+The rank is **frozen when the screen opens**. `menuUpdated` fires on every stock flip, and a grid that re-sorts between the look and the tap is worse than one a minute stale.
+
+Two surfaces deliberately ignore it: the menu admin list, where an owner hunting an item to edit needs a stable list, and the [[Menu tamu]] page, which has its own `guestFeatured` — an owner-authored pin sales must not silently fight. Live search results are not re-ranked either.
+
+_Avoid_: storing a sales counter; ranking by revenue; re-sorting the grid live; treating an unranked item as new.
+
 ### Kedai (counter mode)
 **ID · EN** — Kedai · Counter mode. States: aktif · on. _Not_ "Kafe"/"Cafe" — the shape being described is **ordering at a counter**, which a warung, a kiosk and a bar all share; naming it after one kind of shop invites the wrong venues to tick it and the right ones to skip it. _Not_ "mode sederhana"/"simple mode" either: nothing is removed, the defaults are different.
 

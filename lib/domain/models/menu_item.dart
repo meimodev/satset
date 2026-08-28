@@ -60,6 +60,12 @@ class MenuItem {
   /// Modifier options whose own recipe cannot currently be covered.
   final List<String> soldOutOptionIds;
 
+  /// Lines sold in the last 30 business days — the [[Menu populer]] rank
+  /// (ADR-0113). Derived server-side, never stored. 0 means "never sold in the
+  /// window", which sorts to the bottom of the order-flow grid; it is not a
+  /// claim that the item is new.
+  final int popQty;
+
   bool get hasPhoto => photoRev > 0;
 
   const MenuItem({
@@ -77,6 +83,7 @@ class MenuItem {
     this.unavailable = false,
     this.photoRev = 0,
     this.autoSoldOut = false,
+    this.popQty = 0,
     this.soldOutVariantIds = const [],
     this.soldOutOptionIds = const [],
   });
@@ -107,6 +114,7 @@ class MenuItem {
     bool? unavailable,
     int? photoRev,
     bool? autoSoldOut,
+    int? popQty,
     List<String>? soldOutVariantIds,
     List<String>? soldOutOptionIds,
 
@@ -130,6 +138,7 @@ class MenuItem {
       unavailable: unavailable ?? this.unavailable,
       photoRev: photoRev ?? this.photoRev,
       autoSoldOut: autoSoldOut ?? this.autoSoldOut,
+      popQty: popQty ?? this.popQty,
       soldOutVariantIds: soldOutVariantIds ?? this.soldOutVariantIds,
       soldOutOptionIds: soldOutOptionIds ?? this.soldOutOptionIds,
     );

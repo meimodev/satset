@@ -61,6 +61,11 @@ abstract class MenuItemDto with _$MenuItemDto {
     @Default(false) bool autoSoldOut,
     @Default(<String>[]) List<String> soldOutVariantIds,
     @Default(<String>[]) List<String> soldOutOptionIds,
+
+    /// Lines sold in the last 30 business days — the [[Menu populer]] rank
+    /// (ADR-0113). Derived server-side like [autoSoldOut] and never stored; 0
+    /// on an older server, which reads as "unranked" and sorts alphabetically.
+    @Default(0) int popQty,
   }) = _MenuItemDto;
 
   factory MenuItemDto.fromJson(Map<String, dynamic> json) =>

@@ -74,4 +74,74 @@ void main() {
       );
     });
   });
+
+  // [[Menu populer]] (ADR-0113).
+  group('filterMenuItems rank', () {
+    test('ranked items lead, highest first', () {
+      expect(
+        _ids(
+          filterMenuItems(
+            _menu,
+            categoryId: 'all',
+            query: '',
+            rank: const {'d2': 3, 'm2': 40},
+          ),
+        ),
+        ['m2', 'd2', 'd1', 'm1'],
+      );
+    });
+
+    test('unranked items trail, alphabetically', () {
+      // Es Teh · Margarita · Mie Goreng · Nasi Goreng — insertion order had
+      // Nasi Goreng first.
+      expect(
+        _ids(
+          filterMenuItems(
+            _menu,
+            categoryId: 'all',
+            query: '',
+            rank: const {},
+          ),
+        ),
+        ['d1', 'd2', 'm2', 'm1'],
+      );
+    });
+
+    test('rank applies inside a category too', () {
+      expect(
+        _ids(
+          filterMenuItems(
+            _menu,
+            categoryId: 'mains',
+            query: '',
+            rank: const {'m2': 9},
+          ),
+        ),
+        ['m2', 'm1'],
+      );
+    });
+
+    test('search results keep server order, unranked', () {
+      expect(
+        _ids(
+          filterMenuItems(
+            _menu,
+            categoryId: 'all',
+            query: 'cabai',
+            rank: const {'d2': 99},
+          ),
+        ),
+        ['m2', 'd2'],
+      );
+    });
+
+    test('no rank leaves the order alone', () {
+      expect(_ids(filterMenuItems(_menu, categoryId: 'all', query: '')), [
+        'm1',
+        'm2',
+        'd1',
+        'd2',
+      ]);
+    });
+  });
 }

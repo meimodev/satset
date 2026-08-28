@@ -14,6 +14,7 @@ import 'package:satset/domain/models/capability.dart';
 import 'package:satset/server/audit_log.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
+import 'package:satset/server/shift.dart' show businessDayStart;
 import 'package:satset/server/stock.dart';
 import 'package:satset/server/ws_hub.dart';
 
@@ -460,6 +461,7 @@ Future<Map<String, dynamic>> _snapshot(AppDatabase db) async {
   )..orderBy([(c) => OrderingTerm(expression: c.sortOrder)])).get();
   final items = await _selectItemsNoBlob(db);
   final flags = await deriveStockFlags(db);
+  final pop = await menuPopularity(db);
   final tags = await (db.select(
     db.menuTags,
   )..orderBy([(t) => OrderingTerm(expression: t.sortOrder)])).get();
@@ -470,7 +472,12 @@ Future<Map<String, dynamic>> _snapshot(AppDatabase db) async {
     ],
     'items': [
       for (final r in items)
-        _itemResultToJson(db, r, flags: flags[r.read(db.menuItems.id)!]),
+        _itemResultToJson(
+          db,
+          r,
+          flags: flags[r.read(db.menuItems.id)!],
+          popQty: pop[r.read(db.menuItems.id)!] ?? 0,
+        ),
     ],
     'tags': [for (final t in tags) _tagRowToJson(t)],
   };
@@ -515,6 +522,7 @@ Map<String, dynamic> _itemResultToJson(
   AppDatabase db,
   TypedResult r, {
   ItemStockFlags? flags,
+  int popQty = 0,
 }) => {
   'id': r.read(db.menuItems.id)!,
   'name': r.read(db.menuItems.name)!,
@@ -537,7 +545,46 @@ Map<String, dynamic> _itemResultToJson(
   'guestVisible': r.read(db.menuItems.guestVisible)!,
   'guestFeatured': r.read(db.menuItems.guestFeatured)!,
   'guestStockOverride': r.read(db.menuItems.guestStockOverride)!,
+  // [[Menu populer]] (ADR-0113). Derived like `autoSoldOut`, never stored, and
+  // 0 on the single-item read — that route feeds an editor, which does not
+  // rank. See [menuPopularity].
+  'popQty': popQty,
 };
+
+/// Lines sold per item since 30 business days ago — the [[Menu populer]] rank
+/// (ADR-0113).
+///
+/// Rollover-aligned, not `now - 30d`: a venue whose day starts at 04:00 counts
+/// the same set of days at 03:00 as it will at 05:00, so the grid does not
+/// reshuffle mid-close. Voided lines are excluded and *every other* status
+/// counts, `draft` and `held` included — popularity is about what a guest
+/// asked for, not what the bill kept, which is why this is not the Reports
+/// ranking (that one is by revenue, `reports_routes.dart`).
+///
+/// Recomputed on every snapshot rather than cached: `deriveStockFlags` already
+/// walks every recipe on this same call, and a cache here would be a second
+/// thing to invalidate on a WS event that already means "re-read the menu".
+Future<Map<String, int>> menuPopularity(AppDatabase db) async {
+  final settings = await (db.select(
+    db.venueSettings,
+  )..where((s) => s.id.equals('default'))).getSingleOrNull();
+  final from = businessDayStart(
+    SatClock.now(),
+    settings?.businessDayStartHour ?? 4,
+  ).subtract(const Duration(days: 30));
+  final qty = db.tickets.qty.sum();
+  final q = db.selectOnly(db.tickets)
+    ..addColumns([db.tickets.itemId, qty])
+    ..where(
+      db.tickets.sentAt.isBiggerOrEqualValue(from) &
+          db.tickets.status.equals('voided').not(),
+    )
+    ..groupBy([db.tickets.itemId]);
+  return {
+    for (final r in await q.get())
+      r.read(db.tickets.itemId)!: r.read(qty) ?? 0,
+  };
+}
 
 Map<String, dynamic> _tagRowToJson(MenuTag t) => {
   'id': t.id,

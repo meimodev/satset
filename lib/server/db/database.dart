@@ -78,7 +78,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 64;
+  int get schemaVersion => 65;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -1313,6 +1313,13 @@ class AppDatabase extends _$AppDatabase {
           TableMigration(demoStates, newColumns: [demoStates.failed]),
         );
       }
+      if (from < 65 && to >= 65) {
+        // `tickets_item_sent` for the [[Menu populer]] rank (ADR-0113). No
+        // column, no data: [_createLookupIndexes] is `IF NOT EXISTS`
+        // throughout, so re-running the whole set is the cheap way to reach an
+        // upgraded venue with one new index.
+        await _createLookupIndexes();
+      }
     },
     onCreate: (m) async {
       await m.createAll();
@@ -1421,6 +1428,12 @@ class AppDatabase extends _$AppDatabase {
       // table for the legacy pre-v29 rows that still carry a null visit_id.
       'CREATE INDEX IF NOT EXISTS tickets_visit ON tickets(visit_id)',
       'CREATE INDEX IF NOT EXISTS tickets_table ON tickets(table_id)',
+      // [[Menu populer]] (ADR-0113): the menu snapshot groups the last 30
+      // business days by item on every refetch, and a `menuUpdated` event —
+      // which a stock flip fires — is a refetch. Without this the rank costs a
+      // full scan of every line the venue ever sent.
+      'CREATE INDEX IF NOT EXISTS tickets_item_sent '
+          'ON tickets(item_id, sent_at)',
       // Bill assembly: receipts for a visit, then everything hanging off each
       // receipt. This is the settlement screen's whole read.
       'CREATE INDEX IF NOT EXISTS receipts_visit ON receipts(visit_id)',
