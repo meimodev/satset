@@ -9,6 +9,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/domain/models/venue_table.dart';
@@ -76,7 +77,7 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
                       layout.gutter,
                       14,
                       layout.gutter,
-                      layout.bottomInset,
+                      context.shellInset,
                     ),
                     buildDefaultDragHandles: false,
                     proxyDecorator: (child, _, _) => _DragProxy(child: child),

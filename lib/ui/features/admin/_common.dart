@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -95,7 +96,11 @@ class AdminPage extends StatelessWidget {
         ),
         Expanded(
           child: SingleChildScrollView(
-            padding: padding,
+            // Every AdminPage is a shell route, and the phone tab bar floats
+            // over it. One place, so nine screens cannot each forget.
+            padding: padding.copyWith(
+              bottom: padding.bottom + context.shellInset,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: children,

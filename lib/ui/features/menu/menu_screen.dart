@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
@@ -36,6 +37,11 @@ import 'modifier_sheet.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/widgets/sat_spinner.dart';
+
+/// Height the floating cart footer covers, plus the gap above it. A scroll
+/// view stacks this on `shellInset`: that one clears the tab bar, this one
+/// clears the footer.
+const double _cartFooterClearance = 80;
 
 const _uuid = Uuid();
 
@@ -506,7 +512,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                               16,
                               4,
                               16,
-                              l.bottomInset + 80,
+                              context.shellInset + _cartFooterClearance,
                             ),
                             itemCount: items.length,
                             itemBuilder: (context, i) {
@@ -528,9 +534,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
             Positioned(
               left: 8 + l.padding.left,
               right: 8 + l.padding.right,
-              bottom: l.useSideRail
-                  ? 16 + l.padding.bottom
-                  : 92 + l.padding.bottom,
+              bottom: Sp.s4 + context.shellInset + l.padding.bottom,
               child: _CartFooter(
                 count: cartCount,
                 total: cartTotal,

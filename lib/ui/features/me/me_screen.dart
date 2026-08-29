@@ -23,6 +23,7 @@ import 'package:satset/ui/core/design/audit_visuals.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/features/me/widgets/theme_sheet.dart';
 import 'package:satset/ui/features/orders/view_models/orders_scope.dart';
@@ -397,7 +398,7 @@ class _MePhone extends StatelessWidget {
         child: ListView(
           // Not `l.topInset` — that token clears a status bar for screens with
           // no chrome above them, and this one always renders under SatAppBar.
-          padding: EdgeInsets.fromLTRB(0, Sp.s6, 0, l.bottomInset + 40),
+          padding: EdgeInsets.fromLTRB(0, Sp.s6, 0, context.shellInset),
           children: [
             _TopBar(theme: theme, onPickTheme: onPickTheme),
             const SizedBox(height: Sp.s2),
@@ -434,7 +435,6 @@ class _MePhone extends StatelessWidget {
                 max: 5,
               ),
             ),
-            SizedBox(height: l.bottomInset),
           ],
         ),
       ),

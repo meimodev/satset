@@ -9,6 +9,7 @@ import 'package:satset/data/services/send_queue_service.dart';
 import 'package:satset/ui/features/shell/send_result_dialog.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/self_order_repository.dart';
@@ -264,11 +265,19 @@ class AppShell extends ConsumerWidget {
             Expanded(
               child: Stack(
                 children: [
-                  Positioned.fill(child: child),
+                  // The bar floats over the page, so the page is told how
+                  // much of its own bottom it cannot use. Nothing below this
+                  // point re-derives the number from MediaQuery.
+                  Positioned.fill(
+                    child: ShellInset(
+                      bottom: _tabBarGap + _tabBarHeight,
+                      child: child,
+                    ),
+                  ),
                   Positioned(
                     left: 8,
                     right: 8,
-                    bottom: 12,
+                    bottom: _tabBarGap,
                     child: _FloatingTabBar(
                       active: activeTab,
                       readyCount: ready,
@@ -287,6 +296,11 @@ class AppShell extends ConsumerWidget {
     );
   }
 }
+
+/// Geometry of the floating phone tab bar, in one place. `ShellInset`
+/// publishes the sum downward, so no screen re-guesses either number.
+const double _tabBarGap = 12;
+const double _tabBarHeight = 64;
 
 class _FloatingTabBar extends StatelessWidget {
   final String active;
@@ -308,7 +322,7 @@ class _FloatingTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final bar = Container(
-      height: 64,
+      height: _tabBarHeight,
       decoration: SatBox.d(
         color: SatShape.veil(sc.scrim, 0.92),
         borderRadius: SatR.a(22),

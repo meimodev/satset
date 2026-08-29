@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/design/shell_inset.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -213,10 +214,10 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                     ],
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.only(
+                    padding: EdgeInsets.only(
                       left: Sp.s7,
                       right: Sp.s7,
-                      bottom: Sp.s7,
+                      bottom: Sp.s7 + context.shellInset,
                     ),
                     itemCount: rows.length,
                     separatorBuilder: (_, _) => const SizedBox(height: Sp.s1h),

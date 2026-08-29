@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/localization/locale_view_model.dart';
@@ -113,7 +114,7 @@ class _QueueTabState extends ConsumerState<_QueueTab> {
     }
 
     return ListView(
-      padding: const EdgeInsets.all(Sp.s4),
+      padding: EdgeInsets.fromLTRB(Sp.s4, Sp.s4, Sp.s4, Sp.s4 + context.shellInset),
       children: [
         SetHero(
           label: l10n.soHeroLabel,

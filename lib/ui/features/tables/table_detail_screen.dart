@@ -15,6 +15,7 @@ import 'package:satset/data/services/api_client.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/course.dart';
 import 'package:satset/ui/core/design/course_visuals.dart';
@@ -44,6 +45,10 @@ import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/widgets/sat_spinner.dart';
+
+/// Height the floating action stack covers, plus the gap above it. Stacks on
+/// `shellInset`, which clears the tab bar when there is one.
+const double _actionStackClearance = 80;
 
 // Motion tuning. Refined, calm — easeOutQuart per design tokens, no bounce.
 // Mirrors the constants in tables_screen.dart so the grid → detail transition
@@ -584,7 +589,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                               0,
                               0,
                               0,
-                              l.bottomInset + 80,
+                              context.shellInset + _actionStackClearance,
                             ),
                             children: [
                               PendingOrdersBlock(tableId: table.id),
@@ -628,9 +633,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
             Positioned(
               left: 16 + l.padding.left,
               right: 16 + l.padding.right,
-              bottom: l.useSideRail
-                  ? 16 + l.padding.bottom
-                  : 92 + l.padding.bottom,
+              bottom: Sp.s4 + context.shellInset + l.padding.bottom,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

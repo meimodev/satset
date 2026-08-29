@@ -40,7 +40,6 @@ class SatLayout {
   double get sideRailWidth => isTablet ? 76 : (isExpanded ? 96 : 80);
 
   double get topInset => padding.top + (isLandscape && isCompact ? 8 : 24);
-  double get bottomInset => padding.bottom + (useSideRail ? 16 : 92);
 
   double get gutter {
     if (isTablet) return 32;

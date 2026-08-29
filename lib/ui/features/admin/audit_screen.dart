@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/localization/audit_text.dart';
@@ -130,6 +131,9 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
                         capped: state.capped,
                       ),
                     ),
+                  SliverToBoxAdapter(
+                    child: SizedBox(height: context.shellInset),
+                  ),
                 ],
               ),
               if (state.pending.isNotEmpty)

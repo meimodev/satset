@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -105,7 +106,7 @@ class _QrTab extends ConsumerWidget {
     final l10n = context.l10n;
     final sc = context.sat;
     return ListView(
-      padding: const EdgeInsets.all(Sp.s4),
+      padding: EdgeInsets.fromLTRB(Sp.s4, Sp.s4, Sp.s4, Sp.s4 + context.shellInset),
       children: [
         SatCard.titled(
           title: l10n.soTableTitle,
@@ -373,7 +374,7 @@ class _MenuTab extends ConsumerWidget {
     final sc = context.sat;
     final n = ref.read(selfOrderProvider.notifier);
     return ListView(
-      padding: const EdgeInsets.all(Sp.s4),
+      padding: EdgeInsets.fromLTRB(Sp.s4, Sp.s4, Sp.s4, Sp.s4 + context.shellInset),
       children: [
         Text(l10n.soMenuSub, style: SatType.bodyM(color: sc.textMd)),
         const SizedBox(height: Sp.s1),
@@ -601,7 +602,7 @@ class _RulesTab extends ConsumerWidget {
     final s = ref.watch(venueSettingsProvider);
     final n = ref.read(venueSettingsProvider.notifier);
     return ListView(
-      padding: const EdgeInsets.all(Sp.s4),
+      padding: EdgeInsets.fromLTRB(Sp.s4, Sp.s4, Sp.s4, Sp.s4 + context.shellInset),
       children: [
         // The master switch lives here and only here (ADR-0106). It is an
         // `editSettings` write, and the queue it interrupts is a waiter's

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
@@ -558,7 +559,7 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+              padding: EdgeInsets.fromLTRB(16, 0, 16, Sp.s6 + context.shellInset),
               children: [
                 _phoneRow(
                   context,

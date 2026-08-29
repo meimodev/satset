@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:satset/ui/core/design/shell_inset.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -129,7 +130,7 @@ class _OpnameScreenState extends ConsumerState<OpnameScreen> {
                   SizedBox(
                     width: 340,
                     child: ListView(
-                      padding: const EdgeInsets.all(Sp.s4),
+                      padding: EdgeInsets.fromLTRB(Sp.s4, Sp.s4, Sp.s4, Sp.s4 + context.shellInset),
                       children: [
                         if (data.open != null) ...[
                           _OpenBanner(session: data.open!),
@@ -327,7 +328,7 @@ class _Document extends ConsumerWidget {
       data: (count) {
         final exact = count.lines.where((l) => l.variance == 0).length;
         return ListView(
-          padding: const EdgeInsets.all(Sp.s5),
+          padding: EdgeInsets.fromLTRB(Sp.s5, Sp.s5, Sp.s5, Sp.s5 + context.shellInset),
           children: [
             Row(
               children: [

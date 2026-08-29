@@ -1,3 +1,6 @@
+// no-shell-inset: the page scroll is AdminPage's, and that adds the clearance
+// once for every admin screen. The only scroll view declared here is the
+// alert-sound bottom sheet, which covers the tab bar rather than hiding under it.
 import 'package:satset/core/localization/labels.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';

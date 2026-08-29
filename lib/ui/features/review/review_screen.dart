@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
@@ -37,6 +38,10 @@ import 'package:satset/ui/features/tables/widgets/assign_table_sheet.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+
+/// Height the floating send bar covers, plus the gap above it. Stacks on
+/// `shellInset`, which clears the tab bar when there is one.
+const double _sendBarClearance = 100;
 
 class ReviewScreen extends ConsumerWidget {
   final String tableId;
@@ -201,7 +206,7 @@ class ReviewScreen extends ConsumerWidget {
                         0,
                         0,
                         0,
-                        l.bottomInset + 100,
+                        context.shellInset + _sendBarClearance,
                       ),
                       children: [
                         for (final cid in Courses.all.map((c) => c.id))
@@ -274,9 +279,7 @@ class ReviewScreen extends ConsumerWidget {
           Positioned(
             left: 16 + l.padding.left,
             right: 16 + l.padding.right,
-            bottom: l.useSideRail
-                ? 16 + l.padding.bottom
-                : 92 + l.padding.bottom,
+            bottom: Sp.s4 + context.shellInset + l.padding.bottom,
             child: SizedBox(
               width: double.infinity,
               child: SatButton.primary(

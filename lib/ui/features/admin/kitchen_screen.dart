@@ -1,4 +1,5 @@
 import 'package:satset/ui/core/widgets/pulse_dot.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
@@ -178,7 +179,7 @@ class KitchenScreen extends ConsumerWidget {
               child: orders.isEmpty
                   ? const _EmptyQueue()
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+                      padding: EdgeInsets.fromLTRB(16, 4, 16, Sp.s6 + context.shellInset),
                       itemCount: orders.length,
                       separatorBuilder: (_, _) => const SizedBox(height: Sp.s3),
                       itemBuilder: (_, i) => _CardEntrance(

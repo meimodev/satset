@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/core/localization/labels.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
@@ -74,7 +75,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     final sc = context.sat;
     return SafeArea(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 24, 16, 120),
+        padding: EdgeInsets.fromLTRB(16, 24, 16, Sp.s6 + context.shellInset),
         children: [
           for (final u in users)
             GestureDetector(

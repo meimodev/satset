@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/widgets/sat_tabs.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
@@ -492,7 +493,7 @@ class _ItemList extends ConsumerWidget {
             ),
           )
         : ListView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+            padding: EdgeInsets.fromLTRB(12, 8, 12, Sp.s6 + context.shellInset),
             itemCount: items.length,
             itemBuilder: (_, i) => Reveal(
               index: i.clamp(0, 11),

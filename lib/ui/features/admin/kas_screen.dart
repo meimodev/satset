@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -172,6 +173,7 @@ class _KasScreenState extends ConsumerState<KasScreen> {
                       ),
                     ),
                   ),
+                SliverToBoxAdapter(child: SizedBox(height: context.shellInset)),
               ],
             ),
           ),

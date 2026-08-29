@@ -18,6 +18,7 @@ import 'package:satset/ui/features/tables/view_models/floor_signals.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -123,7 +124,7 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
           child: zoneTables.isEmpty
               ? _EmptyZone(zoneName: zone.name, tablet: false)
               : SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(16, 4, 16, l.bottomInset),
+                  padding: EdgeInsets.fromLTRB(16, 4, 16, context.shellInset),
                   child: Center(
                     child: ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: l.contentMaxWidth),

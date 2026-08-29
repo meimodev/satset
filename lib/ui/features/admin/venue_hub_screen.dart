@@ -19,6 +19,7 @@ import 'package:satset/data/services/api_client.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/features/admin/alerts_screen.dart';
@@ -554,11 +555,10 @@ class _PhoneHub extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final l = context.layout;
     return ListView(
-      // Not `l.topInset` — that token clears a status bar for screens with no
+      // Not `SatLayout.topInset` — that token clears a status bar for screens with no
       // chrome above them, and this one always renders under SatAppBar.
-      padding: EdgeInsets.fromLTRB(16, Sp.s6, 16, l.bottomInset + 40),
+      padding: EdgeInsets.fromLTRB(16, Sp.s6, 16, context.shellInset),
       children: [
         Reveal(
           index: 0,

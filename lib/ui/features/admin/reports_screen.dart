@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -93,7 +94,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       final sc = context.sat;
       return SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
+          padding: EdgeInsets.fromLTRB(16, 20, 16, Sp.s6 + context.shellInset),
           children: [
             Padding(
               padding: const EdgeInsets.only(bottom: Sp.s4),

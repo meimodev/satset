@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/models/bill_dto.dart';
@@ -160,6 +161,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                   ),
                 ),
                 ..._body(open, unpaid, _inRange(closed), zones, history, page),
+                SliverToBoxAdapter(child: SizedBox(height: context.shellInset)),
               ],
             ),
           ),

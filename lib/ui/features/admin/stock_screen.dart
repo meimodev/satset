@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
@@ -196,7 +197,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               return RefreshIndicator(
                 onRefresh: () async => ref.invalidate(ingredientsProvider),
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                  padding: EdgeInsets.fromLTRB(20, 16, 20, Sp.s8 + context.shellInset),
                   children: [
                     // Smooth Animated CrossFade between KPI Summary and Opname Banner
                     AnimatedCrossFade(

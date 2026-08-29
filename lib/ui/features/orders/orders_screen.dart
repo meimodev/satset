@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
@@ -246,7 +247,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       section('Bawa pulang', taRows);
       section('Makan di tempat', dineRows);
       slivers.add(
-        SliverToBoxAdapter(child: SizedBox(height: grid ? 32 : l.bottomInset)),
+        SliverToBoxAdapter(child: SizedBox(height: grid ? 32 : context.shellInset)),
       );
       return CustomScrollView(slivers: slivers);
     }

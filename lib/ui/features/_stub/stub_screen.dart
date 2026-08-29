@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/colors.dart';
-import 'package:satset/ui/core/design/layout.dart';
+import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 
@@ -20,11 +20,10 @@ class StubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
-    final l = context.layout;
     return Padding(
-      // Not `l.topInset` — that token clears a status bar for screens with no
+      // Not `SatLayout.topInset` — that token clears a status bar for screens with no
       // chrome above them, and this one always renders under SatAppBar.
-      padding: EdgeInsets.fromLTRB(0, Sp.s6, 0, l.bottomInset),
+      padding: EdgeInsets.fromLTRB(0, Sp.s6, 0, context.shellInset),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
