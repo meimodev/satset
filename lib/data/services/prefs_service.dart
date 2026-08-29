@@ -44,6 +44,18 @@ class PrefsService {
   /// clearable by force-quitting the app.
   static const _kReleaseGate = 'satset.release_gate';
 
+  /// The venue's **shape** as last mirrored — `modules` + `counterConfig`
+  /// (ADR-0115). Cached because every mode key fails *closed*, so a client
+  /// that cold-boots away from its host would otherwise render the restaurant
+  /// shape at a counter shop: a [[Floor]] `menuHome` hides, a KDS tab
+  /// [[Tanpa antrian persiapan]] removes. The venue's own answer, once heard,
+  /// outlives the connection that carried it.
+  ///
+  /// Stored as JSON rather than two string lists because `modules: null`
+  /// ("never mirrored", reads as entitled) and `modules: []` ("holds no
+  /// module") are different answers and a missing key must not collapse them.
+  static const _kVenueShape = 'satset.venue_shape';
+
   AppMode appMode() => appModeFromKey(_p.getString(_kMode));
   Future<void> setAppMode(AppMode m) async {
     final ok = await _p.setString(_kMode, appModeKey(m));
@@ -148,6 +160,31 @@ class PrefsService {
   ///
   /// Stored as an opaque key — resolving it to a palette is the UI layer's job,
   /// since `data/` must not import `ui/`.
+  /// The cached venue shape, or null when this device has never heard one.
+  ({List<String>? modules, List<String>? counterConfig})? venueShape() {
+    final raw = _p.getString(_kVenueShape);
+    if (raw == null) return null;
+    try {
+      final m = jsonDecode(raw) as Map<String, dynamic>;
+      List<String>? list(String k) => m[k] == null
+          ? null
+          : [for (final e in m[k] as List) e.toString()];
+      return (modules: list('modules'), counterConfig: list('counterConfig'));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> setVenueShape(
+    List<String>? modules,
+    List<String>? counterConfig,
+  ) async {
+    await _p.setString(
+      _kVenueShape,
+      jsonEncode({'modules': modules, 'counterConfig': counterConfig}),
+    );
+  }
+
   String? themeKey() => _p.getString(_kTheme);
   Future<void> setThemeKey(String key) async {
     await _p.setString(_kTheme, key);

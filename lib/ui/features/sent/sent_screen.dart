@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -83,7 +85,11 @@ class _SentScreenState extends ConsumerState<SentScreen>
               Text(context.l10n.sntTitle, style: SatType.h1(color: ink)),
               const SizedBox(height: Sp.s2),
               Text(
-                context.l10n.sntBody(name),
+                // There is no display to be live on when the venue has no prep
+                // queue (ADR-0115) — the line is already waiting to be run.
+                ref.watch(venueSettingsProvider).bypassKds
+                    ? context.l10n.sntBodyNoPrep(name)
+                    : context.l10n.sntBody(name),
                 textAlign: TextAlign.center,
                 style: SatType.bodyM(
                   color: glow ? ink.withValues(alpha: 0.7) : sc.textMd,
@@ -100,8 +106,11 @@ class _SentScreenState extends ConsumerState<SentScreen>
                   // chips report that, and nothing else — they used to tick
                   // over on timers, which staged a delivery that had already
                   // happened and invented a latency figure to go with it.
-                  for (final station in widget.stations)
-                    _StationChip(name: station),
+                  // A station chip says the line reached a display. With no
+                  // prep queue there is none to reach (ADR-0115).
+                  if (!ref.watch(venueSettingsProvider).bypassKds)
+                    for (final station in widget.stations)
+                      _StationChip(name: station),
                 ],
               ),
               if (table != null) ...[

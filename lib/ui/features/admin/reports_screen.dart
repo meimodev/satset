@@ -238,6 +238,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           isTab: isTab,
           loading: status.isLoading,
           compact: ringkas,
+          showPrepMetrics: !ref.watch(venueSettingsProvider).bypassKds,
         ),
       ],
     ];

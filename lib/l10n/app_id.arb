@@ -1974,7 +1974,7 @@
   "cshErrForbidden": "Perlu persetujuan manajer (tak tertagih).",
   "cshErrReasonRequired": "Alasan tak tertagih wajib diisi.",
   "cshErrNoLines": "Meja tidak punya pesanan.",
-  "cshErrOffline": "Pembayaran tidak terkirim — perangkat tidak terhubung ke server. Tagihan belum dibayar.",
+  "cshErrOffline": "Pembayaran belum terkonfirmasi — server tidak menjawab. Tutup dan buka lagi tagihan untuk memastikan sebelum mengulang.",
   "cshErrGeneric": "Operasi gagal ({code}).",
   "@cshErrGeneric": {
     "placeholders": {
@@ -3466,6 +3466,7 @@
     }
   },
   "tblCloseFailed": "Gagal menutup meja: {error}",
+  "tblCloseNotTerminal": "Masih ada item yang belum selesai atau belum terkirim — cek daftar item dulu.",
   "@tblCloseFailed": {
     "placeholders": {
       "error": {
@@ -3548,6 +3549,7 @@
     }
   },
   "tblViewOnly": "Hanya lihat",
+  "tblOfflineQueueNote": "Tanpa jaringan — pesanan dan pembatalan masuk Antrean kirim; sisanya menunggu.",
   "tblCreateOrder": "Buat pesanan",
   "tblAddOrder": "Tambah pesanan",
   "tblStatTotal": "Total item",
@@ -4463,6 +4465,50 @@
       }
     }
   },
+  "liaVoidedQueued": "Tercatat di perangkat ini: ×{qty} {name} · belum terkirim, dapur belum tahu",
+  "@liaVoidedQueued": {
+    "placeholders": {
+      "qty": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "liaVoidFailed": "Item tidak dibatalkan",
+  "liaVoidNoCap": "Peranmu tidak punya izin membatalkan item",
+  "liaVoidNeedsManager": "Sudah disajikan · pembatalannya butuh izin manajer",
+  "voidFailForbidden": "Peranmu tidak punya izin membatalkan item. Minta yang berwenang.",
+  "voidFailNeedsManager": "Item sudah disajikan — pembatalannya dihitung gratis dan butuh izin manajer.",
+  "voidFailAlreadyMoved": "Status item sudah berubah di perangkat lain. Tutup sheet ini, lalu cek ulang.",
+  "voidFailReasonRequired": "Alasan pembatalan wajib diisi.",
+  "voidFailOther": "Server menolak pembatalan.",
+  "sendFailVoidExpired": "Pembatalan ×{qty} {name} lewat hari — item masih aktif, batalkan lagi",
+  "@sendFailVoidExpired": {
+    "placeholders": {
+      "qty": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sendFailVoidRefused": "Pembatalan ×{qty} {name} ditolak: {reason} — item masih aktif",
+  "@sendFailVoidRefused": {
+    "placeholders": {
+      "qty": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "resDaySummary": "{day} · {bookings, plural, other{{bookings} booking}} · {covers, plural, other{{covers} tamu}}",
   "@resDaySummary": {
     "placeholders": {
@@ -4590,6 +4636,14 @@
   "crsTo": "Selesai",
   "crsApply": "Terapkan",
   "exitAgainToQuit": "Tekan kembali lagi untuk keluar",
+  "olcVoided": "Dibatalkan · {reason}",
+  "@olcVoided": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "olcVoidedBy": "Dibatalkan · {reason} · disetujui oleh {approver}",
   "@olcVoidedBy": {
     "placeholders": {
@@ -4654,6 +4708,14 @@
     }
   },
   "cmnStationsLive": "STATIONS · LIVE",
+  "modSpecialCounterNoPrep": "{used} / 80 · tampil di pesanan",
+  "@modSpecialCounterNoPrep": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      }
+    }
+  },
   "modSpecialCounter": "{used} / 80 · tampil ke dapur",
   "@modSpecialCounter": {
     "placeholders": {
@@ -4702,6 +4764,14 @@
   "fltLoadFailed": "Gagal memuat fleet",
   "fltNewVenue": "Venue baru",
   "fltOfflineNote": "Tidak terhubung — data tersimpan, bisa sudah berubah. Perubahan dinonaktifkan sampai tersambung.",
+  "sntBodyNoPrep": "Pesanan Meja {table} sudah siap diambil.",
+  "@sntBodyNoPrep": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
   "sntTitle": "Terkirim",
   "sntBody": "Pesanan Meja {table} sudah live di display dapur dan bar.",
   "@sntBody": {
@@ -5162,7 +5232,7 @@
   "vrsCustomerChangeDesc": "Tamu batalkan permintaan",
   "vrsOutOfStock": "Stok habis",
   "vrsOutOfStockDesc": "Item habis di stasiun",
-  "vrsKitchenError": "Komplain / kualitas dapur",
+  "vrsKitchenError": "Komplain / kualitas",
   "vrsKitchenErrorDesc": "Masalah kualitas — item ditarik dari tagihan",
   "vrsComp": "Kompensasi manajer",
   "vrsOther": "Lainnya",
@@ -5566,6 +5636,14 @@
       "prep": {
         "type": "int"
       },
+      "ungreeted": {
+        "type": "int"
+      }
+    }
+  },
+  "alertsThresholdLineNoPrep": "Belum dilayani {ungreeted}m",
+  "@alertsThresholdLineNoPrep": {
+    "placeholders": {
       "ungreeted": {
         "type": "int"
       }
@@ -6269,6 +6347,52 @@
   "fltModuleSelfOrder": "Pesan mandiri",
   "@fltModuleSelfOrder": {
     "description": "Name of the self-order module."
+  },
+  "fltModes": "Mode",
+  "@fltModes": {
+    "description": "Fleet venue card title: how the venue is shaped, as against what it holds."
+  },
+  "fltTagModes": "BENTUK",
+  "@fltTagModes": {
+    "description": "Tag on the fleet Mode card."
+  },
+  "fltModesHint": "Bentuk kerja venue. Bukan yang dibeli \u2014 dua kunci ini berdiri sendiri dan tidak saling mengandaikan.",
+  "@fltModesHint": {
+    "description": "Hint under the fleet Mode card: modes shape the app, modules are bought."
+  },
+  "fltModeBypassKds": "Tanpa antrian persiapan",
+  "@fltModeBypassKds": {
+    "description": "Fleet mode toggle: the venue has no prep queue."
+  },
+  "fltModeBypassKdsHint": "Pesanan langsung siap diambil; tidak ada antrian dapur. Untuk venue yang penerima pesanannya sekaligus yang meracik.",
+  "@fltModeBypassKdsHint": {
+    "description": "Hint under the bypass-KDS mode toggle."
+  },
+  "fltModeBypassKdsOnTitle": "Hilangkan antrian persiapan di {venue}?",
+  "@fltModeBypassKdsOnTitle": {
+    "description": "Confirm dialog title when switching a venue to no-prep-queue.",
+    "placeholders": {
+      "venue": {
+        "type": "String"
+      }
+    }
+  },
+  "fltModeBypassKdsOnBody": "Antrian Persiapan hilang dari venue ini dan pesanan baru langsung berstatus siap. Baris yang sudah dimasak tetap bisa diselesaikan sampai habis.",
+  "@fltModeBypassKdsOnBody": {
+    "description": "Confirm dialog body for turning the no-prep-queue mode on."
+  },
+  "fltModeBypassKdsOnYes": "Hilangkan",
+  "@fltModeBypassKdsOnYes": {
+    "description": "Confirm button for turning the no-prep-queue mode on."
+  },
+  "fltCounterMootByBypass": "{label} \u2014 tidak berlaku tanpa antrian persiapan",
+  "@fltCounterMootByBypass": {
+    "description": "Kedai switch label when the no-prep-queue mode has already removed what it governs.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
   },
   "fltModuleOffTitle": "Matikan {module} untuk {venue}?",
   "@fltModuleOffTitle": {

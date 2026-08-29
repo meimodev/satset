@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/time/sat_clock.dart';
 
@@ -8,6 +9,7 @@ import 'package:satset/data/models/order_dto.dart';
 import 'package:satset/data/models/ticket_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/error_bus_service.dart';
 import 'package:satset/data/services/send_queue_service.dart';
@@ -31,6 +33,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   final Ref ref;
   StreamSubscription? _wsSub;
   bool _resyncing = false;
+  bool _resyncAgain = false;
 
   /// Group key for the live-ticket map: the visitId for every group. A tableId
   /// is reused across visits, so keying by it let a reseat re-absorb the prior
@@ -121,19 +124,37 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
 
   /// Guarded so overlapping connects don't stampede; never throws — a
   /// transient failure simply waits for the next connect.
+  ///
+  /// The guard **coalesces, it does not drop**. A resync asked for while one is
+  /// in flight cannot be answered by that one: the in-flight GET left before
+  /// the caller's write landed. Dropping it is how a drained [[Antrean kirim]]
+  /// lost its own re-pull — the reconnect's GET and the drain fire off the same
+  /// `connected` event, so the drain's `resyncNow()` always arrives mid-flight,
+  /// and the pre-drain response then clobbered the WS deltas the void and the
+  /// new ticket had already applied (ADR-0090, found on device).
   Future<void> _resync() async {
-    if (_resyncing) return;
+    if (_resyncing) {
+      _resyncAgain = true;
+      return;
+    }
     _resyncing = true;
     try {
-      await _refetch();
-      ref.read(ticketsStatusProvider.notifier).state = const AsyncValue.data(
-        null,
-      );
-      SatLog.repo('tickets.resync ok');
-    } catch (e) {
-      SatLog.repo('tickets.resync fail $e');
+      do {
+        _resyncAgain = false;
+        try {
+          await _refetch();
+          ref.read(ticketsStatusProvider.notifier).state =
+              const AsyncValue.data(null);
+          SatLog.repo('tickets.resync ok');
+        } catch (e) {
+          // Caught per pass, not around the loop: a pass that failed must
+          // still honour a re-run someone queued behind it.
+          SatLog.repo('tickets.resync fail $e');
+        }
+      } while (_resyncAgain);
     } finally {
       _resyncing = false;
+      _resyncAgain = false;
     }
   }
 
@@ -459,18 +480,29 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   /// Posts a status change to the server when paired and applies the same
   /// change optimistically. Optional `voidReason` / `voidApprovedBy` ride
   /// along on void transitions.
-  Future<void> transition(
+  ///
+  /// Returns **true when the move was captured on the [SendQueue] instead of
+  /// delivered** — only a void can be, and only while the handset is terputus
+  /// (ADR-0090). The caller has to know, because a queued void means the
+  /// kitchen has not heard it and may still plate the dish.
+  Future<bool> transition(
     String tableId,
     String ticketId,
     TicketStatus to, {
     String? voidReason,
     String? voidReasonCode,
     String? voidApprovedBy,
+    String? actorId,
   }) async {
     SatLog.repo(
       'tickets.transition id=${ticketId.substring(0, ticketId.length.clamp(0, 6))} → ${to.name}',
     );
     final cfg = ref.read(apiConfigProvider);
+    // Only a void is offline-capable. Every other move on this graph is a
+    // kitchen fact — a queued `prep` would replay minutes after the dish left
+    // the pass, telling the room something that stopped being true.
+    final canQueue = to == TicketStatus.voided;
+    var queued = false;
     if (cfg != null) {
       final body = <String, dynamic>{
         'status': ticketStatusKey(to),
@@ -478,15 +510,48 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         'voidReasonCode': ?voidReasonCode,
         'voidApprovedBy': ?voidApprovedBy,
       };
-      await ref
-          .read(apiClientProvider)
-          .postJson('/tickets/$ticketId/transition', body);
+      // Terputus: capture instead of attempting, the same pre-check the order
+      // path makes and for the same reason — the failure costs 8s of
+      // `requestTimeout` and a waiter mid-rush pays it on every tap.
+      if (canQueue && ref.read(wsConnStateProvider) != WsConnState.open) {
+        await _enqueueVoid(
+          tableId: tableId,
+          ticketId: ticketId,
+          voidReason: voidReason,
+          voidReasonCode: voidReasonCode,
+          actorId: actorId,
+        );
+        queued = true;
+      } else {
+        try {
+          await ref
+              .read(apiClientProvider)
+              .postJson('/tickets/$ticketId/transition', body);
+        } on ApiException {
+          // The host answered. Whatever it said — no capability, the line
+          // already moved — is a real answer the caller must surface, not a
+          // gap to queue over.
+          rethrow;
+        } catch (_) {
+          // The socket said open and the request still did not land. This is
+          // the gap between the two signals.
+          if (!canQueue) rethrow;
+          await _enqueueVoid(
+            tableId: tableId,
+            ticketId: ticketId,
+            voidReason: voidReason,
+            voidReasonCode: voidReasonCode,
+            actorId: actorId,
+          );
+          queued = true;
+        }
+      }
     }
     final key = _keyOfTicket(ticketId);
-    if (key == null) return;
+    if (key == null) return queued;
     final next = Map<String, List<Ticket>>.from(state);
     final list = next[key];
-    if (list == null) return;
+    if (list == null) return queued;
     next[key] = [
       for (final t in list)
         if (t.id == ticketId)
@@ -500,6 +565,54 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
           t,
     ];
     state = next;
+    return queued;
+  }
+
+  /// Park a void on the device's [SendQueue] (ADR-0090).
+  ///
+  /// Keyed `void-<ticketId>`, which makes the dedupe free: [SendQueue.enqueue]
+  /// treats a repeated id as a no-op, so tapping Batalkan four times on a dead
+  /// socket leaves one intent and the drain reports one answer.
+  ///
+  /// Carries the line's name and qty because the host is about to be told the
+  /// ticket is gone — by the time a refusal comes back there is nothing left
+  /// to look the words up from, and a report that cannot name the line is a
+  /// report nobody can act on.
+  Future<void> _enqueueVoid({
+    required String tableId,
+    required String ticketId,
+    required String? voidReason,
+    required String? voidReasonCode,
+    String? actorId,
+  }) async {
+    final t = findTicket(tableId, ticketId);
+    try {
+      await ref
+          .read(sendQueueProvider.notifier)
+          .enqueue(
+            id: 'void-$ticketId',
+            kind: SendIntentKind.voidTicket,
+            tableId: tableId,
+            actorId: actorId ?? '',
+            payload: {
+              'ticketId': ticketId,
+              'voidReasonCode': ?voidReasonCode,
+              'voidReason': ?voidReason,
+              'name': t?.name ?? '',
+              'qty': t?.qty ?? 0,
+            },
+          );
+    } on SendQueueFull {
+      final l = ref.read(l10nProvider);
+      ref
+          .read(errorBusServiceProvider)
+          .push(
+            l.sendQueueFull,
+            level: AppErrorLevel.error,
+            code: 'send_queue_full',
+          );
+      rethrow;
+    }
   }
 
   /// Edit a line the kitchen does not yet own — qty, note and modifiers on a
@@ -567,6 +680,11 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   }) {
     final now = SatClock.now();
     final stamp = _nowStamp(now);
+    // Mirror what the host will write (ADR-0115). This row is the optimistic
+    // stand-in for a line the server has not seen yet; minting it `held` in a
+    // venue with no prep queue would offer a fire-course action for a course
+    // nothing will ever fire, then silently swap under the waiter on reconnect.
+    final bypassKds = ref.read(venueSettingsProvider).bypassKds;
     final newTickets = [
       for (var i = 0; i < cart.length; i++)
         Ticket(
@@ -579,13 +697,15 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
           modifiers: cart[i].selectedModifiers,
           note: cart[i].note.isEmpty ? null : cart[i].note,
           price: cart[i].unitPrice,
-          status:
-              (cart[i].course == CourseId.fireNow ||
-                  cart[i].course == CourseId.drinksNow)
-              ? TicketStatus.sent
-              : TicketStatus.held,
+          status: bypassKds
+              ? TicketStatus.ready
+              : ((cart[i].course == CourseId.fireNow ||
+                        cart[i].course == CourseId.drinksNow)
+                    ? TicketStatus.sent
+                    : TicketStatus.held),
           sentAt: stamp,
           sentAtTime: now,
+          readyAtTime: bypassKds ? now : null,
           createdBy: actorId,
         ),
     ];
@@ -707,18 +827,20 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     return transition(tableId, ticketId, TicketStatus.ready);
   }
 
-  Future<void> voidTicket(
+  Future<bool> voidTicket(
     String tableId,
     String ticketId,
     String reason,
-    String reasonCode,
-  ) {
+    String reasonCode, {
+    String? actorId,
+  }) {
     return transition(
       tableId,
       ticketId,
       TicketStatus.voided,
       voidReason: reason,
       voidReasonCode: reasonCode,
+      actorId: actorId,
     );
   }
 }

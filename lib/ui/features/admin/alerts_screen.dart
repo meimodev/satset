@@ -79,8 +79,12 @@ String alertEventLabel(AppL10n l10n, AlertEvent e) => switch (e) {
 
 /// Same summary the hub tile badge shows — the two thresholds an owner tunes
 /// most.
-String alertsSummary(AppL10n l10n, VenueSettingsDto s) =>
-    l10n.alertsThresholdLine(s.prepTargetMins, s.ungreetedMins);
+/// Under [[Tanpa antrian persiapan]] the prep half is dropped, because the row
+/// it summarises is not on the screen either (ADR-0115) — a badge quoting a
+/// target nobody can see or edit is the kind of leftover that reads as a bug.
+String alertsSummary(AppL10n l10n, VenueSettingsDto s) => s.bypassKds
+    ? l10n.alertsThresholdLineNoPrep(s.ungreetedMins)
+    : l10n.alertsThresholdLine(s.prepTargetMins, s.ungreetedMins);
 
 /// Card chrome shared by the three scope blocks. [scope] is never optional:
 /// a block that does not say who it applies to is the bug this screen exists
@@ -162,6 +166,17 @@ class _ScopeCard extends StatelessWidget {
   }
 }
 
+/// The cues a prep queue owns. A venue in [[Tanpa antrian persiapan]] has no
+/// queue, so none of them can fire: `newOrder` needs a `sent` line, `overdue`
+/// needs a line that could be late, and `orderReady` would ring on the device
+/// that just sent the order (ADR-0115). Offering the operator a knob for a
+/// cue nothing can raise is how a settings screen stops describing the venue.
+const _kdsCues = <AlertEvent>{
+  AlertEvent.newOrder,
+  AlertEvent.overdue,
+  AlertEvent.orderReady,
+};
+
 /// Every service threshold in one named place (ADR-0043/0044). Thresholds
 /// decide *when* a cue fires; the sound card decides *what it sounds like*;
 /// the device mute card decides whether this handset plays it at all. Three
@@ -179,15 +194,20 @@ class _ThresholdCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _MinutesRow(
-            label: context.l10n.venueSettingsTimingPrepTarget,
-            hint: context.l10n.venueSettingsTimingPrepTargetHint,
-            value: s.prepTargetMins,
-            min: 5,
-            max: 60,
-            onChanged: (v) => n.patch(prepTargetMins: v),
-          ),
-          _rule(sc),
+          // The prep target is the "how long may the kitchen take" knob. With
+          // no kitchen queue it governs nothing — the stored value stays put,
+          // so the row comes back intact if the mode is turned off again.
+          if (!s.bypassKds) ...[
+            _MinutesRow(
+              label: context.l10n.venueSettingsTimingPrepTarget,
+              hint: context.l10n.venueSettingsTimingPrepTargetHint,
+              value: s.prepTargetMins,
+              min: 5,
+              max: 60,
+              onChanged: (v) => n.patch(prepTargetMins: v),
+            ),
+            _rule(sc),
+          ],
           _MinutesRow(
             label: context.l10n.venueSettingsTimingPickup,
             hint: context.l10n.venueSettingsTimingPickupHint,
@@ -447,6 +467,8 @@ class _SoundCardState extends ConsumerState<_SoundCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (final event in _events)
+            if (!(ref.watch(venueSettingsProvider).bypassKds &&
+                _kdsCues.contains(event)))
             _row(sc, s, event, alertEventLabel(context.l10n, event)),
         ],
       ),
@@ -597,8 +619,14 @@ class _DeviceMuteCard extends ConsumerWidget {
     final sc = context.sat;
     final muted = ref.watch(mutedAlertsProvider);
     final mode = ref.watch(prefsServiceProvider).valueOrNull?.appMode();
-    final visible = (mode == AppMode.server ? _kitchen : _waiter).toList()
-      ..sort((a, b) => a.index.compareTo(b.index));
+    final bypassKds = ref.watch(
+      venueSettingsProvider.select((v) => v.bypassKds),
+    );
+    final visible =
+        (mode == AppMode.server ? _kitchen : _waiter)
+            .where((e) => !(bypassKds && _kdsCues.contains(e)))
+            .toList()
+          ..sort((a, b) => a.index.compareTo(b.index));
 
     return _ScopeCard(
       title: context.l10n.venueSettingsTimingMuteTitle,

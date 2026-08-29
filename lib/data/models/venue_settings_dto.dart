@@ -153,6 +153,14 @@ extension VenueSettingsModules on VenueSettingsDto {
   /// Whether [key] — one of `counterSwitchKeys` — is on.
   bool counterOn(String key) =>
       counterMode && (counterConfig?.contains(key) ?? false);
+
+  /// Whether this venue has no prep queue (ADR-0115). Fails **closed**, like
+  /// [counterMode] and for the same reason, and is **independent of it** — a
+  /// counter shop may still run a cook line.
+  ///
+  /// This is the client half of the read; the server decides what a line is
+  /// *born* as, and every surface here only decides what to draw.
+  bool get bypassKds => modules?.contains(modeBypassKds) ?? false;
   bool get membersOn => membersEnabled && hasModule(moduleMembers);
   bool get guestOrderingOn =>
       guestOrderingEnabled && hasModule(moduleSelfOrder);

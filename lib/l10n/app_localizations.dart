@@ -4558,7 +4558,7 @@ abstract class AppL10n {
   /// No description provided for @cshErrOffline.
   ///
   /// In id, this message translates to:
-  /// **'Pembayaran tidak terkirim — perangkat tidak terhubung ke server. Tagihan belum dibayar.'**
+  /// **'Pembayaran belum terkonfirmasi — server tidak menjawab. Tutup dan buka lagi tagihan untuk memastikan sebelum mengulang.'**
   String get cshErrOffline;
 
   /// No description provided for @cshErrGeneric.
@@ -7243,6 +7243,12 @@ abstract class AppL10n {
   /// **'Gagal menutup meja: {error}'**
   String tblCloseFailed(String error);
 
+  /// No description provided for @tblCloseNotTerminal.
+  ///
+  /// In id, this message translates to:
+  /// **'Masih ada item yang belum selesai atau belum terkirim — cek daftar item dulu.'**
+  String get tblCloseNotTerminal;
+
   /// No description provided for @tblEmptyPhone.
   ///
   /// In id, this message translates to:
@@ -7320,6 +7326,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Hanya lihat'**
   String get tblViewOnly;
+
+  /// No description provided for @tblOfflineQueueNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanpa jaringan — pesanan dan pembatalan masuk Antrean kirim; sisanya menunggu.'**
+  String get tblOfflineQueueNote;
 
   /// No description provided for @tblCreateOrder.
   ///
@@ -9469,6 +9481,72 @@ abstract class AppL10n {
   /// **'Tercatat: ×{qty} {name} · atas nama kamu · terlihat di laporan'**
   String liaVoidedNote(int qty, String name);
 
+  /// No description provided for @liaVoidedQueued.
+  ///
+  /// In id, this message translates to:
+  /// **'Tercatat di perangkat ini: ×{qty} {name} · belum terkirim, dapur belum tahu'**
+  String liaVoidedQueued(int qty, String name);
+
+  /// No description provided for @liaVoidFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Item tidak dibatalkan'**
+  String get liaVoidFailed;
+
+  /// No description provided for @liaVoidNoCap.
+  ///
+  /// In id, this message translates to:
+  /// **'Peranmu tidak punya izin membatalkan item'**
+  String get liaVoidNoCap;
+
+  /// No description provided for @liaVoidNeedsManager.
+  ///
+  /// In id, this message translates to:
+  /// **'Sudah disajikan · pembatalannya butuh izin manajer'**
+  String get liaVoidNeedsManager;
+
+  /// No description provided for @voidFailForbidden.
+  ///
+  /// In id, this message translates to:
+  /// **'Peranmu tidak punya izin membatalkan item. Minta yang berwenang.'**
+  String get voidFailForbidden;
+
+  /// No description provided for @voidFailNeedsManager.
+  ///
+  /// In id, this message translates to:
+  /// **'Item sudah disajikan — pembatalannya dihitung gratis dan butuh izin manajer.'**
+  String get voidFailNeedsManager;
+
+  /// No description provided for @voidFailAlreadyMoved.
+  ///
+  /// In id, this message translates to:
+  /// **'Status item sudah berubah di perangkat lain. Tutup sheet ini, lalu cek ulang.'**
+  String get voidFailAlreadyMoved;
+
+  /// No description provided for @voidFailReasonRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan pembatalan wajib diisi.'**
+  String get voidFailReasonRequired;
+
+  /// No description provided for @voidFailOther.
+  ///
+  /// In id, this message translates to:
+  /// **'Server menolak pembatalan.'**
+  String get voidFailOther;
+
+  /// No description provided for @sendFailVoidExpired.
+  ///
+  /// In id, this message translates to:
+  /// **'Pembatalan ×{qty} {name} lewat hari — item masih aktif, batalkan lagi'**
+  String sendFailVoidExpired(int qty, String name);
+
+  /// No description provided for @sendFailVoidRefused.
+  ///
+  /// In id, this message translates to:
+  /// **'Pembatalan ×{qty} {name} ditolak: {reason} — item masih aktif'**
+  String sendFailVoidRefused(int qty, String name, String reason);
+
   /// No description provided for @resDaySummary.
   ///
   /// In id, this message translates to:
@@ -9721,6 +9799,12 @@ abstract class AppL10n {
   /// **'Tekan kembali lagi untuk keluar'**
   String get exitAgainToQuit;
 
+  /// No description provided for @olcVoided.
+  ///
+  /// In id, this message translates to:
+  /// **'Dibatalkan · {reason}'**
+  String olcVoided(String reason);
+
   /// No description provided for @olcVoidedBy.
   ///
   /// In id, this message translates to:
@@ -9817,6 +9901,12 @@ abstract class AppL10n {
   /// **'STATIONS · LIVE'**
   String get cmnStationsLive;
 
+  /// No description provided for @modSpecialCounterNoPrep.
+  ///
+  /// In id, this message translates to:
+  /// **'{used} / 80 · tampil di pesanan'**
+  String modSpecialCounterNoPrep(int used);
+
   /// No description provided for @modSpecialCounter.
   ///
   /// In id, this message translates to:
@@ -9894,6 +9984,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Tidak terhubung — data tersimpan, bisa sudah berubah. Perubahan dinonaktifkan sampai tersambung.'**
   String get fltOfflineNote;
+
+  /// No description provided for @sntBodyNoPrep.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan Meja {table} sudah siap diambil.'**
+  String sntBodyNoPrep(String table);
 
   /// No description provided for @sntTitle.
   ///
@@ -10828,7 +10924,7 @@ abstract class AppL10n {
   /// No description provided for @vrsKitchenError.
   ///
   /// In id, this message translates to:
-  /// **'Komplain / kualitas dapur'**
+  /// **'Komplain / kualitas'**
   String get vrsKitchenError;
 
   /// No description provided for @vrsKitchenErrorDesc.
@@ -12181,6 +12277,12 @@ abstract class AppL10n {
   /// **'Siap {prep}m · belum dilayani {ungreeted}m'**
   String alertsThresholdLine(int prep, int ungreeted);
 
+  /// No description provided for @alertsThresholdLineNoPrep.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum dilayani {ungreeted}m'**
+  String alertsThresholdLineNoPrep(int ungreeted);
+
   /// No description provided for @venueHubShiftReport.
   ///
   /// In id, this message translates to:
@@ -13092,6 +13194,60 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Pesan mandiri'**
   String get fltModuleSelfOrder;
+
+  /// Fleet venue card title: how the venue is shaped, as against what it holds.
+  ///
+  /// In id, this message translates to:
+  /// **'Mode'**
+  String get fltModes;
+
+  /// Tag on the fleet Mode card.
+  ///
+  /// In id, this message translates to:
+  /// **'BENTUK'**
+  String get fltTagModes;
+
+  /// Hint under the fleet Mode card: modes shape the app, modules are bought.
+  ///
+  /// In id, this message translates to:
+  /// **'Bentuk kerja venue. Bukan yang dibeli — dua kunci ini berdiri sendiri dan tidak saling mengandaikan.'**
+  String get fltModesHint;
+
+  /// Fleet mode toggle: the venue has no prep queue.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanpa antrian persiapan'**
+  String get fltModeBypassKds;
+
+  /// Hint under the bypass-KDS mode toggle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pesanan langsung siap diambil; tidak ada antrian dapur. Untuk venue yang penerima pesanannya sekaligus yang meracik.'**
+  String get fltModeBypassKdsHint;
+
+  /// Confirm dialog title when switching a venue to no-prep-queue.
+  ///
+  /// In id, this message translates to:
+  /// **'Hilangkan antrian persiapan di {venue}?'**
+  String fltModeBypassKdsOnTitle(String venue);
+
+  /// Confirm dialog body for turning the no-prep-queue mode on.
+  ///
+  /// In id, this message translates to:
+  /// **'Antrian Persiapan hilang dari venue ini dan pesanan baru langsung berstatus siap. Baris yang sudah dimasak tetap bisa diselesaikan sampai habis.'**
+  String get fltModeBypassKdsOnBody;
+
+  /// Confirm button for turning the no-prep-queue mode on.
+  ///
+  /// In id, this message translates to:
+  /// **'Hilangkan'**
+  String get fltModeBypassKdsOnYes;
+
+  /// Kedai switch label when the no-prep-queue mode has already removed what it governs.
+  ///
+  /// In id, this message translates to:
+  /// **'{label} — tidak berlaku tanpa antrian persiapan'**
+  String fltCounterMootByBypass(String label);
 
   /// Confirm dialog title when removing a module from a venue.
   ///

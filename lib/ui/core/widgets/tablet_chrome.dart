@@ -23,6 +23,12 @@ class TabletShell extends StatelessWidget {
   /// not the floor. Passed rather than read here so the rail stays a dumb
   /// renderer — `showCounterHome` in app_shell.dart owns the decision.
   final bool counterHome;
+  /// Whether the [[KDS / Antrian Persiapan]] slot is on the rail at all
+  /// (ADR-0115). A venue in [[Tanpa antrian persiapan]] has no prep queue, so
+  /// the destination is not a screen worth showing empty. Passed, like
+  /// [counterHome] — `showKdsSlot` in app_shell.dart owns the decision and its
+  /// two survivals.
+  final bool showKds;
   final int guestPending;
   final Widget child;
   final List<String> crumbs;
@@ -35,6 +41,7 @@ class TabletShell extends StatelessWidget {
     this.showKasir = false,
     this.showTamu = false,
     this.counterHome = false,
+    this.showKds = true,
     this.guestPending = 0,
     required this.child,
     required this.crumbs,
@@ -54,6 +61,7 @@ class TabletShell extends StatelessWidget {
             showKasir: showKasir,
             showTamu: showTamu,
             counterHome: counterHome,
+            showKds: showKds,
             guestPending: guestPending,
           ),
           Expanded(
@@ -81,6 +89,12 @@ class TabletSideRail extends StatelessWidget {
   /// not the floor. Passed rather than read here so the rail stays a dumb
   /// renderer — `showCounterHome` in app_shell.dart owns the decision.
   final bool counterHome;
+  /// Whether the [[KDS / Antrian Persiapan]] slot is on the rail at all
+  /// (ADR-0115). A venue in [[Tanpa antrian persiapan]] has no prep queue, so
+  /// the destination is not a screen worth showing empty. Passed, like
+  /// [counterHome] — `showKdsSlot` in app_shell.dart owns the decision and its
+  /// two survivals.
+  final bool showKds;
   final int guestPending;
   const TabletSideRail({
     super.key,
@@ -90,6 +104,7 @@ class TabletSideRail extends StatelessWidget {
     this.showKasir = false,
     this.showTamu = false,
     this.counterHome = false,
+    this.showKds = true,
     this.guestPending = 0,
   });
 
@@ -140,14 +155,15 @@ class TabletSideRail extends StatelessWidget {
                       route: '/tables',
                       active: active,
                     ),
-                  _RailBtn(
-                    id: 'kitchen',
-                    label: context.l10n.tabAntrian,
-                    icon: Icons.receipt_long_outlined,
-                    route: '/kitchen',
-                    active: active,
-                    badge: kitchenCount,
-                  ),
+                  if (showKds)
+                    _RailBtn(
+                      id: 'kitchen',
+                      label: context.l10n.tabAntrian,
+                      icon: Icons.receipt_long_outlined,
+                      route: '/kitchen',
+                      active: active,
+                      badge: kitchenCount,
+                    ),
                   _RailBtn(
                     id: 'orders',
                     label: context.l10n.tabPesanan,
