@@ -24,6 +24,7 @@ void main() {
     List<BillStrukPayment> payments = const [],
     int outstanding = 0,
     bool taxAfterDiscount = true,
+    List<String> receiptOwners = const [],
   }) => BillStrukData(
     venueName: 'Warung Sebelah',
     address: 'Jl. Pantai Berawa No. 17',
@@ -57,6 +58,7 @@ void main() {
     total: 97555,
     billTotal: 195110,
     payments: payments,
+    receiptOwners: receiptOwners,
     paidNet: payments.fold<int>(0, (a, p) => a + p.amount),
     outstanding: outstanding,
   );
@@ -131,6 +133,34 @@ void main() {
     await pump(t, fixture(kind: BillDocKind.evenReceipt));
     expect(find.textContaining('STRUK BAGIAN'), findsOneWidget);
     expect(money('195.110'), findsWidgets);
+  });
+
+  testWidgets('the settled slip names who each share was for', (t) async {
+    // ADR-0118. The roll prints a [[Pemilik struk]] block on the settled
+    // whole-bill doc; a cashier reconciling against the slips already handed
+    // out has to see it before approving the print, not after.
+    await pump(
+      t,
+      fixture(
+        payments: const [BillStrukPayment(methodLabel: 'Tunai', amount: 97555)],
+        receiptOwners: const ['A · Ana', 'B · Bayu'],
+      ),
+    );
+    expect(find.textContaining('A · Ana'), findsOneWidget);
+    expect(find.textContaining('B · Bayu'), findsOneWidget);
+  });
+
+  testWidgets('an unpaid Tagihan names nobody', (t) async {
+    // The block rides the payment half of the document, so a pre-bill must not
+    // show a row the roll will not print.
+    await pump(
+      t,
+      fixture(
+        outstanding: 97555,
+        receiptOwners: const ['A · Ana', 'B · Bayu'],
+      ),
+    );
+    expect(find.textContaining('A · Ana'), findsNothing);
   });
 
   testWidgets('the Diskon row moves with taxAfterDiscount', (t) async {

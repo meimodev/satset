@@ -122,6 +122,15 @@ class PaperPreview extends StatelessWidget {
               ),
             ] else if (d.outstanding > 0)
               _row(l10n.strukOutstanding, _money(d.outstanding), bold: true),
+            // Who each share was for (ADR-0118). The roll prints this block on
+            // the settled whole-bill doc, so the preview must too — a named row
+            // on paper the cashier cannot see before printing is exactly the
+            // drift this preview exists to prevent.
+            if (!d.isTagihan && d.receiptOwners.isNotEmpty) ...[
+              _rule(dashed: true),
+              _row(l10n.strukReceiptOwners, '', bold: true),
+              for (final row in d.receiptOwners) _row(row, ''),
+            ],
           ],
           _rule(),
           if (d.footer.isNotEmpty) _centre(d.footer, faint: true),
