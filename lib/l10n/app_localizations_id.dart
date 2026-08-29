@@ -7392,6 +7392,13 @@ class AppL10nId extends AppL10n {
   String get rptMembersBills => 'Tagihan';
 
   @override
+  String get rptMembersSplit => 'Tagihan dibagi';
+
+  @override
+  String get rptMembersSplitNote =>
+      'Tagihan yang dibagi dihitung per struk: tiap bagian masuk ke pelanggan yang tertera, sisanya ke pemilik tagihan.';
+
+  @override
   String get rptMembersAvgBill => 'Rata-rata pelanggan';
 
   @override

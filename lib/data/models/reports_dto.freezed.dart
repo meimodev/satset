@@ -7393,7 +7393,17 @@ mixin _$MembersSectionDto {
 /// the points figures and the ranked list's points column are **hidden**,
 /// not zeroed — a zero says "earned nothing", which is a different and
 /// false statement from "this venue does not run points".
- bool get pointsEnabled; int get enrolled; int get activeMembers; int get memberBills; int get memberNet; int get guestBills; int get guestNet; int get avgMemberBill; int get avgGuestBill; int get pointsEarned; int get pointsRedeemed; int get pointsAdjusted; int get pointsOutstanding;/// Rupiah the outstanding points would cost at today's rate. An estimate by
+ bool get pointsEnabled; int get enrolled; int get activeMembers; int get memberBills;/// Bills in this window that carried more than one member (ADR-0118).
+///
+/// Zero at a venue that never held the mode, and the marker that lets the
+/// section say a window spanning the switch is showing two shapes: before
+/// it, a bill counts once for its owner; after it, a share counts for
+/// whoever it was for.
+ int get splitBills;/// Whether the venue may name a member per share *now*. Independent of
+/// [splitBills], which is history: switching the mode off freezes what was
+/// attributed rather than deleting it (ADR-0118 §6), so a closed month
+/// keeps its numbers and this goes false.
+ bool get splitEnabled; int get memberNet; int get guestBills; int get guestNet; int get avgMemberBill; int get avgGuestBill; int get pointsEarned; int get pointsRedeemed; int get pointsAdjusted; int get pointsOutstanding;/// Rupiah the outstanding points would cost at today's rate. An estimate by
 /// construction — the rate can move before they are spent.
  int get liabilityEstimate; List<MemberTopRowDto> get top;/// Members who traded in the window beyond the end of [top]. Shown as a
 /// tail count, so the hundredth name never reads as the last one.
@@ -7410,16 +7420,16 @@ $MembersSectionDtoCopyWith<MembersSectionDto> get copyWith => _$MembersSectionDt
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MembersSectionDto&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.pointsEnabled, pointsEnabled) || other.pointsEnabled == pointsEnabled)&&(identical(other.enrolled, enrolled) || other.enrolled == enrolled)&&(identical(other.activeMembers, activeMembers) || other.activeMembers == activeMembers)&&(identical(other.memberBills, memberBills) || other.memberBills == memberBills)&&(identical(other.memberNet, memberNet) || other.memberNet == memberNet)&&(identical(other.guestBills, guestBills) || other.guestBills == guestBills)&&(identical(other.guestNet, guestNet) || other.guestNet == guestNet)&&(identical(other.avgMemberBill, avgMemberBill) || other.avgMemberBill == avgMemberBill)&&(identical(other.avgGuestBill, avgGuestBill) || other.avgGuestBill == avgGuestBill)&&(identical(other.pointsEarned, pointsEarned) || other.pointsEarned == pointsEarned)&&(identical(other.pointsRedeemed, pointsRedeemed) || other.pointsRedeemed == pointsRedeemed)&&(identical(other.pointsAdjusted, pointsAdjusted) || other.pointsAdjusted == pointsAdjusted)&&(identical(other.pointsOutstanding, pointsOutstanding) || other.pointsOutstanding == pointsOutstanding)&&(identical(other.liabilityEstimate, liabilityEstimate) || other.liabilityEstimate == liabilityEstimate)&&const DeepCollectionEquality().equals(other.top, top)&&(identical(other.topTruncated, topTruncated) || other.topTruncated == topTruncated));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MembersSectionDto&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.pointsEnabled, pointsEnabled) || other.pointsEnabled == pointsEnabled)&&(identical(other.enrolled, enrolled) || other.enrolled == enrolled)&&(identical(other.activeMembers, activeMembers) || other.activeMembers == activeMembers)&&(identical(other.memberBills, memberBills) || other.memberBills == memberBills)&&(identical(other.splitBills, splitBills) || other.splitBills == splitBills)&&(identical(other.splitEnabled, splitEnabled) || other.splitEnabled == splitEnabled)&&(identical(other.memberNet, memberNet) || other.memberNet == memberNet)&&(identical(other.guestBills, guestBills) || other.guestBills == guestBills)&&(identical(other.guestNet, guestNet) || other.guestNet == guestNet)&&(identical(other.avgMemberBill, avgMemberBill) || other.avgMemberBill == avgMemberBill)&&(identical(other.avgGuestBill, avgGuestBill) || other.avgGuestBill == avgGuestBill)&&(identical(other.pointsEarned, pointsEarned) || other.pointsEarned == pointsEarned)&&(identical(other.pointsRedeemed, pointsRedeemed) || other.pointsRedeemed == pointsRedeemed)&&(identical(other.pointsAdjusted, pointsAdjusted) || other.pointsAdjusted == pointsAdjusted)&&(identical(other.pointsOutstanding, pointsOutstanding) || other.pointsOutstanding == pointsOutstanding)&&(identical(other.liabilityEstimate, liabilityEstimate) || other.liabilityEstimate == liabilityEstimate)&&const DeepCollectionEquality().equals(other.top, top)&&(identical(other.topTruncated, topTruncated) || other.topTruncated == topTruncated));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,enabled,pointsEnabled,enrolled,activeMembers,memberBills,memberNet,guestBills,guestNet,avgMemberBill,avgGuestBill,pointsEarned,pointsRedeemed,pointsAdjusted,pointsOutstanding,liabilityEstimate,const DeepCollectionEquality().hash(top),topTruncated);
+int get hashCode => Object.hashAll([runtimeType,enabled,pointsEnabled,enrolled,activeMembers,memberBills,splitBills,splitEnabled,memberNet,guestBills,guestNet,avgMemberBill,avgGuestBill,pointsEarned,pointsRedeemed,pointsAdjusted,pointsOutstanding,liabilityEstimate,const DeepCollectionEquality().hash(top),topTruncated]);
 
 @override
 String toString() {
-  return 'MembersSectionDto(enabled: $enabled, pointsEnabled: $pointsEnabled, enrolled: $enrolled, activeMembers: $activeMembers, memberBills: $memberBills, memberNet: $memberNet, guestBills: $guestBills, guestNet: $guestNet, avgMemberBill: $avgMemberBill, avgGuestBill: $avgGuestBill, pointsEarned: $pointsEarned, pointsRedeemed: $pointsRedeemed, pointsAdjusted: $pointsAdjusted, pointsOutstanding: $pointsOutstanding, liabilityEstimate: $liabilityEstimate, top: $top, topTruncated: $topTruncated)';
+  return 'MembersSectionDto(enabled: $enabled, pointsEnabled: $pointsEnabled, enrolled: $enrolled, activeMembers: $activeMembers, memberBills: $memberBills, splitBills: $splitBills, splitEnabled: $splitEnabled, memberNet: $memberNet, guestBills: $guestBills, guestNet: $guestNet, avgMemberBill: $avgMemberBill, avgGuestBill: $avgGuestBill, pointsEarned: $pointsEarned, pointsRedeemed: $pointsRedeemed, pointsAdjusted: $pointsAdjusted, pointsOutstanding: $pointsOutstanding, liabilityEstimate: $liabilityEstimate, top: $top, topTruncated: $topTruncated)';
 }
 
 
@@ -7430,7 +7440,7 @@ abstract mixin class $MembersSectionDtoCopyWith<$Res>  {
   factory $MembersSectionDtoCopyWith(MembersSectionDto value, $Res Function(MembersSectionDto) _then) = _$MembersSectionDtoCopyWithImpl;
 @useResult
 $Res call({
- bool enabled, bool pointsEnabled, int enrolled, int activeMembers, int memberBills, int memberNet, int guestBills, int guestNet, int avgMemberBill, int avgGuestBill, int pointsEarned, int pointsRedeemed, int pointsAdjusted, int pointsOutstanding, int liabilityEstimate, List<MemberTopRowDto> top, int topTruncated
+ bool enabled, bool pointsEnabled, int enrolled, int activeMembers, int memberBills, int splitBills, bool splitEnabled, int memberNet, int guestBills, int guestNet, int avgMemberBill, int avgGuestBill, int pointsEarned, int pointsRedeemed, int pointsAdjusted, int pointsOutstanding, int liabilityEstimate, List<MemberTopRowDto> top, int topTruncated
 });
 
 
@@ -7447,14 +7457,16 @@ class _$MembersSectionDtoCopyWithImpl<$Res>
 
 /// Create a copy of MembersSectionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? enabled = null,Object? pointsEnabled = null,Object? enrolled = null,Object? activeMembers = null,Object? memberBills = null,Object? memberNet = null,Object? guestBills = null,Object? guestNet = null,Object? avgMemberBill = null,Object? avgGuestBill = null,Object? pointsEarned = null,Object? pointsRedeemed = null,Object? pointsAdjusted = null,Object? pointsOutstanding = null,Object? liabilityEstimate = null,Object? top = null,Object? topTruncated = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? enabled = null,Object? pointsEnabled = null,Object? enrolled = null,Object? activeMembers = null,Object? memberBills = null,Object? splitBills = null,Object? splitEnabled = null,Object? memberNet = null,Object? guestBills = null,Object? guestNet = null,Object? avgMemberBill = null,Object? avgGuestBill = null,Object? pointsEarned = null,Object? pointsRedeemed = null,Object? pointsAdjusted = null,Object? pointsOutstanding = null,Object? liabilityEstimate = null,Object? top = null,Object? topTruncated = null,}) {
   return _then(_self.copyWith(
 enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
 as bool,pointsEnabled: null == pointsEnabled ? _self.pointsEnabled : pointsEnabled // ignore: cast_nullable_to_non_nullable
 as bool,enrolled: null == enrolled ? _self.enrolled : enrolled // ignore: cast_nullable_to_non_nullable
 as int,activeMembers: null == activeMembers ? _self.activeMembers : activeMembers // ignore: cast_nullable_to_non_nullable
 as int,memberBills: null == memberBills ? _self.memberBills : memberBills // ignore: cast_nullable_to_non_nullable
-as int,memberNet: null == memberNet ? _self.memberNet : memberNet // ignore: cast_nullable_to_non_nullable
+as int,splitBills: null == splitBills ? _self.splitBills : splitBills // ignore: cast_nullable_to_non_nullable
+as int,splitEnabled: null == splitEnabled ? _self.splitEnabled : splitEnabled // ignore: cast_nullable_to_non_nullable
+as bool,memberNet: null == memberNet ? _self.memberNet : memberNet // ignore: cast_nullable_to_non_nullable
 as int,guestBills: null == guestBills ? _self.guestBills : guestBills // ignore: cast_nullable_to_non_nullable
 as int,guestNet: null == guestNet ? _self.guestNet : guestNet // ignore: cast_nullable_to_non_nullable
 as int,avgMemberBill: null == avgMemberBill ? _self.avgMemberBill : avgMemberBill // ignore: cast_nullable_to_non_nullable
@@ -7551,10 +7563,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool enabled,  bool pointsEnabled,  int enrolled,  int activeMembers,  int memberBills,  int memberNet,  int guestBills,  int guestNet,  int avgMemberBill,  int avgGuestBill,  int pointsEarned,  int pointsRedeemed,  int pointsAdjusted,  int pointsOutstanding,  int liabilityEstimate,  List<MemberTopRowDto> top,  int topTruncated)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool enabled,  bool pointsEnabled,  int enrolled,  int activeMembers,  int memberBills,  int splitBills,  bool splitEnabled,  int memberNet,  int guestBills,  int guestNet,  int avgMemberBill,  int avgGuestBill,  int pointsEarned,  int pointsRedeemed,  int pointsAdjusted,  int pointsOutstanding,  int liabilityEstimate,  List<MemberTopRowDto> top,  int topTruncated)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MembersSectionDto() when $default != null:
-return $default(_that.enabled,_that.pointsEnabled,_that.enrolled,_that.activeMembers,_that.memberBills,_that.memberNet,_that.guestBills,_that.guestNet,_that.avgMemberBill,_that.avgGuestBill,_that.pointsEarned,_that.pointsRedeemed,_that.pointsAdjusted,_that.pointsOutstanding,_that.liabilityEstimate,_that.top,_that.topTruncated);case _:
+return $default(_that.enabled,_that.pointsEnabled,_that.enrolled,_that.activeMembers,_that.memberBills,_that.splitBills,_that.splitEnabled,_that.memberNet,_that.guestBills,_that.guestNet,_that.avgMemberBill,_that.avgGuestBill,_that.pointsEarned,_that.pointsRedeemed,_that.pointsAdjusted,_that.pointsOutstanding,_that.liabilityEstimate,_that.top,_that.topTruncated);case _:
   return orElse();
 
 }
@@ -7572,10 +7584,10 @@ return $default(_that.enabled,_that.pointsEnabled,_that.enrolled,_that.activeMem
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool enabled,  bool pointsEnabled,  int enrolled,  int activeMembers,  int memberBills,  int memberNet,  int guestBills,  int guestNet,  int avgMemberBill,  int avgGuestBill,  int pointsEarned,  int pointsRedeemed,  int pointsAdjusted,  int pointsOutstanding,  int liabilityEstimate,  List<MemberTopRowDto> top,  int topTruncated)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool enabled,  bool pointsEnabled,  int enrolled,  int activeMembers,  int memberBills,  int splitBills,  bool splitEnabled,  int memberNet,  int guestBills,  int guestNet,  int avgMemberBill,  int avgGuestBill,  int pointsEarned,  int pointsRedeemed,  int pointsAdjusted,  int pointsOutstanding,  int liabilityEstimate,  List<MemberTopRowDto> top,  int topTruncated)  $default,) {final _that = this;
 switch (_that) {
 case _MembersSectionDto():
-return $default(_that.enabled,_that.pointsEnabled,_that.enrolled,_that.activeMembers,_that.memberBills,_that.memberNet,_that.guestBills,_that.guestNet,_that.avgMemberBill,_that.avgGuestBill,_that.pointsEarned,_that.pointsRedeemed,_that.pointsAdjusted,_that.pointsOutstanding,_that.liabilityEstimate,_that.top,_that.topTruncated);case _:
+return $default(_that.enabled,_that.pointsEnabled,_that.enrolled,_that.activeMembers,_that.memberBills,_that.splitBills,_that.splitEnabled,_that.memberNet,_that.guestBills,_that.guestNet,_that.avgMemberBill,_that.avgGuestBill,_that.pointsEarned,_that.pointsRedeemed,_that.pointsAdjusted,_that.pointsOutstanding,_that.liabilityEstimate,_that.top,_that.topTruncated);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -7592,10 +7604,10 @@ return $default(_that.enabled,_that.pointsEnabled,_that.enrolled,_that.activeMem
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool enabled,  bool pointsEnabled,  int enrolled,  int activeMembers,  int memberBills,  int memberNet,  int guestBills,  int guestNet,  int avgMemberBill,  int avgGuestBill,  int pointsEarned,  int pointsRedeemed,  int pointsAdjusted,  int pointsOutstanding,  int liabilityEstimate,  List<MemberTopRowDto> top,  int topTruncated)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool enabled,  bool pointsEnabled,  int enrolled,  int activeMembers,  int memberBills,  int splitBills,  bool splitEnabled,  int memberNet,  int guestBills,  int guestNet,  int avgMemberBill,  int avgGuestBill,  int pointsEarned,  int pointsRedeemed,  int pointsAdjusted,  int pointsOutstanding,  int liabilityEstimate,  List<MemberTopRowDto> top,  int topTruncated)?  $default,) {final _that = this;
 switch (_that) {
 case _MembersSectionDto() when $default != null:
-return $default(_that.enabled,_that.pointsEnabled,_that.enrolled,_that.activeMembers,_that.memberBills,_that.memberNet,_that.guestBills,_that.guestNet,_that.avgMemberBill,_that.avgGuestBill,_that.pointsEarned,_that.pointsRedeemed,_that.pointsAdjusted,_that.pointsOutstanding,_that.liabilityEstimate,_that.top,_that.topTruncated);case _:
+return $default(_that.enabled,_that.pointsEnabled,_that.enrolled,_that.activeMembers,_that.memberBills,_that.splitBills,_that.splitEnabled,_that.memberNet,_that.guestBills,_that.guestNet,_that.avgMemberBill,_that.avgGuestBill,_that.pointsEarned,_that.pointsRedeemed,_that.pointsAdjusted,_that.pointsOutstanding,_that.liabilityEstimate,_that.top,_that.topTruncated);case _:
   return null;
 
 }
@@ -7607,7 +7619,7 @@ return $default(_that.enabled,_that.pointsEnabled,_that.enrolled,_that.activeMem
 @JsonSerializable()
 
 class _MembersSectionDto implements MembersSectionDto {
-  const _MembersSectionDto({this.enabled = false, this.pointsEnabled = false, this.enrolled = 0, this.activeMembers = 0, this.memberBills = 0, this.memberNet = 0, this.guestBills = 0, this.guestNet = 0, this.avgMemberBill = 0, this.avgGuestBill = 0, this.pointsEarned = 0, this.pointsRedeemed = 0, this.pointsAdjusted = 0, this.pointsOutstanding = 0, this.liabilityEstimate = 0, final  List<MemberTopRowDto> top = const <MemberTopRowDto>[], this.topTruncated = 0}): _top = top;
+  const _MembersSectionDto({this.enabled = false, this.pointsEnabled = false, this.enrolled = 0, this.activeMembers = 0, this.memberBills = 0, this.splitBills = 0, this.splitEnabled = false, this.memberNet = 0, this.guestBills = 0, this.guestNet = 0, this.avgMemberBill = 0, this.avgGuestBill = 0, this.pointsEarned = 0, this.pointsRedeemed = 0, this.pointsAdjusted = 0, this.pointsOutstanding = 0, this.liabilityEstimate = 0, final  List<MemberTopRowDto> top = const <MemberTopRowDto>[], this.topTruncated = 0}): _top = top;
   factory _MembersSectionDto.fromJson(Map<String, dynamic> json) => _$MembersSectionDtoFromJson(json);
 
 /// False ⇒ the venue does not run a program, and the section is not drawn.
@@ -7620,6 +7632,18 @@ class _MembersSectionDto implements MembersSectionDto {
 @override@JsonKey() final  int enrolled;
 @override@JsonKey() final  int activeMembers;
 @override@JsonKey() final  int memberBills;
+/// Bills in this window that carried more than one member (ADR-0118).
+///
+/// Zero at a venue that never held the mode, and the marker that lets the
+/// section say a window spanning the switch is showing two shapes: before
+/// it, a bill counts once for its owner; after it, a share counts for
+/// whoever it was for.
+@override@JsonKey() final  int splitBills;
+/// Whether the venue may name a member per share *now*. Independent of
+/// [splitBills], which is history: switching the mode off freezes what was
+/// attributed rather than deleting it (ADR-0118 §6), so a closed month
+/// keeps its numbers and this goes false.
+@override@JsonKey() final  bool splitEnabled;
 @override@JsonKey() final  int memberNet;
 @override@JsonKey() final  int guestBills;
 @override@JsonKey() final  int guestNet;
@@ -7656,16 +7680,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MembersSectionDto&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.pointsEnabled, pointsEnabled) || other.pointsEnabled == pointsEnabled)&&(identical(other.enrolled, enrolled) || other.enrolled == enrolled)&&(identical(other.activeMembers, activeMembers) || other.activeMembers == activeMembers)&&(identical(other.memberBills, memberBills) || other.memberBills == memberBills)&&(identical(other.memberNet, memberNet) || other.memberNet == memberNet)&&(identical(other.guestBills, guestBills) || other.guestBills == guestBills)&&(identical(other.guestNet, guestNet) || other.guestNet == guestNet)&&(identical(other.avgMemberBill, avgMemberBill) || other.avgMemberBill == avgMemberBill)&&(identical(other.avgGuestBill, avgGuestBill) || other.avgGuestBill == avgGuestBill)&&(identical(other.pointsEarned, pointsEarned) || other.pointsEarned == pointsEarned)&&(identical(other.pointsRedeemed, pointsRedeemed) || other.pointsRedeemed == pointsRedeemed)&&(identical(other.pointsAdjusted, pointsAdjusted) || other.pointsAdjusted == pointsAdjusted)&&(identical(other.pointsOutstanding, pointsOutstanding) || other.pointsOutstanding == pointsOutstanding)&&(identical(other.liabilityEstimate, liabilityEstimate) || other.liabilityEstimate == liabilityEstimate)&&const DeepCollectionEquality().equals(other._top, _top)&&(identical(other.topTruncated, topTruncated) || other.topTruncated == topTruncated));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MembersSectionDto&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.pointsEnabled, pointsEnabled) || other.pointsEnabled == pointsEnabled)&&(identical(other.enrolled, enrolled) || other.enrolled == enrolled)&&(identical(other.activeMembers, activeMembers) || other.activeMembers == activeMembers)&&(identical(other.memberBills, memberBills) || other.memberBills == memberBills)&&(identical(other.splitBills, splitBills) || other.splitBills == splitBills)&&(identical(other.splitEnabled, splitEnabled) || other.splitEnabled == splitEnabled)&&(identical(other.memberNet, memberNet) || other.memberNet == memberNet)&&(identical(other.guestBills, guestBills) || other.guestBills == guestBills)&&(identical(other.guestNet, guestNet) || other.guestNet == guestNet)&&(identical(other.avgMemberBill, avgMemberBill) || other.avgMemberBill == avgMemberBill)&&(identical(other.avgGuestBill, avgGuestBill) || other.avgGuestBill == avgGuestBill)&&(identical(other.pointsEarned, pointsEarned) || other.pointsEarned == pointsEarned)&&(identical(other.pointsRedeemed, pointsRedeemed) || other.pointsRedeemed == pointsRedeemed)&&(identical(other.pointsAdjusted, pointsAdjusted) || other.pointsAdjusted == pointsAdjusted)&&(identical(other.pointsOutstanding, pointsOutstanding) || other.pointsOutstanding == pointsOutstanding)&&(identical(other.liabilityEstimate, liabilityEstimate) || other.liabilityEstimate == liabilityEstimate)&&const DeepCollectionEquality().equals(other._top, _top)&&(identical(other.topTruncated, topTruncated) || other.topTruncated == topTruncated));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,enabled,pointsEnabled,enrolled,activeMembers,memberBills,memberNet,guestBills,guestNet,avgMemberBill,avgGuestBill,pointsEarned,pointsRedeemed,pointsAdjusted,pointsOutstanding,liabilityEstimate,const DeepCollectionEquality().hash(_top),topTruncated);
+int get hashCode => Object.hashAll([runtimeType,enabled,pointsEnabled,enrolled,activeMembers,memberBills,splitBills,splitEnabled,memberNet,guestBills,guestNet,avgMemberBill,avgGuestBill,pointsEarned,pointsRedeemed,pointsAdjusted,pointsOutstanding,liabilityEstimate,const DeepCollectionEquality().hash(_top),topTruncated]);
 
 @override
 String toString() {
-  return 'MembersSectionDto(enabled: $enabled, pointsEnabled: $pointsEnabled, enrolled: $enrolled, activeMembers: $activeMembers, memberBills: $memberBills, memberNet: $memberNet, guestBills: $guestBills, guestNet: $guestNet, avgMemberBill: $avgMemberBill, avgGuestBill: $avgGuestBill, pointsEarned: $pointsEarned, pointsRedeemed: $pointsRedeemed, pointsAdjusted: $pointsAdjusted, pointsOutstanding: $pointsOutstanding, liabilityEstimate: $liabilityEstimate, top: $top, topTruncated: $topTruncated)';
+  return 'MembersSectionDto(enabled: $enabled, pointsEnabled: $pointsEnabled, enrolled: $enrolled, activeMembers: $activeMembers, memberBills: $memberBills, splitBills: $splitBills, splitEnabled: $splitEnabled, memberNet: $memberNet, guestBills: $guestBills, guestNet: $guestNet, avgMemberBill: $avgMemberBill, avgGuestBill: $avgGuestBill, pointsEarned: $pointsEarned, pointsRedeemed: $pointsRedeemed, pointsAdjusted: $pointsAdjusted, pointsOutstanding: $pointsOutstanding, liabilityEstimate: $liabilityEstimate, top: $top, topTruncated: $topTruncated)';
 }
 
 
@@ -7676,7 +7700,7 @@ abstract mixin class _$MembersSectionDtoCopyWith<$Res> implements $MembersSectio
   factory _$MembersSectionDtoCopyWith(_MembersSectionDto value, $Res Function(_MembersSectionDto) _then) = __$MembersSectionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- bool enabled, bool pointsEnabled, int enrolled, int activeMembers, int memberBills, int memberNet, int guestBills, int guestNet, int avgMemberBill, int avgGuestBill, int pointsEarned, int pointsRedeemed, int pointsAdjusted, int pointsOutstanding, int liabilityEstimate, List<MemberTopRowDto> top, int topTruncated
+ bool enabled, bool pointsEnabled, int enrolled, int activeMembers, int memberBills, int splitBills, bool splitEnabled, int memberNet, int guestBills, int guestNet, int avgMemberBill, int avgGuestBill, int pointsEarned, int pointsRedeemed, int pointsAdjusted, int pointsOutstanding, int liabilityEstimate, List<MemberTopRowDto> top, int topTruncated
 });
 
 
@@ -7693,14 +7717,16 @@ class __$MembersSectionDtoCopyWithImpl<$Res>
 
 /// Create a copy of MembersSectionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? enabled = null,Object? pointsEnabled = null,Object? enrolled = null,Object? activeMembers = null,Object? memberBills = null,Object? memberNet = null,Object? guestBills = null,Object? guestNet = null,Object? avgMemberBill = null,Object? avgGuestBill = null,Object? pointsEarned = null,Object? pointsRedeemed = null,Object? pointsAdjusted = null,Object? pointsOutstanding = null,Object? liabilityEstimate = null,Object? top = null,Object? topTruncated = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? enabled = null,Object? pointsEnabled = null,Object? enrolled = null,Object? activeMembers = null,Object? memberBills = null,Object? splitBills = null,Object? splitEnabled = null,Object? memberNet = null,Object? guestBills = null,Object? guestNet = null,Object? avgMemberBill = null,Object? avgGuestBill = null,Object? pointsEarned = null,Object? pointsRedeemed = null,Object? pointsAdjusted = null,Object? pointsOutstanding = null,Object? liabilityEstimate = null,Object? top = null,Object? topTruncated = null,}) {
   return _then(_MembersSectionDto(
 enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
 as bool,pointsEnabled: null == pointsEnabled ? _self.pointsEnabled : pointsEnabled // ignore: cast_nullable_to_non_nullable
 as bool,enrolled: null == enrolled ? _self.enrolled : enrolled // ignore: cast_nullable_to_non_nullable
 as int,activeMembers: null == activeMembers ? _self.activeMembers : activeMembers // ignore: cast_nullable_to_non_nullable
 as int,memberBills: null == memberBills ? _self.memberBills : memberBills // ignore: cast_nullable_to_non_nullable
-as int,memberNet: null == memberNet ? _self.memberNet : memberNet // ignore: cast_nullable_to_non_nullable
+as int,splitBills: null == splitBills ? _self.splitBills : splitBills // ignore: cast_nullable_to_non_nullable
+as int,splitEnabled: null == splitEnabled ? _self.splitEnabled : splitEnabled // ignore: cast_nullable_to_non_nullable
+as bool,memberNet: null == memberNet ? _self.memberNet : memberNet // ignore: cast_nullable_to_non_nullable
 as int,guestBills: null == guestBills ? _self.guestBills : guestBills // ignore: cast_nullable_to_non_nullable
 as int,guestNet: null == guestNet ? _self.guestNet : guestNet // ignore: cast_nullable_to_non_nullable
 as int,avgMemberBill: null == avgMemberBill ? _self.avgMemberBill : avgMemberBill // ignore: cast_nullable_to_non_nullable

@@ -7488,6 +7488,13 @@ class AppL10nEn extends AppL10n {
   String get rptMembersBills => 'Bills';
 
   @override
+  String get rptMembersSplit => 'Split bills';
+
+  @override
+  String get rptMembersSplitNote =>
+      'A split bill is counted per receipt: each share goes to the member named on it, the remainder to the bill owner.';
+
+  @override
   String get rptMembersAvgBill => 'Member average';
 
   @override

@@ -2383,6 +2383,9 @@
   "rptMembersEnrolled": "New sign-ups",
   "rptMembersActive": "Active",
   "rptMembersBills": "Bills",
+  "rptMembersSplit": "Split bills",
+  "rptMembersSplitNote": "A split bill is counted per receipt: each share goes to the member named on it, the remainder to the bill owner."
+,
   "rptMembersAvgBill": "Member average",
   "rptMembersAvgGuest": "Walk-in average",
   "rptMembersLift": "Lift",

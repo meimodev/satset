@@ -144,6 +144,12 @@ String buildReportsCsv(
     if (s.members.topTruncated > 0) {
       rows.add(csvRow([l.rptMembersMore(s.members.topTruncated)]));
     }
+    // How the window was counted, in the file itself (ADR-0118). A ranked list
+    // read a year later cannot say whether a row is a whole bill or one share
+    // of one, and the export is the copy that outlives the screen.
+    if (s.members.splitBills > 0) {
+      rows.add(csvRow([l.rptMembersSplitNote]));
+    }
   }
 
   // Hourly sales.
@@ -312,6 +318,14 @@ Future<Uint8List> buildReportsPdf(
               padding: const pw.EdgeInsets.only(top: 6),
               child: pw.Text(
                 l.rptMembersMore(s.members.topTruncated),
+                style: const pw.TextStyle(fontSize: 8),
+              ),
+            ),
+          if (s.members.splitBills > 0)
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(top: 6),
+              child: pw.Text(
+                l.rptMembersSplitNote,
                 style: const pw.TextStyle(fontSize: 8),
               ),
             ),

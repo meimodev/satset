@@ -473,6 +473,20 @@ abstract class MembersSectionDto with _$MembersSectionDto {
     @Default(0) int enrolled,
     @Default(0) int activeMembers,
     @Default(0) int memberBills,
+
+    /// Bills in this window that carried more than one member (ADR-0118).
+    ///
+    /// Zero at a venue that never held the mode, and the marker that lets the
+    /// section say a window spanning the switch is showing two shapes: before
+    /// it, a bill counts once for its owner; after it, a share counts for
+    /// whoever it was for.
+    @Default(0) int splitBills,
+
+    /// Whether the venue may name a member per share *now*. Independent of
+    /// [splitBills], which is history: switching the mode off freezes what was
+    /// attributed rather than deleting it (ADR-0118 §6), so a closed month
+    /// keeps its numbers and this goes false.
+    @Default(false) bool splitEnabled,
     @Default(0) int memberNet,
     @Default(0) int guestBills,
     @Default(0) int guestNet,

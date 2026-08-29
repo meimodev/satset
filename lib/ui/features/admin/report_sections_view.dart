@@ -1523,7 +1523,10 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           context,
           widget.showPrepMetrics
               ? ops.kpis
-              : [for (final k in ops.kpis) if (k.key != 'prep') k],
+              : [
+                  for (final k in ops.kpis)
+                    if (k.key != 'prep') k,
+                ],
         ),
         const SizedBox(height: Sp.s3h),
         if (widget.showPrepMetrics) ...[
@@ -2247,6 +2250,12 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
               _memberCount(context, l10n.rptMembersEnrolled, m.enrolled),
               _memberCount(context, l10n.rptMembersActive, m.activeMembers),
               _memberCount(context, l10n.rptMembersBills, m.memberBills),
+              // Only where the venue has ever split one (ADR-0118). At a venue
+              // that never held the mode the figure is a structural zero, and
+              // a zero here would read as "nobody split a bill" rather than
+              // "this venue cannot".
+              if (m.splitEnabled || m.splitBills > 0)
+                _memberCount(context, l10n.rptMembersSplit, m.splitBills),
               _kasFigure(
                 context,
                 l10n.rptMembersAvgBill,
@@ -2267,6 +2276,18 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
               ),
             ],
           ),
+          // A window that spans the switch holds two shapes, and the numbers
+          // cannot say which is which — before it a bill counted once, for its
+          // owner; after it a share counts for whoever it was for. Said in
+          // words rather than reconciled away, because the honest answer is
+          // that both are true of different days in the range.
+          if (m.splitBills > 0) ...[
+            const SizedBox(height: Sp.s3),
+            Text(
+              l10n.rptMembersSplitNote,
+              style: SatType.bodyS(color: sc.textLo),
+            ),
+          ],
           // Membership can run without points. When it does, the block is
           // absent rather than a row of zeros claiming nothing was earned.
           if (m.pointsEnabled) ...[

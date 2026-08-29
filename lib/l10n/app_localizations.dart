@@ -11737,6 +11737,18 @@ abstract class AppL10n {
   /// **'Tagihan'**
   String get rptMembersBills;
 
+  /// Reports figure: bills in the window that carried more than one member.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagihan dibagi'**
+  String get rptMembersSplit;
+
+  /// Note under the members report figures, explaining how a split bill is counted.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagihan yang dibagi dihitung per struk: tiap bagian masuk ke pelanggan yang tertera, sisanya ke pemilik tagihan.'**
+  String get rptMembersSplitNote;
+
   /// No description provided for @rptMembersAvgBill.
   ///
   /// In id, this message translates to:
