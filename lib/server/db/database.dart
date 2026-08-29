@@ -1340,8 +1340,17 @@ class AppDatabase extends _$AppDatabase {
         // install, which is the v63 lesson: `_safeAddColumnOn` takes a raw
         // string and nothing compares the two populations but
         // schema_migration_test.
-        await _safeAddColumnOn('receipts', 'member_id');
-        await _safeAddColumnOn('table_session_receipts', 'member_id');
+        // `TEXT NULL`, not `TEXT`: `createAll` spells a nullable column with
+        // the keyword and `ALTER TABLE ADD COLUMN` does not, so the two
+        // populations end up with different DDL for the same column — the v63
+        // lesson, and the only thing that catches it is
+        // schema_migration_test.
+        await _safeAddColumnOn('receipts', 'member_id', type: 'TEXT NULL');
+        await _safeAddColumnOn(
+          'table_session_receipts',
+          'member_id',
+          type: 'TEXT NULL',
+        );
         await m.createTable(tableSessionReceiptLines);
         // Widen the order-scope uniqueness to (receipt_id, source). Same name,
         // so `IF NOT EXISTS` alone would leave the old one-slot index standing

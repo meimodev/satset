@@ -144,6 +144,15 @@ the picker vanishes, earn falls back to owner-only, and a window that was
 attributed keeps reporting as attributed — a closed month's numbers must not
 change because someone unticked a box today.
 
+Which fixes the rule the flag obeys, and it is narrower than it first looks:
+**`splitEnabled` gates the write and the picker, never a read.** `punchStatus`
+and `memberReportSection` consult a receipt's stored member unconditionally,
+because a stored attribution is the record of what happened and no live switch
+may rewrite it. This costs nothing at a venue that never held the mode: every
+`member_id` there is null, the owner fallback takes every unit and every
+rupiah, and both reads return exactly what they returned before this ADR. A
+read gated on the flag would have been the same code with a bug in it.
+
 ### The key
 
 `memberSplit`, a **mode** key in `venueModeKeys` (and `MODE_MODULES` in

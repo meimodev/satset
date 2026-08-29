@@ -177,14 +177,12 @@ Future<PunchStatus> punchStatus(
             ..where(s.memberId.equals(memberId)))
           .get();
   final sessionIds = {for (final row in ownedSessions) row.read(s.id)!};
-  if (c.splitEnabled) {
-    final attributed =
-        await (db.selectOnly(r)
-              ..addColumns([r.sessionId])
-              ..where(r.memberId.equals(memberId)))
-            .get();
-    sessionIds.addAll(attributed.map((row) => row.read(r.sessionId)!));
-  }
+  final attributed =
+      await (db.selectOnly(r)
+            ..addColumns([r.sessionId])
+            ..where(r.memberId.equals(memberId)))
+          .get();
+  sessionIds.addAll(attributed.map((row) => row.read(r.sessionId)!));
   if (sessionIds.isEmpty) {
     return PunchStatus(bought: 0, given: 0, target: c.punchTarget);
   }
@@ -209,19 +207,23 @@ Future<PunchStatus> punchStatus(
   };
 
   // Receipt → its [[Pemilik struk]], and the line assignments that point at
-  // one. Both empty when the mode is off, which collapses everything below to
-  // the pre-ADR-0118 reading: every unit belongs to whoever owned the bill.
-  var receiptOwner = <String, String?>{};
-  var lines = <TableSessionReceiptLine>[];
-  if (c.splitEnabled) {
-    receiptOwner = {
-      for (final row in await (db.select(r)..where((x) => x.sessionId.isIn(sessionIds))).get())
-        row.receiptId: row.memberId,
-    };
-    lines = await (db.select(
-      rl,
-    )..where((x) => x.sessionId.isIn(sessionIds))).get();
-  }
+  // one.
+  //
+  // Deliberately **not** gated on [MemberConfig.splitEnabled]: a stored
+  // attribution is the record of what happened, and unticking the mode today
+  // must not change what a closed month counted (ADR-0118 §6 — freeze, never
+  // delete). At a venue that never held the mode every `memberId` here is
+  // null, so the fallback below hands every unit to whoever owned the bill,
+  // which is the pre-ADR-0118 reading exactly. The flag gates the *write* and
+  // the picker, never the read.
+  final receiptOwner = {
+    for (final row
+        in await (db.select(r)..where((x) => x.sessionId.isIn(sessionIds))).get())
+      row.receiptId: row.memberId,
+  };
+  final lines = await (db.select(
+    rl,
+  )..where((x) => x.sessionId.isIn(sessionIds))).get();
   final linesByTicket = <String, List<TableSessionReceiptLine>>{};
   for (final line in lines) {
     (linesByTicket[line.ticketId] ??= <TableSessionReceiptLine>[]).add(line);
@@ -1214,23 +1216,80 @@ Future<Map<String, dynamic>> memberReportSection(
           ))
           .get();
 
+  // Receipts of the sessions in this window that name a [[Pemilik struk]]
+  // (ADR-0118), grouped by session. Read unconditionally, not behind
+  // [MemberConfig.splitEnabled]: a window that was attributed keeps reporting
+  // as attributed after the mode is unticked, and at a venue that never held
+  // it this map is empty and everything below collapses to the per-bill
+  // reading it had before.
+  final attributedBySession = <String, List<TableSessionReceipt>>{};
+  if (sessions.isNotEmpty) {
+    final ids = sessions.map((x) => x.id).toList();
+    final recs = await (db.select(db.tableSessionReceipts)
+          ..where((x) => x.sessionId.isIn(ids) & x.memberId.isNotNull()))
+        .get();
+    for (final rec in recs) {
+      (attributedBySession[rec.sessionId] ??= <TableSessionReceipt>[]).add(rec);
+    }
+  }
+
   var memberBills = 0;
   var memberNet = 0;
   var guestBills = 0;
   var guestNet = 0;
   final spendBy = <String, int>{};
   final visitsBy = <String, int>{};
+  // How many bills in this window were split between two or more members —
+  // the one figure that says "these numbers are two shapes" when a report
+  // spans the moment the mode was switched on.
+  var splitBills = 0;
   for (final row in sessions) {
-    final id = row.memberId;
-    if (id == null) {
+    final owner = row.memberId;
+
+    // **Bills stay bills**, counted on the owner (ADR-0118 §6). A
+    // part-member, part-guest bill is one bill by whoever held it, so every
+    // saved comparison still means what it meant; the finer truth lives in
+    // the per-member rollup below.
+    if (owner == null) {
       guestBills++;
       guestNet += row.settledTotal;
-      continue;
+    } else {
+      memberBills++;
+      memberNet += row.settledTotal;
     }
-    memberBills++;
-    memberNet += row.settledTotal;
-    spendBy[id] = (spendBy[id] ?? 0) + row.settledTotal;
-    visitsBy[id] = (visitsBy[id] ?? 0) + 1;
+
+    // Spend divides the way the points base does: a receipt naming someone
+    // other than the owner is theirs, and the owner takes everything left —
+    // their own receipts, unnamed ones, and money on no receipt at all. The
+    // parts therefore always add back to `settledTotal`.
+    final touched = <String>{};
+    var claimedByOthers = 0;
+    for (final rec
+        in attributedBySession[row.id] ?? const <TableSessionReceipt>[]) {
+      final id = rec.memberId!;
+      if (id == owner) continue;
+      spendBy[id] = (spendBy[id] ?? 0) + rec.total;
+      claimedByOthers += rec.total;
+      touched.add(id);
+    }
+    if (touched.length + (owner == null ? 0 : 1) > 1) splitBills++;
+    if (owner != null) {
+      // Clamped because an amount receipt's claim is frozen at minting
+      // (ADR-0068) and a later void can leave the shares claiming more than
+      // the bill settled for — the owner's share floors at zero rather than
+      // going negative and dragging the ranked list with it.
+      final ownerSpend = (row.settledTotal - claimedByOthers)
+          .clamp(0, 1 << 31)
+          .toInt();
+      spendBy[owner] = (spendBy[owner] ?? 0) + ownerSpend;
+      touched.add(owner);
+    }
+    // A visit each, not a share each: the ranked list's "kunjungan" column
+    // counts bills a member was on, and three friends at one table ate out
+    // once apiece.
+    for (final id in touched) {
+      visitsBy[id] = (visitsBy[id] ?? 0) + 1;
+    }
   }
 
   // Points moved *in this window*, split the way the ledger splits them: what
@@ -1313,6 +1372,11 @@ Future<Map<String, dynamic>> memberReportSection(
     'activeMembers': spendBy.length,
     'memberBills': memberBills,
     'memberNet': memberNet,
+    // Bills in this window that carried more than one member (ADR-0118). Zero
+    // at a venue without the mode, and the marker that lets the section say a
+    // window spanning the switch is showing two shapes rather than one.
+    'splitBills': splitBills,
+    'splitEnabled': cfg.splitEnabled,
     'guestBills': guestBills,
     'guestNet': guestNet,
     'avgMemberBill': memberBills == 0 ? 0 : memberNet ~/ memberBills,

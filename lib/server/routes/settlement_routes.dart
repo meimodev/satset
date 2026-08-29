@@ -2403,6 +2403,12 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
       (a, p) => a + p.read(db.payments.amount)!,
     );
     paidNet += recPaid;
+    // Null when the named member has since been deleted — the receipt was
+    // theirs and history does not rewrite (ADR-0092), so the id stays and the
+    // client renders its own placeholder.
+    final recMember = rec.memberId == null
+        ? null
+        : await getMember(db, rec.memberId!);
     receiptsJson.add({
       'id': rec.id,
       'mode': rec.mode,
@@ -2414,6 +2420,13 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
       'total': rec.total,
       'status': rec.status,
       'paidNet': recPaid,
+      // The [[Pemilik struk]] (ADR-0118) — who this share is *for*, a
+      // different question from who pays it. Null at a venue without the mode
+      // and on any share nobody named, whose money is the
+      // [[Pemilik tagihan]]'s. Carried whole, like the bill's own member, so
+      // the split step can show a balance without a second round trip.
+      'memberId': rec.memberId,
+      'member': recMember == null ? null : memberJson(recMember),
       // Individual rows, not just the total — the money doc prints a NAMED
       // "Diskon <preset>" and line discounts render under their item.
       'discounts': [
@@ -2477,6 +2490,7 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
       ? null
       : await getMember(db, visit.memberId!);
   final punch = member == null ? null : await punchStatus(db, member.id);
+  final mcfg = await memberConfig(db);
 
   return {
     'visitId': visit.id,
@@ -2527,6 +2541,11 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
             'punchTarget': punch?.target ?? 0,
             'punchRewardDue': punch?.rewardDue ?? false,
           },
+    // Whether this venue may name a [[Pemilik struk]] per receipt (ADR-0118).
+    // Composed server-side in `MemberConfig` — the client gates its step on
+    // this and never re-derives it from a module list, the rule ADR-0107
+    // already puts on `membersOn`.
+    'splitEnabled': mcfg.splitEnabled,
     'lines': linesJson,
     'receipts': receiptsJson,
   };
@@ -2629,6 +2648,9 @@ Future<Map<String, dynamic>?> _buildSessionBill(
       'total': rec.total,
       'status': rec.status,
       'paidNet': recPaid,
+      // Frozen at snapshot (ADR-0118), so a reprinted past slip still names
+      // the guest it was handed to.
+      'memberId': rec.memberId,
       'lines': const [],
       'payments': [
         for (final p in pays)
