@@ -194,9 +194,15 @@ class MemberPanel extends ConsumerWidget {
     WidgetRef ref,
     MemberDto member,
   ) async {
+    final cfg = ref.read(venueSettingsProvider);
     final points = await showSatSheet<int>(
       context,
-      builder: (_) => _RedeemSheet(member: member, bill: bill),
+      builder: (_) => RedeemSheet(
+        points: member.points,
+        room: bill.total - bill.serviceAmount - bill.taxAmount,
+        pointValue: cfg.memberPointValue,
+        minPoints: cfg.memberRedeemMin,
+      ),
     );
     if (points == null || points <= 0) return;
     await run(() => repo.redeemPoints(bill.visitId, points));
@@ -205,7 +211,9 @@ class MemberPanel extends ConsumerWidget {
 
 /// Find the guest, or enrol them on the spot. One sheet, because at the till
 /// "who are you" and "let's sign you up" are the same thirty seconds.
-@visibleForTesting
+///
+/// Public because the [[Pemilik struk]] step reaches the same sheet per share
+/// (ADR-0118) — finding a guest is one implementation, whatever it is for.
 class MemberLookupSheet extends ConsumerStatefulWidget {
   const MemberLookupSheet({super.key});
 
@@ -321,18 +329,35 @@ class _LookupSheetState extends ConsumerState<MemberLookupSheet> {
 }
 
 /// How many points to spend. The ceiling is the smaller of what they have and
-/// what this bill can absorb — spending points on nothing is the one outcome
-/// worth designing against.
-class _RedeemSheet extends ConsumerStatefulWidget {
-  final MemberDto member;
-  final Bill bill;
-  const _RedeemSheet({required this.member, required this.bill});
+/// what the thing being paid can absorb — spending points on nothing is the one
+/// outcome worth designing against.
+///
+/// Takes numbers, not a [Bill]: since ADR-0118 the thing being paid is either
+/// the whole bill or one [[Pemilik struk]]'s share, and the arithmetic is the
+/// same either way.
+class RedeemSheet extends ConsumerStatefulWidget {
+  /// What the guest holds.
+  final int points;
+
+  /// What this bill or share can absorb — its total less service and tax.
+  final int room;
+
+  final int pointValue;
+  final int minPoints;
+
+  const RedeemSheet({
+    super.key,
+    required this.points,
+    required this.room,
+    required this.pointValue,
+    required this.minPoints,
+  });
 
   @override
-  ConsumerState<_RedeemSheet> createState() => _RedeemSheetState();
+  ConsumerState<RedeemSheet> createState() => _RedeemSheetState();
 }
 
-class _RedeemSheetState extends ConsumerState<_RedeemSheet> {
+class _RedeemSheetState extends ConsumerState<RedeemSheet> {
   final _points = TextEditingController();
 
   @override
@@ -348,16 +373,11 @@ class _RedeemSheetState extends ConsumerState<_RedeemSheet> {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final l10n = context.l10n;
-    final cfg = ref.watch(venueSettingsProvider);
-    final room =
-        widget.bill.total - widget.bill.serviceAmount - widget.bill.taxAmount;
-    final maxByBill = cfg.memberPointValue <= 0
+    final maxByBill = widget.pointValue <= 0
         ? 0
-        : room ~/ cfg.memberPointValue;
-    final max = widget.member.points < maxByBill
-        ? widget.member.points
-        : maxByBill;
-    final ok = _value >= cfg.memberRedeemMin && _value <= max;
+        : widget.room ~/ widget.pointValue;
+    final max = widget.points < maxByBill ? widget.points : maxByBill;
+    final ok = _value >= widget.minPoints && _value <= max;
 
     return SafeArea(
       child: Padding(
@@ -392,7 +412,7 @@ class _RedeemSheetState extends ConsumerState<_RedeemSheet> {
               // The rupiah the points are about to become, updated as they are
               // typed: points are an abstraction, money is not.
               helperText: l10n.cshMemberRedeemWorth(
-                formatIDR(_value * cfg.memberPointValue),
+                formatIDR(_value * widget.pointValue),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -404,7 +424,7 @@ class _RedeemSheetState extends ConsumerState<_RedeemSheet> {
             const SizedBox(height: Sp.s2),
             SatButton.ghost(
               label: l10n.cshMemberRedeemAll,
-              onTap: max >= cfg.memberRedeemMin
+              onTap: max >= widget.minPoints
                   ? () => Navigator.of(context).pop(max)
                   : null,
             ),

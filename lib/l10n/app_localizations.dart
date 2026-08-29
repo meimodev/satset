@@ -13243,6 +13243,24 @@ abstract class AppL10n {
   /// **'Hilangkan'**
   String get fltModeBypassKdsOnYes;
 
+  /// Fleet console label for the per-receipt member attribution mode.
+  ///
+  /// In id, this message translates to:
+  /// **'Pemilik struk'**
+  String get fltModeMemberSplit;
+
+  /// Fleet console hint under the per-receipt member attribution toggle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagihan yang dipisah bisa diberi pelanggan per struk, jadi tiap anggota dapat poin dan diskonnya sendiri.'**
+  String get fltModeMemberSplitHint;
+
+  /// Shown in place of the hint when the venue does not hold the members module.
+  ///
+  /// In id, this message translates to:
+  /// **'Perlu modul Keanggotaan aktif dulu.'**
+  String get fltModeMemberSplitNeedsMembers;
+
   /// Kedai switch label when the no-prep-queue mode has already removed what it governs.
   ///
   /// In id, this message translates to:
@@ -14250,6 +14268,60 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Preset diskon tagihan yang otomatis dipasang begitu pelanggan dikaitkan ke tagihan.'**
   String get vstMembersPresetHint;
+
+  /// Title of the step that names a member per receipt on a split bill.
+  ///
+  /// In id, this message translates to:
+  /// **'Siapa'**
+  String get cshWho;
+
+  /// Subtitle under the Siapa sheet header.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih pelanggan tiap struk. Poin dan diskonnya ikut yang dipilih.'**
+  String get cshWhoHint;
+
+  /// Placeholder on a receipt nobody has been named for.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum dipilih'**
+  String get cshWhoUnset;
+
+  /// Shown when a receipt names a member record that has since been deleted.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan terhapus'**
+  String get cshWhoGone;
+
+  /// Chip on a receipt whose attribution is frozen because it has a payment.
+  ///
+  /// In id, this message translates to:
+  /// **'Sudah dibayar'**
+  String get cshWhoPaid;
+
+  /// Footer naming the bill owner, who gets any money no receipt claims.
+  ///
+  /// In id, this message translates to:
+  /// **'Sisanya masuk ke {name}'**
+  String cshWhoRest(String name);
+
+  /// Footer when the bill has no owner, so unclaimed money earns for nobody.
+  ///
+  /// In id, this message translates to:
+  /// **'Sisanya tidak masuk poin siapa pun'**
+  String get cshWhoRestNone;
+
+  /// Button back into the Siapa step when every receipt is already named.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah pemilik struk'**
+  String get cshWhoEdit;
+
+  /// Button into the Siapa step, counting the receipts still unnamed.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih pelanggan ({count})'**
+  String cshWhoSet(int count);
 
   /// The member row on a live bill.
   ///

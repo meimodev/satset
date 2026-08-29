@@ -8418,6 +8418,17 @@ class AppL10nEn extends AppL10n {
   String get fltModeBypassKdsOnYes => 'Remove';
 
   @override
+  String get fltModeMemberSplit => 'Receipt owner';
+
+  @override
+  String get fltModeMemberSplitHint =>
+      'A split bill can name a member per receipt, so each one earns their own points and discount.';
+
+  @override
+  String get fltModeMemberSplitNeedsMembers =>
+      'Needs the Membership module switched on first.';
+
+  @override
   String fltCounterMootByBypass(String label) {
     return '$label — does not apply without a prep queue';
   }
@@ -9035,6 +9046,38 @@ class AppL10nEn extends AppL10n {
   @override
   String get vstMembersPresetHint =>
       'The bill discount preset applied automatically the moment a member is attached to a bill.';
+
+  @override
+  String get cshWho => 'Who';
+
+  @override
+  String get cshWhoHint =>
+      'Name a member on each receipt. Their points and discount follow the name.';
+
+  @override
+  String get cshWhoUnset => 'Not chosen';
+
+  @override
+  String get cshWhoGone => 'Member deleted';
+
+  @override
+  String get cshWhoPaid => 'Already paid';
+
+  @override
+  String cshWhoRest(String name) {
+    return 'The rest goes to $name';
+  }
+
+  @override
+  String get cshWhoRestNone => 'The rest earns for no one';
+
+  @override
+  String get cshWhoEdit => 'Change receipt owners';
+
+  @override
+  String cshWhoSet(int count) {
+    return 'Choose members ($count)';
+  }
 
   @override
   String get cshMemberNone => 'No member on this bill';

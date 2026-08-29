@@ -29,6 +29,8 @@ void main() {
     serviceAmount: 0,
     taxAmount: 0,
     total: 100000,
+    memberId: null,
+    member: null,
     status: 'paid',
     paidNet: payments.fold(0, (a, p) => a + p.amount),
     lines: const [],

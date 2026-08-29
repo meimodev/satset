@@ -8312,6 +8312,17 @@ class AppL10nId extends AppL10n {
   String get fltModeBypassKdsOnYes => 'Hilangkan';
 
   @override
+  String get fltModeMemberSplit => 'Pemilik struk';
+
+  @override
+  String get fltModeMemberSplitHint =>
+      'Tagihan yang dipisah bisa diberi pelanggan per struk, jadi tiap anggota dapat poin dan diskonnya sendiri.';
+
+  @override
+  String get fltModeMemberSplitNeedsMembers =>
+      'Perlu modul Keanggotaan aktif dulu.';
+
+  @override
   String fltCounterMootByBypass(String label) {
     return '$label — tidak berlaku tanpa antrian persiapan';
   }
@@ -8924,6 +8935,38 @@ class AppL10nId extends AppL10n {
   @override
   String get vstMembersPresetHint =>
       'Preset diskon tagihan yang otomatis dipasang begitu pelanggan dikaitkan ke tagihan.';
+
+  @override
+  String get cshWho => 'Siapa';
+
+  @override
+  String get cshWhoHint =>
+      'Pilih pelanggan tiap struk. Poin dan diskonnya ikut yang dipilih.';
+
+  @override
+  String get cshWhoUnset => 'Belum dipilih';
+
+  @override
+  String get cshWhoGone => 'Pelanggan terhapus';
+
+  @override
+  String get cshWhoPaid => 'Sudah dibayar';
+
+  @override
+  String cshWhoRest(String name) {
+    return 'Sisanya masuk ke $name';
+  }
+
+  @override
+  String get cshWhoRestNone => 'Sisanya tidak masuk poin siapa pun';
+
+  @override
+  String get cshWhoEdit => 'Ubah pemilik struk';
+
+  @override
+  String cshWhoSet(int count) {
+    return 'Pilih pelanggan ($count)';
+  }
 
   @override
   String get cshMemberNone => 'Belum ada pelanggan';

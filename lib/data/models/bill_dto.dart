@@ -408,6 +408,17 @@ class BillReceipt {
   final int total;
   final String status;
   final int paidNet;
+
+  /// The [[Pemilik struk]] — who this share is *for* (ADR-0118). Null at a
+  /// venue without the `memberSplit` mode and on any share nobody named, whose
+  /// money is the [[Pemilik tagihan]]'s.
+  final String? memberId;
+
+  /// The same member carried whole, so the Siapa step can show a points balance
+  /// without a round trip. Null when [memberId] names someone since deleted —
+  /// the share was still theirs (ADR-0092), so the id outlives the person and
+  /// the UI renders its own placeholder.
+  final MemberDto? member;
   final List<BillReceiptLine> lines;
   final List<BillPayment> payments;
   final List<BillDiscount> discounts;
@@ -423,6 +434,8 @@ class BillReceipt {
     required this.total,
     required this.status,
     required this.paidNet,
+    required this.memberId,
+    required this.member,
     required this.lines,
     required this.payments,
     required this.discounts,
@@ -444,10 +457,25 @@ class BillReceipt {
     return sum < 0 ? 0 : sum;
   }
 
-  /// The whole-order discount, if any. At most one (ADR-0037, no stacking).
-  BillDiscount? get orderDiscount {
+  /// The **cashier's own** whole-order discount, if any.
+  ///
+  /// Filtered to `manual` since ADR-0118: order scope now holds one slot per
+  /// source, the same way bill scope has since ADR-0094, so the member's tier
+  /// discount and a redemption sit alongside this one rather than in it.
+  /// Returning the first non-line row would put a member's give-back behind
+  /// the cashier's own discount button, where removing it would silently take
+  /// back points.
+  BillDiscount? get orderDiscount => _orderDiscountOf('manual');
+
+  /// The [[Pemilik struk]]'s standing tier discount on this share.
+  BillDiscount? get memberDiscount => _orderDiscountOf('member');
+
+  /// Their points redemption against this share.
+  BillDiscount? get redeemDiscount => _orderDiscountOf('redeem');
+
+  BillDiscount? _orderDiscountOf(String source) {
     for (final d in discounts) {
-      if (!d.isLine) return d;
+      if (!d.isLine && d.source == source) return d;
     }
     return null;
   }
@@ -471,6 +499,10 @@ class BillReceipt {
     total: _int(j['total']),
     status: j['status'] as String? ?? 'unpaid',
     paidNet: _int(j['paidNet']),
+    memberId: j['memberId'] as String?,
+    member: j['member'] == null
+        ? null
+        : MemberDto.fromJson((j['member'] as Map).cast<String, dynamic>()),
     lines: [
       for (final l in (j['lines'] as List? ?? const []))
         BillReceiptLine(
@@ -520,8 +552,18 @@ class Bill {
   /// ADR-0094: one slot per [[Sumber diskon (discount source)|source]].
   final List<BillDiscount> billDiscounts;
 
-  /// The [[Pelanggan (member)]] on this bill, or null.
+  /// The [[Pelanggan (member)]] on this bill, or null. The [[Pemilik tagihan]]
+  /// since ADR-0118: they own the bill, and any money no share claims is
+  /// theirs.
   final MemberDto? member;
+
+  /// Whether this venue may name a [[Pemilik struk]] per receipt (ADR-0118).
+  ///
+  /// Server-composed in `MemberConfig.splitEnabled` — the mode key, the
+  /// `members` module and the owner's own switch, ANDed once. Read it rather
+  /// than re-deriving the same AND from a module list, the rule ADR-0107 puts
+  /// on every floor surface.
+  final bool splitEnabled;
   final int serviceAmount;
   final int taxAmount;
   final int total;
@@ -554,6 +596,7 @@ class Bill {
     required this.discountAmount,
     required this.billDiscounts,
     required this.member,
+    required this.splitEnabled,
     required this.serviceAmount,
     required this.taxAmount,
     required this.total,
@@ -608,6 +651,8 @@ class Bill {
     member: j['member'] == null
         ? null
         : MemberDto.fromJson((j['member'] as Map).cast<String, dynamic>()),
+    // Absent on an older server: fail closed, exactly as the mode key does.
+    splitEnabled: j['splitEnabled'] == true,
     serviceAmount: _int(j['serviceAmount']),
     taxAmount: _int(j['taxAmount']),
     total: _int(j['total']),

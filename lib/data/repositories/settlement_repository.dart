@@ -389,9 +389,10 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   /// it configured one, lands in its own slot server-side — nothing here has to
   /// remember to apply it.
   Future<Bill> attachMember(String visitId, String memberId) async {
-    final raw = await ref
-        .read(apiClientProvider)
-        .postJson('/settlement/visits/$visitId/member', {'memberId': memberId});
+    final raw = await ref.read(apiClientProvider).postJson(
+      '/settlement/visits/$visitId/member',
+      {'memberId': memberId},
+    );
     return _billFrom(raw);
   }
 
@@ -405,9 +406,10 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   /// Spend points as money off this bill. The ledger row and the discount land
   /// together server-side or not at all.
   Future<Bill> redeemPoints(String visitId, int points) async {
-    final raw = await ref
-        .read(apiClientProvider)
-        .postJson('/settlement/visits/$visitId/redeem', {'points': points});
+    final raw = await ref.read(apiClientProvider).postJson(
+      '/settlement/visits/$visitId/redeem',
+      {'points': points},
+    );
     return _billFrom(raw);
   }
 
@@ -415,6 +417,42 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     final raw = await ref
         .read(apiClientProvider)
         .postJson('/settlement/visits/$visitId/redeem/remove', const {});
+    return _billFrom(raw);
+  }
+
+  // ── the [[Pemilik struk]]: the same four acts, one share at a time
+  //    (ADR-0118). Each returns the whole bill because a share's give-back
+  //    moves the bill's ladder, and the Siapa step draws every row. ──
+
+  Future<Bill> attachReceiptMember(String receiptId, String memberId) async {
+    final raw = await ref.read(apiClientProvider).postJson(
+      '/settlement/receipts/$receiptId/member',
+      {'memberId': memberId},
+    );
+    return _billFrom(raw);
+  }
+
+  Future<Bill> detachReceiptMember(String receiptId) async {
+    final raw = await ref
+        .read(apiClientProvider)
+        .postJson('/settlement/receipts/$receiptId/member/detach', const {});
+    return _billFrom(raw);
+  }
+
+  /// Spend this guest's points against their own share. The ceiling is what
+  /// that share can absorb, not the whole bill.
+  Future<Bill> redeemOnReceipt(String receiptId, int points) async {
+    final raw = await ref.read(apiClientProvider).postJson(
+      '/settlement/receipts/$receiptId/redeem',
+      {'points': points},
+    );
+    return _billFrom(raw);
+  }
+
+  Future<Bill> removeReceiptRedeem(String receiptId) async {
+    final raw = await ref
+        .read(apiClientProvider)
+        .postJson('/settlement/receipts/$receiptId/redeem/remove', const {});
     return _billFrom(raw);
   }
 

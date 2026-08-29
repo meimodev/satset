@@ -6385,6 +6385,18 @@
   "@fltModeBypassKdsOnYes": {
     "description": "Confirm button for turning the no-prep-queue mode on."
   },
+  "fltModeMemberSplit": "Pemilik struk",
+  "@fltModeMemberSplit": {
+    "description": "Fleet console label for the per-receipt member attribution mode."
+  },
+  "fltModeMemberSplitHint": "Tagihan yang dipisah bisa diberi pelanggan per struk, jadi tiap anggota dapat poin dan diskonnya sendiri.",
+  "@fltModeMemberSplitHint": {
+    "description": "Fleet console hint under the per-receipt member attribution toggle."
+  },
+  "fltModeMemberSplitNeedsMembers": "Perlu modul Keanggotaan aktif dulu.",
+  "@fltModeMemberSplitNeedsMembers": {
+    "description": "Shown in place of the hint when the venue does not hold the members module."
+  },
   "fltCounterMootByBypass": "{label} \u2014 tidak berlaku tanpa antrian persiapan",
   "@fltCounterMootByBypass": {
     "description": "Kedai switch label when the no-prep-queue mode has already removed what it governs.",
@@ -7012,6 +7024,52 @@
   "vstMembersPresetHint": "Preset diskon tagihan yang otomatis dipasang begitu pelanggan dikaitkan ke tagihan.",
   "@vstMembersPresetHint": {
     "description": "Membership settings and hub copy."
+  },
+  "cshWho": "Siapa",
+  "@cshWho": {
+    "description": "Title of the step that names a member per receipt on a split bill."
+  },
+  "cshWhoHint": "Pilih pelanggan tiap struk. Poin dan diskonnya ikut yang dipilih.",
+  "@cshWhoHint": {
+    "description": "Subtitle under the Siapa sheet header."
+  },
+  "cshWhoUnset": "Belum dipilih",
+  "@cshWhoUnset": {
+    "description": "Placeholder on a receipt nobody has been named for."
+  },
+  "cshWhoGone": "Pelanggan terhapus",
+  "@cshWhoGone": {
+    "description": "Shown when a receipt names a member record that has since been deleted."
+  },
+  "cshWhoPaid": "Sudah dibayar",
+  "@cshWhoPaid": {
+    "description": "Chip on a receipt whose attribution is frozen because it has a payment."
+  },
+  "cshWhoRest": "Sisanya masuk ke {name}",
+  "@cshWhoRest": {
+    "description": "Footer naming the bill owner, who gets any money no receipt claims.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cshWhoRestNone": "Sisanya tidak masuk poin siapa pun",
+  "@cshWhoRestNone": {
+    "description": "Footer when the bill has no owner, so unclaimed money earns for nobody."
+  },
+  "cshWhoEdit": "Ubah pemilik struk",
+  "@cshWhoEdit": {
+    "description": "Button back into the Siapa step when every receipt is already named."
+  },
+  "cshWhoSet": "Pilih pelanggan ({count})",
+  "@cshWhoSet": {
+    "description": "Button into the Siapa step, counting the receipts still unnamed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "cshMemberNone": "Belum ada pelanggan",
   "@cshMemberNone": {

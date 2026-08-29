@@ -29,6 +29,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/cashier/discount_sheet.dart';
 import 'package:satset/ui/features/cashier/member_panel.dart';
 import 'package:satset/ui/features/cashier/receipt_badge.dart';
+import 'package:satset/ui/features/cashier/who_sheet.dart';
 import 'package:satset/ui/features/cashier/widgets/settle_pane.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
@@ -426,6 +427,38 @@ class _BillBodyState extends State<_BillBody> {
     });
   }
 
+  /// The [[Pemilik struk]] step offers itself once, the first time a split
+  /// appears with a share nobody has named (ADR-0118). A cashier who closed it
+  /// answered "later" — asking again on every refetch is how a sheet becomes
+  /// the thing you tap past without reading.
+  bool _whoOffered = false;
+
+  @override
+  void didUpdateWidget(covariant _BillBody old) {
+    super.didUpdateWidget(old);
+    final b = widget.bill;
+    if (_whoOffered ||
+        !b.splitEnabled ||
+        b.receipts.length < 2 ||
+        b.receipts.length <= old.bill.receipts.length ||
+        b.receipts.every((r) => r.memberId != null)) {
+      return;
+    }
+    _whoOffered = true;
+    // Not during a build: the split that minted these shares is very often the
+    // same frame that rebuilt this body.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showWhoSheet(
+        context,
+        visitId: b.visitId,
+        bill: b,
+        run: widget.run,
+        repo: widget.repo,
+      );
+    });
+  }
+
   /// A payment landed, or the mode changed — the picks no longer refer to
   /// anything, and a stale selection is how a cashier double-charges an item.
   void _clearSelection() {
@@ -552,6 +585,24 @@ class _BillBodyState extends State<_BillBody> {
           // An even split's shares own no items and are interchangeable by
           // design, so N near-identical cards are scroll with no signal in it.
           // They collapse into one card of thin rows. ADR-0063.
+          // Above the shares, not inside either branch: "who is A, who is B"
+          // is asked of the split as a whole, and an even split and an itemized
+          // one draw their shares two different ways (ADR-0063).
+          if (bill.splitEnabled && bill.receipts.isNotEmpty) ...[
+            rv(
+              _WhoCard(
+                bill: bill,
+                onOpen: () => showWhoSheet(
+                  context,
+                  visitId: bill.visitId,
+                  bill: bill,
+                  run: widget.run,
+                  repo: widget.repo,
+                ),
+              ),
+            ),
+            const SizedBox(height: Sp.s2h),
+          ],
           if (bill.mode == 'even' && bill.receipts.isNotEmpty)
             rv(
               _EvenSplitCard(
@@ -1613,6 +1664,70 @@ class _ReceiptCard extends ConsumerWidget {
 /// Every per-share act stays reachable: a row opens that share's own
 /// [_ReceiptCard] in a sheet, so pay / reopen / refund / diskon / cetak run
 /// through exactly one implementation. See ADR-0063.
+/// Who each share is for, at a glance, and the way back into the **Siapa**
+/// step. A summary and the header action in one widget: the fact a cashier
+/// scans for — *is anyone still unnamed* — is the same fact that decides
+/// whether they need to open the sheet again.
+class _WhoCard extends StatelessWidget {
+  final Bill bill;
+  final VoidCallback onOpen;
+  const _WhoCard({required this.bill, required this.onOpen});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    final unnamed = bill.receipts.where((r) => r.memberId == null).length;
+    return SatCard.section(
+      header: l10n.cshWho,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final r in bill.receipts)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: Sp.s1),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: Sp.s7,
+                    child: Text(
+                      r.label,
+                      style: SatType.labelM(color: sc.textHi),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      r.member?.name ??
+                          (r.memberId == null
+                              ? l10n.cshWhoUnset
+                              : l10n.cshWhoGone),
+                      style: r.member == null
+                          ? SatType.bodyS(color: sc.textLo)
+                          : SatType.bodyS(color: sc.textHi),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    formatIDR(r.total),
+                    style: SatType.mono(color: sc.textLo),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: Sp.s2),
+          SatButton.outline(
+            label: unnamed == 0 ? l10n.cshWhoEdit : l10n.cshWhoSet(unnamed),
+            icon: Icons.people_alt_outlined,
+            size: SatButtonSize.sm,
+            onTap: onOpen,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _EvenSplitCard extends StatelessWidget {
   final Bill bill;
   final Future<void> Function(Future<Bill> Function()) run;

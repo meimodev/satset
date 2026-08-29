@@ -162,6 +162,16 @@ extension VenueSettingsModules on VenueSettingsDto {
   /// *born* as, and every surface here only decides what to draw.
   bool get bypassKds => modules?.contains(modeBypassKds) ?? false;
   bool get membersOn => membersEnabled && hasModule(moduleMembers);
+
+  /// Whether a share of a split bill may name its own [[Pemilik struk]]
+  /// (ADR-0118). Fails **closed**, like the other mode keys, and ANDs with
+  /// [membersOn] — attribution with no membership to attribute to is a picker
+  /// that can only 404.
+  ///
+  /// The floor reads this, never the bare mode key, for the reason ADR-0107
+  /// puts on every sellable gate: the AND belongs in one place.
+  bool get memberSplitOn =>
+      membersOn && (modules?.contains(modeMemberSplit) ?? false);
   bool get guestOrderingOn =>
       guestOrderingEnabled && hasModule(moduleSelfOrder);
 }

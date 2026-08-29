@@ -656,6 +656,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           _counterSection(sc, can),
           const SizedBox(height: Sp.s3),
           _bypassKdsSection(sc, can),
+          const SizedBox(height: Sp.s3),
+          _memberSplitSection(sc, can),
         ],
       ),
     );
@@ -691,6 +693,55 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
         Text(
           context.l10n.fltModeBypassKdsHint,
           style: SatType.bodyS(color: sc.textLo),
+        ),
+      ],
+    );
+  }
+
+  /// **[[Pemilik struk]]** (ADR-0118) — may a share of a split bill name its
+  /// own member. No confirmation either way: switching it on adds a step the
+  /// cashier can ignore, and switching it off freezes what was already
+  /// attributed rather than deleting it, so neither direction takes anything
+  /// away mid-service.
+  ///
+  /// Dead without the `members` module, because attribution with no membership
+  /// to attribute to is a picker whose every route answers 404.
+  Widget _memberSplitSection(SatColors sc, bool can) {
+    final holdsMembers = _modules.contains(moduleMembers);
+    final on = _modules.contains(modeMemberSplit);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            SatToggle(
+              value: on && holdsMembers,
+              semanticLabel: context.l10n.fltModeMemberSplit,
+              onChanged: can && holdsMembers
+                  ? (v) => setState(
+                      () => _modules = v
+                          ? {..._modules, modeMemberSplit}
+                          : ({..._modules}..remove(modeMemberSplit)),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: Sp.s2),
+            Expanded(
+              child: Text(
+                context.l10n.fltModeMemberSplit,
+                style: SatType.bodyM(
+                  color: holdsMembers ? sc.textHi : sc.textLo,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: Sp.s2),
+        Text(
+          holdsMembers
+              ? context.l10n.fltModeMemberSplitHint
+              : context.l10n.fltModeMemberSplitNeedsMembers,
+          style: SatType.bodyS(color: holdsMembers ? sc.textLo : sc.warn),
         ),
       ],
     );
