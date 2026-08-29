@@ -93,3 +93,25 @@ final kitchenNewOrderCountProvider = Provider<int>((ref) {
   });
   return count;
 });
+
+/// Whether any line is still inside the prep queue — `sent`, `prep` or
+/// `cooked`. Read by the shell so that turning [[Tanpa antrian persiapan]] on
+/// mid-shift does not strand the lines that were already cooking: the KDS slot
+/// survives its own removal until the last of them is out (ADR-0115).
+///
+/// Deliberately broader than [kitchenNewOrderCountProvider], which counts only
+/// *unstarted* batches — a started line is still one nobody can finish without
+/// this screen.
+final kitchenQueueLiveProvider = Provider<bool>((ref) {
+  final by = ref.watch(ticketsProvider);
+  for (final list in by.values) {
+    for (final t in list) {
+      if (t.status == TicketStatus.sent ||
+          t.status == TicketStatus.prep ||
+          t.status == TicketStatus.cooked) {
+        return true;
+      }
+    }
+  }
+  return false;
+});

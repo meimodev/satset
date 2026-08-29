@@ -33,12 +33,21 @@ class OrderLineCard extends ConsumerStatefulWidget {
   final VoidCallback onTap;
   final void Function(String) onMarkServed;
   final bool readOnly;
+
+  /// Whether [onTap] stays live while [readOnly] is set. The two are separate
+  /// because the sheet behind the tap can *queue* a void and the serve button
+  /// cannot queue anything (ADR-0116) — a terputus handset keeps one and loses
+  /// the other. Null follows [readOnly], which is every caller that has no
+  /// lease to lose.
+  final bool? tappableWhenReadOnly;
+
   const OrderLineCard({
     super.key,
     required this.ticket,
     required this.onTap,
     required this.onMarkServed,
     this.readOnly = false,
+    this.tappableWhenReadOnly,
   });
 
   @override
@@ -86,6 +95,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
   Widget build(BuildContext context) {
     final ticket = widget.ticket;
     final readOnly = widget.readOnly;
+    final tappable = widget.tappableWhenReadOnly ?? !readOnly;
     final onTap = widget.onTap;
     final onMarkServed = widget.onMarkServed;
     final sc = context.sat;
@@ -147,7 +157,7 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
             color: Colors.transparent,
             borderRadius: SatR.a(14),
             child: InkWell(
-              onTap: readOnly ? null : onTap,
+              onTap: tappable ? onTap : null,
               borderRadius: SatR.a(14),
               child: Container(
                 padding: const EdgeInsets.all(Sp.s3h),
@@ -204,19 +214,28 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                               ticket.voidReasonCode != null)
                             Padding(
                               padding: const EdgeInsets.only(top: Sp.s1),
-                              child: Text(
-                                context.l10n.olcVoidedBy(
+                              child: Builder(
+                                builder: (context) {
                                   // A fixed reason stores no free text: its
                                   // words are rendered from the code.
-                                  (ticket.voidReason ?? '').isNotEmpty
+                                  final reason =
+                                      (ticket.voidReason ?? '').isNotEmpty
                                       ? ticket.voidReason!
                                       : voidReasonLabel(
                                           context.l10n,
                                           ticket.voidReasonCode ?? 'other',
-                                        ),
-                                  ticket.voidApprovedBy ?? '',
-                                ),
-                                style: SatType.bodyS(color: sc.urgent),
+                                        );
+                                  // Only a comp carries an approver; a
+                                  // self-served void must not trail an empty
+                                  // "approved by".
+                                  final by = ticket.voidApprovedBy?.trim();
+                                  return Text(
+                                    by == null || by.isEmpty
+                                        ? context.l10n.olcVoided(reason)
+                                        : context.l10n.olcVoidedBy(reason, by),
+                                    style: SatType.bodyS(color: sc.urgent),
+                                  );
+                                },
                               ),
                             ),
                           const SizedBox(height: Sp.s2),

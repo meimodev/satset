@@ -26,6 +26,7 @@ import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/domain/models/zone.dart';
+import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/services/send_queue_service.dart';
@@ -53,6 +54,27 @@ const Duration _kPressIn = Duration(milliseconds: 90);
 
 bool _animationsDisabled(BuildContext c) =>
     MediaQuery.maybeOf(c)?.disableAnimations ?? false;
+
+/// The three-state answer ADR-0116 replaced a single `readOnly` boolean with.
+///
+/// * `readOnly` — no ordinary edit: fire, serve, close, cover count.
+/// * `canQueueWrite` — take an order, void a line. The two acts the
+///   [[Antrean kirim]] can honour, and the only two this screen produces.
+///
+/// They differ in exactly one state: terputus with nobody else holding the
+/// lease. A handset that cannot reach the host cannot acquire the lease either,
+/// so folding that into `readOnly` padlocked the screen in the one condition
+/// the queue exists for — an order behind a table seated offline (ADR-0090) and
+/// a void captured when the guest changes their mind (ADR-0114).
+({bool readOnly, bool canQueueWrite}) tableAccess({
+  required bool lockedByOther,
+  required bool hasLease,
+  required bool offline,
+}) {
+  // Someone else holds it, or we are online and simply have not got it.
+  final lockedOut = lockedByOther || (!hasLease && !offline);
+  return (readOnly: lockedOut || !hasLease, canQueueWrite: !lockedOut);
+}
 
 class TableDetailScreen extends ConsumerStatefulWidget {
   final String tableId;
@@ -243,7 +265,29 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     // any client flips this screen between editable / read-only without
     // requiring a local poll.
     final lockedByOther = table.isLockedByOther(actorId);
-    final readOnly = lockedByOther || (!_ownsLock && !_acquiring);
+
+    // Terputus with no lease is a *third* state, not a read-only table
+    // (ADR-0116). A handset that cannot reach the host cannot acquire the
+    // lease either, so `readOnly` used to swallow the outage and padlock the
+    // screen — which made two documented offline paths unreachable at the one
+    // place they were written for: an order queued behind a table seated
+    // offline (ADR-0090) and a void captured when the guest changes their mind
+    // (ADR-0114). Both have queue backing; nothing else on this screen does,
+    // so the split unlocks exactly those two and leaves the rest disabled.
+    //
+    // The signal is `wsConnStateProvider`, the same one `submitOrder` and the
+    // void path read to decide they must enqueue — so the button is offered
+    // exactly when the queue will accept what it produces. Deliberately *not*
+    // `_acquireLock`'s catch, which swallows a capability denial into the same
+    // branch as a dead socket and would offer the FAB to a refused waiter.
+    final access = tableAccess(
+      lockedByOther: lockedByOther,
+      hasLease: _ownsLock || _acquiring,
+      offline: ref.watch(wsConnStateProvider) != WsConnState.open,
+    );
+    final readOnly = access.readOnly;
+    final canQueueWrite = access.canQueueWrite;
+    final offlineNoLease = readOnly && canQueueWrite;
 
     // Watch for two related transitions: (a) the current lock holder
     // releases while we're sitting read-only, or (b) the row flips from
@@ -252,6 +296,23 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     // cases we want to try to claim the lock — but only when the table is
     // actually in a lockable state. Kosong tables are intentionally
     // lock-free, so we skip auto-acquire on them.
+    // (c) The socket returns. A lease cannot be asked for while terputus
+    // (ADR-0116), so the screen would otherwise sit lease-less — and now
+    // *looking* locked out — until the waiter backs out and comes in again.
+    ref.listen<WsConnState>(wsConnStateProvider, (prev, next) {
+      if (next != WsConnState.open || _ownsLock || actorId == null) return;
+      final t = ref
+          .read(tablesProvider)
+          .where((x) => x.id == _tableId)
+          .firstOrNull;
+      if (t == null ||
+          t.status == TableStatus.available ||
+          t.isLockedByOther(actorId)) {
+        return;
+      }
+      _scheduleAutoAcquire();
+    });
+
     ref.listen<List<VenueTable>>(tablesProvider, (prev, next) {
       if (_ownsLock || actorId == null) return;
       final t = next.firstWhere(
@@ -426,12 +487,17 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     }
 
     void openAction(Ticket t) {
-      if (readOnly) return;
+      // A void is capturable while terputus (ADR-0114) and this is the only
+      // dine-in door to the sheet, so it opens on `canQueueWrite`, not on the
+      // lease. Takeaway never had the problem — it holds no lock (ADR-0026).
+      if (!canQueueWrite) return;
       showLineItemActionSheet(context: context, tableId: _tableId, ticket: t);
     }
 
     void onAdd() {
-      if (readOnly) return;
+      // Composing an order is legal without a lease the handset could not have
+      // got (ADR-0116); `submitOrder` enqueues it and the host arbitrates.
+      if (!canQueueWrite) return;
       context.push('/table/$_tableId/menu');
     }
 
@@ -493,6 +559,22 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
           await notifier.closeTable(_tableId, actorId: actorId);
         }
         if (context.mounted) safePop(context);
+      } on ApiException catch (e) {
+        // The one refusal a waiter can actually act on, and the one they hit
+        // after voiding a line on a terputus handset: the host still sees that
+        // line live, because the void is on the queue. Raw `$e` here rendered
+        // the JSON body at them.
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                e.code == 'tickets_not_terminal'
+                    ? context.l10n.tblCloseNotTerminal
+                    : context.l10n.tblCloseFailed('${e.code ?? e.statusCode}'),
+              ),
+            ),
+          );
+        }
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -533,6 +615,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
         readyAny: readyAny,
         canEditGuests: canEditGuests,
         readOnly: readOnly,
+        canQueueWrite: canQueueWrite,
         canClose: canClose,
         closeLabel: closeLabel,
         isKosong: isKosong,
@@ -568,6 +651,18 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                 onShowContext: showContextSheet,
               ),
               ?lockBanner,
+              // In flow with the other banners rather than in the floating
+              // action column: the list is often shorter than the viewport, so
+              // a floating note has nothing to be pushed clear of and lands on
+              // the last card.
+              if (offlineNoLease)
+                const Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: Sp.s4,
+                    vertical: Sp.s1h,
+                  ),
+                  child: _OfflineNoLeaseNote(),
+                ),
               if (readyAny) const ReadyBanner(),
               Expanded(
                 child: Center(
@@ -598,6 +693,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                                       course: Courses.byId(cid),
                                       items: grouped[cid]!,
                                       readOnly: readOnly,
+                                      canQueueWrite: canQueueWrite,
                                       onMarkServed: markServed,
                                       onFireCourse: () => fireCourse(cid),
                                       onTicketTap: openAction,
@@ -643,8 +739,10 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                       ),
                     ),
                   _PrimaryIconButton(
-                    icon: readOnly ? Icons.lock_outline : Icons.add,
-                    enabled: !readOnly,
+                    // The padlock means "someone else has this table", never
+                    // "the network is down" — offline still adds (ADR-0116).
+                    icon: canQueueWrite ? Icons.add : Icons.lock_outline,
+                    enabled: canQueueWrite,
                     onTap: onAdd,
                   ),
                 ],
@@ -963,6 +1061,11 @@ class _DetailCourseBlock extends StatelessWidget {
   final void Function(Ticket) onTicketTap;
   final bool readOnly;
 
+  /// Whether the line may still be *tapped* — the void sheet behind that tap
+  /// has a queue, so it survives an outage the serve and fire buttons do not
+  /// (ADR-0116). Defaults to `!readOnly`, which is the online case.
+  final bool? canQueueWrite;
+
   const _DetailCourseBlock({
     required this.course,
     required this.items,
@@ -970,6 +1073,7 @@ class _DetailCourseBlock extends StatelessWidget {
     required this.onFireCourse,
     required this.onTicketTap,
     this.readOnly = false,
+    this.canQueueWrite,
   });
 
   @override
@@ -1014,6 +1118,7 @@ class _DetailCourseBlock extends StatelessWidget {
               onTap: () => onTicketTap(it),
               onMarkServed: onMarkServed,
               readOnly: readOnly,
+              tappableWhenReadOnly: canQueueWrite,
             ),
           if (allHeld && !readOnly)
             Padding(
@@ -1365,6 +1470,40 @@ class _LockedBanner extends StatelessWidget {
   }
 }
 
+/// Says which half of the screen is still live while the handset is terputus
+/// and holds no lease (ADR-0116) — without it the enabled "Tambah pesanan"
+/// button next to a dead socket reads as a bug rather than as the queue doing
+/// its job. Deliberately not urgent: nothing has failed.
+class _OfflineNoLeaseNote extends StatelessWidget {
+  const _OfflineNoLeaseNote();
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3h, vertical: Sp.s2h),
+      decoration: SatBox.d(
+        color: sc.warnSoft,
+        border: SatB.all(color: sc.warn.withValues(alpha: 0.35)),
+        borderRadius: SatR.a(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.cloud_off_outlined, size: 16, color: sc.warn),
+          const SizedBox(width: Sp.s2h),
+          Expanded(
+            child: Text(
+              context.l10n.tblOfflineQueueNote,
+              style: SatType.bodyS(color: sc.warn),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TabletSplit extends StatelessWidget {
   final List<MenuItem> menu;
   final Widget appBar;
@@ -1375,6 +1514,10 @@ class _TabletSplit extends StatelessWidget {
   final bool readyAny;
   final bool canEditGuests;
   final bool readOnly;
+
+  /// Order and void survive an outage the rest of this pane does not; see
+  /// ADR-0116. Distinct from `!readOnly` only while terputus.
+  final bool canQueueWrite;
   final bool canClose;
   final String closeLabel;
   final bool isKosong;
@@ -1405,6 +1548,7 @@ class _TabletSplit extends StatelessWidget {
     required this.readyAny,
     required this.canEditGuests,
     required this.readOnly,
+    required this.canQueueWrite,
     required this.canClose,
     required this.closeLabel,
     required this.isKosong,
@@ -1575,6 +1719,7 @@ class _TabletSplit extends StatelessWidget {
                                           course: Courses.byId(cid),
                                           items: grouped[cid]!,
                                           readOnly: readOnly,
+                                          canQueueWrite: canQueueWrite,
                                           onMarkServed: onMarkServed,
                                           onFireCourse: () => onFireCourse(cid),
                                           onTicketTap: onTicketTap,
@@ -1589,62 +1734,78 @@ class _TabletSplit extends StatelessWidget {
                           decoration: SatBox.d(
                             border: Border(top: SatB.side(color: sc.border0)),
                           ),
-                          child: Row(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (canClose) ...[
-                                Expanded(
-                                  child: _CloseTableButton(
-                                    label: closeLabel,
-                                    onTap: onClose,
-                                  ),
-                                ),
-                                const SizedBox(width: Sp.s2h),
+                              // Read-only *and* still writable is exactly the
+                              // terputus-without-lease state (ADR-0116) — the
+                              // phone derives it the same way from its own
+                              // flags, so no third field crosses the ctor.
+                              if (readOnly && canQueueWrite) ...[
+                                const _OfflineNoLeaseNote(),
+                                const SizedBox(height: Sp.s2h),
                               ],
-                              Expanded(
-                                flex: canClose ? 1 : 1,
-                                child: Opacity(
-                                  opacity: readOnly ? 0.5 : 1,
-                                  child: Material(
-                                    color: sc.accent,
-                                    borderRadius: SatR.a(14),
-                                    child: InkWell(
-                                      onTap: readOnly ? null : onAdd,
-                                      borderRadius: SatR.a(14),
-                                      child: Container(
-                                        height: 52,
-                                        alignment: Alignment.center,
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              readOnly
-                                                  ? Icons.lock_outline
-                                                  : Icons.add,
-                                              size: 18,
-                                              color: sc.accentInk,
+                              Row(
+                                children: [
+                                  if (canClose) ...[
+                                    Expanded(
+                                      child: _CloseTableButton(
+                                        label: closeLabel,
+                                        onTap: onClose,
+                                      ),
+                                    ),
+                                    const SizedBox(width: Sp.s2h),
+                                  ],
+                                  Expanded(
+                                    flex: canClose ? 1 : 1,
+                                    child: Opacity(
+                                      opacity: canQueueWrite ? 1 : 0.5,
+                                      child: Material(
+                                        color: sc.accent,
+                                        borderRadius: SatR.a(14),
+                                        child: InkWell(
+                                          onTap: canQueueWrite ? onAdd : null,
+                                          borderRadius: SatR.a(14),
+                                          child: Container(
+                                            height: 52,
+                                            alignment: Alignment.center,
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  // The padlock means "someone else
+                                                  // has this table", never "the
+                                                  // network is down" (ADR-0116).
+                                                  canQueueWrite
+                                                      ? Icons.add
+                                                      : Icons.lock_outline,
+                                                  size: 18,
+                                                  color: sc.accentInk,
+                                                ),
+                                                const SizedBox(width: Sp.s2),
+                                                Text(
+                                                  !canQueueWrite
+                                                      ? context.l10n.tblViewOnly
+                                                      : (tickets.isEmpty
+                                                            ? context
+                                                                  .l10n
+                                                                  .tblCreateOrder
+                                                            : context
+                                                                  .l10n
+                                                                  .tblAddOrder),
+                                                  style: SatType.labelL(
+                                                    color: sc.accentInk,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                            const SizedBox(width: Sp.s2),
-                                            Text(
-                                              readOnly
-                                                  ? context.l10n.tblViewOnly
-                                                  : (tickets.isEmpty
-                                                        ? context
-                                                              .l10n
-                                                              .tblCreateOrder
-                                                        : context
-                                                              .l10n
-                                                              .tblAddOrder),
-                                              style: SatType.labelL(
-                                                color: sc.accentInk,
-                                              ),
-                                            ),
-                                          ],
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
                             ],
                           ),

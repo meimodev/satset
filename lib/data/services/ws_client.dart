@@ -143,9 +143,17 @@ class WsClient {
     _scheduleReconnect();
   }
 
+  /// A dead Wi-Fi does not close a TCP socket — the interface goes away with no
+  /// FIN and no RST, so a handset that walks out of range keeps reporting LIVE
+  /// for as long as nothing is written. That stale `open` is not cosmetic: it
+  /// is the signal `submitOrder` and the table screen read to decide whether to
+  /// queue (ADR-0090, ADR-0116), so without a keepalive the waiter in the dead
+  /// corner is told everything is fine. The ping is what makes the badge honest.
+  static const _keepAlive = Duration(seconds: 5);
+
   WebSocketChannel _pinnedConnect(Uri uri) {
     if (uri.scheme != 'wss') {
-      return WebSocketChannel.connect(uri);
+      return IOWebSocketChannel.connect(uri, pingInterval: _keepAlive);
     }
     final pinned = config.trustedFingerprint.toLowerCase();
     final loopback = ApiClient.isLoopbackHost(uri.host);
@@ -158,7 +166,11 @@ class WsClient {
       pinned,
       isLoopback: loopback,
     );
-    return IOWebSocketChannel.connect(uri, customClient: httpClient);
+    return IOWebSocketChannel.connect(
+      uri,
+      customClient: httpClient,
+      pingInterval: _keepAlive,
+    );
   }
 
   void _onMessage(dynamic raw) {

@@ -156,6 +156,83 @@ void main() {
     expect(q.state, hasLength(1));
   });
 
+  Future<SendIntent> enqueueVoid(
+    SendQueue q, {
+    required String ticketId,
+    String tableId = 'a',
+    String actor = 'user-1',
+  }) => q.enqueue(
+    id: 'void-$ticketId',
+    kind: SendIntentKind.voidTicket,
+    tableId: tableId,
+    actorId: actor,
+    payload: {
+      'ticketId': ticketId,
+      'voidReasonCode': 'customerChange',
+      'voidReason': '',
+      'name': 'Nasi goreng',
+      'qty': 1,
+    },
+  );
+
+  test('a refused void does not stall the orders behind it', () async {
+    // `served → voided` costs `compItem`, which a waiter may simply not hold.
+    // That is a business refusal about one line, not a broken bearer — and
+    // stalling on it strands every order queued behind a comp the venue was
+    // never going to allow.
+    final sent = <SendIntentKind>[];
+    final q = SendQueue(
+      prefs: prefs,
+      send: (i) async {
+        sent.add(i.kind);
+        if (i.kind == SendIntentKind.voidTicket) {
+          throw const ApiException(403, '{}', 'forbidden');
+        }
+        return {'ticketIds': <String>[], 'visitId': 'v-1'};
+      },
+    );
+    await enqueueVoid(q, ticketId: 'tk-1');
+    await enqueueOrder(q, tableId: 'b');
+
+    final report = await q.drain();
+
+    expect(report.interrupted, isFalse);
+    expect(sent, [SendIntentKind.voidTicket, SendIntentKind.submitOrder]);
+    expect(q.state, isEmpty, reason: 'both were answered');
+    expect(
+      report.outcomes.first.kind,
+      SendOutcomeKind.refused,
+      reason: 'the void is refused, not stalled',
+    );
+  });
+
+  test('a rejected bearer on an order still stalls a void behind it', () async {
+    // The 401/403 stall is only relaxed for the void itself. An order the
+    // bearer cannot carry must still hold the whole backlog.
+    final q = SendQueue(
+      prefs: prefs,
+      send: (_) async => throw const ApiException(403, '{}', 'forbidden'),
+    );
+    await enqueueOrder(q, tableId: 'a');
+    await enqueueVoid(q, ticketId: 'tk-1');
+
+    final report = await q.drain();
+
+    expect(report.interrupted, isTrue);
+    expect(q.state, hasLength(2));
+  });
+
+  test('voiding the same line twice offline queues one intent', () async {
+    // The key is `void-<ticketId>`, so the dedupe is the idempotency: four
+    // taps on a dead socket must leave one intent and one answer, not four.
+    final q = SendQueue(prefs: prefs, send: (_) async => {});
+    await enqueueVoid(q, ticketId: 'tk-1');
+    await enqueueVoid(q, ticketId: 'tk-1');
+    await enqueueVoid(q, ticketId: 'tk-2');
+
+    expect(q.state, hasLength(2));
+  });
+
   test('the idempotency key survives a retry', () async {
     final keys = <String>[];
     var failFirst = true;

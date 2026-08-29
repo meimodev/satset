@@ -85,7 +85,11 @@ Specifics, each of which was a live alternative:
   table now holds. Orders for every other table drain normally.
 - **No lock theatre.** A terputus device cannot hold the 7s lease, so it says so
   rather than faking one. A lease nobody can observe is exactly the ambiguous
-  state the design principles ban.
+  state the design principles ban. **Superseded in part by
+  [ADR-0116](0116-a-lease-you-cannot-renew-still-lets-you-queue.md):** the
+  no-fake-lease rule stands, but "cannot hold the lease" was read as "cannot
+  write", which padlocked the table screen in exactly the condition this queue
+  exists for — including the offline void of ADR-0114.
 - **No client stock ledger.** Cached `habis` flags render as they last stood; the
   line is provisional and coverage is decided at delivery, as it always was.
 

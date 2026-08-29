@@ -7,6 +7,7 @@ import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 
 final venueSettingsStatusProvider = StateProvider<AsyncValue<void>>(
@@ -22,7 +23,27 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
   final Ref ref;
   StreamSubscription? _wsSub;
 
+  /// Keep the venue **shape** across a cold boot (ADR-0115). Only the two
+  /// cloud-owned fields — everything else on the DTO is either cosmetic or
+  /// safer refetched. A mode key fails closed, so without this a handset that
+  /// boots away from its host draws a KDS tab and a [[Floor]] the venue does
+  /// not have, then flickers them away when it reconnects.
+  void _rememberShape(VenueSettingsDto dto) {
+    final prefs = ref.read(prefsServiceProvider).valueOrNull;
+    if (prefs == null) return;
+    unawaited(prefs.setVenueShape(dto.modules, dto.counterConfig));
+  }
+
   Future<void> _bootstrap() async {
+    // Paint the last-known shape before the fetch, so the first frame is the
+    // venue's own shape rather than the fail-closed default.
+    final cached = ref.read(prefsServiceProvider).valueOrNull?.venueShape();
+    if (cached != null) {
+      state = state.copyWith(
+        modules: cached.modules,
+        counterConfig: cached.counterConfig,
+      );
+    }
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
       ref.read(venueSettingsStatusProvider.notifier).state =
@@ -37,6 +58,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         (raw as Map).cast<String, dynamic>(),
       );
       state = dto;
+      _rememberShape(dto);
       ref.read(venueSettingsStatusProvider.notifier).state =
           const AsyncValue.data(null);
     } catch (e, st) {
@@ -49,7 +71,9 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     _wsSub = ref.read(wsClientProvider).events.listen((ev) {
       if (ev.type != WsEventTypes.venueSettingsUpdated) return;
       try {
-        state = VenueSettingsDto.fromJson(ev.payload);
+        final dto = VenueSettingsDto.fromJson(ev.payload);
+        state = dto;
+        _rememberShape(dto);
         SatLog.repo('venueSettings.ws update');
       } catch (e) {
         SatLog.repo('venueSettings.ws decode fail $e');

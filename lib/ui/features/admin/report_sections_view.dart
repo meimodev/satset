@@ -37,6 +37,7 @@ class ReportSectionsView extends StatefulWidget {
     this.loading = false,
     this.showStock = true,
     this.compact = false,
+    this.showPrepMetrics = true,
   });
 
   final ReportsSnapshotDto snapshot;
@@ -47,6 +48,14 @@ class ReportSectionsView extends StatefulWidget {
   /// off-site owner (ADR-0036) has no route to — their view renders from a
   /// cloud snapshot only, so it passes `false`.
   final bool showStock;
+
+  /// Whether the prep-queue metrics belong in Operasional (ADR-0115). A venue
+  /// in [[Tanpa antrian persiapan]] stamps `readyAt` at send, so its prep
+  /// median, its SLA hit-rate and its `prep` KPI are all a structural zero —
+  /// a "100% on target, 0 menit" panel that describes the schema rather than
+  /// the shift. The pickup metrics stay: food that sits after it is ready is a
+  /// real failure at a counter too.
+  final bool showPrepMetrics;
 
   /// [[Laporan ringkas]] (switch `ringkasReport`). The compact card above this
   /// view already carries the close, so the nine sections start **collapsed**
@@ -1510,10 +1519,17 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _opsKpis(context, ops.kpis),
+        _opsKpis(
+          context,
+          widget.showPrepMetrics
+              ? ops.kpis
+              : [for (final k in ops.kpis) if (k.key != 'prep') k],
+        ),
         const SizedBox(height: Sp.s3h),
-        _speedOfService(context, ops.speed),
-        const SizedBox(height: Sp.s3h),
+        if (widget.showPrepMetrics) ...[
+          _speedOfService(context, ops.speed),
+          const SizedBox(height: Sp.s3h),
+        ],
         _heatmap(context, ops.heatmap),
         const SizedBox(height: Sp.s3h),
         if (isTab)
@@ -1544,7 +1560,8 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
               value: '—',
               sub: context.l10n.rptNoDataLower,
             ),
-            KpiTileDto(label: context.l10n.rptKpiPrep, value: '—', sub: '—'),
+            if (widget.showPrepMetrics)
+              KpiTileDto(label: context.l10n.rptKpiPrep, value: '—', sub: '—'),
             KpiTileDto(label: context.l10n.rptKpiPickup, value: '—', sub: '—'),
             KpiTileDto(
               label: context.l10n.rptKpiReservations,

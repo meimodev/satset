@@ -25,10 +25,24 @@ const venueModuleKeys = <String>[moduleMembers, moduleSelfOrder];
 /// read through `venueHasMode`, never `venueHasModule`.
 const modeCounterService = 'counterService';
 
+/// **[[Tanpa antrian persiapan]]** (ADR-0115) — the venue has no prep queue at
+/// all: whoever takes the order also makes it, so a sent line is born `ready`
+/// and the [[KDS / Antrian Persiapan|KDS]] is not part of the venue's shape.
+///
+/// A mode key like [modeCounterService] and read the same way — closed when
+/// unknown — but **independent of it**: a counter shop may still run a cook
+/// line, and a small restaurant may have no queue. Neither implies the other,
+/// which is why this is a mode of its own rather than a seventh
+/// [counterSwitchKeys] entry.
+///
+/// It is the one key in this file that a *writer* reads (`submitOrder`), which
+/// ADR-0115 permits a mode and still forbids a config switch.
+const modeBypassKds = 'bypassKds';
+
 /// Mode keys ride in the same `addOns` array and the same mirrored CSV as the
 /// sellable ones — one transport, two readings. Kept apart here so the trial's
 /// implicit grant and the fail-open resolver can each name the set they mean.
-const venueModeKeys = <String>[modeCounterService];
+const venueModeKeys = <String>[modeCounterService, modeBypassKds];
 
 /// Everything the console may write to `addOns` and the mirror may carry down.
 /// Must stay equal to `ALL_MODULES` in `functions/index.js`.

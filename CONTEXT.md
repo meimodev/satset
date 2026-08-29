@@ -68,6 +68,8 @@ Per-user advisory lease on a table's detail screen. Prevents two waiters editing
 
 **Scope:** the lock is only active when the table's status is **not** `available`. Kosong tables are lock-free; their detail screen is read/seat-only. See ADR-0001.
 
+**A lease that cannot be asked for is not a lease held by someone else.** A [[Terputus|terputus]] handset cannot acquire the lease — the request needs the host — so "no lease" has two meanings that must not be collapsed: *somebody else has this table*, which blocks everything, and *nobody could be asked*, which blocks only what the [[Antrean kirim]] cannot carry. In the second, taking an order and voiding a line stay open, because both have a queue behind them; firing, serving, closing and editing the cover count wait, because none of them does. The lease is never faked, claimed or heartbeaten while terputus — the host still arbitrates on drain — and the padlock keeps its one meaning: *someone else has this table*, never *the network is down*. See ADR-0116. _Avoid_: reading the padlock as an outage, or offering an offline control whose act nothing can queue.
+
 ### Reservation
 **ID · EN** — Reservasi · Booking. Buku reservasi · Booking book. Statuses: pending · Pending; seated · Seated; noShow · No-show; cancelled · Cancelled.
 
@@ -251,7 +253,9 @@ Removing a sent ticket line from an order. User-facing copy: **"Batalkan item"**
 
 Self-served by any waiter holding `voidItem`, allowed only pre-serve (`sent | held | prep | cooked | ready`). Voiding a `served` item is a **comp/refund**, not a void — those go through `compItem` / `refund` capabilities with manager approval. See [docs/adr/0006-self-served-void-with-per-waiter-accountability.md](docs/adr/0006-self-served-void-with-per-waiter-accountability.md).
 
-Every void carries a canonical **reason code** — `wrongOrder` (terkirim salah), `customerChange` (tamu berubah pikiran), `outOfStock` (stok habis), `kitchenError` (kualitas dapur), `other` (free text wajib). Server stamps `actorUserId` from the JWT; reports surface per-waiter void rate and lost rupiah by reason.
+Every void carries a canonical **reason code** — `wrongOrder` (terkirim salah), `customerChange` (tamu berubah pikiran), `outOfStock` (stok habis), `kitchenError` (kualitas dapur), `other` (free text wajib). The **code is the whole reason**; free text is an extra that only `other` requires, and the words for every other code are composed at read time from the code (ADR-0085) — a void that stored a sentence stored one device's language. Server stamps the acting waiter; reports surface per-waiter void rate and lost rupiah by reason.
+
+A void may be **captured rather than delivered**: it is the one move on the ticket graph that a terputus handset parks on the [[Antrean kirim]] (ADR-0114), because a guest changes their mind in exactly the corner where the signal dies. A captured void is a real void on that handset and **no void at all to the kitchen** until the queue drains — the dish may still be plated in the meantime, and the screen says so. It is also the one intent whose failure leaves something *live*: a stranded order never happened, a stranded void leaves the line on the guest's bill. _Avoid_: reading a queued void as done; giving any other ticket transition an offline path (a replayed `prep` announces a kitchen fact that stopped being true minutes ago).
 
 ### Comp
 **ID · EN** — Kompensasi manajer · Comp (manager). _Not_ "Free"/"Gratis" as a label — a comp is a write-off with an approver, not a giveaway.
@@ -1105,7 +1109,18 @@ The shape of a venue where one person at one counter takes the order, makes it a
 
 Set by the **operator on the fleet console**, not by the owner in Pengaturan: unlike [[Pelanggan (member)|membership]] or [[Pesan mandiri (Self-order)|self-order]], this is not a programme an owner opts into, it is the shape of their shop, settled at onboarding. Everything it hides stays **legal and written** — tables, zones, [[Reservation]]s and locks are all still there, so a venue that adds a floor next month unticks a switch and finds it intact.
 
-_Avoid_: a `venueKind` enum (it cannot be half-ticked, and half-ticked is the common case); a switch that changes what a **writer** writes rather than what a screen defaults to; reading a mode key through the fail-open module resolver; treating a switch as a [[Capability]] — these change defaults, never permission.
+_Avoid_: a `venueKind` enum (it cannot be half-ticked, and half-ticked is the common case); a **switch** that changes what a writer writes rather than what a screen defaults to (a *mode key* may — see [[Tanpa antrian persiapan (no prep queue)]] — a `counterConfig` switch may not); reading a mode key through the fail-open module resolver; treating a switch as a [[Capability]] — these change defaults, never permission.
+
+### Tanpa antrian persiapan (no prep queue)
+**ID · EN** — Tanpa antrian persiapan · No prep queue. _Not_ "tanpa dapur"/"no kitchen" — the venue still cooks; what it does not have is a **queue** and a second person to hand the line to. _Not_ "mode cepat"/"fast mode": nothing is faster, one station is simply missing. _Not_ "bypass KDS" in user-facing copy — [[KDS / Antrian Persiapan|KDS]] is called Antrian Persiapan in both languages, and "bypass" describes the code path rather than the shop.
+
+The shape of a venue where whoever takes the order also makes it, so there is nobody downstream to queue for. Held as the `bypassKds` **mode key** in `addOns`, read through the same fail-closed resolver as [[Kedai (counter mode)|Kedai]] and **independent of it**: a counter shop may still run a cook line, and a small restaurant may have none. Neither key implies the other, which is why this is not a seventh `counterConfig` switch (ADR-0115).
+
+**A line is born `ready`.** `submitOrder` writes `ready` with `readyAt` stamped at send, rather than `sent` — the one place a mode key reaches into a writer, which ADR-0115 permits a *mode* and still forbids a *switch*. Everything that follows is a consequence, not a second decision: the line lands in the [[Pesanan board]]'s **Siap diambil** bucket, `ready → served` is the ordinary handover tap, and a mis-key is still the waiter's own [[Void (item)|void]] (`voidItem`) rather than a manager's comp — which is the whole reason the born status is `ready` and not `served`.
+
+**It hides, and it self-drains.** The KDS slot leaves the rail, but the route stays legal and the slot **comes back** while any line is still `sent`/`prep`/`cooked` — turning the mode on mid-shift must not strand food already cooking, since `sent → served` is not a waiter's move. It also stays for a `viewKds`-only signed-in user, whose device would otherwise have no destination at all. Prep metrics, the prep-queue [[Audio alert]]s and the `viewKds` row in the [[Role]] sheet all disappear too — **hidden, never revoked**: the capability stays stored and the switches stay written, so unticking the mode finds the venue as it left it.
+
+_Avoid_: "bypass KDS" as user-facing copy; a `counterConfig` switch for this (a switch may not branch a writer); reading it through the fail-open module resolver; writing the born status as `served` (it costs a manager to void what a waiter mis-keyed); revoking `viewKds` instead of hiding it.
 
 ### Buka kedai / Tutup kedai (venue day)
 **ID · EN** — Buka kedai · Open shop; Tutup kedai · Close shop. _Not_ "Buka/Tutup shift" — a [[Shift]] belongs to one person and there may be three of them in a day; this happens once, to the venue.

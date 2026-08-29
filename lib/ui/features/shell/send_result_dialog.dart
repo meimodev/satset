@@ -115,9 +115,22 @@ class _SendResultDialog extends ConsumerWidget {
   /// worded the same way an online send words them (ADR-0041).
   List<String> _reasons(BuildContext context, SendOutcome o) {
     final l = context.l10n;
+    // A stranded **void** is the opposite of a stranded order: the order never
+    // happened, but the line this was meant to remove is still live and still
+    // on the guest's bill. The row has to say that, and has to name the line —
+    // which is why the intent carries its name and qty.
+    final isVoid = o.intent.kind == SendIntentKind.voidTicket;
+    final qty = (o.intent.payload['qty'] as num?)?.toInt() ?? 0;
+    final name = (o.intent.payload['name'] as String?) ?? '';
     return switch (o.kind) {
-      SendOutcomeKind.expired => [l.sendFailExpired],
-      SendOutcomeKind.refused => [sendFailureText(l, o.code)],
+      SendOutcomeKind.expired => [
+        isVoid ? l.sendFailVoidExpired(qty, name) : l.sendFailExpired,
+      ],
+      SendOutcomeKind.refused => [
+        isVoid
+            ? l.sendFailVoidRefused(qty, name, sendFailureText(l, o.code))
+            : sendFailureText(l, o.code),
+      ],
       SendOutcomeKind.delivered => [
         for (final r in o.rejectedLines)
           l.tktNotSent(

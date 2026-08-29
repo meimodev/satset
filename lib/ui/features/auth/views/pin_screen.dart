@@ -1454,22 +1454,29 @@ class _ManualAddressDialogState extends ConsumerState<_ManualAddressDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(context.l10n.pinManualEntryTitle),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(context.l10n.pinManualEntryDescription),
-          const SizedBox(height: Sp.s4),
-          SatField.text(
-            controller: _controller,
-            hint: '192.168.1.100:7443',
-            label: context.l10n.pinManualEntryLabel,
-            errorText: _error,
-            enabled: !_busy,
-            autofocus: true,
-            onSubmitted: (_) => _onSubmit(),
-          ),
-        ],
+      // The field autofocuses, so the keyboard is always up by the time this
+      // is measured — on a short phone that leaves the dialog less height than
+      // the description plus the field, and the difference rendered as an
+      // overflow stripe across the input. Scrolling the content is the whole
+      // fix; nothing here needs to be smaller.
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(context.l10n.pinManualEntryDescription),
+            const SizedBox(height: Sp.s4),
+            SatField.text(
+              controller: _controller,
+              hint: '192.168.1.100:7443',
+              label: context.l10n.pinManualEntryLabel,
+              errorText: _error,
+              enabled: !_busy,
+              autofocus: true,
+              onSubmitted: (_) => _onSubmit(),
+            ),
+          ],
+        ),
       ),
       actions: [
         SatButton.ghost(

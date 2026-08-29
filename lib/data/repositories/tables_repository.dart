@@ -46,6 +46,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   final Ref ref;
   StreamSubscription? _wsSub;
   bool _resyncing = false;
+  bool _resyncAgain = false;
 
   Future<void> _bootstrap() async {
     final cfg = ref.read(apiConfigProvider);
@@ -131,18 +132,37 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   /// while we were down (or before our bootstrap GET succeeded) would never
   /// otherwise appear. Guarded so overlapping connects don't stampede; never
   /// throws (a transient failure simply waits for the next connect). ADR-0021.
+  ///
+  /// The guard coalesces rather than drops — see the same note on
+  /// `TicketsRepository._resync`. A resync asked for while one is in flight is
+  /// asking about a write the in-flight GET left too early to see.
   Future<void> _resync() async {
-    if (_resyncing) return;
+    if (_resyncing) {
+      _resyncAgain = true;
+      return;
+    }
     _resyncing = true;
     try {
-      await _refetch();
-      SatLog.repo('tables.resync ok');
-    } catch (e) {
-      SatLog.repo('tables.resync fail $e');
+      do {
+        _resyncAgain = false;
+        try {
+          await _refetch();
+          SatLog.repo('tables.resync ok');
+        } catch (e) {
+          // Per pass, not around the loop — see TicketsRepository._resync.
+          SatLog.repo('tables.resync fail $e');
+        }
+      } while (_resyncAgain);
     } finally {
       _resyncing = false;
+      _resyncAgain = false;
     }
   }
+
+  /// Re-pull after something outside this repository changed the server's
+  /// tables — today, a drained send queue (ADR-0090): a replayed seat is a
+  /// table fact, and a replayed order moves the tab.
+  Future<void> resyncNow() => _resync();
 
   VenueTable _toDomain(TableDto d) {
     return VenueTable(

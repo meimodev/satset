@@ -102,11 +102,29 @@ String kpiSub(AppL10n l, KpiTileDto k) {
 /// server's `code`; the sentence is composed here, like every other code that
 /// crosses the layer (ADR-0085).
 String sendFailureText(AppL10n l, String? code) => switch (code) {
+  'forbidden' => l.sendFailBlocked,
   'visit_changed' => l.sendFailVisitChanged,
   'bill_closed' => l.sendFailBillClosed,
   'expired' => l.sendFailExpired,
   'blocked' => l.sendFailBlocked,
   _ => l.sendFailOther,
+};
+
+/// Why a void did not happen (ADR-0006). The sheet resolves the exception to
+/// a code and the words are composed here, like every other code that crosses
+/// the layer (ADR-0085). An unknown code still renders a sentence.
+///
+/// The two 403 flavours are a real distinction, not a nicety: "your role
+/// cannot void" is a permissions problem, "this one needs a manager" is the
+/// deliberate comp gate, and a waiter told the wrong one either stops trying
+/// or goes looking for the wrong person.
+String voidFailureText(AppL10n l, String? code) => switch (code) {
+  'forbidden' => l.voidFailForbidden,
+  'forbidden_comp' => l.voidFailNeedsManager,
+  'illegal_transition' => l.voidFailAlreadyMoved,
+  'reason_required' => l.voidFailReasonRequired,
+  'send_queue_full' => l.sendQueueFull,
+  _ => l.voidFailOther,
 };
 
 /// Why the host refused a decision on a guest order (ADR-0105). Same shape as

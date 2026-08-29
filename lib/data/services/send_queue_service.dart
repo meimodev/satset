@@ -19,7 +19,7 @@ const _uuid = Uuid();
 /// only two acts a terputus handset may capture (ADR-0090). Editing or voiding
 /// a line that has not been delivered yet never becomes an intent — it rewrites
 /// the queued [SendIntent] in place, because the host has never heard of it.
-enum SendIntentKind { seatTable, submitOrder }
+enum SendIntentKind { seatTable, submitOrder, voidTicket }
 
 /// One act a waiter performed while their handset could not reach the host.
 ///
@@ -47,6 +47,9 @@ class SendIntent {
   final String actorId;
 
   /// `submitOrder`: `{'lines': [...]}`. `seatTable`: `{'pax': n}`.
+  /// `voidTicket`: `{'ticketId', 'voidReasonCode', 'voidReason', 'name', 'qty'}`
+  /// — the line's name and qty ride along because the host is about to be told
+  /// the ticket is gone, and the drain report still has to name what failed.
   final Map<String, dynamic> payload;
 
   const SendIntent({
@@ -413,10 +416,18 @@ class SendQueue extends StateNotifier<List<SendIntent>> {
           );
           await discard(intent.id);
         } on ApiException catch (e) {
-          if (e.statusCode == 401 || e.statusCode == 403) {
+          if (e.statusCode == 401 ||
+              (e.statusCode == 403 &&
+                  intent.kind != SendIntentKind.voidTicket)) {
             // The bearer cannot carry this backlog — a role changed, or the
             // handset is now signed in as someone without takeOrder. Stall and
             // say so; never self-authorise, never drop the orders.
+            //
+            // A **void** is the exception: `served → voided` costs `compItem`,
+            // which a waiter may simply not hold, and that is a business
+            // refusal about one line — not a broken bearer. Stalling on it
+            // would strand every order queued behind a comp the venue was
+            // never going to allow. 401 still stalls either way.
             SatLog.repo('sendQueue.drain blocked ${e.statusCode}');
             interrupted = true;
             break;
@@ -472,6 +483,24 @@ IntentSender apiIntentSender(ApiClient api) => (intent) async {
         // order that is perfectly fine.
         'expectedVisitId': ?intent.expectedVisitId,
       });
+      return (raw as Map).cast<String, dynamic>();
+    case SendIntentKind.voidTicket:
+      // No idempotency key: `voided` is terminal and has no outgoing
+      // transition, so a replay of one the host already took comes back as
+      // `409 illegal_transition` — a refusal the drain records and drops. The
+      // 409 *is* the idempotency; a key would be a second mechanism for the
+      // same guarantee.
+      final raw = await api.postJson(
+        '/tickets/${intent.payload['ticketId']}/transition',
+        {
+          'status': 'voided',
+          'voidReason': ?intent.payload['voidReason'] as String?,
+          'voidReasonCode': ?intent.payload['voidReasonCode'] as String?,
+          // Names the waiter who voided, not whoever carried the backlog in
+          // (ADR-0006 accountability, ADR-0056 never backfills authorship).
+          'actorId': intent.actorId,
+        },
+      );
       return (raw as Map).cast<String, dynamic>();
     case SendIntentKind.seatTable:
       final raw = await api.postJson('/tables/${intent.tableId}/seat', {

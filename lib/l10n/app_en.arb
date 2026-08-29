@@ -1001,7 +1001,7 @@
   "cshErrForbidden": "Needs manager approval (write-off).",
   "cshErrReasonRequired": "A write-off reason is required.",
   "cshErrNoLines": "The table has no orders.",
-  "cshErrOffline": "Payment not sent — this device cannot reach the server. The bill is still unpaid.",
+  "cshErrOffline": "Payment unconfirmed — the server did not answer. Reopen the bill to check before trying again.",
   "cshErrGeneric": "Operation failed ({code}).",
   "cshReceipts": "Receipts",
   "cshUnassignedCount": "{n, plural, one{{n} item not assigned to a receipt} other{{n} items not assigned to a receipt}}",
@@ -1529,6 +1529,7 @@
   "tblFinishBody": "Every ticket is done. Clear table {table} for the next guests? The bill stays with the cashier until it is paid.",
   "tblFinishBodyPaid": "Every ticket is done. Clear table {table} for the next guests? The bill is already paid.",
   "tblCloseFailed": "Couldn't close the table: {error}",
+  "tblCloseNotTerminal": "Some items are not finished, or not sent yet — check the item list.",
   "tblEmptyPhone": "Nothing here yet — tap \"Add to order\" to start.",
   "tblContextTitle": "Table context",
   "tblSeatedFor": "SEATED {elapsed} · {pax} GUESTS",
@@ -1542,6 +1543,7 @@
   "tblLockedSince": " · since {time}",
   "tblReadyToCollect": "{n} ready to collect",
   "tblViewOnly": "View only",
+  "tblOfflineQueueNote": "Offline — orders and voids go to the send queue; the rest waits.",
   "tblCreateOrder": "Create order",
   "tblAddOrder": "Add order",
   "tblStatTotal": "Total items",
@@ -1900,6 +1902,17 @@
   "liaVoidWarning": "A void is recorded against your sign-in together with its reason — visible in reports and the audit log.",
   "liaVoided": "Item voided",
   "liaVoidedNote": "Recorded: ×{qty} {name} · under your name · visible in reports",
+  "liaVoidedQueued": "Recorded on this device: ×{qty} {name} · not sent yet, the kitchen has not been told",
+  "liaVoidFailed": "Item not voided",
+  "liaVoidNoCap": "Your role cannot void items",
+  "liaVoidNeedsManager": "Already served · voiding needs manager approval",
+  "voidFailForbidden": "Your role cannot void items. Ask someone who can.",
+  "voidFailNeedsManager": "This item was already served — voiding it counts as a comp and needs manager approval.",
+  "voidFailAlreadyMoved": "This item already changed on another device. Close this sheet and check again.",
+  "voidFailReasonRequired": "A void reason is required.",
+  "voidFailOther": "The server refused the void.",
+  "sendFailVoidExpired": "Void of ×{qty} {name} is past the business day — the item is still live, void it again",
+  "sendFailVoidRefused": "Void of ×{qty} {name} refused: {reason} — the item is still live",
   "resDaySummary": "{day} · {bookings, plural, =1{1 booking} other{{bookings} bookings}} · {covers, plural, =1{1 guest} other{{covers} guests}}",
   "resNoTableForParty": "No table in this zone seats {size} or more.",
   "resAlreadySeated": "Another party is already at that table",
@@ -1942,6 +1955,7 @@
   "crsTo": "To",
   "crsApply": "Apply",
   "exitAgainToQuit": "Press back again to exit",
+  "olcVoided": "Voided · {reason}",
   "olcVoidedBy": "Voided · {reason} · approved by {approver}",
   "rdyBannerText": "Items are ready at the pass — mark them served below",
   "ppfTitle": "Payment proof",
@@ -1965,6 +1979,14 @@
   "vhbSettings": "Settings",
   "mnaItemCount": "{count, plural, =1{1 item} other{{count} items}}",
   "cmnStationsLive": "STATIONS · LIVE",
+  "modSpecialCounterNoPrep": "{used} / 80 · shown on the order",
+  "@modSpecialCounterNoPrep": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      }
+    }
+  },
   "modSpecialCounter": "{used} / 80 · shown to the kitchen",
   "zonSeatsCount": "{count, plural, =1{1 seat} other{{count} seats}}",
   "zonTablesCount": "{count, plural, =1{1 table} other{{count} tables}}",
@@ -1978,6 +2000,14 @@
   "fltLoadFailed": "Couldn't load the fleet",
   "fltNewVenue": "New venue",
   "fltOfflineNote": "Not connected — this data is stored and may already have changed. Editing is disabled until you reconnect.",
+  "sntBodyNoPrep": "Table {table}'s order is ready to run.",
+  "@sntBodyNoPrep": {
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
+  },
   "sntTitle": "Sent",
   "sntBody": "Table {table}'s order is live on the kitchen and bar displays.",
   "meShiftLine": "STARTED {start} · {elapsed} RUNNING",
@@ -2140,7 +2170,7 @@
   "vrsCustomerChangeDesc": "Guest cancelled the request",
   "vrsOutOfStock": "Out of stock",
   "vrsOutOfStockDesc": "Item ran out at the station",
-  "vrsKitchenError": "Complaint / kitchen quality",
+  "vrsKitchenError": "Complaint / quality",
   "vrsKitchenErrorDesc": "Quality problem — item pulled off the bill",
   "vrsComp": "Manager comp",
   "vrsOther": "Other",
@@ -2457,6 +2487,7 @@
   "rptAllZones": "All zones",
   "rptAllCategories": "All categories",
   "alertsThresholdLine": "Ready {prep}m · ungreeted {ungreeted}m",
+  "alertsThresholdLineNoPrep": "Ungreeted {ungreeted}m",
   "venueHubShiftReport": "Shift report",
   "auditExportFailed": "Couldn't export the audit log",
   "killReasonOutOfStock": "Out of ingredients",
@@ -2609,6 +2640,15 @@
   "fltCounterOffBody": "The venue goes back to its restaurant shape. The switches are kept, so turning the mode back on restores it.",
   "fltModuleMembers": "Membership",
   "fltModuleSelfOrder": "Self-order",
+  "fltModes": "Mode",
+  "fltTagModes": "SHAPE",
+  "fltModesHint": "How the venue works. Not what it bought \u2014 these two keys stand alone and neither implies the other.",
+  "fltModeBypassKds": "No prep queue",
+  "fltModeBypassKdsHint": "Orders land ready for pickup; there is no kitchen queue. For a venue where whoever takes the order also makes it.",
+  "fltModeBypassKdsOnTitle": "Remove the prep queue at {venue}?",
+  "fltModeBypassKdsOnBody": "The Prep Queue disappears from this venue and new orders land ready. Lines already cooking stay finishable until the last one is out.",
+  "fltModeBypassKdsOnYes": "Remove",
+  "fltCounterMootByBypass": "{label} \u2014 does not apply without a prep queue",
   "fltModuleOffTitle": "Turn off {module} for {venue}?",
   "fltModuleOffBody": "Data is kept; the screens disappear.",
   "fltModuleOffYes": "Turn off",

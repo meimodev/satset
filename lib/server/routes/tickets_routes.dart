@@ -21,6 +21,8 @@ import 'package:satset/domain/models/ticket_transitions.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/domain/models/menu_item.dart' show openItemId;
+import 'package:satset/server/modules.dart'
+    show modeBypassKds, venueHasMode;
 
 Future<Response?> _requireCap(
   Request req,
@@ -91,7 +93,7 @@ const _voidReasonLabels = <String, String>{
   'wrongOrder': 'Terkirim salah',
   'customerChange': 'Tamu berubah pikiran',
   'outOfStock': 'Stok habis',
-  'kitchenError': 'Komplain / kualitas dapur',
+  'kitchenError': 'Komplain / kualitas',
   'comp': 'Kompensasi manajer',
   'other': 'Lainnya',
 };
@@ -281,6 +283,19 @@ Future<SubmitOrderResult> submitOrder(
     // point at which refusing a line is still cheap. `running` is mutated as
     // lines are accepted, so two lines of the same order competing for the
     // last portion resolve consistently.
+    // The venue's shape, resolved once per submit (ADR-0115). A venue in
+    // [[Tanpa antrian persiapan]] has no prep queue, so a line is *born*
+    // `ready` — the one place a mode key reaches into a writer, and the reason
+    // that ADR amends ADR-0109 §3. Read here rather than on the wire so the
+    // guest-accept path and an [[Antrean kirim]] replay inherit the same shape
+    // without a second arm; a status a caller could name would be a hole on
+    // the cleartext guest plane.
+    final settingsRow = await (db.select(
+      db.venueSettings,
+    )..where((x) => x.id.equals('default'))).getSingleOrNull();
+    final bypassKds = venueHasMode(settingsRow, modeBypassKds);
+    final bornStatus = bypassKds ? 'ready' : 'sent';
+
     final recipes = await loadRecipes(db);
     final ingredientRows = await db.select(db.ingredients).get();
     final running = {for (final i in ingredientRows) i.id: i.stockOnHand};
@@ -293,8 +308,9 @@ Future<SubmitOrderResult> submitOrder(
       final id = '${idPrefix ?? ''}${_orderUuid.v4()}';
       final course = l['course'] as String;
       // "Kirim ke dapur" is an explicit fire action: every line enters
-      // the KDS queue as `sent`. Course pacing is purely a sort/grouping
-      // hint for the kitchen, not a gate.
+      // the KDS queue as `sent` — unless the venue has no queue to enter,
+      // in which case it is born `ready` (see [bornStatus] above). Course
+      // pacing is purely a sort/grouping hint for the kitchen, not a gate.
       final itemId = l['itemId'] as String;
       final lineQty = (l['qty'] as num?)?.toInt() ?? 1;
       final lineVariant = (l['variantName'] as String?) ?? '';
@@ -347,8 +363,13 @@ Future<SubmitOrderResult> submitOrder(
         modifiersJson: Value(jsonEncode(l['modifiers'] ?? const [])),
         note: Value(l['note'] as String?),
         price: (l['unitPrice'] as num).toInt(),
-        status: 'sent',
+        status: bornStatus,
         sentAt: stamp,
+        // Stamped with `sentAt`, not left null: a born-`ready` line was never
+        // in anyone's queue, so its prep clock is genuinely zero rather than
+        // unknown. Leaving it null is what makes an elapsed pill tick forever
+        // and a speed-of-service report read a line as still cooking.
+        readyAt: Value(bypassKds ? stamp : null),
         capturedAt: Value(capturedAt),
         replayedByUserId: Value(replayedByUserId),
         createdByUserId: Value(actorId),
@@ -404,11 +425,20 @@ Future<SubmitOrderResult> submitOrder(
       final tblCurrent = await (db.select(
         db.venueTables,
       )..where((t) => t.id.equals(tableId))).getSingleOrNull();
+      // A line born `ready` (ADR-0115) never passes through the transition
+      // route, which is the only other place `readyCount` and the `ready`
+      // table status are maintained. Left at `pending` the floor would read
+      // "Pesanan masuk" over food already sitting at the pass, and the
+      // waiter's later `ready → served` would decrement a count that was
+      // never bumped and leave the table pending until settle.
       await (db.update(
         db.venueTables,
       )..where((t) => t.id.equals(tableId))).write(
         VenueTablesCompanion(
-          status: const Value('pending'),
+          status: Value(bypassKds ? 'ready' : 'pending'),
+          readyCount: bypassKds
+              ? Value((tblCurrent?.readyCount ?? 0) + createdIds.length)
+              : const Value.absent(),
           lastActorId: Value(actorId),
           openedAt: tblCurrent?.openedAt == null
               ? Value(stamp)
@@ -755,27 +785,48 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     }
     final denied = await _requireCap(req, db, auth, needed);
     if (denied != null) return denied;
-    // Void requires a reason + canonical code so reports can attribute lost
-    // revenue (ADR-0006). UI-only enforcement is insufficient now the manager
-    // gate is gone.
+    // Void requires a canonical code so reports can attribute lost revenue
+    // (ADR-0006). UI-only enforcement is insufficient now the manager gate is
+    // gone.
+    //
+    // The **code** is the invariant; the sentence is not. `voidReason` is free
+    // text and required only for `other`, the one code that says nothing on
+    // its own — every other code composes its own words at read time
+    // (ADR-0085), which is exactly why the client stopped sending a label and
+    // why demanding one here rejected four of the five reasons the picker
+    // offers.
     final isVoid = to == TicketStatus.voided;
     final voidReason = body['voidReason'] as String?;
     final voidReasonCode = body['voidReasonCode'] as String?;
+    final needsText = voidReasonCode?.trim() == 'other';
     if (isVoid &&
-        (voidReason == null ||
-            voidReason.trim().isEmpty ||
-            voidReasonCode == null ||
-            voidReasonCode.trim().isEmpty)) {
+        ((voidReasonCode == null || voidReasonCode.trim().isEmpty) ||
+            (needsText &&
+                (voidReason == null || voidReason.trim().isEmpty)))) {
       return Response(
         400,
         body: jsonEncode({
           'code': 'reason_required',
-          'message': 'void requires voidReason and voidReasonCode',
+          'message': needsText
+              ? 'void reason code `other` requires voidReason text'
+              : 'void requires voidReasonCode',
         }),
         headers: {'content-type': 'application/json'},
       );
     }
-    final actor = isVoid ? await _actor(req, db, auth) : null;
+    // Attribution splits from authorisation on a replayed void, the same way
+    // it does on a replayed order above: the capability check ran against the
+    // bearer, and `actorId` keeps naming the waiter who actually voided. A
+    // drain runs under whoever is signed in *now*, so without this one
+    // waiter's backlog hangs on the next one's name — in the per-waiter void
+    // rate that is the entire deterrent ADR-0006 replaced the manager PIN
+    // with. A live void sends no `actorId` and still takes the bearer.
+    final bodyActorId = (body['actorId'] as String?)?.trim();
+    final voidActorId = !isVoid
+        ? null
+        : (bodyActorId != null && bodyActorId.isNotEmpty)
+        ? bodyActorId
+        : (await _actor(req, db, auth))?.id;
     // Speed-of-service stamps (ADR-0013). readyAt set-once on first entry into
     // `ready` (so a served→ready undo never inflates prep time); servedAt
     // last-write on every entry into `served`.
@@ -797,7 +848,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           voidReason: Value(voidReason),
           voidReasonCode: Value(voidReasonCode),
           voidApprovedBy: Value(body['voidApprovedBy'] as String?),
-          voidedByUserId: Value(actor?.id),
+          voidedByUserId: Value(voidActorId),
         ),
       );
       row = await (db.select(
@@ -813,7 +864,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           db,
           ticketId: id,
           untouched: from == TicketStatus.sent,
-          userId: actor?.id,
+          userId: voidActorId,
           note: voidReason,
         );
       }
@@ -862,7 +913,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         ticket: row!,
         reasonCode: voidReasonCode!,
         reasonText: voidReason,
-        actorUserId: actor?.id,
+        actorUserId: voidActorId,
       );
     }
     hub.broadcast(WsEventTypes.ticketUpdated, _toJson(row!));

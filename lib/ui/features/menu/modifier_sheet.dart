@@ -155,8 +155,12 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
     // `held` tickets sitting behind a fire button the counter's rail no longer
     // shows. An **edited** line keeps whatever course it already carries: the
     // switch changes what gets typed next, never what is already in the cart.
+    // [[Tanpa antrian persiapan]] (ADR-0115) collapses the pace for the same
+    // reason and one step harder: there is no queue to pace *into*, so every
+    // line is "now" whether or not the venue is a counter shop.
+    final s = ref.read(venueSettingsProvider);
     _course = edit?.course ??
-        (ref.read(venueSettingsProvider).counterOn(counterSimpleKds)
+        (s.counterOn(counterSimpleKds) || s.bypassKds
             ? CourseId.fireNow
             : Courses.fromCategory(widget.item.categoryId));
     _qty = edit?.qty ?? 1;
@@ -395,7 +399,7 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                     ),
                   if (!ref.watch(
                     venueSettingsProvider.select(
-                      (v) => v.counterOn(counterSimpleKds),
+                      (v) => v.counterOn(counterSimpleKds) || v.bypassKds,
                     ),
                   ))
                   _ModGroup(
@@ -439,7 +443,16 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                         ),
                         const SizedBox(height: Sp.s1),
                         Text(
-                          context.l10n.modSpecialCounter(_special.length),
+                          // The note still travels with the line, but with no
+                          // prep queue there is no kitchen display to name
+                          // (ADR-0115) — it surfaces on the order itself.
+                          ref.watch(venueSettingsProvider).bypassKds
+                              ? context.l10n.modSpecialCounterNoPrep(
+                                  _special.length,
+                                )
+                              : context.l10n.modSpecialCounter(
+                                  _special.length,
+                                ),
                           style: SatType.monoS(color: sc.textLo),
                         ),
                       ],

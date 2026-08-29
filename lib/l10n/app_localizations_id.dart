@@ -2717,7 +2717,7 @@ class AppL10nId extends AppL10n {
 
   @override
   String get cshErrOffline =>
-      'Pembayaran tidak terkirim — perangkat tidak terhubung ke server. Tagihan belum dibayar.';
+      'Pembayaran belum terkonfirmasi — server tidak menjawab. Tutup dan buka lagi tagihan untuk memastikan sebelum mengulang.';
 
   @override
   String cshErrGeneric(String code) {
@@ -4505,6 +4505,10 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String get tblCloseNotTerminal =>
+      'Masih ada item yang belum selesai atau belum terkirim — cek daftar item dulu.';
+
+  @override
   String get tblEmptyPhone =>
       'Belum ada item — ketuk \"Tambah ke pesanan\" untuk mulai.';
 
@@ -4569,6 +4573,10 @@ class AppL10nId extends AppL10n {
 
   @override
   String get tblViewOnly => 'Hanya lihat';
+
+  @override
+  String get tblOfflineQueueNote =>
+      'Tanpa jaringan — pesanan dan pembatalan masuk Antrean kirim; sisanya menunggu.';
 
   @override
   String get tblCreateOrder => 'Buat pesanan';
@@ -5899,6 +5907,49 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String liaVoidedQueued(int qty, String name) {
+    return 'Tercatat di perangkat ini: ×$qty $name · belum terkirim, dapur belum tahu';
+  }
+
+  @override
+  String get liaVoidFailed => 'Item tidak dibatalkan';
+
+  @override
+  String get liaVoidNoCap => 'Peranmu tidak punya izin membatalkan item';
+
+  @override
+  String get liaVoidNeedsManager =>
+      'Sudah disajikan · pembatalannya butuh izin manajer';
+
+  @override
+  String get voidFailForbidden =>
+      'Peranmu tidak punya izin membatalkan item. Minta yang berwenang.';
+
+  @override
+  String get voidFailNeedsManager =>
+      'Item sudah disajikan — pembatalannya dihitung gratis dan butuh izin manajer.';
+
+  @override
+  String get voidFailAlreadyMoved =>
+      'Status item sudah berubah di perangkat lain. Tutup sheet ini, lalu cek ulang.';
+
+  @override
+  String get voidFailReasonRequired => 'Alasan pembatalan wajib diisi.';
+
+  @override
+  String get voidFailOther => 'Server menolak pembatalan.';
+
+  @override
+  String sendFailVoidExpired(int qty, String name) {
+    return 'Pembatalan ×$qty $name lewat hari — item masih aktif, batalkan lagi';
+  }
+
+  @override
+  String sendFailVoidRefused(int qty, String name, String reason) {
+    return 'Pembatalan ×$qty $name ditolak: $reason — item masih aktif';
+  }
+
+  @override
   String resDaySummary(String day, int bookings, int covers) {
     String _temp0 = intl.Intl.pluralLogic(
       bookings,
@@ -6065,6 +6116,11 @@ class AppL10nId extends AppL10n {
   String get exitAgainToQuit => 'Tekan kembali lagi untuk keluar';
 
   @override
+  String olcVoided(String reason) {
+    return 'Dibatalkan · $reason';
+  }
+
+  @override
   String olcVoidedBy(String reason, String approver) {
     return 'Dibatalkan · $reason · disetujui oleh $approver';
   }
@@ -6133,6 +6189,11 @@ class AppL10nId extends AppL10n {
   String get cmnStationsLive => 'STATIONS · LIVE';
 
   @override
+  String modSpecialCounterNoPrep(int used) {
+    return '$used / 80 · tampil di pesanan';
+  }
+
+  @override
   String modSpecialCounter(int used) {
     return '$used / 80 · tampil ke dapur';
   }
@@ -6191,6 +6252,11 @@ class AppL10nId extends AppL10n {
   @override
   String get fltOfflineNote =>
       'Tidak terhubung — data tersimpan, bisa sudah berubah. Perubahan dinonaktifkan sampai tersambung.';
+
+  @override
+  String sntBodyNoPrep(String table) {
+    return 'Pesanan Meja $table sudah siap diambil.';
+  }
 
   @override
   String get sntTitle => 'Terkirim';
@@ -6829,7 +6895,7 @@ class AppL10nId extends AppL10n {
   String get vrsOutOfStockDesc => 'Item habis di stasiun';
 
   @override
-  String get vrsKitchenError => 'Komplain / kualitas dapur';
+  String get vrsKitchenError => 'Komplain / kualitas';
 
   @override
   String get vrsKitchenErrorDesc =>
@@ -7648,6 +7714,11 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String alertsThresholdLineNoPrep(int ungreeted) {
+    return 'Belum dilayani ${ungreeted}m';
+  }
+
+  @override
   String get venueHubShiftReport => 'Laporan shift';
 
   @override
@@ -8210,6 +8281,40 @@ class AppL10nId extends AppL10n {
 
   @override
   String get fltModuleSelfOrder => 'Pesan mandiri';
+
+  @override
+  String get fltModes => 'Mode';
+
+  @override
+  String get fltTagModes => 'BENTUK';
+
+  @override
+  String get fltModesHint =>
+      'Bentuk kerja venue. Bukan yang dibeli — dua kunci ini berdiri sendiri dan tidak saling mengandaikan.';
+
+  @override
+  String get fltModeBypassKds => 'Tanpa antrian persiapan';
+
+  @override
+  String get fltModeBypassKdsHint =>
+      'Pesanan langsung siap diambil; tidak ada antrian dapur. Untuk venue yang penerima pesanannya sekaligus yang meracik.';
+
+  @override
+  String fltModeBypassKdsOnTitle(String venue) {
+    return 'Hilangkan antrian persiapan di $venue?';
+  }
+
+  @override
+  String get fltModeBypassKdsOnBody =>
+      'Antrian Persiapan hilang dari venue ini dan pesanan baru langsung berstatus siap. Baris yang sudah dimasak tetap bisa diselesaikan sampai habis.';
+
+  @override
+  String get fltModeBypassKdsOnYes => 'Hilangkan';
+
+  @override
+  String fltCounterMootByBypass(String label) {
+    return '$label — tidak berlaku tanpa antrian persiapan';
+  }
 
   @override
   String fltModuleOffTitle(String module, String venue) {

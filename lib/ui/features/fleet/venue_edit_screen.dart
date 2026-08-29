@@ -378,6 +378,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
               // module is priced (ADR-0107 §5, §9).
               _modulesCard(sc),
               const SizedBox(height: Sp.s6),
+              // Modes after modules, in their own card (ADR-0115): a module is
+              // a thing the venue *bought*, a mode is the *shape* it works in.
+              // They ride the same `addOns` array and the same save, and that
+              // shared transport is exactly why the reading has to be split on
+              // screen — an operator ticking "no prep queue" in a list titled
+              // Modul is being told they are selling something.
+              _modeCard(sc),
+              const SizedBox(height: Sp.s6),
               _subscriptionCard(sc),
               const SizedBox(height: Sp.s6),
               _principalSection(
@@ -620,9 +628,84 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
             ),
             const SizedBox(height: Sp.s2),
           ],
-          _counterSection(sc, can),
         ],
       ),
+    );
+  }
+
+  /// **Mode** — how the venue is shaped, as against what it holds (ADR-0115).
+  ///
+  /// Two independent keys, both fail-closed: [[Kedai]] mode and
+  /// [[Tanpa antrian persiapan]]. Neither implies the other — a counter shop
+  /// may still run a cook line, and a small restaurant may have no queue at
+  /// all — so they are two toggles rather than a seventh switch under the
+  /// first.
+  Widget _modeCard(SatColors sc) {
+    final can = !_busy && !_offline;
+    return SatCard.titled(
+      title: context.l10n.fltModes,
+      tag: context.l10n.fltTagModes,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            context.l10n.fltModesHint,
+            style: SatType.bodyS(color: sc.textLo),
+          ),
+          const SizedBox(height: Sp.s3),
+          _counterSection(sc, can),
+          const SizedBox(height: Sp.s3),
+          _bypassKdsSection(sc, can),
+        ],
+      ),
+    );
+  }
+
+  /// **[[Tanpa antrian persiapan]]** (ADR-0115). The one mode key that changes
+  /// what the server *writes*: a line is born `ready`, because there is nobody
+  /// downstream to hand it to. Confirmed on the way **on**, unlike the counter
+  /// preset — here it is switching it on that takes a mechanism away from a
+  /// venue mid-service, and switching it off only gives one back.
+  Widget _bypassKdsSection(SatColors sc, bool can) {
+    final on = _modules.contains(modeBypassKds);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            SatToggle(
+              value: on,
+              semanticLabel: context.l10n.fltModeBypassKds,
+              onChanged: can ? _setBypassKds : null,
+            ),
+            const SizedBox(width: Sp.s2),
+            Expanded(
+              child: Text(
+                context.l10n.fltModeBypassKds,
+                style: SatType.bodyM(color: sc.textHi),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: Sp.s2),
+        Text(
+          context.l10n.fltModeBypassKdsHint,
+          style: SatType.bodyS(color: sc.textLo),
+        ),
+      ],
+    );
+  }
+
+  void _setBypassKds(bool on) {
+    if (!on) {
+      setState(() => _modules = {..._modules}..remove(modeBypassKds));
+      return;
+    }
+    _confirm(
+      context.l10n.fltModeBypassKdsOnTitle(_nameText),
+      context.l10n.fltModeBypassKdsOnBody,
+      context.l10n.fltModeBypassKdsOnYes,
+      () => setState(() => _modules = {..._modules, modeBypassKds}),
     );
   }
 
@@ -670,9 +753,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
               child: Row(
                 children: [
                   SatToggle(
+                    // `simpleKds` tunes a queue that [[Tanpa antrian
+                    // persiapan]] has removed. Left *writable in the doc* and
+                    // only greyed here, because it is config rather than
+                    // entitlement: unticking bypass must find the venue's own
+                    // answer where it left it (ADR-0115).
                     value: _counter.contains(key),
                     semanticLabel: _counterLabel(key),
-                    onChanged: can
+                    onChanged: can && !_kdsSwitchMoot(key)
                         ? (v) => setState(() {
                             _counter = {..._counter};
                             if (v) {
@@ -686,8 +774,14 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
                   const SizedBox(width: Sp.s2),
                   Expanded(
                     child: Text(
-                      _counterLabel(key),
-                      style: SatType.bodyS(color: sc.textMd),
+                      _kdsSwitchMoot(key)
+                          ? context.l10n.fltCounterMootByBypass(
+                              _counterLabel(key),
+                            )
+                          : _counterLabel(key),
+                      style: SatType.bodyS(
+                        color: _kdsSwitchMoot(key) ? sc.textLo : sc.textMd,
+                      ),
                     ),
                   ),
                 ],
@@ -701,6 +795,11 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
       ],
     );
   }
+
+  /// Whether a [[Kedai]] switch governs something [[Tanpa antrian persiapan]]
+  /// has already taken away. Only `simpleKds` does today.
+  bool _kdsSwitchMoot(String key) =>
+      key == counterSimpleKds && _modules.contains(modeBypassKds);
 
   String _counterLabel(String key) => switch (key) {
     counterMenuHome => context.l10n.fltCounterMenuHome,

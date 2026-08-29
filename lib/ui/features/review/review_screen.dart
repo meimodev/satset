@@ -167,7 +167,10 @@ class ReviewScreen extends ConsumerWidget {
                   spacing: 8,
                   runSpacing: 6,
                   children: [
-                    if (kitchenCt > 0)
+                    // No prep queue means no kitchen to count lines for
+                    // (ADR-0115) — the line is born ready, and a "Dapur × 1"
+                    // chip names a station the venue does not staff.
+                    if (kitchenCt > 0 && !venue.bypassKds)
                       SatChip.tag(
                         icon: Icons.local_fire_department,
                         label: context.l10n.mnuKitchenCount(kitchenCt),
@@ -284,7 +287,7 @@ class ReviewScreen extends ConsumerWidget {
                     ? context.l10n.revSending
                     : _isTakeaway
                     ? context.l10n.revAddToOrder
-                    : tableless
+                    : tableless || venue.bypassKds
                     ? context.l10n.revSendOrder
                     : context.l10n.revSendTo(sendTarget),
                 icon: Icons.auto_awesome,
@@ -386,9 +389,15 @@ class ReviewScreen extends ConsumerWidget {
                           if (s.error != null || s.submittedTicketIds == null) {
                             return;
                           }
-                          ref
-                              .read(tablesProvider.notifier)
-                              .markPending(pick.tableId, userId: actorId);
+                          // With no prep queue the line is born `ready`, and
+                          // `submitOrder` already flipped the table with it
+                          // (ADR-0115) — posting `pending` here would overwrite
+                          // that and hide finished food behind "Pesanan masuk".
+                          if (!venue.bypassKds) {
+                            ref
+                                .read(tablesProvider.notifier)
+                                .markPending(pick.tableId, userId: actorId);
+                          }
                           ref.read(cartProvider(tableId).notifier).clear();
                           if (context.mounted) {
                             // go (not push): drops the draft menu/review stack
@@ -413,9 +422,11 @@ class ReviewScreen extends ConsumerWidget {
                         if (s.error != null || s.submittedTicketIds == null) {
                           return;
                         }
-                        ref
-                            .read(tablesProvider.notifier)
-                            .markPending(tableId, userId: actorId);
+                        if (!venue.bypassKds) {
+                          ref
+                              .read(tablesProvider.notifier)
+                              .markPending(tableId, userId: actorId);
+                        }
                         ref.read(cartProvider(tableId).notifier).clear();
                         if (context.mounted) {
                           context.push(

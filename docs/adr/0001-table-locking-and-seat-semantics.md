@@ -19,7 +19,7 @@ We needed a coherent answer to: when is the lock active, and who holds it after 
 
 The `available` status carries no editable per-party state (no tickets, no pax beyond zero, no guest info). Locking it produces contention without protecting anything. Kosong tables are freely browsable by any waiter; the detail screen renders a read-only summary + a "Mulai layani meja" CTA.
 
-`table_detail_screen.initState` skips lock acquire when the row is `available`. A status listener triggers auto-acquire when the row transitions to a non-`available` state while the screen is open.
+`table_detail_screen.initState` skips lock acquire when the row is `available`. A status listener triggers auto-acquire when the row transitions to a non-`available` state while the screen is open. **Amended by [ADR-0116](0116-a-lease-you-cannot-renew-still-lets-you-queue.md):** failing to *acquire* the lease is not the same as another waiter holding it. A terputus handset cannot ask, and treating that as read-only hid the two writes the [[Antrean kirim]] exists to carry (ADR-0090, ADR-0114). Those two stay open offline; the rest of the screen still waits.
 
 **2. The `seat` endpoint rejects non-`available` tables.**
 

@@ -149,8 +149,14 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
       // Transport failure — the server never answered. Uncaught, this escaped
       // to the zone: the cashier got no error line, the refetch below failed
       // too, and the whole sheet collapsed to `Gagal memuat tagihan` with the
-      // money path's outcome unstated. Nothing landed, so there is nothing to
-      // refetch: keep the bill on screen and say the payment did not go.
+      // money path's outcome unstated. What this does NOT know is whether the
+      // write landed: a lost response after a committed payment looks exactly
+      // like a request that never left, and `POST /settlement/.../payments`
+      // carries no idempotency key, so a retry on a landed payment charges
+      // twice. Observed on device: the bill settled server-side and this line
+      // still read "belum dibayar". Hence the copy says unconfirmed, never
+      // unpaid. The refetch is skipped on purpose — offline it fails too and
+      // collapses the sheet.
       if (mounted) {
         setState(() => _error = ref.read(l10nProvider).cshErrOffline);
       }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/models/ws_event_dto.dart';
+import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/send_queue_service.dart';
@@ -34,6 +35,9 @@ final sendQueueDrainProvider = Provider<void>((ref) {
     // existed — so without this the board would show the world as it was a
     // moment before the backlog landed.
     await ref.read(ticketsProvider.notifier).resyncNow();
+    // The tables carry the other half of what a drain changed: a replayed seat
+    // is a table fact, and a replayed order moves the tab.
+    await ref.read(tablesProvider.notifier).resyncNow();
     ref.read(sendReportProvider.notifier).state = report;
   });
   ref.onDispose(sub.cancel);

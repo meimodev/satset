@@ -8,12 +8,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/send_queue_service.dart';
+import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/ticket.dart';
+import 'package:satset/domain/models/ticket_transitions.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/ui/features/menu/modifier_sheet.dart';
+import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 import 'package:satset/ui/core/widgets/status_chip.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -38,6 +44,11 @@ const _voidReasons = <String>[
 /// its own a comp was only recorded as one if someone happened to type the
 /// word into free text — so the venue log counted giveaways as cancellations.
 const _compReason = 'comp';
+
+/// The terminal-view inset, shared by the two full-sheet outcomes so the
+/// confirmation and the refusal sit on exactly the same optical centre — and
+/// so the ratchet in `design_tokens_test.dart` counts one literal, not two.
+const _outcomePadding = EdgeInsets.fromLTRB(28, 28, 28, 32);
 
 void showLineItemActionSheet({
   required BuildContext context,
@@ -66,7 +77,25 @@ void showLineItemActionSheet({
   );
 }
 
-enum _Step { actions, voidReason, confirmed }
+enum _Step { actions, voidReason, confirmed, failed }
+
+/// Why the void did not happen, as a code the sheet can render (ADR-0085).
+///
+/// The sheet, not the server, decides between the two 403 flavours: the host
+/// answers a bare `forbidden` for both, and only the caller knows the line was
+/// already served — which is the difference between "your role cannot do this"
+/// and "this one needs a manager".
+String voidFailCode(Object e, TicketStatus status) {
+  if (e is IllegalTicketTransition) return 'illegal_transition';
+  if (e is SendQueueFull) return 'send_queue_full';
+  if (e is ApiException) {
+    if (e.statusCode == 403) {
+      return status == TicketStatus.served ? 'forbidden_comp' : 'forbidden';
+    }
+    return e.code ?? 'other';
+  }
+  return 'other';
+}
 
 class _SheetBody extends ConsumerStatefulWidget {
   final String tableId;
@@ -88,6 +117,18 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
   _Step _step = _Step.actions;
   String? _reason;
   String _reasonText = '';
+
+  /// Set when the host refused. A void that fails silently is the bug this
+  /// sheet shipped with: the await threw, the step never advanced, and the
+  /// waiter was left looking at a reason list that had stopped responding.
+  String? _failCode;
+
+  /// The void was captured on the queue, not delivered. Same confirmation,
+  /// one different sentence — the kitchen has not heard it and may still plate
+  /// the dish.
+  bool _queued = false;
+
+  bool _committing = false;
 
   // Re-resolves the ticket from live state each build so kitchen status
   // changes (sent → prep → ready …) refresh the sheet's chip + action list.
@@ -184,21 +225,46 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
   Future<void> _commitVoid() async {
     final t = _live;
     final reason = _reason!;
-    // Free text rides only for `other`. A fixed reason stores nothing but its
-    // code — the label it used to store was whichever language the waiter's
-    // phone happened to be in, frozen into the row. The server stamps the
-    // acting waiter.
-    await ref
-        .read(advanceTicketStatusUseCaseProvider)
-        .call(
-          widget.tableId,
-          t.id,
-          TicketStatus.voided,
-          voidReason: _reasonText.trim(),
-          voidReasonCode: reason,
-        );
-    setState(() => _step = _Step.confirmed);
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    setState(() => _committing = true);
+    final bool queued;
+    try {
+      // Free text rides only for `other`. A fixed reason stores nothing but
+      // its code — the label it used to store was whichever language the
+      // waiter's phone happened to be in, frozen into the row. The server
+      // composes the words from the code at read time (ADR-0085) and requires
+      // text only for `other`.
+      //
+      // `actorId` names the waiter who voided, which matters only on a replay:
+      // a drain runs under whoever is signed in then, and ADR-0006's whole
+      // deterrent is that a void carries the name of whoever made it.
+      queued = await ref
+          .read(advanceTicketStatusUseCaseProvider)
+          .call(
+            widget.tableId,
+            t.id,
+            TicketStatus.voided,
+            voidReason: _reasonText.trim(),
+            voidReasonCode: reason,
+            actorId: ref.read(authStateProvider).user?.id,
+          );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _committing = false;
+        _failCode = voidFailCode(e, t.status);
+        _step = _Step.failed;
+      });
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _committing = false;
+      _queued = queued;
+      _step = _Step.confirmed;
+    });
+    // A queued void stays up longer: it says something the waiter has to
+    // carry to the kitchen themselves.
+    Future.delayed(Duration(milliseconds: queued ? 2600 : 1500), () {
       if (mounted) Navigator.of(context).pop();
     });
   }
@@ -244,13 +310,21 @@ class _SheetBodyState extends ConsumerState<_SheetBody> {
                 ),
                 _Step.voidReason => _VoidReasonList(
                   canComp: ticket.status == TicketStatus.served,
+                  busy: _committing,
                   onPick: (r, text) {
                     _reason = r;
                     _reasonText = text;
                     _commitVoid();
                   },
                 ),
-                _Step.confirmed => _ConfirmedView(ticket: ticket),
+                _Step.confirmed => _ConfirmedView(
+                  ticket: ticket,
+                  queued: _queued,
+                ),
+                _Step.failed => _FailedView(
+                  code: _failCode,
+                  onBack: () => setState(() => _step = _Step.voidReason),
+                ),
               },
             ),
           ),
@@ -310,16 +384,21 @@ class _LineActionHead extends StatelessWidget {
   }
 }
 
-class _ActionList extends StatelessWidget {
+class _ActionList extends ConsumerWidget {
   final Ticket ticket;
   final ValueChanged<String> onPick;
   const _ActionList({required this.ticket, required this.onPick});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final rows = <_ActionItem>[];
-    if (ticket.status == TicketStatus.held) {
+    // A void is the only act here the [[Antrean kirim]] can carry (ADR-0114),
+    // so it is the only one offered while terputus — the rule of ADR-0116, held
+    // in the sheet as well as on the card behind it. Firing, editing and
+    // serving all announce a kitchen fact and have nowhere to queue.
+    final offline = ref.watch(wsConnStateProvider) != WsConnState.open;
+    if (!offline && ticket.status == TicketStatus.held) {
       rows.add(
         _ActionItem(
           id: 'fire',
@@ -342,7 +421,7 @@ class _ActionList extends StatelessWidget {
         ),
       );
     }
-    if (ticket.status == TicketStatus.ready) {
+    if (!offline && ticket.status == TicketStatus.ready) {
       rows.add(
         _ActionItem(
           id: 'serve',
@@ -353,7 +432,7 @@ class _ActionList extends StatelessWidget {
         ),
       );
     }
-    if (ticket.status == TicketStatus.served) {
+    if (!offline && ticket.status == TicketStatus.served) {
       rows.add(
         _ActionItem(
           id: 'unserve',
@@ -365,13 +444,30 @@ class _ActionList extends StatelessWidget {
       );
     }
     if (ticket.status != TicketStatus.voided) {
+      // The graph names the capability this particular void costs — `voidItem`
+      // pre-serve, `compItem` once the plate is down (ADR-0101). Read it here
+      // rather than offering a button whose only outcome is a 403: the client
+      // gate decides what to *offer*, the server still decides what is
+      // allowed. Shown disabled with the reason rather than hidden, because a
+      // button that vanished teaches nobody why.
+      final needed = capabilityForTransition(
+        ticket.status,
+        TicketStatus.voided,
+      );
+      final allowed =
+          needed != null && ref.watch(authStateProvider).has(needed);
       rows.add(
         _ActionItem(
           id: 'void',
           icon: Icons.delete_outline,
           title: context.l10n.liaVoidItem,
-          desc: context.l10n.liaVoidDesc,
+          desc: allowed
+              ? context.l10n.liaVoidDesc
+              : needed == Capability.compItem
+              ? context.l10n.liaVoidNeedsManager
+              : context.l10n.liaVoidNoCap,
           tone: _Tone.danger,
+          enabled: allowed,
         ),
       );
     }
@@ -403,12 +499,17 @@ class _ActionItem {
   final String title;
   final String desc;
   final _Tone tone;
+
+  /// False renders the row dimmed and inert. [desc] then carries the reason —
+  /// a disabled row that does not say why is a support call.
+  final bool enabled;
   _ActionItem({
     required this.id,
     required this.icon,
     required this.title,
     required this.desc,
     required this.tone,
+    this.enabled = true,
   });
 }
 
@@ -449,11 +550,20 @@ class _ActionRow extends StatelessWidget {
       case _Tone.normal:
         break;
     }
+    if (!item.enabled) {
+      // Dim the whole row rather than only the label: a red icon over grey
+      // text reads as an available danger action at arm's length, which is
+      // the one glance this screen is designed for.
+      border = sc.border0;
+      iconBg = sc.bg3;
+      iconFg = sc.textLo;
+      titleColor = sc.textLo;
+    }
     return Material(
       color: sc.bg2,
       borderRadius: SatR.a(14),
       child: InkWell(
-        onTap: onTap,
+        onTap: item.enabled ? onTap : null,
         borderRadius: SatR.a(14),
         child: Container(
           padding: const EdgeInsets.symmetric(
@@ -484,7 +594,11 @@ class _ActionRow extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, size: 16, color: sc.textLo),
+              Icon(
+                item.enabled ? Icons.chevron_right : Icons.lock_outline,
+                size: 16,
+                color: sc.textLo,
+              ),
             ],
           ),
         ),
@@ -496,11 +610,19 @@ class _ActionRow extends StatelessWidget {
 class _VoidReasonList extends StatefulWidget {
   final void Function(String reasonCode, String text) onPick;
 
+  /// The commit is in flight. The button goes inert rather than firing a
+  /// second void at a host that is merely slow.
+  final bool busy;
+
   /// Whether the line has already been served — the case that requires
   /// `compItem` rather than `voidItem`, and the only one where "gratis" is a
   /// real answer rather than a way to lose money quietly.
   final bool canComp;
-  const _VoidReasonList({required this.onPick, required this.canComp});
+  const _VoidReasonList({
+    required this.onPick,
+    required this.canComp,
+    this.busy = false,
+  });
 
   @override
   State<_VoidReasonList> createState() => _VoidReasonListState();
@@ -517,7 +639,9 @@ class _VoidReasonListState extends State<_VoidReasonList> {
   ];
 
   bool get _canContinue =>
-      _pickedId != null && (_pickedId != 'other' || _other.trim().length >= 3);
+      !widget.busy &&
+      _pickedId != null &&
+      (_pickedId != 'other' || _other.trim().length >= 3);
 
   @override
   Widget build(BuildContext context) {
@@ -656,13 +780,18 @@ class _VoidReasonListState extends State<_VoidReasonList> {
 
 class _ConfirmedView extends StatelessWidget {
   final Ticket ticket;
-  const _ConfirmedView({required this.ticket});
+
+  /// The host has not heard this yet — it is on the device's [[Antrean kirim]]
+  /// (ADR-0090). Same view, one honest extra sentence: the kitchen may still
+  /// be cooking the dish.
+  final bool queued;
+  const _ConfirmedView({required this.ticket, this.queued = false});
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 28, 28, 32),
+      padding: _outcomePadding,
       child: Column(
         children: [
           Container(
@@ -679,9 +808,62 @@ class _ConfirmedView extends StatelessWidget {
           Text(context.l10n.liaVoided, style: SatType.h2(color: sc.textHi)),
           const SizedBox(height: Sp.s2),
           Text(
-            context.l10n.liaVoidedNote(ticket.qty, ticket.name),
+            queued
+                ? context.l10n.liaVoidedQueued(ticket.qty, ticket.name)
+                : context.l10n.liaVoidedNote(ticket.qty, ticket.name),
+            textAlign: TextAlign.center,
+            style: SatType.bodyM(color: queued ? sc.warn : sc.textMd),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Why the void did not happen, and the way back to the reason list.
+///
+/// Inline rather than a snackbar behind a dismissed sheet: the waiter is
+/// standing in the sheet that just refused them, and half of these are
+/// recoverable by picking a different reason or handing the phone to someone
+/// who holds `compItem`.
+class _FailedView extends StatelessWidget {
+  final String? code;
+  final VoidCallback onBack;
+  const _FailedView({required this.code, required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Padding(
+      padding: _outcomePadding,
+      child: Column(
+        children: [
+          Container(
+            width: 96,
+            height: 96,
+            decoration: SatBox.d(
+              shape: BoxShape.circle,
+              color: sc.warn.withValues(alpha: 0.16),
+            ),
+            alignment: Alignment.center,
+            child: Icon(Icons.error_outline, size: 46, color: sc.warn),
+          ),
+          const SizedBox(height: Sp.s4),
+          Text(context.l10n.liaVoidFailed, style: SatType.h2(color: sc.textHi)),
+          const SizedBox(height: Sp.s2),
+          Text(
+            voidFailureText(context.l10n, code),
             textAlign: TextAlign.center,
             style: SatType.bodyM(color: sc.textMd),
+          ),
+          const SizedBox(height: Sp.s4),
+          SizedBox(
+            width: double.infinity,
+            child: SatButton.neutral(
+              label: context.l10n.back,
+              size: SatButtonSize.lg,
+              onTap: onBack,
+            ),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:audioplayers/audioplayers.dart';
@@ -120,6 +121,13 @@ class AlertSoundService {
   AppMode get _mode =>
       ref.read(prefsServiceProvider).valueOrNull?.appMode() ?? AppMode.unset;
 
+  /// [[Tanpa antrian persiapan]] (ADR-0115). Only the *ready* cue asks: the
+  /// `newOrder` and `overdue` cues silence themselves, since a venue with no
+  /// queue never writes a `sent` line and a born-`ready` one is never late.
+  /// The `pickup` cue deliberately keeps running — food that stays ready is
+  /// food nobody handed over, which is exactly the counter's own failure.
+  bool get _bypassKds => ref.read(venueSettingsProvider).bypassKds;
+
   /// The venue-chosen preset id for [event], degraded to the event default if
   /// the stored id names a preset that no longer exists.
   String _soundIdFor(AlertEvent event) {
@@ -166,7 +174,11 @@ class AlertSoundService {
         // New work reached the kitchen (sent, or a held course fired).
         if (mode == AppMode.server) _play(AlertEvent.newOrder);
       case TicketStatus.ready:
-        if (mode == AppMode.client) {
+        // A venue in [[Tanpa antrian persiapan]] has no pass to be called
+        // away from: a line is *born* `ready` at send, so this cue would ring
+        // on the device that just sent it, once per order, at the counter the
+        // guest is standing at (ADR-0115).
+        if (mode == AppMode.client && !_bypassKds) {
           _play(AlertEvent.orderReady);
           _raiseReadyAlert(dto);
         }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/core/localization/labels.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
@@ -8,6 +9,7 @@ import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/roles_repository.dart';
 import 'package:satset/data/repositories/staff_repository.dart';
 import 'package:satset/domain/models/capability.dart';
@@ -1272,8 +1274,19 @@ class _RolePermissionsDrawer extends ConsumerWidget {
         .where((u) => u.roleId == role.id && !u.disabled)
         .length;
 
+    // [[Tanpa antrian persiapan]] (ADR-0115): a venue with no prep queue has
+    // no screen for `viewKds` to open, so the row is not offered. **Hidden, not
+    // revoked** — the toggle writes the role's *stored* set (`setCapability`
+    // rebuilds the PATCH from the row, never from what this sheet renders), so
+    // an existing cook keeps the capability and gets it back the day the mode
+    // is turned off. `CapabilityGroup.kitchen` holds nothing else, so its card
+    // goes with it rather than standing empty.
+    final bypassKds = ref.watch(
+      venueSettingsProvider.select((v) => v.bypassKds),
+    );
     final grouped = <CapabilityGroup, List<Capability>>{};
     for (final c in Capability.values) {
+      if (bypassKds && c == Capability.viewKds) continue;
       grouped.putIfAbsent(c.group, () => []).add(c);
     }
 
@@ -1370,7 +1383,8 @@ class _RolePermissionsDrawer extends ConsumerWidget {
                           ),
                         ],
                       ),
-                    for (final g in CapabilityGroup.values) ...[
+                    for (final g in CapabilityGroup.values)
+                      if (grouped[g]?.isNotEmpty ?? false) ...[
                       const SizedBox(height: Sp.s4),
                       SatCard.section(
                         header: capabilityGroupLabel(context.l10n, g),

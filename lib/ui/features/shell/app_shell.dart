@@ -115,6 +115,23 @@ bool showCounterHome({
   required bool canTakeOrder,
 }) => menuHomeEnabled && canTakeOrder;
 
+/// Whether the [[KDS / Antrian Persiapan]] slot belongs on the rail (ADR-0115).
+///
+/// [[Tanpa antrian persiapan]] removes it, with two deliberate survivals — both
+/// of which *show* rather than refuse, because the route itself stays legal:
+///
+/// * [queueLive] — flipping the mode on mid-shift leaves lines already cooking,
+///   and `sent → served` is not a waiter's move. The slot outlives its own
+///   removal until the last of them is out, then disappears on its own.
+/// * [kdsOnlyUser] — a cook whose role is `viewKds` and nothing else lands on
+///   `/kitchen`. Hiding the slot from *them* is the one case where hiding is
+///   indistinguishable from locking the device.
+bool showKdsSlot({
+  required bool bypassKds,
+  required bool queueLive,
+  required bool kdsOnlyUser,
+}) => !bypassKds || queueLive || kdsOnlyUser;
+
 /// Which rail item owns [loc].
 String activeTabFor(String loc) => _railRoutes[_firstSegment(loc)] ?? 'venue';
 
@@ -214,6 +231,16 @@ class AppShell extends ConsumerWidget {
     final guestPending = showTamu
         ? ref.watch(selfOrderProvider.select((s) => s.pending.length))
         : 0;
+    final showKds = showKdsSlot(
+      bypassKds: ref.watch(venueSettingsProvider.select((v) => v.bypassKds)),
+      queueLive: ref.watch(kitchenQueueLiveProvider),
+      kdsOnlyUser: ref.watch(
+        authStateProvider.select(
+          (s) =>
+              s.has(Capability.viewKds) && !s.has(Capability.takeOrder),
+        ),
+      ),
+    );
     final counterHome = showCounterHome(
       menuHomeEnabled: ref.watch(
         venueSettingsProvider.select((v) => v.counterOn(counterMenuHome)),
@@ -232,6 +259,7 @@ class AppShell extends ConsumerWidget {
           activeTab: activeTab,
           readyCount: ready,
           kitchenCount: kitchenCount,
+          showKds: showKds,
           showKasir: showKasir,
           showTamu: showTamu,
           counterHome: counterHome,

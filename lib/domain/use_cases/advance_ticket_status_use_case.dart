@@ -22,13 +22,17 @@ class AdvanceTicketStatusUseCase {
   AdvanceTicketStatusUseCase(this._tickets);
   final TicketsRepository _tickets;
 
-  Future<void> call(
+  /// Returns **true when the move was queued rather than delivered** — only a
+  /// void can be, and only on a terputus handset (ADR-0090). The caller must
+  /// say so: a queued void means the kitchen has not heard it yet.
+  Future<bool> call(
     String tableId,
     String ticketId,
     TicketStatus to, {
     String? voidReason,
     String? voidReasonCode,
     String? voidApprovedBy,
+    String? actorId,
   }) async {
     final current = _tickets.findTicket(tableId, ticketId);
     if (current == null) {
@@ -37,13 +41,14 @@ class AdvanceTicketStatusUseCase {
     if (!canTransition(current.status, to)) {
       throw IllegalTicketTransition(current.status, to);
     }
-    await _tickets.transition(
+    return _tickets.transition(
       tableId,
       ticketId,
       to,
       voidReason: voidReason,
       voidReasonCode: voidReasonCode,
       voidApprovedBy: voidApprovedBy,
+      actorId: actorId,
     );
   }
 }

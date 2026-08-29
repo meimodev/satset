@@ -45,7 +45,12 @@ const MODULES = ["members", "selfOrder"];
 // array — one transport — but it is **outside** the trial's implicit grant,
 // because a trial demos the restaurant product. The client reads it through a
 // separate fail-closed resolver; see venueHasMode in lib/server/modules.dart.
-const MODE_MODULES = ["counterService"];
+//
+// `bypassKds` (ADR-0115) is the second of the kind and independent of the
+// first: the venue has no prep queue, so a sent line is born `ready`. A counter
+// shop may still run a cook line and a small restaurant may have none, so
+// neither key implies the other.
+const MODE_MODULES = ["counterService", "bypassKds"];
 
 // Everything `addOns` may contain. Must stay equal to `venueEntitlementKeys` in
 // lib/domain/models/venue_module.dart.

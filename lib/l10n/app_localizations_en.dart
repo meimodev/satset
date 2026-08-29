@@ -2733,7 +2733,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get cshErrOffline =>
-      'Payment not sent — this device cannot reach the server. The bill is still unpaid.';
+      'Payment unconfirmed — the server did not answer. Reopen the bill to check before trying again.';
 
   @override
   String cshErrGeneric(String code) {
@@ -4545,6 +4545,10 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String get tblCloseNotTerminal =>
+      'Some items are not finished, or not sent yet — check the item list.';
+
+  @override
   String get tblEmptyPhone =>
       'Nothing here yet — tap \"Add to order\" to start.';
 
@@ -4611,6 +4615,10 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get tblViewOnly => 'View only';
+
+  @override
+  String get tblOfflineQueueNote =>
+      'Offline — orders and voids go to the send queue; the rest waits.';
 
   @override
   String get tblCreateOrder => 'Create order';
@@ -5964,6 +5972,49 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String liaVoidedQueued(int qty, String name) {
+    return 'Recorded on this device: ×$qty $name · not sent yet, the kitchen has not been told';
+  }
+
+  @override
+  String get liaVoidFailed => 'Item not voided';
+
+  @override
+  String get liaVoidNoCap => 'Your role cannot void items';
+
+  @override
+  String get liaVoidNeedsManager =>
+      'Already served · voiding needs manager approval';
+
+  @override
+  String get voidFailForbidden =>
+      'Your role cannot void items. Ask someone who can.';
+
+  @override
+  String get voidFailNeedsManager =>
+      'This item was already served — voiding it counts as a comp and needs manager approval.';
+
+  @override
+  String get voidFailAlreadyMoved =>
+      'This item already changed on another device. Close this sheet and check again.';
+
+  @override
+  String get voidFailReasonRequired => 'A void reason is required.';
+
+  @override
+  String get voidFailOther => 'The server refused the void.';
+
+  @override
+  String sendFailVoidExpired(int qty, String name) {
+    return 'Void of ×$qty $name is past the business day — the item is still live, void it again';
+  }
+
+  @override
+  String sendFailVoidRefused(int qty, String name, String reason) {
+    return 'Void of ×$qty $name refused: $reason — the item is still live';
+  }
+
+  @override
   String resDaySummary(String day, int bookings, int covers) {
     String _temp0 = intl.Intl.pluralLogic(
       bookings,
@@ -6133,6 +6184,11 @@ class AppL10nEn extends AppL10n {
   String get exitAgainToQuit => 'Press back again to exit';
 
   @override
+  String olcVoided(String reason) {
+    return 'Voided · $reason';
+  }
+
+  @override
   String olcVoidedBy(String reason, String approver) {
     return 'Voided · $reason · approved by $approver';
   }
@@ -6201,6 +6257,11 @@ class AppL10nEn extends AppL10n {
   String get cmnStationsLive => 'STATIONS · LIVE';
 
   @override
+  String modSpecialCounterNoPrep(int used) {
+    return '$used / 80 · shown on the order';
+  }
+
+  @override
   String modSpecialCounter(int used) {
     return '$used / 80 · shown to the kitchen';
   }
@@ -6261,6 +6322,11 @@ class AppL10nEn extends AppL10n {
   @override
   String get fltOfflineNote =>
       'Not connected — this data is stored and may already have changed. Editing is disabled until you reconnect.';
+
+  @override
+  String sntBodyNoPrep(String table) {
+    return 'Table $table\'s order is ready to run.';
+  }
 
   @override
   String get sntTitle => 'Sent';
@@ -6916,7 +6982,7 @@ class AppL10nEn extends AppL10n {
   String get vrsOutOfStockDesc => 'Item ran out at the station';
 
   @override
-  String get vrsKitchenError => 'Complaint / kitchen quality';
+  String get vrsKitchenError => 'Complaint / quality';
 
   @override
   String get vrsKitchenErrorDesc =>
@@ -7747,6 +7813,11 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String alertsThresholdLineNoPrep(int ungreeted) {
+    return 'Ungreeted ${ungreeted}m';
+  }
+
+  @override
   String get venueHubShiftReport => 'Shift report';
 
   @override
@@ -8316,6 +8387,40 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get fltModuleSelfOrder => 'Self-order';
+
+  @override
+  String get fltModes => 'Mode';
+
+  @override
+  String get fltTagModes => 'SHAPE';
+
+  @override
+  String get fltModesHint =>
+      'How the venue works. Not what it bought — these two keys stand alone and neither implies the other.';
+
+  @override
+  String get fltModeBypassKds => 'No prep queue';
+
+  @override
+  String get fltModeBypassKdsHint =>
+      'Orders land ready for pickup; there is no kitchen queue. For a venue where whoever takes the order also makes it.';
+
+  @override
+  String fltModeBypassKdsOnTitle(String venue) {
+    return 'Remove the prep queue at $venue?';
+  }
+
+  @override
+  String get fltModeBypassKdsOnBody =>
+      'The Prep Queue disappears from this venue and new orders land ready. Lines already cooking stay finishable until the last one is out.';
+
+  @override
+  String get fltModeBypassKdsOnYes => 'Remove';
+
+  @override
+  String fltCounterMootByBypass(String label) {
+    return '$label — does not apply without a prep queue';
+  }
 
   @override
   String fltModuleOffTitle(String module, String venue) {
