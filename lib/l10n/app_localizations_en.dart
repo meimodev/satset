@@ -2155,6 +2155,9 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String get strukReceiptOwners => 'Receipt owners';
+
+  @override
   String strukMemberPoints(int points) {
     return 'Points balance: $points';
   }

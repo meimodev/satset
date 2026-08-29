@@ -1174,6 +1174,10 @@
       }
     }
   },
+  "strukReceiptOwners": "Pemilik struk",
+  "@strukReceiptOwners": {
+    "description": "Heading of the block on a whole-bill document listing which member each split receipt is for."
+  },
   "strukMemberPoints": "Saldo poin: {points}",
   "@strukMemberPoints": {
     "placeholders": {

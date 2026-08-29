@@ -1235,11 +1235,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             ))
             .go();
       }
-      await (db.update(
-        db.receipts,
-      )..where((x) => x.id.equals(receiptId))).write(
-        ReceiptsCompanion(memberId: Value(member.id)),
-      );
+      await (db.update(db.receipts)..where((x) => x.id.equals(receiptId)))
+          .write(ReceiptsCompanion(memberId: Value(member.id)));
 
       if (cfg.presetId != null &&
           await _receiptDiscountOf(db, receiptId, 'member') == null) {
@@ -1310,11 +1307,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
                 x.source.isIn(['member', 'redeem']),
           ))
           .go();
-      await (db.update(
-        db.receipts,
-      )..where((x) => x.id.equals(receiptId))).write(
-        const ReceiptsCompanion(memberId: Value(null)),
-      );
+      await (db.update(db.receipts)..where((x) => x.id.equals(receiptId)))
+          .write(const ReceiptsCompanion(memberId: Value(null)));
     });
     await _recompute(db, visitId);
     await broadcastBill(visitId);
@@ -2375,6 +2369,8 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
   );
 
   var paidNet = 0;
+  // [[Kartu stempel (punch card)]] per named [[Pemilik struk]], memoised.
+  final recPunch = <String, PunchStatus>{};
   final receiptsJson = <Map<String, dynamic>>[];
   for (final rec in recs) {
     final lines = await (db.select(
@@ -2409,6 +2405,11 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
     final recMember = rec.memberId == null
         ? null
         : await getMember(db, rec.memberId!);
+    if (recMember != null && !recPunch.containsKey(recMember.id)) {
+      // Once per member, not once per share: a guest with two slips has one
+      // card, and the walk is short enough that a map beats a join.
+      recPunch[recMember.id] = await punchStatus(db, recMember.id);
+    }
     receiptsJson.add({
       'id': rec.id,
       'mode': rec.mode,
@@ -2426,7 +2427,19 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
       // [[Pemilik tagihan]]'s. Carried whole, like the bill's own member, so
       // the split step can show a balance without a second round trip.
       'memberId': rec.memberId,
-      'member': recMember == null ? null : memberJson(recMember),
+      // With the punch fields the bill's own member carries: the slip a guest
+      // takes home is the one reminder of what they are banking, and a share
+      // that names them must say the same thing the whole-bill doc would.
+      'member': recMember == null
+          ? null
+          : () {
+              final p = recPunch[recMember.id];
+              return {
+                ...memberJson(recMember),
+                'punchTarget': p?.target ?? 0,
+                'punchRewardDue': p?.rewardDue ?? false,
+              };
+            }(),
       // Individual rows, not just the total — the money doc prints a NAMED
       // "Diskon <preset>" and line discounts render under their item.
       'discounts': [

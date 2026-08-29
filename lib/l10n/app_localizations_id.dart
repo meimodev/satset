@@ -2143,6 +2143,9 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String get strukReceiptOwners => 'Pemilik struk';
+
+  @override
   String strukMemberPoints(int points) {
     return 'Saldo poin: $points';
   }

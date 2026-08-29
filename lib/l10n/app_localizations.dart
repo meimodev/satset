@@ -3775,6 +3775,12 @@ abstract class AppL10n {
   /// **'Member: {name}'**
   String strukMember(String name);
 
+  /// Heading of the block on a whole-bill document listing which member each split receipt is for.
+  ///
+  /// In id, this message translates to:
+  /// **'Pemilik struk'**
+  String get strukReceiptOwners;
+
   /// No description provided for @strukMemberPoints.
   ///
   /// In id, this message translates to:

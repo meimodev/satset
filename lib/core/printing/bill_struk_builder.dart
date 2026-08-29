@@ -116,6 +116,7 @@ class BillStrukBuilder {
         subtotal: bill.subtotal,
         // Whole-bill doc: the give-back may span several receipts, so it is
         // named only when exactly one order discount exists across the bill.
+        receiptOwners: _receiptOwners(bill),
         discountLabel: _wholeBillDiscountLabel(bill),
         discountAmount: bill.discountAmount,
         taxAfterDiscount: bill.taxAfterDiscount,
@@ -130,6 +131,11 @@ class BillStrukBuilder {
       );
     }
 
+    final who = receipt.member ?? bill.member;
+    final orderDiscounts = [
+      for (final d in receipt.discounts)
+        if (!d.isLine) d,
+    ];
     final even = receipt.mode == 'even';
     final lines = even
         ? [
@@ -158,14 +164,14 @@ class BillStrukBuilder {
       tableLabel: bill.tableLabel ?? bill.tableId,
       pax: bill.pax,
       guestName: bill.guestName ?? '',
-      memberName: bill.member?.name ?? '',
-      memberPoints: bill.member?.points ?? 0,
-      memberPunch: bill.member == null
+      // The [[Pemilik struk]] when this share names one, the [[Pemilik tagihan]]
+      // otherwise (ADR-0118). The slip is the one artefact a guest takes home,
+      // so it must carry *their* standing, not the party host's.
+      memberName: who?.name ?? '',
+      memberPoints: who?.points ?? 0,
+      memberPunch: who == null
           ? ''
-          : punchText(
-              bill.member!.member.punchProgress,
-              bill.member!.punchTarget,
-            ),
+          : punchText(who.member.punchProgress, who.punchTarget),
       at: SatClock.now(),
       kind: even ? BillDocKind.evenReceipt : BillDocKind.itemizedReceipt,
       // "Tamu A", not a bare "A" — the guest reads this line to know the slip
@@ -174,8 +180,15 @@ class BillStrukBuilder {
       docLabel: receiptTitle(l, receipt.label),
       lines: lines,
       subtotal: receipt.subtotal,
-      discountLabel: receipt.orderDiscount?.label ?? '',
-      discountAmount: receipt.orderDiscount?.amount ?? 0,
+      // Every order-scope give-back, not just the cashier's: since ADR-0118 a
+      // share can carry a manual discount, the member's tier discount and a
+      // redemption at once, and printing only the first is a slip whose
+      // arithmetic does not reach its own total. Named only when there is one,
+      // for the reason `_wholeBillDiscountLabel` gives.
+      discountLabel: orderDiscounts.length == 1
+          ? orderDiscounts.first.label
+          : '',
+      discountAmount: orderDiscounts.fold(0, (a, d) => a + d.amount),
       taxAfterDiscount: bill.taxAfterDiscount,
       serviceAmount: receipt.serviceAmount,
       taxAmount: receipt.taxAmount,
@@ -209,6 +222,20 @@ class BillStrukBuilder {
       );
     }
     return out;
+  }
+
+  /// One composed line per share on a split the [[Pemilik struk]] mode named —
+  /// `'A · Budi'` — and an empty list otherwise, which is every bill at a venue
+  /// that never held the mode.
+  ///
+  /// A share nobody named is skipped rather than printed blank: its money is
+  /// the bill owner's, and the header already says who that is.
+  static List<String> _receiptOwners(Bill bill) {
+    if (!bill.splitEnabled) return const [];
+    return [
+      for (final r in bill.receipts)
+        if (r.member != null) '${r.label} · ${r.member!.name}',
+    ];
   }
 
   /// Name the whole-bill Diskon row only when the bill carries exactly one
@@ -330,9 +357,17 @@ class BillStrukBuilder {
       return '$name ${(n(d['value']) / 100).toStringAsFixed(0)}%';
     }
 
-    Map? orderDiscountOf(Map r) {
-      for (final d in discountsOf(r)) {
-        if (d['ticketId'] == null) return d;
+    List<Map> orderDiscountsOf(Map r) => [
+      for (final d in discountsOf(r))
+        if (d['ticketId'] == null) d,
+    ];
+
+    /// The cashier's own, for the whole-bill label — since ADR-0118 the other
+    /// two slots belong to the member, and naming a bill after someone's tier
+    /// discount reads as the venue's promotion.
+    Map? manualDiscountOf(Map r) {
+      for (final d in orderDiscountsOf(r)) {
+        if (((d['source'] as String?) ?? 'manual') == 'manual') return d;
       }
       return null;
     }
@@ -366,6 +401,14 @@ class BillStrukBuilder {
         memberName: memberName,
         memberPoints: memberPoints,
         memberPunch: memberPunch,
+        receiptOwners: (bill['splitEnabled'] as bool?) != true
+            ? const []
+            : [
+                for (final r in receipts)
+                  if ((r['member'] as Map?)?['name'] != null)
+                    '${(r['label'] as String?) ?? ''} · '
+                        '${(r['member'] as Map)['name']}',
+              ],
         at: SatClock.now(),
         kind: BillDocKind.wholeBill,
         lines: [
@@ -386,7 +429,7 @@ class BillStrukBuilder {
         discountLabel: () {
           final named = [
             for (final r in receipts)
-              if (orderDiscountOf(r) != null) orderDiscountOf(r)!,
+              if (manualDiscountOf(r) != null) manualDiscountOf(r)!,
           ];
           return named.length == 1 ? discountLabel(named.first) : '';
         }(),
@@ -447,6 +490,11 @@ class BillStrukBuilder {
     final recTotal = n(rec['total']);
     final recPaid = n(rec['paidNet']);
     final pays = (rec['payments'] as List? ?? const []);
+    // The [[Pemilik struk]] when this share names one, the bill's owner
+    // otherwise (ADR-0118) — the slip carries the standing of whoever it is
+    // for, not the party host's.
+    final recMember = (rec['member'] as Map?) ?? member;
+    final recOrderDiscounts = orderDiscountsOf(rec);
     return BillStrukData(
       venueName: venueName,
       header: header,
@@ -462,18 +510,29 @@ class BillStrukBuilder {
       tableLabel: tableLabel,
       pax: pax,
       guestName: guestName,
-      memberName: memberName,
-      memberPoints: memberPoints,
-      memberPunch: memberPunch,
+      memberName: (recMember?['name'] as String?) ?? '',
+      memberPoints: n(recMember?['points']),
+      memberPunch: recMember == null
+          ? ''
+          : punchText(
+              n(recMember['punchProgress']),
+              n(recMember['punchTarget']),
+            ),
       at: SatClock.now(),
       kind: even ? BillDocKind.evenReceipt : BillDocKind.itemizedReceipt,
       docLabel: receiptTitle(l, (rec['label'] as String?) ?? ''),
       lines: lines,
       subtotal: n(rec['subtotal']),
-      discountLabel: orderDiscountOf(rec) == null
-          ? ''
-          : discountLabel(orderDiscountOf(rec)!),
-      discountAmount: n(orderDiscountOf(rec)?['amount']),
+      // Every order-scope give-back, not just the first: a share can carry a
+      // manual discount, a member's tier discount and a redemption at once
+      // (ADR-0118), and printing one of three is a slip that does not add up.
+      discountLabel: recOrderDiscounts.length == 1
+          ? discountLabel(recOrderDiscounts.first)
+          : '',
+      discountAmount: recOrderDiscounts.fold<int>(
+        0,
+        (a, d) => a + n(d['amount']),
+      ),
       taxAfterDiscount: taxAfterDiscount,
       serviceAmount: n(rec['serviceAmount']),
       taxAmount: n(rec['taxAmount']),

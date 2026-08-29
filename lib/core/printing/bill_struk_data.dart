@@ -110,6 +110,14 @@ class BillStrukData {
   final String memberName;
   final int memberPoints;
 
+  /// Who each share is for, one composed line per receipt (`'A · Budi'`), on
+  /// the whole-bill doc only and only when a split names anyone (ADR-0118).
+  ///
+  /// Composed by the builder rather than carried structured: this block exists
+  /// to be read back against the slips already in guests' hands, and the only
+  /// thing the renderer does with it is print it.
+  final List<String> receiptOwners;
+
   /// Punch progress as the card reads it — `'3/10'`, or '' when no program.
   final String memberPunch;
   final DateTime at;
@@ -172,6 +180,7 @@ class BillStrukData {
     this.memberName = '',
     this.memberPoints = 0,
     this.memberPunch = '',
+    this.receiptOwners = const [],
     required this.at,
     required this.kind,
     this.docLabel = '',

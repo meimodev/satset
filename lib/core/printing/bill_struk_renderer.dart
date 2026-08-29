@@ -318,6 +318,20 @@ class BillStrukRenderer {
           out.addAll(g.text(l.strukMemberPunch(d.memberPunch)));
         }
       }
+
+      // ── who each share was for (ADR-0118) ──
+      // On the whole-bill doc only, and only when the split named anyone: this
+      // is the sheet the cashier reconciles against the slips already handed
+      // out, and it prints nothing at a venue that never names a share.
+      if (d.receiptOwners.isNotEmpty) {
+        out.addAll(g.hr(ch: '-'));
+        out.addAll(
+          g.text(l.strukReceiptOwners, styles: const PosStyles(bold: true)),
+        );
+        for (final row in d.receiptOwners) {
+          out.addAll(g.text(row));
+        }
+      }
     }
 
     // ── footer ──

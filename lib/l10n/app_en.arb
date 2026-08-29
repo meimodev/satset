@@ -739,6 +739,7 @@
   "strukTableLine": "Table {label}  ·  {pax} pax  ·  {time}",
   "strukGuest": "Guest: {name}",
   "strukMember": "Member: {name}",
+  "strukReceiptOwners": "Receipt owners",
   "strukMemberPoints": "Points balance: {points}",
   "strukMemberPunch": "Stamp card: {progress}",
   "strukNote": "Note: {note}",

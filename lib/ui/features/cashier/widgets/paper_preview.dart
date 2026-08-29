@@ -78,12 +78,18 @@ class PaperPreview extends StatelessWidget {
             // above Layanan when it reduced their base, below Pajak otherwise
             // (ADR-0038). Printing it in a fixed slot prints a sum that fails.
             if (d.discountAmount > 0 && d.taxAfterDiscount)
-              _row(d.discountLabel, '−${_money(d.discountAmount)}'),
+              _row(
+                d.discountLabel.isEmpty ? l10n.strukDiscount : d.discountLabel,
+                '−${_money(d.discountAmount)}',
+              ),
             if (d.serviceAmount > 0)
               _row(l10n.strukService, _money(d.serviceAmount)),
             if (d.taxAmount > 0) _row(l10n.strukTax, _money(d.taxAmount)),
             if (d.discountAmount > 0 && !d.taxAfterDiscount)
-              _row(d.discountLabel, '−${_money(d.discountAmount)}'),
+              _row(
+                d.discountLabel.isEmpty ? l10n.strukDiscount : d.discountLabel,
+                '−${_money(d.discountAmount)}',
+              ),
             _rule(),
             _row(l10n.strukTotal, _money(d.total), bold: true),
             if (d.kind == BillDocKind.evenReceipt && d.billTotal != d.total)
