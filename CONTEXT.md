@@ -907,6 +907,17 @@ The ledger is **append-only** and its balance is `SUM(delta)` — **derived, nev
 
 _Avoid_: treating a `piutang` payment as money received; keeping a visit open as a tab; folding a collection into revenue or into [[Kas kecil (petty cash)]] (guest money is the drawer, the box is a float that only pays out); a negative balance as a stored-value deposit; giving a tab a due date without an ADR.
 
+### Laporan anggota (member report)
+**ID · EN** — Laporan anggota · Member report; Anggota aktif · Active members; Kembali lagi · Returning members; Belanja anggota · Member spend; Belanja tanpa rincian · Untracked spend. _Avoid_: **Riwayat pelanggan** for this screen — the directory already shows a member's bills, and this is the venue-wide reading; **Laporan pelanggan**, which reads as a report *for* the guest.
+
+What the [[Pelanggan (member)]] program bought the venue, over a window the reader picks (ADR-0119). Two readings of the same trade: **who came and what they spent**, ranked across the directory, and **what one of them actually ate**, per menu item. Distinct from the Keanggotaan block in [[Report freshness (Live vs Snapshot)|Reports]], which answers the first for the venue as a whole and is deliberately unchanged — this is the per-person, per-dish surface.
+
+Spend divides by the [[Pemilik struk]] subtraction (ADR-0118) and **so do lines**: units on a receipt naming somebody are theirs, units on an unnamed receipt or on no receipt at all are the [[Pemilik tagihan]]'s. A **void is not a purchase** and leaves the rollup, so a bill a member settled may show no items at all. An [[Amount receipt]] owns no lines, so the money on one is **belanja tanpa rincian** — reported by name, because a spend total and a product rollup that are *supposed* to disagree read as a bug when nothing says why.
+
+The window has an **open-ended** setting (Semua) the accounting report deliberately lacks: this payload is aggregated to a capped list plus a rollup, where that one is per bill. A [[Pelanggan (member)|deleted member]] keeps a row and keeps opening — the trade is the venue's record and outlives the person (ADR-0092).
+
+_Avoid_: reading **anggota aktif** as everyone enrolled (it is everyone who traded *in the window*); reading a product rollup as the venue's menu mix (it is one member's); adding a figure here that the Keanggotaan block computes separately rather than from the same walk.
+
 ### Sumber diskon (discount source)
 **ID · EN** — internal; not shown. Slots: `manual` · `member` · `redeem`.
 

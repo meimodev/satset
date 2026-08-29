@@ -229,10 +229,19 @@ Future<PunchStatus> punchStatus(
     (linesByTicket[line.ticketId] ??= <TableSessionReceiptLine>[]).add(line);
   }
 
+  final mine = memberUnitsOf(
+    tickets,
+    memberId: memberId,
+    linesByTicket: linesByTicket,
+    receiptOwner: receiptOwner,
+    sessionOwner: sessionOwner,
+  );
+
   var bought = 0;
   var given = 0;
-  void tally(TableSessionTicket tk, int units) {
-    if (units <= 0) return;
+  for (final tk in tickets) {
+    final units = mine[tk.id] ?? 0;
+    if (units <= 0) continue;
     final voided = tk.status == 'voided';
     // A comp is a void carrying reason code `comp` (ADR-0006) — so the reward
     // is found the same way the comp tile finds it, not by a second flag.
@@ -242,26 +251,51 @@ Future<PunchStatus> punchStatus(
       bought += units;
     }
   }
+  return PunchStatus(bought: bought, given: given, target: c.punchTarget);
+}
 
+/// How many units of each snapshot ticket belong to [memberId], keyed on
+/// `TableSessionTickets.id`.
+///
+/// **The** line-attribution rule of ADR-0118, in one place: a line assigned to
+/// a receipt belongs to that receipt's [[Pemilik struk]]; a receipt nobody
+/// named, and every unit sitting on no receipt at all — which is *every* unit
+/// of a bill split into [[Amount receipt|amount receipts]], since those own no
+/// lines — belongs to the [[Pemilik tagihan]]. Money divides by the same
+/// subtraction in [pointsBaseByMember]; this is its counterpart for things.
+///
+/// Shared by [punchStatus] (stempel) and [memberHistory] (the product rollup)
+/// so the two can never disagree about who ate what. Deliberately **not**
+/// gated on [MemberConfig.splitEnabled], for the reason [punchStatus] gives:
+/// the flag gates the write and the picker, never the read.
+///
+/// Voids are left in — the caller decides what a voided unit means, because a
+/// comp is a reward to stempel and not a purchase to the rollup.
+Map<String, int> memberUnitsOf(
+  Iterable<TableSessionTicket> tickets, {
+  required String memberId,
+  required Map<String, List<TableSessionReceiptLine>> linesByTicket,
+  required Map<String, String?> receiptOwner,
+  required Map<String, String?> sessionOwner,
+}) {
+  final out = <String, int>{};
   for (final tk in tickets) {
     final owner = sessionOwner[tk.sessionId];
     var assigned = 0;
+    var mine = 0;
     for (final line
         in linesByTicket[tk.ticketId] ?? const <TableSessionReceiptLine>[]) {
       assigned += line.qtyUnits;
-      // An unattributed receipt is the bill owner's, same rule the points
-      // remainder follows — a receipt nobody named does not orphan its units.
       final holder = receiptOwner[line.receiptId] ?? owner;
-      if (holder == memberId) tally(tk, line.qtyUnits);
+      if (holder == memberId) mine += line.qtyUnits;
     }
-    // Units on no receipt at all — including every unit of a bill split into
-    // [[Amount receipt|amount receipts]], which own no lines. An even split
-    // has already abandoned tracking who ordered what, so its punches stay
-    // with the [[Pemilik tagihan]]: money can be attributed there, lines
-    // cannot.
-    if (owner == memberId) tally(tk, tk.qty - assigned);
+    // Clamped because a snapshot can carry assignments summing past the
+    // ticket's own qty when a unit was moved between receipts before close;
+    // the remainder floors at zero rather than deducting from the owner.
+    if (owner == memberId) mine += (tk.qty - assigned).clamp(0, tk.qty);
+    if (mine > 0) out[tk.id] = mine;
   }
-  return PunchStatus(bought: bought, given: given, target: c.punchTarget);
+  return out;
 }
 
 /// The **only** member fact that may cross the guest plane (ADR-0110): how far
@@ -1242,8 +1276,129 @@ Future<Map<String, dynamic>> memberReportSection(
   AppDatabase db, {
   required DateTime from,
   required DateTime to,
+  /// Already-walked scans. The member report walks the same window for its own
+  /// finer list, so it hands them over rather than paying for the pass twice.
+  MemberWindowTrade? trade,
+  MemberWindowPoints? points,
 }) async {
   final cfg = await memberConfig(db);
+  final t = trade ?? await memberWindowTrade(db, from: from, to: to);
+  final p = points ?? await memberWindowPoints(db, from: from, to: to);
+  final owedPoints = await memberPointsOutstanding(db);
+
+  final enrolled =
+      await (db.select(db.members)..where(
+            (m) =>
+                m.joinedAt.isBiggerOrEqualValue(from) &
+                m.joinedAt.isSmallerThanValue(to),
+          ))
+          .get();
+
+  final ranked = t.spendBy.keys.toList()
+    ..sort((a, b) => (t.spendBy[b] ?? 0).compareTo(t.spendBy[a] ?? 0));
+  final capped = ranked.take(_topRankLimit).toList();
+  final named = await memberNamesOf(db, capped);
+  final topRows = [
+    for (final id in capped)
+      {
+        'memberId': id,
+        // Null when the member has since been deleted — the trade stands, the
+        // person does not (ADR-0092). The client renders its own placeholder.
+        'name': named[id]?.name,
+        'visits': t.visitsBy[id] ?? 0,
+        'spend': t.spendBy[id] ?? 0,
+        'points': p.earnedBy[id] ?? 0,
+      },
+  ];
+
+  return {
+    'enabled': cfg.enabled,
+    // The points program runs independently of membership itself, so the client
+    // hides the points column rather than drawing a column of structural zeros.
+    'pointsEnabled': cfg.pointsEnabled,
+    'enrolled': enrolled.length,
+    'activeMembers': t.spendBy.length,
+    'memberBills': t.memberBills,
+    'memberNet': t.memberNet,
+    // Bills in this window that carried more than one member (ADR-0118). Zero
+    // at a venue without the mode, and the marker that lets the section say a
+    // window spanning the switch is showing two shapes rather than one.
+    'splitBills': t.splitBills,
+    'splitEnabled': cfg.splitEnabled,
+    'guestBills': t.guestBills,
+    'guestNet': t.guestNet,
+    'avgMemberBill': t.memberBills == 0 ? 0 : t.memberNet ~/ t.memberBills,
+    'avgGuestBill': t.guestBills == 0 ? 0 : t.guestNet ~/ t.guestBills,
+    'pointsEarned': p.earned,
+    'pointsRedeemed': p.redeemed,
+    'pointsAdjusted': p.adjusted,
+    'pointsOutstanding': owedPoints,
+    // What the outstanding points would cost the venue if every one of them
+    // were spent tomorrow, at today's rate. The rate can move; the liability
+    // is only ever an estimate, which is why it is named one.
+    'liabilityEstimate': owedPoints * cfg.pointValue,
+    'top': topRows,
+    // Members who traded in the window but fell off the end of the list. Sent
+    // as a count so the client can say "+380 lainnya" rather than implying the
+    // hundredth name is the last one.
+    'topTruncated': t.spendBy.length - topRows.length,
+  };
+}
+
+/// Per-member trade in one window, split the way ADR-0118 splits money.
+///
+/// Extracted so the venue report's Keanggotaan block and the member report's
+/// ranked list read **one** definition of the subtraction. Two copies of it is
+/// how the same split bill comes to say a member spent 40k on one screen and
+/// 65k on the next.
+class MemberWindowTrade {
+  /// Spend claimed per member. The parts always add back to `settledTotal`,
+  /// because the owner's share is what is *left* rather than what is found.
+  final Map<String, int> spendBy;
+
+  /// Bills a member was on — one each, not a share each: three friends at one
+  /// table ate out once apiece.
+  final Map<String, int> visitsBy;
+
+  /// Newest settled bill per member inside the window.
+  final Map<String, DateTime> lastVisitBy;
+
+  final int memberBills;
+  final int memberNet;
+  final int guestBills;
+  final int guestNet;
+
+  /// Bills carrying more than one member (ADR-0118).
+  final int splitBills;
+
+  /// Oldest `closedAt` the scan saw, so an open-ended window can label itself
+  /// with the venue's real first day instead of a sentinel year.
+  final DateTime? earliestClosedAt;
+
+  const MemberWindowTrade({
+    required this.spendBy,
+    required this.visitsBy,
+    required this.lastVisitBy,
+    required this.memberBills,
+    required this.memberNet,
+    required this.guestBills,
+    required this.guestNet,
+    required this.splitBills,
+    required this.earliestClosedAt,
+  });
+}
+
+/// Walk the window's settled bills once and divide them among the members who
+/// were on them.
+///
+/// [from] already carries the caller's `businessDayStartHour` rollover, so a
+/// 02:00 bill lands with the night it belongs to — the contract every report
+/// section here keeps.
+Future<MemberWindowTrade> memberWindowTrade(
+  AppDatabase db, {
+  required DateTime from,
+  required DateTime to,
+}) async {
   final s = db.tableSessions;
   final sessions =
       await (db.select(s)..where(
@@ -1262,9 +1417,11 @@ Future<Map<String, dynamic>> memberReportSection(
   final attributedBySession = <String, List<TableSessionReceipt>>{};
   if (sessions.isNotEmpty) {
     final ids = sessions.map((x) => x.id).toList();
-    final recs = await (db.select(db.tableSessionReceipts)
-          ..where((x) => x.sessionId.isIn(ids) & x.memberId.isNotNull()))
-        .get();
+    final recs =
+        await (db.select(db.tableSessionReceipts)..where(
+              (x) => x.sessionId.isIn(ids) & x.memberId.isNotNull(),
+            ))
+            .get();
     for (final rec in recs) {
       (attributedBySession[rec.sessionId] ??= <TableSessionReceipt>[]).add(rec);
     }
@@ -1274,14 +1431,17 @@ Future<Map<String, dynamic>> memberReportSection(
   var memberNet = 0;
   var guestBills = 0;
   var guestNet = 0;
+  var splitBills = 0;
+  DateTime? earliest;
   final spendBy = <String, int>{};
   final visitsBy = <String, int>{};
-  // How many bills in this window were split between two or more members —
-  // the one figure that says "these numbers are two shapes" when a report
-  // spans the moment the mode was switched on.
-  var splitBills = 0;
+  final lastVisitBy = <String, DateTime>{};
+
   for (final row in sessions) {
     final owner = row.memberId;
+    if (earliest == null || row.closedAt.isBefore(earliest)) {
+      earliest = row.closedAt;
+    }
 
     // **Bills stay bills**, counted on the owner (ADR-0118 §6). A
     // part-member, part-guest bill is one bill by whoever held it, so every
@@ -1321,17 +1481,58 @@ Future<Map<String, dynamic>> memberReportSection(
       spendBy[owner] = (spendBy[owner] ?? 0) + ownerSpend;
       touched.add(owner);
     }
-    // A visit each, not a share each: the ranked list's "kunjungan" column
-    // counts bills a member was on, and three friends at one table ate out
-    // once apiece.
     for (final id in touched) {
       visitsBy[id] = (visitsBy[id] ?? 0) + 1;
+      final seen = lastVisitBy[id];
+      if (seen == null || row.closedAt.isAfter(seen)) {
+        lastVisitBy[id] = row.closedAt;
+      }
     }
   }
 
-  // Points moved *in this window*, split the way the ledger splits them: what
-  // the venue promised (earn) against what it actually gave back (redeem, at
-  // the venue's own rate). A reversal nets itself out of whichever it undid.
+  return MemberWindowTrade(
+    spendBy: spendBy,
+    visitsBy: visitsBy,
+    lastVisitBy: lastVisitBy,
+    memberBills: memberBills,
+    memberNet: memberNet,
+    guestBills: guestBills,
+    guestNet: guestNet,
+    splitBills: splitBills,
+    earliestClosedAt: earliest,
+  );
+}
+
+/// Points moved inside one window, split the way the ledger splits them.
+class MemberWindowPoints {
+  /// What the venue promised.
+  final int earned;
+
+  /// What it actually gave back, at its own rate.
+  final int redeemed;
+
+  /// Hand corrections.
+  final int adjusted;
+
+  /// Per-member earn, for the ranked list's points column. Keyed on the
+  /// ledger's own `memberId` — a points row cannot be traced to one session
+  /// (the snapshot mints a fresh id and the visit it names is deleted), so
+  /// this is the finest grain the schema supports.
+  final Map<String, int> earnedBy;
+
+  const MemberWindowPoints({
+    required this.earned,
+    required this.redeemed,
+    required this.adjusted,
+    required this.earnedBy,
+  });
+}
+
+Future<MemberWindowPoints> memberWindowPoints(
+  AppDatabase db, {
+  required DateTime from,
+  required DateTime to,
+}) async {
   final p = db.memberPoints;
   final ledger =
       await (db.select(p)..where(
@@ -1342,10 +1543,6 @@ Future<Map<String, dynamic>> memberReportSection(
   var earned = 0;
   var redeemed = 0;
   var adjusted = 0;
-  // Per-member earn, for the ranked list's points column. Keyed on the ledger's
-  // own `memberId` — a points row cannot be traced to one session (the snapshot
-  // mints a fresh id and the visit it names is deleted), so this is the finest
-  // grain the schema supports.
   final earnedBy = <String, int>{};
   for (final row in ledger) {
     switch (memberPointKindFromName(row.kind)) {
@@ -1369,67 +1566,374 @@ Future<Map<String, dynamic>> memberReportSection(
         break;
     }
   }
+  return MemberWindowPoints(
+    earned: earned,
+    redeemed: redeemed,
+    adjusted: adjusted,
+    earnedBy: earnedBy,
+  );
+}
 
-  // The whole outstanding liability, not just this window's — points never
-  // expire (ADR-0095), so what the venue owes is a running total or nothing.
+/// The whole outstanding points liability, not any one window's — points never
+/// expire (ADR-0095), so what the venue owes is a running total or nothing.
+Future<int> memberPointsOutstanding(AppDatabase db) async {
+  final p = db.memberPoints;
   final sum = p.delta.sum();
-  final owedRow = await (db.selectOnly(p)..addColumns([sum])).getSingleOrNull();
-  final owedPoints = owedRow?.read(sum) ?? 0;
+  final row = await (db.selectOnly(p)..addColumns([sum])).getSingleOrNull();
+  return row?.read(sum) ?? 0;
+}
 
-  final enrolled =
-      await (db.select(db.members)..where(
-            (m) =>
-                m.joinedAt.isBiggerOrEqualValue(from) &
-                m.joinedAt.isSmallerThanValue(to),
-          ))
-          .get();
+/// Name and phone for a batch of member ids, in one query.
+///
+/// An id missing from the result is a member since deleted (ADR-0092) — the
+/// caller renders the placeholder, because the trade stands and the person
+/// does not.
+Future<Map<String, ({String name, String phone})>> memberNamesOf(
+  AppDatabase db,
+  List<String> ids,
+) async {
+  if (ids.isEmpty) return const {};
+  final rows = await (db.select(
+    db.members,
+  )..where((m) => m.id.isIn(ids))).get();
+  return {for (final r in rows) r.id: (name: r.name, phone: r.phone)};
+}
 
-  final top = spendBy.keys.toList()
-    ..sort((a, b) => (spendBy[b] ?? 0).compareTo(spendBy[a] ?? 0));
-  final topRows = <Map<String, dynamic>>[];
-  for (final id in top.take(_topRankLimit)) {
-    final name = await _nameOf(db, id);
-    topRows.add({
-      'memberId': id,
-      // Null when the member has since been deleted — the trade stands, the
-      // person does not (ADR-0092). The client renders its own placeholder.
-      'name': name,
-      'visits': visitsBy[id] ?? 0,
-      'spend': spendBy[id] ?? 0,
-      'points': earnedBy[id] ?? 0,
-    });
+/// How many members the member report's ranked list carries.
+///
+/// Five times [_topRankLimit], because that screen is for **browsing** the
+/// directory's trade rather than reading a top ten: the client sorts and
+/// filters the rows it already holds, so this cap is the only thing standing
+/// between it and a venue-sized list. The remainder still ships as a count.
+const _memberRankLimit = 500;
+
+/// The member report: the overview numbers plus every member who traded in the
+/// window, ranked by spend.
+///
+/// One walk of the window feeds both halves — [memberReportSection] is handed
+/// the scans rather than repeating them, which is also what keeps the tiles and
+/// the list agreeing about the same bill.
+Future<Map<String, dynamic>> memberTradeReport(
+  AppDatabase db, {
+  required DateTime from,
+  required DateTime to,
+}) async {
+  final trade = await memberWindowTrade(db, from: from, to: to);
+  final points = await memberWindowPoints(db, from: from, to: to);
+  final section = await memberReportSection(
+    db,
+    from: from,
+    to: to,
+    trade: trade,
+    points: points,
+  );
+
+  final ranked = trade.spendBy.keys.toList()
+    ..sort((a, b) => (trade.spendBy[b] ?? 0).compareTo(trade.spendBy[a] ?? 0));
+  final capped = ranked.take(_memberRankLimit).toList();
+  final named = await memberNamesOf(db, capped);
+
+  // Everyone on the books, so the screen can say how many members did **not**
+  // trade in this window. A trade report has no row for them — they belong to
+  // the directory — but a count is the difference between "nobody else exists"
+  // and "nobody else came".
+  final enrolledTotal = await db.members.count().getSingle();
+
+  // Members with more than one settled bill in the window. The one number the
+  // venue block never had to compute, and the only question a loyalty program
+  // is really asked: do they come back?
+  var returning = 0;
+  for (final n in trade.visitsBy.values) {
+    if (n > 1) returning++;
   }
 
   return {
-    'enabled': cfg.enabled,
-    // The points program runs independently of membership itself, so the client
-    // hides the points column rather than drawing a column of structural zeros.
-    'pointsEnabled': cfg.pointsEnabled,
-    'enrolled': enrolled.length,
-    'activeMembers': spendBy.length,
-    'memberBills': memberBills,
-    'memberNet': memberNet,
-    // Bills in this window that carried more than one member (ADR-0118). Zero
-    // at a venue without the mode, and the marker that lets the section say a
-    // window spanning the switch is showing two shapes rather than one.
-    'splitBills': splitBills,
-    'splitEnabled': cfg.splitEnabled,
-    'guestBills': guestBills,
-    'guestNet': guestNet,
-    'avgMemberBill': memberBills == 0 ? 0 : memberNet ~/ memberBills,
-    'avgGuestBill': guestBills == 0 ? 0 : guestNet ~/ guestBills,
-    'pointsEarned': earned,
-    'pointsRedeemed': redeemed,
-    'pointsAdjusted': adjusted,
-    'pointsOutstanding': owedPoints,
-    // What the outstanding points would cost the venue if every one of them
-    // were spent tomorrow, at today's rate. The rate can move; the liability
-    // is only ever an estimate, which is why it is named one.
-    'liabilityEstimate': owedPoints * cfg.pointValue,
-    'top': topRows,
-    // Members who traded in the window but fell off the end of the list. Sent
-    // as a count so the client can say "+380 lainnya" rather than implying the
-    // hundredth name is the last one.
-    'topTruncated': spendBy.length - topRows.length,
+    ...section,
+    'members': [
+      for (final id in capped)
+        {
+          'memberId': id,
+          'name': named[id]?.name,
+          'phone': named[id]?.phone,
+          'visits': trade.visitsBy[id] ?? 0,
+          'spend': trade.spendBy[id] ?? 0,
+          'points': points.earnedBy[id] ?? 0,
+          'lastVisitAt': trade.lastVisitBy[id]?.toIso8601String(),
+        },
+    ],
+    'membersTruncated': trade.spendBy.length - capped.length,
+    'enrolledTotal': enrolledTotal,
+    'idleMembers': enrolledTotal - trade.spendBy.length,
+    'returningMembers': returning,
+    // The venue's oldest settled bill inside the window. Null when nothing
+    // traded; the `all` range uses it to label itself with a real date.
+    'earliestClosedAt': trade.earliestClosedAt?.toIso8601String(),
   };
 }
+
+/// One settled bill on a member's history, from that member's side of it.
+class MemberBillRow {
+  final String sessionId;
+  final DateTime closedAt;
+  final String? tableLabel;
+  final int pax;
+  final String kind;
+
+  /// What the whole bill settled for.
+  final int billTotal;
+
+  /// What this member's share of it was — the ADR-0118 subtraction.
+  final int share;
+
+  /// True when this member held the bill, false when they only named a
+  /// receipt on somebody else's.
+  final bool owner;
+
+  /// Units attributed to this member on this bill, voids excluded.
+  final int units;
+
+  const MemberBillRow({
+    required this.sessionId,
+    required this.closedAt,
+    required this.tableLabel,
+    required this.pax,
+    required this.kind,
+    required this.billTotal,
+    required this.share,
+    required this.owner,
+    required this.units,
+  });
+}
+
+/// One menu item in a member's product rollup.
+class MemberProductRow {
+  final String itemId;
+
+  /// Taken from the newest snapshot line, so a renamed item still reads as
+  /// itself rather than as whatever it was called the first time.
+  final String name;
+  final int qty;
+  final int spend;
+  final DateTime lastAt;
+
+  const MemberProductRow({
+    required this.itemId,
+    required this.name,
+    required this.qty,
+    required this.spend,
+    required this.lastAt,
+  });
+}
+
+/// How many bills a member's drill returns before it truncates.
+const _memberBillLimit = 200;
+
+/// One member's trade in a window: their bills, and every product they bought.
+///
+/// Deliberately does **not** go through [getMember] — a member deleted under
+/// ADR-0092 leaves their trade behind as an orphan `memberId`, and those bills
+/// are the venue's own record of what happened rather than the person's data.
+/// So this answers for an id with no directory row, where `GET /members/<id>`
+/// correctly 404s.
+Future<Map<String, dynamic>> memberHistory(
+  AppDatabase db,
+  String memberId, {
+  required DateTime from,
+  required DateTime to,
+  int billLimit = _memberBillLimit,
+}) async {
+  final s = db.tableSessions;
+  final r = db.tableSessionReceipts;
+
+  // Bills this member can be on: the ones they owned, plus — under
+  // `memberSplit` — any whose receipts name them, which includes bills owned
+  // by somebody else entirely (ADR-0118).
+  final owned =
+      await (db.selectOnly(s)
+            ..addColumns([s.id])
+            ..where(
+              s.memberId.equals(memberId) &
+                  s.closedAt.isBiggerOrEqualValue(from) &
+                  s.closedAt.isSmallerThanValue(to),
+            ))
+          .get();
+  final candidates = {for (final row in owned) row.read(s.id)!};
+  final named =
+      await (db.selectOnly(r)
+            ..addColumns([r.sessionId])
+            ..where(r.memberId.equals(memberId)))
+          .get();
+  candidates.addAll(named.map((row) => row.read(r.sessionId)!));
+
+  if (candidates.isEmpty) return _emptyHistory(memberId);
+
+  final sessions =
+      await (db.select(s)
+            ..where(
+              (x) =>
+                  x.id.isIn(candidates.toList()) &
+                  x.closedAt.isBiggerOrEqualValue(from) &
+                  x.closedAt.isSmallerThanValue(to),
+            )
+            ..orderBy([(x) => OrderingTerm.desc(x.closedAt)]))
+          .get();
+  if (sessions.isEmpty) return _emptyHistory(memberId);
+
+  final sessionIds = sessions.map((x) => x.id).toList();
+  final sessionOwner = {for (final row in sessions) row.id: row.memberId};
+
+  final receipts = await (db.select(
+    r,
+  )..where((x) => x.sessionId.isIn(sessionIds))).get();
+  final receiptOwner = {
+    for (final rec in receipts) rec.receiptId: rec.memberId,
+  };
+
+  final lines = await (db.select(
+    db.tableSessionReceiptLines,
+  )..where((x) => x.sessionId.isIn(sessionIds))).get();
+  final linesByTicket = <String, List<TableSessionReceiptLine>>{};
+  for (final line in lines) {
+    (linesByTicket[line.ticketId] ??= <TableSessionReceiptLine>[]).add(line);
+  }
+
+  // Newest bill first, so the first name seen for an item is its most recent
+  // one — what [MemberProductRow.name] promises.
+  final order = {for (var i = 0; i < sessionIds.length; i++) sessionIds[i]: i};
+  final tickets =
+      await (db.select(
+        db.tableSessionTickets,
+      )..where((x) => x.sessionId.isIn(sessionIds))).get()
+        ..sort(
+          (a, b) =>
+              (order[a.sessionId] ?? 0).compareTo(order[b.sessionId] ?? 0),
+        );
+
+  final mine = memberUnitsOf(
+    tickets,
+    memberId: memberId,
+    linesByTicket: linesByTicket,
+    receiptOwner: receiptOwner,
+    sessionOwner: sessionOwner,
+  );
+
+  final unitsBySession = <String, int>{};
+  final products = <String, MemberProductRow>{};
+  for (final tk in tickets) {
+    final units = mine[tk.id] ?? 0;
+    if (units <= 0) continue;
+    // A void is not a purchase. It stays out of both the rollup and the
+    // per-bill count, which is why a bill the member did settle can show zero
+    // items.
+    if (tk.status == 'voided') continue;
+    unitsBySession[tk.sessionId] = (unitsBySession[tk.sessionId] ?? 0) + units;
+    final prev = products[tk.itemId];
+    products[tk.itemId] = MemberProductRow(
+      itemId: tk.itemId,
+      name: prev?.name ?? tk.name,
+      qty: (prev?.qty ?? 0) + units,
+      spend: (prev?.spend ?? 0) + tk.price * units,
+      lastAt: prev?.lastAt ?? tk.sentAt,
+    );
+  }
+
+  final receiptsBySession = <String, List<TableSessionReceipt>>{};
+  for (final rec in receipts) {
+    (receiptsBySession[rec.sessionId] ??= <TableSessionReceipt>[]).add(rec);
+  }
+
+  final bills = <MemberBillRow>[];
+  var spendTotal = 0;
+  var untrackedSpend = 0;
+  for (final row in sessions) {
+    final isOwner = row.memberId == memberId;
+    // The same subtraction [memberWindowTrade] makes, struck one bill at a
+    // time so a row can show the member's own share beside what the table as a
+    // whole settled for.
+    var share = 0;
+    var claimedByOthers = 0;
+    for (final rec
+        in receiptsBySession[row.id] ?? const <TableSessionReceipt>[]) {
+      final id = rec.memberId;
+      if (id == null || id == row.memberId) continue;
+      claimedByOthers += rec.total;
+      if (id == memberId) share += rec.total;
+    }
+    if (isOwner) {
+      share += (row.settledTotal - claimedByOthers).clamp(0, 1 << 31).toInt();
+    }
+    final units = unitsBySession[row.id] ?? 0;
+    spendTotal += share;
+    // Money on a bill where this member was attributed no line at all — every
+    // unit of an [[Amount receipt]] (ADR-0068), which claims money and owns no
+    // items. Named, because the spend total and the product rollup are then
+    // *supposed* to disagree and a silent gap reads as a bug.
+    if (units == 0 && share > 0) untrackedSpend += share;
+    bills.add(
+      MemberBillRow(
+        sessionId: row.id,
+        closedAt: row.closedAt,
+        tableLabel: row.tableLabel,
+        pax: row.pax,
+        kind: row.kind,
+        billTotal: row.settledTotal,
+        share: share,
+        owner: isOwner,
+        units: units,
+      ),
+    );
+  }
+
+  final ranked = products.values.toList()
+    ..sort((a, b) {
+      final byQty = b.qty.compareTo(a.qty);
+      return byQty != 0 ? byQty : b.spend.compareTo(a.spend);
+    });
+  final capped = bills.take(billLimit.clamp(1, 500)).toList();
+
+  return {
+    'memberId': memberId,
+    'bills': [
+      for (final b in capped)
+        {
+          'sessionId': b.sessionId,
+          'closedAt': b.closedAt.toIso8601String(),
+          'tableLabel': b.tableLabel,
+          'pax': b.pax,
+          'kind': b.kind,
+          'billTotal': b.billTotal,
+          'share': b.share,
+          'owner': b.owner,
+          'units': b.units,
+        },
+    ],
+    'billsTotal': bills.length,
+    'products': [
+      for (final p in ranked)
+        {
+          'itemId': p.itemId,
+          'name': p.name,
+          'qty': p.qty,
+          'spend': p.spend,
+          'lastAt': p.lastAt.toIso8601String(),
+        },
+    ],
+    'visits': bills.length,
+    'spend': spendTotal,
+    'units': unitsBySession.values.fold<int>(0, (a, b) => a + b),
+    'avgBill': bills.isEmpty ? 0 : spendTotal ~/ bills.length,
+    'untrackedSpend': untrackedSpend,
+  };
+}
+
+Map<String, dynamic> _emptyHistory(String memberId) => {
+  'memberId': memberId,
+  'bills': const <Map<String, dynamic>>[],
+  'billsTotal': 0,
+  'products': const <Map<String, dynamic>>[],
+  'visits': 0,
+  'spend': 0,
+  'units': 0,
+  'avgBill': 0,
+  'untrackedSpend': 0,
+};

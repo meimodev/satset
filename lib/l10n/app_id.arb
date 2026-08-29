@@ -110,7 +110,7 @@
   "auditTypeStockWasted": "Buang",
   "auditTypeOpenItemSold": "Item bebas",
   "@auditTypeStockWasted": {
-    "description": "CONTEXT.md: Buang \u00b7 Waste."
+    "description": "CONTEXT.md: Buang · Waste."
   },
   "auditTypeStockCounted": "Opname",
   "soTitle": "Pesan mandiri",
@@ -304,9 +304,21 @@
   "vdayNoteLabel": "Catatan (opsional)",
   "vdayVarianceNone": "Cocok dengan catatan.",
   "vdayVariance": "Selisih {amount}.",
-  "@vdayVariance": {"placeholders": {"amount": {"type": "String"}}},
+  "@vdayVariance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "vdayLedgerSays": "Catatan kas kecil: {amount}",
-  "@vdayLedgerSays": {"placeholders": {"amount": {"type": "String"}}},
+  "@vdayLedgerSays": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "vdayFloatNote": "Modal awal",
   "vdayCountNote": "Hitung tutup kedai",
   "venueHubDayTitle": "Buka & tutup kedai",
@@ -1587,9 +1599,9 @@
       }
     }
   },
-  "auditStockWasted": "Buang {what} \u2014 {value}",
+  "auditStockWasted": "Buang {what} — {value}",
   "@auditStockWasted": {
-    "description": "CONTEXT.md: Buang \u00b7 Waste.",
+    "description": "CONTEXT.md: Buang · Waste.",
     "placeholders": {
       "what": {
         "type": "String"
@@ -2301,9 +2313,24 @@
   "rptRingkasAvg": "Rata-rata nota",
   "rptRingkasTop": "Terlaris",
   "rptRingkasKasOk": "Kas kecil {closing}, cocok dengan catatan.",
-  "@rptRingkasKasOk": {"placeholders": {"closing": {"type": "String"}}},
+  "@rptRingkasKasOk": {
+    "placeholders": {
+      "closing": {
+        "type": "String"
+      }
+    }
+  },
   "rptRingkasKasOff": "Kas kecil {closing}, selisih {variance}.",
-  "@rptRingkasKasOff": {"placeholders": {"closing": {"type": "String"}, "variance": {"type": "String"}}},
+  "@rptRingkasKasOff": {
+    "placeholders": {
+      "closing": {
+        "type": "String"
+      },
+      "variance": {
+        "type": "String"
+      }
+    }
+  },
   "rptSecSales": "Penjualan",
   "rptSecStaff": "Staf",
   "rptSecMenu": "Menu",
@@ -2865,7 +2892,7 @@
   "stkReceive": "Terima",
   "stkMenuWaste": "Buang",
   "@stkMenuWaste": {
-    "description": "CONTEXT.md: Buang \u00b7 Waste."
+    "description": "CONTEXT.md: Buang · Waste."
   },
   "stkWasteTitle": "Buang {name}",
   "@stkWasteTitle": {
@@ -2877,7 +2904,7 @@
   },
   "stkWasteSub": "Stok yang dibuang keluar dari catatan dan nilainya hilang",
   "stkWasteNote": "Alasan",
-  "stkWasteNoteHelper": "Wajib diisi \u2014 tanpa alasan, angka buang tidak bisa ditindaklanjuti",
+  "stkWasteNoteHelper": "Wajib diisi — tanpa alasan, angka buang tidak bisa ditindaklanjuti",
   "stkWasteNoteRequired": "Alasan wajib diisi",
   "stkWasteQtyRequired": "Jumlah wajib diisi",
   "stkWasteOk": "Tercatat dibuang, nilai {value}",
@@ -3016,7 +3043,7 @@
   "stkLowAtHelper": "Munculkan peringatan saat stok di bawah angka ini",
   "stkParAt": "Stok par ({unit}, opsional)",
   "@stkParAt": {
-    "description": "CONTEXT.md: Stok par \u00b7 Par level.",
+    "description": "CONTEXT.md: Stok par · Par level.",
     "placeholders": {
       "unit": {
         "type": "String"
@@ -3026,7 +3053,7 @@
   "stkParAtHelper": "Jumlah yang ingin selalu tersedia; kekurangannya masuk daftar belanja",
   "stkBelanja": "Belanja",
   "@stkBelanja": {
-    "description": "CONTEXT.md: Belanja \u00b7 Shopping list."
+    "description": "CONTEXT.md: Belanja · Shopping list."
   },
   "stkBelanjaEstimate": "Perkiraan belanja {amount}",
   "@stkBelanjaEstimate": {
@@ -3674,7 +3701,7 @@
   "mieRecipeEmpty": "Belum ada bahan pada resep ini.",
   "mieBuang": "Buang",
   "@mieBuang": {
-    "description": "CONTEXT.md: Buang \u00b7 Waste."
+    "description": "CONTEXT.md: Buang · Waste."
   },
   "mieBuangTitle": "Buang {name}",
   "@mieBuangTitle": {
@@ -3686,7 +3713,7 @@
   },
   "mieBuangSub": "Bahan sesuai resep akan dikurangi sebanyak porsi yang dibuang",
   "@mieBuangSub": {
-    "description": "CONTEXT.md: bahan \u00b7 Ingredient; resep \u00b7 Recipe."
+    "description": "CONTEXT.md: bahan · Ingredient; resep · Recipe."
   },
   "mieBuangNote": "Alasan",
   "mieBuangNoteRequired": "Alasan wajib diisi",
@@ -3700,11 +3727,11 @@
   },
   "mieJualSatuan": "Jual satuan",
   "@mieJualSatuan": {
-    "description": "CONTEXT.md: Jual satuan \u00b7 Sold by unit."
+    "description": "CONTEXT.md: Jual satuan · Sold by unit."
   },
-  "mieJualSatuanDone": "Bahan \u201c{name}\u201d dibuat, resep 1 pcs terisi",
+  "mieJualSatuanDone": "Bahan “{name}” dibuat, resep 1 pcs terisi",
   "@mieJualSatuanDone": {
-    "description": "CONTEXT.md: bahan \u00b7 Ingredient; resep \u00b7 Recipe.",
+    "description": "CONTEXT.md: bahan · Ingredient; resep · Recipe.",
     "placeholders": {
       "name": {
         "type": "String"
@@ -6368,7 +6395,7 @@
   "@fltTagModes": {
     "description": "Tag on the fleet Mode card."
   },
-  "fltModesHint": "Bentuk kerja venue. Bukan yang dibeli \u2014 dua kunci ini berdiri sendiri dan tidak saling mengandaikan.",
+  "fltModesHint": "Bentuk kerja venue. Bukan yang dibeli — dua kunci ini berdiri sendiri dan tidak saling mengandaikan.",
   "@fltModesHint": {
     "description": "Hint under the fleet Mode card: modes shape the app, modules are bought."
   },
@@ -6409,7 +6436,7 @@
   "@fltModeMemberSplitNeedsMembers": {
     "description": "Shown in place of the hint when the venue does not hold the members module."
   },
-  "fltCounterMootByBypass": "{label} \u2014 tidak berlaku tanpa antrian persiapan",
+  "fltCounterMootByBypass": "{label} — tidak berlaku tanpa antrian persiapan",
   "@fltCounterMootByBypass": {
     "description": "Kedai switch label when the no-prep-queue mode has already removed what it governs.",
     "placeholders": {
@@ -7453,5 +7480,201 @@
         "type": "String"
       }
     }
-  }
+  },
+  "mrpTitle": "Laporan anggota",
+  "mrpSub": "Riwayat belanja pelanggan terdaftar",
+  "mrpPhoneOnly": "Laporan ini dibaca dengan membandingkan baris satu sama lain. Buka di tablet.",
+  "mrpRangeAll": "Semua",
+  "mrpActiveOf": "{active} dari {total} anggota berbelanja",
+  "@mrpActiveOf": {
+    "placeholders": {
+      "active": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpOfEnrolled": "dari {total} terdaftar",
+  "@mrpOfEnrolled": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpIdle": "{count} belum kembali",
+  "@mrpIdle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpShareOfNet": "{pct}% dari omzet",
+  "@mrpShareOfNet": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpVsGuest": "Tamu {amount}",
+  "@mrpVsGuest": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpOnceOnly": "{count} sekali saja",
+  "@mrpOnceOnly": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpLiability": "Liabilitas ≈ {amount}",
+  "@mrpLiability": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpKpiActive": "Anggota aktif",
+  "mrpKpiNew": "Anggota baru",
+  "mrpKpiSpend": "Belanja anggota",
+  "mrpKpiAvg": "Rata-rata tagihan",
+  "mrpKpiReturn": "Kembali lagi",
+  "mrpKpiPoints": "Poin beredar",
+  "mrpDetail": "Detail",
+  "mrpHideDetail": "Tutup detail",
+  "mrpMemberBills": "Tagihan anggota",
+  "mrpGuestBills": "Tagihan tamu",
+  "mrpGuestNet": "Omzet tamu",
+  "mrpSplitBills": "Tagihan patungan",
+  "mrpPointsEarned": "Poin terkumpul",
+  "mrpPointsRedeemed": "Poin ditukar",
+  "mrpPointsAdjusted": "Koreksi poin",
+  "mrpSince": "Sejak {date}",
+  "@mrpSince": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpSearchHint": "Cari nama atau nomor",
+  "mrpSortSpend": "Belanja",
+  "mrpSortVisits": "Kunjungan",
+  "mrpSortPoints": "Poin",
+  "mrpSortRecent": "Terakhir datang",
+  "mrpSortName": "Nama",
+  "mrpNoMatch": "Tidak ada yang cocok.",
+  "mrpTruncated": "{count, plural, other{+{count} anggota lainnya tidak ditampilkan}}",
+  "@mrpTruncated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpDeleted": "Pelanggan dihapus",
+  "mrpVisitsN": "{count, plural, other{{count} kunjungan}}",
+  "@mrpVisitsN": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpPointsN": "{count, plural, other{+{count} poin}}",
+  "@mrpPointsN": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpEmptyTitle": "Belum ada belanja anggota",
+  "mrpEmptyBody": "Tidak ada anggota yang bertransaksi dalam rentang ini.",
+  "mrpPickTitle": "Pilih satu anggota",
+  "mrpPickBody": "Riwayat kunjungan dan rincian produknya muncul di sini.",
+  "mrpTabProducts": "Produk",
+  "mrpTabVisits": "Kunjungan",
+  "mrpInWindow": "Dalam rentang",
+  "mrpStatVisits": "Kunjungan",
+  "mrpStatBills": "{count, plural, other{{count} tagihan}}",
+  "@mrpStatBills": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpStatSpend": "Belanja",
+  "mrpStatAvg": "Rata-rata {amount}",
+  "@mrpStatAvg": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpStatItems": "Porsi",
+  "mrpStatDistinct": "{count, plural, other{{count} jenis item}}",
+  "@mrpStatDistinct": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpStatPoints": "Poin",
+  "mrpStatBalance": "Saldo saat ini",
+  "mrpLifetimeVisits": "Kunjungan seumur",
+  "mrpLifetimeSpend": "Belanja seumur",
+  "mrpJoined": "Bergabung",
+  "mrpUntracked": "{amount} dari struk nominal — mengklaim uang tanpa rincian item, jadi tidak masuk daftar produk.",
+  "@mrpUntracked": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpNoProductsTitle": "Tidak ada rincian item",
+  "mrpNoProductsBody": "Belanjanya seluruhnya lewat struk nominal, yang tidak menyimpan item.",
+  "mrpNoBillsTitle": "Belum ada tagihan",
+  "mrpNoBillsBody": "Anggota ini tidak bertransaksi dalam rentang yang dipilih.",
+  "mrpColItem": "Item",
+  "mrpColQty": "Porsi",
+  "mrpColValue": "Nilai",
+  "mrpColLast": "Terakhir",
+  "mrpColWhen": "Waktu",
+  "mrpColTable": "Meja",
+  "mrpColShare": "Bagian",
+  "mrpBillOwner": "pemilik",
+  "mrpBillGuestOf": "patungan",
+  "mrpOfBill": "dari {amount}",
+  "@mrpOfBill": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpBillsMore": "{count, plural, other{+{count} tagihan lagi tidak ditampilkan}}",
+  "@mrpBillsMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hubMemberReport": "Laporan anggota",
+  "hubMemberReportSub": "Riwayat belanja dan produk favorit pelanggan"
 }

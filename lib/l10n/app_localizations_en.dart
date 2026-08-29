@@ -9386,4 +9386,300 @@ class AppL10nEn extends AppL10n {
   String auditDebtReversedNoBill(String member, String amount) {
     return 'Tab charge reversed for $member: $amount';
   }
+
+  @override
+  String get mrpTitle => 'Member report';
+
+  @override
+  String get mrpSub => 'What enrolled guests actually buy';
+
+  @override
+  String get mrpPhoneOnly =>
+      'This report is read by comparing rows against each other. Open it on a tablet.';
+
+  @override
+  String get mrpRangeAll => 'All time';
+
+  @override
+  String mrpActiveOf(int active, int total) {
+    return '$active of $total enrolled traded';
+  }
+
+  @override
+  String mrpOfEnrolled(int total) {
+    return 'of $total enrolled';
+  }
+
+  @override
+  String mrpIdle(int count) {
+    return '$count did not come';
+  }
+
+  @override
+  String mrpShareOfNet(int pct) {
+    return '$pct% of net sales';
+  }
+
+  @override
+  String mrpVsGuest(String amount) {
+    return 'Guests $amount';
+  }
+
+  @override
+  String mrpOnceOnly(int count) {
+    return '$count came once';
+  }
+
+  @override
+  String mrpLiability(String amount) {
+    return 'Liability ≈ $amount';
+  }
+
+  @override
+  String get mrpKpiActive => 'Active members';
+
+  @override
+  String get mrpKpiNew => 'New members';
+
+  @override
+  String get mrpKpiSpend => 'Member spend';
+
+  @override
+  String get mrpKpiAvg => 'Average bill';
+
+  @override
+  String get mrpKpiReturn => 'Came back';
+
+  @override
+  String get mrpKpiPoints => 'Points outstanding';
+
+  @override
+  String get mrpDetail => 'Detail';
+
+  @override
+  String get mrpHideDetail => 'Hide detail';
+
+  @override
+  String get mrpMemberBills => 'Member bills';
+
+  @override
+  String get mrpGuestBills => 'Guest bills';
+
+  @override
+  String get mrpGuestNet => 'Guest net';
+
+  @override
+  String get mrpSplitBills => 'Split bills';
+
+  @override
+  String get mrpPointsEarned => 'Points earned';
+
+  @override
+  String get mrpPointsRedeemed => 'Points redeemed';
+
+  @override
+  String get mrpPointsAdjusted => 'Points adjusted';
+
+  @override
+  String mrpSince(String date) {
+    return 'Since $date';
+  }
+
+  @override
+  String get mrpSearchHint => 'Search name or number';
+
+  @override
+  String get mrpSortSpend => 'Spend';
+
+  @override
+  String get mrpSortVisits => 'Visits';
+
+  @override
+  String get mrpSortPoints => 'Points';
+
+  @override
+  String get mrpSortRecent => 'Last visit';
+
+  @override
+  String get mrpSortName => 'Name';
+
+  @override
+  String get mrpNoMatch => 'Nothing matches.';
+
+  @override
+  String mrpTruncated(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more members not shown',
+      one: '1 more member not shown',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mrpDeleted => 'Deleted customer';
+
+  @override
+  String mrpVisitsN(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count visits',
+      one: '1 visit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String mrpPointsN(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+$count pts',
+      one: '+1 pt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mrpEmptyTitle => 'No member trade yet';
+
+  @override
+  String get mrpEmptyBody => 'No member settled a bill in this range.';
+
+  @override
+  String get mrpPickTitle => 'Pick a member';
+
+  @override
+  String get mrpPickBody =>
+      'Their visits and the items they bought appear here.';
+
+  @override
+  String get mrpTabProducts => 'Products';
+
+  @override
+  String get mrpTabVisits => 'Visits';
+
+  @override
+  String get mrpInWindow => 'In range';
+
+  @override
+  String get mrpStatVisits => 'Visits';
+
+  @override
+  String mrpStatBills(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bills',
+      one: '1 bill',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mrpStatSpend => 'Spend';
+
+  @override
+  String mrpStatAvg(String amount) {
+    return 'Average $amount';
+  }
+
+  @override
+  String get mrpStatItems => 'Items';
+
+  @override
+  String mrpStatDistinct(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count distinct items',
+      one: '1 distinct item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mrpStatPoints => 'Points';
+
+  @override
+  String get mrpStatBalance => 'Current balance';
+
+  @override
+  String get mrpLifetimeVisits => 'Lifetime visits';
+
+  @override
+  String get mrpLifetimeSpend => 'Lifetime spend';
+
+  @override
+  String get mrpJoined => 'Joined';
+
+  @override
+  String mrpUntracked(String amount) {
+    return '$amount came from amount receipts — they claim money and own no items, so they cannot appear in the product list.';
+  }
+
+  @override
+  String get mrpNoProductsTitle => 'No itemised detail';
+
+  @override
+  String get mrpNoProductsBody =>
+      'Their spend was all on amount receipts, which hold no items.';
+
+  @override
+  String get mrpNoBillsTitle => 'No bills';
+
+  @override
+  String get mrpNoBillsBody =>
+      'This member did not trade in the selected range.';
+
+  @override
+  String get mrpColItem => 'Item';
+
+  @override
+  String get mrpColQty => 'Qty';
+
+  @override
+  String get mrpColValue => 'Value';
+
+  @override
+  String get mrpColLast => 'Last';
+
+  @override
+  String get mrpColWhen => 'When';
+
+  @override
+  String get mrpColTable => 'Table';
+
+  @override
+  String get mrpColShare => 'Share';
+
+  @override
+  String get mrpBillOwner => 'owner';
+
+  @override
+  String get mrpBillGuestOf => 'shared';
+
+  @override
+  String mrpOfBill(String amount) {
+    return 'of $amount';
+  }
+
+  @override
+  String mrpBillsMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more bills not shown',
+      one: '1 more bill not shown',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hubMemberReport => 'Member report';
+
+  @override
+  String get hubMemberReportSub => 'Spending history and favourite items';
 }

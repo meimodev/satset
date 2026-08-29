@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/member.dart';
 import 'package:satset/server/auth.dart';
@@ -12,6 +13,7 @@ import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart' hide Member;
 import 'package:satset/server/debts.dart';
 import 'package:satset/server/members.dart';
+import 'package:satset/server/routes/reports_routes.dart' show reportWindow;
 import 'package:satset/server/ws_hub.dart';
 
 /// The [[Pelanggan (member)]] directory.
@@ -248,6 +250,95 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     } on DebtException catch (e) {
       return debtErr(e);
     }
+  });
+
+  /// The window a member-report request asks for.
+  ///
+  /// Every preset resolves through [reportWindow], so this report and
+  /// `/reports` agree about where a business day ends. `all` is resolved
+  /// **here and not there** on purpose: an unbounded window is safe for this
+  /// payload — it is aggregated to a capped list of members plus a rollup, and
+  /// does not grow with the span — where the accounting report is per-bill and
+  /// genuinely does. The resolver they share should not quietly hand one
+  /// report the other's ceiling.
+  Future<(DateTime, DateTime)> windowOf(Request req) async {
+    final qp = req.url.queryParameters;
+    final now = SatClock.now();
+    final settings = await (db.select(
+      db.venueSettings,
+    )..where((x) => x.id.equals('default'))).getSingleOrNull();
+    final hour = settings?.businessDayStartHour ?? 4;
+    if (qp['range'] == 'all') {
+      // Ends where today does, so a bill taken an hour ago is in "Semua"
+      // rather than a day away from it. The client labels the open start with
+      // `earliestClosedAt`, the venue's real first trading day.
+      final (_, to) = reportWindow('today', now, hour);
+      return (DateTime.utc(2000), to);
+    }
+    return reportWindow(
+      qp['range'] ?? 'today',
+      now,
+      hour,
+      fromStr: qp['from'],
+      toStr: qp['to'],
+    );
+  }
+
+  /// The member report (§Laporan anggota): the overview numbers, plus every
+  /// member who traded in the window ranked by spend.
+  ///
+  /// Registered **before** `/members/<id>`, which it would otherwise match as
+  /// a member whose id is the word "report".
+  ///
+  /// Opens to `viewReports` **or** `manageMembers` — the list shape `/kas` and
+  /// `/opname` use, because the person who enrols the guests and the person
+  /// who reads their spending back are rarely the same one.
+  r.get('/members/report', (Request req) async {
+    final off = await enabledGuard();
+    if (off != null) return off;
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!a.$2.contains(Capability.viewReports.name) &&
+        !a.$2.contains(Capability.manageMembers.name)) {
+      return forbidden(Capability.viewReports);
+    }
+    final (from, to) = await windowOf(req);
+    return json(await memberTradeReport(db, from: from, to: to));
+  });
+
+  /// One member's history: their bills in the window, and every product they
+  /// bought.
+  ///
+  /// Answers for a member who no longer has a directory row — a delete
+  /// anonymises and leaves the trade behind (ADR-0092), and those bills are the
+  /// venue's record of what happened rather than the person's data. That is the
+  /// deliberate difference from `GET /members/<id>`, which 404s.
+  r.get('/members/<id>/report', (Request req, String id) async {
+    final off = await enabledGuard();
+    if (off != null) return off;
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!a.$2.contains(Capability.viewReports.name) &&
+        !a.$2.contains(Capability.manageMembers.name)) {
+      return forbidden(Capability.viewReports);
+    }
+    final (from, to) = await windowOf(req);
+    final limit = int.tryParse(req.url.queryParameters['limit'] ?? '');
+    final body = await memberHistory(
+      db,
+      id,
+      from: from,
+      to: to,
+      billLimit: limit ?? 200,
+    );
+    // The directory row when there still is one, so the drill can show
+    // lifetime figures beside the window's. Absent for a deleted member, which
+    // the client renders as the placeholder rather than as an error.
+    final member = await getMember(db, id);
+    return json({
+      ...body,
+      'member': member == null ? null : memberJson(member),
+    });
   });
 
   // The directory, and the till's prefix search. Readable by anyone who can

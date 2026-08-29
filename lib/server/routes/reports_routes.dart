@@ -65,7 +65,16 @@ const int _customRangeMaxDays = 92;
 /// says when it bit rather than showing a quietly short list.
 const int _moneyAuditCap = 500;
 
-(DateTime, DateTime) _windowFor(
+/// Resolve a range key into a half-open `[from, to)` window on the venue's own
+/// business day.
+///
+/// Public because the member report resolves the same presets and must land on
+/// the same rollover — a report that disagreed with `/reports` about where
+/// yesterday ends would put the same 02:00 bill in two different nights. It
+/// deliberately knows nothing about `all`: that window is unbounded, and the
+/// member report resolves it for itself precisely because this report's payload
+/// is per-bill and would grow without a ceiling (see the member routes).
+(DateTime, DateTime) reportWindow(
   String range,
   DateTime now,
   int hour, {
@@ -131,7 +140,7 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
       db.venueSettings,
     )..where((s) => s.id.equals('default'))).getSingleOrNull();
     final hour = settings?.businessDayStartHour ?? _defaultBusinessDayStartHour;
-    final (from, to) = _windowFor(
+    final (from, to) = reportWindow(
       range,
       now,
       hour,
@@ -917,7 +926,7 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
       db.venueSettings,
     )..where((s) => s.id.equals('default'))).getSingleOrNull();
     final hour = settings?.businessDayStartHour ?? _defaultBusinessDayStartHour;
-    final (from, to) = _windowFor(
+    final (from, to) = reportWindow(
       range,
       now,
       hour,
@@ -1122,7 +1131,7 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
       db.venueSettings,
     )..where((s) => s.id.equals('default'))).getSingleOrNull();
     final hour = settings?.businessDayStartHour ?? _defaultBusinessDayStartHour;
-    final (from, to) = _windowFor(
+    final (from, to) = reportWindow(
       range,
       now,
       hour,
@@ -1278,7 +1287,7 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
       db.venueSettings,
     )..where((s) => s.id.equals('default'))).getSingleOrNull();
     final hour = settings?.businessDayStartHour ?? _defaultBusinessDayStartHour;
-    final (from, to) = _windowFor(
+    final (from, to) = reportWindow(
       range,
       now,
       hour,

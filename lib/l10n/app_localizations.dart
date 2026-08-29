@@ -14802,6 +14802,450 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Batal piutang {member} — {amount}'**
   String auditDebtReversedNoBill(String member, String amount);
+
+  /// No description provided for @mrpTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Laporan anggota'**
+  String get mrpTitle;
+
+  /// No description provided for @mrpSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat belanja pelanggan terdaftar'**
+  String get mrpSub;
+
+  /// No description provided for @mrpPhoneOnly.
+  ///
+  /// In id, this message translates to:
+  /// **'Laporan ini dibaca dengan membandingkan baris satu sama lain. Buka di tablet.'**
+  String get mrpPhoneOnly;
+
+  /// No description provided for @mrpRangeAll.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua'**
+  String get mrpRangeAll;
+
+  /// No description provided for @mrpActiveOf.
+  ///
+  /// In id, this message translates to:
+  /// **'{active} dari {total} anggota berbelanja'**
+  String mrpActiveOf(int active, int total);
+
+  /// No description provided for @mrpOfEnrolled.
+  ///
+  /// In id, this message translates to:
+  /// **'dari {total} terdaftar'**
+  String mrpOfEnrolled(int total);
+
+  /// No description provided for @mrpIdle.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} belum kembali'**
+  String mrpIdle(int count);
+
+  /// No description provided for @mrpShareOfNet.
+  ///
+  /// In id, this message translates to:
+  /// **'{pct}% dari omzet'**
+  String mrpShareOfNet(int pct);
+
+  /// No description provided for @mrpVsGuest.
+  ///
+  /// In id, this message translates to:
+  /// **'Tamu {amount}'**
+  String mrpVsGuest(String amount);
+
+  /// No description provided for @mrpOnceOnly.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} sekali saja'**
+  String mrpOnceOnly(int count);
+
+  /// No description provided for @mrpLiability.
+  ///
+  /// In id, this message translates to:
+  /// **'Liabilitas ≈ {amount}'**
+  String mrpLiability(String amount);
+
+  /// No description provided for @mrpKpiActive.
+  ///
+  /// In id, this message translates to:
+  /// **'Anggota aktif'**
+  String get mrpKpiActive;
+
+  /// No description provided for @mrpKpiNew.
+  ///
+  /// In id, this message translates to:
+  /// **'Anggota baru'**
+  String get mrpKpiNew;
+
+  /// No description provided for @mrpKpiSpend.
+  ///
+  /// In id, this message translates to:
+  /// **'Belanja anggota'**
+  String get mrpKpiSpend;
+
+  /// No description provided for @mrpKpiAvg.
+  ///
+  /// In id, this message translates to:
+  /// **'Rata-rata tagihan'**
+  String get mrpKpiAvg;
+
+  /// No description provided for @mrpKpiReturn.
+  ///
+  /// In id, this message translates to:
+  /// **'Kembali lagi'**
+  String get mrpKpiReturn;
+
+  /// No description provided for @mrpKpiPoints.
+  ///
+  /// In id, this message translates to:
+  /// **'Poin beredar'**
+  String get mrpKpiPoints;
+
+  /// No description provided for @mrpDetail.
+  ///
+  /// In id, this message translates to:
+  /// **'Detail'**
+  String get mrpDetail;
+
+  /// No description provided for @mrpHideDetail.
+  ///
+  /// In id, this message translates to:
+  /// **'Tutup detail'**
+  String get mrpHideDetail;
+
+  /// No description provided for @mrpMemberBills.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagihan anggota'**
+  String get mrpMemberBills;
+
+  /// No description provided for @mrpGuestBills.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagihan tamu'**
+  String get mrpGuestBills;
+
+  /// No description provided for @mrpGuestNet.
+  ///
+  /// In id, this message translates to:
+  /// **'Omzet tamu'**
+  String get mrpGuestNet;
+
+  /// No description provided for @mrpSplitBills.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagihan patungan'**
+  String get mrpSplitBills;
+
+  /// No description provided for @mrpPointsEarned.
+  ///
+  /// In id, this message translates to:
+  /// **'Poin terkumpul'**
+  String get mrpPointsEarned;
+
+  /// No description provided for @mrpPointsRedeemed.
+  ///
+  /// In id, this message translates to:
+  /// **'Poin ditukar'**
+  String get mrpPointsRedeemed;
+
+  /// No description provided for @mrpPointsAdjusted.
+  ///
+  /// In id, this message translates to:
+  /// **'Koreksi poin'**
+  String get mrpPointsAdjusted;
+
+  /// No description provided for @mrpSince.
+  ///
+  /// In id, this message translates to:
+  /// **'Sejak {date}'**
+  String mrpSince(String date);
+
+  /// No description provided for @mrpSearchHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cari nama atau nomor'**
+  String get mrpSearchHint;
+
+  /// No description provided for @mrpSortSpend.
+  ///
+  /// In id, this message translates to:
+  /// **'Belanja'**
+  String get mrpSortSpend;
+
+  /// No description provided for @mrpSortVisits.
+  ///
+  /// In id, this message translates to:
+  /// **'Kunjungan'**
+  String get mrpSortVisits;
+
+  /// No description provided for @mrpSortPoints.
+  ///
+  /// In id, this message translates to:
+  /// **'Poin'**
+  String get mrpSortPoints;
+
+  /// No description provided for @mrpSortRecent.
+  ///
+  /// In id, this message translates to:
+  /// **'Terakhir datang'**
+  String get mrpSortRecent;
+
+  /// No description provided for @mrpSortName.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama'**
+  String get mrpSortName;
+
+  /// No description provided for @mrpNoMatch.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada yang cocok.'**
+  String get mrpNoMatch;
+
+  /// No description provided for @mrpTruncated.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{+{count} anggota lainnya tidak ditampilkan}}'**
+  String mrpTruncated(int count);
+
+  /// No description provided for @mrpDeleted.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan dihapus'**
+  String get mrpDeleted;
+
+  /// No description provided for @mrpVisitsN.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{{count} kunjungan}}'**
+  String mrpVisitsN(int count);
+
+  /// No description provided for @mrpPointsN.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{+{count} poin}}'**
+  String mrpPointsN(int count);
+
+  /// No description provided for @mrpEmptyTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada belanja anggota'**
+  String get mrpEmptyTitle;
+
+  /// No description provided for @mrpEmptyBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada anggota yang bertransaksi dalam rentang ini.'**
+  String get mrpEmptyBody;
+
+  /// No description provided for @mrpPickTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih satu anggota'**
+  String get mrpPickTitle;
+
+  /// No description provided for @mrpPickBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat kunjungan dan rincian produknya muncul di sini.'**
+  String get mrpPickBody;
+
+  /// No description provided for @mrpTabProducts.
+  ///
+  /// In id, this message translates to:
+  /// **'Produk'**
+  String get mrpTabProducts;
+
+  /// No description provided for @mrpTabVisits.
+  ///
+  /// In id, this message translates to:
+  /// **'Kunjungan'**
+  String get mrpTabVisits;
+
+  /// No description provided for @mrpInWindow.
+  ///
+  /// In id, this message translates to:
+  /// **'Dalam rentang'**
+  String get mrpInWindow;
+
+  /// No description provided for @mrpStatVisits.
+  ///
+  /// In id, this message translates to:
+  /// **'Kunjungan'**
+  String get mrpStatVisits;
+
+  /// No description provided for @mrpStatBills.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{{count} tagihan}}'**
+  String mrpStatBills(int count);
+
+  /// No description provided for @mrpStatSpend.
+  ///
+  /// In id, this message translates to:
+  /// **'Belanja'**
+  String get mrpStatSpend;
+
+  /// No description provided for @mrpStatAvg.
+  ///
+  /// In id, this message translates to:
+  /// **'Rata-rata {amount}'**
+  String mrpStatAvg(String amount);
+
+  /// No description provided for @mrpStatItems.
+  ///
+  /// In id, this message translates to:
+  /// **'Porsi'**
+  String get mrpStatItems;
+
+  /// No description provided for @mrpStatDistinct.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{{count} jenis item}}'**
+  String mrpStatDistinct(int count);
+
+  /// No description provided for @mrpStatPoints.
+  ///
+  /// In id, this message translates to:
+  /// **'Poin'**
+  String get mrpStatPoints;
+
+  /// No description provided for @mrpStatBalance.
+  ///
+  /// In id, this message translates to:
+  /// **'Saldo saat ini'**
+  String get mrpStatBalance;
+
+  /// No description provided for @mrpLifetimeVisits.
+  ///
+  /// In id, this message translates to:
+  /// **'Kunjungan seumur'**
+  String get mrpLifetimeVisits;
+
+  /// No description provided for @mrpLifetimeSpend.
+  ///
+  /// In id, this message translates to:
+  /// **'Belanja seumur'**
+  String get mrpLifetimeSpend;
+
+  /// No description provided for @mrpJoined.
+  ///
+  /// In id, this message translates to:
+  /// **'Bergabung'**
+  String get mrpJoined;
+
+  /// No description provided for @mrpUntracked.
+  ///
+  /// In id, this message translates to:
+  /// **'{amount} dari struk nominal — mengklaim uang tanpa rincian item, jadi tidak masuk daftar produk.'**
+  String mrpUntracked(String amount);
+
+  /// No description provided for @mrpNoProductsTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada rincian item'**
+  String get mrpNoProductsTitle;
+
+  /// No description provided for @mrpNoProductsBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Belanjanya seluruhnya lewat struk nominal, yang tidak menyimpan item.'**
+  String get mrpNoProductsBody;
+
+  /// No description provided for @mrpNoBillsTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada tagihan'**
+  String get mrpNoBillsTitle;
+
+  /// No description provided for @mrpNoBillsBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Anggota ini tidak bertransaksi dalam rentang yang dipilih.'**
+  String get mrpNoBillsBody;
+
+  /// No description provided for @mrpColItem.
+  ///
+  /// In id, this message translates to:
+  /// **'Item'**
+  String get mrpColItem;
+
+  /// No description provided for @mrpColQty.
+  ///
+  /// In id, this message translates to:
+  /// **'Porsi'**
+  String get mrpColQty;
+
+  /// No description provided for @mrpColValue.
+  ///
+  /// In id, this message translates to:
+  /// **'Nilai'**
+  String get mrpColValue;
+
+  /// No description provided for @mrpColLast.
+  ///
+  /// In id, this message translates to:
+  /// **'Terakhir'**
+  String get mrpColLast;
+
+  /// No description provided for @mrpColWhen.
+  ///
+  /// In id, this message translates to:
+  /// **'Waktu'**
+  String get mrpColWhen;
+
+  /// No description provided for @mrpColTable.
+  ///
+  /// In id, this message translates to:
+  /// **'Meja'**
+  String get mrpColTable;
+
+  /// No description provided for @mrpColShare.
+  ///
+  /// In id, this message translates to:
+  /// **'Bagian'**
+  String get mrpColShare;
+
+  /// No description provided for @mrpBillOwner.
+  ///
+  /// In id, this message translates to:
+  /// **'pemilik'**
+  String get mrpBillOwner;
+
+  /// No description provided for @mrpBillGuestOf.
+  ///
+  /// In id, this message translates to:
+  /// **'patungan'**
+  String get mrpBillGuestOf;
+
+  /// No description provided for @mrpOfBill.
+  ///
+  /// In id, this message translates to:
+  /// **'dari {amount}'**
+  String mrpOfBill(String amount);
+
+  /// No description provided for @mrpBillsMore.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{+{count} tagihan lagi tidak ditampilkan}}'**
+  String mrpBillsMore(int count);
+
+  /// No description provided for @hubMemberReport.
+  ///
+  /// In id, this message translates to:
+  /// **'Laporan anggota'**
+  String get hubMemberReport;
+
+  /// No description provided for @hubMemberReportSub.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat belanja dan produk favorit pelanggan'**
+  String get hubMemberReportSub;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

@@ -229,6 +229,15 @@ List<_HubSection> _sectionsFor(AppL10n l10n) => <_HubSection>[
     phoneBadge: l10n.memPhoneOnly,
   ),
   _HubSection(
+    label: l10n.hubMemberReport,
+    sub: l10n.hubMemberReportSub,
+    icon: Icons.insights_outlined,
+    route: '/member-report',
+    tint: (sc) => sc.violet,
+    module: moduleMembers,
+    phoneBadge: l10n.mrpPhoneOnly,
+  ),
+  _HubSection(
     label: l10n.opnTitle,
     sub: l10n.opnHubSubtitle,
     icon: Icons.inventory_2_outlined,
