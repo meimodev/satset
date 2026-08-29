@@ -846,6 +846,17 @@ A **durable person** the venue recognises across [[Visit|visits]] — name, phon
 
 The whole feature is off until **`membersEnabled`**; enroll, attach and [[Tukar poin|redeem]] ride the **`settleBill`** [[Capability]] (they happen at the till), while edit, hand-adjustment, merge and delete need **`manageMembers`** — as does **reading one member's visit history**, which is a keeper's act at the directory rather than something the till does across the counter mid-settlement. Reachable at **`/members`**, tablet-only from the Venue hub, like [[Audit]] and [[Kas kecil (petty cash)]]. **Deleting a member anonymises, it never erases money** (ADR-0092): the person's row goes, the closed [[Bill (tab)|bills]] keep their `memberId` and render as "Pelanggan dihapus". _Avoid_: an anonymous or walk-in member; attaching to a receipt *instead of* the visit (a [[Pemilik struk]] is additional to the [[Pemilik tagihan]], never a replacement — a bill always has an owner); overwriting `guestName`; deleting a member by deleting their settled history; storing a member in the cloud; a lifetime figure and a window figure side by side without saying which is which; a stored "lapsed" or "churned" status.
 
+### Alamat pelanggan
+**ID · EN** — Alamat · Address; Kabupaten/Kota · Regency/City; Kecamatan · District; Kelurahan/Desa · Village. _Avoid_ "Sub-district" for Kecamatan and "Ward" for Kelurahan — the app ships the Indonesian administrative words and the English column reads as the plain equivalent of each.
+
+Where a [[Pelanggan (member)]] lives, as four **optional** fields on the person: kabupaten, kecamatan, kelurahan and a street line. **Record-keeping only** — nothing searches an address, groups by one, reports on one or prints one on a receipt. That is why it is four columns on the member rather than an entity of its own: there is no history to keep, no second address per person, and nothing that joins.
+
+The three administrative levels are **picked, never typed**, from a vocabulary bundled with the app that covers **Sulawesi Utara only** — the venues this ships to are there, and the national set is roughly sixty times the size for a field nobody queries. What is stored is the **name, snapshotted** at the moment it was picked, exactly as a [[Preset diskon]] and a booked [[Reservation]] name are: swapping the bundled dataset or a rename upstream can never rewrite an address somebody already saved. A wilayah code would buy a stable join, and nothing joins.
+
+**Any prefix is a legal answer.** Kabupaten alone saves; all four empty is the ordinary case; a guest from outside the province leaves the three pickers blank and writes everything on the street line, which is the escape hatch. Picking a new parent **clears its children**, because a kelurahan left over from the previous kecamatan is a wrong answer where a blank was an honest one. The **street line is the street line** — `Jl. Sam Ratulangi No. 12` — never a second copy of the three levels above it.
+
+The server does **not** check the picked words against the list: the picker is the constraint, and validating a snapshot against a vocabulary that moves would refuse tomorrow's edit of a record saved correctly today. The address rides every member payload, so the till holds it, but only the directory draws it — a bill overlay is for settling. Deleting a member takes the address with them, since the row goes; a **merge** keeps the surviving member's address untouched, like every other field. _Avoid_: storing a wilayah code; requiring the full chain; reading the street line as a whole address; a national dataset added because the province one felt incomplete; searching or reporting on an address without first deciding it is more than a record.
+
 ### Pemilik tagihan
 **ID · EN** — Pemilik tagihan · Bill owner.
 
@@ -895,6 +906,17 @@ The ledger is **append-only** and its balance is `SUM(delta)` — **derived, nev
 **A collection is not revenue; a bad debt is a loss.** Revenue was booked at [[Bill close (Tutup tagihan)|bill close]] and stays booked — `settledTotal` keeps its frozen meaning — so collections read through their own **Piutang** section in [[Report freshness (Live vs Snapshot)|Reports]] (opening, charged, collected by method, written off, closing, plus who owes what and for how long). The isolation stops at write-offs: a **Piutang tak tertagih** line rides in the Sales section, read-only, because a reader shown the sale must also be shown that it evaporated. Ageing is derived by walking the ledger oldest-first — there are no due dates and no invoice allocation.
 
 _Avoid_: treating a `piutang` payment as money received; keeping a visit open as a tab; folding a collection into revenue or into [[Kas kecil (petty cash)]] (guest money is the drawer, the box is a float that only pays out); a negative balance as a stored-value deposit; giving a tab a due date without an ADR.
+
+### Laporan anggota (member report)
+**ID · EN** — Laporan anggota · Member report; Anggota aktif · Active members; Kembali lagi · Returning members; Belanja anggota · Member spend; Belanja tanpa rincian · Untracked spend. _Avoid_: **Riwayat pelanggan** for this screen — the directory already shows a member's bills, and this is the venue-wide reading; **Laporan pelanggan**, which reads as a report *for* the guest.
+
+What the [[Pelanggan (member)]] program bought the venue, over a window the reader picks (ADR-0119). Two readings of the same trade: **who came and what they spent**, ranked across the directory, and **what one of them actually ate**, per menu item. Distinct from the Keanggotaan block in [[Report freshness (Live vs Snapshot)|Reports]], which answers the first for the venue as a whole and is deliberately unchanged — this is the per-person, per-dish surface.
+
+Spend divides by the [[Pemilik struk]] subtraction (ADR-0118) and **so do lines**: units on a receipt naming somebody are theirs, units on an unnamed receipt or on no receipt at all are the [[Pemilik tagihan]]'s. A **void is not a purchase** and leaves the rollup, so a bill a member settled may show no items at all. An [[Amount receipt]] owns no lines, so the money on one is **belanja tanpa rincian** — reported by name, because a spend total and a product rollup that are *supposed* to disagree read as a bug when nothing says why.
+
+The window has an **open-ended** setting (Semua) the accounting report deliberately lacks: this payload is aggregated to a capped list plus a rollup, where that one is per bill. A [[Pelanggan (member)|deleted member]] keeps a row and keeps opening — the trade is the venue's record and outlives the person (ADR-0092).
+
+_Avoid_: reading **anggota aktif** as everyone enrolled (it is everyone who traded *in the window*); reading a product rollup as the venue's menu mix (it is one member's); adding a figure here that the Keanggotaan block computes separately rather than from the same walk.
 
 ### Sumber diskon (discount source)
 **ID · EN** — internal; not shown. Slots: `manual` · `member` · `redeem`.

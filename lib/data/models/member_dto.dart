@@ -39,6 +39,11 @@ class MemberDto {
       code: j['code'] as String? ?? '',
       note: j['note'] as String?,
       birthday: DateTime.tryParse(j['birthday'] as String? ?? ''),
+      // Absent on a server older than the field; an empty address reads the
+      // same as none, so there is nothing to fall back to.
+      address: MemberAddress.fromJson(
+        ((j['address'] as Map?) ?? const {}).cast<String, dynamic>(),
+      ),
       joinedAt:
           DateTime.tryParse(j['joinedAt'] as String? ?? '') ?? DateTime(2000),
       points: _int(j['points']),

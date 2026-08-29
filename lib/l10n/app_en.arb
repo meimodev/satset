@@ -279,9 +279,21 @@
   "vdayNoteLabel": "Note (optional)",
   "vdayVarianceNone": "Matches the ledger.",
   "vdayVariance": "Off by {amount}.",
-  "@vdayVariance": {"placeholders": {"amount": {"type": "String"}}},
+  "@vdayVariance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "vdayLedgerSays": "Petty cash ledger: {amount}",
-  "@vdayLedgerSays": {"placeholders": {"amount": {"type": "String"}}},
+  "@vdayLedgerSays": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "vdayFloatNote": "Starting float",
   "vdayCountNote": "Closing count",
   "venueHubDayTitle": "Open & close shop",
@@ -857,7 +869,7 @@
       }
     }
   },
-  "auditStockWasted": "Wasted {what} \u2014 {value}",
+  "auditStockWasted": "Wasted {what} — {value}",
   "auditStockCountClosed": "Stocktake closed — {lines, plural, =1{1 ingredient} other{{lines} ingredients}}, variance {variance}",
   "@auditStockCountClosed": {
     "placeholders": {
@@ -1084,9 +1096,24 @@
   "rptRingkasAvg": "Average bill",
   "rptRingkasTop": "Top sellers",
   "rptRingkasKasOk": "Petty cash {closing}, matches the ledger.",
-  "@rptRingkasKasOk": {"placeholders": {"closing": {"type": "String"}}},
+  "@rptRingkasKasOk": {
+    "placeholders": {
+      "closing": {
+        "type": "String"
+      }
+    }
+  },
   "rptRingkasKasOff": "Petty cash {closing}, off by {variance}.",
-  "@rptRingkasKasOff": {"placeholders": {"closing": {"type": "String"}, "variance": {"type": "String"}}},
+  "@rptRingkasKasOff": {
+    "placeholders": {
+      "closing": {
+        "type": "String"
+      },
+      "variance": {
+        "type": "String"
+      }
+    }
+  },
   "rptSecSales": "Sales",
   "rptSecStaff": "Staff",
   "rptSecMenu": "Menu",
@@ -1368,7 +1395,7 @@
   "stkWasteTitle": "Waste {name}",
   "stkWasteSub": "Wasted stock leaves the ledger and its value is lost",
   "stkWasteNote": "Reason",
-  "stkWasteNoteHelper": "Required \u2014 a waste figure with no reason can't be acted on",
+  "stkWasteNoteHelper": "Required — a waste figure with no reason can't be acted on",
   "stkWasteNoteRequired": "A reason is required",
   "stkWasteQtyRequired": "A quantity is required",
   "stkWasteOk": "Waste recorded, value {value}",
@@ -1612,7 +1639,7 @@
   "mieBuangNoteRequired": "A reason is required",
   "mieBuangOk": "Waste recorded, value {value}",
   "mieJualSatuan": "Sold by unit",
-  "mieJualSatuanDone": "Ingredient \u201c{name}\u201d created, recipe set to 1 pcs",
+  "mieJualSatuanDone": "Ingredient “{name}” created, recipe set to 1 pcs",
   "mieAddIngredient": "Add ingredient",
   "mieIngredient": "Ingredient",
   "mieIngredientOption": "{name} ({unit})",
@@ -2384,8 +2411,7 @@
   "rptMembersActive": "Active",
   "rptMembersBills": "Bills",
   "rptMembersSplit": "Split bills",
-  "rptMembersSplitNote": "A split bill is counted per receipt: each share goes to the member named on it, the remainder to the bill owner."
-,
+  "rptMembersSplitNote": "A split bill is counted per receipt: each share goes to the member named on it, the remainder to the bill owner.",
   "rptMembersAvgBill": "Member average",
   "rptMembersAvgGuest": "Walk-in average",
   "rptMembersLift": "Lift",
@@ -2646,7 +2672,7 @@
   "fltModuleSelfOrder": "Self-order",
   "fltModes": "Mode",
   "fltTagModes": "SHAPE",
-  "fltModesHint": "How the venue works. Not what it bought \u2014 these two keys stand alone and neither implies the other.",
+  "fltModesHint": "How the venue works. Not what it bought — these two keys stand alone and neither implies the other.",
   "fltModeBypassKds": "No prep queue",
   "fltModeBypassKdsHint": "Orders land ready for pickup; there is no kitchen queue. For a venue where whoever takes the order also makes it.",
   "fltModeBypassKdsOnTitle": "Remove the prep queue at {venue}?",
@@ -2655,7 +2681,7 @@
   "fltModeMemberSplit": "Receipt owner",
   "fltModeMemberSplitHint": "A split bill can name a member per receipt, so each one earns their own points and discount.",
   "fltModeMemberSplitNeedsMembers": "Needs the Membership module switched on first.",
-  "fltCounterMootByBypass": "{label} \u2014 does not apply without a prep queue",
+  "fltCounterMootByBypass": "{label} — does not apply without a prep queue",
   "fltModuleOffTitle": "Turn off {module} for {venue}?",
   "fltModuleOffBody": "Data is kept; the screens disappear.",
   "fltModuleOffYes": "Turn off",
@@ -2805,6 +2831,13 @@
   "memFieldPhone": "Phone number",
   "memPhoneHelp": "The phone number is the identity. 0812…, +62812… and 62812… are one person.",
   "memFieldNote": "Note",
+  "memFieldAddress": "Address",
+  "memFieldKabupaten": "Regency/City",
+  "memFieldKecamatan": "District",
+  "memFieldKelurahan": "Village",
+  "memFieldStreet": "Address (street, no.)",
+  "memFieldStreetHelp": "Street name and number only",
+  "memAddressPick": "Select",
   "memFieldBirthday": "Birthday",
   "memPickBirthday": "Pick a birth date",
   "memSave": "Save",
@@ -3058,5 +3091,201 @@
   "memErrOverpayment": "More than the outstanding balance.",
   "memErrDebtOff": "Receivables are not enabled at this venue.",
   "auditDebtChargedNoBill": "On account for {member}: {amount}",
-  "auditDebtReversedNoBill": "Tab charge reversed for {member}: {amount}"
+  "auditDebtReversedNoBill": "Tab charge reversed for {member}: {amount}",
+  "mrpTitle": "Member report",
+  "mrpSub": "What enrolled guests actually buy",
+  "mrpPhoneOnly": "This report is read by comparing rows against each other. Open it on a tablet.",
+  "mrpRangeAll": "All time",
+  "mrpActiveOf": "{active} of {total} enrolled traded",
+  "@mrpActiveOf": {
+    "placeholders": {
+      "active": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpOfEnrolled": "of {total} enrolled",
+  "@mrpOfEnrolled": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpIdle": "{count} did not come",
+  "@mrpIdle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpShareOfNet": "{pct}% of net sales",
+  "@mrpShareOfNet": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpVsGuest": "Guests {amount}",
+  "@mrpVsGuest": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpOnceOnly": "{count} came once",
+  "@mrpOnceOnly": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpLiability": "Liability ≈ {amount}",
+  "@mrpLiability": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpKpiActive": "Active members",
+  "mrpKpiNew": "New members",
+  "mrpKpiSpend": "Member spend",
+  "mrpKpiAvg": "Average bill",
+  "mrpKpiReturn": "Came back",
+  "mrpKpiPoints": "Points outstanding",
+  "mrpDetail": "Detail",
+  "mrpHideDetail": "Hide detail",
+  "mrpMemberBills": "Member bills",
+  "mrpGuestBills": "Guest bills",
+  "mrpGuestNet": "Guest net",
+  "mrpSplitBills": "Split bills",
+  "mrpPointsEarned": "Points earned",
+  "mrpPointsRedeemed": "Points redeemed",
+  "mrpPointsAdjusted": "Points adjusted",
+  "mrpSince": "Since {date}",
+  "@mrpSince": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpSearchHint": "Search name or number",
+  "mrpSortSpend": "Spend",
+  "mrpSortVisits": "Visits",
+  "mrpSortPoints": "Points",
+  "mrpSortRecent": "Last visit",
+  "mrpSortName": "Name",
+  "mrpNoMatch": "Nothing matches.",
+  "mrpTruncated": "{count, plural, =1{1 more member not shown} other{{count} more members not shown}}",
+  "@mrpTruncated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpDeleted": "Deleted customer",
+  "mrpVisitsN": "{count, plural, =1{1 visit} other{{count} visits}}",
+  "@mrpVisitsN": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpPointsN": "{count, plural, =1{+1 pt} other{+{count} pts}}",
+  "@mrpPointsN": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpEmptyTitle": "No member trade yet",
+  "mrpEmptyBody": "No member settled a bill in this range.",
+  "mrpPickTitle": "Pick a member",
+  "mrpPickBody": "Their visits and the items they bought appear here.",
+  "mrpTabProducts": "Products",
+  "mrpTabVisits": "Visits",
+  "mrpInWindow": "In range",
+  "mrpStatVisits": "Visits",
+  "mrpStatBills": "{count, plural, =1{1 bill} other{{count} bills}}",
+  "@mrpStatBills": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpStatSpend": "Spend",
+  "mrpStatAvg": "Average {amount}",
+  "@mrpStatAvg": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpStatItems": "Items",
+  "mrpStatDistinct": "{count, plural, =1{1 distinct item} other{{count} distinct items}}",
+  "@mrpStatDistinct": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mrpStatPoints": "Points",
+  "mrpStatBalance": "Current balance",
+  "mrpLifetimeVisits": "Lifetime visits",
+  "mrpLifetimeSpend": "Lifetime spend",
+  "mrpJoined": "Joined",
+  "mrpUntracked": "{amount} came from amount receipts — they claim money and own no items, so they cannot appear in the product list.",
+  "@mrpUntracked": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpNoProductsTitle": "No itemised detail",
+  "mrpNoProductsBody": "Their spend was all on amount receipts, which hold no items.",
+  "mrpNoBillsTitle": "No bills",
+  "mrpNoBillsBody": "This member did not trade in the selected range.",
+  "mrpColItem": "Item",
+  "mrpColQty": "Qty",
+  "mrpColValue": "Value",
+  "mrpColLast": "Last",
+  "mrpColWhen": "When",
+  "mrpColTable": "Table",
+  "mrpColShare": "Share",
+  "mrpBillOwner": "owner",
+  "mrpBillGuestOf": "shared",
+  "mrpOfBill": "of {amount}",
+  "@mrpOfBill": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpBillsMore": "{count, plural, =1{1 more bill not shown} other{{count} more bills not shown}}",
+  "@mrpBillsMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hubMemberReport": "Member report",
+  "hubMemberReportSub": "Spending history and favourite items"
 }

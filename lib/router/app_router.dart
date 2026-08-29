@@ -37,6 +37,7 @@ import 'package:satset/ui/features/admin/audit_screen.dart';
 import 'package:satset/ui/features/admin/kas_screen.dart';
 import 'package:satset/ui/features/admin/self_order_admin_screen.dart';
 import 'package:satset/ui/features/admin/self_order_screen.dart';
+import 'package:satset/ui/features/admin/member_report_screen.dart';
 import 'package:satset/ui/features/admin/opname_screen.dart';
 import 'package:satset/ui/features/admin/members_screen.dart';
 import 'package:satset/ui/features/admin/venue_day_screen.dart';
@@ -105,6 +106,14 @@ List<Capability>? _capabilityFor(String loc) {
     return const [Capability.takeOrder, Capability.editSettings];
   }
   if (loc.startsWith('/venue/diskon')) return const [Capability.editSettings];
+  // The member report. Two authorities, like `/kas` and `/opname`: the person
+  // who enrols the guests keeps the directory, the person who reads their
+  // spending back reads reports, and they are rarely the same one. Matched
+  // before `/members` for legibility — the paths do not actually collide, and
+  // a later rename that made them collide would be silent.
+  if (loc.startsWith('/member-report')) {
+    return const [Capability.viewReports, Capability.manageMembers];
+  }
   // The directory-keeper's screen (ADR-0092). Reading it is open to the till
   // server-side, but the till reaches a member through the bill overlay — this
   // route is where records are changed, so it wants the keeper's authority.
@@ -338,6 +347,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, _) => const SelfOrderAdminScreen(),
           ),
           GoRoute(path: '/members', builder: (_, _) => const MembersScreen()),
+          GoRoute(
+            path: '/member-report',
+            builder: (_, _) => const MemberReportScreen(),
+          ),
           GoRoute(path: '/opname', builder: (_, _) => const OpnameScreen()),
           GoRoute(path: '/system', builder: (_, _) => const SystemScreen()),
           GoRoute(path: '/staff', builder: (_, _) => const StaffScreen()),

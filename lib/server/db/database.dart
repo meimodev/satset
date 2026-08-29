@@ -79,7 +79,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 66;
+  int get schemaVersion => 67;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -1357,6 +1357,17 @@ class AppDatabase extends _$AppDatabase {
         // — it has to go first, exactly as v51 dropped idx_discounts_bill_uniq.
         await customStatement('DROP INDEX IF EXISTS idx_discounts_order_uniq');
         await _createDiscountIndexes();
+      }
+      if (from < 67 && to >= 67) {
+        // [[Alamat pelanggan]]: four optional fields on the member. Nothing is
+        // backfilled and nothing can be — an address is a fact only the guest
+        // can supply.
+        //
+        // `TEXT NULL`, not `TEXT`, for the v63 reason spelled out above.
+        await _safeAddColumnOn('members', 'kabupaten', type: 'TEXT NULL');
+        await _safeAddColumnOn('members', 'kecamatan', type: 'TEXT NULL');
+        await _safeAddColumnOn('members', 'kelurahan', type: 'TEXT NULL');
+        await _safeAddColumnOn('members', 'address_text', type: 'TEXT NULL');
       }
     },
     onCreate: (m) async {

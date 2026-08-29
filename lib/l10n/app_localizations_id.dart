@@ -8736,6 +8736,27 @@ class AppL10nId extends AppL10n {
   String get memFieldNote => 'Catatan';
 
   @override
+  String get memFieldAddress => 'Alamat';
+
+  @override
+  String get memFieldKabupaten => 'Kabupaten/Kota';
+
+  @override
+  String get memFieldKecamatan => 'Kecamatan';
+
+  @override
+  String get memFieldKelurahan => 'Kelurahan/Desa';
+
+  @override
+  String get memFieldStreet => 'Alamat (jalan, no.)';
+
+  @override
+  String get memFieldStreetHelp => 'Nama jalan dan nomor saja';
+
+  @override
+  String get memAddressPick => 'Pilih';
+
+  @override
   String get memFieldBirthday => 'Ulang tahun';
 
   @override
@@ -9251,4 +9272,296 @@ class AppL10nId extends AppL10n {
   String auditDebtReversedNoBill(String member, String amount) {
     return 'Batal piutang $member — $amount';
   }
+
+  @override
+  String get mrpTitle => 'Laporan anggota';
+
+  @override
+  String get mrpSub => 'Riwayat belanja pelanggan terdaftar';
+
+  @override
+  String get mrpPhoneOnly =>
+      'Laporan ini dibaca dengan membandingkan baris satu sama lain. Buka di tablet.';
+
+  @override
+  String get mrpRangeAll => 'Semua';
+
+  @override
+  String mrpActiveOf(int active, int total) {
+    return '$active dari $total anggota berbelanja';
+  }
+
+  @override
+  String mrpOfEnrolled(int total) {
+    return 'dari $total terdaftar';
+  }
+
+  @override
+  String mrpIdle(int count) {
+    return '$count belum kembali';
+  }
+
+  @override
+  String mrpShareOfNet(int pct) {
+    return '$pct% dari omzet';
+  }
+
+  @override
+  String mrpVsGuest(String amount) {
+    return 'Tamu $amount';
+  }
+
+  @override
+  String mrpOnceOnly(int count) {
+    return '$count sekali saja';
+  }
+
+  @override
+  String mrpLiability(String amount) {
+    return 'Liabilitas ≈ $amount';
+  }
+
+  @override
+  String get mrpKpiActive => 'Anggota aktif';
+
+  @override
+  String get mrpKpiNew => 'Anggota baru';
+
+  @override
+  String get mrpKpiSpend => 'Belanja anggota';
+
+  @override
+  String get mrpKpiAvg => 'Rata-rata tagihan';
+
+  @override
+  String get mrpKpiReturn => 'Kembali lagi';
+
+  @override
+  String get mrpKpiPoints => 'Poin beredar';
+
+  @override
+  String get mrpDetail => 'Detail';
+
+  @override
+  String get mrpHideDetail => 'Tutup detail';
+
+  @override
+  String get mrpMemberBills => 'Tagihan anggota';
+
+  @override
+  String get mrpGuestBills => 'Tagihan tamu';
+
+  @override
+  String get mrpGuestNet => 'Omzet tamu';
+
+  @override
+  String get mrpSplitBills => 'Tagihan patungan';
+
+  @override
+  String get mrpPointsEarned => 'Poin terkumpul';
+
+  @override
+  String get mrpPointsRedeemed => 'Poin ditukar';
+
+  @override
+  String get mrpPointsAdjusted => 'Koreksi poin';
+
+  @override
+  String mrpSince(String date) {
+    return 'Sejak $date';
+  }
+
+  @override
+  String get mrpSearchHint => 'Cari nama atau nomor';
+
+  @override
+  String get mrpSortSpend => 'Belanja';
+
+  @override
+  String get mrpSortVisits => 'Kunjungan';
+
+  @override
+  String get mrpSortPoints => 'Poin';
+
+  @override
+  String get mrpSortRecent => 'Terakhir datang';
+
+  @override
+  String get mrpSortName => 'Nama';
+
+  @override
+  String get mrpNoMatch => 'Tidak ada yang cocok.';
+
+  @override
+  String mrpTruncated(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+$count anggota lainnya tidak ditampilkan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mrpDeleted => 'Pelanggan dihapus';
+
+  @override
+  String mrpVisitsN(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kunjungan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String mrpPointsN(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+$count poin',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mrpEmptyTitle => 'Belum ada belanja anggota';
+
+  @override
+  String get mrpEmptyBody =>
+      'Tidak ada anggota yang bertransaksi dalam rentang ini.';
+
+  @override
+  String get mrpPickTitle => 'Pilih satu anggota';
+
+  @override
+  String get mrpPickBody =>
+      'Riwayat kunjungan dan rincian produknya muncul di sini.';
+
+  @override
+  String get mrpTabProducts => 'Produk';
+
+  @override
+  String get mrpTabVisits => 'Kunjungan';
+
+  @override
+  String get mrpInWindow => 'Dalam rentang';
+
+  @override
+  String get mrpStatVisits => 'Kunjungan';
+
+  @override
+  String mrpStatBills(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tagihan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mrpStatSpend => 'Belanja';
+
+  @override
+  String mrpStatAvg(String amount) {
+    return 'Rata-rata $amount';
+  }
+
+  @override
+  String get mrpStatItems => 'Porsi';
+
+  @override
+  String mrpStatDistinct(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jenis item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mrpStatPoints => 'Poin';
+
+  @override
+  String get mrpStatBalance => 'Saldo saat ini';
+
+  @override
+  String get mrpLifetimeVisits => 'Kunjungan seumur';
+
+  @override
+  String get mrpLifetimeSpend => 'Belanja seumur';
+
+  @override
+  String get mrpJoined => 'Bergabung';
+
+  @override
+  String mrpUntracked(String amount) {
+    return '$amount dari struk nominal — mengklaim uang tanpa rincian item, jadi tidak masuk daftar produk.';
+  }
+
+  @override
+  String get mrpNoProductsTitle => 'Tidak ada rincian item';
+
+  @override
+  String get mrpNoProductsBody =>
+      'Belanjanya seluruhnya lewat struk nominal, yang tidak menyimpan item.';
+
+  @override
+  String get mrpNoBillsTitle => 'Belum ada tagihan';
+
+  @override
+  String get mrpNoBillsBody =>
+      'Anggota ini tidak bertransaksi dalam rentang yang dipilih.';
+
+  @override
+  String get mrpColItem => 'Item';
+
+  @override
+  String get mrpColQty => 'Porsi';
+
+  @override
+  String get mrpColValue => 'Nilai';
+
+  @override
+  String get mrpColLast => 'Terakhir';
+
+  @override
+  String get mrpColWhen => 'Waktu';
+
+  @override
+  String get mrpColTable => 'Meja';
+
+  @override
+  String get mrpColShare => 'Bagian';
+
+  @override
+  String get mrpBillOwner => 'pemilik';
+
+  @override
+  String get mrpBillGuestOf => 'patungan';
+
+  @override
+  String mrpOfBill(String amount) {
+    return 'dari $amount';
+  }
+
+  @override
+  String mrpBillsMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+$count tagihan lagi tidak ditampilkan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hubMemberReport => 'Laporan anggota';
+
+  @override
+  String get hubMemberReportSub =>
+      'Riwayat belanja dan produk favorit pelanggan';
 }

@@ -144,6 +144,10 @@ flutter:
     # plane by reading it out of the bundle — an APK has no filesystem for a
     # static handler to walk.
     - assets/guest_web/
+    # The [[Alamat pelanggan]] picker's vocabulary — Sulawesi Utara only, 25 KB.
+    # Bundled rather than fetched because the whole app runs on a LAN with no
+    # internet. See the loader in lib/data/services/wilayah_service.dart.
+    - assets/wilayah/
 
   # Every face every skin can reach, so the app never needs the network to draw
   # a correct first frame — which is the whole promise. Archivo serves `glow`

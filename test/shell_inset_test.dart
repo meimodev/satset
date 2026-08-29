@@ -46,6 +46,7 @@ const _shellRouteScreens = <String>[
   'lib/ui/features/admin/venue_day_screen.dart',
   'lib/ui/features/admin/self_order_screen.dart',
   'lib/ui/features/admin/self_order_admin_screen.dart',
+  'lib/ui/features/admin/member_report_screen.dart',
   'lib/ui/features/admin/members_screen.dart',
   'lib/ui/features/admin/opname_screen.dart',
   'lib/ui/features/admin/system_screen.dart',
