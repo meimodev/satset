@@ -10,6 +10,7 @@ import 'package:satset/data/models/member_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/members_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/services/wilayah_service.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/member.dart';
 import 'package:satset/l10n/app_localizations.dart';
@@ -21,6 +22,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
+import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
@@ -478,6 +480,14 @@ class _MemberDetailSheetState extends ConsumerState<_MemberDetailSheet> {
                     ),
                   if ((m.member.note ?? '').isNotEmpty)
                     _FactLine(label: l10n.memFieldNote, value: m.member.note!),
+                  // The directory is the only surface that draws an address.
+                  // The till gets it on the wire and ignores it — a bill
+                  // overlay is for settling.
+                  if (m.member.address.isNotEmpty)
+                    _FactLine(
+                      label: l10n.memFieldAddress,
+                      value: m.member.address.oneLine,
+                    ),
                   const SizedBox(height: Sp.s4),
                   Wrap(
                     spacing: Sp.s2,
@@ -1092,7 +1102,12 @@ class _MemberFormSheetState extends ConsumerState<MemberFormSheet> {
   /// limit — so it is seeded from the member's *own* limit, never the resolved
   /// one (ADR-0098).
   late final TextEditingController _limit;
+
+  /// The street line. The three administrative levels are picked, not typed,
+  /// so they live in [_address] rather than in a controller.
+  late final TextEditingController _street;
   DateTime? _birthday;
+  MemberAddress _address = const MemberAddress();
   bool _busy = false;
   String? _error;
 
@@ -1106,6 +1121,8 @@ class _MemberFormSheetState extends ConsumerState<MemberFormSheet> {
     final own = e?.member.ownDebtLimit;
     _limit = TextEditingController(text: own == null ? '' : groupRupiah(own));
     _birthday = e?.member.birthday;
+    _address = e?.member.address ?? const MemberAddress();
+    _street = TextEditingController(text: _address.text ?? '');
   }
 
   @override
@@ -1114,8 +1131,16 @@ class _MemberFormSheetState extends ConsumerState<MemberFormSheet> {
     _phone.dispose();
     _note.dispose();
     _limit.dispose();
+    _street.dispose();
     super.dispose();
   }
+
+  /// The whole chain as it stands, street line included. Sent wholesale on
+  /// every save — the sheet holds all four fields, so there is nothing partial
+  /// for a per-field flag to express.
+  MemberAddress get _addressValue => _address.copyWith(
+    text: _street.text.trim().isEmpty ? null : _street.text.trim(),
+  );
 
   /// Null when the field is empty — the member falls back to the venue default.
   int? get _limitValue {
@@ -1153,6 +1178,7 @@ class _MemberFormSheetState extends ConsumerState<MemberFormSheet> {
               phone: _phone.text.trim(),
               note: _note.text.trim().isEmpty ? null : _note.text.trim(),
               birthday: _birthday,
+              address: _addressValue,
             )
           : await repo.edit(
               id: widget.existing!.id,
@@ -1163,6 +1189,7 @@ class _MemberFormSheetState extends ConsumerState<MemberFormSheet> {
               clearBirthday: _birthday == null,
               debtLimit: _limitValue,
               clearDebtLimit: _limitValue == null,
+              address: _addressValue,
             );
       if (mounted) Navigator.of(context).pop(saved);
     } catch (e) {
@@ -1233,6 +1260,12 @@ class _MemberFormSheetState extends ConsumerState<MemberFormSheet> {
                 controller: _note,
                 label: l10n.memFieldNote,
                 hint: '',
+              ),
+              const SizedBox(height: Sp.s3),
+              _AddressFields(
+                value: _address,
+                street: _street,
+                onChanged: (a) => setState(() => _address = a),
               ),
               // Enrolment cannot set a limit: the PATCH route owns it, and a
               // tab is a decision about someone you already know.
@@ -1533,6 +1566,107 @@ class _ConfirmDialog extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The [[Alamat pelanggan]] block of the member sheet: three cascading pickers
+/// over the bundled Sulawesi Utara vocabulary, then a free street line.
+///
+/// **Any prefix is legal** — kabupaten alone saves, all four empty is the normal
+/// case, and a guest from outside the province just leaves the pickers alone and
+/// writes their address on the street line.
+///
+/// Picking a new parent clears its children, because a kelurahan left over from
+/// the previous kecamatan is a wrong answer where a blank was an honest one.
+class _AddressFields extends StatelessWidget {
+  final MemberAddress value;
+  final TextEditingController street;
+  final ValueChanged<MemberAddress> onChanged;
+
+  const _AddressFields({
+    required this.value,
+    required this.street,
+    required this.onChanged,
+  });
+
+  /// A stored name the bundled list does not contain still has to render — the
+  /// value is a snapshot, so a dataset swap or an upstream rename must not make
+  /// a member's address vanish from its own editor.
+  List<SatOption<String>> _options(List<String> names, String? current) => [
+    if (current != null && current.isNotEmpty && !names.contains(current))
+      SatOption(current, current),
+    for (final n in names) SatOption(n, n),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return FutureBuilder<Wilayah>(
+      future: loadWilayah(),
+      builder: (context, snap) {
+        final w = snap.data;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SatDropdown<String>(
+              value: value.kabupaten,
+              label: l10n.memFieldKabupaten,
+              hint: l10n.memAddressPick,
+              options: _options(w?.kabupaten ?? const [], value.kabupaten),
+              // Null while the 25 KB asset decodes — a beat, and disabled says
+              // so without a spinner.
+              onChanged: w == null
+                  ? null
+                  : (v) => onChanged(
+                      MemberAddress(kabupaten: v, text: value.text),
+                    ),
+            ),
+            const SizedBox(height: Sp.s3),
+            SatDropdown<String>(
+              value: value.kecamatan,
+              label: l10n.memFieldKecamatan,
+              hint: l10n.memAddressPick,
+              options: _options(
+                w?.kecamatanIn(value.kabupaten) ?? const [],
+                value.kecamatan,
+              ),
+              onChanged: w == null || value.kabupaten == null
+                  ? null
+                  : (v) => onChanged(
+                      MemberAddress(
+                        kabupaten: value.kabupaten,
+                        kecamatan: v,
+                        text: value.text,
+                      ),
+                    ),
+            ),
+            const SizedBox(height: Sp.s3),
+            SatDropdown<String>(
+              value: value.kelurahan,
+              label: l10n.memFieldKelurahan,
+              hint: l10n.memAddressPick,
+              options: _options(
+                w?.kelurahanIn(value.kabupaten, value.kecamatan) ?? const [],
+                value.kelurahan,
+              ),
+              onChanged: w == null || value.kecamatan == null
+                  ? null
+                  : (v) => onChanged(value.copyWith(kelurahan: v)),
+            ),
+            const SizedBox(height: Sp.s3),
+            SatField.text(
+              controller: street,
+              label: l10n.memFieldStreet,
+              hint: '',
+              // Says "street and number", so nobody retypes the kecamatan they
+              // just picked into a field that would then disagree with it.
+              helperText: l10n.memFieldStreetHelp,
+              capitalization: TextCapitalization.words,
+            ),
+          ],
+        );
+      },
     );
   }
 }

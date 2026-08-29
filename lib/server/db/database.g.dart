@@ -25427,6 +25427,50 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _kabupatenMeta = const VerificationMeta(
+    'kabupaten',
+  );
+  @override
+  late final GeneratedColumn<String> kabupaten = GeneratedColumn<String>(
+    'kabupaten',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _kecamatanMeta = const VerificationMeta(
+    'kecamatan',
+  );
+  @override
+  late final GeneratedColumn<String> kecamatan = GeneratedColumn<String>(
+    'kecamatan',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _kelurahanMeta = const VerificationMeta(
+    'kelurahan',
+  );
+  @override
+  late final GeneratedColumn<String> kelurahan = GeneratedColumn<String>(
+    'kelurahan',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _addressTextMeta = const VerificationMeta(
+    'addressText',
+  );
+  @override
+  late final GeneratedColumn<String> addressText = GeneratedColumn<String>(
+    'address_text',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -25437,6 +25481,10 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     birthday,
     joinedAt,
     debtLimit,
+    kabupaten,
+    kecamatan,
+    kelurahan,
+    addressText,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -25503,6 +25551,33 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
         debtLimit.isAcceptableOrUnknown(data['debt_limit']!, _debtLimitMeta),
       );
     }
+    if (data.containsKey('kabupaten')) {
+      context.handle(
+        _kabupatenMeta,
+        kabupaten.isAcceptableOrUnknown(data['kabupaten']!, _kabupatenMeta),
+      );
+    }
+    if (data.containsKey('kecamatan')) {
+      context.handle(
+        _kecamatanMeta,
+        kecamatan.isAcceptableOrUnknown(data['kecamatan']!, _kecamatanMeta),
+      );
+    }
+    if (data.containsKey('kelurahan')) {
+      context.handle(
+        _kelurahanMeta,
+        kelurahan.isAcceptableOrUnknown(data['kelurahan']!, _kelurahanMeta),
+      );
+    }
+    if (data.containsKey('address_text')) {
+      context.handle(
+        _addressTextMeta,
+        addressText.isAcceptableOrUnknown(
+          data['address_text']!,
+          _addressTextMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -25544,6 +25619,22 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
         DriftSqlType.int,
         data['${effectivePrefix}debt_limit'],
       ),
+      kabupaten: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kabupaten'],
+      ),
+      kecamatan: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kecamatan'],
+      ),
+      kelurahan: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kelurahan'],
+      ),
+      addressText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}address_text'],
+      ),
     );
   }
 
@@ -25577,6 +25668,31 @@ class Member extends DataClass implements Insertable<Member> {
   /// ship at: turning the feature on must not silently extend credit to
   /// everybody already enrolled. See ADR-0098.
   final int? debtLimit;
+
+  /// [[Alamat pelanggan]] — four optional fields, all nullable, none of them
+  /// ever required. Record-keeping only: nothing searches, groups, reports or
+  /// prints an address, which is why this is four columns on the person rather
+  /// than a table of its own.
+  ///
+  /// The three administrative levels store the **name**, snapshotted at write
+  /// time — never the Kemendagri wilayah code. Same rule a [[Preset diskon]]
+  /// and a booked [[Reservation]] name keep: the displayed value is frozen, so
+  /// swapping the bundled dataset or renaming a kelurahan upstream can never
+  /// rewrite a record somebody already saved. Nothing joins on these, so the
+  /// stable key a code would buy has no buyer.
+  ///
+  /// **Any prefix is legal.** [kabupaten] alone stores fine; picking a new
+  /// parent clears its children, because a stale child is worse than a blank.
+  final String? kabupaten;
+  final String? kecamatan;
+  final String? kelurahan;
+
+  /// The street line **only** — `Jl. Sam Ratulangi No. 12`. Never the whole
+  /// address: a freeform field repeating the three above is a field that
+  /// disagrees with them the first time someone edits one and not the other.
+  /// Also the escape hatch for a guest from outside Sulawesi Utara, whose
+  /// three pickers stay empty.
+  final String? addressText;
   const Member({
     required this.id,
     required this.name,
@@ -25586,6 +25702,10 @@ class Member extends DataClass implements Insertable<Member> {
     this.birthday,
     required this.joinedAt,
     this.debtLimit,
+    this.kabupaten,
+    this.kecamatan,
+    this.kelurahan,
+    this.addressText,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -25604,6 +25724,18 @@ class Member extends DataClass implements Insertable<Member> {
     if (!nullToAbsent || debtLimit != null) {
       map['debt_limit'] = Variable<int>(debtLimit);
     }
+    if (!nullToAbsent || kabupaten != null) {
+      map['kabupaten'] = Variable<String>(kabupaten);
+    }
+    if (!nullToAbsent || kecamatan != null) {
+      map['kecamatan'] = Variable<String>(kecamatan);
+    }
+    if (!nullToAbsent || kelurahan != null) {
+      map['kelurahan'] = Variable<String>(kelurahan);
+    }
+    if (!nullToAbsent || addressText != null) {
+      map['address_text'] = Variable<String>(addressText);
+    }
     return map;
   }
 
@@ -25621,6 +25753,18 @@ class Member extends DataClass implements Insertable<Member> {
       debtLimit: debtLimit == null && nullToAbsent
           ? const Value.absent()
           : Value(debtLimit),
+      kabupaten: kabupaten == null && nullToAbsent
+          ? const Value.absent()
+          : Value(kabupaten),
+      kecamatan: kecamatan == null && nullToAbsent
+          ? const Value.absent()
+          : Value(kecamatan),
+      kelurahan: kelurahan == null && nullToAbsent
+          ? const Value.absent()
+          : Value(kelurahan),
+      addressText: addressText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(addressText),
     );
   }
 
@@ -25638,6 +25782,10 @@ class Member extends DataClass implements Insertable<Member> {
       birthday: serializer.fromJson<DateTime?>(json['birthday']),
       joinedAt: serializer.fromJson<DateTime>(json['joinedAt']),
       debtLimit: serializer.fromJson<int?>(json['debtLimit']),
+      kabupaten: serializer.fromJson<String?>(json['kabupaten']),
+      kecamatan: serializer.fromJson<String?>(json['kecamatan']),
+      kelurahan: serializer.fromJson<String?>(json['kelurahan']),
+      addressText: serializer.fromJson<String?>(json['addressText']),
     );
   }
   @override
@@ -25652,6 +25800,10 @@ class Member extends DataClass implements Insertable<Member> {
       'birthday': serializer.toJson<DateTime?>(birthday),
       'joinedAt': serializer.toJson<DateTime>(joinedAt),
       'debtLimit': serializer.toJson<int?>(debtLimit),
+      'kabupaten': serializer.toJson<String?>(kabupaten),
+      'kecamatan': serializer.toJson<String?>(kecamatan),
+      'kelurahan': serializer.toJson<String?>(kelurahan),
+      'addressText': serializer.toJson<String?>(addressText),
     };
   }
 
@@ -25664,6 +25816,10 @@ class Member extends DataClass implements Insertable<Member> {
     Value<DateTime?> birthday = const Value.absent(),
     DateTime? joinedAt,
     Value<int?> debtLimit = const Value.absent(),
+    Value<String?> kabupaten = const Value.absent(),
+    Value<String?> kecamatan = const Value.absent(),
+    Value<String?> kelurahan = const Value.absent(),
+    Value<String?> addressText = const Value.absent(),
   }) => Member(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -25673,6 +25829,10 @@ class Member extends DataClass implements Insertable<Member> {
     birthday: birthday.present ? birthday.value : this.birthday,
     joinedAt: joinedAt ?? this.joinedAt,
     debtLimit: debtLimit.present ? debtLimit.value : this.debtLimit,
+    kabupaten: kabupaten.present ? kabupaten.value : this.kabupaten,
+    kecamatan: kecamatan.present ? kecamatan.value : this.kecamatan,
+    kelurahan: kelurahan.present ? kelurahan.value : this.kelurahan,
+    addressText: addressText.present ? addressText.value : this.addressText,
   );
   Member copyWithCompanion(MembersCompanion data) {
     return Member(
@@ -25684,6 +25844,12 @@ class Member extends DataClass implements Insertable<Member> {
       birthday: data.birthday.present ? data.birthday.value : this.birthday,
       joinedAt: data.joinedAt.present ? data.joinedAt.value : this.joinedAt,
       debtLimit: data.debtLimit.present ? data.debtLimit.value : this.debtLimit,
+      kabupaten: data.kabupaten.present ? data.kabupaten.value : this.kabupaten,
+      kecamatan: data.kecamatan.present ? data.kecamatan.value : this.kecamatan,
+      kelurahan: data.kelurahan.present ? data.kelurahan.value : this.kelurahan,
+      addressText: data.addressText.present
+          ? data.addressText.value
+          : this.addressText,
     );
   }
 
@@ -25697,14 +25863,30 @@ class Member extends DataClass implements Insertable<Member> {
           ..write('note: $note, ')
           ..write('birthday: $birthday, ')
           ..write('joinedAt: $joinedAt, ')
-          ..write('debtLimit: $debtLimit')
+          ..write('debtLimit: $debtLimit, ')
+          ..write('kabupaten: $kabupaten, ')
+          ..write('kecamatan: $kecamatan, ')
+          ..write('kelurahan: $kelurahan, ')
+          ..write('addressText: $addressText')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, phone, code, note, birthday, joinedAt, debtLimit);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    phone,
+    code,
+    note,
+    birthday,
+    joinedAt,
+    debtLimit,
+    kabupaten,
+    kecamatan,
+    kelurahan,
+    addressText,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -25716,7 +25898,11 @@ class Member extends DataClass implements Insertable<Member> {
           other.note == this.note &&
           other.birthday == this.birthday &&
           other.joinedAt == this.joinedAt &&
-          other.debtLimit == this.debtLimit);
+          other.debtLimit == this.debtLimit &&
+          other.kabupaten == this.kabupaten &&
+          other.kecamatan == this.kecamatan &&
+          other.kelurahan == this.kelurahan &&
+          other.addressText == this.addressText);
 }
 
 class MembersCompanion extends UpdateCompanion<Member> {
@@ -25728,6 +25914,10 @@ class MembersCompanion extends UpdateCompanion<Member> {
   final Value<DateTime?> birthday;
   final Value<DateTime> joinedAt;
   final Value<int?> debtLimit;
+  final Value<String?> kabupaten;
+  final Value<String?> kecamatan;
+  final Value<String?> kelurahan;
+  final Value<String?> addressText;
   final Value<int> rowid;
   const MembersCompanion({
     this.id = const Value.absent(),
@@ -25738,6 +25928,10 @@ class MembersCompanion extends UpdateCompanion<Member> {
     this.birthday = const Value.absent(),
     this.joinedAt = const Value.absent(),
     this.debtLimit = const Value.absent(),
+    this.kabupaten = const Value.absent(),
+    this.kecamatan = const Value.absent(),
+    this.kelurahan = const Value.absent(),
+    this.addressText = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MembersCompanion.insert({
@@ -25749,6 +25943,10 @@ class MembersCompanion extends UpdateCompanion<Member> {
     this.birthday = const Value.absent(),
     required DateTime joinedAt,
     this.debtLimit = const Value.absent(),
+    this.kabupaten = const Value.absent(),
+    this.kecamatan = const Value.absent(),
+    this.kelurahan = const Value.absent(),
+    this.addressText = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -25763,6 +25961,10 @@ class MembersCompanion extends UpdateCompanion<Member> {
     Expression<DateTime>? birthday,
     Expression<DateTime>? joinedAt,
     Expression<int>? debtLimit,
+    Expression<String>? kabupaten,
+    Expression<String>? kecamatan,
+    Expression<String>? kelurahan,
+    Expression<String>? addressText,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -25774,6 +25976,10 @@ class MembersCompanion extends UpdateCompanion<Member> {
       if (birthday != null) 'birthday': birthday,
       if (joinedAt != null) 'joined_at': joinedAt,
       if (debtLimit != null) 'debt_limit': debtLimit,
+      if (kabupaten != null) 'kabupaten': kabupaten,
+      if (kecamatan != null) 'kecamatan': kecamatan,
+      if (kelurahan != null) 'kelurahan': kelurahan,
+      if (addressText != null) 'address_text': addressText,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -25787,6 +25993,10 @@ class MembersCompanion extends UpdateCompanion<Member> {
     Value<DateTime?>? birthday,
     Value<DateTime>? joinedAt,
     Value<int?>? debtLimit,
+    Value<String?>? kabupaten,
+    Value<String?>? kecamatan,
+    Value<String?>? kelurahan,
+    Value<String?>? addressText,
     Value<int>? rowid,
   }) {
     return MembersCompanion(
@@ -25798,6 +26008,10 @@ class MembersCompanion extends UpdateCompanion<Member> {
       birthday: birthday ?? this.birthday,
       joinedAt: joinedAt ?? this.joinedAt,
       debtLimit: debtLimit ?? this.debtLimit,
+      kabupaten: kabupaten ?? this.kabupaten,
+      kecamatan: kecamatan ?? this.kecamatan,
+      kelurahan: kelurahan ?? this.kelurahan,
+      addressText: addressText ?? this.addressText,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -25829,6 +26043,18 @@ class MembersCompanion extends UpdateCompanion<Member> {
     if (debtLimit.present) {
       map['debt_limit'] = Variable<int>(debtLimit.value);
     }
+    if (kabupaten.present) {
+      map['kabupaten'] = Variable<String>(kabupaten.value);
+    }
+    if (kecamatan.present) {
+      map['kecamatan'] = Variable<String>(kecamatan.value);
+    }
+    if (kelurahan.present) {
+      map['kelurahan'] = Variable<String>(kelurahan.value);
+    }
+    if (addressText.present) {
+      map['address_text'] = Variable<String>(addressText.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -25846,6 +26072,10 @@ class MembersCompanion extends UpdateCompanion<Member> {
           ..write('birthday: $birthday, ')
           ..write('joinedAt: $joinedAt, ')
           ..write('debtLimit: $debtLimit, ')
+          ..write('kabupaten: $kabupaten, ')
+          ..write('kecamatan: $kecamatan, ')
+          ..write('kelurahan: $kelurahan, ')
+          ..write('addressText: $addressText, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -41787,6 +42017,10 @@ typedef $$MembersTableCreateCompanionBuilder =
       Value<DateTime?> birthday,
       required DateTime joinedAt,
       Value<int?> debtLimit,
+      Value<String?> kabupaten,
+      Value<String?> kecamatan,
+      Value<String?> kelurahan,
+      Value<String?> addressText,
       Value<int> rowid,
     });
 typedef $$MembersTableUpdateCompanionBuilder =
@@ -41799,6 +42033,10 @@ typedef $$MembersTableUpdateCompanionBuilder =
       Value<DateTime?> birthday,
       Value<DateTime> joinedAt,
       Value<int?> debtLimit,
+      Value<String?> kabupaten,
+      Value<String?> kecamatan,
+      Value<String?> kelurahan,
+      Value<String?> addressText,
       Value<int> rowid,
     });
 
@@ -41848,6 +42086,26 @@ class $$MembersTableFilterComposer
 
   ColumnFilters<int> get debtLimit => $composableBuilder(
     column: $table.debtLimit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kabupaten => $composableBuilder(
+    column: $table.kabupaten,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kecamatan => $composableBuilder(
+    column: $table.kecamatan,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kelurahan => $composableBuilder(
+    column: $table.kelurahan,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get addressText => $composableBuilder(
+    column: $table.addressText,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -41900,6 +42158,26 @@ class $$MembersTableOrderingComposer
     column: $table.debtLimit,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get kabupaten => $composableBuilder(
+    column: $table.kabupaten,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kecamatan => $composableBuilder(
+    column: $table.kecamatan,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kelurahan => $composableBuilder(
+    column: $table.kelurahan,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get addressText => $composableBuilder(
+    column: $table.addressText,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MembersTableAnnotationComposer
@@ -41934,6 +42212,20 @@ class $$MembersTableAnnotationComposer
 
   GeneratedColumn<int> get debtLimit =>
       $composableBuilder(column: $table.debtLimit, builder: (column) => column);
+
+  GeneratedColumn<String> get kabupaten =>
+      $composableBuilder(column: $table.kabupaten, builder: (column) => column);
+
+  GeneratedColumn<String> get kecamatan =>
+      $composableBuilder(column: $table.kecamatan, builder: (column) => column);
+
+  GeneratedColumn<String> get kelurahan =>
+      $composableBuilder(column: $table.kelurahan, builder: (column) => column);
+
+  GeneratedColumn<String> get addressText => $composableBuilder(
+    column: $table.addressText,
+    builder: (column) => column,
+  );
 }
 
 class $$MembersTableTableManager
@@ -41972,6 +42264,10 @@ class $$MembersTableTableManager
                 Value<DateTime?> birthday = const Value.absent(),
                 Value<DateTime> joinedAt = const Value.absent(),
                 Value<int?> debtLimit = const Value.absent(),
+                Value<String?> kabupaten = const Value.absent(),
+                Value<String?> kecamatan = const Value.absent(),
+                Value<String?> kelurahan = const Value.absent(),
+                Value<String?> addressText = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MembersCompanion(
                 id: id,
@@ -41982,6 +42278,10 @@ class $$MembersTableTableManager
                 birthday: birthday,
                 joinedAt: joinedAt,
                 debtLimit: debtLimit,
+                kabupaten: kabupaten,
+                kecamatan: kecamatan,
+                kelurahan: kelurahan,
+                addressText: addressText,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -41994,6 +42294,10 @@ class $$MembersTableTableManager
                 Value<DateTime?> birthday = const Value.absent(),
                 required DateTime joinedAt,
                 Value<int?> debtLimit = const Value.absent(),
+                Value<String?> kabupaten = const Value.absent(),
+                Value<String?> kecamatan = const Value.absent(),
+                Value<String?> kelurahan = const Value.absent(),
+                Value<String?> addressText = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MembersCompanion.insert(
                 id: id,
@@ -42004,6 +42308,10 @@ class $$MembersTableTableManager
                 birthday: birthday,
                 joinedAt: joinedAt,
                 debtLimit: debtLimit,
+                kabupaten: kabupaten,
+                kecamatan: kecamatan,
+                kelurahan: kelurahan,
+                addressText: addressText,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

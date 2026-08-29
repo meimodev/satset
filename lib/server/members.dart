@@ -423,6 +423,12 @@ Future<List<Member>> _decorate(
         code: r.code,
         note: r.note,
         birthday: r.birthday,
+        address: MemberAddress(
+          kabupaten: r.kabupaten,
+          kecamatan: r.kecamatan,
+          kelurahan: r.kelurahan,
+          text: r.addressText,
+        ),
         joinedAt: r.joinedAt,
         points: points[r.id] ?? 0,
         punchProgress: punch.progress,
@@ -446,6 +452,10 @@ Future<Member> createMember(
   required String phone,
   String? note,
   DateTime? birthday,
+
+  /// Optional, and the reservation-fallback enrolment deliberately never sends
+  /// one — enrolling a guest at 19:00 stays two fields.
+  MemberAddress address = const MemberAddress(),
   String? actorUserId,
   WsHub? hub,
   DateTime? at,
@@ -477,6 +487,10 @@ Future<Member> createMember(
           code: Value(_codeFor(cleanPhone)),
           note: Value(note),
           birthday: Value(birthday),
+          kabupaten: Value(address.kabupaten),
+          kecamatan: Value(address.kecamatan),
+          kelurahan: Value(address.kelurahan),
+          addressText: Value(address.text),
         ),
       );
   await writeAudit(
@@ -508,6 +522,13 @@ Future<Member> updateMember(
   String? note,
   DateTime? birthday,
   bool clearBirthday = false,
+
+  /// The whole [[Alamat pelanggan]] or nothing: null leaves it alone, a value
+  /// **replaces all four fields**. Every field inside is nullable, so a per-
+  /// field `clearKabupaten` flag would need four of them to say what one
+  /// wholesale replacement says — and the address is edited as one chain
+  /// anyway, since picking a new parent clears its children.
+  MemberAddress? address,
 
   /// This member's own credit limit. Absent leaves it alone; [clearDebtLimit]
   /// puts them back on the venue default — the two are different, which is why
@@ -545,6 +566,18 @@ Future<Member> updateMember(
       debtLimit: clearDebtLimit
           ? const Value(null)
           : (debtLimit == null ? const Value.absent() : Value(debtLimit)),
+      kabupaten: address == null
+          ? const Value.absent()
+          : Value(address.kabupaten),
+      kecamatan: address == null
+          ? const Value.absent()
+          : Value(address.kecamatan),
+      kelurahan: address == null
+          ? const Value.absent()
+          : Value(address.kelurahan),
+      addressText: address == null
+          ? const Value.absent()
+          : Value(address.text),
     ),
   );
   final member = (await getMember(db, id))!;
@@ -1085,6 +1118,10 @@ Map<String, dynamic> memberJson(Member m) => {
   'code': m.code,
   'note': m.note,
   'birthday': m.birthday?.toIso8601String(),
+  // Always present, even when every field inside is null: one shape means the
+  // till and the directory read the same payload, and only the directory
+  // chooses to draw it.
+  'address': m.address.toJson(),
   'joinedAt': m.joinedAt.toIso8601String(),
   'points': m.points,
   'punchProgress': m.punchProgress,

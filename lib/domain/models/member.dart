@@ -250,6 +250,91 @@ class Debtor {
   );
 }
 
+/// Where a [[Pelanggan (member)]] lives, as far as anyone here cares.
+///
+/// **Record-keeping only.** Nothing searches an address, groups by one, reports
+/// on one or prints one on a slip — which is why it is four optional fields on
+/// the person rather than an entity with a table of its own.
+///
+/// The three administrative levels hold a **name**, snapshotted at write time,
+/// never a Kemendagri wilayah code: the picker's vocabulary is bundled and may
+/// be replaced, and a stored code would let that replacement rewrite a record
+/// somebody already saved. Nothing joins on these.
+///
+/// **Any prefix is legal** — [kabupaten] alone is a valid, useful answer. The
+/// whole thing empty is the normal case.
+class MemberAddress {
+  /// Picked from the bundled Sulawesi Utara vocabulary. Empty for a guest from
+  /// anywhere else, whose address lives entirely in [text].
+  final String? kabupaten;
+  final String? kecamatan;
+  final String? kelurahan;
+
+  /// The street line **only** — `Jl. Sam Ratulangi No. 12`. Never a repeat of
+  /// the three above; two spellings of one fact is one fact too many.
+  final String? text;
+
+  const MemberAddress({
+    this.kabupaten,
+    this.kecamatan,
+    this.kelurahan,
+    this.text,
+  });
+
+  bool get isEmpty =>
+      (kabupaten ?? '').isEmpty &&
+      (kecamatan ?? '').isEmpty &&
+      (kelurahan ?? '').isEmpty &&
+      (text ?? '').isEmpty;
+
+  bool get isNotEmpty => !isEmpty;
+
+  /// Street first, then outward — how an Indonesian address is read aloud and
+  /// how it would be written on an envelope. Levels the guest did not give are
+  /// simply absent; there is no placeholder for an unknown kecamatan.
+  String get oneLine => [
+    if ((text ?? '').isNotEmpty) text!,
+    if ((kelurahan ?? '').isNotEmpty) 'Kel. $kelurahan',
+    if ((kecamatan ?? '').isNotEmpty) 'Kec. $kecamatan',
+    if ((kabupaten ?? '').isNotEmpty) kabupaten!,
+  ].join(', ');
+
+  Map<String, dynamic> toJson() => {
+    'kabupaten': kabupaten,
+    'kecamatan': kecamatan,
+    'kelurahan': kelurahan,
+    'text': text,
+  };
+
+  static String? _clean(Object? v) {
+    final s = (v as String?)?.trim() ?? '';
+    return s.isEmpty ? null : s;
+  }
+
+  factory MemberAddress.fromJson(Map<String, dynamic> j) => MemberAddress(
+    kabupaten: _clean(j['kabupaten']),
+    kecamatan: _clean(j['kecamatan']),
+    kelurahan: _clean(j['kelurahan']),
+    text: _clean(j['text']),
+  );
+
+  MemberAddress copyWith({
+    Object? kabupaten = _keep,
+    Object? kecamatan = _keep,
+    Object? kelurahan = _keep,
+    Object? text = _keep,
+  }) => MemberAddress(
+    kabupaten: kabupaten == _keep ? this.kabupaten : kabupaten as String?,
+    kecamatan: kecamatan == _keep ? this.kecamatan : kecamatan as String?,
+    kelurahan: kelurahan == _keep ? this.kelurahan : kelurahan as String?,
+    text: text == _keep ? this.text : text as String?,
+  );
+
+  /// Sentinel, because every field here is nullable and `null` therefore has to
+  /// mean "clear it" rather than "leave it".
+  static const _keep = Object();
+}
+
 /// A member as a reader sees them — the record plus the two derived figures
 /// nothing stores: the points balance and the punch card's progress.
 class Member {
@@ -268,6 +353,11 @@ class Member {
   /// Date only. Feeds the directory's "ulang tahun bulan ini" filter and
   /// nothing else — there is deliberately no birthday rules engine.
   final DateTime? birthday;
+
+  /// Optional and usually empty. Rides every payload the directory and the till
+  /// share, but only the directory draws it — a bill overlay is for settling,
+  /// and an address there is a line between the cashier and the total.
+  final MemberAddress address;
   final DateTime joinedAt;
 
   /// `SUM(delta)` over the ledger. **Derived, never stored** — money must not
@@ -305,6 +395,7 @@ class Member {
     this.code = '',
     this.note,
     this.birthday,
+    this.address = const MemberAddress(),
     this.points = 0,
     this.punchProgress = 0,
     this.visitCount = 0,

@@ -8847,6 +8847,27 @@ class AppL10nEn extends AppL10n {
   String get memFieldNote => 'Note';
 
   @override
+  String get memFieldAddress => 'Address';
+
+  @override
+  String get memFieldKabupaten => 'Regency/City';
+
+  @override
+  String get memFieldKecamatan => 'District';
+
+  @override
+  String get memFieldKelurahan => 'Village';
+
+  @override
+  String get memFieldStreet => 'Address (street, no.)';
+
+  @override
+  String get memFieldStreetHelp => 'Street name and number only';
+
+  @override
+  String get memAddressPick => 'Select';
+
+  @override
   String get memFieldBirthday => 'Birthday';
 
   @override

@@ -201,6 +201,7 @@ class MembersRepository extends StateNotifier<MembersState> {
     required String phone,
     String? note,
     DateTime? birthday,
+    MemberAddress address = const MemberAddress(),
   }) => _write(
     () async =>
         await _ref.read(apiClientProvider).postJson('/members', {
@@ -208,6 +209,7 @@ class MembersRepository extends StateNotifier<MembersState> {
               'phone': phone,
               'note': note,
               'birthday': birthday?.toIso8601String(),
+              if (address.isNotEmpty) 'address': address.toJson(),
             })
             as Map<String, dynamic>,
   );
@@ -221,6 +223,11 @@ class MembersRepository extends StateNotifier<MembersState> {
     bool clearBirthday = false,
     int? debtLimit,
     bool clearDebtLimit = false,
+
+    /// All four fields or none: absent leaves the stored address alone, a value
+    /// replaces it whole. The editor always sends one, because the sheet holds
+    /// the whole chain anyway.
+    MemberAddress? address,
   }) => _write(
     () async =>
         await _ref.read(apiClientProvider).patchJson('/members/$id', {
@@ -233,6 +240,7 @@ class MembersRepository extends StateNotifier<MembersState> {
               // Same shape, and it carries more weight here: a null puts them
               // back on the venue default, which is not the same as a 0 limit.
               if (clearDebtLimit || debtLimit != null) 'debtLimit': debtLimit,
+              if (address != null) 'address': address.toJson(),
             })
             as Map<String, dynamic>,
   );

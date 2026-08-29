@@ -13909,6 +13909,48 @@ abstract class AppL10n {
   /// **'Catatan'**
   String get memFieldNote;
 
+  /// No description provided for @memFieldAddress.
+  ///
+  /// In id, this message translates to:
+  /// **'Alamat'**
+  String get memFieldAddress;
+
+  /// No description provided for @memFieldKabupaten.
+  ///
+  /// In id, this message translates to:
+  /// **'Kabupaten/Kota'**
+  String get memFieldKabupaten;
+
+  /// No description provided for @memFieldKecamatan.
+  ///
+  /// In id, this message translates to:
+  /// **'Kecamatan'**
+  String get memFieldKecamatan;
+
+  /// No description provided for @memFieldKelurahan.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelurahan/Desa'**
+  String get memFieldKelurahan;
+
+  /// No description provided for @memFieldStreet.
+  ///
+  /// In id, this message translates to:
+  /// **'Alamat (jalan, no.)'**
+  String get memFieldStreet;
+
+  /// No description provided for @memFieldStreetHelp.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama jalan dan nomor saja'**
+  String get memFieldStreetHelp;
+
+  /// No description provided for @memAddressPick.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih'**
+  String get memAddressPick;
+
   /// No description provided for @memFieldBirthday.
   ///
   /// In id, this message translates to:

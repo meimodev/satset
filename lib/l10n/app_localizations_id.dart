@@ -8736,6 +8736,27 @@ class AppL10nId extends AppL10n {
   String get memFieldNote => 'Catatan';
 
   @override
+  String get memFieldAddress => 'Alamat';
+
+  @override
+  String get memFieldKabupaten => 'Kabupaten/Kota';
+
+  @override
+  String get memFieldKecamatan => 'Kecamatan';
+
+  @override
+  String get memFieldKelurahan => 'Kelurahan/Desa';
+
+  @override
+  String get memFieldStreet => 'Alamat (jalan, no.)';
+
+  @override
+  String get memFieldStreetHelp => 'Nama jalan dan nomor saja';
+
+  @override
+  String get memAddressPick => 'Pilih';
+
+  @override
   String get memFieldBirthday => 'Ulang tahun';
 
   @override

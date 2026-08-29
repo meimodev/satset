@@ -1401,6 +1401,31 @@ class Members extends Table {
   /// ship at: turning the feature on must not silently extend credit to
   /// everybody already enrolled. See ADR-0098.
   IntColumn get debtLimit => integer().nullable()();
+
+  /// [[Alamat pelanggan]] — four optional fields, all nullable, none of them
+  /// ever required. Record-keeping only: nothing searches, groups, reports or
+  /// prints an address, which is why this is four columns on the person rather
+  /// than a table of its own.
+  ///
+  /// The three administrative levels store the **name**, snapshotted at write
+  /// time — never the Kemendagri wilayah code. Same rule a [[Preset diskon]]
+  /// and a booked [[Reservation]] name keep: the displayed value is frozen, so
+  /// swapping the bundled dataset or renaming a kelurahan upstream can never
+  /// rewrite a record somebody already saved. Nothing joins on these, so the
+  /// stable key a code would buy has no buyer.
+  ///
+  /// **Any prefix is legal.** [kabupaten] alone stores fine; picking a new
+  /// parent clears its children, because a stale child is worse than a blank.
+  TextColumn get kabupaten => text().nullable()();
+  TextColumn get kecamatan => text().nullable()();
+  TextColumn get kelurahan => text().nullable()();
+
+  /// The street line **only** — `Jl. Sam Ratulangi No. 12`. Never the whole
+  /// address: a freeform field repeating the three above is a field that
+  /// disagrees with them the first time someone edits one and not the other.
+  /// Also the escape hatch for a guest from outside Sulawesi Utara, whose
+  /// three pickers stay empty.
+  TextColumn get addressText => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }

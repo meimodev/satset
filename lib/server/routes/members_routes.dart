@@ -5,6 +5,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import 'package:satset/domain/models/capability.dart';
+import 'package:satset/domain/models/member.dart';
 import 'package:satset/server/auth.dart';
 // Hidden for the reason `members.dart` gives: Drift's row class shares the
 // domain model's name and this file means the domain one.
@@ -347,6 +348,7 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         phone: (body['phone'] as String?) ?? '',
         note: _text(body['note']),
         birthday: _date(body['birthday']),
+        address: _address(body['address']) ?? const MemberAddress(),
         actorUserId: a.$1,
         hub: hub,
       );
@@ -380,6 +382,12 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         // them back on the venue default, which is not the same as 0.
         clearDebtLimit:
             body.containsKey('debtLimit') && body['debtLimit'] == null,
+        // Wholesale: absent leaves the address alone, present replaces all four
+        // fields. An explicit null is an empty address, which is how the sheet
+        // clears one.
+        address: body.containsKey('address')
+            ? (_address(body['address']) ?? const MemberAddress())
+            : null,
         hub: hub,
       );
       return json(memberJson(member));
@@ -480,4 +488,15 @@ Uint8List? _photo(Object? raw) {
 DateTime? _date(Object? raw) {
   if (raw is! String || raw.isEmpty) return null;
   return DateTime.tryParse(raw);
+}
+
+/// The [[Alamat pelanggan]] off the wire. **No vocabulary check**: the picker
+/// is the constraint, not this route. Validating a kecamatan against the
+/// bundled list would mean a member enrolled today fails to save tomorrow
+/// because their kelurahan was renamed upstream — punishing the record for the
+/// list changing, when the stored value is a snapshot precisely so it cannot
+/// be rewritten. `manageMembers` on a LAN is the fence that matters.
+MemberAddress? _address(Object? raw) {
+  if (raw is! Map) return null;
+  return MemberAddress.fromJson(Map<String, dynamic>.from(raw));
 }
