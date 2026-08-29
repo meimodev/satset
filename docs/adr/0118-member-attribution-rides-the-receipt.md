@@ -72,9 +72,18 @@ splits therefore behaves exactly as it does today, byte for byte.
 ADR-0095 applies to a bill, evaluated one level down. No allocation, no
 apportionment, no rounding rule: a receipt already carries all three figures
 because ADR-0038 computes service and tax per receipt. Earn still fires **once,
-at bill close**, and a write-off still earns nothing; what changes is that a
-close now writes one `member_points` row per attributed receipt plus one for
-the owner's remainder, where it used to write one.
+at bill close**, and a write-off still earns nothing.
+
+What changes is only *how many* rows a close writes: **one per member**, not
+one per receipt. A member's receipts are summed first and their earn is posted
+against that total, with the [[Pemilik tagihan]] taking the unclaimed
+remainder on top of whatever receipts they own. Per-receipt rows were the
+obvious shape and are wrong twice over: `earnPointsForVisit` is idempotent on
+"this visit already earned", which per-receipt calls would trip on the second
+receipt, and a guest holding two slips is one person who ate one meal — two
+ledger rows for it reads as two visits to anyone summing the ledger later.
+ADR-0095's "earn once at bill close" therefore still holds exactly as written,
+now per person rather than per bill.
 
 **3. An amount receipt may carry a member.**
 This is the point of the feature — "split it evenly, two of us are members" is
@@ -89,6 +98,16 @@ stop being interchangeable — which is why an attributed share prints its
 member's name where an unattributed one prints `Bagian 1/3`. Its claim stays
 frozen at minting (ADR-0068), which serves the guest here too: the points match
 the number they were quoted.
+
+**[[Poin]] split on an amount receipt; [[Kartu stempel (punch card)|stempel]]
+does not.** An even share owns no lines, so there is nothing to say *which*
+items its guest ate — the mode "has already abandoned tracking who ordered
+what", in ADR-0068's words. Money is still attributable because the share's
+total is a number; a punch is not, so units under an amount receipt stay with
+the [[Pemilik tagihan]]. A venue that wants split punches splits itemized,
+which is the only split that knows the answer. This is a real limit and it is
+the honest one: the alternative is apportioning a punch item to a guest who
+may not have ordered it.
 
 **4. The member's give-backs move down to receipt scope.**
 With the mode on, the tier discount and a redemption are applied against the

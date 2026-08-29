@@ -57,6 +57,15 @@ class MemberException implements Exception {
 /// The membership half of `venue_settings`, read as one row.
 class MemberConfig {
   final bool enabled;
+
+  /// Whether a [[Split bill]] may name a [[Pemilik struk]] per receipt
+  /// (ADR-0118). Composed here and nowhere else, like [enabled] — a route that
+  /// asks about modules for itself is a review finding.
+  ///
+  /// Fails **closed**: it reads through `venueHasMode`, so an unmirrored venue
+  /// is not offered a picker whose only outcome is a mis-attributed row in a
+  /// ledger that never expires.
+  final bool splitEnabled;
   final bool pointsEnabled;
   final bool punchEnabled;
   final String? presetId;
@@ -68,6 +77,7 @@ class MemberConfig {
 
   const MemberConfig({
     required this.enabled,
+    required this.splitEnabled,
     required this.pointsEnabled,
     required this.punchEnabled,
     required this.presetId,
@@ -92,6 +102,13 @@ Future<MemberConfig> memberConfig(AppDatabase db) async {
     // facts so "they said no" stays distinguishable from "they can't", and so
     // re-entitling restores the owner's own choice rather than a default.
     enabled: (s?.membersEnabled ?? false) && venueHasModule(s, moduleMembers),
+    // Three facts ANDed, not two: the owner's preference, the sellable module,
+    // and the mode key on top (ADR-0118). Attribution is meaningless without
+    // membership itself, so it can never outlive it.
+    splitEnabled:
+        (s?.membersEnabled ?? false) &&
+        venueHasModule(s, moduleMembers) &&
+        venueHasMode(s, modeMemberSplit),
     pointsEnabled: s?.memberPointsEnabled ?? false,
     punchEnabled: s?.memberPunchEnabled ?? false,
     presetId: s?.memberPresetId,
@@ -148,24 +165,99 @@ Future<PunchStatus> punchStatus(
   }
   final t = db.tableSessionTickets;
   final s = db.tableSessions;
-  final rows =
-      await (db.select(t).join([innerJoin(s, s.id.equalsExp(t.sessionId))])
-            ..where(
-              s.memberId.equals(memberId) & t.itemId.equals(c.punchItemId!),
-            ))
+  final r = db.tableSessionReceipts;
+  final rl = db.tableSessionReceiptLines;
+
+  // Which closed sessions can hold a unit of this member's: the ones they
+  // owned, plus — under `memberSplit` — any whose receipts name them, which
+  // includes bills owned by somebody else entirely (ADR-0118).
+  final ownedSessions =
+      await (db.selectOnly(s)
+            ..addColumns([s.id])
+            ..where(s.memberId.equals(memberId)))
           .get();
+  final sessionIds = {for (final row in ownedSessions) row.read(s.id)!};
+  if (c.splitEnabled) {
+    final attributed =
+        await (db.selectOnly(r)
+              ..addColumns([r.sessionId])
+              ..where(r.memberId.equals(memberId)))
+            .get();
+    sessionIds.addAll(attributed.map((row) => row.read(r.sessionId)!));
+  }
+  if (sessionIds.isEmpty) {
+    return PunchStatus(bought: 0, given: 0, target: c.punchTarget);
+  }
+
+  final tickets =
+      await (db.select(t)..where(
+            (x) => x.sessionId.isIn(sessionIds) & x.itemId.equals(c.punchItemId!),
+          ))
+          .get();
+  if (tickets.isEmpty) {
+    return PunchStatus(bought: 0, given: 0, target: c.punchTarget);
+  }
+
+  // Owner of each session, so an unclaimed unit can fall back to them.
+  final sessionOwner = {
+    for (final row
+        in await (db.selectOnly(s)
+              ..addColumns([s.id, s.memberId])
+              ..where(s.id.isIn(sessionIds)))
+            .get())
+      row.read(s.id)!: row.read(s.memberId),
+  };
+
+  // Receipt → its [[Pemilik struk]], and the line assignments that point at
+  // one. Both empty when the mode is off, which collapses everything below to
+  // the pre-ADR-0118 reading: every unit belongs to whoever owned the bill.
+  var receiptOwner = <String, String?>{};
+  var lines = <TableSessionReceiptLine>[];
+  if (c.splitEnabled) {
+    receiptOwner = {
+      for (final row in await (db.select(r)..where((x) => x.sessionId.isIn(sessionIds))).get())
+        row.receiptId: row.memberId,
+    };
+    lines = await (db.select(
+      rl,
+    )..where((x) => x.sessionId.isIn(sessionIds))).get();
+  }
+  final linesByTicket = <String, List<TableSessionReceiptLine>>{};
+  for (final line in lines) {
+    (linesByTicket[line.ticketId] ??= <TableSessionReceiptLine>[]).add(line);
+  }
+
   var bought = 0;
   var given = 0;
-  for (final r in rows) {
-    final tk = r.readTable(t);
+  void tally(TableSessionTicket tk, int units) {
+    if (units <= 0) return;
     final voided = tk.status == 'voided';
     // A comp is a void carrying reason code `comp` (ADR-0006) — so the reward
     // is found the same way the comp tile finds it, not by a second flag.
     if (voided && tk.voidReasonCode == 'comp') {
-      given += tk.qty;
+      given += units;
     } else if (!voided) {
-      bought += tk.qty;
+      bought += units;
     }
+  }
+
+  for (final tk in tickets) {
+    final owner = sessionOwner[tk.sessionId];
+    var assigned = 0;
+    for (final line
+        in linesByTicket[tk.ticketId] ?? const <TableSessionReceiptLine>[]) {
+      assigned += line.qtyUnits;
+      // An unattributed receipt is the bill owner's, same rule the points
+      // remainder follows — a receipt nobody named does not orphan its units.
+      final holder = receiptOwner[line.receiptId] ?? owner;
+      if (holder == memberId) tally(tk, line.qtyUnits);
+    }
+    // Units on no receipt at all — including every unit of a bill split into
+    // [[Amount receipt|amount receipts]], which own no lines. An even split
+    // has already abandoned tracking who ordered what, so its punches stay
+    // with the [[Pemilik tagihan]]: money can be attributed there, lines
+    // cannot.
+    if (owner == memberId) tally(tk, tk.qty - assigned);
   }
   return PunchStatus(bought: bought, given: given, target: c.punchTarget);
 }
@@ -687,7 +779,7 @@ Future<int> earnPointsForVisit(
   // worth nothing if a re-close can read "no earn yet" while the first close
   // is still inserting one — the guest earns twice for one meal.
   final points = await db.transaction(() async {
-    final already = await _earnRowFor(db, visitId);
+    final already = await _earnRowFor(db, visitId, memberId);
     if (already != null) return already.delta;
     final earned = (base ~/ 1000) * cfg.earnPerThousand;
     if (earned <= 0) return 0;
@@ -723,18 +815,23 @@ Future<void> reverseEarnForVisit(
   String? actorUserId,
   WsHub? hub,
 }) async {
-  final earn = await _earnRowFor(db, visitId);
-  if (earn == null) return;
-  await _post(
-    db,
-    memberId: earn.memberId,
-    kind: MemberPointKind.reversal,
-    delta: -earn.delta,
-    visitId: visitId,
-    actorUserId: actorUserId,
-  );
-  final member = await getMember(db, earn.memberId);
-  if (member != null) _broadcast(hub, member);
+  // **Every** live earn, not the last one. A [[Split bill]] under
+  // `memberSplit` pays out once per member (ADR-0118), so reversing a single
+  // row would reopen a bill that still has three of its four guests paid — and
+  // nothing downstream would ever surface it.
+  final earns = await _liveEarnRows(db, visitId);
+  for (final earn in earns) {
+    await _post(
+      db,
+      memberId: earn.memberId,
+      kind: MemberPointKind.reversal,
+      delta: -earn.delta,
+      visitId: visitId,
+      actorUserId: actorUserId,
+    );
+    final member = await getMember(db, earn.memberId);
+    if (member != null) _broadcast(hub, member);
+  }
 }
 
 /// Give a live bill's redemption back — the cashier detached the member, or
@@ -747,21 +844,27 @@ Future<void> reverseEarnForVisit(
 Future<void> reverseRedeemForVisit(
   AppDatabase db, {
   required String visitId,
+  String? memberId,
   String? actorUserId,
   WsHub? hub,
 }) async {
-  final redeem = await _redeemRowFor(db, visitId);
-  if (redeem == null) return;
-  await _post(
-    db,
-    memberId: redeem.memberId,
-    kind: MemberPointKind.reversal,
-    delta: -redeem.delta, // positive: the points come back
-    visitId: visitId,
-    actorUserId: actorUserId,
-  );
-  final member = await getMember(db, redeem.memberId);
-  if (member != null) _broadcast(hub, member);
+  // [memberId] scopes this to one guest — detaching one [[Pemilik struk]]
+  // must not hand back the points of the three sitting beside them. Null means
+  // every live redemption on the bill: a visit detach, or a reopen.
+  final redeems = await _liveRedeemRows(db, visitId);
+  for (final redeem in redeems) {
+    if (memberId != null && redeem.memberId != memberId) continue;
+    await _post(
+      db,
+      memberId: redeem.memberId,
+      kind: MemberPointKind.reversal,
+      delta: -redeem.delta, // positive: the points come back
+      visitId: visitId,
+      actorUserId: actorUserId,
+    );
+    final member = await getMember(db, redeem.memberId);
+    if (member != null) _broadcast(hub, member);
+  }
 }
 
 /// The live earn on a visit — an `earn` row with no `reversal` against it.
@@ -771,32 +874,116 @@ Future<void> reverseRedeemForVisit(
 /// gives them back (positive). Counting them together would let a cancelled
 /// redemption make an earn look already reversed, and the bill would pay out
 /// twice on its next close.
-Future<MemberPoint?> _earnRowFor(AppDatabase db, String visitId) async {
+/// Every live earn on [visitId] — one per member who still has an unreversed
+/// one. A [[Split bill]] under `memberSplit` earns for each [[Pemilik struk]]
+/// and for the [[Pemilik tagihan]]'s remainder (ADR-0118), so a visit holds as
+/// many earns as it had members; without the mode it holds at most one and
+/// this returns a list of that length.
+///
+/// The earn/reversal tally is struck **per member**. Striking it across the
+/// visit is what the single-member version did and it silently reads one
+/// member's reversal as cancelling another's earn.
+/// One receipt's contribution to a bill's points base: who it is *for*, and
+/// its own money net of service and tax.
+typedef ReceiptBase = ({String? memberId, int base});
+
+/// How a closing bill's points base divides between its members (ADR-0118).
+/// Returns `memberId → base`; every entry becomes exactly one earn row.
+///
+/// The [[Pemilik tagihan]] takes **everything no other member's receipt
+/// claimed** — their own receipts, unattributed receipts, and the money no
+/// receipt covers at all, which on an unsplit bill is the whole of it. Stated
+/// as a subtraction rather than a sum precisely so the three cases need no
+/// arms: whatever is not somebody else's is the owner's, and the parts always
+/// add back up to [billBase].
+///
+/// With [splitEnabled] false this returns at most `{owner: billBase}`, which
+/// is the pre-ADR-0118 reading exactly.
+Map<String, int> pointsBaseByMember({
+  required int billBase,
+  required String? ownerId,
+  required Iterable<ReceiptBase> receipts,
+  required bool splitEnabled,
+}) {
+  final out = <String, int>{};
+  var claimedByOthers = 0;
+  if (splitEnabled) {
+    for (final r in receipts) {
+      final id = r.memberId;
+      if (id == null || id == ownerId) continue;
+      out[id] = (out[id] ?? 0) + r.base;
+      claimedByOthers += r.base;
+    }
+  }
+  if (ownerId != null) {
+    final ownerBase = billBase - claimedByOthers;
+    if (ownerBase > 0) out[ownerId] = ownerBase;
+  }
+  return out;
+}
+
+Future<List<MemberPoint>> _liveEarnRows(AppDatabase db, String visitId) async {
   final rows = await (db.select(
     db.memberPoints,
   )..where((p) => p.visitId.equals(visitId))).get();
-  final earns = rows.where((r) => r.kind == MemberPointKind.earn.name).length;
-  final reversals = rows
-      .where((r) => r.kind == MemberPointKind.reversal.name && r.delta < 0)
-      .length;
-  if (earns <= reversals) return null;
-  return rows.lastWhere((r) => r.kind == MemberPointKind.earn.name);
+  final byMember = <String, List<MemberPoint>>{};
+  for (final r in rows) {
+    (byMember[r.memberId] ??= <MemberPoint>[]).add(r);
+  }
+  final live = <MemberPoint>[];
+  for (final entry in byMember.entries) {
+    final earns = entry.value
+        .where((r) => r.kind == MemberPointKind.earn.name)
+        .toList();
+    final reversals = entry.value
+        .where((r) => r.kind == MemberPointKind.reversal.name && r.delta < 0)
+        .length;
+    if (earns.length > reversals) live.add(earns.last);
+  }
+  return live;
+}
+
+Future<MemberPoint?> _earnRowFor(
+  AppDatabase db,
+  String visitId,
+  String memberId,
+) async {
+  final live = await _liveEarnRows(db, visitId);
+  for (final r in live) {
+    if (r.memberId == memberId) return r;
+  }
+  return null;
 }
 
 /// The live redemption on a visit — a `redeem` row with no reversal against it.
-Future<MemberPoint?> _redeemRowFor(AppDatabase db, String visitId) async {
+/// Every live redemption on [visitId] — one per member who still has an
+/// unreversed one. Under `memberSplit` each [[Pemilik struk]] may redeem
+/// against their own receipt (ADR-0118), so the spend/undone tally is struck
+/// **per member** for the reason [_liveEarnRows] gives.
+Future<List<MemberPoint>> _liveRedeemRows(
+  AppDatabase db,
+  String visitId,
+) async {
   final rows = await (db.select(
     db.memberPoints,
   )..where((p) => p.visitId.equals(visitId))).get();
-  final spends = rows
-      .where((r) => r.kind == MemberPointKind.redeem.name)
-      .length;
-  final undone = rows
-      .where((r) => r.kind == MemberPointKind.reversal.name && r.delta > 0)
-      .length;
-  if (spends <= undone) return null;
-  return rows.lastWhere((r) => r.kind == MemberPointKind.redeem.name);
+  final byMember = <String, List<MemberPoint>>{};
+  for (final r in rows) {
+    (byMember[r.memberId] ??= <MemberPoint>[]).add(r);
+  }
+  final live = <MemberPoint>[];
+  for (final entry in byMember.entries) {
+    final spends = entry.value
+        .where((r) => r.kind == MemberPointKind.redeem.name)
+        .toList();
+    final undone = entry.value
+        .where((r) => r.kind == MemberPointKind.reversal.name && r.delta > 0)
+        .length;
+    if (spends.length > undone) live.add(spends.last);
+  }
+  return live;
 }
+
 
 Future<String?> _nameOf(AppDatabase db, String memberId) async {
   final row = await (db.select(

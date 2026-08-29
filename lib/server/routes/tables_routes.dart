@@ -426,6 +426,10 @@ Future<void> snapshotVisitAndDelete(
               taxAmount: Value(rec.taxAmount),
               total: Value(rec.total),
               status: Value(rec.status),
+              // The [[Pemilik struk]] frozen with the rest of the receipt
+              // (ADR-0118). Null on every receipt nobody named and at every
+              // venue without the mode.
+              memberId: Value(rec.memberId),
             ),
           );
       await (db.delete(
@@ -453,6 +457,26 @@ Future<void> snapshotVisitAndDelete(
                 at: p.at,
                 // Carry the proof photo into immutable history (ADR-0025).
                 photo: Value(p.photo),
+              ),
+            );
+      }
+      // Mirror the assignments before dropping them (ADR-0118). Which units
+      // sat on which receipt is the only way a [[Kartu stempel (punch card)]]
+      // can be counted per [[Pemilik struk]] after close, and nothing else in
+      // the snapshot records it.
+      final recLines = await (db.select(
+        db.receiptLines,
+      )..where((x) => x.receiptId.equals(rec.id))).get();
+      for (final line in recLines) {
+        await db
+            .into(db.tableSessionReceiptLines)
+            .insert(
+              TableSessionReceiptLinesCompanion.insert(
+                id: _uuid.v4(),
+                sessionId: sid,
+                receiptId: rec.id,
+                ticketId: line.ticketId,
+                qtyUnits: Value(line.qtyUnits),
               ),
             );
       }

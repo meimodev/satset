@@ -16401,6 +16401,17 @@ class $ReceiptsTable extends Receipts with TableInfo<$ReceiptsTable, Receipt> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -16415,6 +16426,7 @@ class $ReceiptsTable extends Receipts with TableInfo<$ReceiptsTable, Receipt> {
     total,
     status,
     createdAt,
+    memberId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -16509,6 +16521,12 @@ class $ReceiptsTable extends Receipts with TableInfo<$ReceiptsTable, Receipt> {
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
+    }
     return context;
   }
 
@@ -16566,6 +16584,10 @@ class $ReceiptsTable extends Receipts with TableInfo<$ReceiptsTable, Receipt> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      ),
     );
   }
 
@@ -16609,6 +16631,21 @@ class Receipt extends DataClass implements Insertable<Receipt> {
   final int total;
   final String status;
   final DateTime createdAt;
+
+  /// The [[Pemilik struk]] — the [[Pelanggan (member)]] this receipt is *for*,
+  /// as distinct from whoever pays it (ADR-0118). Written only at a venue
+  /// holding the `memberSplit` mode; null everywhere else, and null on any
+  /// receipt nobody named, whose money earns to the [[Pemilik tagihan]]
+  /// instead.
+  ///
+  /// Set while the receipt is unpaid and **frozen at its first payment**, with
+  /// the rest of the receipt (ADR-0068) — the member's discount is money
+  /// collected under that name, so the name may not move while the money does
+  /// not. Correcting one goes through the audited reopen.
+  ///
+  /// A weak reference, like [Visits.memberId]: a deleted member leaves it
+  /// dangling on purpose (ADR-0092), because the receipt *was* theirs.
+  final String? memberId;
   const Receipt({
     required this.id,
     required this.tableId,
@@ -16622,6 +16659,7 @@ class Receipt extends DataClass implements Insertable<Receipt> {
     required this.total,
     required this.status,
     required this.createdAt,
+    this.memberId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -16640,6 +16678,9 @@ class Receipt extends DataClass implements Insertable<Receipt> {
     map['total'] = Variable<int>(total);
     map['status'] = Variable<String>(status);
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || memberId != null) {
+      map['member_id'] = Variable<String>(memberId);
+    }
     return map;
   }
 
@@ -16659,6 +16700,9 @@ class Receipt extends DataClass implements Insertable<Receipt> {
       total: Value(total),
       status: Value(status),
       createdAt: Value(createdAt),
+      memberId: memberId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(memberId),
     );
   }
 
@@ -16680,6 +16724,7 @@ class Receipt extends DataClass implements Insertable<Receipt> {
       total: serializer.fromJson<int>(json['total']),
       status: serializer.fromJson<String>(json['status']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      memberId: serializer.fromJson<String?>(json['memberId']),
     );
   }
   @override
@@ -16698,6 +16743,7 @@ class Receipt extends DataClass implements Insertable<Receipt> {
       'total': serializer.toJson<int>(total),
       'status': serializer.toJson<String>(status),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'memberId': serializer.toJson<String?>(memberId),
     };
   }
 
@@ -16714,6 +16760,7 @@ class Receipt extends DataClass implements Insertable<Receipt> {
     int? total,
     String? status,
     DateTime? createdAt,
+    Value<String?> memberId = const Value.absent(),
   }) => Receipt(
     id: id ?? this.id,
     tableId: tableId ?? this.tableId,
@@ -16727,6 +16774,7 @@ class Receipt extends DataClass implements Insertable<Receipt> {
     total: total ?? this.total,
     status: status ?? this.status,
     createdAt: createdAt ?? this.createdAt,
+    memberId: memberId.present ? memberId.value : this.memberId,
   );
   Receipt copyWithCompanion(ReceiptsCompanion data) {
     return Receipt(
@@ -16746,6 +16794,7 @@ class Receipt extends DataClass implements Insertable<Receipt> {
       total: data.total.present ? data.total.value : this.total,
       status: data.status.present ? data.status.value : this.status,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
     );
   }
 
@@ -16763,7 +16812,8 @@ class Receipt extends DataClass implements Insertable<Receipt> {
           ..write('taxAmount: $taxAmount, ')
           ..write('total: $total, ')
           ..write('status: $status, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('memberId: $memberId')
           ..write(')'))
         .toString();
   }
@@ -16782,6 +16832,7 @@ class Receipt extends DataClass implements Insertable<Receipt> {
     total,
     status,
     createdAt,
+    memberId,
   );
   @override
   bool operator ==(Object other) =>
@@ -16798,7 +16849,8 @@ class Receipt extends DataClass implements Insertable<Receipt> {
           other.taxAmount == this.taxAmount &&
           other.total == this.total &&
           other.status == this.status &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.memberId == this.memberId);
 }
 
 class ReceiptsCompanion extends UpdateCompanion<Receipt> {
@@ -16814,6 +16866,7 @@ class ReceiptsCompanion extends UpdateCompanion<Receipt> {
   final Value<int> total;
   final Value<String> status;
   final Value<DateTime> createdAt;
+  final Value<String?> memberId;
   final Value<int> rowid;
   const ReceiptsCompanion({
     this.id = const Value.absent(),
@@ -16828,6 +16881,7 @@ class ReceiptsCompanion extends UpdateCompanion<Receipt> {
     this.total = const Value.absent(),
     this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.memberId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ReceiptsCompanion.insert({
@@ -16843,6 +16897,7 @@ class ReceiptsCompanion extends UpdateCompanion<Receipt> {
     this.total = const Value.absent(),
     this.status = const Value.absent(),
     required DateTime createdAt,
+    this.memberId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        tableId = Value(tableId),
@@ -16860,6 +16915,7 @@ class ReceiptsCompanion extends UpdateCompanion<Receipt> {
     Expression<int>? total,
     Expression<String>? status,
     Expression<DateTime>? createdAt,
+    Expression<String>? memberId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -16875,6 +16931,7 @@ class ReceiptsCompanion extends UpdateCompanion<Receipt> {
       if (total != null) 'total': total,
       if (status != null) 'status': status,
       if (createdAt != null) 'created_at': createdAt,
+      if (memberId != null) 'member_id': memberId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -16892,6 +16949,7 @@ class ReceiptsCompanion extends UpdateCompanion<Receipt> {
     Value<int>? total,
     Value<String>? status,
     Value<DateTime>? createdAt,
+    Value<String?>? memberId,
     Value<int>? rowid,
   }) {
     return ReceiptsCompanion(
@@ -16907,6 +16965,7 @@ class ReceiptsCompanion extends UpdateCompanion<Receipt> {
       total: total ?? this.total,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      memberId: memberId ?? this.memberId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -16950,6 +17009,9 @@ class ReceiptsCompanion extends UpdateCompanion<Receipt> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -16971,6 +17033,7 @@ class ReceiptsCompanion extends UpdateCompanion<Receipt> {
           ..write('total: $total, ')
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
+          ..write('memberId: $memberId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -18026,6 +18089,17 @@ class $TableSessionReceiptsTable extends TableSessionReceipts
     requiredDuringInsert: false,
     defaultValue: const Constant('unpaid'),
   );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -18039,6 +18113,7 @@ class $TableSessionReceiptsTable extends TableSessionReceipts
     taxAmount,
     total,
     status,
+    memberId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -18127,6 +18202,12 @@ class $TableSessionReceiptsTable extends TableSessionReceipts
         status.isAcceptableOrUnknown(data['status']!, _statusMeta),
       );
     }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
+    }
     return context;
   }
 
@@ -18180,6 +18261,10 @@ class $TableSessionReceiptsTable extends TableSessionReceipts
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      ),
     );
   }
 
@@ -18202,6 +18287,12 @@ class TableSessionReceipt extends DataClass
   final int taxAmount;
   final int total;
   final String status;
+
+  /// The [[Pemilik struk]] frozen at snapshot (ADR-0118). Every per-member
+  /// figure in Reports reads this rather than the live directory, for the
+  /// reason [TableSessions.memberId] does: a deleted member's past trade still
+  /// counts while the person is gone (ADR-0092).
+  final String? memberId;
   const TableSessionReceipt({
     required this.id,
     required this.sessionId,
@@ -18214,6 +18305,7 @@ class TableSessionReceipt extends DataClass
     required this.taxAmount,
     required this.total,
     required this.status,
+    this.memberId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -18229,6 +18321,9 @@ class TableSessionReceipt extends DataClass
     map['tax_amount'] = Variable<int>(taxAmount);
     map['total'] = Variable<int>(total);
     map['status'] = Variable<String>(status);
+    if (!nullToAbsent || memberId != null) {
+      map['member_id'] = Variable<String>(memberId);
+    }
     return map;
   }
 
@@ -18245,6 +18340,9 @@ class TableSessionReceipt extends DataClass
       taxAmount: Value(taxAmount),
       total: Value(total),
       status: Value(status),
+      memberId: memberId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(memberId),
     );
   }
 
@@ -18265,6 +18363,7 @@ class TableSessionReceipt extends DataClass
       taxAmount: serializer.fromJson<int>(json['taxAmount']),
       total: serializer.fromJson<int>(json['total']),
       status: serializer.fromJson<String>(json['status']),
+      memberId: serializer.fromJson<String?>(json['memberId']),
     );
   }
   @override
@@ -18282,6 +18381,7 @@ class TableSessionReceipt extends DataClass
       'taxAmount': serializer.toJson<int>(taxAmount),
       'total': serializer.toJson<int>(total),
       'status': serializer.toJson<String>(status),
+      'memberId': serializer.toJson<String?>(memberId),
     };
   }
 
@@ -18297,6 +18397,7 @@ class TableSessionReceipt extends DataClass
     int? taxAmount,
     int? total,
     String? status,
+    Value<String?> memberId = const Value.absent(),
   }) => TableSessionReceipt(
     id: id ?? this.id,
     sessionId: sessionId ?? this.sessionId,
@@ -18309,6 +18410,7 @@ class TableSessionReceipt extends DataClass
     taxAmount: taxAmount ?? this.taxAmount,
     total: total ?? this.total,
     status: status ?? this.status,
+    memberId: memberId.present ? memberId.value : this.memberId,
   );
   TableSessionReceipt copyWithCompanion(TableSessionReceiptsCompanion data) {
     return TableSessionReceipt(
@@ -18327,6 +18429,7 @@ class TableSessionReceipt extends DataClass
       taxAmount: data.taxAmount.present ? data.taxAmount.value : this.taxAmount,
       total: data.total.present ? data.total.value : this.total,
       status: data.status.present ? data.status.value : this.status,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
     );
   }
 
@@ -18343,7 +18446,8 @@ class TableSessionReceipt extends DataClass
           ..write('serviceAmount: $serviceAmount, ')
           ..write('taxAmount: $taxAmount, ')
           ..write('total: $total, ')
-          ..write('status: $status')
+          ..write('status: $status, ')
+          ..write('memberId: $memberId')
           ..write(')'))
         .toString();
   }
@@ -18361,6 +18465,7 @@ class TableSessionReceipt extends DataClass
     taxAmount,
     total,
     status,
+    memberId,
   );
   @override
   bool operator ==(Object other) =>
@@ -18376,7 +18481,8 @@ class TableSessionReceipt extends DataClass
           other.serviceAmount == this.serviceAmount &&
           other.taxAmount == this.taxAmount &&
           other.total == this.total &&
-          other.status == this.status);
+          other.status == this.status &&
+          other.memberId == this.memberId);
 }
 
 class TableSessionReceiptsCompanion
@@ -18392,6 +18498,7 @@ class TableSessionReceiptsCompanion
   final Value<int> taxAmount;
   final Value<int> total;
   final Value<String> status;
+  final Value<String?> memberId;
   final Value<int> rowid;
   const TableSessionReceiptsCompanion({
     this.id = const Value.absent(),
@@ -18405,6 +18512,7 @@ class TableSessionReceiptsCompanion
     this.taxAmount = const Value.absent(),
     this.total = const Value.absent(),
     this.status = const Value.absent(),
+    this.memberId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TableSessionReceiptsCompanion.insert({
@@ -18419,6 +18527,7 @@ class TableSessionReceiptsCompanion
     this.taxAmount = const Value.absent(),
     this.total = const Value.absent(),
     this.status = const Value.absent(),
+    this.memberId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        sessionId = Value(sessionId),
@@ -18435,6 +18544,7 @@ class TableSessionReceiptsCompanion
     Expression<int>? taxAmount,
     Expression<int>? total,
     Expression<String>? status,
+    Expression<String>? memberId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -18449,6 +18559,7 @@ class TableSessionReceiptsCompanion
       if (taxAmount != null) 'tax_amount': taxAmount,
       if (total != null) 'total': total,
       if (status != null) 'status': status,
+      if (memberId != null) 'member_id': memberId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -18465,6 +18576,7 @@ class TableSessionReceiptsCompanion
     Value<int>? taxAmount,
     Value<int>? total,
     Value<String>? status,
+    Value<String?>? memberId,
     Value<int>? rowid,
   }) {
     return TableSessionReceiptsCompanion(
@@ -18479,6 +18591,7 @@ class TableSessionReceiptsCompanion
       taxAmount: taxAmount ?? this.taxAmount,
       total: total ?? this.total,
       status: status ?? this.status,
+      memberId: memberId ?? this.memberId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -18519,6 +18632,9 @@ class TableSessionReceiptsCompanion
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -18539,6 +18655,374 @@ class TableSessionReceiptsCompanion
           ..write('taxAmount: $taxAmount, ')
           ..write('total: $total, ')
           ..write('status: $status, ')
+          ..write('memberId: $memberId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TableSessionReceiptLinesTable extends TableSessionReceiptLines
+    with TableInfo<$TableSessionReceiptLinesTable, TableSessionReceiptLine> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TableSessionReceiptLinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _receiptIdMeta = const VerificationMeta(
+    'receiptId',
+  );
+  @override
+  late final GeneratedColumn<String> receiptId = GeneratedColumn<String>(
+    'receipt_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ticketIdMeta = const VerificationMeta(
+    'ticketId',
+  );
+  @override
+  late final GeneratedColumn<String> ticketId = GeneratedColumn<String>(
+    'ticket_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _qtyUnitsMeta = const VerificationMeta(
+    'qtyUnits',
+  );
+  @override
+  late final GeneratedColumn<int> qtyUnits = GeneratedColumn<int>(
+    'qty_units',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sessionId,
+    receiptId,
+    ticketId,
+    qtyUnits,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'table_session_receipt_lines';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TableSessionReceiptLine> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('receipt_id')) {
+      context.handle(
+        _receiptIdMeta,
+        receiptId.isAcceptableOrUnknown(data['receipt_id']!, _receiptIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_receiptIdMeta);
+    }
+    if (data.containsKey('ticket_id')) {
+      context.handle(
+        _ticketIdMeta,
+        ticketId.isAcceptableOrUnknown(data['ticket_id']!, _ticketIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ticketIdMeta);
+    }
+    if (data.containsKey('qty_units')) {
+      context.handle(
+        _qtyUnitsMeta,
+        qtyUnits.isAcceptableOrUnknown(data['qty_units']!, _qtyUnitsMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TableSessionReceiptLine map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TableSessionReceiptLine(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      receiptId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}receipt_id'],
+      )!,
+      ticketId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ticket_id'],
+      )!,
+      qtyUnits: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}qty_units'],
+      )!,
+    );
+  }
+
+  @override
+  $TableSessionReceiptLinesTable createAlias(String alias) {
+    return $TableSessionReceiptLinesTable(attachedDatabase, alias);
+  }
+}
+
+class TableSessionReceiptLine extends DataClass
+    implements Insertable<TableSessionReceiptLine> {
+  final String id;
+  final String sessionId;
+  final String receiptId;
+  final String ticketId;
+  final int qtyUnits;
+  const TableSessionReceiptLine({
+    required this.id,
+    required this.sessionId,
+    required this.receiptId,
+    required this.ticketId,
+    required this.qtyUnits,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['session_id'] = Variable<String>(sessionId);
+    map['receipt_id'] = Variable<String>(receiptId);
+    map['ticket_id'] = Variable<String>(ticketId);
+    map['qty_units'] = Variable<int>(qtyUnits);
+    return map;
+  }
+
+  TableSessionReceiptLinesCompanion toCompanion(bool nullToAbsent) {
+    return TableSessionReceiptLinesCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      receiptId: Value(receiptId),
+      ticketId: Value(ticketId),
+      qtyUnits: Value(qtyUnits),
+    );
+  }
+
+  factory TableSessionReceiptLine.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TableSessionReceiptLine(
+      id: serializer.fromJson<String>(json['id']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      receiptId: serializer.fromJson<String>(json['receiptId']),
+      ticketId: serializer.fromJson<String>(json['ticketId']),
+      qtyUnits: serializer.fromJson<int>(json['qtyUnits']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'receiptId': serializer.toJson<String>(receiptId),
+      'ticketId': serializer.toJson<String>(ticketId),
+      'qtyUnits': serializer.toJson<int>(qtyUnits),
+    };
+  }
+
+  TableSessionReceiptLine copyWith({
+    String? id,
+    String? sessionId,
+    String? receiptId,
+    String? ticketId,
+    int? qtyUnits,
+  }) => TableSessionReceiptLine(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    receiptId: receiptId ?? this.receiptId,
+    ticketId: ticketId ?? this.ticketId,
+    qtyUnits: qtyUnits ?? this.qtyUnits,
+  );
+  TableSessionReceiptLine copyWithCompanion(
+    TableSessionReceiptLinesCompanion data,
+  ) {
+    return TableSessionReceiptLine(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      receiptId: data.receiptId.present ? data.receiptId.value : this.receiptId,
+      ticketId: data.ticketId.present ? data.ticketId.value : this.ticketId,
+      qtyUnits: data.qtyUnits.present ? data.qtyUnits.value : this.qtyUnits,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TableSessionReceiptLine(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('receiptId: $receiptId, ')
+          ..write('ticketId: $ticketId, ')
+          ..write('qtyUnits: $qtyUnits')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, sessionId, receiptId, ticketId, qtyUnits);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TableSessionReceiptLine &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.receiptId == this.receiptId &&
+          other.ticketId == this.ticketId &&
+          other.qtyUnits == this.qtyUnits);
+}
+
+class TableSessionReceiptLinesCompanion
+    extends UpdateCompanion<TableSessionReceiptLine> {
+  final Value<String> id;
+  final Value<String> sessionId;
+  final Value<String> receiptId;
+  final Value<String> ticketId;
+  final Value<int> qtyUnits;
+  final Value<int> rowid;
+  const TableSessionReceiptLinesCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.receiptId = const Value.absent(),
+    this.ticketId = const Value.absent(),
+    this.qtyUnits = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TableSessionReceiptLinesCompanion.insert({
+    required String id,
+    required String sessionId,
+    required String receiptId,
+    required String ticketId,
+    this.qtyUnits = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       sessionId = Value(sessionId),
+       receiptId = Value(receiptId),
+       ticketId = Value(ticketId);
+  static Insertable<TableSessionReceiptLine> custom({
+    Expression<String>? id,
+    Expression<String>? sessionId,
+    Expression<String>? receiptId,
+    Expression<String>? ticketId,
+    Expression<int>? qtyUnits,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (receiptId != null) 'receipt_id': receiptId,
+      if (ticketId != null) 'ticket_id': ticketId,
+      if (qtyUnits != null) 'qty_units': qtyUnits,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TableSessionReceiptLinesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? sessionId,
+    Value<String>? receiptId,
+    Value<String>? ticketId,
+    Value<int>? qtyUnits,
+    Value<int>? rowid,
+  }) {
+    return TableSessionReceiptLinesCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      receiptId: receiptId ?? this.receiptId,
+      ticketId: ticketId ?? this.ticketId,
+      qtyUnits: qtyUnits ?? this.qtyUnits,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (receiptId.present) {
+      map['receipt_id'] = Variable<String>(receiptId.value);
+    }
+    if (ticketId.present) {
+      map['ticket_id'] = Variable<String>(ticketId.value);
+    }
+    if (qtyUnits.present) {
+      map['qty_units'] = Variable<int>(qtyUnits.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TableSessionReceiptLinesCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('receiptId: $receiptId, ')
+          ..write('ticketId: $ticketId, ')
+          ..write('qtyUnits: $qtyUnits, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -29302,6 +29786,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PaymentsTable payments = $PaymentsTable(this);
   late final $TableSessionReceiptsTable tableSessionReceipts =
       $TableSessionReceiptsTable(this);
+  late final $TableSessionReceiptLinesTable tableSessionReceiptLines =
+      $TableSessionReceiptLinesTable(this);
   late final $TableSessionPaymentsTable tableSessionPayments =
       $TableSessionPaymentsTable(this);
   late final $DiscountPresetsTable discountPresets = $DiscountPresetsTable(
@@ -29357,6 +29843,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     receiptLines,
     payments,
     tableSessionReceipts,
+    tableSessionReceiptLines,
     tableSessionPayments,
     discountPresets,
     discounts,
@@ -36773,6 +37260,7 @@ typedef $$ReceiptsTableCreateCompanionBuilder =
       Value<int> total,
       Value<String> status,
       required DateTime createdAt,
+      Value<String?> memberId,
       Value<int> rowid,
     });
 typedef $$ReceiptsTableUpdateCompanionBuilder =
@@ -36789,6 +37277,7 @@ typedef $$ReceiptsTableUpdateCompanionBuilder =
       Value<int> total,
       Value<String> status,
       Value<DateTime> createdAt,
+      Value<String?> memberId,
       Value<int> rowid,
     });
 
@@ -36858,6 +37347,11 @@ class $$ReceiptsTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberId => $composableBuilder(
+    column: $table.memberId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -36930,6 +37424,11 @@ class $$ReceiptsTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ReceiptsTableAnnotationComposer
@@ -36980,6 +37479,9 @@ class $$ReceiptsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get memberId =>
+      $composableBuilder(column: $table.memberId, builder: (column) => column);
 }
 
 class $$ReceiptsTableTableManager
@@ -37022,6 +37524,7 @@ class $$ReceiptsTableTableManager
                 Value<int> total = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ReceiptsCompanion(
                 id: id,
@@ -37036,6 +37539,7 @@ class $$ReceiptsTableTableManager
                 total: total,
                 status: status,
                 createdAt: createdAt,
+                memberId: memberId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -37052,6 +37556,7 @@ class $$ReceiptsTableTableManager
                 Value<int> total = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 required DateTime createdAt,
+                Value<String?> memberId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ReceiptsCompanion.insert(
                 id: id,
@@ -37066,6 +37571,7 @@ class $$ReceiptsTableTableManager
                 total: total,
                 status: status,
                 createdAt: createdAt,
+                memberId: memberId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -37577,6 +38083,7 @@ typedef $$TableSessionReceiptsTableCreateCompanionBuilder =
       Value<int> taxAmount,
       Value<int> total,
       Value<String> status,
+      Value<String?> memberId,
       Value<int> rowid,
     });
 typedef $$TableSessionReceiptsTableUpdateCompanionBuilder =
@@ -37592,6 +38099,7 @@ typedef $$TableSessionReceiptsTableUpdateCompanionBuilder =
       Value<int> taxAmount,
       Value<int> total,
       Value<String> status,
+      Value<String?> memberId,
       Value<int> rowid,
     });
 
@@ -37656,6 +38164,11 @@ class $$TableSessionReceiptsTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberId => $composableBuilder(
+    column: $table.memberId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -37723,6 +38236,11 @@ class $$TableSessionReceiptsTableOrderingComposer
     column: $table.status,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TableSessionReceiptsTableAnnotationComposer
@@ -37770,6 +38288,9 @@ class $$TableSessionReceiptsTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get memberId =>
+      $composableBuilder(column: $table.memberId, builder: (column) => column);
 }
 
 class $$TableSessionReceiptsTableTableManager
@@ -37826,6 +38347,7 @@ class $$TableSessionReceiptsTableTableManager
                 Value<int> taxAmount = const Value.absent(),
                 Value<int> total = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TableSessionReceiptsCompanion(
                 id: id,
@@ -37839,6 +38361,7 @@ class $$TableSessionReceiptsTableTableManager
                 taxAmount: taxAmount,
                 total: total,
                 status: status,
+                memberId: memberId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -37854,6 +38377,7 @@ class $$TableSessionReceiptsTableTableManager
                 Value<int> taxAmount = const Value.absent(),
                 Value<int> total = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TableSessionReceiptsCompanion.insert(
                 id: id,
@@ -37867,6 +38391,7 @@ class $$TableSessionReceiptsTableTableManager
                 taxAmount: taxAmount,
                 total: total,
                 status: status,
+                memberId: memberId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -37896,6 +38421,225 @@ typedef $$TableSessionReceiptsTableProcessedTableManager =
         >,
       ),
       TableSessionReceipt,
+      PrefetchHooks Function()
+    >;
+typedef $$TableSessionReceiptLinesTableCreateCompanionBuilder =
+    TableSessionReceiptLinesCompanion Function({
+      required String id,
+      required String sessionId,
+      required String receiptId,
+      required String ticketId,
+      Value<int> qtyUnits,
+      Value<int> rowid,
+    });
+typedef $$TableSessionReceiptLinesTableUpdateCompanionBuilder =
+    TableSessionReceiptLinesCompanion Function({
+      Value<String> id,
+      Value<String> sessionId,
+      Value<String> receiptId,
+      Value<String> ticketId,
+      Value<int> qtyUnits,
+      Value<int> rowid,
+    });
+
+class $$TableSessionReceiptLinesTableFilterComposer
+    extends Composer<_$AppDatabase, $TableSessionReceiptLinesTable> {
+  $$TableSessionReceiptLinesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get receiptId => $composableBuilder(
+    column: $table.receiptId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ticketId => $composableBuilder(
+    column: $table.ticketId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get qtyUnits => $composableBuilder(
+    column: $table.qtyUnits,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TableSessionReceiptLinesTableOrderingComposer
+    extends Composer<_$AppDatabase, $TableSessionReceiptLinesTable> {
+  $$TableSessionReceiptLinesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get receiptId => $composableBuilder(
+    column: $table.receiptId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ticketId => $composableBuilder(
+    column: $table.ticketId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get qtyUnits => $composableBuilder(
+    column: $table.qtyUnits,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TableSessionReceiptLinesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TableSessionReceiptLinesTable> {
+  $$TableSessionReceiptLinesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<String> get receiptId =>
+      $composableBuilder(column: $table.receiptId, builder: (column) => column);
+
+  GeneratedColumn<String> get ticketId =>
+      $composableBuilder(column: $table.ticketId, builder: (column) => column);
+
+  GeneratedColumn<int> get qtyUnits =>
+      $composableBuilder(column: $table.qtyUnits, builder: (column) => column);
+}
+
+class $$TableSessionReceiptLinesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TableSessionReceiptLinesTable,
+          TableSessionReceiptLine,
+          $$TableSessionReceiptLinesTableFilterComposer,
+          $$TableSessionReceiptLinesTableOrderingComposer,
+          $$TableSessionReceiptLinesTableAnnotationComposer,
+          $$TableSessionReceiptLinesTableCreateCompanionBuilder,
+          $$TableSessionReceiptLinesTableUpdateCompanionBuilder,
+          (
+            TableSessionReceiptLine,
+            BaseReferences<
+              _$AppDatabase,
+              $TableSessionReceiptLinesTable,
+              TableSessionReceiptLine
+            >,
+          ),
+          TableSessionReceiptLine,
+          PrefetchHooks Function()
+        > {
+  $$TableSessionReceiptLinesTableTableManager(
+    _$AppDatabase db,
+    $TableSessionReceiptLinesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TableSessionReceiptLinesTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$TableSessionReceiptLinesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$TableSessionReceiptLinesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<String> receiptId = const Value.absent(),
+                Value<String> ticketId = const Value.absent(),
+                Value<int> qtyUnits = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TableSessionReceiptLinesCompanion(
+                id: id,
+                sessionId: sessionId,
+                receiptId: receiptId,
+                ticketId: ticketId,
+                qtyUnits: qtyUnits,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String sessionId,
+                required String receiptId,
+                required String ticketId,
+                Value<int> qtyUnits = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TableSessionReceiptLinesCompanion.insert(
+                id: id,
+                sessionId: sessionId,
+                receiptId: receiptId,
+                ticketId: ticketId,
+                qtyUnits: qtyUnits,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TableSessionReceiptLinesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TableSessionReceiptLinesTable,
+      TableSessionReceiptLine,
+      $$TableSessionReceiptLinesTableFilterComposer,
+      $$TableSessionReceiptLinesTableOrderingComposer,
+      $$TableSessionReceiptLinesTableAnnotationComposer,
+      $$TableSessionReceiptLinesTableCreateCompanionBuilder,
+      $$TableSessionReceiptLinesTableUpdateCompanionBuilder,
+      (
+        TableSessionReceiptLine,
+        BaseReferences<
+          _$AppDatabase,
+          $TableSessionReceiptLinesTable,
+          TableSessionReceiptLine
+        >,
+      ),
+      TableSessionReceiptLine,
       PrefetchHooks Function()
     >;
 typedef $$TableSessionPaymentsTableCreateCompanionBuilder =
@@ -43247,6 +43991,11 @@ class $AppDatabaseManager {
       $$PaymentsTableTableManager(_db, _db.payments);
   $$TableSessionReceiptsTableTableManager get tableSessionReceipts =>
       $$TableSessionReceiptsTableTableManager(_db, _db.tableSessionReceipts);
+  $$TableSessionReceiptLinesTableTableManager get tableSessionReceiptLines =>
+      $$TableSessionReceiptLinesTableTableManager(
+        _db,
+        _db.tableSessionReceiptLines,
+      );
   $$TableSessionPaymentsTableTableManager get tableSessionPayments =>
       $$TableSessionPaymentsTableTableManager(_db, _db.tableSessionPayments);
   $$DiscountPresetsTableTableManager get discountPresets =>

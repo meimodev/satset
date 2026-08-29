@@ -50,7 +50,14 @@ const MODULES = ["members", "selfOrder"];
 // first: the venue has no prep queue, so a sent line is born `ready`. A counter
 // shop may still run a cook line and a small restaurant may have none, so
 // neither key implies the other.
-const MODE_MODULES = ["counterService", "bypassKds"];
+//
+// `memberSplit` (ADR-0118) is the third: a split bill may name a member per
+// receipt, so each regular in a party earns points on their own share. It is a
+// mode rather than a sellable module for the fail-closed reading — offering a
+// per-receipt member picker at a venue that never mirrored would write
+// mis-attributed rows into a points ledger that never expires. Meaningless
+// without `members`, which the server ANDs it with.
+const MODE_MODULES = ["counterService", "bypassKds", "memberSplit"];
 
 // Everything `addOns` may contain. Must stay equal to `venueEntitlementKeys` in
 // lib/domain/models/venue_module.dart.

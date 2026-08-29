@@ -42,7 +42,29 @@ const modeBypassKds = 'bypassKds';
 /// Mode keys ride in the same `addOns` array and the same mirrored CSV as the
 /// sellable ones — one transport, two readings. Kept apart here so the trial's
 /// implicit grant and the fail-open resolver can each name the set they mean.
-const venueModeKeys = <String>[modeCounterService, modeBypassKds];
+/// **[[Pemilik struk]]** (ADR-0118) — a [[Split bill]] may name a
+/// [[Pelanggan (member)]] per receipt, so a party of regulars each earn
+/// [[Poin]] on their own share instead of one of them earning on all of it.
+///
+/// A mode key rather than a sellable [[Modul]], read through [venueHasMode] so
+/// it fails **closed**. The fail-open in `venueHasModule` protects a feature a
+/// venue *paid for* from a cold boot; applied here it would offer a
+/// per-receipt member picker at a venue that never mirrored, and a
+/// wrongly-offered picker writes mis-attributed rows into a points ledger that
+/// never expires. A missing button is one tick away from fixed; a wrong ledger
+/// row is a reversal and a conversation.
+///
+/// Unlike [modeBypassKds] it branches no writer — it only decides whether a
+/// receipt's `memberId` is offered, read and reported. Meaningless without
+/// [moduleMembers] and the owner's own `membersEnabled`, so it is ANDed with
+/// both **once**, in `MemberConfig.splitEnabled`, and never at a route.
+const modeMemberSplit = 'memberSplit';
+
+const venueModeKeys = <String>[
+  modeCounterService,
+  modeBypassKds,
+  modeMemberSplit,
+];
 
 /// Everything the console may write to `addOns` and the mirror may carry down.
 /// Must stay equal to `ALL_MODULES` in `functions/index.js`.

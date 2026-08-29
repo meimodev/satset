@@ -40,6 +40,7 @@ part 'database.g.dart';
     ReceiptLines,
     Payments,
     TableSessionReceipts,
+    TableSessionReceiptLines,
     TableSessionPayments,
     DiscountPresets,
     Discounts,
@@ -78,7 +79,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 65;
+  int get schemaVersion => 66;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -86,9 +87,17 @@ class AppDatabase extends _$AppDatabase {
   /// code. Drift cannot express partial indexes, so they are raw SQL and must be
   /// created on both fresh and upgraded databases.
   Future<void> _createDiscountIndexes() async {
+    // One order discount per *source*, not per receipt (ADR-0118) — the same
+    // move ADR-0094 made one level up, for the same reason. With the member's
+    // tier discount and a redemption now applied against the
+    // [[Pemilik struk]]'s own receipt, a receipt_id-only index would make a
+    // cashier's manual promo and a member discount contend for one slot, and
+    // the exclusive version is the one a guest experiences as being punished
+    // for membership. The pre-v66 index (receipt_id alone) is dropped in the
+    // v66 branch — leaving it would keep the three from coexisting.
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_order_uniq '
-      'ON discounts (receipt_id) WHERE receipt_id IS NOT NULL '
+      'ON discounts (receipt_id, source) WHERE receipt_id IS NOT NULL '
       'AND ticket_id IS NULL',
     );
     await customStatement(
@@ -1319,6 +1328,26 @@ class AppDatabase extends _$AppDatabase {
         // throughout, so re-running the whole set is the cheap way to reach an
         // upgraded venue with one new index.
         await _createLookupIndexes();
+      }
+      if (from < 66 && to >= 66) {
+        // [[Pemilik struk]] (ADR-0118): a [[Split bill]] may name a member per
+        // receipt. Two nullable columns and one snapshot table — nothing is
+        // backfilled, because a receipt closed before this existed had no
+        // member and inventing one would put rows in a points ledger nobody
+        // earned.
+        //
+        // The type strings must match what `createAll` writes for a fresh
+        // install, which is the v63 lesson: `_safeAddColumnOn` takes a raw
+        // string and nothing compares the two populations but
+        // schema_migration_test.
+        await _safeAddColumnOn('receipts', 'member_id');
+        await _safeAddColumnOn('table_session_receipts', 'member_id');
+        await m.createTable(tableSessionReceiptLines);
+        // Widen the order-scope uniqueness to (receipt_id, source). Same name,
+        // so `IF NOT EXISTS` alone would leave the old one-slot index standing
+        // — it has to go first, exactly as v51 dropped idx_discounts_bill_uniq.
+        await customStatement('DROP INDEX IF EXISTS idx_discounts_order_uniq');
+        await _createDiscountIndexes();
       }
     },
     onCreate: (m) async {

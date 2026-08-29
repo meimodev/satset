@@ -845,7 +845,7 @@ mixin _$MenuItemDto {
 // never stored (ADR-0040). Replaces the former `stockCount` /
 // `autoSoldOutAtZero` pair, which v36 dropped.
  bool get autoSoldOut; List<String> get soldOutVariantIds; List<String> get soldOutOptionIds;/// Lines sold in the last 30 business days — the [[Menu populer]] rank
-/// (ADR-0110). Derived server-side like [autoSoldOut] and never stored; 0
+/// (ADR-0113). Derived server-side like [autoSoldOut] and never stored; 0
 /// on an older server, which reads as "unranked" and sorts alphabetically.
  int get popQty;
 /// Create a copy of MenuItemDto
@@ -1117,7 +1117,7 @@ class _MenuItemDto implements MenuItemDto {
 }
 
 /// Lines sold in the last 30 business days — the [[Menu populer]] rank
-/// (ADR-0110). Derived server-side like [autoSoldOut] and never stored; 0
+/// (ADR-0113). Derived server-side like [autoSoldOut] and never stored; 0
 /// on an older server, which reads as "unranked" and sorts alphabetically.
 @override@JsonKey() final  int popQty;
 

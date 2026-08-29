@@ -851,6 +851,21 @@ class Receipts extends Table {
   IntColumn get total => integer().withDefault(const Constant(0))();
   TextColumn get status => text().withDefault(const Constant('unpaid'))();
   DateTimeColumn get createdAt => dateTime()();
+
+  /// The [[Pemilik struk]] — the [[Pelanggan (member)]] this receipt is *for*,
+  /// as distinct from whoever pays it (ADR-0118). Written only at a venue
+  /// holding the `memberSplit` mode; null everywhere else, and null on any
+  /// receipt nobody named, whose money earns to the [[Pemilik tagihan]]
+  /// instead.
+  ///
+  /// Set while the receipt is unpaid and **frozen at its first payment**, with
+  /// the rest of the receipt (ADR-0068) — the member's discount is money
+  /// collected under that name, so the name may not move while the money does
+  /// not. Correcting one goes through the audited reopen.
+  ///
+  /// A weak reference, like [Visits.memberId]: a deleted member leaves it
+  /// dangling on purpose (ADR-0092), because the receipt *was* theirs.
+  TextColumn get memberId => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -988,6 +1003,34 @@ class TableSessionReceipts extends Table {
   IntColumn get taxAmount => integer().withDefault(const Constant(0))();
   IntColumn get total => integer().withDefault(const Constant(0))();
   TextColumn get status => text().withDefault(const Constant('unpaid'))();
+
+  /// The [[Pemilik struk]] frozen at snapshot (ADR-0118). Every per-member
+  /// figure in Reports reads this rather than the live directory, for the
+  /// reason [TableSessions.memberId] does: a deleted member's past trade still
+  /// counts while the person is gone (ADR-0092).
+  TextColumn get memberId => text().nullable()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Per-assignment snapshot tied to a TableSession (mirrors ReceiptLines at
+/// close), so which units sat on which [[Receipt]] survives the live-row
+/// delete.
+///
+/// It exists for [[Kartu stempel (punch card)|stempel]] (ADR-0118). Punch
+/// progress is derived from settled history, and under `memberSplit` it counts
+/// the units on a member's **own** receipts — a question nothing could answer
+/// after close, because `TableSessionTickets` records no receipt. Flattening
+/// the link onto that table instead would have been one nullable column and
+/// loses the qty split: a `qty: 3` punch item divided 2+1 between two members
+/// would credit one of them for all three, silently. Punch is a counting path,
+/// so it gets the faithful mirror.
+class TableSessionReceiptLines extends Table {
+  TextColumn get id => text()();
+  TextColumn get sessionId => text()();
+  TextColumn get receiptId => text()();
+  TextColumn get ticketId => text()();
+  IntColumn get qtyUnits => integer().withDefault(const Constant(1))();
   @override
   Set<Column> get primaryKey => {id};
 }
