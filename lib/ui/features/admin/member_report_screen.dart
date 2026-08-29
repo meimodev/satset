@@ -222,72 +222,84 @@ class _MemberReportScreenState extends ConsumerState<MemberReportScreen> {
         rows.where((m) => m.memberId == _selectedId).firstOrNull ??
         rows.firstOrNull;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(Sp.s4, Sp.s4, Sp.s4, Sp.s3),
-          child: _Overview(
-            report: report,
-            expanded: _detail,
-            onToggle: () => setState(() => _detail = !_detail),
-            since: state.range == MemberRange.all
-                ? report.earliestClosedAt
-                : null,
-          ),
-        ),
-        Expanded(
-          child: report.members.isEmpty
-              ? Center(
-                  child: SatEmpty(
-                    icon: Icons.people_outline,
-                    title: l10n.mrpEmptyTitle,
-                    body: l10n.mrpEmptyBody,
-                  ),
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      width: 360,
-                      child: _RankedList(
-                        rows: rows,
-                        report: report,
-                        controller: _search,
-                        sort: _sort,
-                        selectedId: selected?.memberId,
-                        onQuery: (q) => setState(() => _query = q),
-                        onSort: (s) => setState(() => _sort = s),
-                        onPick: (id) => setState(() => _selectedId = id),
+    // Height, not keyboard state: a docked tablet IME halves the viewport, and
+    // the ranked pane's own header (search box + sort chips) has no smaller
+    // size to shrink to — so below this floor the glance card stands down and
+    // gives the list what is left. Asked as a layout question because that is
+    // the one the shell answers honestly: its Scaffold resizes the body and
+    // zeroes `viewInsets` on the way past, and a keyboard dismissed by its own
+    // chevron leaves the field focused, so neither of those reads the room.
+    const glanceFloor = 320.0;
+
+    return LayoutBuilder(
+      builder: (context, box) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (box.maxHeight >= glanceFloor)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(Sp.s4, Sp.s4, Sp.s4, Sp.s3),
+              child: _Overview(
+                report: report,
+                expanded: _detail,
+                onToggle: () => setState(() => _detail = !_detail),
+                since: state.range == MemberRange.all
+                    ? report.earliestClosedAt
+                    : null,
+              ),
+            ),
+          Expanded(
+            child: report.members.isEmpty
+                ? Center(
+                    child: SatEmpty(
+                      icon: Icons.people_outline,
+                      title: l10n.mrpEmptyTitle,
+                      body: l10n.mrpEmptyBody,
+                    ),
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(
+                        width: 360,
+                        child: _RankedList(
+                          rows: rows,
+                          report: report,
+                          controller: _search,
+                          sort: _sort,
+                          selectedId: selected?.memberId,
+                          onQuery: (q) => setState(() => _query = q),
+                          onSort: (s) => setState(() => _sort = s),
+                          onPick: (id) => setState(() => _selectedId = id),
+                        ),
                       ),
-                    ),
-                    Container(width: 1, color: sc.border1),
-                    Expanded(
-                      child: selected == null
-                          ? Center(
-                              child: SatEmpty(
-                                icon: Icons.person_search_outlined,
-                                title: l10n.mrpPickTitle,
-                                body: l10n.mrpPickBody,
+                      Container(width: 1, color: sc.border1),
+                      Expanded(
+                        child: selected == null
+                            ? Center(
+                                child: SatEmpty(
+                                  icon: Icons.person_search_outlined,
+                                  title: l10n.mrpPickTitle,
+                                  body: l10n.mrpPickBody,
+                                ),
+                              )
+                            : _Drill(
+                                // Keyed on the member *and* the window, so
+                                // changing either refetches instead of showing
+                                // the previous answer under the new heading.
+                                key: ValueKey(
+                                  '${selected.memberId}·'
+                                  '${memberRangeKey(state.range)}·'
+                                  '${state.customFrom}·${state.customTo}',
+                                ),
+                                row: selected,
+                                pointsEnabled: report.pointsEnabled,
                               ),
-                            )
-                          : _Drill(
-                              // Keyed on the member *and* the window, so
-                              // changing either refetches instead of showing
-                              // the previous answer under the new heading.
-                              key: ValueKey(
-                                '${selected.memberId}·'
-                                '${memberRangeKey(state.range)}·'
-                                '${state.customFrom}·${state.customTo}',
-                              ),
-                              row: selected,
-                              pointsEnabled: report.pointsEnabled,
-                            ),
-                    ),
-                  ],
-                ),
-        ),
-      ],
+                      ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -604,10 +616,7 @@ class _MemberTile extends StatelessWidget {
     return SatCard.tappable(
       onTap: onTap,
       selected: selected,
-      padding: const EdgeInsets.symmetric(
-        horizontal: Sp.s3,
-        vertical: Sp.s2h,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -743,10 +752,7 @@ class _DrillState extends ConsumerState<_Drill> {
               onSelected: (i) => setState(() => _tab = i),
             ),
             const SizedBox(height: Sp.s3),
-            if (_tab == 0)
-              _Products(history: h)
-            else
-              _Bills(history: h),
+            if (_tab == 0) _Products(history: h) else _Bills(history: h),
           ],
         );
       },
@@ -818,10 +824,7 @@ class _DrillStats extends StatelessWidget {
                 _Fact(l.mrpLifetimeVisits, '${history.lifetimeVisits}'),
                 _Fact(l.mrpLifetimeSpend, formatIDR(history.lifetimeSpend)),
                 if (history.joinedAt != null)
-                  _Fact(
-                    l.mrpJoined,
-                    formatShortDateId(history.joinedAt!),
-                  ),
+                  _Fact(l.mrpJoined, formatShortDateId(history.joinedAt!)),
               ],
             ),
           ],
@@ -845,10 +848,7 @@ class _UntrackedNote extends StatelessWidget {
     final l = context.l10n;
     final sc = context.sat;
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Sp.s3,
-        vertical: Sp.s2h,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2h),
       decoration: SatBox.d(
         color: sc.bg2,
         borderRadius: SatR.card,
