@@ -235,6 +235,66 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     return null;
   }
 
+  /// The mode, the module and the owner's own switch, asked once
+  /// (`MemberConfig.splitEnabled`). A venue without it must not be able to
+  /// write a `receipts.member_id` by calling a route directly.
+  ///
+  /// Up here rather than beside the [[Pemilik struk]] routes below because the
+  /// mint route needs it too: a struk is born named (ADR-0120 §3), so the gate
+  /// has to be reachable from the top of the file.
+  Future<(MemberConfig, Response?)> requireSplit() async {
+    final cfg = await memberConfig(db);
+    if (!cfg.enabled) {
+      return (cfg, _err(409, 'members_disabled', 'keanggotaan tidak aktif'));
+    }
+    if (!cfg.splitEnabled) {
+      return (cfg, _err(409, 'split_disabled', 'pemilik struk tidak aktif'));
+    }
+    return (cfg, null);
+  }
+
+  /// Write the [[Pemilik struk]] onto a receipt and land their standing
+  /// discount on it. Shared by the mint route and the attach route so a struk
+  /// born named and a struk named afterwards cannot end up with different
+  /// give-backs. Caller supplies the transaction; caller has already resolved
+  /// the member and passed [requireSplit].
+  Future<void> writeReceiptMember(
+    String receiptId,
+    String memberId,
+    MemberConfig cfg,
+    String? actorId,
+  ) async {
+    await (db.update(db.receipts)..where((x) => x.id.equals(receiptId))).write(
+      ReceiptsCompanion(memberId: Value(memberId)),
+    );
+    if (cfg.presetId == null) return;
+    if (await _receiptDiscountOf(db, receiptId, 'member') != null) return;
+    final preset = await (db.select(
+      db.discountPresets,
+    )..where((x) => x.id.equals(cfg.presetId!))).getSingleOrNull();
+    // The owner nominates one preset as "the member discount" and its stored
+    // scope says where a *cashier* may reach for it. Applied here it always
+    // lands at order scope, so a `bill` or `order` preset both work; a `line`
+    // one does not, because a tier discount is not a price change on one dish.
+    if (preset == null || !preset.active) return;
+    if (preset.scope != 'bill' && preset.scope != 'order') return;
+    await db
+        .into(db.discounts)
+        .insert(
+          DiscountsCompanion.insert(
+            id: _uuid.v4(),
+            receiptId: Value(receiptId),
+            presetId: Value(preset.id),
+            name: preset.name,
+            kind: preset.kind,
+            value: Value(preset.value),
+            source: const Value('member'),
+            byUserId: Value(actorId),
+            at: SatClock.now().toUtc(),
+          ),
+        );
+  }
+
   // List every open, payable visit (≥1 sent line, bill not yet closed). Spans
   // attached (table occupied) AND detached (table freed, bill still open)
   // visits — the detached ones carry `tableFreedAt`/`detached` for the flag.
@@ -292,6 +352,22 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final mode = (body['mode'] as String?) == 'even' ? 'even' : 'itemized';
     final id = _uuid.v4();
+    // A struk may be born named (ADR-0120 §3). The settle pane mints at confirm
+    // so an abandoned mode leaves nothing behind, which means there is no
+    // receipt to attach a member to at the moment the cashier picks one — the
+    // member has to ride in with the lines. Resolved before the transaction so
+    // a refusal never leaves a half-made receipt standing.
+    final wantMember = (body['memberId'] as String?)?.trim();
+    MemberConfig? splitCfg;
+    String? bornForId;
+    if (wantMember != null && wantMember.isNotEmpty) {
+      final (cfg, blocked) = await requireSplit();
+      if (blocked != null) return blocked;
+      final m = await getMember(db, wantMember);
+      if (m == null) return _err(404, 'no_member', 'pelanggan tidak ada');
+      bornForId = m.id;
+      splitCfg = cfg;
+    }
     await db.transaction(() async {
       await db
           .into(db.receipts)
@@ -328,6 +404,14 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
                 qtyUnits: Value(want < free ? want : free),
               ),
             );
+      }
+      if (bornForId != null) {
+        await writeReceiptMember(
+          id,
+          bornForId,
+          splitCfg!,
+          (await resolve(req))?.id,
+        );
       }
       await _recompute(db, visitId);
     });
@@ -1177,20 +1261,6 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     return null;
   }
 
-  /// The mode, the module and the owner's own switch, asked once
-  /// (`MemberConfig.splitEnabled`). A venue without it must not be able to
-  /// write a `receipts.member_id` by calling the route directly.
-  Future<(MemberConfig, Response?)> requireSplit() async {
-    final cfg = await memberConfig(db);
-    if (!cfg.enabled) {
-      return (cfg, _err(409, 'members_disabled', 'keanggotaan tidak aktif'));
-    }
-    if (!cfg.splitEnabled) {
-      return (cfg, _err(409, 'split_disabled', 'pemilik struk tidak aktif'));
-    }
-    return (cfg, null);
-  }
-
   // Name a [[Pemilik struk]]. {memberId}. Their standing discount lands on
   // this receipt straight away, the way attaching to a bill has always
   // applied it to the bill.
@@ -1235,39 +1305,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             ))
             .go();
       }
-      await (db.update(db.receipts)..where((x) => x.id.equals(receiptId)))
-          .write(ReceiptsCompanion(memberId: Value(member.id)));
-
-      if (cfg.presetId != null &&
-          await _receiptDiscountOf(db, receiptId, 'member') == null) {
-        final preset = await (db.select(
-          db.discountPresets,
-        )..where((x) => x.id.equals(cfg.presetId!))).getSingleOrNull();
-        // The owner nominates one preset as "the member discount" and its
-        // stored scope says where a *cashier* may reach for it. Applied here
-        // it always lands at order scope, so a `bill` or `order` preset both
-        // work; a `line` one does not, because a tier discount is not a price
-        // change on one dish.
-        if (preset != null &&
-            preset.active &&
-            (preset.scope == 'bill' || preset.scope == 'order')) {
-          await db
-              .into(db.discounts)
-              .insert(
-                DiscountsCompanion.insert(
-                  id: _uuid.v4(),
-                  receiptId: Value(receiptId),
-                  presetId: Value(preset.id),
-                  name: preset.name,
-                  kind: preset.kind,
-                  value: Value(preset.value),
-                  source: const Value('member'),
-                  byUserId: Value(actor?.id),
-                  at: SatClock.now().toUtc(),
-                ),
-              );
-        }
-      }
+      await writeReceiptMember(receiptId, member.id, cfg, actor?.id);
     });
     await _recompute(db, visitId);
     await settleOrBroadcast(visitId, actor?.id);
@@ -1448,6 +1486,15 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     }
     final amount = (body['amount'] as num?)?.toInt() ?? 0;
     if (amount <= 0) return _err(400, 'bad_amount', 'amount must be positive');
+    // A struk takes several payments now that the tender lock is gone
+    // (ADR-0121), so the amount is the cashier's to type and nothing else caps
+    // it. Before, the settle mode computed it and this could not be wrong.
+    final left = rec.total - await _paidNet(db, receiptId);
+    if (amount > left) {
+      return _err(409, 'overpayment', 'melebihi sisa struk ini', {
+        'outstanding': left,
+      });
+    }
     final onAccount = method == 'piutang';
     // Mandatory proof photo for any non-cash method (ADR-0025). The bytes ride
     // in this same request (base64), so payment + photo land atomically.
@@ -1463,11 +1510,15 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     // Everything a tab needs is checked before the row is written, so a refusal
     // never leaves a payment standing with no ledger entry behind it.
     final visit = onAccount ? await _visit(db, visitId) : null;
+    // The [[Pemilik struk]], else the [[Pemilik tagihan]] (ADR-0120) — the same
+    // subtraction `memberUnitsOf` and `pointsBaseByMember` make. A share named
+    // to one guest and paid on account must reach *their* tab; charging
+    // whoever was seated first is a debt the wrong person is chased for.
+    final debtorId = rec.memberId ?? visit?.memberId;
     if (onAccount) {
       final cfg = await debtConfig(db);
       if (!cfg.enabled) return _err(404, 'debt_disabled', 'piutang mati');
-      final memberId = visit?.memberId;
-      if (memberId == null) {
+      if (debtorId == null) {
         return _err(409, 'no_member', 'tagihan belum punya pelanggan');
       }
     }
@@ -1501,13 +1552,13 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         if (onAccount) {
           await chargeDebt(
             db,
-            memberId: visit!.memberId!,
+            memberId: debtorId!,
             amount: amount,
             paymentId: paymentId,
             visitId: visitId,
             // The table, not the receipt: `rec.label` is empty on a bill nobody
             // split, and "which table" is how a tab is recognised weeks later.
-            billLabel: visit.tableLabel ?? rec.label,
+            billLabel: visit?.tableLabel ?? rec.label,
             actorUserId: user?.id,
             hub: hub,
           );
@@ -1606,38 +1657,40 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
     final visitId = rec.visitId ?? rec.tableId;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-    final method = (body['method'] as String?) ?? 'tunai';
-    // `piutang` shares [_methods] with the payment route above, so it has to be
-    // refused here explicitly: a "refund by piutang" would be a negative
-    // payment with no ledger counterpart — money handed back that nobody's tab
-    // ever recorded. Money owed is reduced by collecting or writing off, both
-    // of which live on the member (ADR-0098).
-    if (!_methods.contains(method) || method == 'piutang') {
-      return _err(400, 'bad_method', 'unknown refund method');
+    // A refund names the **leg** it unwinds, never a method (ADR-0121). The
+    // method used to identify one, because the bill-wide tender lock left a
+    // struk holding exactly one; with the lock gone it identifies nothing —
+    // two `tunai` legs on one struk are indistinguishable by method, and a
+    // `piutang` leg has no money method to name at all.
+    final paymentId = (body['paymentId'] as String?)?.trim() ?? '';
+    if (paymentId.isEmpty) {
+      return _err(400, 'bad_request', 'paymentId required');
+    }
+    final leg = await (db.select(db.payments)
+          ..where((x) => x.id.equals(paymentId) & x.receiptId.equals(receiptId)))
+        .getSingleOrNull();
+    if (leg == null) return _err(404, 'no_payment', 'payment not found');
+    if (leg.isRefund) {
+      return _err(409, 'not_a_payment', 'baris ini sendiri sebuah pengembalian');
     }
     final amount = (body['amount'] as num?)?.toInt() ?? 0;
     if (amount <= 0) return _err(400, 'bad_amount', 'amount must be positive');
-    // You can only hand back money you took. A `piutang` payment discharged the
-    // receipt's claim without a rupiah moving (ADR-0098), so counting it as
-    // refundable would pay a guest out of the drawer for a bill they still owe
-    // — and leave the tab standing, since a refund touches no ledger. Prior
-    // refunds are negative rows carrying their own money method, so they net
-    // out of this sum on their own.
-    final refundable =
+    // What this leg has left to give back: its own amount, less every refund
+    // already written against it. Refund rows are negative and carry the leg
+    // they unwind, so they net out by addition.
+    final priorRefunds =
         (await (db.select(db.payments)..where(
-                  (x) =>
-                      x.receiptId.equals(receiptId) &
-                      x.method.equals('piutang').not(),
+                  (x) => x.refundsPaymentId.equals(paymentId),
                 ))
                 .get())
             .fold<int>(0, (a, p) => a + p.amount);
+    final refundable = leg.amount + priorRefunds;
     if (amount > refundable) {
-      return _err(
-        409,
-        'over_refund',
-        'melebihi uang yang diterima pada struk ini',
-      );
+      return _err(409, 'over_refund', 'melebihi sisa pada pembayaran ini', {
+        'refundable': refundable,
+      });
     }
+    final onAccount = leg.method == 'piutang';
     await db.transaction(() async {
       await db
           .into(db.payments)
@@ -1645,14 +1698,28 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             PaymentsCompanion.insert(
               id: _uuid.v4(),
               receiptId: receiptId,
-              method: method,
+              // Inherited, never chosen: a refund is the leg running backwards.
+              method: leg.method,
               amount: -amount,
               isRefund: const Value(true),
+              refundsPaymentId: Value(paymentId),
               cashierUserId: Value(user?.id),
               note: Value((body['note'] as String?)?.trim()),
               at: SatClock.now().toUtc(),
             ),
           );
+      // A tab leg gives nothing back from the drawer — the claim simply stops
+      // standing on the member (ADR-0121). Partial, and in the same
+      // transaction as the negative payment for the reason the charge was.
+      if (onAccount) {
+        await reverseChargeForPayment(
+          db,
+          paymentId: paymentId,
+          amount: amount,
+          actorUserId: user?.id,
+          hub: hub,
+        );
+      }
       await _recompute(db, visitId);
       await _audit(
         db,
@@ -1660,7 +1727,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         AuditKind.refund,
         params: {
           'amount': auditRupiah(amount),
-          'method': method,
+          'method': leg.method,
           'label': rec.label,
         },
         tableId: rec.tableId,
@@ -2386,6 +2453,7 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
                 db.payments.method,
                 db.payments.amount,
                 db.payments.isRefund,
+                db.payments.refundsPaymentId,
                 db.payments.tenderedAmount,
                 db.payments.cashierUserId,
                 db.payments.note,
@@ -2456,6 +2524,10 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
             'method': p.read(db.payments.method)!,
             'amount': p.read(db.payments.amount)!,
             'isRefund': p.read(db.payments.isRefund)!,
+            // Which leg this refund unwinds (ADR-0121). The till derives each
+            // leg's remaining refundable from these rather than the server
+            // sending a fourth money figure per payment.
+            'refundsPaymentId': p.read(db.payments.refundsPaymentId),
             'tendered': p.read(db.payments.tenderedAmount),
             'cashierUserId': p.read(db.payments.cashierUserId),
             'note': p.read(db.payments.note),

@@ -4798,8 +4798,26 @@ abstract class AppL10n {
   /// No description provided for @cshRefundCap.
   ///
   /// In id, this message translates to:
-  /// **'Maksimum {amount} — hanya uang yang benar-benar diterima yang bisa dikembalikan.'**
+  /// **'Maksimum {amount} — sisa pada pembayaran yang dipilih.'**
   String cshRefundCap(String amount);
+
+  /// Label for the leg picker in the refund sheet (ADR-0121).
+  ///
+  /// In id, this message translates to:
+  /// **'Pembayaran yang dikembalikan'**
+  String get cshRefundLeg;
+
+  /// Shown when the picked refund leg is a piutang payment.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang — tidak ada uang keluar, tagihan pelanggan yang berkurang.'**
+  String get cshRefundOnAccount;
+
+  /// No description provided for @cshPayCap.
+  ///
+  /// In id, this message translates to:
+  /// **'Maksimum {amount} — sisa struk ini.'**
+  String cshPayCap(String amount);
 
   /// No description provided for @cshRefundTitle.
   ///
@@ -8892,12 +8910,6 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Metode'**
   String get stlMethod;
-
-  /// No description provided for @stlLockedTo.
-  ///
-  /// In id, this message translates to:
-  /// **'Terkunci — pembayaran sebelumnya {method}'**
-  String stlLockedTo(String method);
 
   /// No description provided for @stlProofAttached.
   ///

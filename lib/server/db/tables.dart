@@ -976,6 +976,13 @@ class Payments extends Table {
   TextColumn get method => text()();
   IntColumn get amount => integer()();
   BoolColumn get isRefund => boolean().withDefault(const Constant(false))();
+
+  /// On a refund row, the payment it unwinds (ADR-0121). Null on a payment,
+  /// and null on a refund written before the tender lock came off — those
+  /// predate the leg concept and are deliberately not backfilled, for the
+  /// reason `stock_movements.count_id` is not: there is no honest answer to
+  /// "which leg" on a struk that could only ever hold one.
+  TextColumn get refundsPaymentId => text().nullable()();
   IntColumn get tenderedAmount => integer().nullable()();
   TextColumn get cashierUserId => text().nullable()();
   TextColumn get note => text().nullable()();

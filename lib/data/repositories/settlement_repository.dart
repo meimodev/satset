@@ -117,12 +117,14 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     String? label,
     bool assignAll = false,
     List<BillReceiptLine> lines = const [],
+    String? memberId,
   }) async => (await mintReceipt(
     visitId,
     mode: mode,
     label: label,
     assignAll: assignAll,
     lines: lines,
+    memberId: memberId,
   )).bill;
 
   /// As [createReceipt], but hands back the new receipt's id.
@@ -135,6 +137,11 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     String? label,
     bool assignAll = false,
     List<BillReceiptLine> lines = const [],
+
+    /// The [[Pemilik struk]] this share is born for (ADR-0120). The pane mints
+    /// at confirm, so there is no receipt to name afterwards without opening a
+    /// window where a named struk is half-made.
+    String? memberId,
   }) async {
     final raw = await ref.read(apiClientProvider).postJson(
       '/settlement/visits/$visitId/receipts',
@@ -142,6 +149,7 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
         'mode': mode,
         'label': ?label,
         'assignAll': assignAll,
+        'memberId': ?memberId,
         if (lines.isNotEmpty)
           'lines': [
             for (final l in lines)
@@ -300,15 +308,19 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return ref.read(apiClientProvider).getBytes(path);
   }
 
+  /// Unwind part or all of one payment **leg** (ADR-0121). The method is
+  /// inherited from [paymentId] and never sent — a struk may hold two `tunai`
+  /// legs, which a method cannot tell apart, and a `piutang` leg has no money
+  /// method to name at all.
   Future<Bill> refund(
     String receiptId, {
-    required String method,
+    required String paymentId,
     required int amount,
     String? note,
   }) async {
     final raw = await ref.read(apiClientProvider).postJson(
       '/settlement/receipts/$receiptId/refund',
-      {'method': method, 'amount': amount, 'note': ?note},
+      {'paymentId': paymentId, 'amount': amount, 'note': ?note},
     );
     return _billFrom(raw);
   }

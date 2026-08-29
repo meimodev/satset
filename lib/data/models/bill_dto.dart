@@ -309,6 +309,11 @@ class BillPayment {
   final String method;
   final int amount;
   final bool isRefund;
+
+  /// On a refund row, the payment it unwinds (ADR-0121). Null on a payment and
+  /// on a refund written before the tender lock came off — a struk could hold
+  /// only one method then, so there was no leg to name.
+  final String? refundsPaymentId;
   final int? tendered;
   final String? note;
   final DateTime at;
@@ -321,6 +326,7 @@ class BillPayment {
     required this.method,
     required this.amount,
     required this.isRefund,
+    required this.refundsPaymentId,
     required this.tendered,
     required this.note,
     required this.at,
@@ -332,6 +338,7 @@ class BillPayment {
     method: j['method'] as String? ?? 'tunai',
     amount: _int(j['amount']),
     isRefund: j['isRefund'] as bool? ?? false,
+    refundsPaymentId: j['refundsPaymentId'] as String?,
     tendered: (j['tendered'] as num?)?.toInt(),
     note: j['note'] as String?,
     at: DateTime.tryParse(j['at'] as String? ?? '') ?? SatClock.now(),
@@ -444,17 +451,37 @@ class BillReceipt {
   bool get isPaid => status == 'paid';
   int get outstanding => (total - paidNet).clamp(0, 1 << 31);
 
-  /// Money actually taken on this receipt, and therefore the most that can be
-  /// handed back. A `piutang` payment cleared the claim without a rupiah moving
-  /// (ADR-0098), so it is not refundable — the tab is reduced by collecting it
-  /// or writing it off, both of which live on the member. Refunds are negative
-  /// rows carrying their own money method and net out here on their own.
+  /// What one **leg** still has to give back (ADR-0121): its own amount, less
+  /// every refund already written against it.
+  ///
+  /// A `piutang` leg counts. It hands nothing back from the drawer — the
+  /// refund writes a [[Piutang]] reversal instead — which is ADR-0098's rule
+  /// kept intact by inheriting the method rather than by hiding the leg.
+  int refundableOf(BillPayment leg) {
+    if (leg.isRefund) return 0;
+    var left = leg.amount;
+    for (final p in payments) {
+      if (p.refundsPaymentId == leg.id) left += p.amount;
+    }
+    return left < 0 ? 0 : left;
+  }
+
+  /// The legs a refund may still target, in the order they were taken. This is
+  /// what the refund sheet lists — a refund names a leg, never a method, since
+  /// two `tunai` legs on one struk are indistinguishable by method.
+  List<BillPayment> get refundableLegs => [
+    for (final p in payments)
+      if (!p.isRefund && refundableOf(p) > 0) p,
+  ];
+
+  /// Everything still refundable across the struk — the button's gate and the
+  /// figure the sheet caps against when no leg is picked yet.
   int get refundable {
     var sum = 0;
     for (final p in payments) {
-      if (p.method != 'piutang') sum += p.amount;
+      if (!p.isRefund) sum += refundableOf(p);
     }
-    return sum < 0 ? 0 : sum;
+    return sum;
   }
 
   /// The **cashier's own** whole-order discount, if any.

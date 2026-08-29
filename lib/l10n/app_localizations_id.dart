@@ -2870,7 +2870,19 @@ class AppL10nId extends AppL10n {
 
   @override
   String cshRefundCap(String amount) {
-    return 'Maksimum $amount — hanya uang yang benar-benar diterima yang bisa dikembalikan.';
+    return 'Maksimum $amount — sisa pada pembayaran yang dipilih.';
+  }
+
+  @override
+  String get cshRefundLeg => 'Pembayaran yang dikembalikan';
+
+  @override
+  String get cshRefundOnAccount =>
+      'Piutang — tidak ada uang keluar, tagihan pelanggan yang berkurang.';
+
+  @override
+  String cshPayCap(String amount) {
+    return 'Maksimum $amount — sisa struk ini.';
   }
 
   @override
@@ -5502,11 +5514,6 @@ class AppL10nId extends AppL10n {
 
   @override
   String get stlMethod => 'Metode';
-
-  @override
-  String stlLockedTo(String method) {
-    return 'Terkunci — pembayaran sebelumnya $method';
-  }
 
   @override
   String get stlProofAttached => 'Bukti terlampir';

@@ -395,34 +395,68 @@ Future<void> adjustDebt(
   );
 }
 
-/// Undo the charge a payment raised, because that payment is being deleted.
+/// How much of the charge this payment raised is still standing — the charge
+/// less every reversal already written against it. Zero when there was no
+/// charge, or when it has been reversed in full.
+Future<int> unreversedChargeFor(AppDatabase db, String paymentId) async {
+  final rows = await (db.select(
+    db.memberDebts,
+  )..where((x) => x.paymentId.equals(paymentId))).get();
+  return _unreversed(rows);
+}
+
+int _unreversed(List<rows.MemberDebt> ledger) {
+  final charge = ledger
+      .where((r) => r.kind == MemberDebtKind.charge.name)
+      .firstOrNull;
+  if (charge == null) return 0;
+  // Reversal deltas are negative, so this subtracts by adding.
+  final left = ledger
+      .where((r) => r.kind == MemberDebtKind.reversal.name)
+      .fold<int>(charge.delta, (a, r) => a + r.delta);
+  return left < 0 ? 0 : left;
+}
+
+/// Undo the charge a payment raised — all of it, or [amount] of it when a
+/// single leg of a [[Split bill]] struk is refunded rather than reopened
+/// (ADR-0121).
 ///
-/// Reachable only while the visit still exists — a reopened receipt hard-deletes
-/// its payments, and this runs over them first. **Idempotent**: reopening twice,
-/// or a retry after a half-failed request, must not reverse twice.
+/// **Idempotent by subtraction, not by presence** (ADR-0121). The older guard
+/// was "a reversal row exists for this paymentId", which is right only while
+/// reversal is all-or-nothing; once a leg can be refunded in part, that guard
+/// makes the *reopen* after a part-refund a no-op and leaves the member owing
+/// the remainder for food they were refunded. Reversing `charge − Σreversals`
+/// keeps reopening twice safe for the same reason the old one did — the second
+/// call finds nothing left — and makes part-then-reopen net to exactly zero.
+///
+/// [amount] is clamped to what is still standing rather than refused: this is
+/// a correcting write on a ledger whose whole posture is to correct forwards
+/// (ADR-0088), and the callers that care about the cap enforce it on the way in
+/// so the cashier sees the refusal, not the ledger.
 Future<void> reverseChargeForPayment(
   AppDatabase db, {
   required String paymentId,
+  int? amount,
   String? actorUserId,
   WsHub? hub,
 }) async {
   final t = db.memberDebts;
-  final rows = await (db.select(
+  final ledger = await (db.select(
     t,
   )..where((x) => x.paymentId.equals(paymentId))).get();
-  final charge = rows
+  final charge = ledger
       .where((r) => r.kind == MemberDebtKind.charge.name)
       .firstOrNull;
   if (charge == null) return;
-  // The reversal carries the same paymentId, so its presence is the idempotency
-  // key — no separate "reversed" flag to keep in step with reality.
-  final already = rows.any((r) => r.kind == MemberDebtKind.reversal.name);
-  if (already) return;
+  final remaining = _unreversed(ledger);
+  if (remaining <= 0) return;
+  final take = amount == null || amount > remaining ? remaining : amount;
+  if (take <= 0) return;
   await _post(
     db,
     memberId: charge.memberId,
     kind: MemberDebtKind.reversal,
-    delta: -charge.delta,
+    delta: -take,
     paymentId: paymentId,
     visitId: charge.visitId,
     billLabel: charge.billLabel,
@@ -431,10 +465,10 @@ Future<void> reverseChargeForPayment(
     auditKind: AuditKind.debtReversed,
     auditParams: {
       'member': await _nameOf(db, charge.memberId),
-      'amount': auditRupiah(charge.delta.abs()),
+      'amount': auditRupiah(take),
       'bill': charge.billLabel,
     },
-    amountCents: charge.delta.abs(),
+    amountCents: take,
   );
 }
 

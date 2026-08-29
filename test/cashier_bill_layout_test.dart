@@ -251,20 +251,18 @@ void main() {
     }
   });
 
-  testWidgets('part-paid bill locks the method to the last tender', (
-    tester,
-  ) async {
+  testWidgets('a part-paid bill still offers every method', (tester) async {
     await pumpBill(tester, tablet: true, fixture: partPaid);
 
-    // QRIS paid the first receipt; the later `tunai` row is a refund and must
-    // not win.
-    expect(find.text('QRIS', skipOffstage: false), findsOneWidget);
-    for (final label in ['Tunai', 'Kartu', 'Transfer', 'Lainnya']) {
-      expect(find.text(label, skipOffstage: false), findsNothing);
+    // QRIS paid the first receipt. It used to collapse the row to itself for
+    // the rest of the bill; `CONTEXT.md` has always described a struk taking
+    // part Tunai part Kartu, so the lock was drift and is gone (ADR-0121).
+    for (final label in ['Tunai', 'QRIS', 'Kartu', 'Transfer', 'Lainnya']) {
+      expect(find.text(label, skipOffstage: false), findsOneWidget);
     }
     expect(
       find.textContaining('Terkunci', skipOffstage: false),
-      findsOneWidget,
+      findsNothing,
     );
   });
 }

@@ -79,7 +79,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 67;
+  int get schemaVersion => 68;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -1368,6 +1368,20 @@ class AppDatabase extends _$AppDatabase {
         await _safeAddColumnOn('members', 'kecamatan', type: 'TEXT NULL');
         await _safeAddColumnOn('members', 'kelurahan', type: 'TEXT NULL');
         await _safeAddColumnOn('members', 'address_text', type: 'TEXT NULL');
+      }
+
+      if (from < 68 && to >= 68) {
+        // A refund names the leg it unwinds (ADR-0121). Not backfilled: every
+        // existing refund was written while the bill-wide tender lock still
+        // stood, so its struk held one method and "which leg" had no answer
+        // worth inventing.
+        //
+        // `TEXT NULL`, not `TEXT`, for the v63 reason spelled out above.
+        await _safeAddColumnOn(
+          'payments',
+          'refunds_payment_id',
+          type: 'TEXT NULL',
+        );
       }
     },
     onCreate: (m) async {

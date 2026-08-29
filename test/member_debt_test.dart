@@ -172,6 +172,37 @@ void main() {
     expect(await memberDebt(db, m.id), 0);
   });
 
+  // ADR-0121. Idempotency is now by *subtraction*, not by presence: the older
+  // guard ("a reversal row exists for this paymentId") made the reopen after a
+  // part-refund a no-op, leaving the member owing for food they were refunded.
+  test('a part refund then a reopen nets the charge to exactly zero', () async {
+    final m = await enrol();
+    await charge(m.id, 90000, paymentId: 'pm1');
+
+    // The cashier hands a third of the share back.
+    await reverseChargeForPayment(db, paymentId: 'pm1', amount: 30000);
+    expect(await memberDebt(db, m.id), 60000);
+    expect(await unreversedChargeFor(db, 'pm1'), 60000);
+
+    // Then the struk is reopened, which reverses whatever is still standing —
+    // not the whole charge again, and not nothing.
+    await reverseChargeForPayment(db, paymentId: 'pm1');
+    expect(await memberDebt(db, m.id), 0);
+
+    // And a second reopen still credits nobody twice.
+    await reverseChargeForPayment(db, paymentId: 'pm1');
+    expect(await memberDebt(db, m.id), 0);
+  });
+
+  test('a reversal larger than what stands is clamped, never negative', () async {
+    final m = await enrol();
+    await charge(m.id, 40000, paymentId: 'pm1');
+
+    await reverseChargeForPayment(db, paymentId: 'pm1', amount: 999999);
+    expect(await memberDebt(db, m.id), 0);
+    expect(await unreversedChargeFor(db, 'pm1'), 0);
+  });
+
   test('a member who owes cannot be deleted', () async {
     final m = await enrol();
     await charge(m.id, 25000, paymentId: 'pm1');

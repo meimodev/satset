@@ -2127,8 +2127,24 @@
       }
     }
   },
-  "cshRefundCap": "Maksimum {amount} — hanya uang yang benar-benar diterima yang bisa dikembalikan.",
+  "cshRefundCap": "Maksimum {amount} — sisa pada pembayaran yang dipilih.",
   "@cshRefundCap": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshRefundLeg": "Pembayaran yang dikembalikan",
+  "@cshRefundLeg": {
+    "description": "Label for the leg picker in the refund sheet (ADR-0121)."
+  },
+  "cshRefundOnAccount": "Piutang — tidak ada uang keluar, tagihan pelanggan yang berkurang.",
+  "@cshRefundOnAccount": {
+    "description": "Shown when the picked refund leg is a piutang payment."
+  },
+  "cshPayCap": "Maksimum {amount} — sisa struk ini.",
+  "@cshPayCap": {
     "placeholders": {
       "amount": {
         "type": "String"
@@ -4167,14 +4183,6 @@
   "stlRowChargeNow": "Tagih sekarang",
   "stlSplitFor": "Bagi untuk",
   "stlMethod": "Metode",
-  "stlLockedTo": "Terkunci — pembayaran sebelumnya {method}",
-  "@stlLockedTo": {
-    "placeholders": {
-      "method": {
-        "type": "String"
-      }
-    }
-  },
   "stlProofAttached": "Bukti terlampir",
   "stlRetakePhoto": "Ambil ulang",
   "stlTakePhoto": "Ambil foto bukti bayar",

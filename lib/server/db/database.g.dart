@@ -17406,6 +17406,17 @@ class $PaymentsTable extends Payments with TableInfo<$PaymentsTable, Payment> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _refundsPaymentIdMeta = const VerificationMeta(
+    'refundsPaymentId',
+  );
+  @override
+  late final GeneratedColumn<String> refundsPaymentId = GeneratedColumn<String>(
+    'refunds_payment_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _tenderedAmountMeta = const VerificationMeta(
     'tenderedAmount',
   );
@@ -17462,6 +17473,7 @@ class $PaymentsTable extends Payments with TableInfo<$PaymentsTable, Payment> {
     method,
     amount,
     isRefund,
+    refundsPaymentId,
     tenderedAmount,
     cashierUserId,
     note,
@@ -17513,6 +17525,15 @@ class $PaymentsTable extends Payments with TableInfo<$PaymentsTable, Payment> {
       context.handle(
         _isRefundMeta,
         isRefund.isAcceptableOrUnknown(data['is_refund']!, _isRefundMeta),
+      );
+    }
+    if (data.containsKey('refunds_payment_id')) {
+      context.handle(
+        _refundsPaymentIdMeta,
+        refundsPaymentId.isAcceptableOrUnknown(
+          data['refunds_payment_id']!,
+          _refundsPaymentIdMeta,
+        ),
       );
     }
     if (data.containsKey('tendered_amount')) {
@@ -17579,6 +17600,10 @@ class $PaymentsTable extends Payments with TableInfo<$PaymentsTable, Payment> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_refund'],
       )!,
+      refundsPaymentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}refunds_payment_id'],
+      ),
       tenderedAmount: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}tendered_amount'],
@@ -17614,6 +17639,13 @@ class Payment extends DataClass implements Insertable<Payment> {
   final String method;
   final int amount;
   final bool isRefund;
+
+  /// On a refund row, the payment it unwinds (ADR-0121). Null on a payment,
+  /// and null on a refund written before the tender lock came off — those
+  /// predate the leg concept and are deliberately not backfilled, for the
+  /// reason `stock_movements.count_id` is not: there is no honest answer to
+  /// "which leg" on a struk that could only ever hold one.
+  final String? refundsPaymentId;
   final int? tenderedAmount;
   final String? cashierUserId;
   final String? note;
@@ -17630,6 +17662,7 @@ class Payment extends DataClass implements Insertable<Payment> {
     required this.method,
     required this.amount,
     required this.isRefund,
+    this.refundsPaymentId,
     this.tenderedAmount,
     this.cashierUserId,
     this.note,
@@ -17644,6 +17677,9 @@ class Payment extends DataClass implements Insertable<Payment> {
     map['method'] = Variable<String>(method);
     map['amount'] = Variable<int>(amount);
     map['is_refund'] = Variable<bool>(isRefund);
+    if (!nullToAbsent || refundsPaymentId != null) {
+      map['refunds_payment_id'] = Variable<String>(refundsPaymentId);
+    }
     if (!nullToAbsent || tenderedAmount != null) {
       map['tendered_amount'] = Variable<int>(tenderedAmount);
     }
@@ -17667,6 +17703,9 @@ class Payment extends DataClass implements Insertable<Payment> {
       method: Value(method),
       amount: Value(amount),
       isRefund: Value(isRefund),
+      refundsPaymentId: refundsPaymentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(refundsPaymentId),
       tenderedAmount: tenderedAmount == null && nullToAbsent
           ? const Value.absent()
           : Value(tenderedAmount),
@@ -17692,6 +17731,7 @@ class Payment extends DataClass implements Insertable<Payment> {
       method: serializer.fromJson<String>(json['method']),
       amount: serializer.fromJson<int>(json['amount']),
       isRefund: serializer.fromJson<bool>(json['isRefund']),
+      refundsPaymentId: serializer.fromJson<String?>(json['refundsPaymentId']),
       tenderedAmount: serializer.fromJson<int?>(json['tenderedAmount']),
       cashierUserId: serializer.fromJson<String?>(json['cashierUserId']),
       note: serializer.fromJson<String?>(json['note']),
@@ -17708,6 +17748,7 @@ class Payment extends DataClass implements Insertable<Payment> {
       'method': serializer.toJson<String>(method),
       'amount': serializer.toJson<int>(amount),
       'isRefund': serializer.toJson<bool>(isRefund),
+      'refundsPaymentId': serializer.toJson<String?>(refundsPaymentId),
       'tenderedAmount': serializer.toJson<int?>(tenderedAmount),
       'cashierUserId': serializer.toJson<String?>(cashierUserId),
       'note': serializer.toJson<String?>(note),
@@ -17722,6 +17763,7 @@ class Payment extends DataClass implements Insertable<Payment> {
     String? method,
     int? amount,
     bool? isRefund,
+    Value<String?> refundsPaymentId = const Value.absent(),
     Value<int?> tenderedAmount = const Value.absent(),
     Value<String?> cashierUserId = const Value.absent(),
     Value<String?> note = const Value.absent(),
@@ -17733,6 +17775,9 @@ class Payment extends DataClass implements Insertable<Payment> {
     method: method ?? this.method,
     amount: amount ?? this.amount,
     isRefund: isRefund ?? this.isRefund,
+    refundsPaymentId: refundsPaymentId.present
+        ? refundsPaymentId.value
+        : this.refundsPaymentId,
     tenderedAmount: tenderedAmount.present
         ? tenderedAmount.value
         : this.tenderedAmount,
@@ -17750,6 +17795,9 @@ class Payment extends DataClass implements Insertable<Payment> {
       method: data.method.present ? data.method.value : this.method,
       amount: data.amount.present ? data.amount.value : this.amount,
       isRefund: data.isRefund.present ? data.isRefund.value : this.isRefund,
+      refundsPaymentId: data.refundsPaymentId.present
+          ? data.refundsPaymentId.value
+          : this.refundsPaymentId,
       tenderedAmount: data.tenderedAmount.present
           ? data.tenderedAmount.value
           : this.tenderedAmount,
@@ -17770,6 +17818,7 @@ class Payment extends DataClass implements Insertable<Payment> {
           ..write('method: $method, ')
           ..write('amount: $amount, ')
           ..write('isRefund: $isRefund, ')
+          ..write('refundsPaymentId: $refundsPaymentId, ')
           ..write('tenderedAmount: $tenderedAmount, ')
           ..write('cashierUserId: $cashierUserId, ')
           ..write('note: $note, ')
@@ -17786,6 +17835,7 @@ class Payment extends DataClass implements Insertable<Payment> {
     method,
     amount,
     isRefund,
+    refundsPaymentId,
     tenderedAmount,
     cashierUserId,
     note,
@@ -17801,6 +17851,7 @@ class Payment extends DataClass implements Insertable<Payment> {
           other.method == this.method &&
           other.amount == this.amount &&
           other.isRefund == this.isRefund &&
+          other.refundsPaymentId == this.refundsPaymentId &&
           other.tenderedAmount == this.tenderedAmount &&
           other.cashierUserId == this.cashierUserId &&
           other.note == this.note &&
@@ -17814,6 +17865,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
   final Value<String> method;
   final Value<int> amount;
   final Value<bool> isRefund;
+  final Value<String?> refundsPaymentId;
   final Value<int?> tenderedAmount;
   final Value<String?> cashierUserId;
   final Value<String?> note;
@@ -17826,6 +17878,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
     this.method = const Value.absent(),
     this.amount = const Value.absent(),
     this.isRefund = const Value.absent(),
+    this.refundsPaymentId = const Value.absent(),
     this.tenderedAmount = const Value.absent(),
     this.cashierUserId = const Value.absent(),
     this.note = const Value.absent(),
@@ -17839,6 +17892,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
     required String method,
     required int amount,
     this.isRefund = const Value.absent(),
+    this.refundsPaymentId = const Value.absent(),
     this.tenderedAmount = const Value.absent(),
     this.cashierUserId = const Value.absent(),
     this.note = const Value.absent(),
@@ -17856,6 +17910,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
     Expression<String>? method,
     Expression<int>? amount,
     Expression<bool>? isRefund,
+    Expression<String>? refundsPaymentId,
     Expression<int>? tenderedAmount,
     Expression<String>? cashierUserId,
     Expression<String>? note,
@@ -17869,6 +17924,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
       if (method != null) 'method': method,
       if (amount != null) 'amount': amount,
       if (isRefund != null) 'is_refund': isRefund,
+      if (refundsPaymentId != null) 'refunds_payment_id': refundsPaymentId,
       if (tenderedAmount != null) 'tendered_amount': tenderedAmount,
       if (cashierUserId != null) 'cashier_user_id': cashierUserId,
       if (note != null) 'note': note,
@@ -17884,6 +17940,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
     Value<String>? method,
     Value<int>? amount,
     Value<bool>? isRefund,
+    Value<String?>? refundsPaymentId,
     Value<int?>? tenderedAmount,
     Value<String?>? cashierUserId,
     Value<String?>? note,
@@ -17897,6 +17954,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
       method: method ?? this.method,
       amount: amount ?? this.amount,
       isRefund: isRefund ?? this.isRefund,
+      refundsPaymentId: refundsPaymentId ?? this.refundsPaymentId,
       tenderedAmount: tenderedAmount ?? this.tenderedAmount,
       cashierUserId: cashierUserId ?? this.cashierUserId,
       note: note ?? this.note,
@@ -17923,6 +17981,9 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
     }
     if (isRefund.present) {
       map['is_refund'] = Variable<bool>(isRefund.value);
+    }
+    if (refundsPaymentId.present) {
+      map['refunds_payment_id'] = Variable<String>(refundsPaymentId.value);
     }
     if (tenderedAmount.present) {
       map['tendered_amount'] = Variable<int>(tenderedAmount.value);
@@ -17953,6 +18014,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
           ..write('method: $method, ')
           ..write('amount: $amount, ')
           ..write('isRefund: $isRefund, ')
+          ..write('refundsPaymentId: $refundsPaymentId, ')
           ..write('tenderedAmount: $tenderedAmount, ')
           ..write('cashierUserId: $cashierUserId, ')
           ..write('note: $note, ')
@@ -38014,6 +38076,7 @@ typedef $$PaymentsTableCreateCompanionBuilder =
       required String method,
       required int amount,
       Value<bool> isRefund,
+      Value<String?> refundsPaymentId,
       Value<int?> tenderedAmount,
       Value<String?> cashierUserId,
       Value<String?> note,
@@ -38028,6 +38091,7 @@ typedef $$PaymentsTableUpdateCompanionBuilder =
       Value<String> method,
       Value<int> amount,
       Value<bool> isRefund,
+      Value<String?> refundsPaymentId,
       Value<int?> tenderedAmount,
       Value<String?> cashierUserId,
       Value<String?> note,
@@ -38067,6 +38131,11 @@ class $$PaymentsTableFilterComposer
 
   ColumnFilters<bool> get isRefund => $composableBuilder(
     column: $table.isRefund,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get refundsPaymentId => $composableBuilder(
+    column: $table.refundsPaymentId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -38130,6 +38199,11 @@ class $$PaymentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get refundsPaymentId => $composableBuilder(
+    column: $table.refundsPaymentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get tenderedAmount => $composableBuilder(
     column: $table.tenderedAmount,
     builder: (column) => ColumnOrderings(column),
@@ -38179,6 +38253,11 @@ class $$PaymentsTableAnnotationComposer
 
   GeneratedColumn<bool> get isRefund =>
       $composableBuilder(column: $table.isRefund, builder: (column) => column);
+
+  GeneratedColumn<String> get refundsPaymentId => $composableBuilder(
+    column: $table.refundsPaymentId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get tenderedAmount => $composableBuilder(
     column: $table.tenderedAmount,
@@ -38233,6 +38312,7 @@ class $$PaymentsTableTableManager
                 Value<String> method = const Value.absent(),
                 Value<int> amount = const Value.absent(),
                 Value<bool> isRefund = const Value.absent(),
+                Value<String?> refundsPaymentId = const Value.absent(),
                 Value<int?> tenderedAmount = const Value.absent(),
                 Value<String?> cashierUserId = const Value.absent(),
                 Value<String?> note = const Value.absent(),
@@ -38245,6 +38325,7 @@ class $$PaymentsTableTableManager
                 method: method,
                 amount: amount,
                 isRefund: isRefund,
+                refundsPaymentId: refundsPaymentId,
                 tenderedAmount: tenderedAmount,
                 cashierUserId: cashierUserId,
                 note: note,
@@ -38259,6 +38340,7 @@ class $$PaymentsTableTableManager
                 required String method,
                 required int amount,
                 Value<bool> isRefund = const Value.absent(),
+                Value<String?> refundsPaymentId = const Value.absent(),
                 Value<int?> tenderedAmount = const Value.absent(),
                 Value<String?> cashierUserId = const Value.absent(),
                 Value<String?> note = const Value.absent(),
@@ -38271,6 +38353,7 @@ class $$PaymentsTableTableManager
                 method: method,
                 amount: amount,
                 isRefund: isRefund,
+                refundsPaymentId: refundsPaymentId,
                 tenderedAmount: tenderedAmount,
                 cashierUserId: cashierUserId,
                 note: note,

@@ -2888,7 +2888,19 @@ class AppL10nEn extends AppL10n {
 
   @override
   String cshRefundCap(String amount) {
-    return 'At most $amount — only money actually received can be handed back.';
+    return 'At most $amount — what is left on the payment you picked.';
+  }
+
+  @override
+  String get cshRefundLeg => 'Payment to unwind';
+
+  @override
+  String get cshRefundOnAccount =>
+      'On account — no money leaves the drawer; the customer\'s tab goes down.';
+
+  @override
+  String cshPayCap(String amount) {
+    return 'At most $amount — what is left on this receipt.';
   }
 
   @override
@@ -5557,11 +5569,6 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get stlMethod => 'Method';
-
-  @override
-  String stlLockedTo(String method) {
-    return 'Locked — the earlier payment was $method';
-  }
 
   @override
   String get stlProofAttached => 'Proof attached';

@@ -30,6 +30,7 @@ import 'package:satset/ui/features/cashier/discount_sheet.dart';
 import 'package:satset/ui/features/cashier/member_panel.dart';
 import 'package:satset/ui/features/cashier/receipt_badge.dart';
 import 'package:satset/ui/features/cashier/who_sheet.dart';
+import 'package:satset/ui/features/cashier/widgets/pay_method_picker.dart';
 import 'package:satset/ui/features/cashier/widgets/settle_pane.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
@@ -521,6 +522,7 @@ class _BillBodyState extends State<_BillBody> {
       },
       onClearSelection: _clearSelection,
       debtEnabled: widget.debtEnabled,
+      splitEnabled: bill.splitEnabled,
     );
   }
 
@@ -1362,33 +1364,18 @@ class _ReceiptCard extends ConsumerWidget {
     );
   }
 
+  /// Take one payment on this struk. A struk may hold several — part Tunai,
+  /// part Kartu, part on the tab — so this is a *leg*, capped at what the struk
+  /// still owes rather than forced to settle it whole (ADR-0121).
   Future<void> _paySheet(
     BuildContext context,
     BillReceipt r, {
     required bool debtEnabled,
-  }) => _moneySheet(context, r, refund: false, debtEnabled: debtEnabled);
-
-  Future<void> _refundSheet(BuildContext context, BillReceipt r) =>
-      _moneySheet(context, r, refund: true, debtEnabled: false);
-
-  Future<void> _moneySheet(
-    BuildContext context,
-    BillReceipt r, {
-    required bool refund,
-    required bool debtEnabled,
   }) async {
     final sc = context.sat;
-    final amountCtl = TextEditingController(
-      text: groupRupiah(refund ? r.refundable : r.outstanding),
-    );
+    final amountCtl = TextEditingController(text: groupRupiah(r.outstanding));
     final tenderedCtl = TextEditingController();
-    // Same freeze the settle pane applies (ADR-0068): once money has landed,
-    // the bill is bound to that method. This sheet used to offer all five, so a
-    // cashier blocked in the pane could take a card payment on a cash bill just
-    // by opening the struk. A refund is exempt for the same reason the lock
-    // skips refund rows — handing money back doesn't decide how it came in.
-    final locked = refund ? null : lockedMethodFor(bill);
-    var method = locked?.id ?? 'tunai';
+    var method = 'tunai';
     Uint8List? photoBytes; // proof shot for a non-cash payment (ADR-0025)
     await showSatSheet<void>(
       context,
@@ -1401,20 +1388,15 @@ class _ReceiptCard extends ConsumerWidget {
           final change = tendered - amount;
           // Piutang on a single receipt is what makes part-cash-part-tab
           // reachable: pay one share in cash, put the sibling on the member's
-          // ledger. Same gate as the settle pane — enabled, a member on the
-          // bill, and headroom left — and the same rule that a disabled chip
-          // says why (Principle 3).
-          final headroom = bill.member?.debtHeadroom ?? 0;
-          final piutangOff = bill.member == null
-              ? context.l10n.stlPiutangNoMember
-              : headroom <= 0
-              ? context.l10n.stlPiutangNoRoom
-              : null;
+          // ledger. Whose tab is the [[Pemilik struk]]'s, else the bill
+          // owner's (ADR-0120) — the same member the server will charge.
+          final debtor = debtorFor(bill, receiptMember: r.member);
+          final headroom = debtor?.debtHeadroom ?? 0;
           final onAccount = method == PayMethod.piutang.id;
-          // Non-cash payments (not refunds) require a live proof photo.
-          // Piutang is exempt: no money moves, so there is nothing to shoot.
+          // Non-cash payments require a live proof photo. Piutang is exempt:
+          // no money moves, so there is nothing to shoot.
           final needsPhoto =
-              !refund && method != 'tunai' && method != PayMethod.piutang.id;
+              method != 'tunai' && method != PayMethod.piutang.id;
           final photoMissing = needsPhoto && photoBytes == null;
           Future<void> shootPhoto() async {
             try {
@@ -1451,55 +1433,21 @@ class _ReceiptCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    refund
-                        ? context.l10n.cshRefundTitle(
-                            receiptTitle(context.l10n, r.label),
-                          )
-                        : context.l10n.cshPayTitle(
-                            receiptTitle(context.l10n, r.label),
-                          ),
+                    context.l10n.cshPayTitle(
+                      receiptTitle(context.l10n, r.label),
+                    ),
                     style: SatType.labelL(color: sc.textHi),
                   ),
                   const SizedBox(height: Sp.s3),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final m in paymentMethods)
-                        if (locked == null || m == locked.id)
-                          SatChip.select(
-                            label: paymentMethodLabel(context.l10n, m),
-                            selected: method == m,
-                            onTap: locked != null
-                                ? null
-                                : () => setState(() => method = m),
-                          ),
-                      if (debtEnabled)
-                        SatChip.select(
-                          label: paymentMethodLabel(
-                            context.l10n,
-                            PayMethod.piutang.id,
-                          ),
-                          selected: onAccount,
-                          onTap: piutangOff != null
-                              ? null
-                              : () => setState(
-                                  () => method = PayMethod.piutang.id,
-                                ),
-                        ),
-                    ],
+                  // The same row the settle pane draws, and deliberately the
+                  // same widget: two copies is how one surface keeps a rule
+                  // the other dropped (ADR-0121).
+                  PayMethodPicker(
+                    selected: PayMethod.byId(method) ?? PayMethod.tunai,
+                    onPick: (m) => setState(() => method = m.id),
+                    debtEnabled: debtEnabled,
+                    debtor: debtor,
                   ),
-                  if (locked != null) ...[
-                    const SizedBox(height: Sp.s2),
-                    Text(
-                      context.l10n.stlLockedTo(locked.label(context.l10n)),
-                      style: SatType.bodyS(color: sc.textLo),
-                    ),
-                  ],
-                  if (debtEnabled && piutangOff != null) ...[
-                    const SizedBox(height: Sp.s2),
-                    Text(piutangOff, style: SatType.bodyS(color: sc.textLo)),
-                  ],
                   if (onAccount) ...[
                     const SizedBox(height: Sp.s2),
                     Text(
@@ -1521,17 +1469,18 @@ class _ReceiptCard extends ConsumerWidget {
                     hint: '',
                     onChanged: (_) => setState(() {}),
                   ),
-                  // The cap earns a line rather than a dead button: a receipt
-                  // settled on the tab shows a total the cashier can see and a
-                  // refundable figure they cannot work out.
-                  if (refund && amount > r.refundable) ...[
+                  // The cap earns a line rather than a dead button. It can be
+                  // hit now that the amount is the cashier's to type: a struk
+                  // part-paid in cash shows a total that is no longer what is
+                  // left on it.
+                  if (amount > r.outstanding) ...[
                     const SizedBox(height: Sp.s2),
                     Text(
-                      context.l10n.cshRefundCap(formatIDR(r.refundable)),
+                      context.l10n.cshPayCap(formatIDR(r.outstanding)),
                       style: SatType.labelM(color: sc.warn),
                     ),
                   ],
-                  if (!refund && method == 'tunai') ...[
+                  if (method == 'tunai') ...[
                     const SizedBox(height: Sp.s2),
                     SatField.money(
                       controller: tenderedCtl,
@@ -1605,41 +1554,137 @@ class _ReceiptCard extends ConsumerWidget {
                   SizedBox(
                     width: double.infinity,
                     child: SatButton.primary(
-                      label: refund
-                          ? context.l10n.cshRecordRefund
-                          : context.l10n.cshRecordPayment,
+                      label: context.l10n.cshRecordPayment,
                       onTap:
                           amount <= 0 ||
                               photoMissing ||
-                              (onAccount && amount > headroom) ||
-                              (refund && amount > r.refundable)
+                              amount > r.outstanding ||
+                              (onAccount && amount > headroom)
                           ? null
                           : () async {
                               Navigator.of(ctx).pop();
-                              if (refund) {
-                                await run(
-                                  () => repo.refund(
-                                    r.id,
-                                    method: method,
-                                    amount: amount,
-                                  ),
-                                );
-                              } else {
-                                await run(
-                                  () => repo.recordPayment(
-                                    r.id,
-                                    method: method,
-                                    amount: amount,
-                                    tendered: method == 'tunai' && tendered > 0
-                                        ? tendered
-                                        : null,
-                                    photoBase64:
-                                        needsPhoto && photoBytes != null
-                                        ? base64Encode(photoBytes!)
-                                        : null,
-                                  ),
-                                );
-                              }
+                              await run(
+                                () => repo.recordPayment(
+                                  r.id,
+                                  method: method,
+                                  amount: amount,
+                                  tendered: method == 'tunai' && tendered > 0
+                                      ? tendered
+                                      : null,
+                                  photoBase64: needsPhoto && photoBytes != null
+                                      ? base64Encode(photoBytes!)
+                                      : null,
+                                ),
+                              );
+                            },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Give part or all of one payment **leg** back (ADR-0121).
+  ///
+  /// A leg picker, not a method picker: a struk may hold two `tunai` legs,
+  /// which no method can tell apart, and a `piutang` leg has no money method
+  /// at all. The method is inherited from whichever row the cashier taps, so
+  /// ADR-0098's rule that a tab is never refunded *out of the drawer* holds by
+  /// construction — that leg unwinds as a [[Piutang]] reversal instead.
+  Future<void> _refundSheet(BuildContext context, BillReceipt r) async {
+    final sc = context.sat;
+    final legs = r.refundableLegs;
+    if (legs.isEmpty) return;
+    var leg = legs.first;
+    final amountCtl = TextEditingController(
+      text: groupRupiah(r.refundableOf(leg)),
+    );
+    await showSatSheet<void>(
+      context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) {
+          final l10n = context.l10n;
+          final cap = r.refundableOf(leg);
+          final amount =
+              int.tryParse(amountCtl.text.replaceAll(RegExp(r'[^0-9]'), '')) ??
+              0;
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+              left: Sp.s4,
+              right: Sp.s4,
+              top: Sp.s4,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.cshRefundTitle(receiptTitle(l10n, r.label)),
+                    style: SatType.labelL(color: sc.textHi),
+                  ),
+                  const SizedBox(height: Sp.s3),
+                  Text(l10n.cshRefundLeg, style: SatType.labelS(color: sc.textLo)),
+                  const SizedBox(height: Sp.s2),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final p in legs)
+                        SatChip.select(
+                          label:
+                              '${paymentMethodLabel(l10n, p.method)} · '
+                              '${groupRupiah(r.refundableOf(p))}',
+                          selected: p.id == leg.id,
+                          onTap: () => setState(() {
+                            leg = p;
+                            amountCtl.text = groupRupiah(r.refundableOf(p));
+                          }),
+                        ),
+                    ],
+                  ),
+                  if (leg.method == PayMethod.piutang.id) ...[
+                    const SizedBox(height: Sp.s2),
+                    Text(
+                      l10n.cshRefundOnAccount,
+                      style: SatType.bodyS(color: sc.textLo),
+                    ),
+                  ],
+                  const SizedBox(height: Sp.s3),
+                  SatField.money(
+                    controller: amountCtl,
+                    label: l10n.cshAmount,
+                    hint: '',
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  if (amount > cap) ...[
+                    const SizedBox(height: Sp.s2),
+                    Text(
+                      l10n.cshRefundCap(formatIDR(cap)),
+                      style: SatType.labelM(color: sc.warn),
+                    ),
+                  ],
+                  const SizedBox(height: Sp.s4),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SatButton.primary(
+                      label: l10n.cshRecordRefund,
+                      onTap: amount <= 0 || amount > cap
+                          ? null
+                          : () async {
+                              Navigator.of(ctx).pop();
+                              await run(
+                                () => repo.refund(
+                                  r.id,
+                                  paymentId: leg.id,
+                                  amount: amount,
+                                ),
+                              );
                             },
                     ),
                   ),

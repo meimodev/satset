@@ -18,7 +18,7 @@ import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import 'package:satset/ui/features/admin/members_screen.dart';
-import 'package:satset/ui/features/cashier/widgets/settle_pane.dart';
+import 'package:satset/ui/features/cashier/widgets/pay_method_picker.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
