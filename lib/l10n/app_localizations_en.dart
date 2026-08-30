@@ -6561,6 +6561,22 @@ class AppL10nEn extends AppL10n {
   String get blcPrepaid => 'Prepaid in-app';
 
   @override
+  String blcPiutang(String amount) {
+    return 'On account $amount';
+  }
+
+  @override
+  String cshSegPiutang(String amount) {
+    return 'On account $amount';
+  }
+
+  @override
+  String get cshEmptyPiutang => 'No bills settled on account';
+
+  @override
+  String get cshReceiptPiutang => 'On account';
+
+  @override
   String get cshLoadFailedTitle => 'Couldn\'t load the bills';
 
   @override

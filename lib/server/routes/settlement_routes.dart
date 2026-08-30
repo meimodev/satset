@@ -2010,13 +2010,47 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             .clamp(1, historyPageCeiling);
     final tableId = req.url.queryParameters['tableId'];
     final scoped = tableId != null && tableId.isNotEmpty;
+    // Only the bills that went out on trust (ADR-0098). A filter, not a
+    // segment: a tab-paid bill is Lunas like any other, it just needs chasing.
+    final onAccount = req.url.queryParameters['onAccount'] == '1';
     final cutoff = SatClock.now().toUtc().subtract(Duration(days: days));
+
+    // Net `piutang` per closed session across the whole window — one query
+    // answering three questions: which sessions the filter keeps, what each
+    // row's pill says, and the window total the chip carries. Net, because a
+    // refunded tab leg is stored as a negative payment that unwinds the charge
+    // (ADR-0121), so a fully reversed tab must not read as one.
+    final piutangSum = db.tableSessionPayments.amount.sum();
+    final pq =
+        db.selectOnly(db.tableSessionPayments).join([
+            innerJoin(
+              db.tableSessions,
+              db.tableSessions.id.equalsExp(db.tableSessionPayments.sessionId),
+            ),
+          ])
+          ..addColumns([db.tableSessionPayments.sessionId, piutangSum])
+          ..where(
+            db.tableSessionPayments.method.equals('piutang') &
+                db.tableSessions.closedAt.isBiggerThanValue(cutoff),
+          )
+          ..groupBy([db.tableSessionPayments.sessionId]);
+    if (scoped) pq.where(db.tableSessions.tableId.equals(tableId));
+    final piutang = <String, int>{};
+    for (final row in await pq.get()) {
+      final amount = row.read(piutangSum) ?? 0;
+      if (amount > 0) {
+        piutang[row.read(db.tableSessionPayments.sessionId)!] = amount;
+      }
+    }
+    final piutangTotal = piutang.values.fold<int>(0, (a, b) => a + b);
+    final onAccountIds = piutang.keys.toList();
 
     final q = db.select(db.tableSessions)
       ..where((s) => s.closedAt.isBiggerThanValue(cutoff))
       ..orderBy([(s) => OrderingTerm.desc(s.closedAt)])
       ..limit(limit);
     if (scoped) q.where((s) => s.tableId.equals(tableId));
+    if (onAccount) q.where((s) => s.id.isIn(onAccountIds));
     final sessions = await q.get();
 
     // Same WHERE, no limit. Counted rather than derived from `sessions`, which
@@ -2025,10 +2059,14 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final cq = db.selectOnly(db.tableSessions)..addColumns([countCol]);
     cq.where(db.tableSessions.closedAt.isBiggerThanValue(cutoff));
     if (scoped) cq.where(db.tableSessions.tableId.equals(tableId));
+    if (onAccount) cq.where(db.tableSessions.id.isIn(onAccountIds));
     final total = (await cq.getSingle()).read(countCol) ?? 0;
 
     return _ok({
       'total': total,
+      // The window's tab total, unaffected by [onAccount] — it is the number
+      // the filter chip carries, so it must not change when the filter is on.
+      'piutangTotal': piutangTotal,
       'rows': [
         for (final s in sessions)
           {
@@ -2051,6 +2089,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             'lossAmount': s.lossAmount,
             'billClosedBy': s.billClosedBy,
             'ticketCount': s.ticketCount,
+            // How much of this closed bill went onto a member's tab. 0 on the
+            // overwhelming majority; > 0 is what the card's Piutang pill reads.
+            'piutangAmount': piutang[s.id] ?? 0,
           },
       ],
     });
@@ -2819,6 +2860,17 @@ Map<String, dynamic> _summarize(Map<String, dynamic> bill) => {
   // The member on the bill, so the payable card can show a pill without
   // fetching each bill in full.
   'memberName': (bill['member'] as Map?)?['name'],
+  // How much of this bill has already gone onto a tab (ADR-0098). Live too,
+  // not only in history: a split bill whose struk B was settled on account is
+  // still open at struk A, and that is precisely the case a cashier misses.
+  // Summed net of refunds, which ride the same list as negative amounts.
+  'piutangAmount': (bill['receipts'] as List)
+      .cast<Map<String, dynamic>>()
+      .expand((r) => (r['payments'] as List? ?? const []))
+      .cast<Map<String, dynamic>>()
+      .where((p) => p['method'] == 'piutang')
+      .fold<int>(0, (a, p) => a + ((p['amount'] as num?)?.toInt() ?? 0))
+      .clamp(0, 1 << 31),
   // Just the letter and its paid-ness — enough for the /kasir tile's progress
   // strip, without shipping every line and payment into a list payload. See
   // ADR-0063.

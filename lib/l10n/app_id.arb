@@ -5001,6 +5001,24 @@
     }
   },
   "blcPrepaid": "Prabayar aplikasi",
+  "blcPiutang": "Piutang {amount}",
+  "@blcPiutang": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshSegPiutang": "Piutang {amount}",
+  "@cshSegPiutang": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshEmptyPiutang": "Tidak ada tagihan yang dibayar piutang",
+  "cshReceiptPiutang": "Piutang",
   "cshLoadFailedTitle": "Gagal memuat tagihan",
   "cshPullToRetry": "Tarik untuk coba lagi.",
   "cshEmptyDetached": "Tidak ada meja tertutup yang belum lunas",

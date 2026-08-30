@@ -6487,6 +6487,22 @@ class AppL10nId extends AppL10n {
   String get blcPrepaid => 'Prabayar aplikasi';
 
   @override
+  String blcPiutang(String amount) {
+    return 'Piutang $amount';
+  }
+
+  @override
+  String cshSegPiutang(String amount) {
+    return 'Piutang $amount';
+  }
+
+  @override
+  String get cshEmptyPiutang => 'Tidak ada tagihan yang dibayar piutang';
+
+  @override
+  String get cshReceiptPiutang => 'Piutang';
+
+  @override
   String get cshLoadFailedTitle => 'Gagal memuat tagihan';
 
   @override

@@ -244,14 +244,22 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     String? tableId,
     int days = 7,
     int limit = historyPageSize,
+    bool onAccount = false,
   }) async {
     final scope = tableId != null && tableId.isNotEmpty
         ? '&tableId=$tableId'
         : '';
+    // Filtered server-side, never over the loaded page: the rows on the wire
+    // are one page of the window, so a client-side filter would report "3
+    // tabs" when it means "3 in the 60 rows I happen to hold". Same trap
+    // ADR-0079 kept out of the Lunas count.
+    final tabs = onAccount ? '&onAccount=1' : '';
     final raw =
         await ref
                 .read(apiClientProvider)
-                .getJson('/settlement/history?days=$days&limit=$limit$scope')
+                .getJson(
+                  '/settlement/history?days=$days&limit=$limit$scope$tabs',
+                )
             as Map;
     final json = raw.cast<String, dynamic>();
     return PastBillPage(
@@ -260,6 +268,7 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
           PastBillSummary.fromJson((e as Map).cast<String, dynamic>()),
       ],
       total: (json['total'] as num?)?.toInt() ?? 0,
+      piutangTotal: (json['piutangTotal'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -585,6 +594,14 @@ final historyLimitProvider = StateProvider<int>((ref) {
 /// pages would need reconciling against a list that moved underneath them.
 /// Ceiling is `historyPageCeiling`; past that, cursor paging is the upgrade.
 /// See ADR-0079.
+/// Whether the cashier is looking only at bills that went out on a member's
+/// tab (ADR-0098). Watched by [venueHistoryProvider] rather than filtered in
+/// the widget, because the window is paged — see `fetchHistory`.
+final historyOnAccountProvider = StateProvider<bool>((ref) {
+  ref.watch(apiConfigProvider);
+  return false;
+});
+
 final venueHistoryProvider = FutureProvider.autoDispose<PastBillPage>((
   ref,
 ) async {
@@ -594,9 +611,12 @@ final venueHistoryProvider = FutureProvider.autoDispose<PastBillPage>((
   // there plus a foot spinner instead of collapsing the grid. A family would
   // hand back a brand-new, empty instance.
   final limit = ref.watch(historyLimitProvider);
+  final onAccount = ref.watch(historyOnAccountProvider);
   final sub = ref.read(wsClientProvider).events.listen((ev) {
     if (ev.type == WsEventTypes.tableSessionClosed) ref.invalidateSelf();
   });
   ref.onDispose(sub.cancel);
-  return ref.read(settlementProvider.notifier).fetchHistory(limit: limit);
+  return ref
+      .read(settlementProvider.notifier)
+      .fetchHistory(limit: limit, onAccount: onAccount);
 });

@@ -77,6 +77,10 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     // with the old page still attached, so the grid never blinks to empty.
     final page = history.valueOrNull ?? PastBillPage.empty;
     final closed = page.rows;
+    final debtOn = ref.watch(
+      venueSettingsProvider.select((v) => v.membersOn && v.memberDebtEnabled),
+    );
+    final piutangOnly = ref.watch(historyOnAccountProvider);
 
     return Scaffold(
       backgroundColor: sc.bg0,
@@ -123,11 +127,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                         // A member may walk in only to settle a tab, with
                         // nothing seated and no bill open — so the way in
                         // cannot hang off a card (ADR-0098).
-                        if (ref.watch(
-                          venueSettingsProvider.select(
-                            (v) => v.membersOn && v.memberDebtEnabled,
-                          ),
-                        )) ...[
+                        if (debtOn) ...[
                           const SizedBox(height: Sp.s3),
                           SatButton.outline(
                             label: context.l10n.cshDebtCollect,
@@ -141,12 +141,48 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                           perluDitagih: unpaid.length,
                           lunas: page.total,
                           semua: open.length + page.total,
-                          onSelected: (s) => setState(() {
-                            _seg = s;
-                            if (s != _Segment.perluDitagih) {
-                              _detachedOnly = false;
+                          piutangTotal: debtOn ? page.piutangTotal : null,
+                          piutangOnly: piutangOnly,
+                          onPiutangTap: () {
+                            final on = !piutangOnly;
+                            ref
+                                    .read(historyOnAccountProvider.notifier)
+                                    .state =
+                                on;
+                            // Turning it on walks the cashier to where the
+                            // rows are, exactly as the Meja ditutup tile walks
+                            // them the other way — a tab-paid bill is always
+                            // closed, so the filter is meaningless on Perlu
+                            // ditagih. The range goes with it: chasing a debt
+                            // is not a today job, and the chip counts the whole
+                            // window, so leaving it on Hari ini promises rows
+                            // the grid then clips away.
+                            if (on) {
+                              setState(() {
+                                if (_seg == _Segment.perluDitagih) {
+                                  _seg = _Segment.lunas;
+                                }
+                                _range = _Range.tujuhHari;
+                              });
                             }
-                          }),
+                          },
+                          onSelected: (s) {
+                            if (s == _Segment.perluDitagih &&
+                                ref.read(historyOnAccountProvider)) {
+                              // No closed bill renders here, so a lit filter
+                              // would claim to be narrowing a list it cannot
+                              // touch. Mirrors _detachedOnly below.
+                              ref
+                                  .read(historyOnAccountProvider.notifier)
+                                  .state = false;
+                            }
+                            setState(() {
+                              _seg = s;
+                              if (s != _Segment.perluDitagih) {
+                                _detachedOnly = false;
+                              }
+                            });
+                          },
                         ),
                         if (_seg != _Segment.perluDitagih) ...[
                           const SizedBox(height: Sp.s2h),
@@ -249,10 +285,14 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                     ? context.l10n.cshEmptyDetached
                     : context.l10n.cshEmptyOpen,
               _Segment.lunas =>
-                _range == _Range.hariIni
+                ref.watch(historyOnAccountProvider)
+                    ? context.l10n.cshEmptyPiutang
+                    : _range == _Range.hariIni
                     ? context.l10n.cshEmptySettledToday
                     : context.l10n.cshEmptySettled7d,
-              _Segment.semua => context.l10n.cshEmptyAll,
+              _Segment.semua => ref.watch(historyOnAccountProvider)
+                  ? context.l10n.cshEmptyPiutang
+                  : context.l10n.cshEmptyAll,
             },
           ),
         ),
@@ -503,12 +543,24 @@ class _SegmentRow extends StatelessWidget {
   final int lunas;
   final int semua;
   final ValueChanged<_Segment> onSelected;
+
+  /// The window's tab total, or null where the venue does not do tabs. Shown
+  /// on the chip itself so the number an owner wants is legible without
+  /// turning the filter on — and it is the *window's*, unaffected by the
+  /// filter, so tapping it never changes what it says.
+  final int? piutangTotal;
+  final bool piutangOnly;
+  final VoidCallback onPiutangTap;
+
   const _SegmentRow({
     required this.selected,
     required this.perluDitagih,
     required this.lunas,
     required this.semua,
     required this.onSelected,
+    required this.piutangTotal,
+    required this.piutangOnly,
+    required this.onPiutangTap,
   });
 
   @override
@@ -534,6 +586,16 @@ class _SegmentRow extends StatelessWidget {
         selected: selected == _Segment.semua,
         onTap: () => onSelected(_Segment.semua),
       ),
+      // A filter, not a fourth segment: a tab-paid bill is Lunas like every
+      // other, so this narrows the settled list rather than naming a state of
+      // its own (ADR-0098). It sits with the segments rather than in the range
+      // row so it is visible from Perlu ditagih, where the cashier starts.
+      if (piutangTotal != null)
+        SatChip.select(
+          label: context.l10n.cshSegPiutang(formatIDR(piutangTotal!)),
+          selected: piutangOnly,
+          onTap: piutangTotal == 0 && !piutangOnly ? null : onPiutangTap,
+        ),
     ],
   );
 }

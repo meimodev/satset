@@ -74,6 +74,14 @@ class BillSummary {
   /// The [[Pelanggan (member)]] on this bill, by name — the card's member pill.
   final String? memberName;
 
+  /// How much of this bill has already been discharged onto a member's
+  /// [[Piutang]] tab (ADR-0098), net of refunded legs. 0 on an ordinary bill.
+  ///
+  /// Live, not only in history: a [[Split bill]] whose struk B went on account
+  /// is still open at struk A, and that is exactly the bill a cashier settles
+  /// the rest of without noticing a tab was taken.
+  final int piutangAmount;
+
   /// Letter + paid-ness per receipt, in bill order — the `/kasir` card's
   /// progress strip. Empty on a bill nobody has paid into yet. ADR-0063.
   final List<BillSummaryReceipt> receipts;
@@ -105,12 +113,14 @@ class BillSummary {
     required this.lineCount,
     required this.billDiscountLabel,
     required this.memberName,
+    this.piutangAmount = 0,
     required this.receipts,
     required this.mode,
     required this.fullySettled,
   });
 
   bool get isTakeaway => kind == 'takeaway';
+  bool get isOnAccount => piutangAmount > 0;
 
   /// Amount receipts on this bill, and how many are settled — the card's
   /// `Bagi 3 · 1 bayar` pill. An amount receipt carries no letter (ADR-0063),
@@ -141,6 +151,7 @@ class BillSummary {
     lineCount: _int(j['lineCount']),
     billDiscountLabel: j['billDiscountLabel'] as String?,
     memberName: j['memberName'] as String?,
+    piutangAmount: _int(j['piutangAmount']),
     receipts: [
       for (final r in (j['receipts'] as List? ?? const []))
         BillSummaryReceipt.fromJson((r as Map).cast<String, dynamic>()),
@@ -188,7 +199,16 @@ class PastBillPage {
   final List<PastBillSummary> rows;
   final int total;
 
-  const PastBillPage({required this.rows, required this.total});
+  /// Every rupiah in the window that went out on a member's tab (ADR-0098).
+  /// Window-wide and **unfiltered**, so switching the Piutang filter on does
+  /// not change the number the chip carrying it reads.
+  final int piutangTotal;
+
+  const PastBillPage({
+    required this.rows,
+    required this.total,
+    this.piutangTotal = 0,
+  });
 
   static const empty = PastBillPage(rows: [], total: 0);
 
@@ -217,6 +237,14 @@ class PastBillSummary {
   final int lossAmount;
   final int ticketCount;
 
+  /// How much of this closed bill was discharged onto a member's [[Piutang]]
+  /// tab (ADR-0098), net of any leg since refunded. 0 on an ordinary bill.
+  ///
+  /// The bill is still **Lunas** — the claim was discharged, the revenue was
+  /// booked. This is the separate, orthogonal fact that somebody still owes
+  /// the venue for it.
+  final int piutangAmount;
+
   const PastBillSummary({
     required this.sessionId,
     required this.tableId,
@@ -229,9 +257,11 @@ class PastBillSummary {
     required this.netTotal,
     required this.lossAmount,
     required this.ticketCount,
+    this.piutangAmount = 0,
   });
 
   bool get isWriteOff => lossAmount > 0;
+  bool get isOnAccount => piutangAmount > 0;
   bool get isTakeaway => kind == 'takeaway';
 
   factory PastBillSummary.fromJson(Map<String, dynamic> j) => PastBillSummary(
@@ -247,6 +277,7 @@ class PastBillSummary {
     netTotal: _int(j['netTotal']),
     lossAmount: _int(j['lossAmount']),
     ticketCount: _int(j['ticketCount']),
+    piutangAmount: _int(j['piutangAmount']),
   );
 }
 

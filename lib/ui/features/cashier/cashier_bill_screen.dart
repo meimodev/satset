@@ -1137,6 +1137,11 @@ class _ReceiptCard extends ConsumerWidget {
     // 'Tagihan' (whole bill) and 'Bagian 1/3' (even share) are not letters and
     // wear no badge — there is no sibling guest to tell them apart from.
     final hasLetter = isReceiptLetter(r.label.trim());
+    // Net of any leg since refunded — a fully reversed tab left a [[Piutang]]
+    // reversal behind and nobody owes for this struk any more (ADR-0121).
+    final onAccount = r.payments
+        .where((p) => p.method == PayMethod.piutang.id)
+        .fold<int>(0, (a, p) => a + p.amount);
     // Not SatCard.plain, unlike the totals and lines cards ADR-0064 folded:
     // this outline carries *identity*, not just chrome. ADR-0063 gives the
     // card its guest's hue so a scrolled-past receipt stays identifiable once
@@ -1170,6 +1175,19 @@ class _ReceiptCard extends ConsumerWidget {
                   style: SatType.labelM(color: sc.textHi),
                 ),
               ),
+              // Settled *and* owed. The Lunas chip keeps meaning exactly what
+              // it means — this struk claims nothing more — and the tab rides
+              // beside it, because a [[Piutang]] payment discharges the claim
+              // rather than collecting it (ADR-0098, ADR-0120).
+              if (onAccount > 0) ...[
+                SatChip.tag(
+                  label: context.l10n.cshReceiptPiutang,
+                  icon: Icons.account_balance_wallet_outlined,
+                  hue: SatChipHue.warn,
+                  size: SatChipSize.sm,
+                ),
+                const SizedBox(width: Sp.s1),
+              ],
               // Was a hand-drawn AnimatedContainer pill (ADR-0064). The card
               // outline says the same thing at a glance; the chip is what says
               // it in words.

@@ -2092,6 +2092,24 @@
   "blcTableClosed": "Table released",
   "blcEvenSplit": "Split {shares} · {paid} paid",
   "blcPrepaid": "Prepaid in-app",
+  "blcPiutang": "On account {amount}",
+  "@blcPiutang": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshSegPiutang": "On account {amount}",
+  "@cshSegPiutang": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshEmptyPiutang": "No bills settled on account",
+  "cshReceiptPiutang": "On account",
   "cshLoadFailedTitle": "Couldn't load the bills",
   "cshPullToRetry": "Pull to try again.",
   "cshEmptyDetached": "No released table is still unpaid",

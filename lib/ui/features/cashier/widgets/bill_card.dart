@@ -66,6 +66,15 @@ class BillCard extends StatelessWidget {
   final int evenSharesPaid;
   final bool prepaid;
 
+  /// How much of this bill was discharged onto a member's [[Piutang]] tab
+  /// (ADR-0098), net of refunded legs. 0 on an ordinary bill.
+  ///
+  /// Deliberately **not** a [BillCardState]: a tab-settled bill is Lunas, the
+  /// claim was discharged and the revenue was booked. That somebody still owes
+  /// for it is a second, orthogonal fact — so it rides the pill row beside the
+  /// status, never in place of it.
+  final int piutang;
+
   /// Itemized receipts only — an amount receipt has no letter (ADR-0063).
   final List<BillSummaryReceipt> letters;
 
@@ -91,6 +100,7 @@ class BillCard extends StatelessWidget {
     required this.evenShares,
     required this.evenSharesPaid,
     required this.prepaid,
+    this.piutang = 0,
     required this.letters,
     required this.footNote,
     required this.onTap,
@@ -133,6 +143,7 @@ class BillCard extends StatelessWidget {
       evenShares: b.evenShareCount,
       evenSharesPaid: b.evenSharesPaid,
       prepaid: b.prepaid,
+      piutang: b.piutangAmount,
       letters: [
         for (final r in b.receipts)
           if (isReceiptLetter(r.label.trim())) r,
@@ -165,6 +176,7 @@ class BillCard extends StatelessWidget {
     evenShares: 0,
     evenSharesPaid: 0,
     prepaid: p.prepaid,
+    piutang: p.piutangAmount,
     letters: const [],
     footNote: l10n.blcSeeReceipt,
     onTap: onTap,
@@ -372,6 +384,16 @@ class BillCard extends StatelessWidget {
           SatChip.tag(
             label: context.l10n.blcPrepaid,
             hue: SatChipHue.success,
+            size: SatChipSize.sm,
+          ),
+        // Settled, and still owed. Without this a bill paid on a member's tab
+        // is byte-identical to one paid in cash, and the follow-up is only
+        // discovered when someone reads the ledger. ADR-0098, ADR-0120.
+        if (piutang > 0)
+          SatChip.tag(
+            label: context.l10n.blcPiutang(formatIDR(piutang)),
+            icon: Icons.account_balance_wallet_outlined,
+            hue: SatChipHue.warn,
             size: SatChipSize.sm,
           ),
         // Who is still owing, without opening the bill. ADR-0063.

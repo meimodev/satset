@@ -10333,6 +10333,30 @@ abstract class AppL10n {
   /// **'Prabayar aplikasi'**
   String get blcPrepaid;
 
+  /// No description provided for @blcPiutang.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang {amount}'**
+  String blcPiutang(String amount);
+
+  /// No description provided for @cshSegPiutang.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang {amount}'**
+  String cshSegPiutang(String amount);
+
+  /// No description provided for @cshEmptyPiutang.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak ada tagihan yang dibayar piutang'**
+  String get cshEmptyPiutang;
+
+  /// No description provided for @cshReceiptPiutang.
+  ///
+  /// In id, this message translates to:
+  /// **'Piutang'**
+  String get cshReceiptPiutang;
+
   /// No description provided for @cshLoadFailedTitle.
   ///
   /// In id, this message translates to:
