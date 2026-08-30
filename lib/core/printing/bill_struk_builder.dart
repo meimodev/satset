@@ -201,6 +201,104 @@ class BillStrukBuilder {
     );
   }
 
+  /// The **[[Rincian pilihan]]** — the tapped-but-not-yet-minted Per item
+  /// selection, printed so the guest can check "these are mine" before any
+  /// money moves (ADR-0122).
+  ///
+  /// Ephemeral: nothing is minted, so the doc carries no payments and therefore
+  /// renders as a Tagihan by the ordinary rule. It reuses
+  /// [BillDocKind.itemizedReceipt] because that is exactly its shape — only the
+  /// [docLabel] says it is provisional, which is the one thing a reader must
+  /// not mistake.
+  ///
+  /// [selection] is `ticketId → units`, the map the settle pane holds.
+  static BillStrukData fromSelection({
+    required AppL10n l,
+    required Bill bill,
+    required Map<String, int> selection,
+    required VenueSettingsDto venue,
+    List<int>? logoBytes,
+  }) {
+    final lines = <BillStrukLine>[];
+    var subtotal = 0;
+    for (final line in bill.lines) {
+      if (line.status == 'voided') continue;
+      final units = selection[line.ticketId] ?? 0;
+      if (units <= 0) continue;
+      final lineTotal = line.unitPrice * units;
+      subtotal += lineTotal;
+      lines.add(
+        BillStrukLine(
+          qty: units,
+          name: line.name,
+          variant: line.variantName,
+          lineTotal: lineTotal,
+          modifiers: [for (final m in line.modifiers) m.display],
+          note: line.note ?? '',
+        ),
+      );
+    }
+
+    // The total is the bill's own prorate — the same call the confirm button
+    // makes — and service/tax are then split so the three rows add up to it.
+    // Prorating all three independently would print arithmetic off by a rupiah.
+    final total = bill.prorate(subtotal);
+    var service = _shareOf(bill.serviceAmount, subtotal, bill.subtotal);
+    var tax = _shareOf(bill.taxAmount, subtotal, bill.subtotal);
+    final residual = total - subtotal - service - tax;
+    if (tax > 0) {
+      tax += residual;
+    } else if (service > 0) {
+      service += residual;
+    }
+
+    return BillStrukData(
+      venueName: venue.displayName,
+      header: venue.receiptHeader,
+      footer: venue.receiptFooter,
+      tagline: venue.receiptTagline,
+      social: venue.receiptSocial,
+      thankYou: venue.receiptThankYou,
+      address: venue.address,
+      phone: venue.phone,
+      logoBytes: logoBytes,
+      qrUrl: venue.receiptQrUrl,
+      qrCaption: venue.receiptQrCaption,
+      tableLabel: bill.tableLabel ?? bill.tableId,
+      pax: bill.pax,
+      guestName: bill.guestName ?? '',
+      memberName: bill.member?.name ?? '',
+      memberPoints: bill.member?.points ?? 0,
+      memberPunch: bill.member == null
+          ? ''
+          : punchText(
+              bill.member!.member.punchProgress,
+              bill.member!.punchTarget,
+            ),
+      at: SatClock.now(),
+      kind: BillDocKind.itemizedReceipt,
+      docLabel: l.printSelectionDocLabel,
+      lines: lines,
+      subtotal: subtotal,
+      // No receipt exists yet, so no give-back can be attached to one. A bill
+      // discount applied later only makes the guest's share smaller than this
+      // quote, which is the harmless direction.
+      taxAfterDiscount: bill.taxAfterDiscount,
+      serviceAmount: service,
+      taxAmount: tax,
+      total: total,
+      billTotal: bill.total,
+      outstanding: total,
+    );
+  }
+
+  /// `part / whole` of [amount], rounded — 0 when the bill has no subtotal to
+  /// divide by.
+  static int _shareOf(int amount, int part, int whole) {
+    if (amount <= 0 || part <= 0 || whole <= 0) return 0;
+    return (amount * part / whole).round();
+  }
+
   static List<BillStrukLine> _receiptLines(Bill bill, BillReceipt receipt) {
     final byTicket = {for (final l in bill.lines) l.ticketId: l};
     final out = <BillStrukLine>[];

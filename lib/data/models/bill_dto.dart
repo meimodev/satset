@@ -655,6 +655,17 @@ class Bill {
     return null;
   }
 
+  /// Grow a raw subtotal by this bill's own effective service+tax rate.
+  ///
+  /// Derived from the bill rather than re-read from settings, so a preview can
+  /// never disagree with the total printed above it — and it lives here rather
+  /// than beside either caller because the Per item confirm button and the
+  /// printed [[Rincian pilihan]] slip must state the same number.
+  int prorate(int amount) {
+    if (amount <= 0 || subtotal <= 0) return amount.clamp(0, 1 << 31);
+    return (amount * total / subtotal).round();
+  }
+
   factory Bill.fromJson(Map<String, dynamic> j) => Bill(
     visitId: j['visitId'] as String? ?? '',
     tableId: j['tableId'] as String,

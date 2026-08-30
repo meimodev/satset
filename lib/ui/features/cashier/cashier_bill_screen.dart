@@ -224,6 +224,12 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
                 bill: bill,
                 receipt: r,
               ),
+              printSelection: (sel) => printBillSelection(
+                context: context,
+                ref: ref,
+                bill: bill,
+                selection: sel,
+              ),
             ),
           ),
         ),
@@ -383,6 +389,11 @@ class _BillBody extends StatefulWidget {
   final VoidCallback onReopenBill;
   final Future<void> Function(BillReceipt?) printDoc;
 
+  /// Print the tapped-but-unminted Per item selection (ADR-0122). Injected
+  /// from the ConsumerState above for the same reason [printDoc] is — this
+  /// widget holds the selection but has no `ref`.
+  final Future<void> Function(Map<String, int>) printSelection;
+
   const _BillBody({
     required this.bill,
     required this.run,
@@ -392,6 +403,7 @@ class _BillBody extends StatefulWidget {
     required this.onCloseBill,
     required this.onReopenBill,
     required this.printDoc,
+    required this.printSelection,
   });
 
   @override
@@ -521,6 +533,7 @@ class _BillBodyState extends State<_BillBody> {
         _clearSelection();
       },
       onClearSelection: _clearSelection,
+      onPrintSelection: () => widget.printSelection(_selection),
       debtEnabled: widget.debtEnabled,
       splitEnabled: bill.splitEnabled,
     );

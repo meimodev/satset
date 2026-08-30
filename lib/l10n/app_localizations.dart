@@ -4021,6 +4021,24 @@ abstract class AppL10n {
   /// **'Cetak tagihan · {who}'**
   String printJobBillDoc(String who);
 
+  /// Doc label on the Rincian pilihan slip. Says the slip is NOT a settled struk yet. CONTEXT: Rincian pilihan.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagihan sementara'**
+  String get printSelectionDocLabel;
+
+  /// Printer picker subtitle for the unminted Per item selection.
+  ///
+  /// In id, this message translates to:
+  /// **'Cetak rincian pilihan · {label}'**
+  String printJobSelectionDoc(String label);
+
+  /// Settle pane action: print the tapped Per item lines before paying.
+  ///
+  /// In id, this message translates to:
+  /// **'Cetak rincian pilihan'**
+  String get stlPrintSelection;
+
   /// Fallback for "who" when a split receipt carries no letter.
   ///
   /// In id, this message translates to:

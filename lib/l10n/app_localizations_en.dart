@@ -2297,6 +2297,17 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String get printSelectionDocLabel => 'Provisional bill';
+
+  @override
+  String printJobSelectionDoc(String label) {
+    return 'Print selection · $label';
+  }
+
+  @override
+  String get stlPrintSelection => 'Print selection';
+
+  @override
   String get printWhoReceipt => 'receipt';
 
   @override

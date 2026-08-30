@@ -177,6 +177,51 @@ Future<void> printBillStruk({
   );
 }
 
+/// The **[[Rincian pilihan]]** (ADR-0122) — the Per item selection a cashier
+/// has tapped but not yet minted into a receipt, so the guest can check the
+/// lines before paying.
+///
+/// Deliberately NOT a `receipt` argument on [printBillStruk]: that function's
+/// contract is "null ⇒ whole bill, else one receipt", and a third meaning
+/// inside it is what makes the next reader guess. No `printVenue` — there is no
+/// receipt for the server to re-render, so a venue printer gets the bytes this
+/// device rendered, exactly as the debt slip does.
+Future<void> printBillSelection({
+  required BuildContext context,
+  required WidgetRef ref,
+  required Bill bill,
+  required Map<String, int> selection,
+}) async {
+  final l = context.l10n;
+  final venue = ref.read(venueSettingsProvider);
+  final logo = await ref.read(venueLogoBytesProvider(venue.logoRev).future);
+  final data = BillStrukBuilder.fromSelection(
+    l: l,
+    bill: bill,
+    selection: selection,
+    venue: venue,
+    logoBytes: logo,
+  );
+  if (data.lines.isEmpty) {
+    if (context.mounted) _toast(context, l.prnNothingToPrint);
+    return;
+  }
+  if (!context.mounted) return;
+  final subtitle = l.printJobSelectionDoc(bill.tableLabel ?? '');
+  final go = await showSatSheet<bool>(
+    context,
+    builder: (c) => _PreviewSheet(data: data, subtitle: subtitle),
+  );
+  if (go != true || !context.mounted) return;
+  await _openPicker(
+    context,
+    PrintJob(
+      subtitle: subtitle,
+      renderBytes: () async => BillStrukRenderer.render(l, data),
+    ),
+  );
+}
+
 /// The [[Piutang]] collection slip (ADR-0098). Same preview-then-pick flow as
 /// the bill doc, and the same renderer — this is a money document, and the one
 /// where the guest holds no other evidence that they paid.

@@ -60,6 +60,11 @@ class SettlePane extends StatefulWidget {
   final ValueChanged<SettleMode> onMode;
   final VoidCallback onClearSelection;
 
+  /// Print the selection as a provisional [[Rincian pilihan]] slip before any
+  /// money moves (ADR-0122). Nothing is minted — the guest checks the lines,
+  /// the cashier then hits confirm on the same selection.
+  final VoidCallback onPrintSelection;
+
   /// Whether the venue runs tabs at all (ADR-0098). Passed rather than watched
   /// because this pane holds no `WidgetRef`, and the parent already has one.
   final bool debtEnabled;
@@ -78,6 +83,7 @@ class SettlePane extends StatefulWidget {
     required this.mode,
     required this.onMode,
     required this.onClearSelection,
+    required this.onPrintSelection,
     this.debtEnabled = false,
     this.splitEnabled = false,
   });
@@ -187,15 +193,10 @@ class _SettlePaneState extends State<SettlePane> {
     return shares.isEmpty ? 0 : shares.first;
   }
 
-  /// Apply the bill's own effective service+tax rate to a raw subtotal. Derived
-  /// from the bill rather than re-read from settings, so a preview can never
-  /// disagree with the total printed above it.
-  int _grossUp(int subtotal) {
-    if (subtotal <= 0) return 0;
-    final base = _bill.subtotal;
-    if (base <= 0) return subtotal;
-    return (subtotal * _bill.total / base).round();
-  }
+  /// Apply the bill's own effective service+tax rate to a raw subtotal. The
+  /// rule lives on [Bill] so the printed [[Rincian pilihan]] slip cannot state
+  /// a different figure from the button beneath it.
+  int _grossUp(int subtotal) => _bill.prorate(subtotal);
 
   String? get _blocker {
     final l10n = context.l10n;
@@ -432,6 +433,15 @@ class _SettlePaneState extends State<SettlePane> {
                   formatIDR(
                     (_bill.outstanding - _amount).clamp(0, _bill.outstanding),
                   ),
+                ),
+                const SizedBox(height: Sp.s2h),
+                // Hand the guest the lines before taking their money. The slip
+                // mints nothing, so the selection survives the print and the
+                // confirm below charges exactly what was on the paper.
+                SatButton.ghost(
+                  label: l10n.stlPrintSelection,
+                  icon: Icons.print_rounded,
+                  onTap: widget.onPrintSelection,
                 ),
               ],
       SettleMode.bagiRata => [

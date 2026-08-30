@@ -1308,6 +1308,23 @@
       }
     }
   },
+  "printSelectionDocLabel": "Tagihan sementara",
+  "@printSelectionDocLabel": {
+    "description": "Doc label on the Rincian pilihan slip. Says the slip is NOT a settled struk yet. CONTEXT: Rincian pilihan."
+  },
+  "printJobSelectionDoc": "Cetak rincian pilihan · {label}",
+  "@printJobSelectionDoc": {
+    "description": "Printer picker subtitle for the unminted Per item selection.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "stlPrintSelection": "Cetak rincian pilihan",
+  "@stlPrintSelection": {
+    "description": "Settle pane action: print the tapped Per item lines before paying."
+  },
   "printWhoReceipt": "struk",
   "@printWhoReceipt": {
     "description": "Fallback for \"who\" when a split receipt carries no letter."

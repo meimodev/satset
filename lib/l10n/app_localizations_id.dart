@@ -2285,6 +2285,17 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String get printSelectionDocLabel => 'Tagihan sementara';
+
+  @override
+  String printJobSelectionDoc(String label) {
+    return 'Cetak rincian pilihan · $label';
+  }
+
+  @override
+  String get stlPrintSelection => 'Cetak rincian pilihan';
+
+  @override
   String get printWhoReceipt => 'struk';
 
   @override
