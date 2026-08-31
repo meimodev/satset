@@ -1566,6 +1566,21 @@
       }
     }
   },
+  "auditSettlementArrivedLate": "Pembayaran susulan {amount} {table} — ditagih {captured}",
+  "@auditSettlementArrivedLate": {
+    "description": "A settlement captured offline reached the host after its business day had closed (ADR-0123). Susulan · arriving late, after the fact — never \"Terlambat\", which blames the cashier.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "table": {
+        "type": "String"
+      },
+      "captured": {
+        "type": "String"
+      }
+    }
+  },
   "auditCashToppedUp": "Isi kas kecil {amount}",
   "@auditCashToppedUp": {
     "placeholders": {
@@ -1955,6 +1970,41 @@
   "@auditSampleDataLoaded": {
     "description": "Audit row for the ADR-0073 seed. No parameters — the act names itself."
   },
+  "cshSyncDraining": "Menyinkronkan tagihan…",
+  "cshSyncPending": "{count, plural, other{{count} tagihan belum terkirim}}",
+  "@cshSyncPending": {
+    "description": "The Antrean setelmen backlog on /kasir (ADR-0123).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cshBillPending": "Tertunda",
+  "@cshBillPending": {
+    "description": "Badge on a bill this device settled while terputus — lunas here, still open everywhere else."
+  },
+  "cshSyncRefusedTitle": "Tagihan ditolak host",
+  "cshSyncRefusedBody": "{count, plural, other{{count} tagihan tidak diterima}}. Uang sudah diterima di laci; cocokkan dengan pembukuan.",
+  "@cshSyncRefusedBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cshSyncStranded": "{amount} belum tercatat",
+  "@cshSyncStranded": {
+    "description": "The rupiah a refused chain collected but the host has not taken.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cshSyncAck": "Mengerti",
+  "cshApprovalOffline": "Persetujuan manajer perlu koneksi ke host",
+  "cshJournalFull": "Terlalu banyak tagihan tertunda — sambungkan ke host dulu",
   "cshCrumbCashier": "Kasir",
   "cshCrumbBill": "Tagihan",
   "cshBillTableCrumb": "Tagihan · Meja {table}",

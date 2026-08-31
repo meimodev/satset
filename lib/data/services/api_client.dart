@@ -137,8 +137,22 @@ class ApiClient {
   /// [timeout] overrides [requestTimeout] for the rare endpoint that is
   /// legitimately slow — the demo seed writes a month of service and takes
   /// tens of seconds on device (ADR-0052 §7).
-  Future<dynamic> postJson(String path, Object body, {Duration? timeout}) =>
-      _send('POST', path, body: body, timeout: timeout);
+  Future<dynamic> postJson(
+    String path,
+    Object body, {
+    Duration? timeout,
+    /// Makes the write replay-safe (ADR-0123). Every act on the
+    /// [[Antrean setelmen]] carries its event id here, so a replay after a
+    /// committed-but-timed-out request reads the host's stored answer instead
+    /// of splitting the bill a second time.
+    String? idempotencyKey,
+  }) => _send(
+    'POST',
+    path,
+    body: body,
+    timeout: timeout,
+    idempotencyKey: idempotencyKey,
+  );
 
   Future<dynamic> patchJson(String path, Object body) =>
       _send('PATCH', path, body: body);
@@ -150,7 +164,8 @@ class ApiClient {
     await _send('DELETE', path);
   }
 
-  Future<dynamic> deleteJson(String path) => _send('DELETE', path);
+  Future<dynamic> deleteJson(String path, {String? idempotencyKey}) =>
+      _send('DELETE', path, idempotencyKey: idempotencyKey);
 
   /// Fetch raw bytes over the pinned client (e.g. a menu photo). Plain
   /// `Image.network` cannot be used — it bypasses TLS pinning and fails the
@@ -181,9 +196,14 @@ class ApiClient {
     Map<String, String>? query,
     Object? body,
     Duration? timeout,
+    String? idempotencyKey,
   }) async {
     final uri = _config.baseUri.resolve(path).replace(queryParameters: query);
-    final headers = await _headers();
+    final headers = await _headers(
+      extra: (idempotencyKey == null || idempotencyKey.isEmpty)
+          ? null
+          : {'X-Idempotency-Key': idempotencyKey},
+    );
     final encoded = body == null ? null : jsonEncode(body);
     final sw = Stopwatch()..start();
     try {

@@ -2422,6 +2422,15 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String auditSettlementArrivedLate(
+    String amount,
+    String table,
+    String captured,
+  ) {
+    return 'Pembayaran susulan $amount $table — ditagih $captured';
+  }
+
+  @override
   String auditCashToppedUp(String amount) {
     return 'Isi kas kecil $amount';
   }
@@ -2657,6 +2666,50 @@ class AppL10nId extends AppL10n {
 
   @override
   String get auditSampleDataLoaded => 'Memuat contoh data restoran';
+
+  @override
+  String get cshSyncDraining => 'Menyinkronkan tagihan…';
+
+  @override
+  String cshSyncPending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tagihan belum terkirim',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cshBillPending => 'Tertunda';
+
+  @override
+  String get cshSyncRefusedTitle => 'Tagihan ditolak host';
+
+  @override
+  String cshSyncRefusedBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tagihan tidak diterima',
+    );
+    return '$_temp0. Uang sudah diterima di laci; cocokkan dengan pembukuan.';
+  }
+
+  @override
+  String cshSyncStranded(String amount) {
+    return '$amount belum tercatat';
+  }
+
+  @override
+  String get cshSyncAck => 'Mengerti';
+
+  @override
+  String get cshApprovalOffline => 'Persetujuan manajer perlu koneksi ke host';
+
+  @override
+  String get cshJournalFull =>
+      'Terlalu banyak tagihan tertunda — sambungkan ke host dulu';
 
   @override
   String get cshCrumbCashier => 'Kasir';

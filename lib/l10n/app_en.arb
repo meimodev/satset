@@ -823,6 +823,7 @@
   "auditBillReopened": "Reopened bill {table}",
   "auditBillClosed": "Closed bill {table}",
   "auditBillWrittenOff": "Bill written off {amount} {table}",
+  "auditSettlementArrivedLate": "Late settlement {amount} {table} — collected {captured}",
   "auditCashToppedUp": "Topped up petty cash {amount}",
   "@auditCashToppedUp": {
     "placeholders": {
@@ -996,6 +997,15 @@
   "receiptPart": "Part {index}/{count}",
   "auditStaffDeleted": "Deleted {name}",
   "auditSampleDataLoaded": "Loaded sample restaurant data",
+  "cshSyncDraining": "Syncing bills…",
+  "cshSyncPending": "{count, plural, =1{1 bill not yet sent} other{{count} bills not yet sent}}",
+  "cshBillPending": "Pending",
+  "cshSyncRefusedTitle": "Host refused a bill",
+  "cshSyncRefusedBody": "{count, plural, =1{1 bill was not accepted} other{{count} bills were not accepted}}. The money is in the drawer; reconcile against the books.",
+  "cshSyncStranded": "{amount} unrecorded",
+  "cshSyncAck": "Got it",
+  "cshApprovalOffline": "A manager approval needs the host",
+  "cshJournalFull": "Too many pending bills — reconnect to the host first",
   "cshCrumbCashier": "Cashier",
   "cshCrumbBill": "Bill",
   "cshBillTableCrumb": "Bill · Table {table}",

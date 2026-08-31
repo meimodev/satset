@@ -44,6 +44,11 @@ Specifics, each of which was a live alternative:
   line this device captured and has not yet delivered*. Settlement, discount,
   table move, stock override and takeaway are refused while terputus — money,
   cross-device state and privilege each need the authority present.
+  **Amended by [ADR-0123](0123-an-offline-settlement-is-a-journal-not-an-intent.md):**
+  the refusal of settlement held while the kasir *was* the host; a client-mode
+  `/kasir` loses the host the way a handset does, and money captured there is a
+  journal rather than an intent. Discount and privilege keep their line — a
+  manager step-up still has no offline path (ADR-0099).
 - **No offline mode flag.** With the socket closed the client enqueues without
   attempting (a waiter must not eat 8s per tap); with it open it posts normally
   and enqueues only on transport failure. `WsConnState` drives the badge, never

@@ -622,6 +622,26 @@ What the host answered when the [[Antrean kirim]] drained: accepted, refused (ou
 
 Two moments a [[Pesanan tertunda]] carries. **Terkirim** is when the host accepted the line — what the [[KDS / Antrian Persiapan|KDS]], the [[Order elapsed time|waktu berjalan]] and every [[Audio alert]] threshold measure from, because the kitchen cannot be late for food it had not received. **Diambil** is when the waiter keyed it at the table, kept for the [[Audit]] trail and for telling a guest why their food is behind. _Avoid_: aging a replayed line from diambil (it lands on the board already screaming); presenting diambil as the ordering time in [[Reports|laporan]], which bucket on terkirim.
 
+### Antrean setelmen (settlement journal)
+**ID · EN** — Antrean setelmen · Settlement journal.
+
+The device-local, **per-[[Visit]] ordered** log of settlement events a [[Terputus (client disconnected)|terputus]] [[Cashier|kasir]] has captured but not yet delivered — mint a receipt, assign a line, apply a [[Diskon (discount)]], take a [[Payment (manual confirmation)|payment]], close. Distinct from the [[Antrean kirim]] in three ways that matter: it is a **chain, not a FIFO of independents** (each event reads what the last one wrote), it is **read as well as drained** (the kasir needs the outstanding and the change), and it **never expires** — a business-day rollover retires an order, but cash is already in the drawer. Lives in the client database (ADR-0124), not prefs. See [docs/adr/0123-an-offline-settlement-is-a-journal-not-an-intent.md](docs/adr/0123-an-offline-settlement-is-a-journal-not-an-intent.md). _Avoid_: calling it an [[Antrean kirim]] for money (the shapes differ); "sinkron" / "rekonsiliasi"; letting an event expire.
+
+### Tagihan tertunda (bill settled offline)
+**ID · EN** — Tagihan tertunda · Pending-settled bill. The badge: Tertunda · Not yet landed.
+
+A [[Bill (tab)]] the capturing device shows as **lunas** while every other device in the venue still shows it **open** — because the money exists only in that device's [[Antrean setelmen]]. It is the money twin of a [[Pesanan tertunda]], and worse in one respect: the guest has already gone. Two islanded devices can each collect the same bill in full, which is **not prevented** — a lease granted by the host that just vanished is no lease (ADR-0116) — only made loud at drain. _Avoid_: rendering it as an ordinary Lunas with no badge; reading the badge as "the network is down" (it names *this bill*, not the link).
+
+### Kunjungan otoritatif-lokal (local-authoritative visit)
+**ID · EN** — Kunjungan otoritatif-lokal · Local-authoritative visit.
+
+A [[Visit]] whose [[Antrean setelmen]] is non-empty. Every settlement act on it **appends to the journal** rather than going to the host — *even after the socket returns* — until its chain drains clean, because a live write that lands ahead of the queued events makes the projection the kasir is reading a lie. The condition is `journal.isNotEmpty || wsConnState != open`, so it outlives the outage that started it. _Avoid_: reading "back online" as "back to normal" for a visit that still has events parked; interleaving a live write with an undrained chain.
+
+### Hasil setelmen (settlement result)
+**ID · EN** — Hasil setelmen · Settlement result.
+
+What the host answered when an [[Antrean setelmen]] chain drained. Refusal is **on contradiction, never on staleness**: a bill that grew while the kasir was dark settles short and is still a correct bill with an outstanding; only a fact that contradicts a captured event (the [[Visit]] already [[Bill close (Tutup tagihan)|closed]] by someone else, the receipt gone, the line voided, the redeem over balance) refuses. A refusal **halts that visit's chain** and parks the rest untried — a refund whose payment was refused must never land — while other visits keep draining. Surfaced heavier than a [[Hasil pengiriman]], because the cash is already collected: a blocking sheet on the [[Cashier|kasir]] screen naming the visit, what landed, what is parked, and the rupiah delta; acknowledging it writes an [[Audit]] row. _Avoid_: auto-retrying a refusal; refusing a payment merely because the bill has since grown.
+
 ### Generic seed (sample data)
 **ID · EN** — Contoh data · Sample data. The seeded **content itself** — zone names (Dalam / Luar / Teras / VIP), the ~42 menu items, bahan, staff names — is venue content and ships Indonesian in both locales (ADR-0083). Only the prompt and progress copy around it translate.
 

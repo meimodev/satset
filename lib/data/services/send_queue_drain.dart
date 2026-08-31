@@ -2,9 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/send_queue_service.dart';
+import 'package:satset/data/services/settlement_journal.dart';
+import 'package:satset/data/services/settlement_sync.dart';
 import 'package:satset/data/services/ws_client.dart';
 
 /// Drains the **Antrean kirim** whenever the socket comes back.
@@ -26,19 +29,47 @@ final sendQueueDrainProvider = Provider<void>((ref) {
   if (ref.watch(apiConfigProvider) == null) return;
   final sub = ref.watch(wsClientProvider).events.listen((ev) async {
     if (ev.type != WsEventTypes.connected) return;
-    if (ref.read(sendQueueProvider).isEmpty) return;
-    final report = await ref.read(sendQueueProvider.notifier).drain();
-    if (report.isEmpty) return;
-    // Re-pull rather than patch: one drain can have created lines across
-    // several visits, and the authoritative list is a single GET away. The
-    // repositories' own `connected` resync already ran — before these orders
-    // existed — so without this the board would show the world as it was a
-    // moment before the backlog landed.
-    await ref.read(ticketsProvider.notifier).resyncNow();
-    // The tables carry the other half of what a drain changed: a replayed seat
-    // is a table fact, and a replayed order moves the tab.
-    await ref.read(tablesProvider.notifier).resyncNow();
-    ref.read(sendReportProvider.notifier).state = report;
+    await _drainOrders(ref);
+    // Money **after** food, always (ADR-0123). A payment replayed ahead of the
+    // order it pays for lands against a bill that does not yet hold the lines,
+    // and the bill then reads short for no reason anybody can see. Only this
+    // device's ordering is ours to fix — another handset's backlog lands when
+    // it lands, which is what the staleness rule covers.
+    await _drainSettlement(ref);
   });
   ref.onDispose(sub.cancel);
 });
+
+Future<void> _drainOrders(Ref ref) async {
+  if (ref.read(sendQueueProvider).isEmpty) return;
+  final report = await ref.read(sendQueueProvider.notifier).drain();
+  if (report.isEmpty) return;
+  // Re-pull rather than patch: one drain can have created lines across
+  // several visits, and the authoritative list is a single GET away. The
+  // repositories' own `connected` resync already ran — before these orders
+  // existed — so without this the board would show the world as it was a
+  // moment before the backlog landed.
+  await ref.read(ticketsProvider.notifier).resyncNow();
+  // The tables carry the other half of what a drain changed: a replayed seat
+  // is a table fact, and a replayed order moves the tab.
+  await ref.read(tablesProvider.notifier).resyncNow();
+  ref.read(sendReportProvider.notifier).state = report;
+}
+
+/// Replay the [[Antrean setelmen]] (ADR-0123). Per visit, in capture order,
+/// halting a visit on its first refusal; other visits keep draining.
+Future<void> _drainSettlement(Ref ref) async {
+  if (ref.read(settlementJournalProvider).pendingVisits.isEmpty) return;
+  final report = await ref.read(settlementJournalProvider.notifier).drain();
+  if (report.isEmpty) return;
+  // Same reason the order drain re-pulls: the cashier list's own `connected`
+  // resync ran before these payments existed.
+  await ref.read(settlementProvider.notifier).refresh();
+  if (report.failures.isNotEmpty) {
+    ref.read(settlementReportProvider.notifier).state = report;
+  }
+}
+
+/// The last drain that refused something. Read by the `/kasir` sheet, which
+/// clears it when the cashier acknowledges (ADR-0123).
+final settlementReportProvider = StateProvider<SettlementReport?>((_) => null);

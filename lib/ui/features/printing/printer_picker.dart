@@ -25,6 +25,7 @@ import 'package:satset/data/models/device_printer.dart';
 import 'package:satset/data/models/printer_dto.dart';
 import 'package:satset/data/repositories/printers_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
+import 'package:satset/data/services/settlement_sync.dart';
 import 'package:satset/data/services/bt_printer_service.dart';
 import 'package:satset/data/services/printer_discovery_service.dart';
 import 'package:satset/data/services/prefs_service.dart';
@@ -146,12 +147,19 @@ Future<void> printBillStruk({
 
   final venue = ref.read(venueSettingsProvider);
   final logo = await ref.read(venueLogoBytesProvider(venue.logoRev).future);
+  // Printing off a projection the host has not taken yet: the money is the
+  // till's own arithmetic and is right, the points and stempel are not
+  // (ADR-0123).
+  final pendingSync = ref
+      .read(settlementJournalProvider)
+      .isLocal(bill.visitId);
   final data = BillStrukBuilder.fromBill(
     l: l,
     bill: bill,
     receipt: receipt,
     venue: venue,
     logoBytes: logo,
+    pendingSync: pendingSync,
   );
 
   // Look before you print (ADR-0066). The preview is built from the same

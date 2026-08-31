@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/business_day.dart';
 import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:drift/drift.dart';
@@ -19,6 +20,7 @@ import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/server/audit_log.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
+import 'package:satset/domain/use_cases/bill_recompute.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/debts.dart';
@@ -89,9 +91,12 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     required String? actorId,
     required int loss,
     String? reason,
+    /// When the close actually happened, if it was captured on a terputus till
+    /// and replayed later (ADR-0123). Null for every online close.
+    DateTime? at,
   }) async {
     final visitId = visit.id;
-    final now = SatClock.now().toUtc();
+    final now = at ?? SatClock.now().toUtc();
     // A close is one act: the stamp, its audit row, the points it pays out and
     // the snapshot that files it (ADR-0100). Half of it is a bill marked
     // closed that never earned, or an archived visit with no audit line.
@@ -117,6 +122,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         // Only a write-off moves money; a normal close is bookkeeping, so it
         // carries no amount rather than a zero the venue log would tally.
         amountCents: loss > 0 ? loss : null,
+        at: at,
       );
       // [[Poin]] earn at bill close, once per visit (ADR-0095). A write-off pays
       // out nothing — the guest did not pay, so there is no spend to reward — and
@@ -162,6 +168,11 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
               base: entry.value,
               actorUserId: actorId,
               hub: hub,
+              // Earned when the bill closed, not when it drained — the close
+              // itself already backdates, and a points row filed a day later
+              // than the bill that earned it makes the member report disagree
+              // with the sales report about the same meal.
+              at: now,
             );
           }
         }
@@ -175,6 +186,13 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           fresh,
           billClosedBy: actorId,
           lossAmount: loss,
+          // The snapshot files the bill under the moment it closed, which for
+          // a replayed settlement is when the till took the money, not when
+          // the socket came back (ADR-0123). Without this the payment row is
+          // backdated correctly and the session it lives in is not, so a bill
+          // collected at 23:50 and drained at 00:10 is reported on the wrong
+          // day by everything that buckets on `TableSession.closedAt`.
+          closedAt: now,
         );
       } else {
         final tbl = await (db.select(
@@ -203,12 +221,18 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   /// ADR-0069 — a bill closes itself the moment it settles. Only ever the Lunas
   /// path: a write-off has `outstanding > 0` by definition, so it can never
   /// reach here. Returns true when it closed (and therefore already broadcast).
-  Future<bool> autoCloseIfSettled(String visitId, String? actorId) async {
+  Future<bool> autoCloseIfSettled(
+    String visitId,
+    String? actorId, {
+    DateTime? at,
+  }) async {
     final v = await _visit(db, visitId);
     if (v == null || v.billClosedAt != null) return false;
     final bill = await _buildBill(db, visitId);
     if (bill == null || bill['fullySettled'] != true) return false;
-    await performBillClose(v, actorId: actorId, loss: 0);
+    // A bill settled by a replayed payment closed when that payment was taken,
+    // not when the socket came back.
+    await performBillClose(v, actorId: actorId, loss: 0, at: at);
     return true;
   }
 
@@ -216,8 +240,12 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   /// rather than [broadcastBill] — payment, assignment, split, discount. The
   /// ones that can only move it away (refund, reopen, deleting a receipt) keep
   /// the plain broadcast, so a reopen is not undone a millisecond later.
-  Future<void> settleOrBroadcast(String visitId, String? actorId) async {
-    if (await autoCloseIfSettled(visitId, actorId)) return;
+  Future<void> settleOrBroadcast(
+    String visitId,
+    String? actorId, {
+    DateTime? at,
+  }) async {
+    if (await autoCloseIfSettled(visitId, actorId, at: at)) return;
     await broadcastBill(visitId);
   }
 
@@ -351,7 +379,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     if (visit == null) return _err(404, 'no_visit', 'visit not found');
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final mode = (body['mode'] as String?) == 'even' ? 'even' : 'itemized';
-    final id = _uuid.v4();
+    final id = _mintId(body);
     // A struk may be born named (ADR-0120 §3). The settle pane mints at confirm
     // so an abandoned mode leaves nothing behind, which means there is no
     // receipt to attach a member to at the moment the cashier picks one — the
@@ -546,13 +574,21 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     // Number the new shares after any that already exist, so a second split
     // does not mint a second part 1. Stored as the bare spec (ADR-0085).
     final from = existing.where((r) => r.mode == 'even').length;
+    // Ids may be supplied, one per share (ADR-0123): a till that cut the split
+    // while terputus has already shown the guest which slip is theirs, and a
+    // payment queued behind this names that slip by id.
+    final ids = [
+      for (final x in (body['ids'] as List? ?? const [])) x.toString(),
+    ];
     await db.transaction(() async {
       for (var i = 0; i < n; i++) {
         await db
             .into(db.receipts)
             .insert(
               ReceiptsCompanion.insert(
-                id: _uuid.v4(),
+                id: i < ids.length && ids[i].isNotEmpty
+                    ? ids[i]
+                    : _uuid.v4(),
                 tableId: visit.tableId,
                 visitId: Value(visitId),
                 mode: const Value('even'),
@@ -697,7 +733,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       );
     }
 
-    final discountId = _uuid.v4();
+    final discountId = _mintId(body);
     await db
         .into(db.discounts)
         .insert(
@@ -1170,6 +1206,11 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           points: points,
           actorUserId: actor?.id,
           hub: hub,
+          // The ledger row and its audit backdate with the money they belong
+          // to (ADR-0123 §capturedAt). A redeem captured at 23:50 and drained
+          // at 00:10 otherwise files the give-back in the next day's member
+          // report while the payment it paid for sits in the previous day's.
+          at: _capturedAt(body),
         );
         await db
             .into(db.discounts)
@@ -1400,6 +1441,11 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           points: points,
           actorUserId: actor?.id,
           hub: hub,
+          // The ledger row and its audit backdate with the money they belong
+          // to (ADR-0123 §capturedAt). A redeem captured at 23:50 and drained
+          // at 00:10 otherwise files the give-back in the next day's member
+          // report while the payment it paid for sits in the previous day's.
+          at: _capturedAt(body),
         );
         await db
             .into(db.discounts)
@@ -1522,8 +1568,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         return _err(409, 'no_member', 'tagihan belum punya pelanggan');
       }
     }
-    // Minted up front so the audit row can point at it (ADR-0086).
-    final paymentId = _uuid.v4();
+    // Minted up front so the audit row can point at it (ADR-0086); supplied by
+    // the till since ADR-0123, so a queued refund can name this leg.
+    final paymentId = _mintId(body);
     final storedPhoto = (method == 'tunai' || onAccount) ? null : photo;
     try {
       await db.transaction(() async {
@@ -1542,7 +1589,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
                 ),
                 cashierUserId: Value(user?.id),
                 note: Value((body['note'] as String?)?.trim()),
-                at: SatClock.now().toUtc(),
+                at: _capturedAt(body) ?? SatClock.now().toUtc(),
                 photo: Value(storedPhoto),
               ),
             );
@@ -1579,6 +1626,11 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           // Only when there is genuinely an image behind it — a cash tender
           // leaves this null so the venue log shows no indicator to tap.
           paymentId: storedPhoto == null ? null : paymentId,
+          // The row backdates (ADR-0123 §capturedAt) and so must the audit:
+          // `billClosed` is already stamped at capture, so leaving this at
+          // drain time files a bill as closed before the payment that closed
+          // it — the venue log then reads as an impossible order of events.
+          at: _capturedAt(body),
         );
       });
     } on DebtException catch (e) {
@@ -1590,7 +1642,35 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         'limit': e.limit,
       });
     }
-    await settleOrBroadcast(visitId, user?.id);
+    final captured = _capturedAt(body);
+    await settleOrBroadcast(visitId, user?.id, at: captured);
+    // A payment collected on a dark till and drained after its own business
+    // day closed its books is accepted — the cash is in the drawer, and
+    // refusing it would lose the record, not the money. It gets a row of its
+    // own so the discrepancy the owner finds in a signed-off day has a name
+    // (ADR-0123).
+    if (captured != null) {
+      final hour = await _dayStartHour(db);
+      final now = SatClock.now();
+      if (businessDayStart(captured.toLocal(), hour).isBefore(
+        businessDayStart(now, hour),
+      )) {
+        await _audit(
+          db,
+          AuditType.paymentRecorded,
+          AuditKind.settlementArrivedLate,
+          params: {
+            'table': visit?.tableLabel ?? '',
+            'amount': auditRupiah(amount),
+            'captured': captured.toLocal().toIso8601String(),
+          },
+          tableId: visit?.tableId ?? '',
+          actor: user?.id,
+          amountCents: amount,
+          paymentId: paymentId,
+        );
+      }
+    }
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
@@ -1696,7 +1776,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           .into(db.payments)
           .insert(
             PaymentsCompanion.insert(
-              id: _uuid.v4(),
+              id: _mintId(body),
               receiptId: receiptId,
               // Inherited, never chosen: a refund is the leg running backwards.
               method: leg.method,
@@ -1705,7 +1785,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
               refundsPaymentId: Value(paymentId),
               cashierUserId: Value(user?.id),
               note: Value((body['note'] as String?)?.trim()),
-              at: SatClock.now().toUtc(),
+              at: _capturedAt(body) ?? SatClock.now().toUtc(),
             ),
           );
       // A tab leg gives nothing back from the drawer — the claim simply stops
@@ -1736,6 +1816,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         // The payment row stores this negative; the audit column is a
         // magnitude, so the sign is dropped here deliberately.
         amountCents: amount,
+        // Backdated with its row, for the reason the payment audit is.
+        at: _capturedAt(body),
       );
     });
     await broadcastBill(visitId);
@@ -1932,6 +2014,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       actorId: user?.id,
       loss: loss,
       reason: writeOff ? (body['reason'] as String?)?.trim() : null,
+      at: _capturedAt(body),
     );
     return _ok({'closed': true, 'snapshotted': snapshotted});
   });
@@ -2115,6 +2198,39 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
 
 // ───────────────────────── helpers ─────────────────────────
 
+/// A row id the caller may mint (ADR-0123).
+///
+/// Receipt, payment, discount and refund ids come from the client — **online
+/// too**, not only on the [[Antrean setelmen]] path. Minting only offline would
+/// give one row two provenances and leave the offline branch exercised only
+/// offline. It also lets a queued refund name the payment leg it unwinds before
+/// that payment has ever reached the host.
+///
+/// Falls back to a server uuid so an older client keeps working unchanged.
+String _mintId(Map<String, dynamic> body, [String key = 'id']) {
+  final given = (body[key] as String?)?.trim() ?? '';
+  // Length-bounded rather than uuid-shaped: the id is opaque here, and the
+  // primary key is what actually enforces uniqueness.
+  if (given.isNotEmpty && given.length <= 64) return given;
+  return _uuid.v4();
+}
+
+/// When the act actually happened, if the caller was there and the host was
+/// not (ADR-0123).
+///
+/// A payment taken at 23:50 on a dark handset and drained at 00:10 belongs to
+/// the shift that collected it; stamping it at drain time makes the closing
+/// shift short and the opening one over in the same stroke. Ignored when
+/// absent (every online write) and when it is in the future — a handset clock
+/// ahead of the host must not book money into tomorrow.
+DateTime? _capturedAt(Map<String, dynamic> body) {
+  final raw = body['capturedAt'] as String?;
+  if (raw == null) return null;
+  final t = DateTime.tryParse(raw)?.toUtc();
+  if (t == null) return null;
+  return t.isAfter(SatClock.now().toUtc()) ? null : t;
+}
+
 Future<Receipt?> _receipt(AppDatabase db, String id) =>
     (db.select(db.receipts)..where((x) => x.id.equals(id))).getSingleOrNull();
 
@@ -2185,6 +2301,13 @@ Future<List<Ticket>> _sentTickets(AppDatabase db, String visitId) async {
       .toList();
 }
 
+Future<int> _dayStartHour(AppDatabase db) async {
+  final s = await (db.select(
+    db.venueSettings,
+  )..where((x) => x.id.equals('default'))).getSingleOrNull();
+  return s?.businessDayStartHour ?? 4;
+}
+
 Future<TaxServiceConfig> _config(AppDatabase db) async {
   final s = await (db.select(
     db.venueSettings,
@@ -2198,27 +2321,6 @@ Future<TaxServiceConfig> _config(AppDatabase db) async {
     serviceFixedAmount: s?.serviceFixedAmount ?? 0,
     taxAfterDiscount: s?.taxAfterDiscount ?? true,
   );
-}
-
-/// Re-resolve a live [[Diskon (discount)]] row's rupiah [amount] from its
-/// snapshotted `kind`/`value` against the CURRENT [base], persisting the
-/// result. The snapshot rule (ADR-0037) freezes `name`/`kind`/`value` so a
-/// preset edit never rewrites history — but `amount` is *derived*, and while a
-/// receipt is still live its base moves as lines are assigned and reassigned.
-/// Leaving a stale amount would silently turn a 10% discount into 20% when a
-/// line moves away. Frozen for good at bill close, into `tableSessionDiscounts`.
-Future<int> _resolveDiscountRow(AppDatabase db, Discount d, int base) async {
-  final amount = resolveDiscountAmount(
-    kind: d.kind,
-    value: d.value,
-    base: base,
-  );
-  if (amount != d.amount) {
-    await (db.update(db.discounts)..where((x) => x.id.equals(d.id))).write(
-      DiscountsCompanion(amount: Value(amount)),
-    );
-  }
-  return amount;
 }
 
 /// Every discount row on a visit's receipts, grouped by receipt id.
@@ -2240,123 +2342,120 @@ Future<Map<String, List<Discount>>> _discountsByReceipt(
   return out;
 }
 
-/// Recompute every itemized receipt's money + paid status for a visit.
-Future<void> _recompute(AppDatabase db, String visitId) async {
+/// Gather everything [recomputeBill] needs for one visit, as plain records.
+///
+/// The Drift→records step is the whole cost of ADR-0123's shared rule: the
+/// arithmetic itself lives in `domain/` and is run verbatim by a terputus
+/// [[Cashier|kasir]] over its cached bill and [[Antrean setelmen]].
+Future<
+  ({
+    List<RcLine> lines,
+    List<RcReceipt> receipts,
+    List<RcAssign> assigns,
+    List<RcDiscount> discounts,
+    Map<String, int> paid,
+    TaxServiceConfig cfg,
+  })
+>
+_rcInputs(AppDatabase db, String visitId) async {
   final cfg = await _config(db);
+  final tickets = await _sentTickets(db, visitId);
   final recs = await (db.select(
     db.receipts,
   )..where((x) => x.visitId.equals(visitId))).get();
-  final tickets = {for (final t in await _sentTickets(db, visitId)) t.id: t};
+  final ids = [for (final r in recs) r.id];
+  final assignRows = ids.isEmpty
+      ? const <ReceiptLine>[]
+      : await (db.select(
+          db.receiptLines,
+        )..where((x) => x.receiptId.isIn(ids))).get();
+  // Both scopes in one list — `recomputeBill` tells them apart by a null
+  // `receiptId`, exactly as the schema does (ADR-0070).
+  final discRows = [
+    ...(ids.isEmpty
+        ? const <Discount>[]
+        : await (db.select(
+            db.discounts,
+          )..where((x) => x.receiptId.isIn(ids))).get()),
+    ...await _billDiscounts(db, visitId),
+  ];
+  final paid = <String, int>{};
+  for (final r in recs) {
+    paid[r.id] = await _paidNet(db, r.id);
+  }
+  return (
+    lines: [
+      for (final t in tickets)
+        RcLine(ticketId: t.id, unitPrice: t.price, qty: t.qty),
+    ],
+    receipts: [
+      for (final r in recs)
+        RcReceipt(id: r.id, mode: r.mode, amountTotal: r.total),
+    ],
+    assigns: [
+      for (final l in assignRows)
+        RcAssign(
+          receiptId: l.receiptId,
+          ticketId: l.ticketId,
+          qtyUnits: l.qtyUnits,
+        ),
+    ],
+    discounts: [
+      for (final d in discRows)
+        RcDiscount(
+          id: d.id,
+          receiptId: d.receiptId,
+          ticketId: d.ticketId,
+          kind: d.kind,
+          value: d.value,
+        ),
+    ],
+    paid: paid,
+    cfg: cfg,
+  );
+}
 
-  final byReceipt = await _discountsByReceipt(db, recs.map((r) => r.id));
-
-  final itemized = recs.where((r) => r.mode != 'even').toList();
-  final subtotals = <int>[]; // net of line discounts (ADR-0038)
-  final lineDiscounts = <int>[];
-  final orderDiscounts = <int>[];
-  for (final rec in itemized) {
-    final lines = await (db.select(
-      db.receiptLines,
-    )..where((x) => x.receiptId.equals(rec.id))).get();
-    final units = <String, int>{};
-    var gross = 0;
-    for (final l in lines) {
-      final t = tickets[l.ticketId];
-      if (t != null) {
-        gross += t.price * l.qtyUnits;
-        units[l.ticketId] = (units[l.ticketId] ?? 0) + l.qtyUnits;
-      }
-    }
-    final ds = byReceipt[rec.id] ?? const <Discount>[];
-    // A line discount's base is the value of the units THIS receipt owns.
-    var lineDisc = 0;
-    for (final d in ds.where((d) => d.ticketId != null)) {
-      final t = tickets[d.ticketId];
-      final base = t == null ? 0 : t.price * (units[d.ticketId] ?? 0);
-      lineDisc += await _resolveDiscountRow(db, d, base);
-    }
-    final net = gross - lineDisc;
-    // The order discount's base is the subtotal already net of line discounts
-    // — line-then-order (ADR-0038).
-    var orderDisc = 0;
-    for (final d in ds.where((d) => d.ticketId == null)) {
-      orderDisc += await _resolveDiscountRow(db, d, net);
-    }
-    subtotals.add(net);
-    lineDiscounts.add(lineDisc);
-    orderDiscounts.add(orderDisc);
-  }
-  final billSub = tickets.values.fold<int>(0, (a, t) => a + t.price * t.qty);
-  final assignedSub =
-      subtotals.fold<int>(0, (a, b) => a + b) + _sum(lineDiscounts);
-  final allUnitsAssigned = await _fullyAssigned(db, tickets.values);
-  // A bill-scope discount belongs to the visit, so it has to be fanned out
-  // across the itemized receipts before they can each be totalled — same job
-  // `distributeFixed` does for a fixed service charge. Amount receipts are
-  // excluded on purpose: their claim was frozen at mint time (ADR-0068), and a
-  // discount applied afterwards must not silently re-quote a guest.
-  //
-  // Sources stack (ADR-0094) and every one of them resolves against the SAME
-  // base — a percentage never compounds on top of another source's give-away,
-  // because a guest cannot be told what "10%" meant if the answer depends on
-  // which slot was filled first.
-  final billDiscBase = billSub - _sum(lineDiscounts);
-  var billDiscAmount = 0;
-  for (final d in await _billDiscounts(db, visitId)) {
-    billDiscAmount += await _resolveDiscountRow(db, d, billDiscBase);
-  }
-  // ponytail: the stack is clamped to the base rather than reconciled row by
-  // row. Only reachable when the slots together exceed 100%, and the printed
-  // rows stay honest about what each promised.
-  if (billDiscAmount > billDiscBase) billDiscAmount = billDiscBase;
-  if (billDiscAmount > 0 && itemized.isNotEmpty) {
-    final fanned = distributeFixed(subtotals, billDiscAmount);
-    for (var i = 0; i < itemized.length; i++) {
-      orderDiscounts[i] += fanned[i];
-    }
-  }
-  // Whatever the amount receipts already claim is not the itemized side's to
-  // account for, so it comes off the target they have to hit.
-  final amountClaim = recs
-      .where((r) => r.mode == 'even')
-      .fold<int>(0, (a, r) => a + r.total);
-  final billTotal = allUnitsAssigned
-      ? computeBreakdown(
-              billSub - _sum(lineDiscounts),
-              cfg,
-              discount: _sum(orderDiscounts),
-            ).total -
-            amountClaim
-      : null;
-  final breakdowns = splitItemized(
-    subtotals,
-    cfg,
-    billTotalTarget: (assignedSub == billSub) ? billTotal : null,
-    discounts: orderDiscounts,
+/// Recompute every itemized receipt's money + paid status for a visit, and
+/// re-resolve every live [[Diskon (discount)]] row's rupiah against its current
+/// base (ADR-0037 freezes `kind`/`value`, never the derived `amount`).
+///
+/// The arithmetic is [recomputeBill]; this function is only the persistence
+/// half. Nothing here may compute money — a second rule is the drift ADR-0123
+/// exists to prevent.
+Future<void> _recompute(AppDatabase db, String visitId) async {
+  final input = await _rcInputs(db, visitId);
+  final res = recomputeBill(
+    lines: input.lines,
+    receipts: input.receipts,
+    assigns: input.assigns,
+    discounts: input.discounts,
+    paidByReceipt: input.paid,
+    cfg: input.cfg,
   );
 
-  for (var i = 0; i < itemized.length; i++) {
-    final rec = itemized[i];
-    final b = breakdowns[i];
-    final paid = await _paidNet(db, rec.id);
-    await (db.update(db.receipts)..where((x) => x.id.equals(rec.id))).write(
-      ReceiptsCompanion(
-        subtotal: Value(b.subtotal),
-        // Reporting figure: line discounts (already inside subtotal) plus the
-        // whole-order one actually applied after clamping.
-        discountAmount: Value(lineDiscounts[i] + b.discountAmount),
-        serviceAmount: Value(b.serviceAmount),
-        taxAmount: Value(b.taxAmount),
-        total: Value(b.total),
-        status: Value(b.total > 0 && paid >= b.total ? 'paid' : 'unpaid'),
-      ),
+  for (final d in input.discounts) {
+    final amount = res.discountAmounts[d.id] ?? 0;
+    await (db.update(db.discounts)..where((x) => x.id.equals(d.id))).write(
+      DiscountsCompanion(amount: Value(amount)),
     );
   }
-  for (final rec in recs.where((r) => r.mode == 'even')) {
-    final paid = await _paidNet(db, rec.id);
+  for (final rec in input.receipts) {
+    final m = res.receipts[rec.id];
+    if (m == null) {
+      // An amount receipt keeps its frozen claim; only its status moves.
+      await (db.update(db.receipts)..where((x) => x.id.equals(rec.id))).write(
+        ReceiptsCompanion(status: Value(res.statuses[rec.id] ?? 'unpaid')),
+      );
+      continue;
+    }
     await (db.update(db.receipts)..where((x) => x.id.equals(rec.id))).write(
       ReceiptsCompanion(
-        status: Value(rec.total > 0 && paid >= rec.total ? 'paid' : 'unpaid'),
+        subtotal: Value(m.subtotal),
+        discountAmount: Value(m.discountAmount),
+        serviceAmount: Value(m.serviceAmount),
+        taxAmount: Value(m.taxAmount),
+        total: Value(m.total),
+        status: Value(m.status),
       ),
     );
   }
@@ -2401,13 +2500,6 @@ Future<int> _paidNet(AppDatabase db, String receiptId) async {
   return rows.fold<int>(0, (a, r) => a + (r.read(db.payments.amount) ?? 0));
 }
 
-Future<bool> _fullyAssigned(AppDatabase db, Iterable<Ticket> tickets) async {
-  for (final t in tickets) {
-    if (await _assignedUnits(db, t.id) < t.qty) return false;
-  }
-  return true;
-}
-
 Future<void> _audit(
   AppDatabase db,
   AuditType type,
@@ -2418,6 +2510,7 @@ Future<void> _audit(
   String? reason,
   int? amountCents,
   String? paymentId,
+  DateTime? at,
 }) => writeAudit(
   db,
   type: type,
@@ -2428,6 +2521,7 @@ Future<void> _audit(
   reason: reason,
   amountCents: amountCents,
   paymentId: paymentId,
+  at: at,
 );
 
 /// Build the full bill JSON for one visit, or null if it has no sent lines.

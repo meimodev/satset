@@ -34,8 +34,12 @@ class _RefusingClient extends ApiClient {
   final String code;
 
   @override
-  Future<dynamic> postJson(String path, Object body, {Duration? timeout}) =>
-      throw ApiException(409, '{"code":"$code"}', code);
+  Future<dynamic> postJson(
+    String path,
+    Object body, {
+    Duration? timeout,
+    String? idempotencyKey,
+  }) => throw ApiException(409, '{"code":"$code"}', code);
 
   @override
   Future<dynamic> getJson(String path, {Map<String, String>? query}) async =>

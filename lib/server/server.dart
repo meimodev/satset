@@ -18,6 +18,7 @@ import 'package:satset/domain/models/release_gate.dart';
 import 'auth.dart';
 import 'db/database.dart';
 import 'db/seed.dart';
+import 'idempotency.dart';
 import 'mdns.dart';
 import 'routes/auth_routes.dart';
 import 'routes/devices_routes.dart';
@@ -352,7 +353,10 @@ class ServerRuntime {
     r.mount('/', kdsRoutes(db, auth).call);
     r.mount('/', reportsRoutes(db, auth).call);
     r.mount('/', reservationsRoutes(db, hub, auth).call);
-    r.mount('/', settlementRoutes(db, hub, auth).call);
+    // Every settlement mutation is replay-safe when it carries an
+    // idempotency key — the [[Antrean setelmen]] replays a whole chain and
+    // most of its acts are not naturally idempotent (ADR-0123).
+    r.mount('/', idempotent(db, settlementRoutes(db, hub, auth).call));
     r.mount('/', cashRoutes(db, hub, auth).call);
     r.mount('/', venueDayRoutes(db, hub, auth).call);
     r.mount('/', membersRoutes(db, hub, auth).call);

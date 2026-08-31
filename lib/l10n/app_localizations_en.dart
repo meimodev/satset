@@ -2434,6 +2434,15 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String auditSettlementArrivedLate(
+    String amount,
+    String table,
+    String captured,
+  ) {
+    return 'Late settlement $amount $table — collected $captured';
+  }
+
+  @override
   String auditCashToppedUp(String amount) {
     return 'Topped up petty cash $amount';
   }
@@ -2673,6 +2682,52 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get auditSampleDataLoaded => 'Loaded sample restaurant data';
+
+  @override
+  String get cshSyncDraining => 'Syncing bills…';
+
+  @override
+  String cshSyncPending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bills not yet sent',
+      one: '1 bill not yet sent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cshBillPending => 'Pending';
+
+  @override
+  String get cshSyncRefusedTitle => 'Host refused a bill';
+
+  @override
+  String cshSyncRefusedBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bills were not accepted',
+      one: '1 bill was not accepted',
+    );
+    return '$_temp0. The money is in the drawer; reconcile against the books.';
+  }
+
+  @override
+  String cshSyncStranded(String amount) {
+    return '$amount unrecorded';
+  }
+
+  @override
+  String get cshSyncAck => 'Got it';
+
+  @override
+  String get cshApprovalOffline => 'A manager approval needs the host';
+
+  @override
+  String get cshJournalFull =>
+      'Too many pending bills — reconnect to the host first';
 
   @override
   String get cshCrumbCashier => 'Cashier';

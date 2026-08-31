@@ -66,6 +66,12 @@ class BillCard extends StatelessWidget {
   final int evenSharesPaid;
   final bool prepaid;
 
+  /// This device settled the bill while it could not reach the host
+  /// (ADR-0123). It reads lunas here and **open on every other screen in the
+  /// venue** until the [[Antrean setelmen]] drains, which is exactly the fact
+  /// the badge exists to state.
+  final bool pendingSync;
+
   /// How much of this bill was discharged onto a member's [[Piutang]] tab
   /// (ADR-0098), net of refunded legs. 0 on an ordinary bill.
   ///
@@ -101,6 +107,7 @@ class BillCard extends StatelessWidget {
     required this.evenSharesPaid,
     required this.prepaid,
     this.piutang = 0,
+    this.pendingSync = false,
     required this.letters,
     required this.footNote,
     required this.onTap,
@@ -112,6 +119,7 @@ class BillCard extends StatelessWidget {
     required AppL10n l10n,
     required Zone? zone,
     required VoidCallback onTap,
+    bool pendingSync = false,
   }) {
     final settled = b.fullySettled;
     final partial = !settled && b.paidAmount > 0;
@@ -143,6 +151,7 @@ class BillCard extends StatelessWidget {
       evenShares: b.evenShareCount,
       evenSharesPaid: b.evenSharesPaid,
       prepaid: b.prepaid,
+      pendingSync: pendingSync,
       piutang: b.piutangAmount,
       letters: [
         for (final r in b.receipts)
@@ -356,6 +365,15 @@ class BillCard extends StatelessWidget {
           SatChip.tag(
             label: context.l10n.blcSinceChip(sinceVerb, elapsed),
             icon: Icons.schedule_rounded,
+            size: SatChipSize.sm,
+          ),
+        // Settled here, open everywhere else. Never a network badge — it
+        // names *this bill*, not the link (ADR-0123).
+        if (pendingSync)
+          SatChip.tag(
+            label: context.l10n.cshBillPending,
+            icon: Icons.sync_problem_rounded,
+            hue: SatChipHue.warn,
             size: SatChipSize.sm,
           ),
         // The waiter freed the table and the money never landed — the one bill

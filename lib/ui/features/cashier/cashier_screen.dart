@@ -22,6 +22,8 @@ import 'package:satset/ui/core/widgets/tablet_chrome.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
 import 'package:satset/ui/features/cashier/debt_collect_sheet.dart';
 import 'package:satset/ui/features/cashier/widgets/bill_card.dart';
+import 'package:satset/data/services/settlement_sync.dart';
+import 'package:satset/ui/features/cashier/widgets/sync_strip.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/core/time/sat_clock.dart';
@@ -82,123 +84,136 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     );
     final piutangOnly = ref.watch(historyOnAccountProvider);
 
-    return Scaffold(
-      backgroundColor: sc.bg0,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            await ref.read(settlementProvider.notifier).refresh();
-            ref.invalidate(venueHistoryProvider);
-          },
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (n) {
-              _maybeGrow(n, page, history.isLoading);
-              return false;
+    return SettlementRefusalListener(
+      child: Scaffold(
+        backgroundColor: sc.bg0,
+        body: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              await ref.read(settlementProvider.notifier).refresh();
+              ref.invalidate(venueHistoryProvider);
             },
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Every settled count below reads `page.total`, never
-                        // `closed.length` — the rows on screen are one page of
-                        // the window, the count is the whole of it (ADR-0079).
-                        _Header(
-                          running: unpaid.length,
-                          takeaway: open.where((b) => b.isTakeaway).length,
-                          settled: page.total,
-                          outstanding: unpaid.fold<int>(
-                            0,
-                            (a, b) => a + b.outstanding,
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (n) {
+                _maybeGrow(n, page, history.isLoading);
+                return false;
+              },
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Every settled count below reads `page.total`, never
+                          // `closed.length` — the rows on screen are one page of
+                          // the window, the count is the whole of it (ADR-0079).
+                          _Header(
+                            running: unpaid.length,
+                            takeaway: open.where((b) => b.isTakeaway).length,
+                            settled: page.total,
+                            outstanding: unpaid.fold<int>(
+                              0,
+                              (a, b) => a + b.outstanding,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: Sp.s4),
-                        _StatRow(
-                          bills: open,
-                          detachedOnly: _detachedOnly,
-                          onDetachedTap: () => setState(() {
-                            _detachedOnly = !_detachedOnly;
-                            if (_detachedOnly) _seg = _Segment.perluDitagih;
-                          }),
-                        ),
-                        // A member may walk in only to settle a tab, with
-                        // nothing seated and no bill open — so the way in
-                        // cannot hang off a card (ADR-0098).
-                        if (debtOn) ...[
-                          const SizedBox(height: Sp.s3),
-                          SatButton.outline(
-                            label: context.l10n.cshDebtCollect,
-                            icon: Icons.account_balance_wallet_outlined,
-                            onTap: () => showDebtCollectSheet(context),
+                          const SettlementSyncStrip(),
+                          const SizedBox(height: Sp.s4),
+                          _StatRow(
+                            bills: open,
+                            detachedOnly: _detachedOnly,
+                            onDetachedTap: () => setState(() {
+                              _detachedOnly = !_detachedOnly;
+                              if (_detachedOnly) _seg = _Segment.perluDitagih;
+                            }),
                           ),
-                        ],
-                        const SizedBox(height: Sp.s4),
-                        _SegmentRow(
-                          selected: _seg,
-                          perluDitagih: unpaid.length,
-                          lunas: page.total,
-                          semua: open.length + page.total,
-                          piutangTotal: debtOn ? page.piutangTotal : null,
-                          piutangOnly: piutangOnly,
-                          onPiutangTap: () {
-                            final on = !piutangOnly;
-                            ref
-                                    .read(historyOnAccountProvider.notifier)
-                                    .state =
-                                on;
-                            // Turning it on walks the cashier to where the
-                            // rows are, exactly as the Meja ditutup tile walks
-                            // them the other way — a tab-paid bill is always
-                            // closed, so the filter is meaningless on Perlu
-                            // ditagih. The range goes with it: chasing a debt
-                            // is not a today job, and the chip counts the whole
-                            // window, so leaving it on Hari ini promises rows
-                            // the grid then clips away.
-                            if (on) {
-                              setState(() {
-                                if (_seg == _Segment.perluDitagih) {
-                                  _seg = _Segment.lunas;
-                                }
-                                _range = _Range.tujuhHari;
-                              });
-                            }
-                          },
-                          onSelected: (s) {
-                            if (s == _Segment.perluDitagih &&
-                                ref.read(historyOnAccountProvider)) {
-                              // No closed bill renders here, so a lit filter
-                              // would claim to be narrowing a list it cannot
-                              // touch. Mirrors _detachedOnly below.
+                          // A member may walk in only to settle a tab, with
+                          // nothing seated and no bill open — so the way in
+                          // cannot hang off a card (ADR-0098).
+                          if (debtOn) ...[
+                            const SizedBox(height: Sp.s3),
+                            SatButton.outline(
+                              label: context.l10n.cshDebtCollect,
+                              icon: Icons.account_balance_wallet_outlined,
+                              onTap: () => showDebtCollectSheet(context),
+                            ),
+                          ],
+                          const SizedBox(height: Sp.s4),
+                          _SegmentRow(
+                            selected: _seg,
+                            perluDitagih: unpaid.length,
+                            lunas: page.total,
+                            semua: open.length + page.total,
+                            piutangTotal: debtOn ? page.piutangTotal : null,
+                            piutangOnly: piutangOnly,
+                            onPiutangTap: () {
+                              final on = !piutangOnly;
                               ref
-                                  .read(historyOnAccountProvider.notifier)
-                                  .state = false;
-                            }
-                            setState(() {
-                              _seg = s;
-                              if (s != _Segment.perluDitagih) {
-                                _detachedOnly = false;
+                                      .read(historyOnAccountProvider.notifier)
+                                      .state =
+                                  on;
+                              // Turning it on walks the cashier to where the
+                              // rows are, exactly as the Meja ditutup tile walks
+                              // them the other way — a tab-paid bill is always
+                              // closed, so the filter is meaningless on Perlu
+                              // ditagih. The range goes with it: chasing a debt
+                              // is not a today job, and the chip counts the whole
+                              // window, so leaving it on Hari ini promises rows
+                              // the grid then clips away.
+                              if (on) {
+                                setState(() {
+                                  if (_seg == _Segment.perluDitagih) {
+                                    _seg = _Segment.lunas;
+                                  }
+                                  _range = _Range.tujuhHari;
+                                });
                               }
-                            });
-                          },
-                        ),
-                        if (_seg != _Segment.perluDitagih) ...[
-                          const SizedBox(height: Sp.s2h),
-                          _RangeRow(
-                            selected: _range,
-                            onSelected: (r) => setState(() => _range = r),
+                            },
+                            onSelected: (s) {
+                              if (s == _Segment.perluDitagih &&
+                                  ref.read(historyOnAccountProvider)) {
+                                // No closed bill renders here, so a lit filter
+                                // would claim to be narrowing a list it cannot
+                                // touch. Mirrors _detachedOnly below.
+                                ref
+                                        .read(historyOnAccountProvider.notifier)
+                                        .state =
+                                    false;
+                              }
+                              setState(() {
+                                _seg = s;
+                                if (s != _Segment.perluDitagih) {
+                                  _detachedOnly = false;
+                                }
+                              });
+                            },
                           ),
+                          if (_seg != _Segment.perluDitagih) ...[
+                            const SizedBox(height: Sp.s2h),
+                            _RangeRow(
+                              selected: _range,
+                              onSelected: (r) => setState(() => _range = r),
+                            ),
+                          ],
+                          const SizedBox(height: Sp.s3h),
                         ],
-                        const SizedBox(height: Sp.s3h),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-                ..._body(open, unpaid, _inRange(closed), zones, history, page),
-                SliverToBoxAdapter(child: SizedBox(height: context.shellInset)),
-              ],
+                  ..._body(
+                    open,
+                    unpaid,
+                    _inRange(closed),
+                    zones,
+                    history,
+                    page,
+                  ),
+                  SliverToBoxAdapter(
+                    child: SizedBox(height: context.shellInset),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -290,9 +305,10 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                     : _range == _Range.hariIni
                     ? context.l10n.cshEmptySettledToday
                     : context.l10n.cshEmptySettled7d,
-              _Segment.semua => ref.watch(historyOnAccountProvider)
-                  ? context.l10n.cshEmptyPiutang
-                  : context.l10n.cshEmptyAll,
+              _Segment.semua =>
+                ref.watch(historyOnAccountProvider)
+                    ? context.l10n.cshEmptyPiutang
+                    : context.l10n.cshEmptyAll,
             },
           ),
         ),
@@ -309,6 +325,8 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     final sortedPast = [...past]
       ..sort((a, b) => b.closedAt.compareTo(a.closedAt));
 
+    // Which bills this device has settled but the host has not taken.
+    final pending = ref.watch(settlementJournalProvider).pendingVisits;
     final cards = <Widget>[
       for (final b in sortedLive)
         BillCard.fromSummary(
@@ -316,6 +334,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
           l10n: context.l10n,
           zone: zones[b.zoneId],
           onTap: () => openCashierBill(context, visitId: b.visitId),
+          pendingSync: pending.contains(b.visitId),
         ),
       for (final p in sortedPast)
         BillCard.fromPastBill(

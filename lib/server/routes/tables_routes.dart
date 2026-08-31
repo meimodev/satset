@@ -216,7 +216,11 @@ Future<void> snapshotVisitAndDelete(
   // Backdating + id injection exist for the demo seed (ADR-0052), which
   // archives a month of visits through this path: `closedAt` places the
   // session in the past, `sessionId` carries the `demo-` tag its reset deletes
-  // by (child rows key off it). Production callers pass neither.
+  // by (child rows key off it).
+  //
+  // `closedAt` has a second, production caller since ADR-0123: a settlement
+  // captured on a terputus till closes at the moment the money was taken, not
+  // at the moment the drain reached the host.
   DateTime? closedAt,
   String? sessionId,
 }) async {

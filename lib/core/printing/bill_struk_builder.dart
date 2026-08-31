@@ -66,12 +66,19 @@ class BillStrukBuilder {
     cashierName: cashierName,
   );
 
+  /// [pendingSync] means this slip is being printed off a projection the host
+  /// has not taken yet (ADR-0123). The money is the till's own arithmetic and
+  /// is correct; the **[[Poin]] and stempel figures are not** — the host
+  /// recomputes both at bill close, so printing the last-synced numbers hands
+  /// the guest a balance they can photograph and argue from next week. The
+  /// block is omitted rather than guessed.
   static BillStrukData fromBill({
     required AppL10n l,
     required Bill bill,
     BillReceipt? receipt,
     required VenueSettingsDto venue,
     List<int>? logoBytes,
+    bool pendingSync = false,
   }) {
     if (receipt == null) {
       // Whole-bill: every sent line, the grand total, aggregate payments.
@@ -92,8 +99,8 @@ class BillStrukBuilder {
         pax: bill.pax,
         guestName: bill.guestName ?? '',
         memberName: bill.member?.name ?? '',
-        memberPoints: bill.member?.points ?? 0,
-        memberPunch: bill.member == null
+        memberPoints: pendingSync ? 0 : (bill.member?.points ?? 0),
+        memberPunch: (pendingSync || bill.member == null)
             ? ''
             : punchText(
                 bill.member!.member.punchProgress,
@@ -168,10 +175,12 @@ class BillStrukBuilder {
       // otherwise (ADR-0118). The slip is the one artefact a guest takes home,
       // so it must carry *their* standing, not the party host's.
       memberName: who?.name ?? '',
-      memberPoints: who?.points ?? 0,
+      memberPoints: pendingSync ? 0 : (who?.points ?? 0),
       memberPunch: who == null
           ? ''
-          : punchText(who.member.punchProgress, who.punchTarget),
+          : (pendingSync
+                ? ''
+                : punchText(who.member.punchProgress, who.punchTarget)),
       at: SatClock.now(),
       kind: even ? BillDocKind.evenReceipt : BillDocKind.itemizedReceipt,
       // "Tamu A", not a bare "A" — the guest reads this line to know the slip

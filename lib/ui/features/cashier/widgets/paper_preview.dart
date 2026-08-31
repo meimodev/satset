@@ -103,23 +103,29 @@ class PaperPreview extends StatelessWidget {
                       : p.methodLabel,
                   _money(p.amount),
                 ),
-              if (d.tenderedTotal != null) ...[
+              // Both conditions are the renderer's, not this widget's: the roll
+              // omits a zero change line and prints the settled word centred
+              // with no figure beside it. A preview that adds "Kembalian Rp. 0"
+              // and "LUNAS 0" is showing the cashier a slip that will not come
+              // out of the printer, which is the drift this widget exists to
+              // catch.
+              if (d.tenderedTotal != null && d.tenderedTotal! > 0) ...[
                 _row(
                   l10n.strukCashReceived,
                   _money(d.tenderedTotal!),
                   faint: true,
                 ),
-                _row(
-                  l10n.cpdChange,
-                  _money(d.tenderedTotal! - d.paidNet),
-                  faint: true,
-                ),
+                if (d.tenderedTotal! - d.paidNet > 0)
+                  _row(
+                    l10n.cpdChange,
+                    _money(d.tenderedTotal! - d.paidNet),
+                    faint: true,
+                  ),
               ],
-              _row(
-                d.outstanding > 0 ? l10n.strukOutstanding : l10n.strukSettled,
-                d.outstanding > 0 ? _money(d.outstanding) : '0',
-                bold: true,
-              ),
+              if (d.outstanding > 0)
+                _row(l10n.strukOutstanding, _money(d.outstanding), bold: true)
+              else
+                _centred(l10n.strukSettled),
             ] else if (d.outstanding > 0)
               _row(l10n.strukOutstanding, _money(d.outstanding), bold: true),
             // Who each share was for (ADR-0118). The roll prints this block on
@@ -198,6 +204,16 @@ class PaperPreview extends StatelessWidget {
       ),
     );
   }
+
+  /// A line the roll centres and prints without a figure beside it.
+  Widget _centred(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: Sp.sHair),
+    child: Text(
+      text,
+      textAlign: TextAlign.center,
+      style: SatType.monoM(color: satPaperInk),
+    ),
+  );
 
   Widget _sub(String text) => Padding(
     padding: const EdgeInsets.only(left: Sp.s3, bottom: Sp.sHair),

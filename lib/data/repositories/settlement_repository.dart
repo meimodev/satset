@@ -5,10 +5,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/log/sat_log.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/models/bill_dto.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/error_bus_service.dart';
+import 'package:satset/data/services/settlement_journal.dart';
+import 'package:satset/data/services/settlement_sync.dart';
 import 'package:satset/data/services/ws_client.dart';
+import 'package:satset/domain/models/settlement_event.dart';
+import 'package:satset/domain/use_cases/settlement_projection.dart';
+import 'package:uuid/uuid.dart';
+
+const _uuid = Uuid();
 
 /// Bootstrap status for the cashier payable list (spinner / retry banner).
 final settlementStatusProvider = StateProvider<AsyncValue<void>>(
@@ -80,16 +92,93 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
       final raw =
           await ref.read(apiClientProvider).getJson('/settlement/payable')
               as List;
-      state = [
-        for (final e in raw)
-          BillSummary.fromJson((e as Map).cast<String, dynamic>()),
-      ];
+      state = _summaries(raw);
       SatLog.repo('settlement.payable n=${state.length}');
+      unawaited(_journal.cachePayable(raw));
+      unawaited(_prefetchBills());
     } catch (e) {
       SatLog.repo('settlement.payable fail $e');
+      // A cold boot with no host. The bills are all cached (ADR-0123 §Q19) but
+      // the list that reaches them is fetched, so without this the cashier
+      // opens `/kasir` to an empty screen and a strip telling them money is
+      // still queued — every bill present and none of them reachable.
+      if (state.isEmpty) {
+        final cached = await _journal.cachedPayable();
+        if (cached != null) {
+          state = _summaries(cached);
+          SatLog.repo('settlement.payable cached n=${state.length}');
+          return;
+        }
+      }
       rethrow;
     } finally {
       _refetching = false;
+    }
+  }
+
+  /// Keep a full [[Bill (tab)]] cached for **every** open visit, not just the
+  /// one the cashier happened to open (ADR-0123 §Q19).
+  ///
+  /// Caching on open only would make the offline fallback's availability depend
+  /// on where a thumb was five minutes ago, which is the worst possible
+  /// property for a fallback. Throttled per visit: a bill is re-pulled when its
+  /// cache is missing or older than [_billCacheTtl], so the ordinary WS churn
+  /// does not turn one list refresh into twenty round trips.
+  static const _billCacheTtl = Duration(minutes: 2);
+
+  List<BillSummary> _summaries(List<dynamic> raw) => [
+    for (final e in raw)
+      BillSummary.fromJson((e as Map).cast<String, dynamic>()),
+  ];
+
+  /// Whether the prefetch sweep should re-pull this visit's bill.
+  ///
+  /// Pulled out because the two conditions interact, and the interaction is
+  /// what shipped broken: skipping a local-authoritative visit is right, but
+  /// only if skipping it does not also *count* as having swept it.
+  static bool shouldRefetchBill({
+    required DateTime? fetchedAt,
+    required DateTime now,
+    required bool local,
+  }) {
+    if (local) return false;
+    if (fetchedAt == null) return true;
+    return now.difference(fetchedAt) >= _billCacheTtl;
+  }
+
+  Future<void> _prefetchBills() async {
+    final now = SatClock.now();
+    final journal = _journal;
+    // Per visit, not one clock for the sweep. A global throttle skips the
+    // visit that just drained: it was [[Kunjungan otoritatif-lokal]] when the
+    // reconnect sweep ran, so it was passed over, and the drain's own refresh
+    // moments later then found the sweep clock fresh and did nothing — leaving
+    // a cache that predates the settlement it just sent. The next time the
+    // till goes dark that bill reads unpaid, and the cashier collects twice.
+    final ages = await journal.cacheAges();
+    for (final b in state) {
+      if (!shouldRefetchBill(
+        fetchedAt: ages[b.visitId],
+        now: now,
+        // A visit the till is already carrying answers off its own journal; its
+        // cache is the base those events apply to and must not be overwritten
+        // with a host view that predates them.
+        local: ref.read(settlementJournalProvider).isLocal(b.visitId),
+      )) {
+        continue;
+      }
+      try {
+        final raw = await ref
+            .read(apiClientProvider)
+            .getJson('/settlement/visits/${b.visitId}/bill');
+        await journal.cacheBill(
+          b.visitId,
+          (raw as Map).cast<String, dynamic>(),
+        );
+      } catch (_) {
+        // The host went away mid-sweep. Whatever is cached stays cached.
+        return;
+      }
     }
   }
 
@@ -97,15 +186,166 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   //    canonical detail source and is invalidated by the screen / WS) ──
 
   Future<Bill> fetchBill(String visitId) async {
-    final raw = await ref
-        .read(apiClientProvider)
-        .getJson('/settlement/visits/$visitId/bill');
-    return Bill.fromJson((raw as Map).cast<String, dynamic>());
+    // A visit the till is still carrying answers off its own journal — asking
+    // the host would render the world as it was before the backlog landed
+    // (ADR-0123 §local-authoritative).
+    if (await _isLocal(visitId)) return _project(visitId);
+    try {
+      final raw = await ref
+          .read(apiClientProvider)
+          .getJson('/settlement/visits/$visitId/bill');
+      final map = (raw as Map).cast<String, dynamic>();
+      await _journal.cacheBill(visitId, map);
+      return Bill.fromJson(map);
+    } catch (_) {
+      // The host went away mid-read. The cached bill is what the cashier was
+      // last shown, and it is settleable — that is the whole point of caching
+      // every open visit rather than only the one somebody opened.
+      final bill = await _project(visitId);
+      return bill;
+    }
   }
 
   Future<Bill> _billFrom(Object? raw) async {
     final map = (raw as Map).cast<String, dynamic>();
-    return Bill.fromJson((map['bill'] as Map).cast<String, dynamic>());
+    final bill = (map['bill'] as Map).cast<String, dynamic>();
+    await _journal.cacheBill(bill['visitId'] as String? ?? '', bill);
+    return Bill.fromJson(bill);
+  }
+
+  // ── the offline path (ADR-0123) ───────────────────────────────────────────
+
+  SettlementJournal get _journal =>
+      ref.read(settlementJournalProvider.notifier);
+
+  /// Is this visit [[Kunjungan otoritatif-lokal|local-authoritative]]?
+  ///
+  /// Three ways in, and the journal is the one that outlives the outage: a
+  /// visit whose chain has not drained keeps taking its acts locally even
+  /// after the socket returns, or a live write lands ahead of the queued
+  /// events and the projection the cashier is reading becomes a lie.
+  Future<bool> _isLocal(String visitId) async {
+    if (ref.read(settlementJournalProvider).isLocal(visitId)) return true;
+    return ref.read(wsConnStateProvider) != WsConnState.open;
+  }
+
+  Future<bool> _isLocalReceipt(String receiptId) async {
+    final v = await _visitOfReceipt(receiptId);
+    return v != null && await _isLocal(v);
+  }
+
+  ProjectionConfig _projectionConfig() {
+    final v = ref.read(venueSettingsProvider);
+    return ProjectionConfig(
+      tax: v.toTaxServiceConfig(),
+      pointValue: v.memberPointValue,
+    );
+  }
+
+  /// The cached bill with this visit's journal applied. Throws when the visit
+  /// was never cached — a bill this device has never seen cannot be settled
+  /// from nothing.
+  Future<Bill> _project(String visitId) async {
+    final cached = await _journal.cachedBill(visitId);
+    if (cached == null) {
+      throw StateError('no cached bill for $visitId');
+    }
+    final events = await _journal.eventsFor(visitId);
+    return Bill.fromJson(projectBill(cached, events, _projectionConfig()));
+  }
+
+  /// Perform one settlement act, online or captured.
+  ///
+  /// [id] is minted **before** the request goes out and is both the row id the
+  /// act creates and its idempotency key — which is what lets a request that
+  /// timed out after the host committed be replayed harmlessly, and what lets
+  /// a captured act name the row it made.
+  ///
+  /// A 4xx is the host refusing an online caller and is rethrown untouched. A
+  /// transport failure is captured instead: the cashier is standing in front of
+  /// a guest and refusing the act is worse than replaying it.
+  Future<Bill> _act({
+    required String visitId,
+    required SettlementEventKind kind,
+    required Map<String, dynamic> payload,
+    required Future<Object?> Function(String id) online,
+    String? id,
+  }) async {
+    final eventId = id ?? _uuid.v4();
+    if (await _isLocal(visitId)) {
+      await _capture(visitId, kind, payload, eventId);
+      return _project(visitId);
+    }
+    try {
+      return await _billFrom(await online(eventId));
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      await _capture(visitId, kind, payload, eventId);
+      return _project(visitId);
+    }
+  }
+
+  /// The visit a receipt belongs to, off the cached bills.
+  ///
+  /// Receipt-scoped routes name only the receipt, but the journal is ordered
+  /// **per visit** — a chain is what makes a settlement replayable, and a
+  /// receipt with no visit has no chain to join.
+  Future<String?> _visitOfReceipt(String receiptId) =>
+      _journal.visitOfReceipt(receiptId);
+
+  /// [_act] for a route that names a receipt rather than a visit.
+  ///
+  /// A receipt whose visit this device has never cached cannot be captured, so
+  /// the online call is made and its failure surfaces — better a refusal the
+  /// cashier sees than an event with nowhere to replay.
+  Future<Bill> _actOnReceipt(
+    String receiptId,
+    SettlementEventKind kind,
+    Map<String, dynamic> payload,
+    Future<Object?> Function(String id) online, {
+    String? id,
+  }) async {
+    final visitId = await _visitOfReceipt(receiptId);
+    if (visitId == null) return _billFrom(await online(id ?? _uuid.v4()));
+    return _act(
+      visitId: visitId,
+      kind: kind,
+      id: id,
+      payload: {'receiptId': receiptId, ...payload},
+      online: online,
+    );
+  }
+
+  Future<void> _capture(
+    String visitId,
+    SettlementEventKind kind,
+    Map<String, dynamic> payload,
+    String id,
+  ) async {
+    try {
+      await _journal.append(
+        visitId: visitId,
+        kind: kind,
+        payload: payload,
+        id: id,
+        actorId: ref.read(authStateProvider).user?.id ?? '',
+      );
+    } on SettlementJournalFull {
+      // A cap trips through the same surface a refusal does, never as a silent
+      // drop: what is being refused here is an act on money.
+      _refuse(ref.read(l10nProvider).cshJournalFull, 'journal_full');
+    }
+  }
+
+  /// Surface a client-side refusal on the shell's error bus (ADR-0103) and
+  /// stop the act. Used where the till itself says no — a manager step-up
+  /// while terputus, a full journal — rather than the host.
+  Never _refuse(String message, [String code = 'refused']) {
+    ref
+        .read(errorBusServiceProvider)
+        .push(message, level: AppErrorLevel.error, code: code);
+    throw StateError(code);
   }
 
   /// Mint a receipt. [lines] assigns in the same transaction — the
@@ -143,33 +383,46 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     /// window where a named struk is half-made.
     String? memberId,
   }) async {
-    final raw = await ref.read(apiClientProvider).postJson(
-      '/settlement/visits/$visitId/receipts',
-      {
+    // The id is minted here, not by the host (ADR-0123) — the settle pane pays
+    // in the same gesture, and a captured payment has to be able to name the
+    // struk it is for before that struk has ever reached the host.
+    final receiptId = _uuid.v4();
+    final lineSpecs = [
+      for (final l in lines) {'ticketId': l.ticketId, 'qtyUnits': l.qtyUnits},
+    ];
+    final bill = await _act(
+      visitId: visitId,
+      kind: SettlementEventKind.mintReceipt,
+      id: receiptId,
+      payload: {
         'mode': mode,
         'label': ?label,
         'assignAll': assignAll,
         'memberId': ?memberId,
-        if (lines.isNotEmpty)
-          'lines': [
-            for (final l in lines)
-              {'ticketId': l.ticketId, 'qtyUnits': l.qtyUnits},
-          ],
+        if (lineSpecs.isNotEmpty) 'lines': lineSpecs,
       },
+      online: (id) => ref
+          .read(apiClientProvider)
+          .postJson('/settlement/visits/$visitId/receipts', {
+            'id': id,
+            'mode': mode,
+            'label': ?label,
+            'assignAll': assignAll,
+            'memberId': ?memberId,
+            if (lineSpecs.isNotEmpty) 'lines': lineSpecs,
+          }, idempotencyKey: id),
     );
-    final map = (raw as Map).cast<String, dynamic>();
-    return (
-      receiptId: map['receiptId'] as String,
-      bill: Bill.fromJson((map['bill'] as Map).cast<String, dynamic>()),
-    );
+    return (receiptId: receiptId, bill: bill);
   }
 
-  Future<Bill> deleteReceipt(String receiptId) async {
-    final raw = await ref
+  Future<Bill> deleteReceipt(String receiptId) async => _actOnReceipt(
+    receiptId,
+    SettlementEventKind.deleteReceipt,
+    const {},
+    (id) => ref
         .read(apiClientProvider)
-        .deleteJson('/settlement/receipts/$receiptId');
-    return _billFrom(raw);
-  }
+        .deleteJson('/settlement/receipts/$receiptId', idempotencyKey: id),
+  );
 
   /// Undo the chosen billing method while no money has been taken: drop every
   /// receipt so the bill returns to the mode chooser. Caller must gate on
@@ -182,24 +435,32 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return last ?? bill;
   }
 
-  Future<Bill> assignLine(
-    String receiptId,
-    String ticketId,
-    int qtyUnits,
-  ) async {
-    final raw = await ref.read(apiClientProvider).postJson(
-      '/settlement/receipts/$receiptId/lines',
-      {'ticketId': ticketId, 'qtyUnits': qtyUnits},
-    );
-    return _billFrom(raw);
-  }
+  Future<Bill> assignLine(String receiptId, String ticketId, int qtyUnits) =>
+      _actOnReceipt(
+        receiptId,
+        SettlementEventKind.assignLine,
+        {'ticketId': ticketId, 'qtyUnits': qtyUnits},
+        (id) => ref.read(apiClientProvider).postJson(
+          '/settlement/receipts/$receiptId/lines',
+          {'ticketId': ticketId, 'qtyUnits': qtyUnits},
+          idempotencyKey: id,
+        ),
+      );
 
-  Future<Bill> splitEven(String visitId, int n) async {
-    final raw = await ref.read(apiClientProvider).postJson(
-      '/settlement/visits/$visitId/split-even',
-      {'n': n},
+  Future<Bill> splitEven(String visitId, int n) {
+    // One id per share, minted here for the same reason a receipt's is: the
+    // guest is told which slip is theirs before the host has heard of it.
+    final ids = [for (var i = 0; i < n; i++) _uuid.v4()];
+    return _act(
+      visitId: visitId,
+      kind: SettlementEventKind.splitEven,
+      payload: {'n': n, 'ids': ids},
+      online: (id) => ref.read(apiClientProvider).postJson(
+        '/settlement/visits/$visitId/split-even',
+        {'n': n, 'ids': ids},
+        idempotencyKey: id,
+      ),
     );
-    return _billFrom(raw);
   }
 
   /// Bill close (Tutup tagihan). `writeOff` records a tak-tertagih loss
@@ -208,12 +469,16 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     String visitId, {
     bool writeOff = false,
     String? reason,
-  }) async {
-    await ref.read(apiClientProvider).postJson(
+  }) => _act(
+    visitId: visitId,
+    kind: SettlementEventKind.closeBill,
+    payload: {'writeOff': writeOff, 'reason': ?reason},
+    online: (id) => ref.read(apiClientProvider).postJson(
       '/settlement/visits/$visitId/bill-close',
       {'writeOff': writeOff, 'reason': ?reason},
-    );
-  }
+      idempotencyKey: id,
+    ),
+  );
 
   /// Takeaway handover ("Serahkan") — the first/second axis for a Bawa pulang
   /// visit, replacing table-close. Server stamps `tableFreedAt`; if the bill is
@@ -225,12 +490,18 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   }
 
   /// Reopen (unlock) a locked-but-not-yet-snapshotted bill.
-  Future<Bill> reopenBill(String visitId) async {
-    final raw = await ref
+  Future<Bill> reopenBill(String visitId) => _act(
+    visitId: visitId,
+    kind: SettlementEventKind.reopenBill,
+    payload: const {},
+    online: (id) => ref
         .read(apiClientProvider)
-        .postJson('/settlement/visits/$visitId/reopen', const {});
-    return _billFrom(raw);
-  }
+        .postJson(
+          '/settlement/visits/$visitId/reopen',
+          const {},
+          idempotencyKey: id,
+        ),
+  );
 
   /// Past bills (last `days`, default 7), newest-first, capped at `limit` rows.
   /// `tableId` null ⇒ venue-wide (the cashier's Riwayat tab); set ⇒ scoped to
@@ -287,18 +558,30 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     int? tendered,
     String? note,
     String? photoBase64,
-  }) async {
-    final raw = await ref
+  }) => _actOnReceipt(
+    receiptId,
+    SettlementEventKind.recordPayment,
+    {
+      'method': method,
+      'amount': amount,
+      'tendered': ?tendered,
+      'note': ?note,
+      // Carried on the event so a captured proof still reaches the host. It
+      // never enters the projection — the money has to add up offline, the
+      // photo only has to arrive.
+      'photoBase64': ?photoBase64,
+    },
+    (id) => ref
         .read(apiClientProvider)
         .postJson('/settlement/receipts/$receiptId/payments', {
+          'id': id,
           'method': method,
           'amount': amount,
           'tendered': ?tendered,
           'note': ?note,
           'photoBase64': ?photoBase64,
-        });
-    return _billFrom(raw);
-  }
+        }, idempotencyKey: id),
+  );
 
   /// Proof-photo bytes for one id (ADR-0025, ADR-0082), from whichever route
   /// [scope] names.
@@ -326,20 +609,29 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     required String paymentId,
     required int amount,
     String? note,
-  }) async {
-    final raw = await ref.read(apiClientProvider).postJson(
+  }) => _actOnReceipt(
+    receiptId,
+    SettlementEventKind.refund,
+    {'paymentId': paymentId, 'amount': amount, 'note': ?note},
+    (id) => ref.read(apiClientProvider).postJson(
       '/settlement/receipts/$receiptId/refund',
-      {'paymentId': paymentId, 'amount': amount, 'note': ?note},
-    );
-    return _billFrom(raw);
-  }
+      {'id': id, 'paymentId': paymentId, 'amount': amount, 'note': ?note},
+      idempotencyKey: id,
+    ),
+  );
 
-  Future<Bill> reopen(String receiptId) async {
-    final raw = await ref
+  Future<Bill> reopen(String receiptId) => _actOnReceipt(
+    receiptId,
+    SettlementEventKind.reopenReceipt,
+    const {},
+    (id) => ref
         .read(apiClientProvider)
-        .postJson('/settlement/receipts/$receiptId/reopen', const {});
-    return _billFrom(raw);
-  }
+        .postJson(
+          '/settlement/receipts/$receiptId/reopen',
+          const {},
+          idempotencyKey: id,
+        ),
+  );
 
   // ── discounts (ADR-0037). Cashier-stage only; the cashier picks a preset,
   //    never a free-typed rate. `ticketId` null ⇒ whole-order discount.
@@ -353,15 +645,26 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     String? ticketId,
     String? approverPin,
   }) async {
-    final raw = await ref.read(apiClientProvider).postJson(
-      '/settlement/receipts/$receiptId/discounts',
-      {
-        'presetId': presetId,
-        'ticketId': ?ticketId,
-        'approverPin': ?approverPin,
-      },
+    // A manager step-up has no offline path (ADR-0123, following ADR-0099):
+    // the PIN is verified against a salted hash on the host, and caching those
+    // on a shared handset makes a stolen tablet a manager. A cashier who holds
+    // `applyDiscount` outright keeps every discount offline.
+    if (approverPin != null && await _isLocalReceipt(receiptId)) {
+      _refuse(ref.read(l10nProvider).cshApprovalOffline, 'approval_offline');
+    }
+    return _actOnReceipt(
+      receiptId,
+      SettlementEventKind.applyDiscount,
+      {'presetId': presetId, 'ticketId': ?ticketId},
+      (id) => ref
+          .read(apiClientProvider)
+          .postJson('/settlement/receipts/$receiptId/discounts', {
+            'id': id,
+            'presetId': presetId,
+            'ticketId': ?ticketId,
+            'approverPin': ?approverPin,
+          }, idempotencyKey: id),
     );
-    return _billFrom(raw);
   }
 
   Future<Bill> removeDiscount(
@@ -369,11 +672,19 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     String discountId, {
     String? approverPin,
   }) async {
-    final raw = await ref.read(apiClientProvider).postJson(
-      '/settlement/receipts/$receiptId/discounts/$discountId/remove',
-      {'approverPin': ?approverPin},
+    if (approverPin != null && await _isLocalReceipt(receiptId)) {
+      _refuse(ref.read(l10nProvider).cshApprovalOffline, 'approval_offline');
+    }
+    return _actOnReceipt(
+      receiptId,
+      SettlementEventKind.removeDiscount,
+      {'discountId': discountId},
+      (id) => ref.read(apiClientProvider).postJson(
+        '/settlement/receipts/$receiptId/discounts/$discountId/remove',
+        {'approverPin': ?approverPin},
+        idempotencyKey: id,
+      ),
     );
-    return _billFrom(raw);
   }
 
   /// The table-wide promo (ADR-0070). Attaches to the visit, not a receipt, so
@@ -384,11 +695,19 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     required String presetId,
     String? approverPin,
   }) async {
-    final raw = await ref.read(apiClientProvider).postJson(
-      '/settlement/visits/$visitId/discounts',
-      {'presetId': presetId, 'approverPin': ?approverPin},
+    if (approverPin != null && await _isLocal(visitId)) {
+      _refuse(ref.read(l10nProvider).cshApprovalOffline, 'approval_offline');
+    }
+    return _act(
+      visitId: visitId,
+      kind: SettlementEventKind.applyBillDiscount,
+      payload: {'presetId': presetId},
+      online: (id) => ref.read(apiClientProvider).postJson(
+        '/settlement/visits/$visitId/discounts',
+        {'id': id, 'presetId': presetId, 'approverPin': ?approverPin},
+        idempotencyKey: id,
+      ),
     );
-    return _billFrom(raw);
   }
 
   Future<Bill> removeBillDiscount(
@@ -396,11 +715,19 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     String discountId, {
     String? approverPin,
   }) async {
-    final raw = await ref.read(apiClientProvider).postJson(
-      '/settlement/visits/$visitId/discounts/$discountId/remove',
-      {'approverPin': ?approverPin},
+    if (approverPin != null && await _isLocal(visitId)) {
+      _refuse(ref.read(l10nProvider).cshApprovalOffline, 'approval_offline');
+    }
+    return _act(
+      visitId: visitId,
+      kind: SettlementEventKind.removeBillDiscount,
+      payload: {'discountId': discountId},
+      online: (id) => ref.read(apiClientProvider).postJson(
+        '/settlement/visits/$visitId/discounts/$discountId/remove',
+        {'approverPin': ?approverPin},
+        idempotencyKey: id,
+      ),
     );
-    return _billFrom(raw);
   }
 
   // ── membership at the till (ADR-0093). All four move a live bill, so they
@@ -409,73 +736,110 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   /// Attach a [[Pelanggan (member)]]. The venue's standing member discount, if
   /// it configured one, lands in its own slot server-side — nothing here has to
   /// remember to apply it.
-  Future<Bill> attachMember(String visitId, String memberId) async {
-    final raw = await ref.read(apiClientProvider).postJson(
+  Future<Bill> attachMember(String visitId, String memberId) => _act(
+    visitId: visitId,
+    kind: SettlementEventKind.attachMember,
+    payload: {'memberId': memberId},
+    online: (id) => ref.read(apiClientProvider).postJson(
       '/settlement/visits/$visitId/member',
       {'memberId': memberId},
-    );
-    return _billFrom(raw);
-  }
+      idempotencyKey: id,
+    ),
+  );
 
-  Future<Bill> detachMember(String visitId) async {
-    final raw = await ref
+  Future<Bill> detachMember(String visitId) => _act(
+    visitId: visitId,
+    kind: SettlementEventKind.detachMember,
+    payload: const {},
+    online: (id) => ref
         .read(apiClientProvider)
-        .postJson('/settlement/visits/$visitId/member/detach', const {});
-    return _billFrom(raw);
-  }
+        .postJson(
+          '/settlement/visits/$visitId/member/detach',
+          const {},
+          idempotencyKey: id,
+        ),
+  );
 
   /// Spend points as money off this bill. The ledger row and the discount land
   /// together server-side or not at all.
-  Future<Bill> redeemPoints(String visitId, int points) async {
-    final raw = await ref.read(apiClientProvider).postJson(
+  Future<Bill> redeemPoints(String visitId, int points) => _act(
+    visitId: visitId,
+    kind: SettlementEventKind.redeemPoints,
+    payload: {'points': points},
+    online: (id) => ref.read(apiClientProvider).postJson(
       '/settlement/visits/$visitId/redeem',
       {'points': points},
-    );
-    return _billFrom(raw);
-  }
+      idempotencyKey: id,
+    ),
+  );
 
-  Future<Bill> removeRedeem(String visitId) async {
-    final raw = await ref
+  Future<Bill> removeRedeem(String visitId) => _act(
+    visitId: visitId,
+    kind: SettlementEventKind.removeRedeem,
+    payload: const {},
+    online: (id) => ref
         .read(apiClientProvider)
-        .postJson('/settlement/visits/$visitId/redeem/remove', const {});
-    return _billFrom(raw);
-  }
+        .postJson(
+          '/settlement/visits/$visitId/redeem/remove',
+          const {},
+          idempotencyKey: id,
+        ),
+  );
 
   // ── the [[Pemilik struk]]: the same four acts, one share at a time
   //    (ADR-0118). Each returns the whole bill because a share's give-back
   //    moves the bill's ladder, and the Siapa step draws every row. ──
 
-  Future<Bill> attachReceiptMember(String receiptId, String memberId) async {
-    final raw = await ref.read(apiClientProvider).postJson(
-      '/settlement/receipts/$receiptId/member',
-      {'memberId': memberId},
-    );
-    return _billFrom(raw);
-  }
+  Future<Bill> attachReceiptMember(String receiptId, String memberId) =>
+      _actOnReceipt(
+        receiptId,
+        SettlementEventKind.attachReceiptMember,
+        {'memberId': memberId},
+        (id) => ref.read(apiClientProvider).postJson(
+          '/settlement/receipts/$receiptId/member',
+          {'memberId': memberId},
+          idempotencyKey: id,
+        ),
+      );
 
-  Future<Bill> detachReceiptMember(String receiptId) async {
-    final raw = await ref
+  Future<Bill> detachReceiptMember(String receiptId) => _actOnReceipt(
+    receiptId,
+    SettlementEventKind.detachReceiptMember,
+    const {},
+    (id) => ref
         .read(apiClientProvider)
-        .postJson('/settlement/receipts/$receiptId/member/detach', const {});
-    return _billFrom(raw);
-  }
+        .postJson(
+          '/settlement/receipts/$receiptId/member/detach',
+          const {},
+          idempotencyKey: id,
+        ),
+  );
 
   /// Spend this guest's points against their own share. The ceiling is what
   /// that share can absorb, not the whole bill.
-  Future<Bill> redeemOnReceipt(String receiptId, int points) async {
-    final raw = await ref.read(apiClientProvider).postJson(
+  Future<Bill> redeemOnReceipt(String receiptId, int points) => _actOnReceipt(
+    receiptId,
+    SettlementEventKind.redeemOnReceipt,
+    {'points': points},
+    (id) => ref.read(apiClientProvider).postJson(
       '/settlement/receipts/$receiptId/redeem',
       {'points': points},
-    );
-    return _billFrom(raw);
-  }
+      idempotencyKey: id,
+    ),
+  );
 
-  Future<Bill> removeReceiptRedeem(String receiptId) async {
-    final raw = await ref
+  Future<Bill> removeReceiptRedeem(String receiptId) => _actOnReceipt(
+    receiptId,
+    SettlementEventKind.removeReceiptRedeem,
+    const {},
+    (id) => ref
         .read(apiClientProvider)
-        .postJson('/settlement/receipts/$receiptId/redeem/remove', const {});
-    return _billFrom(raw);
-  }
+        .postJson(
+          '/settlement/receipts/$receiptId/redeem/remove',
+          const {},
+          idempotencyKey: id,
+        ),
+  );
 
   // ── printing the money document (server renders to a VENUE printer; device
   //    printers render client-side via the picker). Returns null on success or

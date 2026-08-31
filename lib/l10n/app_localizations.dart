@@ -4207,6 +4207,16 @@ abstract class AppL10n {
   /// **'Tagihan tak tertagih {amount} {table}'**
   String auditBillWrittenOff(String amount, String table);
 
+  /// A settlement captured offline reached the host after its business day had closed (ADR-0123). Susulan · arriving late, after the fact — never "Terlambat", which blames the cashier.
+  ///
+  /// In id, this message translates to:
+  /// **'Pembayaran susulan {amount} {table} — ditagih {captured}'**
+  String auditSettlementArrivedLate(
+    String amount,
+    String table,
+    String captured,
+  );
+
   /// No description provided for @auditCashToppedUp.
   ///
   /// In id, this message translates to:
@@ -4452,6 +4462,60 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Memuat contoh data restoran'**
   String get auditSampleDataLoaded;
+
+  /// No description provided for @cshSyncDraining.
+  ///
+  /// In id, this message translates to:
+  /// **'Menyinkronkan tagihan…'**
+  String get cshSyncDraining;
+
+  /// The Antrean setelmen backlog on /kasir (ADR-0123).
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{{count} tagihan belum terkirim}}'**
+  String cshSyncPending(int count);
+
+  /// Badge on a bill this device settled while terputus — lunas here, still open everywhere else.
+  ///
+  /// In id, this message translates to:
+  /// **'Tertunda'**
+  String get cshBillPending;
+
+  /// No description provided for @cshSyncRefusedTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagihan ditolak host'**
+  String get cshSyncRefusedTitle;
+
+  /// No description provided for @cshSyncRefusedBody.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{{count} tagihan tidak diterima}}. Uang sudah diterima di laci; cocokkan dengan pembukuan.'**
+  String cshSyncRefusedBody(int count);
+
+  /// The rupiah a refused chain collected but the host has not taken.
+  ///
+  /// In id, this message translates to:
+  /// **'{amount} belum tercatat'**
+  String cshSyncStranded(String amount);
+
+  /// No description provided for @cshSyncAck.
+  ///
+  /// In id, this message translates to:
+  /// **'Mengerti'**
+  String get cshSyncAck;
+
+  /// No description provided for @cshApprovalOffline.
+  ///
+  /// In id, this message translates to:
+  /// **'Persetujuan manajer perlu koneksi ke host'**
+  String get cshApprovalOffline;
+
+  /// No description provided for @cshJournalFull.
+  ///
+  /// In id, this message translates to:
+  /// **'Terlalu banyak tagihan tertunda — sambungkan ke host dulu'**
+  String get cshJournalFull;
 
   /// No description provided for @cshCrumbCashier.
   ///

@@ -210,6 +210,17 @@ enum AuditKind {
 
   /// The sample seed ran (ADR-0073). No params.
   sampleDataLoaded,
+
+  /// A settlement act captured on a [[Terputus (client disconnected)|terputus]]
+  /// till reached the host **after the business day it belongs to had already
+  /// closed its books** (ADR-0123). Params: `{table}`, `{amount}`
+  /// (pre-formatted rupiah), `{captured}` (when it was collected, already
+  /// formatted).
+  ///
+  /// Never a refusal — the cash is physically in the drawer and discarding the
+  /// record loses it. This row exists so the discrepancy the owner finds in a
+  /// signed-off day has a name.
+  settlementArrivedLate,
 }
 
 /// Read a persisted kind back, tolerating one written by a newer build.
