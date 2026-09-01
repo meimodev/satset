@@ -1,5 +1,6 @@
 package id.activid.satset
 
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Build
@@ -8,9 +9,12 @@ import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.ByteArrayOutputStream
 
 class MainActivity : FlutterActivity() {
     private val channel = "satset/server"
+    private val csvRequest = 1042
+    private var csvResult: MethodChannel.Result? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,8 +62,59 @@ class MainActivity : FlutterActivity() {
                         stopService(Intent(this, SatSetServerService::class.java))
                         result.success(null)
                     }
+                    "pickCsv" -> {
+                        if (csvResult != null) {
+                            result.error("picker_busy", "CSV picker already open", null)
+                        } else {
+                            csvResult = result
+                            startActivityForResult(
+                                Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                                    addCategory(Intent.CATEGORY_OPENABLE)
+                                    type = "text/*"
+                                    putExtra(
+                                        Intent.EXTRA_MIME_TYPES,
+                                        arrayOf("text/csv", "text/comma-separated-values", "text/plain")
+                                    )
+                                },
+                                csvRequest
+                            )
+                        }
+                    }
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != csvRequest) return
+        val result = csvResult ?: return
+        csvResult = null
+        val uri = data?.data
+        if (resultCode != Activity.RESULT_OK || uri == null) {
+            result.success(null)
+            return
+        }
+        try {
+            val output = ByteArrayOutputStream()
+            contentResolver.openInputStream(uri)!!.use { input ->
+                val buffer = ByteArray(8192)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    output.write(buffer, 0, read)
+                    if (output.size() > 5 * 1024 * 1024) {
+                        throw IllegalArgumentException("file_too_large")
+                    }
+                }
+            }
+            result.success(output.toByteArray())
+        } catch (e: Exception) {
+            result.error(
+                if (e.message == "file_too_large") "file_too_large" else "file_read_failed",
+                e.message,
+                null
+            )
+        }
     }
 }

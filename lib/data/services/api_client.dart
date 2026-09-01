@@ -141,6 +141,7 @@ class ApiClient {
     String path,
     Object body, {
     Duration? timeout,
+
     /// Makes the write replay-safe (ADR-0123). Every act on the
     /// [[Antrean setelmen]] carries its event id here, so a replay after a
     /// committed-but-timed-out request reads the host's stored answer instead
@@ -187,6 +188,20 @@ class ApiClient {
     final uri = _config.baseUri.resolve(path);
     final headers = await _headers(extra: {'Content-Type': contentType});
     final r = await _inner.put(uri, headers: headers, body: bytes);
+    return _decode(r);
+  }
+
+  Future<dynamic> postBytes(
+    String path,
+    List<int> bytes, {
+    String contentType = 'application/octet-stream',
+    Duration? timeout,
+  }) async {
+    final uri = _config.baseUri.resolve(path);
+    final headers = await _headers(extra: {'Content-Type': contentType});
+    final r = await _inner
+        .post(uri, headers: headers, body: bytes)
+        .timeout(timeout ?? requestTimeout);
     return _decode(r);
   }
 

@@ -15,6 +15,56 @@ import 'package:satset/domain/models/member.dart';
 /// typing a name or a number.
 const _kMembersPage = 100;
 
+class MemberImportRowDto {
+  final int row;
+  final String name;
+  final String phone;
+  final String status;
+  final List<String> errors;
+
+  const MemberImportRowDto({
+    required this.row,
+    required this.name,
+    required this.phone,
+    required this.status,
+    required this.errors,
+  });
+
+  factory MemberImportRowDto.fromJson(Map<String, dynamic> json) =>
+      MemberImportRowDto(
+        row: json['row'] as int,
+        name: json['name'] as String,
+        phone: json['phone'] as String,
+        status: json['status'] as String,
+        errors: (json['errors'] as List).cast<String>(),
+      );
+}
+
+class MemberImportPreviewDto {
+  final int newCount;
+  final int skippedCount;
+  final int invalidCount;
+  final List<MemberImportRowDto> rows;
+
+  const MemberImportPreviewDto({
+    required this.newCount,
+    required this.skippedCount,
+    required this.invalidCount,
+    required this.rows,
+  });
+
+  factory MemberImportPreviewDto.fromJson(Map<String, dynamic> json) =>
+      MemberImportPreviewDto(
+        newCount: json['new'] as int,
+        skippedCount: json['skipped'] as int,
+        invalidCount: json['invalid'] as int,
+        rows: [
+          for (final row in json['rows'] as List)
+            MemberImportRowDto.fromJson((row as Map).cast<String, dynamic>()),
+        ],
+      );
+}
+
 class MembersState {
   final List<MemberDto> members;
 
@@ -185,10 +235,9 @@ class MembersRepository extends StateNotifier<MembersState> {
   /// window does not reach here.
   Future<List<MemberVisitDto>> visits(String id, {int limit = 30}) async {
     final raw =
-        await _ref.read(apiClientProvider).getJson(
-              '/members/$id/visits',
-              query: {'limit': '$limit'},
-            )
+        await _ref
+                .read(apiClientProvider)
+                .getJson('/members/$id/visits', query: {'limit': '$limit'})
             as List;
     return [
       for (final v in raw)
@@ -213,6 +262,32 @@ class MembersRepository extends StateNotifier<MembersState> {
             })
             as Map<String, dynamic>,
   );
+
+  Future<MemberImportPreviewDto> previewImport(List<int> bytes) async {
+    final raw =
+        await _ref
+                .read(apiClientProvider)
+                .postBytes(
+                  '/members/import/preview',
+                  bytes,
+                  contentType: 'text/csv; charset=utf-8',
+                  timeout: const Duration(seconds: 30),
+                )
+            as Map<String, dynamic>;
+    return MemberImportPreviewDto.fromJson(raw);
+  }
+
+  Future<void> importCsv(List<int> bytes) async {
+    await _ref
+        .read(apiClientProvider)
+        .postBytes(
+          '/members/import',
+          bytes,
+          contentType: 'text/csv; charset=utf-8',
+          timeout: const Duration(minutes: 2),
+        );
+    await refresh();
+  }
 
   Future<MemberDto> edit({
     required String id,
@@ -374,6 +449,8 @@ class MembersRepository extends StateNotifier<MembersState> {
         // Full resync on reconnect (ADR-0021): a member enrolled while the
         // socket was down would otherwise be missing until the next search.
         case WsEventTypes.connected:
+          refresh();
+        case WsEventTypes.membersRefresh:
           refresh();
         case WsEventTypes.memberUpdated:
           _upsert(MemberDto.fromJson(ev.payload));

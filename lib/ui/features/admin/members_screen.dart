@@ -3,6 +3,7 @@ import 'package:satset/ui/core/design/shell_inset.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import 'package:satset/core/localization/labels.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
@@ -11,6 +12,8 @@ import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/members_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/wilayah_service.dart';
+import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/error_bus_service.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/member.dart';
 import 'package:satset/l10n/app_localizations.dart';
@@ -25,6 +28,7 @@ import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_inline_error.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import '_common.dart';
@@ -53,6 +57,7 @@ class MembersScreen extends ConsumerStatefulWidget {
 }
 
 class _MembersScreenState extends ConsumerState<MembersScreen> {
+  static const _platform = MethodChannel('satset/server');
   final _search = TextEditingController();
   Timer? _debounce;
 
@@ -127,11 +132,23 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
           sub: filtered
               ? l10n.memMatchCount(state.members.length)
               : l10n.memCount(state.members.length),
-          trailing: SatButton.primary(
-            label: l10n.memActionAdd,
-            icon: Icons.person_add_alt_1_rounded,
-            size: SatButtonSize.sm,
-            onTap: () => _form(),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SatButton.outline(
+                label: 'Impor CSV',
+                icon: Icons.upload_file_rounded,
+                size: SatButtonSize.sm,
+                onTap: _importCsv,
+              ),
+              const SizedBox(width: Sp.s2),
+              SatButton.primary(
+                label: l10n.memActionAdd,
+                icon: Icons.person_add_alt_1_rounded,
+                size: SatButtonSize.sm,
+                onTap: () => _form(),
+              ),
+            ],
           ),
         ),
         Padding(
@@ -243,7 +260,203 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     context,
     builder: (_) => _MemberDetailSheet(member: member),
   );
+
+  Future<void> _importCsv() async {
+    Uint8List? bytes;
+    try {
+      bytes = await _platform.invokeMethod<Uint8List>('pickCsv');
+    } on PlatformException catch (e) {
+      if (mounted) {
+        ref
+            .read(errorBusServiceProvider)
+            .push(
+              e.code == 'file_too_large'
+                  ? 'Berkas CSV melebihi 5 MB.'
+                  : 'Berkas CSV tidak dapat dibaca.',
+            );
+      }
+      return;
+    }
+    final csvBytes = bytes;
+    if (!mounted || csvBytes == null) return;
+    try {
+      final preview = await ref
+          .read(membersProvider.notifier)
+          .previewImport(csvBytes);
+      if (!mounted) return;
+      await showSatDialog<void>(
+        context,
+        builder: (_) => _MemberImportDialog(bytes: csvBytes, preview: preview),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final code = e is ApiException ? e.code : null;
+      ref
+          .read(errorBusServiceProvider)
+          .push('CSV ditolak${code == null ? '' : ': $code'}.');
+    }
+  }
 }
+
+class _MemberImportDialog extends ConsumerStatefulWidget {
+  final List<int> bytes;
+  final MemberImportPreviewDto preview;
+  const _MemberImportDialog({required this.bytes, required this.preview});
+
+  @override
+  ConsumerState<_MemberImportDialog> createState() =>
+      _MemberImportDialogState();
+}
+
+class _MemberImportDialogState extends ConsumerState<_MemberImportDialog> {
+  bool _busy = false;
+  String? _error;
+
+  Future<void> _commit() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(membersProvider.notifier).importCsv(widget.bytes);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e is ApiException && e.code != null
+            ? 'Impor ditolak: ${e.code}'
+            : 'Impor gagal. Coba lagi.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final preview = widget.preview;
+    final canImport = preview.invalidCount == 0 && preview.newCount > 0;
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760, maxHeight: 680),
+        child: Padding(
+          padding: const EdgeInsets.all(Sp.s5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Pratinjau impor CSV', style: SatType.h3(color: sc.textHi)),
+              const SizedBox(height: Sp.s1),
+              Text(
+                '${preview.newCount} baru · ${preview.skippedCount} dilewati · '
+                '${preview.invalidCount} tidak valid',
+                style: SatType.bodyS(color: sc.textMd),
+              ),
+              const SizedBox(height: Sp.s1),
+              Text(
+                'Kolom: nama, telepon, tanggal_lahir, catatan, '
+                'kabupaten_kota, kecamatan, kelurahan_desa, alamat, '
+                'batas_kredit',
+                style: SatType.monoS(color: sc.textLo),
+              ),
+              const SizedBox(height: Sp.s4),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: preview.rows.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: Sp.s1),
+                  itemBuilder: (_, index) {
+                    final row = preview.rows[index];
+                    final invalid = row.status == 'invalid';
+                    final skipped = row.status == 'skip';
+                    final status = invalid
+                        ? row.errors.map(_importError).join(', ')
+                        : skipped
+                        ? 'Sudah ada — dilewati'
+                        : 'Baru';
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Sp.s3,
+                        vertical: Sp.s2,
+                      ),
+                      decoration: SatBox.d(
+                        color: sc.bg1,
+                        borderRadius: SatR.sm,
+                        border: SatB.all(
+                          color: invalid ? sc.urgent : sc.border0,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 48,
+                            child: Text(
+                              '#${row.row}',
+                              style: SatType.monoS(color: sc.textLo),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              '${row.name} · ${row.phone}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: SatType.bodyS(color: sc.textHi),
+                            ),
+                          ),
+                          const SizedBox(width: Sp.s3),
+                          Flexible(
+                            child: Text(
+                              status,
+                              textAlign: TextAlign.end,
+                              style: SatType.bodyS(
+                                color: invalid ? sc.urgent : sc.textLo,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: Sp.s3),
+                SatInlineError(_error!),
+              ],
+              const SizedBox(height: Sp.s4),
+              Row(
+                children: [
+                  Expanded(
+                    child: SatButton.ghost(
+                      label: context.l10n.cancel,
+                      onTap: _busy ? null : () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                  const SizedBox(width: Sp.s2),
+                  Expanded(
+                    child: SatButton.primary(
+                      label: 'Impor ${preview.newCount} pelanggan',
+                      busy: _busy,
+                      onTap: canImport ? _commit : null,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _importError(String code) => switch (code) {
+  'column_count' => 'jumlah kolom salah',
+  'name_required' => 'nama wajib',
+  'phone_required' => 'telepon tidak valid',
+  'invalid_birthday' => 'tanggal lahir harus YYYY-MM-DD',
+  'invalid_credit_limit' => 'batas kredit harus rupiah bulat non-negatif',
+  'duplicate_phone' => 'telepon ganda dalam berkas',
+  _ => code,
+};
 
 /// One member, read the way they are asked after: who, which number, what they
 /// have banked, how often they come.

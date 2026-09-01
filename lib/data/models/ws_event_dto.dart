@@ -54,6 +54,10 @@ class WsEventTypes {
   /// recompute `SUM(delta)` from the page it happens to hold.
   static const memberUpdated = 'member.updated';
 
+  /// A bulk member import committed. Clients refetch once rather than receive
+  /// thousands of member.updated frames.
+  static const membersRefresh = 'members.refresh';
+
   /// Payload `{id}`. Fires on a delete and on the losing half of a merge, which
   /// look identical from the directory's side.
   static const memberDeleted = 'member.deleted';
