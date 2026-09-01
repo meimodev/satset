@@ -1,7 +1,7 @@
 name: satset
 description: "SatSet — Solusi Cepat, Kerja Akurat. Internal ordering ecosystem."
 publish_to: 'none'
-version: 1.0.5+6
+version: 1.0.6+7
 
 environment:
   sdk: ^3.11.3
@@ -205,4 +205,3 @@ flutter_launcher_icons:
   min_sdk_android: 29
   adaptive_icon_background: "#EE8F3B"
   adaptive_icon_foreground: "assets/icon/icon.png"
-
