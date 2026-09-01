@@ -486,6 +486,7 @@ Future<Member> createMember(
   required String phone,
   String? note,
   DateTime? birthday,
+  int? debtLimit,
 
   /// Optional, and the reservation-fallback enrolment deliberately never sends
   /// one — enrolling a guest at 19:00 stays two fields.
@@ -521,6 +522,7 @@ Future<Member> createMember(
           code: Value(_codeFor(cleanPhone)),
           note: Value(note),
           birthday: Value(birthday),
+          debtLimit: Value(debtLimit),
           kabupaten: Value(address.kabupaten),
           kecamatan: Value(address.kecamatan),
           kelurahan: Value(address.kelurahan),

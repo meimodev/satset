@@ -12,6 +12,7 @@ import 'package:satset/server/auth.dart';
 // domain model's name and this file means the domain one.
 import 'package:satset/server/db/database.dart' hide Member;
 import 'package:satset/server/debts.dart';
+import 'package:satset/server/member_import.dart';
 import 'package:satset/server/members.dart';
 import 'package:satset/server/routes/reports_routes.dart' show reportWindow;
 import 'package:satset/server/ws_hub.dart';
@@ -58,6 +59,7 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     String? memberId,
     int? balance,
     int? limit,
+    int? row,
   }) => Response(
     status,
     body: jsonEncode({
@@ -66,6 +68,7 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       'memberId': ?memberId,
       'balance': ?balance,
       'limit': ?limit,
+      'row': ?row,
     }),
     headers: {'content-type': 'application/json'},
   );
@@ -81,6 +84,17 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   Future<Response?> enabledGuard() async {
     final cfg = await memberConfig(db);
     return cfg.enabled ? null : err(404, 'members_disabled');
+  }
+
+  Future<List<int>> csvBytes(Request req) async {
+    final bytes = BytesBuilder(copy: false);
+    await for (final chunk in req.read()) {
+      bytes.add(chunk);
+      if (bytes.length > memberImportMaxBytes) {
+        throw const MemberImportException('file_too_large');
+      }
+    }
+    return bytes.takeBytes();
   }
 
   /// [[Piutang]] off ⇒ 404 as well, and for the same reason: a venue that runs
@@ -418,6 +432,31 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       'ledger': [for (final e in ledger) memberPointEntryJson(e)],
     });
   });
+
+  Future<Response> importResponse(Request req, {required bool commit}) async {
+    final off = await enabledGuard();
+    if (off != null) return off;
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!a.$2.contains(Capability.manageMembers.name)) {
+      return forbidden(Capability.manageMembers);
+    }
+    try {
+      final bytes = await csvBytes(req);
+      final preview = commit
+          ? await importMembers(db, bytes, actorUserId: a.$1!, hub: hub)
+          : await previewMemberImport(db, bytes);
+      return json(preview.toJson());
+    } on MemberImportException catch (e) {
+      return err(400, e.code, row: e.row);
+    }
+  }
+
+  r.post(
+    '/members/import/preview',
+    (Request req) => importResponse(req, commit: false),
+  );
+  r.post('/members/import', (Request req) => importResponse(req, commit: true));
 
   /// Enrol. A cashier's act, mid-settlement — hence `settleBill` rather than
   /// `manageMembers`. A number that already exists comes back as `phone_taken`
