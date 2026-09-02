@@ -191,7 +191,11 @@ void main() {
   /// Tap the settle pane's mode row. The row is always on screen — that is what
   /// makes the cut reversible in one tap.
   Future<void> pickMode(WidgetTester tester, String label) async {
-    await tester.tap(find.text(label).first, warnIfMissed: false);
+    await tester.tap(
+      find.byWidgetPredicate((w) => w is DropdownButtonFormField).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(label).last);
     await drain(tester);
     tester.takeException();
   }
@@ -203,7 +207,7 @@ void main() {
   Finder lines() => find.text('ITEM PESANAN', skipOffstage: false);
   Finder receipts() => find.text('STRUK', skipOffstage: false);
 
-  testWidgets('phone · per item leaves the picker and nothing else', (
+  testWidgets('phone · per item picks first and defers payment to review', (
     tester,
   ) async {
     await pumpBill(tester, tablet: false);
@@ -216,6 +220,18 @@ void main() {
     expect(totals(), findsNothing);
     expect(actions(), findsNothing);
     expect(receipts(), findsNothing);
+
+    await tester.tap(find.text('Nasi Goreng'));
+    await drain(tester);
+    tester.takeException();
+    expect(
+      find.text(
+        'Tinjau struk, terapkan diskon item, lalu bayar',
+        skipOffstage: false,
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Tunai', skipOffstage: false), findsOneWidget);
   });
 
   testWidgets('phone · leaving per item brings everything back', (
@@ -260,10 +276,7 @@ void main() {
     for (final label in ['Tunai', 'QRIS', 'Kartu', 'Transfer', 'Lainnya']) {
       expect(find.text(label, skipOffstage: false), findsOneWidget);
     }
-    expect(
-      find.textContaining('Terkunci', skipOffstage: false),
-      findsNothing,
-    );
+    expect(find.textContaining('Terkunci', skipOffstage: false), findsNothing);
   });
 }
 

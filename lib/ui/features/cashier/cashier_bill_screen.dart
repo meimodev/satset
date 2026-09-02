@@ -481,6 +481,32 @@ class _BillBodyState extends State<_BillBody> {
     setState(_selection.clear);
   }
 
+  Future<void> _reviewReceipt(
+    Bill updated,
+    String receiptId,
+    PayMethod payMethod,
+  ) async {
+    BillReceipt? receipt;
+    for (final candidate in updated.receipts) {
+      if (candidate.id == receiptId) receipt = candidate;
+    }
+    if (receipt == null || !mounted) return;
+    setState(() {
+      _mode = SettleMode.penuh;
+      _selection.clear();
+    });
+    await showReceiptSheet(
+      context,
+      bill: updated,
+      receipt: receipt,
+      run: widget.run,
+      repo: widget.repo,
+      canRefund: widget.canRefund,
+      printDoc: widget.printDoc,
+      initialPayMethod: payMethod,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final done = bill.billClosedAt != null || bill.fullySettled;
@@ -535,6 +561,7 @@ class _BillBodyState extends State<_BillBody> {
         _clearSelection();
       },
       onClearSelection: _clearSelection,
+      onReviewReceipt: _reviewReceipt,
       onPrintSelection: () => widget.printSelection(_selection),
       debtEnabled: widget.debtEnabled,
       splitEnabled: bill.splitEnabled,
@@ -1163,6 +1190,7 @@ class _ReceiptCard extends ConsumerWidget {
   final SettlementRepository repo;
   final bool canRefund;
   final Future<void> Function(BillReceipt?) printDoc;
+  final PayMethod initialPayMethod;
   const _ReceiptCard({
     required this.bill,
     required this.receipt,
@@ -1170,6 +1198,7 @@ class _ReceiptCard extends ConsumerWidget {
     required this.repo,
     required this.canRefund,
     required this.printDoc,
+    this.initialPayMethod = PayMethod.tunai,
   });
 
   @override
@@ -1179,14 +1208,10 @@ class _ReceiptCard extends ConsumerWidget {
     final paid = r.isPaid;
     // Show each receipt's owned items so the cashier sees *who has what* at a
     // glance. Names joined from bill.lines by ticketId (BillReceiptLine carries
-    // only ticketId + qtyUnits). Suppressed only for the degenerate whole-bill
-    // case — a lone receipt that owns every line ("Bayar penuh") — since the
-    // lines section above already itemizes it; any genuine split (incl. one
-    // guest filled so far) shows its items. No per-item rupiah: modifiers would
-    // make a naive qty×unitPrice lie; the server-computed Total is the truth.
+    // only ticketId + qtyUnits). No per-item rupiah: modifiers would make a
+    // naive qty×unitPrice lie; the server-computed Total is the truth.
     final lineByTicket = {for (final b in bill.lines) b.ticketId: b};
-    final isWholeBill = bill.receipts.length == 1 && bill.fullyAssigned;
-    final showItems = r.lines.isNotEmpty && !isWholeBill;
+    final showItems = r.lines.isNotEmpty;
     // 'Tagihan' (whole bill) and 'Bagian 1/3' (even share) are not letters and
     // wear no badge — there is no sibling guest to tell them apart from.
     final hasLetter = isReceiptLetter(r.label.trim());
@@ -1339,6 +1364,7 @@ class _ReceiptCard extends ConsumerWidget {
                   onTap: () => _paySheet(
                     context,
                     r,
+                    initialMethod: initialPayMethod,
                     debtEnabled: ref.read(
                       venueSettingsProvider.select(
                         (v) => v.membersOn && v.memberDebtEnabled,
@@ -1454,12 +1480,13 @@ class _ReceiptCard extends ConsumerWidget {
   Future<void> _paySheet(
     BuildContext context,
     BillReceipt r, {
+    required PayMethod initialMethod,
     required bool debtEnabled,
   }) async {
     final sc = context.sat;
     final amountCtl = TextEditingController(text: groupRupiah(r.outstanding));
     final tenderedCtl = TextEditingController();
-    var method = 'tunai';
+    var method = initialMethod.id;
     Uint8List? photoBytes; // proof shot for a non-cash payment (ADR-0025)
     await showSatSheet<void>(
       context,
@@ -1968,6 +1995,7 @@ Future<void> showReceiptSheet(
   required SettlementRepository repo,
   required bool canRefund,
   required Future<void> Function(BillReceipt?) printDoc,
+  PayMethod initialPayMethod = PayMethod.tunai,
 }) => showSatSheet<void>(
   context,
   builder: (ctx) => Padding(
@@ -1988,6 +2016,7 @@ Future<void> showReceiptSheet(
         repo: repo,
         canRefund: canRefund,
         printDoc: printDoc,
+        initialPayMethod: initialPayMethod,
       ),
     ),
   ),
@@ -2138,24 +2167,28 @@ class _ReceiptItemRow extends ConsumerWidget {
         ? ' · ${l!.variantName}'
         : '';
     final existing = receipt.lineDiscount(ticketId);
+    final manualDiscount = existing?.source == 'manual' ? existing : null;
+    final lockedByAutomaticDiscount =
+        existing != null && existing.source != 'manual';
+    final canEditDiscount = canDiscount && !lockedByAutomaticDiscount;
     // The units THIS receipt owns — a qty:3 line split 2/1 discounts only its
     // own share. Preview only; the server re-resolves authoritatively.
     final base = (l?.unitPrice ?? 0) * qtyUnits;
 
     Future<void> onTap() async {
-      if (!canDiscount) return;
-      if (existing != null) {
+      if (!canEditDiscount) return;
+      if (manualDiscount != null) {
         if (await _confirm(
           context,
           title: context.l10n.cshRemoveLineDiscountTitle,
           message: context.l10n.cshRemoveLineDiscountBody(
-            existing.label,
-            formatIDR(existing.amount),
+            manualDiscount.label,
+            formatIDR(manualDiscount.amount),
             name,
           ),
           confirmLabel: context.l10n.cshConfirmDelete,
         )) {
-          await run(() => repo.removeDiscount(receipt.id, existing.id));
+          await run(() => repo.removeDiscount(receipt.id, manualDiscount.id));
         }
         return;
       }
@@ -2181,7 +2214,7 @@ class _ReceiptItemRow extends ConsumerWidget {
     }
 
     return InkWell(
-      onTap: canDiscount ? onTap : null,
+      onTap: canEditDiscount ? onTap : null,
       child: Padding(
         padding: const EdgeInsets.only(top: Sp.sHair),
         child: Column(
@@ -2195,8 +2228,13 @@ class _ReceiptItemRow extends ConsumerWidget {
                     style: SatType.bodyS(color: sc.textHi),
                   ),
                 ),
-                if (canDiscount && existing == null)
+                if (canEditDiscount && existing == null)
                   Icon(Icons.sell_outlined, size: 14, color: sc.textLo),
+                if (lockedByAutomaticDiscount)
+                  Tooltip(
+                    message: context.l10n.cshLineDiscountLocked,
+                    child: Icon(Icons.lock_outline, size: 14, color: sc.textLo),
+                  ),
               ],
             ),
             if (existing != null)
@@ -2215,6 +2253,14 @@ class _ReceiptItemRow extends ConsumerWidget {
                       style: SatType.monoS(color: sc.warn),
                     ),
                   ],
+                ),
+              ),
+            if (lockedByAutomaticDiscount)
+              Padding(
+                padding: const EdgeInsets.only(left: Sp.s3, top: Sp.sHair),
+                child: Text(
+                  context.l10n.cshLineDiscountLocked,
+                  style: SatType.labelS(color: sc.textLo),
                 ),
               ),
           ],

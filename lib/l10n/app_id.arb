@@ -2324,6 +2324,7 @@
   "cshItemFallback": "Item",
   "cshRemoveLineDiscountTitle": "Hapus diskon item",
   "cshRemoveLineDiscountBody": "Hapus \"{label}\" ({amount}) dari {name}?",
+  "cshLineDiscountLocked": "Diskon member aktif; diskon manual tidak tersedia",
   "@cshRemoveLineDiscountBody": {
     "placeholders": {
       "label": {
@@ -4254,7 +4255,7 @@
   "stlProofAttached": "Bukti terlampir",
   "stlRetakePhoto": "Ambil ulang",
   "stlTakePhoto": "Ambil foto bukti bayar",
-  "stlConfirmItems": "{count, plural, other{Terima {count} item · {amount}}}",
+  "stlConfirmItems": "{count, plural, other{Tinjau {count} item · {amount}}}",
   "@stlConfirmItems": {
     "placeholders": {
       "count": {
@@ -4265,6 +4266,7 @@
       }
     }
   },
+  "stlReviewDiscountHint": "Tinjau struk, terapkan diskon item, lalu bayar",
   "stlConfirmShare": "Terima bagian · {amount}",
   "@stlConfirmShare": {
     "placeholders": {
