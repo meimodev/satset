@@ -7,7 +7,7 @@ The Kasir (Cashier) surface is where a table's food becomes money: assigning sen
 | Feature | Route | Capability | Server |
 |---|---|---|---|
 | Cashier bill list (`/kasir`) | `/kasir` | `settleBill` | `GET /settlement/payable` |
-| Bill overlay (Visit's bill) | pushed from `/kasir` (tablet: root-navigator page; phone: tall sheet) | `settleBill` | `GET /settlement/visits/<visitId>/bill` |
+| Bill detail (Visit's bill) | root-navigator page from `/kasir`, post-send, or the active table header | `settleBill` | `GET /settlement/visits/<visitId>/bill` |
 | Visits vs tables (two-phase settlement) | architectural — `/kasir` list + bill overlay | — | `Visits.tableFreedAt` / `Visits.billClosedAt` |
 | Split bill mode (Penuh / Per item / Bagi rata) | bill overlay → `SettlePane` | `settleBill` | `POST /settlement/visits/<id>/receipts`, `POST /settlement/visits/<id>/split-even` |
 | Per-item line assignment | bill overlay → `Atur` sheet | `settleBill` | `POST /settlement/receipts/<id>/lines` |
@@ -195,7 +195,7 @@ No new capability was minted for the offline path — a captured event replays u
 
 **How to use**
 1. Pick a method: **Tunai**, **QRIS**, **Kartu**, **Transfer**, **Lainnya**, and — only where the venue runs tabs — **Piutang** (`payMethodOnAccount`).
-2. Tunai shows a `CashPad` (Indonesian note buttons Rp 1.000–Rp 100.000, quick-tender chips, a running received/change summary with a note fold for the change).
+2. Tunai shows a `CashPad` (Indonesian denomination buttons Rp 100–Rp 100.000, quick-tender chips, a running received/change summary with a denomination breakdown for the change).
 3. Any other money method (not Tunai, not Piutang) requires a live camera shot before the confirm button unlocks.
 4. Piutang shows the debtor's remaining credit (`stlPiutangLeft`) instead of a pad or camera — no money moves, so nothing is tendered and nothing is shot.
 5. The amount field defaults to the receipt's outstanding but is the cashier's to type down (part-payment), capped at that figure.

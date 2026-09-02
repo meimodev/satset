@@ -1,6 +1,11 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+// ignore: depend_on_referenced_packages
+import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
@@ -11,6 +16,7 @@ import 'package:satset/domain/models/user.dart';
 import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
 import 'package:satset/l10n/app_localizations.dart';
 
@@ -25,9 +31,8 @@ import 'package:satset/l10n/app_localizations.dart';
 /// — the item the cashier is reaching for being on screen — is invisible in a
 /// diff. Hence this file.
 ///
-/// It also pins the settle pane's method lock: once any non-refund payment has
-/// landed, the rest of the bill is bound to that tender, so the Metode row
-/// collapses to the one chip still allowed.
+/// It also pins that every payment method stays available after a payment has
+/// landed, so a receipt can use more than one tender (ADR-0121).
 void main() {
   setUpAll(() => SatType.useSystemFonts = true);
   tearDownAll(() => SatType.useSystemFonts = false);
@@ -149,6 +154,8 @@ void main() {
     WidgetTester tester, {
     required bool tablet,
     Bill? fixture,
+    bool viaEntryPoint = false,
+    void Function(_StubSettlement)? onSettlement,
   }) async {
     // 800dp shortest side is the tablet branch; 360dp is the phone floor.
     tester.view.physicalSize = tablet
@@ -168,6 +175,11 @@ void main() {
               seed: const AuthState(isAuthenticated: true, user: cashier),
             ),
           ),
+          settlementProvider.overrideWith((ref) {
+            final settlement = _StubSettlement(ref: ref, bill: fixture ?? bill);
+            onSettlement?.call(settlement);
+            return settlement;
+          }),
           billDetailProvider('v1').overrideWith((ref) async => fixture ?? bill),
         ],
         child: MaterialApp(
@@ -177,11 +189,28 @@ void main() {
           localizationsDelegates: AppL10n.localizationsDelegates,
           supportedLocales: AppL10n.supportedLocales,
           theme: satTheme(SatTheme.neonTerang),
-          home: const Scaffold(body: CashierBillView(visitId: 'v1')),
+          home: viaEntryPoint
+              ? Builder(
+                  builder: (context) => Scaffold(
+                    body: Center(
+                      child: TextButton(
+                        onPressed: () =>
+                            openCashierBill(context, visitId: 'v1'),
+                        child: const Text('Open bill'),
+                      ),
+                    ),
+                  ),
+                )
+              : const Scaffold(body: CashierBillView(visitId: 'v1')),
         ),
       ),
     );
     await drain(tester);
+    if (viaEntryPoint) {
+      await tester.tap(find.text('Open bill'));
+      await drain(tester);
+      tester.takeException();
+    }
     // The test font draws every glyph as a square of the font size, so rows
     // budgeted against real metrics overrun here. Structure is what this file
     // asserts; the width arithmetic lives in ADR-0062 and on hardware.
@@ -205,33 +234,63 @@ void main() {
   Finder totals() => find.text('Subtotal', skipOffstage: false);
   Finder actions() => find.textContaining('Cetak tagihan', skipOffstage: false);
   Finder lines() => find.text('ITEM PESANAN', skipOffstage: false);
-  Finder receipts() => find.text('STRUK', skipOffstage: false);
 
-  testWidgets('phone · per item picks first and defers payment to review', (
+  testWidgets('tablet · per item pays with the selected method', (
     tester,
   ) async {
-    await pumpBill(tester, tablet: false);
+    late _StubSettlement settlement;
+    final originalPicker = ImagePickerPlatform.instance;
+    ImagePickerPlatform.instance = _StubImagePicker(
+      base64Decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      ),
+    );
+    addTearDown(() => ImagePickerPlatform.instance = originalPicker);
+
+    await pumpBill(
+      tester,
+      tablet: true,
+      onSettlement: (value) => settlement = value,
+    );
     expect(totals(), findsOneWidget);
     expect(lines(), findsOneWidget);
 
     await pickMode(tester, 'Per item');
 
     expect(lines(), findsOneWidget, reason: 'the picker is the whole point');
-    expect(totals(), findsNothing);
-    expect(actions(), findsNothing);
-    expect(receipts(), findsNothing);
 
     await tester.tap(find.text('Nasi Goreng'));
     await drain(tester);
     tester.takeException();
-    expect(
-      find.text(
-        'Tinjau struk, terapkan diskon item, lalu bayar',
-        skipOffstage: false,
-      ),
-      findsOneWidget,
-    );
-    expect(find.text('Tunai', skipOffstage: false), findsOneWidget);
+
+    final methodDropdown = find
+        .byWidgetPredicate(
+          (w) => w is DropdownButtonFormField,
+          skipOffstage: false,
+        )
+        .last;
+    await tester.ensureVisible(methodDropdown);
+    await tester.tap(methodDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('QRIS').last);
+    await drain(tester);
+
+    final takeProof = find.text('Ambil foto bukti bayar');
+    await tester.ensureVisible(takeProof);
+    await tester.tap(takeProof);
+    await drain(tester);
+    expect(find.text('Bukti terlampir'), findsOneWidget);
+
+    final confirm = find.textContaining('Terima 1 item');
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await drain(tester);
+
+    expect(settlement.paymentMethod, 'qris');
+    expect(settlement.paymentPhoto, isNotNull);
+    expect(settlement.mintedLines, hasLength(1));
+    expect(settlement.mintedLines.single.ticketId, 'tk1');
+    expect(settlement.mintedLines.single.qtyUnits, 2);
   });
 
   testWidgets('phone · leaving per item brings everything back', (
@@ -246,6 +305,15 @@ void main() {
     expect(totals(), findsOneWidget);
     expect(actions(), findsOneWidget);
     expect(lines(), findsOneWidget);
+  });
+
+  testWidgets('phone · bill entry pushes one page header', (tester) async {
+    await pumpBill(tester, tablet: false, viaEntryPoint: true);
+
+    expect(find.byType(CashierBillPage), findsOneWidget);
+    expect(find.byType(SatAppBar), findsOneWidget);
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.text('Tagihan · Meja 12'), findsOneWidget);
   });
 
   testWidgets('tablet · per item cuts nothing from the left pane', (
@@ -288,4 +356,56 @@ class _StubAuth extends AuthRepository {
   }) {
     state = seed;
   }
+}
+
+class _StubSettlement extends SettlementRepository {
+  _StubSettlement({required super.ref, required this.bill});
+
+  final Bill bill;
+  String? paymentMethod;
+  String? paymentPhoto;
+  List<BillReceiptLine> mintedLines = const [];
+
+  @override
+  Future<({String receiptId, Bill bill})> mintReceipt(
+    String visitId, {
+    String mode = 'itemized',
+    String? label,
+    bool assignAll = false,
+    List<BillReceiptLine> lines = const [],
+    String? memberId,
+  }) async {
+    mintedLines = lines;
+    return (receiptId: 'r2', bill: bill);
+  }
+
+  @override
+  Future<Bill> recordPayment(
+    String receiptId, {
+    required String method,
+    required int amount,
+    int? tendered,
+    String? note,
+    String? photoBase64,
+    String? memberId,
+  }) async {
+    paymentMethod = method;
+    paymentPhoto = photoBase64;
+    return bill;
+  }
+}
+
+class _StubImagePicker extends ImagePickerPlatform {
+  _StubImagePicker(this.bytes);
+
+  final Uint8List bytes;
+
+  @override
+  Future<XFile?> getImage({
+    required ImageSource source,
+    double? maxWidth,
+    double? maxHeight,
+    int? imageQuality,
+    CameraDevice preferredCameraDevice = CameraDevice.rear,
+  }) async => XFile.fromData(bytes, mimeType: 'image/png', name: 'proof.png');
 }

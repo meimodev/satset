@@ -9026,14 +9026,8 @@ abstract class AppL10n {
   /// No description provided for @stlConfirmItems.
   ///
   /// In id, this message translates to:
-  /// **'{count, plural, other{Tinjau {count} item · {amount}}}'**
+  /// **'{count, plural, other{Terima {count} item · {amount}}}'**
   String stlConfirmItems(int count, String amount);
-
-  /// No description provided for @stlReviewDiscountHint.
-  ///
-  /// In id, this message translates to:
-  /// **'Tinjau struk, terapkan diskon item, lalu bayar'**
-  String get stlReviewDiscountHint;
 
   /// No description provided for @stlConfirmShare.
   ///

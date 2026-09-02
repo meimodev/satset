@@ -5600,14 +5600,10 @@ class AppL10nId extends AppL10n {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Tinjau $count item · $amount',
+      other: 'Terima $count item · $amount',
     );
     return '$_temp0';
   }
-
-  @override
-  String get stlReviewDiscountHint =>
-      'Tinjau struk, terapkan diskon item, lalu bayar';
 
   @override
   String stlConfirmShare(String amount) {

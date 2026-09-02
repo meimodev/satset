@@ -9,10 +9,20 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 
-/// Indonesian notes, largest first. Rp 1.000 is the floor — below that the
-/// cashier is handling coins, and coins are not counted onto a pad.
-const _notes = [100000, 50000, 20000, 10000, 5000, 2000, 1000];
-const _noteLabels = {
+/// Indonesian cash denominations, largest first.
+const _denominations = [
+  100000,
+  50000,
+  20000,
+  10000,
+  5000,
+  2000,
+  1000,
+  500,
+  200,
+  100,
+];
+const _denominationLabels = {
   100000: '100rb',
   50000: '50rb',
   20000: '20rb',
@@ -20,6 +30,9 @@ const _noteLabels = {
   5000: '5rb',
   2000: '2rb',
   1000: '1rb',
+  500: '500',
+  200: '200',
+  100: '100',
 };
 
 /// What the guest is likely to actually hand over: the exact amount, then
@@ -37,13 +50,13 @@ List<int> quickTenders(int due) {
   return sorted.take(4).toList();
 }
 
-/// Greedy note fold — what the drawer will actually look like for [amount].
-/// Shown for change, so the cashier counts out notes instead of doing the
+/// Greedy cash fold — what the drawer will actually look like for [amount].
+/// Shown for change, so the cashier counts out cash instead of doing the
 /// arithmetic twice.
 List<(int, int)> noteFold(int amount) {
   var rest = amount;
   final out = <(int, int)>[];
-  for (final n in _notes) {
+  for (final n in _denominations) {
     final c = rest ~/ n;
     if (c > 0) {
       out.add((n, c));
@@ -53,8 +66,8 @@ List<(int, int)> noteFold(int amount) {
   return out;
 }
 
-/// Counting cash onto the screen: tap a note to add one, `Kosongkan` to start
-/// over (ADR-0066).
+/// Counting cash onto the screen: tap a denomination to add one, `Kosongkan`
+/// to start over (ADR-0066).
 ///
 /// The design source decrements on right-click, which an Android tablet does
 /// not have. Rather than hide the inverse behind a long-press, there is none:
@@ -92,7 +105,9 @@ class _CashPadState extends State<CashPad> {
 
   void _add(int note) {
     setState(() => _counts[note] = (_counts[note] ?? 0) + 1);
-    widget.onTender(_notes.fold<int>(0, (a, n) => a + n * (_counts[n] ?? 0)));
+    widget.onTender(
+      _denominations.fold<int>(0, (a, n) => a + n * (_counts[n] ?? 0)),
+    );
   }
 
   void _setExact(int value) {
@@ -122,9 +137,9 @@ class _CashPadState extends State<CashPad> {
           spacing: Sp.s2,
           runSpacing: Sp.s2,
           children: [
-            for (final n in _notes)
+            for (final n in _denominations)
               _NoteButton(
-                label: _noteLabels[n]!,
+                label: _denominationLabels[n]!,
                 count: _counts[n] ?? 0,
                 onTap: () => _add(n),
               ),
@@ -256,7 +271,7 @@ class _Summary extends StatelessWidget {
                 children: [
                   for (final f in noteFold(change))
                     SatChip.tag(
-                      label: '${f.$2}× ${_noteLabels[f.$1]}',
+                      label: '${f.$2}× ${_denominationLabels[f.$1]}',
                       size: SatChipSize.sm,
                     ),
                 ],

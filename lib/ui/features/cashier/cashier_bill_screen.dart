@@ -5,7 +5,6 @@ import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
-import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import 'package:satset/ui/core/widgets/sat_stepper.dart';
 import 'package:satset/ui/core/widgets/payment_proof_thumb.dart';
 import 'package:satset/ui/core/design/layout.dart';
@@ -43,45 +42,18 @@ import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/ui/core/widgets/sat_spinner.dart';
 
-/// Opens the bill surface. Hardware decides, as everywhere else (ADR-0049):
-///
-/// - **Tablet** — a full-screen two-pane page on the root navigator (ADR-0066).
-///   The settle side carries a mode row, four methods, a seven-note cash pad,
-///   a tender row, a running tally, a change fold and a proof block; that is
-///   not a drawer's worth of content, and the one thing that must not scroll
-///   while a cashier counts notes is the tally beside them.
-/// - **Phone** — the tall sheet ADR-0064 specified, unchanged. A side panel on
-///   a 360dp handset would be the whole screen anyway, so the drawer never had
-///   anything to offer here.
-///
-/// Both are root-navigator by construction, so the floating phone tab bar still
-/// cannot float over the confirm button.
-Future<void> openCashierBill(BuildContext context, {required String visitId}) {
-  if (!context.layout.useTabletShell) {
-    return showSatSheet<void>(
-      context,
-      builder: (_) => FractionallySizedBox(
-        heightFactor: 0.92,
-        child: SafeArea(child: CashierBillView(visitId: visitId)),
+/// Opens one [[Visit]]'s bill as a page on every layout (ADR-0066).
+/// The root navigator keeps shell chrome clear of the pinned payment action.
+Future<void> openCashierBill(BuildContext context, {required String visitId}) =>
+    Navigator.of(context, rootNavigator: true).push<void>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => CashierBillPage(visitId: visitId),
       ),
     );
-  }
-  return Navigator.of(context, rootNavigator: true).push<void>(
-    MaterialPageRoute(
-      fullscreenDialog: true,
-      builder: (_) => CashierBillPage(visitId: visitId),
-    ),
-  );
-}
 
-/// The tablet container for [CashierBillView] — a page, not an overlay
-/// (ADR-0066). Content-only body, same as the phone sheet gets; this supplies
-/// the scaffold, the bar and the way out.
-///
-/// The bar is the container's job, exactly as ADR-0066 prescribes — the view
-/// stays chrome-free so the phone sheet can keep its own header. It watches
-/// the bill only to name the table in the trail; the provider is the same one
-/// the view reads, so this costs a listener, not a fetch.
+/// Page chrome for [CashierBillView]. The phone names the bill in the compact
+/// bar; the tablet keeps the full cashier → table crumb trail (ADR-0066).
 class CashierBillPage extends ConsumerWidget {
   final String visitId;
   const CashierBillPage({super.key, required this.visitId});
@@ -89,10 +61,12 @@ class CashierBillPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
+    final tablet = context.layout.useTabletShell;
     final billAsync = ref.watch(billDetailProvider(visitId));
     return Scaffold(
       backgroundColor: sc.bg0,
       body: SafeArea(
+        top: tablet,
         child: Column(
           children: [
             SatAppBar(
@@ -107,6 +81,19 @@ class CashierBillPage extends ConsumerWidget {
                   context.l10n.cshCrumbBill,
                 ],
               ),
+              trailingPills: tablet
+                  ? const []
+                  : [
+                      Text(
+                        billAsync.maybeWhen(
+                          data: (b) => (b.tableLabel ?? '').isEmpty
+                              ? context.l10n.cshCrumbBill
+                              : context.l10n.cshBillTableCrumb(b.tableLabel!),
+                          orElse: () => context.l10n.cshCrumbBill,
+                        ),
+                        style: SatType.labelM(color: sc.textMd),
+                      ),
+                    ],
               showAvatar: false,
             ),
             Expanded(child: CashierBillView(visitId: visitId)),
@@ -134,10 +121,8 @@ class CashierBillView extends ConsumerStatefulWidget {
 }
 
 class _CashierBillViewState extends ConsumerState<CashierBillView> {
-  /// Last failed operation, shown inline under the header. A `SnackBar` here
-  /// would render in the root `Scaffold` *underneath* the modal barrier — on
-  /// the money path an error must not be something you have to dismiss the
-  /// bill to read (ADR-0064).
+  /// Last failed operation, shown inline above the bill. On the money path the
+  /// operation outcome stays attached to the document it may have changed.
   String? _error;
 
   SettlementRepository get _repo => ref.read(settlementProvider.notifier);
@@ -176,22 +161,6 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Phone only. The tablet container carries a `SatAppBar` whose crumbs
-        // already name the table and whose back arrow is the way out — two bars
-        // stacked would say the same thing twice.
-        if (!context.layout.useTabletShell)
-          SatSheetHeader(
-            onClose: () => Navigator.of(context).pop(),
-            child: Text(
-              billAsync.maybeWhen(
-                data: (b) => (b.tableLabel ?? '').isEmpty
-                    ? context.l10n.cshCrumbBill
-                    : context.l10n.cshBillTableCrumb(b.tableLabel!),
-                orElse: () => context.l10n.cshCrumbBill,
-              ),
-              style: SatType.labelL(color: sc.textHi),
-            ),
-          ),
         if (_error != null)
           _ErrorLine(
             message: _error!,
@@ -343,8 +312,8 @@ String _msg(AppL10n l10n, ApiException e) => switch (e.code) {
   _ => l10n.cshErrGeneric('${e.code ?? e.statusCode}'),
 };
 
-/// The failed-operation line under the sheet header — warn-toned, dismissible,
-/// and inside the surface that raised it.
+/// The failed-operation line above the bill — warn-toned, dismissible, and
+/// inside the page that raised it.
 class _ErrorLine extends StatelessWidget {
   final String message;
   final VoidCallback onDismiss;
@@ -481,32 +450,6 @@ class _BillBodyState extends State<_BillBody> {
     setState(_selection.clear);
   }
 
-  Future<void> _reviewReceipt(
-    Bill updated,
-    String receiptId,
-    PayMethod payMethod,
-  ) async {
-    BillReceipt? receipt;
-    for (final candidate in updated.receipts) {
-      if (candidate.id == receiptId) receipt = candidate;
-    }
-    if (receipt == null || !mounted) return;
-    setState(() {
-      _mode = SettleMode.penuh;
-      _selection.clear();
-    });
-    await showReceiptSheet(
-      context,
-      bill: updated,
-      receipt: receipt,
-      run: widget.run,
-      repo: widget.repo,
-      canRefund: widget.canRefund,
-      printDoc: widget.printDoc,
-      initialPayMethod: payMethod,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final done = bill.billClosedAt != null || bill.fullySettled;
@@ -561,7 +504,6 @@ class _BillBodyState extends State<_BillBody> {
         _clearSelection();
       },
       onClearSelection: _clearSelection,
-      onReviewReceipt: _reviewReceipt,
       onPrintSelection: () => widget.printSelection(_selection),
       debtEnabled: widget.debtEnabled,
       splitEnabled: bill.splitEnabled,
@@ -1190,7 +1132,6 @@ class _ReceiptCard extends ConsumerWidget {
   final SettlementRepository repo;
   final bool canRefund;
   final Future<void> Function(BillReceipt?) printDoc;
-  final PayMethod initialPayMethod;
   const _ReceiptCard({
     required this.bill,
     required this.receipt,
@@ -1198,7 +1139,6 @@ class _ReceiptCard extends ConsumerWidget {
     required this.repo,
     required this.canRefund,
     required this.printDoc,
-    this.initialPayMethod = PayMethod.tunai,
   });
 
   @override
@@ -1364,7 +1304,6 @@ class _ReceiptCard extends ConsumerWidget {
                   onTap: () => _paySheet(
                     context,
                     r,
-                    initialMethod: initialPayMethod,
                     debtEnabled: ref.read(
                       venueSettingsProvider.select(
                         (v) => v.membersOn && v.memberDebtEnabled,
@@ -1480,13 +1419,12 @@ class _ReceiptCard extends ConsumerWidget {
   Future<void> _paySheet(
     BuildContext context,
     BillReceipt r, {
-    required PayMethod initialMethod,
     required bool debtEnabled,
   }) async {
     final sc = context.sat;
     final amountCtl = TextEditingController(text: groupRupiah(r.outstanding));
     final tenderedCtl = TextEditingController();
-    var method = initialMethod.id;
+    var method = PayMethod.tunai.id;
     Uint8List? photoBytes; // proof shot for a non-cash payment (ADR-0025)
     await showSatSheet<void>(
       context,
@@ -1995,7 +1933,6 @@ Future<void> showReceiptSheet(
   required SettlementRepository repo,
   required bool canRefund,
   required Future<void> Function(BillReceipt?) printDoc,
-  PayMethod initialPayMethod = PayMethod.tunai,
 }) => showSatSheet<void>(
   context,
   builder: (ctx) => Padding(
@@ -2016,7 +1953,6 @@ Future<void> showReceiptSheet(
         repo: repo,
         canRefund: canRefund,
         printDoc: printDoc,
-        initialPayMethod: initialPayMethod,
       ),
     ),
   ),

@@ -5657,15 +5657,11 @@ class AppL10nEn extends AppL10n {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Review $count items · $amount',
-      one: 'Review 1 item · $amount',
+      other: 'Take $count items · $amount',
+      one: 'Take 1 item · $amount',
     );
     return '$_temp0';
   }
-
-  @override
-  String get stlReviewDiscountHint =>
-      'Review the receipt, apply item discounts, then pay';
 
   @override
   String stlConfirmShare(String amount) {

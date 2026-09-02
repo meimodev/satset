@@ -59,8 +59,6 @@ class SettlePane extends StatefulWidget {
   final SettleMode mode;
   final ValueChanged<SettleMode> onMode;
   final VoidCallback onClearSelection;
-  final Future<void> Function(Bill bill, String receiptId, PayMethod payMethod)
-  onReviewReceipt;
 
   /// Print the selection as a provisional [[Rincian pilihan]] slip before any
   /// money moves (ADR-0122). Nothing is minted — the guest checks the lines,
@@ -85,7 +83,6 @@ class SettlePane extends StatefulWidget {
     required this.mode,
     required this.onMode,
     required this.onClearSelection,
-    required this.onReviewReceipt,
     required this.onPrintSelection,
     this.debtEnabled = false,
     this.splitEnabled = false,
@@ -175,7 +172,7 @@ class _SettlePaneState extends State<SettlePane> {
     return sum;
   }
 
-  /// The amount this action will either claim on a receipt or collect.
+  /// The number the confirm button is about to take.
   int get _amount => switch (widget.mode) {
     // The whole remainder, capped by what is actually still owed — or the one
     // open receipt's own outstanding when nothing is left to mint from.
@@ -207,9 +204,6 @@ class _SettlePaneState extends State<SettlePane> {
       return l10n.stlBlkPickItems;
     }
     if (_amount <= 0) return l10n.stlBlkNothingToCharge;
-    // Per-item confirmation only mints an unpaid receipt. Money is collected
-    // from its review sheet after line discounts have been applied.
-    if (widget.mode == SettleMode.perItem) return null;
     if (_pay == PayMethod.tunai && _tender < _amount) {
       return l10n.stlBlkTapCash;
     }
@@ -251,33 +245,15 @@ class _SettlePaneState extends State<SettlePane> {
     }
   }
 
-  /// Per-item first mints an unpaid receipt for review; the other modes mint
-  /// their receipt (when needed) and pay it immediately.
+  /// Mint the receipt this mode implies, then pay it. Two calls, but the mint
+  /// is transactional server-side (`createReceipt(lines:)`), so a failure can
+  /// never leave a half-assigned receipt on the bill.
   Future<void> _confirm() async {
     if (_blocker != null || _busy) return;
     setState(() => _busy = true);
+    final amount = _amount;
+    final tender = _pay == PayMethod.tunai ? _tender : null;
     try {
-      if (widget.mode == SettleMode.perItem) {
-        ({String receiptId, Bill bill})? minted;
-        await widget.run(() async {
-          minted = await widget.repo.mintReceipt(
-            _bill.visitId,
-            lines: [
-              for (final e in widget.selection.entries)
-                BillReceiptLine(e.key, e.value),
-            ],
-            memberId: _canName ? _bornFor?.id : null,
-          );
-          return minted!.bill;
-        });
-        if (minted != null && mounted) {
-          await widget.onReviewReceipt(minted!.bill, minted!.receiptId, _pay);
-        }
-        return;
-      }
-
-      final amount = _amount;
-      final tender = _pay == PayMethod.tunai ? _tender : null;
       await widget.run(() async {
         final receiptId = switch (widget.mode) {
           SettleMode.penuh =>
@@ -286,7 +262,16 @@ class _SettlePaneState extends State<SettlePane> {
                   _bill.visitId,
                   assignAll: true,
                 )).receiptId,
-          SettleMode.perItem => throw StateError('handled above'),
+          SettleMode.perItem => (await widget.repo.mintReceipt(
+            _bill.visitId,
+            lines: [
+              for (final e in widget.selection.entries)
+                BillReceiptLine(e.key, e.value),
+            ],
+            // Born named, so the tab this payment may raise reaches the guest
+            // who ate rather than whoever was seated first (ADR-0120).
+            memberId: _canName ? _bornFor?.id : null,
+          )).receiptId,
           SettleMode.bagiRata => await _nextShareId(),
         };
         return widget.repo.recordPayment(
@@ -343,19 +328,17 @@ class _SettlePaneState extends State<SettlePane> {
               ],
               const SizedBox(height: Sp.s3h),
               _methodRow(sc),
-              if (widget.mode != SettleMode.perItem) ...[
-                const SizedBox(height: Sp.s3),
-                if (_pay == PayMethod.tunai)
-                  CashPad(
-                    amount: _amount,
-                    tender: _tender,
-                    onTender: (v) => setState(() => _tender = v),
-                  )
-                else if (_pay == PayMethod.piutang)
-                  _piutangBlock(sc)
-                else
-                  _proofBlock(sc),
-              ],
+              const SizedBox(height: Sp.s3),
+              if (_pay == PayMethod.tunai)
+                CashPad(
+                  amount: _amount,
+                  tender: _tender,
+                  onTender: (v) => setState(() => _tender = v),
+                )
+              else if (_pay == PayMethod.piutang)
+                _piutangBlock(sc)
+              else
+                _proofBlock(sc),
             ],
           ),
         ),
@@ -454,7 +437,7 @@ class _SettlePaneState extends State<SettlePane> {
                   l10n.stlRowServiceTax,
                   formatIDR(_amount - _selectionSubtotal),
                 ),
-                row(l10n.cshTotal, formatIDR(_amount), strong: true),
+                row(l10n.stlRowPayingNow, formatIDR(_amount), strong: true),
                 row(
                   l10n.stlRowRemainderAfter,
                   formatIDR(
@@ -464,7 +447,7 @@ class _SettlePaneState extends State<SettlePane> {
                 const SizedBox(height: Sp.s2h),
                 // Hand the guest the lines before taking their money. The slip
                 // mints nothing, so the selection survives the print and the
-                // review below claims exactly those units.
+                // confirm below charges exactly what was on the paper.
                 SatButton.ghost(
                   label: l10n.stlPrintSelection,
                   icon: Icons.print_rounded,
@@ -706,10 +689,7 @@ class _SettlePaneState extends State<SettlePane> {
           ),
           const SizedBox(height: Sp.s1h),
           Text(
-            blocker ??
-                (widget.mode == SettleMode.perItem
-                    ? context.l10n.stlReviewDiscountHint
-                    : context.l10n.stlAutoPrintHint),
+            blocker ?? context.l10n.stlAutoPrintHint,
             style: SatType.labelS(color: blocker == null ? sc.textLo : sc.warn),
             textAlign: TextAlign.center,
           ),

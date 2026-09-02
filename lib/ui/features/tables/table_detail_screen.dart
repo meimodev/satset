@@ -35,11 +35,13 @@ import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 import 'package:satset/ui/core/widgets/ready_banner.dart';
 import 'package:satset/ui/core/widgets/order_line_card.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
 import '../void_flow/line_item_action_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/move_table_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/pending_orders_block.dart';
+import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/motion.dart';
@@ -261,6 +263,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
           id: s.user?.id,
           name: s.user?.name,
           canTakeOrder: s.has(Capability.takeOrder),
+          canSettleBill: s.has(Capability.settleBill),
         ),
       ),
     );
@@ -607,6 +610,15 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       // No bare `Meja` segment ahead of the table's own name: `Meja › Meja 12`
       // is an echo, and a table name identifies itself.
       crumbs: [table.displayName, if (zone.name.isNotEmpty) zone.name],
+      trailingPills: [
+        if (auth.canSettleBill && table.currentVisitId != null)
+          SatIconButton.plain(
+            icon: Icons.receipt_long_rounded,
+            tooltip: context.l10n.cshCrumbBill,
+            onTap: () =>
+                openCashierBill(context, visitId: table.currentVisitId!),
+          ),
+      ],
     );
 
     if (l.useTabletShell) {
