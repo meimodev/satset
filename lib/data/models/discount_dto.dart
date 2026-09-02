@@ -11,9 +11,9 @@ abstract class DiscountPresetDto with _$DiscountPresetDto {
     required String id,
     @Default('') String name,
 
-    /// `order` (whole receipt) | `line` (one bill line). The picker only offers
-    /// presets valid for what the cashier tapped — this is what stops a fixed
-    /// whole-bill amount landing on a single cheap line.
+    /// `bill` (whole tab) | `order` (one receipt) | `line` (one bill line).
+    /// The picker only offers presets valid for what the cashier tapped — this
+    /// is what stops a fixed whole-bill amount landing on a single cheap line.
     @Default('order') String scope,
 
     /// `percent` (value in basis points) | `fixed` (value in rupiah).

@@ -34,6 +34,7 @@ class DiscountPresetsScreen extends ConsumerWidget {
     final sc = context.sat;
     final presets = ref.watch(discountPresetsRepositoryProvider);
     final repo = ref.read(discountPresetsRepositoryProvider.notifier);
+    final bill = presets.where((p) => p.scope == 'bill').toList();
     final order = presets.where((p) => p.scope == 'order').toList();
     final line = presets.where((p) => p.scope == 'line').toList();
 
@@ -63,6 +64,12 @@ class DiscountPresetsScreen extends ConsumerWidget {
                         style: SatType.bodyS(color: sc.textLo),
                       ),
                       const SizedBox(height: Sp.s4),
+                      if (bill.isNotEmpty) ...[
+                        SatSectionLabel(context.l10n.dscScopeBill),
+                        for (final p in bill)
+                          _PresetTile(preset: p, repo: repo, sc: sc),
+                        const SizedBox(height: Sp.s5),
+                      ],
                       if (order.isNotEmpty) ...[
                         SatSectionLabel(context.l10n.dscScopeOrder),
                         for (final p in order)
@@ -171,7 +178,7 @@ Future<void> _edit(
               ? (existing.value / 100).toStringAsFixed(0)
               : '${existing.value}'),
   );
-  var scope = existing?.scope ?? 'order';
+  var scope = existing?.scope ?? 'bill';
   var kind = existing?.kind ?? 'percent';
   var active = existing?.active ?? true;
   String? error;
@@ -208,6 +215,10 @@ Future<void> _edit(
               // cheap line — the cashier's picker filters on it.
               SegmentedButton<String>(
                 segments: [
+                  ButtonSegment(
+                    value: 'bill',
+                    label: Text(c.l10n.dscScopeBill),
+                  ),
                   ButtonSegment(
                     value: 'order',
                     label: Text(c.l10n.dscScopeOrder),

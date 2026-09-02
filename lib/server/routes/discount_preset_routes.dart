@@ -22,7 +22,7 @@ import 'package:satset/server/ws_hub.dart';
 
 const _uuid = Uuid();
 
-const _scopes = {'order', 'line'};
+const _scopes = {'bill', 'order', 'line'};
 const _kinds = {'percent', 'fixed'};
 
 Map<String, dynamic> discountPresetJson(DiscountPreset p) => {
@@ -82,7 +82,7 @@ Future<Response?> _requireCap(
 /// rather than silently clamped, so the owner sees their typo.
 String? _validate(String name, String scope, String kind, int value) {
   if (name.isEmpty) return 'nama diskon wajib diisi';
-  if (!_scopes.contains(scope)) return 'scope harus order atau line';
+  if (!_scopes.contains(scope)) return 'scope harus bill, order, atau line';
   if (!_kinds.contains(kind)) return 'kind harus percent atau fixed';
   if (value <= 0) return 'nilai diskon harus lebih dari 0';
   if (kind == 'percent' && value > 10000) return 'diskon persen maksimal 100%';

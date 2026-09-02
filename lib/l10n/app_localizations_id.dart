@@ -5238,7 +5238,10 @@ class AppL10nId extends AppL10n {
       'Kasir memilih dari daftar ini — mereka tidak bisa mengetik angka diskon sendiri.';
 
   @override
-  String get dscScopeOrder => 'Seluruh pesanan';
+  String get dscScopeBill => 'Seluruh tagihan';
+
+  @override
+  String get dscScopeOrder => 'Satu struk';
 
   @override
   String get dscScopeLine => 'Per item';

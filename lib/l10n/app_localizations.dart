@@ -8387,10 +8387,16 @@ abstract class AppL10n {
   /// **'Kasir memilih dari daftar ini — mereka tidak bisa mengetik angka diskon sendiri.'**
   String get dscIntro;
 
+  /// No description provided for @dscScopeBill.
+  ///
+  /// In id, this message translates to:
+  /// **'Seluruh tagihan'**
+  String get dscScopeBill;
+
   /// No description provided for @dscScopeOrder.
   ///
   /// In id, this message translates to:
-  /// **'Seluruh pesanan'**
+  /// **'Satu struk'**
   String get dscScopeOrder;
 
   /// No description provided for @dscScopeLine.

@@ -55,6 +55,19 @@ class DiscountPresetsRepository extends StateNotifier<List<DiscountPresetDto>> {
     }
   }
 
+  void _upsert(DiscountPresetDto preset) {
+    final next =
+        [
+          for (final p in state)
+            if (p.id != preset.id) p,
+          preset,
+        ]..sort((a, b) {
+          final byOrder = a.sortOrder.compareTo(b.sortOrder);
+          return byOrder != 0 ? byOrder : a.name.compareTo(b.name);
+        });
+    state = next;
+  }
+
   Future<void> refresh() async {
     if (ref.read(apiConfigProvider) == null) {
       ref.read(discountPresetsStatusProvider.notifier).state =
@@ -103,7 +116,9 @@ class DiscountPresetsRepository extends StateNotifier<List<DiscountPresetDto>> {
           'sortOrder': sortOrder,
         });
     if (raw is! Map) return null;
-    return DiscountPresetDto.fromJson(raw.cast<String, dynamic>());
+    final preset = DiscountPresetDto.fromJson(raw.cast<String, dynamic>());
+    _upsert(preset);
+    return preset;
   }
 
   Future<DiscountPresetDto?> update(
@@ -126,11 +141,14 @@ class DiscountPresetsRepository extends StateNotifier<List<DiscountPresetDto>> {
           'sortOrder': ?sortOrder,
         });
     if (raw is! Map) return null;
-    return DiscountPresetDto.fromJson(raw.cast<String, dynamic>());
+    final preset = DiscountPresetDto.fromJson(raw.cast<String, dynamic>());
+    _upsert(preset);
+    return preset;
   }
 
   Future<void> remove(String id) async {
     await ref.read(apiClientProvider).deleteJson('/venue/discount-presets/$id');
+    state = state.where((p) => p.id != id).toList();
   }
 
   @override

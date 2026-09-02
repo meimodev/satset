@@ -5290,7 +5290,10 @@ class AppL10nEn extends AppL10n {
       'The cashier picks from this list — they can\'t type a discount of their own.';
 
   @override
-  String get dscScopeOrder => 'Whole order';
+  String get dscScopeBill => 'Whole bill';
+
+  @override
+  String get dscScopeOrder => 'One receipt';
 
   @override
   String get dscScopeLine => 'Per item';
