@@ -16,7 +16,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
-import 'package:satset/ui/core/widgets/sat_chip.dart';
+import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/features/cashier/member_panel.dart'
     show MemberLookupSheet;
@@ -364,20 +364,28 @@ class _SettlePaneState extends State<SettlePane> {
     ),
   );
 
-  /// Three options that all fit, so a chip row rather than a bespoke control
-  /// (`CATALOG.md`). The selected fill is `SatChip.select`'s own, which
-  /// ADR-0051 already settled as the app's selection grammar.
-  Widget _modeRow(SatColors sc) => Wrap(
-    spacing: Sp.s2,
-    runSpacing: Sp.s2,
+  Widget _modeRow(SatColors sc) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      for (final m in SettleMode.values)
-        SatChip.select(
-          label: m.label(context.l10n),
-          icon: m.icon,
-          selected: widget.mode == m,
-          onTap: () => widget.onMode(m),
-        ),
+      Text(context.l10n.fltModes, style: SatType.labelS(color: sc.textLo)),
+      const SizedBox(height: Sp.s2),
+      SatDropdown<SettleMode>(
+        key: ValueKey(widget.mode),
+        value: widget.mode,
+        fillColor: sc.bg1,
+        options: [
+          for (final m in SettleMode.values)
+            SatOption(
+              m,
+              m.label(context.l10n),
+              icon: m.icon,
+              iconColor: sc.textHi,
+            ),
+        ],
+        onChanged: (m) {
+          if (m != null) widget.onMode(m);
+        },
+      ),
     ],
   );
 

@@ -28,6 +28,9 @@ class SatDropdown<T> extends StatelessWidget {
   /// Lets a long option name ellipsize instead of overflowing the row.
   final bool expand;
 
+  /// Optional background fill color override.
+  final Color? fillColor;
+
   const SatDropdown({
     super.key,
     required this.value,
@@ -37,6 +40,7 @@ class SatDropdown<T> extends StatelessWidget {
     this.hint,
     this.prefixIcon,
     this.expand = true,
+    this.fillColor,
   });
 
   @override
@@ -56,12 +60,29 @@ class SatDropdown<T> extends StatelessWidget {
         hint: hint,
         enabled: on,
         prefixIcon: prefixIcon,
+      ).copyWith(
+        fillColor: fillColor,
       ),
       items: [
         for (final o in options)
           DropdownMenuItem(
             value: o.value,
-            child: Text(o.label, overflow: TextOverflow.ellipsis),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (o.icon != null) ...[
+                  Icon(o.icon, size: 18, color: o.iconColor ?? sc.textMd),
+                  const SizedBox(width: Sp.s2),
+                ],
+                Flexible(
+                  child: Text(o.label, overflow: TextOverflow.ellipsis),
+                ),
+                if (o.trailing != null) ...[
+                  const SizedBox(width: Sp.s2),
+                  o.trailing!,
+                ],
+              ],
+            ),
           ),
       ],
     );
@@ -85,5 +106,15 @@ class SatDropdown<T> extends StatelessWidget {
 class SatOption<T> {
   final T value;
   final String label;
-  const SatOption(this.value, this.label);
+  final IconData? icon;
+  final Color? iconColor;
+  final Widget? trailing;
+
+  const SatOption(
+    this.value,
+    this.label, {
+    this.icon,
+    this.iconColor,
+    this.trailing,
+  });
 }

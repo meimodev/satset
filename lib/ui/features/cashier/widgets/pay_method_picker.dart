@@ -26,6 +26,15 @@ enum PayMethod {
 
   bool get needsProof => this != PayMethod.tunai && this != PayMethod.piutang;
 
+  IconData get icon => switch (this) {
+    PayMethod.tunai => Icons.payments_outlined,
+    PayMethod.qris => Icons.qr_code_2_rounded,
+    PayMethod.kartu => Icons.credit_card_rounded,
+    PayMethod.transfer => Icons.account_balance_rounded,
+    PayMethod.lainnya => Icons.more_horiz_rounded,
+    PayMethod.piutang => Icons.account_circle_outlined,
+  };
+
   String label(AppL10n l10n) => switch (this) {
     PayMethod.tunai => l10n.stlPayTunai,
     PayMethod.qris => l10n.stlPayQris,
@@ -122,7 +131,14 @@ class PayMethodPicker extends StatelessWidget {
           options: [
             for (final m in PayMethod.values)
               if (m != PayMethod.piutang || includePiutang)
-                SatOption(m, m.label(l10n)),
+                SatOption(
+                  m,
+                  m.label(l10n),
+                  icon: m.icon,
+                  iconColor: m == PayMethod.tunai
+                      ? sc.success
+                      : (m == PayMethod.piutang ? sc.warn : sc.accentText),
+                ),
           ],
           onChanged: (m) {
             if (m != null) onPick(m);
