@@ -402,15 +402,25 @@ class ReviewScreen extends ConsumerWidget {
                                 .markPending(pick.tableId, userId: actorId);
                           }
                           ref.read(cartProvider(tableId).notifier).clear();
+                          final willSettle = shouldSettleAfterSend(
+                            visitId: _visitOf(ref, pick.tableId),
+                            settleOn: ref
+                                .read(venueSettingsProvider)
+                                .counterOn(counterSettleAfterSend),
+                            canSettle: ref
+                                .read(authStateProvider)
+                                .has(Capability.settleBill),
+                          );
                           if (context.mounted) {
-                            // go (not push): drops the draft menu/review stack
-                            // and lands on the freshly-seated table detail with
-                            // the sent confirmation on top.
-                            context.go(
-                              '/table/${pick.tableId}/sent?stations=$stations',
-                            );
+                            if (willSettle) {
+                              context.go('/table/${pick.tableId}');
+                            } else {
+                              context.go(
+                                '/table/${pick.tableId}/sent?stations=$stations',
+                              );
+                            }
                           }
-                          if (context.mounted) {
+                          if (context.mounted && willSettle) {
                             await _settleAfterSend(
                               context,
                               ref,
@@ -431,12 +441,25 @@ class ReviewScreen extends ConsumerWidget {
                               .markPending(tableId, userId: actorId);
                         }
                         ref.read(cartProvider(tableId).notifier).clear();
+                        final willSettle = shouldSettleAfterSend(
+                          visitId: _visitOf(ref, tableId),
+                          settleOn: ref
+                              .read(venueSettingsProvider)
+                              .counterOn(counterSettleAfterSend),
+                          canSettle: ref
+                              .read(authStateProvider)
+                              .has(Capability.settleBill),
+                        );
                         if (context.mounted) {
-                          context.push(
-                            '/table/$tableId/sent?stations=$stations',
-                          );
+                          if (willSettle) {
+                            context.go('/table/$tableId');
+                          } else {
+                            context.go(
+                              '/table/$tableId/sent?stations=$stations',
+                            );
+                          }
                         }
-                        if (context.mounted) {
+                        if (context.mounted && willSettle) {
                           await _settleAfterSend(
                             context,
                             ref,

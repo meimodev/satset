@@ -79,7 +79,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 68;
+  int get schemaVersion => 69;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -102,7 +102,8 @@ class AppDatabase extends _$AppDatabase {
     );
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_line_uniq '
-      'ON discounts (receipt_id, ticket_id) WHERE ticket_id IS NOT NULL',
+      'ON discounts (receipt_id, ticket_id, source) '
+      'WHERE ticket_id IS NOT NULL',
     );
     // One bill discount per *source*, not per visit (ADR-0094). A cashier's
     // promo, the member discount and a redemption each hold their own slot;
@@ -150,6 +151,14 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_table_sessions_member '
       'ON table_sessions (member_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_tickets_member '
+      'ON tickets (member_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_table_session_tickets_member '
+      'ON table_session_tickets (member_id)',
     );
     // Every [[Piutang]] read is "this member's ledger, oldest first" — the
     // balance sums it and the FIFO ageing walk needs it ordered. ADR-0098.
@@ -1382,6 +1391,35 @@ class AppDatabase extends _$AppDatabase {
           'refunds_payment_id',
           type: 'TEXT NULL',
         );
+      }
+      if (from < 69 && to >= 69) {
+        // ADR-0125. No backfill: null version preserves receipt/visit
+        // attribution for already-open visits; new visits are stamped v2.
+        await _safeAddColumnOn(
+          'visits',
+          'member_attribution_version',
+          type: 'INTEGER NULL',
+        );
+        await _safeAddColumnOn('tickets', 'member_id', type: 'TEXT NULL');
+        await _safeAddColumnOn(
+          'table_sessions',
+          'member_attribution_version',
+          type: 'INTEGER NULL',
+        );
+        await _safeAddColumnOn(
+          'table_session_tickets',
+          'member_id',
+          type: 'TEXT NULL',
+        );
+        await _safeAddColumnOn('payments', 'member_id', type: 'TEXT NULL');
+        await _safeAddColumnOn(
+          'table_session_payments',
+          'member_id',
+          type: 'TEXT NULL',
+        );
+        await customStatement('DROP INDEX IF EXISTS idx_discounts_line_uniq');
+        await _createDiscountIndexes();
+        await _createMemberIndexes();
       }
     },
     onCreate: (m) async {

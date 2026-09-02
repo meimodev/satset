@@ -289,7 +289,7 @@ mixin _$TicketDto {
 
  String get id; String get tableId;/// Stable bill key (ADR-0024). Lets the KDS/board label table-less
 /// (takeaway) lines via the visit. Nullable for pre-v29 rows.
- String? get visitId; String get itemId; String get name; String get variantName; String get course; int get qty; List<TicketModifierDto> get modifiers; String? get note; int get price; String get status; DateTime get sentAt;/// When the waiter keyed the line, when that is not when the host received
+ String? get visitId; String? get memberId; String get itemId; String get name; String get variantName; String get course; int get qty; List<TicketModifierDto> get modifiers; String? get note; int get price; String get status; DateTime get sentAt;/// When the waiter keyed the line, when that is not when the host received
 /// it. Null on every ordinary send; non-null only for a line delivered off
 /// a terputus handset's queue. Never age a line from this — `sentAt` is
 /// what the kitchen's clocks mean. See ADR-0090.
@@ -308,16 +308,16 @@ $TicketDtoCopyWith<TicketDto> get copyWith => _$TicketDtoCopyWithImpl<TicketDto>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketDto&&(identical(other.id, id) || other.id == id)&&(identical(other.tableId, tableId) || other.tableId == tableId)&&(identical(other.visitId, visitId) || other.visitId == visitId)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&const DeepCollectionEquality().equals(other.modifiers, modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.price, price) || other.price == price)&&(identical(other.status, status) || other.status == status)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt)&&(identical(other.capturedAt, capturedAt) || other.capturedAt == capturedAt)&&(identical(other.replayedByUserId, replayedByUserId) || other.replayedByUserId == replayedByUserId)&&(identical(other.firedAt, firedAt) || other.firedAt == firedAt)&&(identical(other.readyAt, readyAt) || other.readyAt == readyAt)&&(identical(other.servedAt, servedAt) || other.servedAt == servedAt)&&(identical(other.voidReason, voidReason) || other.voidReason == voidReason)&&(identical(other.voidReasonCode, voidReasonCode) || other.voidReasonCode == voidReasonCode)&&(identical(other.voidApprovedBy, voidApprovedBy) || other.voidApprovedBy == voidApprovedBy)&&(identical(other.createdByUserId, createdByUserId) || other.createdByUserId == createdByUserId)&&(identical(other.voidedByUserId, voidedByUserId) || other.voidedByUserId == voidedByUserId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketDto&&(identical(other.id, id) || other.id == id)&&(identical(other.tableId, tableId) || other.tableId == tableId)&&(identical(other.visitId, visitId) || other.visitId == visitId)&&(identical(other.memberId, memberId) || other.memberId == memberId)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&const DeepCollectionEquality().equals(other.modifiers, modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.price, price) || other.price == price)&&(identical(other.status, status) || other.status == status)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt)&&(identical(other.capturedAt, capturedAt) || other.capturedAt == capturedAt)&&(identical(other.replayedByUserId, replayedByUserId) || other.replayedByUserId == replayedByUserId)&&(identical(other.firedAt, firedAt) || other.firedAt == firedAt)&&(identical(other.readyAt, readyAt) || other.readyAt == readyAt)&&(identical(other.servedAt, servedAt) || other.servedAt == servedAt)&&(identical(other.voidReason, voidReason) || other.voidReason == voidReason)&&(identical(other.voidReasonCode, voidReasonCode) || other.voidReasonCode == voidReasonCode)&&(identical(other.voidApprovedBy, voidApprovedBy) || other.voidApprovedBy == voidApprovedBy)&&(identical(other.createdByUserId, createdByUserId) || other.createdByUserId == createdByUserId)&&(identical(other.voidedByUserId, voidedByUserId) || other.voidedByUserId == voidedByUserId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,tableId,visitId,itemId,name,variantName,course,qty,const DeepCollectionEquality().hash(modifiers),note,price,status,sentAt,capturedAt,replayedByUserId,firedAt,readyAt,servedAt,voidReason,voidReasonCode,voidApprovedBy,createdByUserId,voidedByUserId]);
+int get hashCode => Object.hashAll([runtimeType,id,tableId,visitId,memberId,itemId,name,variantName,course,qty,const DeepCollectionEquality().hash(modifiers),note,price,status,sentAt,capturedAt,replayedByUserId,firedAt,readyAt,servedAt,voidReason,voidReasonCode,voidApprovedBy,createdByUserId,voidedByUserId]);
 
 @override
 String toString() {
-  return 'TicketDto(id: $id, tableId: $tableId, visitId: $visitId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, capturedAt: $capturedAt, replayedByUserId: $replayedByUserId, firedAt: $firedAt, readyAt: $readyAt, servedAt: $servedAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
+  return 'TicketDto(id: $id, tableId: $tableId, visitId: $visitId, memberId: $memberId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, capturedAt: $capturedAt, replayedByUserId: $replayedByUserId, firedAt: $firedAt, readyAt: $readyAt, servedAt: $servedAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
 }
 
 
@@ -328,7 +328,7 @@ abstract mixin class $TicketDtoCopyWith<$Res>  {
   factory $TicketDtoCopyWith(TicketDto value, $Res Function(TicketDto) _then) = _$TicketDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String tableId, String? visitId, String itemId, String name, String variantName, String course, int qty, List<TicketModifierDto> modifiers, String? note, int price, String status, DateTime sentAt, DateTime? capturedAt, String? replayedByUserId, DateTime? firedAt, DateTime? readyAt, DateTime? servedAt, String? voidReason, String? voidReasonCode, String? voidApprovedBy, String? createdByUserId, String? voidedByUserId
+ String id, String tableId, String? visitId, String? memberId, String itemId, String name, String variantName, String course, int qty, List<TicketModifierDto> modifiers, String? note, int price, String status, DateTime sentAt, DateTime? capturedAt, String? replayedByUserId, DateTime? firedAt, DateTime? readyAt, DateTime? servedAt, String? voidReason, String? voidReasonCode, String? voidApprovedBy, String? createdByUserId, String? voidedByUserId
 });
 
 
@@ -345,11 +345,12 @@ class _$TicketDtoCopyWithImpl<$Res>
 
 /// Create a copy of TicketDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? tableId = null,Object? visitId = freezed,Object? itemId = null,Object? name = null,Object? variantName = null,Object? course = null,Object? qty = null,Object? modifiers = null,Object? note = freezed,Object? price = null,Object? status = null,Object? sentAt = null,Object? capturedAt = freezed,Object? replayedByUserId = freezed,Object? firedAt = freezed,Object? readyAt = freezed,Object? servedAt = freezed,Object? voidReason = freezed,Object? voidReasonCode = freezed,Object? voidApprovedBy = freezed,Object? createdByUserId = freezed,Object? voidedByUserId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? tableId = null,Object? visitId = freezed,Object? memberId = freezed,Object? itemId = null,Object? name = null,Object? variantName = null,Object? course = null,Object? qty = null,Object? modifiers = null,Object? note = freezed,Object? price = null,Object? status = null,Object? sentAt = null,Object? capturedAt = freezed,Object? replayedByUserId = freezed,Object? firedAt = freezed,Object? readyAt = freezed,Object? servedAt = freezed,Object? voidReason = freezed,Object? voidReasonCode = freezed,Object? voidApprovedBy = freezed,Object? createdByUserId = freezed,Object? voidedByUserId = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,tableId: null == tableId ? _self.tableId : tableId // ignore: cast_nullable_to_non_nullable
 as String,visitId: freezed == visitId ? _self.visitId : visitId // ignore: cast_nullable_to_non_nullable
+as String?,memberId: freezed == memberId ? _self.memberId : memberId // ignore: cast_nullable_to_non_nullable
 as String?,itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,variantName: null == variantName ? _self.variantName : variantName // ignore: cast_nullable_to_non_nullable
@@ -455,10 +456,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String tableId,  String? visitId,  String itemId,  String name,  String variantName,  String course,  int qty,  List<TicketModifierDto> modifiers,  String? note,  int price,  String status,  DateTime sentAt,  DateTime? capturedAt,  String? replayedByUserId,  DateTime? firedAt,  DateTime? readyAt,  DateTime? servedAt,  String? voidReason,  String? voidReasonCode,  String? voidApprovedBy,  String? createdByUserId,  String? voidedByUserId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String tableId,  String? visitId,  String? memberId,  String itemId,  String name,  String variantName,  String course,  int qty,  List<TicketModifierDto> modifiers,  String? note,  int price,  String status,  DateTime sentAt,  DateTime? capturedAt,  String? replayedByUserId,  DateTime? firedAt,  DateTime? readyAt,  DateTime? servedAt,  String? voidReason,  String? voidReasonCode,  String? voidApprovedBy,  String? createdByUserId,  String? voidedByUserId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TicketDto() when $default != null:
-return $default(_that.id,_that.tableId,_that.visitId,_that.itemId,_that.name,_that.variantName,_that.course,_that.qty,_that.modifiers,_that.note,_that.price,_that.status,_that.sentAt,_that.capturedAt,_that.replayedByUserId,_that.firedAt,_that.readyAt,_that.servedAt,_that.voidReason,_that.voidReasonCode,_that.voidApprovedBy,_that.createdByUserId,_that.voidedByUserId);case _:
+return $default(_that.id,_that.tableId,_that.visitId,_that.memberId,_that.itemId,_that.name,_that.variantName,_that.course,_that.qty,_that.modifiers,_that.note,_that.price,_that.status,_that.sentAt,_that.capturedAt,_that.replayedByUserId,_that.firedAt,_that.readyAt,_that.servedAt,_that.voidReason,_that.voidReasonCode,_that.voidApprovedBy,_that.createdByUserId,_that.voidedByUserId);case _:
   return orElse();
 
 }
@@ -476,10 +477,10 @@ return $default(_that.id,_that.tableId,_that.visitId,_that.itemId,_that.name,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String tableId,  String? visitId,  String itemId,  String name,  String variantName,  String course,  int qty,  List<TicketModifierDto> modifiers,  String? note,  int price,  String status,  DateTime sentAt,  DateTime? capturedAt,  String? replayedByUserId,  DateTime? firedAt,  DateTime? readyAt,  DateTime? servedAt,  String? voidReason,  String? voidReasonCode,  String? voidApprovedBy,  String? createdByUserId,  String? voidedByUserId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String tableId,  String? visitId,  String? memberId,  String itemId,  String name,  String variantName,  String course,  int qty,  List<TicketModifierDto> modifiers,  String? note,  int price,  String status,  DateTime sentAt,  DateTime? capturedAt,  String? replayedByUserId,  DateTime? firedAt,  DateTime? readyAt,  DateTime? servedAt,  String? voidReason,  String? voidReasonCode,  String? voidApprovedBy,  String? createdByUserId,  String? voidedByUserId)  $default,) {final _that = this;
 switch (_that) {
 case _TicketDto():
-return $default(_that.id,_that.tableId,_that.visitId,_that.itemId,_that.name,_that.variantName,_that.course,_that.qty,_that.modifiers,_that.note,_that.price,_that.status,_that.sentAt,_that.capturedAt,_that.replayedByUserId,_that.firedAt,_that.readyAt,_that.servedAt,_that.voidReason,_that.voidReasonCode,_that.voidApprovedBy,_that.createdByUserId,_that.voidedByUserId);case _:
+return $default(_that.id,_that.tableId,_that.visitId,_that.memberId,_that.itemId,_that.name,_that.variantName,_that.course,_that.qty,_that.modifiers,_that.note,_that.price,_that.status,_that.sentAt,_that.capturedAt,_that.replayedByUserId,_that.firedAt,_that.readyAt,_that.servedAt,_that.voidReason,_that.voidReasonCode,_that.voidApprovedBy,_that.createdByUserId,_that.voidedByUserId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -496,10 +497,10 @@ return $default(_that.id,_that.tableId,_that.visitId,_that.itemId,_that.name,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String tableId,  String? visitId,  String itemId,  String name,  String variantName,  String course,  int qty,  List<TicketModifierDto> modifiers,  String? note,  int price,  String status,  DateTime sentAt,  DateTime? capturedAt,  String? replayedByUserId,  DateTime? firedAt,  DateTime? readyAt,  DateTime? servedAt,  String? voidReason,  String? voidReasonCode,  String? voidApprovedBy,  String? createdByUserId,  String? voidedByUserId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String tableId,  String? visitId,  String? memberId,  String itemId,  String name,  String variantName,  String course,  int qty,  List<TicketModifierDto> modifiers,  String? note,  int price,  String status,  DateTime sentAt,  DateTime? capturedAt,  String? replayedByUserId,  DateTime? firedAt,  DateTime? readyAt,  DateTime? servedAt,  String? voidReason,  String? voidReasonCode,  String? voidApprovedBy,  String? createdByUserId,  String? voidedByUserId)?  $default,) {final _that = this;
 switch (_that) {
 case _TicketDto() when $default != null:
-return $default(_that.id,_that.tableId,_that.visitId,_that.itemId,_that.name,_that.variantName,_that.course,_that.qty,_that.modifiers,_that.note,_that.price,_that.status,_that.sentAt,_that.capturedAt,_that.replayedByUserId,_that.firedAt,_that.readyAt,_that.servedAt,_that.voidReason,_that.voidReasonCode,_that.voidApprovedBy,_that.createdByUserId,_that.voidedByUserId);case _:
+return $default(_that.id,_that.tableId,_that.visitId,_that.memberId,_that.itemId,_that.name,_that.variantName,_that.course,_that.qty,_that.modifiers,_that.note,_that.price,_that.status,_that.sentAt,_that.capturedAt,_that.replayedByUserId,_that.firedAt,_that.readyAt,_that.servedAt,_that.voidReason,_that.voidReasonCode,_that.voidApprovedBy,_that.createdByUserId,_that.voidedByUserId);case _:
   return null;
 
 }
@@ -511,7 +512,7 @@ return $default(_that.id,_that.tableId,_that.visitId,_that.itemId,_that.name,_th
 @JsonSerializable()
 
 class _TicketDto implements TicketDto {
-  const _TicketDto({required this.id, required this.tableId, this.visitId, required this.itemId, required this.name, this.variantName = '', required this.course, this.qty = 1, final  List<TicketModifierDto> modifiers = const <TicketModifierDto>[], this.note, required this.price, required this.status, required this.sentAt, this.capturedAt, this.replayedByUserId, this.firedAt, this.readyAt, this.servedAt, this.voidReason, this.voidReasonCode, this.voidApprovedBy, this.createdByUserId, this.voidedByUserId}): _modifiers = modifiers;
+  const _TicketDto({required this.id, required this.tableId, this.visitId, this.memberId, required this.itemId, required this.name, this.variantName = '', required this.course, this.qty = 1, final  List<TicketModifierDto> modifiers = const <TicketModifierDto>[], this.note, required this.price, required this.status, required this.sentAt, this.capturedAt, this.replayedByUserId, this.firedAt, this.readyAt, this.servedAt, this.voidReason, this.voidReasonCode, this.voidApprovedBy, this.createdByUserId, this.voidedByUserId}): _modifiers = modifiers;
   factory _TicketDto.fromJson(Map<String, dynamic> json) => _$TicketDtoFromJson(json);
 
 @override final  String id;
@@ -519,6 +520,7 @@ class _TicketDto implements TicketDto {
 /// Stable bill key (ADR-0024). Lets the KDS/board label table-less
 /// (takeaway) lines via the visit. Nullable for pre-v29 rows.
 @override final  String? visitId;
+@override final  String? memberId;
 @override final  String itemId;
 @override final  String name;
 @override@JsonKey() final  String variantName;
@@ -565,16 +567,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketDto&&(identical(other.id, id) || other.id == id)&&(identical(other.tableId, tableId) || other.tableId == tableId)&&(identical(other.visitId, visitId) || other.visitId == visitId)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&const DeepCollectionEquality().equals(other._modifiers, _modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.price, price) || other.price == price)&&(identical(other.status, status) || other.status == status)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt)&&(identical(other.capturedAt, capturedAt) || other.capturedAt == capturedAt)&&(identical(other.replayedByUserId, replayedByUserId) || other.replayedByUserId == replayedByUserId)&&(identical(other.firedAt, firedAt) || other.firedAt == firedAt)&&(identical(other.readyAt, readyAt) || other.readyAt == readyAt)&&(identical(other.servedAt, servedAt) || other.servedAt == servedAt)&&(identical(other.voidReason, voidReason) || other.voidReason == voidReason)&&(identical(other.voidReasonCode, voidReasonCode) || other.voidReasonCode == voidReasonCode)&&(identical(other.voidApprovedBy, voidApprovedBy) || other.voidApprovedBy == voidApprovedBy)&&(identical(other.createdByUserId, createdByUserId) || other.createdByUserId == createdByUserId)&&(identical(other.voidedByUserId, voidedByUserId) || other.voidedByUserId == voidedByUserId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketDto&&(identical(other.id, id) || other.id == id)&&(identical(other.tableId, tableId) || other.tableId == tableId)&&(identical(other.visitId, visitId) || other.visitId == visitId)&&(identical(other.memberId, memberId) || other.memberId == memberId)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&const DeepCollectionEquality().equals(other._modifiers, _modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.price, price) || other.price == price)&&(identical(other.status, status) || other.status == status)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt)&&(identical(other.capturedAt, capturedAt) || other.capturedAt == capturedAt)&&(identical(other.replayedByUserId, replayedByUserId) || other.replayedByUserId == replayedByUserId)&&(identical(other.firedAt, firedAt) || other.firedAt == firedAt)&&(identical(other.readyAt, readyAt) || other.readyAt == readyAt)&&(identical(other.servedAt, servedAt) || other.servedAt == servedAt)&&(identical(other.voidReason, voidReason) || other.voidReason == voidReason)&&(identical(other.voidReasonCode, voidReasonCode) || other.voidReasonCode == voidReasonCode)&&(identical(other.voidApprovedBy, voidApprovedBy) || other.voidApprovedBy == voidApprovedBy)&&(identical(other.createdByUserId, createdByUserId) || other.createdByUserId == createdByUserId)&&(identical(other.voidedByUserId, voidedByUserId) || other.voidedByUserId == voidedByUserId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,tableId,visitId,itemId,name,variantName,course,qty,const DeepCollectionEquality().hash(_modifiers),note,price,status,sentAt,capturedAt,replayedByUserId,firedAt,readyAt,servedAt,voidReason,voidReasonCode,voidApprovedBy,createdByUserId,voidedByUserId]);
+int get hashCode => Object.hashAll([runtimeType,id,tableId,visitId,memberId,itemId,name,variantName,course,qty,const DeepCollectionEquality().hash(_modifiers),note,price,status,sentAt,capturedAt,replayedByUserId,firedAt,readyAt,servedAt,voidReason,voidReasonCode,voidApprovedBy,createdByUserId,voidedByUserId]);
 
 @override
 String toString() {
-  return 'TicketDto(id: $id, tableId: $tableId, visitId: $visitId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, capturedAt: $capturedAt, replayedByUserId: $replayedByUserId, firedAt: $firedAt, readyAt: $readyAt, servedAt: $servedAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
+  return 'TicketDto(id: $id, tableId: $tableId, visitId: $visitId, memberId: $memberId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, capturedAt: $capturedAt, replayedByUserId: $replayedByUserId, firedAt: $firedAt, readyAt: $readyAt, servedAt: $servedAt, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdByUserId: $createdByUserId, voidedByUserId: $voidedByUserId)';
 }
 
 
@@ -585,7 +587,7 @@ abstract mixin class _$TicketDtoCopyWith<$Res> implements $TicketDtoCopyWith<$Re
   factory _$TicketDtoCopyWith(_TicketDto value, $Res Function(_TicketDto) _then) = __$TicketDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String tableId, String? visitId, String itemId, String name, String variantName, String course, int qty, List<TicketModifierDto> modifiers, String? note, int price, String status, DateTime sentAt, DateTime? capturedAt, String? replayedByUserId, DateTime? firedAt, DateTime? readyAt, DateTime? servedAt, String? voidReason, String? voidReasonCode, String? voidApprovedBy, String? createdByUserId, String? voidedByUserId
+ String id, String tableId, String? visitId, String? memberId, String itemId, String name, String variantName, String course, int qty, List<TicketModifierDto> modifiers, String? note, int price, String status, DateTime sentAt, DateTime? capturedAt, String? replayedByUserId, DateTime? firedAt, DateTime? readyAt, DateTime? servedAt, String? voidReason, String? voidReasonCode, String? voidApprovedBy, String? createdByUserId, String? voidedByUserId
 });
 
 
@@ -602,11 +604,12 @@ class __$TicketDtoCopyWithImpl<$Res>
 
 /// Create a copy of TicketDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? tableId = null,Object? visitId = freezed,Object? itemId = null,Object? name = null,Object? variantName = null,Object? course = null,Object? qty = null,Object? modifiers = null,Object? note = freezed,Object? price = null,Object? status = null,Object? sentAt = null,Object? capturedAt = freezed,Object? replayedByUserId = freezed,Object? firedAt = freezed,Object? readyAt = freezed,Object? servedAt = freezed,Object? voidReason = freezed,Object? voidReasonCode = freezed,Object? voidApprovedBy = freezed,Object? createdByUserId = freezed,Object? voidedByUserId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? tableId = null,Object? visitId = freezed,Object? memberId = freezed,Object? itemId = null,Object? name = null,Object? variantName = null,Object? course = null,Object? qty = null,Object? modifiers = null,Object? note = freezed,Object? price = null,Object? status = null,Object? sentAt = null,Object? capturedAt = freezed,Object? replayedByUserId = freezed,Object? firedAt = freezed,Object? readyAt = freezed,Object? servedAt = freezed,Object? voidReason = freezed,Object? voidReasonCode = freezed,Object? voidApprovedBy = freezed,Object? createdByUserId = freezed,Object? voidedByUserId = freezed,}) {
   return _then(_TicketDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,tableId: null == tableId ? _self.tableId : tableId // ignore: cast_nullable_to_non_nullable
 as String,visitId: freezed == visitId ? _self.visitId : visitId // ignore: cast_nullable_to_non_nullable
+as String?,memberId: freezed == memberId ? _self.memberId : memberId // ignore: cast_nullable_to_non_nullable
 as String?,itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,variantName: null == variantName ? _self.variantName : variantName // ignore: cast_nullable_to_non_nullable

@@ -546,6 +546,10 @@ Future<void> seedHistory(
             memberId: Value(memberId),
           ),
         );
+        if (memberId != null && res.createdIds.isNotEmpty) {
+          await (db.update(db.tickets)..where((t) => t.id.isIn(res.createdIds)))
+              .write(TicketsCompanion(memberId: Value(memberId)));
+        }
 
         final subtotal = res.createdRows.fold<int>(
           0,

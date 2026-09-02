@@ -94,9 +94,7 @@ void _apply(
         ids.length,
       );
       for (var i = 0; i < ids.length; i++) {
-        receipts.add(
-          _emptyReceipt(id: ids[i], mode: 'even', total: shares[i]),
-        );
+        receipts.add(_emptyReceipt(id: ids[i], mode: 'even', total: shares[i]));
       }
 
     case SettlementEventKind.applyDiscount:
@@ -140,9 +138,18 @@ void _apply(
         (d) => (d as Map)['source'] != 'manual',
       );
 
+    case SettlementEventKind.assignTicketMembers:
+      final ids = (e.payload['ticketIds'] as List? ?? const []).toSet();
+      for (final line in _list(bill, 'lines')) {
+        if (ids.contains(line['ticketId'])) {
+          line['memberId'] = e.arg<String>('memberId');
+        }
+      }
+
     case SettlementEventKind.attachReceiptMember:
-      _receiptOf(bill, e.arg<String>('receiptId'))?['memberId'] =
-          e.arg<String>('memberId');
+      _receiptOf(bill, e.arg<String>('receiptId'))?['memberId'] = e.arg<String>(
+        'memberId',
+      );
 
     case SettlementEventKind.detachReceiptMember:
       final rec = _receiptOf(bill, e.arg<String>('receiptId'));

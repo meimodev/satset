@@ -7,6 +7,8 @@ class CartItem {
   final String name;
   final String variantId;
   final String variantName;
+  final String? memberId;
+  final String? memberName;
 
   /// Display labels (with derived sign) for the cart/review screens.
   final List<String> modifiers;
@@ -28,6 +30,8 @@ class CartItem {
     required this.name,
     required this.variantId,
     required this.variantName,
+    this.memberId,
+    this.memberName,
     this.modifiers = const [],
     this.selectedModifiers = const [],
     this.note = '',
@@ -56,6 +60,8 @@ class CartItem {
     name: name ?? this.name,
     variantId: variantId ?? this.variantId,
     variantName: variantName ?? this.variantName,
+    memberId: memberId,
+    memberName: memberName,
     modifiers: modifiers ?? this.modifiers,
     selectedModifiers: selectedModifiers ?? this.selectedModifiers,
     note: note ?? this.note,
@@ -63,6 +69,23 @@ class CartItem {
     qty: qty ?? this.qty,
     unitPrice: unitPrice ?? this.unitPrice,
     allergens: allergens ?? this.allergens,
+  );
+
+  CartItem withMember(String? memberId, String? memberName) => CartItem(
+    id: id,
+    itemId: itemId,
+    name: name,
+    variantId: variantId,
+    variantName: variantName,
+    memberId: memberId,
+    memberName: memberName,
+    modifiers: modifiers,
+    selectedModifiers: selectedModifiers,
+    note: note,
+    course: course,
+    qty: qty,
+    unitPrice: unitPrice,
+    allergens: allergens,
   );
 
   /// Order-insensitive identity of the chosen options. Two lines that picked
@@ -79,6 +102,7 @@ class CartItem {
   bool sameLineAs(CartItem other) =>
       itemId == other.itemId &&
       variantId == other.variantId &&
+      memberId == other.memberId &&
       course == other.course &&
       note.trim() == other.note.trim() &&
       modifierKeys.length == other.modifierKeys.length &&

@@ -54,6 +54,7 @@ void main() {
     int daysAgo = 1,
     int settled = 100000,
     String? tableLabel,
+    int? memberAttributionVersion,
   }) => db
       .into(db.tableSessions)
       .insert(
@@ -64,6 +65,7 @@ void main() {
           zoneId: 'z1',
           closedAt: now.subtract(Duration(days: daysAgo)),
           memberId: Value(memberId),
+          memberAttributionVersion: Value(memberAttributionVersion),
           settledTotal: Value(settled),
           kind: const Value('dineIn'),
         ),
@@ -80,6 +82,7 @@ void main() {
     required int price,
     String status = 'served',
     String? voidReasonCode,
+    String? memberId,
   }) => db
       .into(db.tableSessionTickets)
       .insert(
@@ -87,6 +90,7 @@ void main() {
           id: 'snap-$sessionId-$ticketId',
           sessionId: sessionId,
           ticketId: ticketId,
+          memberId: Value(memberId),
           itemId: itemId,
           name: name,
           course: 'mains',
@@ -144,8 +148,22 @@ void main() {
   test('a whole bill\'s lines are the owner\'s', () async {
     final m = await enrol('Budi', '08120000001');
     await closeBill('s1', memberId: m.id, settled: 90000);
-    await line('s1', 'tk1', itemId: 'i-nasi', name: 'Nasi Goreng', qty: 2, price: 30000);
-    await line('s1', 'tk2', itemId: 'i-teh', name: 'Es Teh', qty: 3, price: 10000);
+    await line(
+      's1',
+      'tk1',
+      itemId: 'i-nasi',
+      name: 'Nasi Goreng',
+      qty: 2,
+      price: 30000,
+    );
+    await line(
+      's1',
+      'tk2',
+      itemId: 'i-teh',
+      name: 'Es Teh',
+      qty: 3,
+      price: 10000,
+    );
 
     final h = await history(m.id);
     final products = (h['products'] as List).cast<Map<String, dynamic>>();
@@ -161,42 +179,87 @@ void main() {
     expect(h['untrackedSpend'], 0);
   });
 
-  test('a named receipt takes its own lines, the owner takes the rest',
-      () async {
-    final owner = await enrol('Budi', '08120000001');
-    final friend = await enrol('Sari', '08120000002');
-    await closeBill('s1', memberId: owner.id, settled: 100000);
-    // Four plates on one ticket; the friend's receipt claims one of them.
-    await line('s1', 'tk1', itemId: 'i-nasi', name: 'Nasi Goreng', qty: 4, price: 25000);
-    await receipt('s1', 'r-friend', memberId: friend.id, total: 25000);
-    await assign('s1', 'r-friend', 'tk1', 1);
-
-    final theirs = await history(friend.id);
-    expect(
-      (theirs['products'] as List).first['qty'],
-      1,
-      reason: 'a share is one plate, not the table',
+  test('ticket attribution credits only the ticket owner', () async {
+    final ani = await enrol('Ani', '08120000011');
+    final budi = await enrol('Budi', '08120000012');
+    await closeBill('s-ticket', memberAttributionVersion: 2, settled: 60000);
+    await line(
+      's-ticket',
+      'tk-ani',
+      itemId: 'i-nasi',
+      name: 'Nasi',
+      qty: 1,
+      price: 30000,
+      memberId: ani.id,
     );
-    expect(theirs['spend'], 25000);
-
-    final ownersRead = await history(owner.id);
-    expect(
-      (ownersRead['products'] as List).first['qty'],
-      3,
-      reason: 'the owner takes what is left, never the whole ticket again',
+    await line(
+      's-ticket',
+      'tk-budi',
+      itemId: 'i-teh',
+      name: 'Teh',
+      qty: 2,
+      price: 15000,
+      memberId: budi.id,
     );
-    expect(ownersRead['spend'], 75000, reason: '100k less the 25k claimed');
 
-    // The parts add back to the bill — the subtraction cannot lose a plate or
-    // a rupiah.
-    expect(theirs['units'] + ownersRead['units'], 4);
-    expect(theirs['spend'] + ownersRead['spend'], 100000);
+    final aniHistory = await history(ani.id);
+    final budiHistory = await history(budi.id);
+    expect((aniHistory['products'] as List).single['name'], 'Nasi');
+    expect((budiHistory['products'] as List).single['name'], 'Teh');
   });
+
+  test(
+    'a named receipt takes its own lines, the owner takes the rest',
+    () async {
+      final owner = await enrol('Budi', '08120000001');
+      final friend = await enrol('Sari', '08120000002');
+      await closeBill('s1', memberId: owner.id, settled: 100000);
+      // Four plates on one ticket; the friend's receipt claims one of them.
+      await line(
+        's1',
+        'tk1',
+        itemId: 'i-nasi',
+        name: 'Nasi Goreng',
+        qty: 4,
+        price: 25000,
+      );
+      await receipt('s1', 'r-friend', memberId: friend.id, total: 25000);
+      await assign('s1', 'r-friend', 'tk1', 1);
+
+      final theirs = await history(friend.id);
+      expect(
+        (theirs['products'] as List).first['qty'],
+        1,
+        reason: 'a share is one plate, not the table',
+      );
+      expect(theirs['spend'], 25000);
+
+      final ownersRead = await history(owner.id);
+      expect(
+        (ownersRead['products'] as List).first['qty'],
+        3,
+        reason: 'the owner takes what is left, never the whole ticket again',
+      );
+      expect(ownersRead['spend'], 75000, reason: '100k less the 25k claimed');
+
+      // The parts add back to the bill — the subtraction cannot lose a plate or
+      // a rupiah.
+      expect(theirs['units'] + ownersRead['units'], 4);
+      expect(theirs['spend'] + ownersRead['spend'], 100000);
+    },
+  );
 
   test('a void is not a purchase', () async {
     final m = await enrol('Budi', '08120000001');
     await closeBill('s1', memberId: m.id, settled: 30000);
-    await line('s1', 'tk1', itemId: 'i-nasi', name: 'Nasi Goreng', qty: 1, price: 30000);
+    await line(
+      's1',
+      'tk1',
+      itemId: 'i-nasi',
+      name: 'Nasi Goreng',
+      qty: 1,
+      price: 30000,
+    );
     await line(
       's1',
       'tk2',
@@ -223,8 +286,21 @@ void main() {
     final friend = await enrol('Sari', '08120000002');
     // Budi's table, split evenly: Sari's share claims money and owns no lines.
     await closeBill('s1', memberId: owner.id, settled: 100000);
-    await line('s1', 'tk1', itemId: 'i-nasi', name: 'Nasi Goreng', qty: 2, price: 50000);
-    await receipt('s1', 'r-sari', memberId: friend.id, mode: 'even', total: 50000);
+    await line(
+      's1',
+      'tk1',
+      itemId: 'i-nasi',
+      name: 'Nasi Goreng',
+      qty: 2,
+      price: 50000,
+    );
+    await receipt(
+      's1',
+      'r-sari',
+      memberId: friend.id,
+      mode: 'even',
+      total: 50000,
+    );
 
     final h = await history(friend.id);
     expect(h['spend'], 50000);
@@ -244,7 +320,14 @@ void main() {
   test('a deleted member still has a history', () async {
     final m = await enrol('Budi', '08120000001');
     await closeBill('s1', memberId: m.id, settled: 60000);
-    await line('s1', 'tk1', itemId: 'i-nasi', name: 'Nasi Goreng', qty: 2, price: 30000);
+    await line(
+      's1',
+      'tk1',
+      itemId: 'i-nasi',
+      name: 'Nasi Goreng',
+      qty: 2,
+      price: 30000,
+    );
     await deleteMember(db, id: m.id);
 
     // The directory row is gone — `GET /members/<id>` would 404 here.
@@ -260,8 +343,22 @@ void main() {
     final m = await enrol('Budi', '08120000001');
     await closeBill('s-old', memberId: m.id, daysAgo: 200, settled: 50000);
     await closeBill('s-new', memberId: m.id, daysAgo: 2, settled: 70000);
-    await line('s-old', 'tk1', itemId: 'i-nasi', name: 'Nasi Goreng', qty: 1, price: 50000);
-    await line('s-new', 'tk2', itemId: 'i-ayam', name: 'Ayam Bakar', qty: 1, price: 70000);
+    await line(
+      's-old',
+      'tk1',
+      itemId: 'i-nasi',
+      name: 'Nasi Goreng',
+      qty: 1,
+      price: 50000,
+    );
+    await line(
+      's-new',
+      'tk2',
+      itemId: 'i-ayam',
+      name: 'Ayam Bakar',
+      qty: 1,
+      price: 70000,
+    );
 
     final wide = await history(m.id);
     expect(wide['visits'], 2);
@@ -281,70 +378,80 @@ void main() {
   // The ranked list
   // ---------------------------------------------------------------------
 
-  test('the list reaches past the venue block\'s cap and names its tail',
-      () async {
-    // 520 members who each traded once — past the 500 this report carries, and
-    // well past the 100 the Keanggotaan block does.
-    for (var i = 0; i < 520; i++) {
-      final m = await enrol('M$i', '0812${i.toString().padLeft(7, '0')}');
-      await closeBill('s$i', memberId: m.id, settled: 1000 + i);
-    }
+  test(
+    'the list reaches past the venue block\'s cap and names its tail',
+    () async {
+      // 520 members who each traded once — past the 500 this report carries, and
+      // well past the 100 the Keanggotaan block does.
+      for (var i = 0; i < 520; i++) {
+        final m = await enrol('M$i', '0812${i.toString().padLeft(7, '0')}');
+        await closeBill('s$i', memberId: m.id, settled: 1000 + i);
+      }
 
-    final r = await memberTradeReport(db, from: from, to: to);
-    final rows = (r['members'] as List).cast<Map<String, dynamic>>();
-    expect(rows.length, 500);
-    expect(r['membersTruncated'], 20);
-    // The venue block travels in the same payload and keeps its own, smaller cap.
-    expect((r['top'] as List).length, 100);
-    expect(rows.first['name'], 'M519', reason: 'spend desc');
-    expect(rows.first['phone'], isNotNull, reason: 'the list is searchable');
-    expect(rows.first['lastVisitAt'], isNotNull);
-  });
+      final r = await memberTradeReport(db, from: from, to: to);
+      final rows = (r['members'] as List).cast<Map<String, dynamic>>();
+      expect(rows.length, 500);
+      expect(r['membersTruncated'], 20);
+      // The venue block travels in the same payload and keeps its own, smaller cap.
+      expect((r['top'] as List).length, 100);
+      expect(rows.first['name'], 'M519', reason: 'spend desc');
+      expect(rows.first['phone'], isNotNull, reason: 'the list is searchable');
+      expect(rows.first['lastVisitAt'], isNotNull);
+    },
+  );
 
-  test('returning is counted against once-only, and idle against the books',
-      () async {
-    final twice = await enrol('Budi', '08120000001');
-    final once = await enrol('Sari', '08120000002');
-    await enrol('Tono', '08120000003'); // enrolled, never came
-    await closeBill('s1', memberId: twice.id, daysAgo: 3, settled: 40000);
-    await closeBill('s2', memberId: twice.id, daysAgo: 1, settled: 60000);
-    await closeBill('s3', memberId: once.id, daysAgo: 2, settled: 50000);
+  test(
+    'returning is counted against once-only, and idle against the books',
+    () async {
+      final twice = await enrol('Budi', '08120000001');
+      final once = await enrol('Sari', '08120000002');
+      await enrol('Tono', '08120000003'); // enrolled, never came
+      await closeBill('s1', memberId: twice.id, daysAgo: 3, settled: 40000);
+      await closeBill('s2', memberId: twice.id, daysAgo: 1, settled: 60000);
+      await closeBill('s3', memberId: once.id, daysAgo: 2, settled: 50000);
 
-    final r = await memberTradeReport(db, from: from, to: to);
-    expect(r['activeMembers'], 2);
-    expect(r['returningMembers'], 1);
-    expect(r['enrolledTotal'], 3);
-    expect(r['idleMembers'], 1, reason: 'Tono is on the books and did not come');
-    expect(r['earliestClosedAt'], isNotNull);
+      final r = await memberTradeReport(db, from: from, to: to);
+      expect(r['activeMembers'], 2);
+      expect(r['returningMembers'], 1);
+      expect(r['enrolledTotal'], 3);
+      expect(
+        r['idleMembers'],
+        1,
+        reason: 'Tono is on the books and did not come',
+      );
+      expect(r['earliestClosedAt'], isNotNull);
 
-    final budi = (r['members'] as List)
-        .cast<Map<String, dynamic>>()
-        .firstWhere((m) => m['memberId'] == twice.id);
-    expect(budi['visits'], 2);
-    expect(budi['spend'], 100000);
-  });
+      final budi = (r['members'] as List)
+          .cast<Map<String, dynamic>>()
+          .firstWhere((m) => m['memberId'] == twice.id);
+      expect(budi['visits'], 2);
+      expect(budi['spend'], 100000);
+    },
+  );
 
-  test('the overview and the list divide the same split bill the same way',
-      () async {
-    final owner = await enrol('Budi', '08120000001');
-    final friend = await enrol('Sari', '08120000002');
-    await closeBill('s1', memberId: owner.id, settled: 120000);
-    await receipt('s1', 'r-sari', memberId: friend.id, total: 45000);
+  test(
+    'the overview and the list divide the same split bill the same way',
+    () async {
+      final owner = await enrol('Budi', '08120000001');
+      final friend = await enrol('Sari', '08120000002');
+      await closeBill('s1', memberId: owner.id, settled: 120000);
+      await receipt('s1', 'r-sari', memberId: friend.id, total: 45000);
 
-    final r = await memberTradeReport(db, from: from, to: to);
-    final rows = (r['members'] as List).cast<Map<String, dynamic>>();
-    final byId = {for (final m in rows) m['memberId'] as String: m};
-    expect(byId[friend.id]!['spend'], 45000);
-    expect(byId[owner.id]!['spend'], 75000);
-    // The bill itself is still one bill, counted on whoever held it.
-    expect(r['memberBills'], 1);
-    expect(r['memberNet'], 120000);
-    expect(r['splitBills'], 1);
-    // And the two halves of the payload agree, because they walk once.
-    final top = (r['top'] as List).cast<Map<String, dynamic>>();
-    expect(
-      {for (final m in top) m['memberId']: m['spend']},
-      {for (final m in rows) m['memberId']: m['spend']},
-    );
-  });
+      final r = await memberTradeReport(db, from: from, to: to);
+      final rows = (r['members'] as List).cast<Map<String, dynamic>>();
+      final byId = {for (final m in rows) m['memberId'] as String: m};
+      expect(byId[friend.id]!['spend'], 45000);
+      expect(byId[owner.id]!['spend'], 75000);
+      // The bill itself is still one bill, counted on whoever held it.
+      expect(r['memberBills'], 1);
+      expect(r['memberNet'], 120000);
+      expect(r['splitBills'], 1);
+      // And the two halves of the payload agree, because they walk once.
+      final top = (r['top'] as List).cast<Map<String, dynamic>>();
+      expect(
+        {for (final m in top) m['memberId']: m['spend']},
+        {for (final m in rows) m['memberId']: m['spend']},
+      );
+    },
+  );
 }

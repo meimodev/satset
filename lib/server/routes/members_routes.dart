@@ -355,6 +355,33 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     });
   });
 
+  r.get('/members/lookup', (Request req) async {
+    final off = await enabledGuard();
+    if (off != null) return off;
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!a.$2.contains(Capability.settleBill.name) &&
+        !a.$2.contains(Capability.takeOrder.name)) {
+      return forbidden(Capability.takeOrder);
+    }
+    final list = await listMembers(
+      db,
+      query: req.url.queryParameters['q'] ?? '',
+      limit: 50,
+    );
+    String masked(String phone) {
+      final tail = phone.length <= 4
+          ? phone
+          : phone.substring(phone.length - 4);
+      return '•••• $tail';
+    }
+
+    return json([
+      for (final member in list)
+        {'id': member.id, 'name': member.name, 'phone': masked(member.phone)},
+    ]);
+  });
+
   // The directory, and the till's prefix search. Readable by anyone who can
   // settle, keep the directory, or report on it.
   r.get('/members', (Request req) async {

@@ -91,6 +91,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     required String? actorId,
     required int loss,
     String? reason,
+
     /// When the close actually happened, if it was captured on a terputus till
     /// and replayed later (ADR-0123). Null for every online close.
     DateTime? at,
@@ -145,18 +146,43 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
                   db.receipts,
                 )..where((x) => x.visitId.equals(visitId))).get()
               : const <Receipt>[];
-          final bases = pointsBaseByMember(
-            billBase: billBase,
-            ownerId: visit.memberId,
-            splitEnabled: cfg.splitEnabled,
-            receipts: [
-              for (final r in recs)
-                (
-                  memberId: r.memberId,
-                  base: r.total - r.serviceAmount - r.taxAmount,
-                ),
-            ],
-          );
+          final Map<String, int> bases;
+          if (cfg.splitEnabled && visit.memberAttributionVersion == 2) {
+            final tickets =
+                await (db.select(db.tickets)..where(
+                      (t) =>
+                          t.visitId.equals(visitId) &
+                          t.status.equals('voided').not(),
+                    ))
+                    .get();
+            final gross = <String?, int>{};
+            for (final ticket in tickets) {
+              gross[ticket.memberId] =
+                  (gross[ticket.memberId] ?? 0) + ticket.price * ticket.qty;
+            }
+            final entries = gross.entries.toList();
+            final shares = distributeFixed([
+              for (final entry in entries) entry.value,
+            ], billBase);
+            bases = {
+              for (var i = 0; i < entries.length; i++)
+                if (entries[i].key != null && shares[i] > 0)
+                  entries[i].key!: shares[i],
+            };
+          } else {
+            bases = pointsBaseByMember(
+              billBase: billBase,
+              ownerId: visit.memberId,
+              splitEnabled: cfg.splitEnabled,
+              receipts: [
+                for (final r in recs)
+                  (
+                    memberId: r.memberId,
+                    base: r.total - r.serviceAmount - r.taxAmount,
+                  ),
+              ],
+            );
+          }
           // One row per member, never one per receipt: a guest holding two
           // slips ate one meal, and `earnPointsForVisit` is idempotent per
           // (visit, member) besides.
@@ -323,6 +349,62 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         );
   }
 
+  Future<void> syncTicketMemberDiscounts(
+    String receiptId,
+    MemberConfig cfg,
+    String? actorId,
+  ) async {
+    await (db.delete(db.discounts)..where(
+          (x) =>
+              x.receiptId.equals(receiptId) &
+              x.ticketId.isNotNull() &
+              x.source.equals('member'),
+        ))
+        .go();
+    if (cfg.presetId == null) return;
+    final preset = await (db.select(
+      db.discountPresets,
+    )..where((x) => x.id.equals(cfg.presetId!))).getSingleOrNull();
+    if (preset == null || !preset.active || preset.kind != 'percent') return;
+    final lines = await (db.select(
+      db.receiptLines,
+    )..where((x) => x.receiptId.equals(receiptId))).get();
+    final units = <String, int>{};
+    for (final line in lines) {
+      units[line.ticketId] = (units[line.ticketId] ?? 0) + line.qtyUnits;
+    }
+    for (final entry in units.entries) {
+      final ticket = await (db.select(
+        db.tickets,
+      )..where((x) => x.id.equals(entry.key))).getSingleOrNull();
+      if (ticket?.memberId == null) continue;
+      final base = ticket!.price * entry.value;
+      await db
+          .into(db.discounts)
+          .insert(
+            DiscountsCompanion.insert(
+              id: _uuid.v4(),
+              receiptId: Value(receiptId),
+              ticketId: Value(ticket.id),
+              presetId: Value(preset.id),
+              name: preset.name,
+              kind: 'percent',
+              value: Value(preset.value),
+              amount: Value(
+                resolveDiscountAmount(
+                  kind: 'percent',
+                  value: preset.value,
+                  base: base,
+                ),
+              ),
+              source: const Value('member'),
+              byUserId: Value(actorId),
+              at: SatClock.now().toUtc(),
+            ),
+          );
+    }
+  }
+
   // List every open, payable visit (≥1 sent line, bill not yet closed). Spans
   // attached (table occupied) AND detached (table freed, bill still open)
   // visits — the detached ones carry `tableFreedAt`/`detached` for the flag.
@@ -434,10 +516,23 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             );
       }
       if (bornForId != null) {
-        await writeReceiptMember(
+        if (visit.memberAttributionVersion == 2) {
+          await (db.update(db.receipts)..where((x) => x.id.equals(id))).write(
+            ReceiptsCompanion(memberId: Value(bornForId)),
+          );
+        } else {
+          await writeReceiptMember(
+            id,
+            bornForId,
+            splitCfg!,
+            (await resolve(req))?.id,
+          );
+        }
+      }
+      if (visit.memberAttributionVersion == 2) {
+        await syncTicketMemberDiscounts(
           id,
-          bornForId,
-          splitCfg!,
+          splitCfg ?? await memberConfig(db),
           (await resolve(req))?.id,
         );
       }
@@ -586,9 +681,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             .into(db.receipts)
             .insert(
               ReceiptsCompanion.insert(
-                id: i < ids.length && ids[i].isNotEmpty
-                    ? ids[i]
-                    : _uuid.v4(),
+                id: i < ids.length && ids[i].isNotEmpty ? ids[i] : _uuid.v4(),
                 tableId: visit.tableId,
                 visitId: Value(visitId),
                 mode: const Value('even'),
@@ -1031,6 +1124,93 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         ))
         .go();
   }
+
+  r.post('/settlement/visits/<visitId>/ticket-members', (
+    Request req,
+    String visitId,
+  ) async {
+    final denied = await requireCap(req, Capability.settleBill);
+    if (denied != null) return denied;
+    final visit = await _visit(db, visitId);
+    if (visit == null) return _err(404, 'no_visit', 'visit not found');
+    final cfg = await memberConfig(db);
+    if (!cfg.splitEnabled || visit.memberAttributionVersion != 2) {
+      return _err(
+        409,
+        'ticket_members_disabled',
+        'pelanggan per tiket tidak aktif',
+      );
+    }
+    final locked = await lockGuard(visitId);
+    if (locked != null) return locked;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final ticketIds = (body['ticketIds'] as List? ?? const [])
+        .whereType<String>()
+        .toSet();
+    if (ticketIds.isEmpty) {
+      return _err(400, 'no_tickets', 'pilih sedikitnya satu tiket');
+    }
+    final memberId = (body['memberId'] as String?)?.trim();
+    final member = memberId?.isNotEmpty == true
+        ? await getMember(db, memberId!)
+        : null;
+    if (memberId?.isNotEmpty == true && member == null) {
+      return _err(404, 'no_member', 'pelanggan tidak ada');
+    }
+    final tickets = await (db.select(
+      db.tickets,
+    )..where((t) => t.visitId.equals(visitId) & t.id.isIn(ticketIds))).get();
+    if (tickets.length != ticketIds.length) {
+      return _err(409, 'ticket_changed', 'daftar tiket sudah berubah');
+    }
+    for (final ticket in tickets) {
+      if (await _ticketMemberLocked(db, ticket.id)) {
+        return _err(
+          409,
+          'ticket_member_locked',
+          'tiket yang sudah dibayar tidak dapat diubah',
+        );
+      }
+    }
+    final actor = await resolve(req);
+    final auditId = _uuid.v4();
+    await db.transaction(() async {
+      await (db.update(db.tickets)
+            ..where((t) => t.visitId.equals(visitId) & t.id.isIn(ticketIds)))
+          .write(TicketsCompanion(memberId: Value(memberId)));
+      final receiptIds = <String>{};
+      for (final ticketId in ticketIds) {
+        final lines = await (db.select(
+          db.receiptLines,
+        )..where((x) => x.ticketId.equals(ticketId))).get();
+        receiptIds.addAll(lines.map((x) => x.receiptId));
+      }
+      for (final receiptId in receiptIds) {
+        await syncTicketMemberDiscounts(receiptId, cfg, actor?.id);
+      }
+      await db
+          .into(db.auditEntries)
+          .insert(
+            AuditEntriesCompanion.insert(
+              id: auditId,
+              type: AuditType.memberChanged.name,
+              title:
+                  '${ticketIds.length} tiket → ${member?.name ?? 'Tanpa pelanggan'}',
+              tableId: Value(visit.tableId),
+              at: SatClock.now().toUtc(),
+              actorUserId: Value(actor?.id),
+              actorName: Value(actor?.name),
+            ),
+          );
+    });
+    await _recompute(db, visitId);
+    final audit = await (db.select(
+      db.auditEntries,
+    )..where((x) => x.id.equals(auditId))).getSingle();
+    hub.broadcast(WsEventTypes.auditCreated, auditJson(audit));
+    await broadcastBill(visitId);
+    return _ok({'bill': await _buildBill(db, visitId)});
+  });
 
   // Attach a [[Pelanggan (member)]] to a live bill. {memberId}. The member's
   // standing discount lands in its own slot straight away, so a cashier who
@@ -1556,16 +1736,17 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     // Everything a tab needs is checked before the row is written, so a refusal
     // never leaves a payment standing with no ledger entry behind it.
     final visit = onAccount ? await _visit(db, visitId) : null;
-    // The [[Pemilik struk]], else the [[Pemilik tagihan]] (ADR-0120) — the same
-    // subtraction `memberUnitsOf` and `pointsBaseByMember` make. A share named
-    // to one guest and paid on account must reach *their* tab; charging
-    // whoever was seated first is a debt the wrong person is chased for.
-    final debtorId = rec.memberId ?? visit?.memberId;
+    // Debt belongs to the payer explicitly named on this leg, independently
+    // of ticket, receipt and visit ownership (ADR-0125).
+    final debtorId = (body['memberId'] as String?)?.trim();
     if (onAccount) {
       final cfg = await debtConfig(db);
       if (!cfg.enabled) return _err(404, 'debt_disabled', 'piutang mati');
       if (debtorId == null) {
-        return _err(409, 'no_member', 'tagihan belum punya pelanggan');
+        return _err(409, 'no_member', 'pilih pelanggan yang berutang');
+      }
+      if (await getMember(db, debtorId) == null) {
+        return _err(404, 'no_member', 'pelanggan tidak ada');
       }
     }
     // Minted up front so the audit row can point at it (ADR-0086); supplied by
@@ -1582,6 +1763,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
                 receiptId: receiptId,
                 method: method,
                 amount: amount,
+                memberId: Value(onAccount ? debtorId : null),
                 // A tab tenders nothing, so nothing is stored — a change figure
                 // on a promise is a lie the receipt would print.
                 tenderedAmount: Value(
@@ -1652,9 +1834,10 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     if (captured != null) {
       final hour = await _dayStartHour(db);
       final now = SatClock.now();
-      if (businessDayStart(captured.toLocal(), hour).isBefore(
-        businessDayStart(now, hour),
-      )) {
+      if (businessDayStart(
+        captured.toLocal(),
+        hour,
+      ).isBefore(businessDayStart(now, hour))) {
         await _audit(
           db,
           AuditType.paymentRecorded,
@@ -1746,12 +1929,18 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     if (paymentId.isEmpty) {
       return _err(400, 'bad_request', 'paymentId required');
     }
-    final leg = await (db.select(db.payments)
-          ..where((x) => x.id.equals(paymentId) & x.receiptId.equals(receiptId)))
-        .getSingleOrNull();
+    final leg =
+        await (db.select(db.payments)..where(
+              (x) => x.id.equals(paymentId) & x.receiptId.equals(receiptId),
+            ))
+            .getSingleOrNull();
     if (leg == null) return _err(404, 'no_payment', 'payment not found');
     if (leg.isRefund) {
-      return _err(409, 'not_a_payment', 'baris ini sendiri sebuah pengembalian');
+      return _err(
+        409,
+        'not_a_payment',
+        'baris ini sendiri sebuah pengembalian',
+      );
     }
     final amount = (body['amount'] as num?)?.toInt() ?? 0;
     if (amount <= 0) return _err(400, 'bad_amount', 'amount must be positive');
@@ -1759,11 +1948,12 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     // already written against it. Refund rows are negative and carry the leg
     // they unwind, so they net out by addition.
     final priorRefunds =
-        (await (db.select(db.payments)..where(
-                  (x) => x.refundsPaymentId.equals(paymentId),
-                ))
-                .get())
-            .fold<int>(0, (a, p) => a + p.amount);
+        (await (db.select(
+          db.payments,
+        )..where((x) => x.refundsPaymentId.equals(paymentId))).get()).fold<int>(
+          0,
+          (a, p) => a + p.amount,
+        );
     final refundable = leg.amount + priorRefunds;
     if (amount > refundable) {
       return _err(409, 'over_refund', 'melebihi sisa pada pembayaran ini', {
@@ -2253,6 +2443,19 @@ Future<int> _assignedUnits(
   return sum;
 }
 
+Future<bool> _ticketMemberLocked(AppDatabase db, String ticketId) async {
+  final lines = await (db.select(
+    db.receiptLines,
+  )..where((x) => x.ticketId.equals(ticketId))).get();
+  if (lines.isEmpty) return false;
+  final receiptIds = lines.map((x) => x.receiptId).toSet();
+  return (await (db.select(db.payments)..where(
+            (p) => p.receiptId.isIn(receiptIds) & p.isRefund.equals(false),
+          ))
+          .get())
+      .isNotEmpty;
+}
+
 /// Units of a line no receipt has claimed yet.
 Future<int> _freeUnits(AppDatabase db, String ticketId) async {
   final t = await (db.select(
@@ -2675,6 +2878,9 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
 
   final linesJson = <Map<String, dynamic>>[];
   for (final t in tickets) {
+    final ticketMember = t.memberId == null
+        ? null
+        : await getMember(db, t.memberId!);
     linesJson.add({
       'ticketId': t.id,
       'itemId': t.itemId,
@@ -2686,6 +2892,9 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
       'assignedUnits': await _assignedUnits(db, t.id),
       'note': t.note,
       'status': t.status,
+      'memberId': t.memberId,
+      'memberName': ticketMember?.name,
+      'memberLocked': await _ticketMemberLocked(db, t.id),
       'modifiersJson': t.modifiersJson,
       'sentAt': t.sentAt.toIso8601String(),
     });
@@ -2766,6 +2975,8 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
     // this and never re-derives it from a module list, the rule ADR-0107
     // already puts on `membersOn`.
     'splitEnabled': mcfg.splitEnabled,
+    'ticketAttribution':
+        mcfg.splitEnabled && visit.memberAttributionVersion == 2,
     'lines': linesJson,
     'receipts': receiptsJson,
   };

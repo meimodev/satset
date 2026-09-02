@@ -12,6 +12,7 @@ import 'package:satset/server/db/database.dart';
 import 'package:satset/server/routes/tables_routes.dart'
     show ensureVisit, syncVisitMoney, createTakeawayVisit;
 import 'package:satset/server/stock.dart';
+import 'package:satset/server/members.dart' show memberConfig;
 import 'package:satset/server/ws_hub.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/ticket.dart'
@@ -21,8 +22,7 @@ import 'package:satset/domain/models/ticket_transitions.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/domain/models/menu_item.dart' show openItemId;
-import 'package:satset/server/modules.dart'
-    show modeBypassKds, venueHasMode;
+import 'package:satset/server/modules.dart' show modeBypassKds, venueHasMode;
 
 Future<Response?> _requireCap(
   Request req,
@@ -163,6 +163,7 @@ class SubmitOrderResult {
   final List<String> createdIds;
   final List<Ticket> createdRows;
   final List<Map<String, dynamic>> rejected;
+  final List<String> attributionWarnings;
   final VenueTable? tableRow;
   final String? visitId;
   final String? storedResponse;
@@ -177,6 +178,7 @@ class SubmitOrderResult {
     required this.createdIds,
     required this.createdRows,
     required this.rejected,
+    this.attributionWarnings = const [],
     this.tableRow,
     this.visitId,
     this.storedResponse,
@@ -230,6 +232,7 @@ Future<SubmitOrderResult> submitOrder(
   final createdIds = <String>[];
   final createdRows = <Ticket>[];
   final rejected = <Map<String, dynamic>>[];
+  final attributionWarnings = <String>[];
   VenueTable? tableRow;
   String? storedResponse;
   String? orderVisitId;
@@ -294,6 +297,14 @@ Future<SubmitOrderResult> submitOrder(
       db.venueSettings,
     )..where((x) => x.id.equals('default'))).getSingleOrNull();
     final bypassKds = venueHasMode(settingsRow, modeBypassKds);
+    final splitAttribution =
+        (await memberConfig(db)).splitEnabled &&
+        (await (db.select(
+                  db.visits,
+                )..where((v) => v.id.equals(visitId))).getSingle())
+                .memberAttributionVersion ==
+            2;
+    final validMemberIds = <String>{};
     final bornStatus = bypassKds ? 'ready' : 'sent';
 
     final recipes = await loadRecipes(db);
@@ -314,6 +325,25 @@ Future<SubmitOrderResult> submitOrder(
       final itemId = l['itemId'] as String;
       final lineQty = (l['qty'] as num?)?.toInt() ?? 1;
       final lineVariant = (l['variantName'] as String?) ?? '';
+      final requestedMemberId = (l['memberId'] as String?)?.trim();
+      String? memberId;
+      if (splitAttribution && requestedMemberId?.isNotEmpty == true) {
+        if (validMemberIds.contains(requestedMemberId)) {
+          memberId = requestedMemberId;
+        } else {
+          final member = await (db.select(
+            db.members,
+          )..where((m) => m.id.equals(requestedMemberId!))).getSingleOrNull();
+          if (member == null) {
+            attributionWarnings.add(
+              '${(l['name'] as String?) ?? itemId}: pelanggan tidak ditemukan; dikirim tanpa pelanggan',
+            );
+          } else {
+            validMemberIds.add(requestedMemberId!);
+            memberId = requestedMemberId;
+          }
+        }
+      }
       if (!variantNameMaps.containsKey(itemId)) {
         final item = await (db.select(
           db.menuItems,
@@ -353,6 +383,7 @@ Future<SubmitOrderResult> submitOrder(
         id: id,
         tableId: tableId,
         visitId: Value(visitId),
+        memberId: Value(memberId),
         itemId: itemId,
         name: (l['name'] as String?) ?? l['itemId'] as String,
         variantName: Value((l['variantName'] as String?) ?? ''),
@@ -411,6 +442,8 @@ Future<SubmitOrderResult> submitOrder(
               'ticketIds': createdIds,
               'visitId': visitId,
               if (rejected.isNotEmpty) 'rejected': rejected,
+              if (attributionWarnings.isNotEmpty)
+                'attributionWarnings': attributionWarnings,
             }),
             createdAt: stamp,
           ),
@@ -454,6 +487,7 @@ Future<SubmitOrderResult> submitOrder(
     createdIds: createdIds,
     createdRows: createdRows,
     rejected: rejected,
+    attributionWarnings: attributionWarnings,
     tableRow: tableRow,
     visitId: orderVisitId,
     storedResponse: storedResponse,
@@ -497,12 +531,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         if (l['itemId'] == openItemId) l,
     ];
     if (openLines.isNotEmpty) {
-      final denied = await _requireCap(
-        req,
-        db,
-        auth,
-        Capability.sellOpenItem,
-      );
+      final denied = await _requireCap(req, db, auth, Capability.sellOpenItem);
       if (denied != null) return denied;
       for (final l in openLines) {
         final price = (l['unitPrice'] as num?)?.toInt() ?? 0;
@@ -576,6 +605,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     }
     final createdIds = res.createdIds;
     final rejected = res.rejected;
+    final attributionWarnings = res.attributionWarnings;
     final orderVisitId = res.visitId;
     final storedResponse = res.storedResponse;
 
@@ -610,6 +640,8 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         'ticketIds': createdIds,
         'visitId': orderVisitId,
         if (rejected.isNotEmpty) 'rejected': rejected,
+        if (attributionWarnings.isNotEmpty)
+          'attributionWarnings': attributionWarnings,
       }),
       headers: {'content-type': 'application/json'},
     );
@@ -801,8 +833,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final needsText = voidReasonCode?.trim() == 'other';
     if (isVoid &&
         ((voidReasonCode == null || voidReasonCode.trim().isEmpty) ||
-            (needsText &&
-                (voidReason == null || voidReason.trim().isEmpty)))) {
+            (needsText && (voidReason == null || voidReason.trim().isEmpty)))) {
       return Response(
         400,
         body: jsonEncode({
@@ -1033,6 +1064,7 @@ Map<String, dynamic> _toJson(Ticket t) => {
   // The stable bill key, independent of tableId. Lets the client/KDS label
   // table-less (takeaway) lines via the visit. See ADR-0024 / ADR-0026.
   'visitId': t.visitId,
+  'memberId': t.memberId,
   'itemId': t.itemId,
   'name': t.name,
   'variantName': t.variantName,

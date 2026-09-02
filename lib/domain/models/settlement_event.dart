@@ -22,6 +22,7 @@ enum SettlementEventKind {
   removeBillDiscount,
   attachMember,
   detachMember,
+  assignTicketMembers,
   attachReceiptMember,
   detachReceiptMember,
   redeemPoints,

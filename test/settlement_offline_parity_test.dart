@@ -248,10 +248,7 @@ void main() {
     ];
     final projected = projectBill(base, events, cfg);
 
-    for (final spec in [
-      ('rcA', 'A', 'tk1'),
-      ('rcB', 'B', 'tk2'),
-    ]) {
+    for (final spec in [('rcA', 'A', 'tk1'), ('rcB', 'B', 'tk2')]) {
       expect(
         (await post('/settlement/visits/v1/receipts', {
           'id': spec.$1,
@@ -502,7 +499,11 @@ void main() {
       db.payments,
     )..where((x) => x.id.equals('ref1'))).getSingle();
     expect(back.at.toUtc(), captured, reason: 'refund row backdates');
-    expect(back.amount, -20000, reason: 'a refund is the leg running backwards');
+    expect(
+      back.amount,
+      -20000,
+      reason: 'a refund is the leg running backwards',
+    );
 
     final audit = await (db.select(
       db.auditEntries,
@@ -523,11 +524,7 @@ void main() {
         visitId: 'v1',
         seq: 1,
         kind: SettlementEventKind.recordPayment,
-        payload: const {
-          'receiptId': 'rc1',
-          'method': 'tunai',
-          'amount': 46620,
-        },
+        payload: const {'receiptId': 'rc1', 'method': 'tunai', 'amount': 46620},
         capturedAt: DateTime.utc(2026, 8, 30, 12),
         // The chain halted before this one. It is untried, not applied — a
         // parked payment the projection still counted would show the cashier a
@@ -538,5 +535,17 @@ void main() {
     final projected = projectBill(base, events, cfg);
     expect(projected['paidAmount'], 0);
     expect(projected['fullySettled'], isFalse);
+  });
+
+  test('ticket ownership projects while its assignment is queued', () async {
+    await line('tk1', 40000);
+    final projected = projectBill(await serverBill(), [
+      ev(0, 'owner1', SettlementEventKind.assignTicketMembers, {
+        'ticketIds': ['tk1'],
+        'memberId': 'member-1',
+      }),
+    ], cfg);
+
+    expect((projected['lines'] as List).single['memberId'], 'member-1');
   });
 }

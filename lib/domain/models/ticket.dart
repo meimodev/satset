@@ -67,6 +67,7 @@ abstract class Ticket with _$Ticket {
     /// The [[Visit]] this line belongs to — used to resolve a table-less
     /// (takeaway) line's label via the visit. See ADR-0024 / ADR-0026.
     String? visitId,
+    String? memberId,
 
     /// The table this line was fired from (empty for takeaway). The live-ticket
     /// cache keys groups by [[visitId]], so map-flattening consumers read the

@@ -34,6 +34,12 @@ class CartViewModel extends StateNotifier<List<CartItem>> {
     state = [...state]..[i] = state[i].copyWith(qty: q);
   }
 
+  void setMember(String id, String? memberId, String? memberName) {
+    final i = state.indexWhere((c) => c.id == id);
+    if (i < 0) return;
+    replace(id, state[i].withMember(memberId, memberName));
+  }
+
   /// Swaps the line [id] for [updated] (a re-run of the modifier sheet). If
   /// the edit made it identical to another line, the two merge — the cart can
   /// never hold two rows that read the same, however it was reached.

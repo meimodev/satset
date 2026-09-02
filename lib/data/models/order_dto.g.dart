@@ -27,6 +27,7 @@ _CartLineDto _$CartLineDtoFromJson(Map<String, dynamic> json) => _CartLineDto(
   name: json['name'] as String,
   variantId: json['variantId'] as String,
   variantName: json['variantName'] as String,
+  memberId: json['memberId'] as String?,
   modifiers: (json['modifiers'] as List<dynamic>)
       .map((e) => CartModifierDto.fromJson(e as Map<String, dynamic>))
       .toList(),
@@ -42,6 +43,7 @@ Map<String, dynamic> _$CartLineDtoToJson(_CartLineDto instance) =>
       'name': instance.name,
       'variantId': instance.variantId,
       'variantName': instance.variantName,
+      'memberId': instance.memberId,
       'modifiers': instance.modifiers,
       'note': instance.note,
       'course': instance.course,
@@ -81,6 +83,11 @@ _SubmitOrderResponseDto _$SubmitOrderResponseDtoFromJson(
           ?.map((e) => RejectedLineDto.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <RejectedLineDto>[],
+  attributionWarnings:
+      (json['attributionWarnings'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
 );
 
 Map<String, dynamic> _$SubmitOrderResponseDtoToJson(
@@ -89,6 +96,7 @@ Map<String, dynamic> _$SubmitOrderResponseDtoToJson(
   'ticketIds': instance.ticketIds,
   'visitId': instance.visitId,
   'rejected': instance.rejected,
+  'attributionWarnings': instance.attributionWarnings,
 };
 
 _RejectedLineDto _$RejectedLineDtoFromJson(Map<String, dynamic> json) =>

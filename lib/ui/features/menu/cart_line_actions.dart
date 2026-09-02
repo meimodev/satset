@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/repositories/menu_repository.dart';
+import 'package:satset/data/models/member_dto.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -10,6 +13,8 @@ import 'package:satset/ui/core/widgets/sat_stepper.dart';
 import 'package:satset/ui/features/menu/modifier_sheet.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/ui/features/cashier/member_panel.dart';
 
 /// The control row under a cart line: quantity, re-configure, remove.
 ///
@@ -27,6 +32,7 @@ class CartLineActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final cart = ref.read(cartProvider(tableId).notifier);
+    final memberSplit = ref.watch(venueSettingsProvider).memberSplitOn;
 
     // The dish can be retired from the menu while the line sits in the cart.
     // Without it there are no modifier groups to prefill the sheet with, so
@@ -36,38 +42,73 @@ class CartLineActions extends ConsumerWidget {
     final i = items.indexWhere((it) => it.id == line.itemId);
     final item = i < 0 ? null : items[i];
 
-    return Row(
-      children: [
-        SatStepper(
-          value: line.qty,
-          min: 1,
-          max: kCartLineMaxQty,
-          size: SatStepperSize.sm,
-          semanticLabel: context.l10n.quantity,
-          onChanged: (v) => cart.setQty(line.id, v),
-        ),
-        const Spacer(),
-        if (item != null) ...[
-          _LineAction(
-            icon: Icons.tune,
-            label: context.l10n.edit,
-            color: sc.textMd,
-            onTap: () => showModifierSheet(
-              context: context,
-              item: item,
-              editing: line,
-              onAdd: (updated) => cart.replace(line.id, updated),
-            ),
+    return SizedBox(
+      width: double.infinity,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        runAlignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: Sp.s3,
+        runSpacing: Sp.s2,
+        children: [
+          SatStepper(
+            value: line.qty,
+            min: 1,
+            max: kCartLineMaxQty,
+            size: SatStepperSize.sm,
+            semanticLabel: context.l10n.quantity,
+            onChanged: (v) => cart.setQty(line.id, v),
           ),
-          const SizedBox(width: Sp.s4),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: Sp.s3,
+            runSpacing: Sp.s1h,
+            children: [
+              if (memberSplit) ...[
+                _LineAction(
+                  icon: Icons.badge_outlined,
+                  label: line.memberName ?? context.l10n.cshMemberFind,
+                  color: line.memberId == null ? sc.textMd : sc.accentText,
+                  onTap: () async {
+                    final picked = await showSatSheet<MemberDto>(
+                      context,
+                      builder: (_) => const MemberLookupSheet(lookupOnly: true),
+                    );
+                    if (picked != null) {
+                      cart.setMember(line.id, picked.id, picked.name);
+                    }
+                  },
+                ),
+                if (line.memberId != null)
+                  _LineAction(
+                    icon: Icons.person_off_outlined,
+                    label: context.l10n.cshMemberDetach,
+                    color: sc.textLo,
+                    onTap: () => cart.setMember(line.id, null, null),
+                  ),
+              ],
+              if (item != null)
+                _LineAction(
+                  icon: Icons.tune,
+                  label: context.l10n.edit,
+                  color: sc.textMd,
+                  onTap: () => showModifierSheet(
+                    context: context,
+                    item: item,
+                    editing: line,
+                    onAdd: (updated) => cart.replace(line.id, updated),
+                  ),
+                ),
+              _LineAction(
+                icon: Icons.delete_outline,
+                label: context.l10n.delete,
+                color: sc.urgent,
+                onTap: () => cart.remove(line.id),
+              ),
+            ],
+          ),
         ],
-        _LineAction(
-          icon: Icons.delete_outline,
-          label: context.l10n.delete,
-          color: sc.urgent,
-          onTap: () => cart.remove(line.id),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -96,13 +137,21 @@ class _LineAction extends StatelessWidget {
         child: Padding(
           // ponytail: padding, not a SizedBox — the row is already 32 tall
           // from the stepper, so this only has to widen the target.
-          padding: const EdgeInsets.symmetric(vertical: Sp.s2),
+          padding: const EdgeInsets.symmetric(vertical: Sp.s1),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 14, color: color),
               const SizedBox(width: Sp.s1),
-              Text(label, style: SatType.bodyS(color: color)),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 120),
+                child: Text(
+                  label,
+                  style: SatType.bodyS(color: color),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
             ],
           ),
         ),

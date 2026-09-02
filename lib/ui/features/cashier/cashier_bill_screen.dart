@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:satset/data/models/bill_dto.dart';
+import 'package:satset/data/models/member_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
@@ -451,6 +452,7 @@ class _BillBodyState extends State<_BillBody> {
     super.didUpdateWidget(old);
     final b = widget.bill;
     if (_whoOffered ||
+        b.ticketAttribution ||
         !b.splitEnabled ||
         b.receipts.length < 2 ||
         b.receipts.length <= old.bill.receipts.length ||
@@ -603,7 +605,9 @@ class _BillBodyState extends State<_BillBody> {
           // Above the shares, not inside either branch: "who is A, who is B"
           // is asked of the split as a whole, and an even split and an itemized
           // one draw their shares two different ways (ADR-0063).
-          if (bill.splitEnabled && bill.receipts.isNotEmpty) ...[
+          if (!bill.ticketAttribution &&
+              bill.splitEnabled &&
+              bill.receipts.isNotEmpty) ...[
             rv(
               _WhoCard(
                 bill: bill,
@@ -908,6 +912,44 @@ class _LinesSection extends StatelessWidget {
                 ? SatType.labelS(color: pending ? sc.warn : sc.textLo)
                 : SatType.bodyS(color: pending ? sc.warn : sc.textLo)),
           ),
+          if (bill.ticketAttribution)
+            Padding(
+              padding: const EdgeInsets.only(top: Sp.s1),
+              child: Wrap(
+                spacing: Sp.s2,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  SatChip.tag(
+                    icon: l.memberId == null
+                        ? Icons.person_outline
+                        : Icons.badge_outlined,
+                    label: l.memberName ?? 'Tanpa pelanggan',
+                    size: SatChipSize.sm,
+                  ),
+                  SatButton.ghost(
+                    label: l.memberId == null
+                        ? context.l10n.cshMemberFind
+                        : context.l10n.edit,
+                    size: SatButtonSize.sm,
+                    onTap: l.memberLocked
+                        ? null
+                        : () => _assignMember(context, l),
+                  ),
+                  if (l.memberId != null)
+                    SatButton.ghost(
+                      label: context.l10n.cshMemberDetach,
+                      size: SatButtonSize.sm,
+                      onTap: l.memberLocked
+                          ? null
+                          : () => run(
+                              () => repo.assignTicketMembers(bill.visitId, [
+                                l.ticketId,
+                              ], null),
+                            ),
+                    ),
+                ],
+              ),
+            ),
           // Where this dish's units went, not just how many are placed: a
           // "2/3 diatur" count never answered *whose*. One chip per owning
           // receipt, plus an amber `?` chip for units still free. ADR-0063.
@@ -971,6 +1013,17 @@ class _LinesSection extends StatelessWidget {
               formatIDR(l.lineTotal),
               style: SatType.monoM(color: sc.textHi),
             ),
+    );
+  }
+
+  Future<void> _assignMember(BuildContext context, BillLine line) async {
+    final picked = await showSatSheet<MemberDto>(
+      context,
+      builder: (_) => const MemberLookupSheet(lookupOnly: true),
+    );
+    if (picked == null) return;
+    await run(
+      () => repo.assignTicketMembers(bill.visitId, [line.ticketId], picked.id),
     );
   }
 
@@ -1474,6 +1527,7 @@ class _ReceiptCard extends ConsumerWidget {
                   // same widget: two copies is how one surface keeps a rule
                   // the other dropped (ADR-0121).
                   PayMethodPicker(
+                    label: context.l10n.stlMethod,
                     selected: PayMethod.byId(method) ?? PayMethod.tunai,
                     onPick: (m) => setState(() => method = m.id),
                     debtEnabled: debtEnabled,
@@ -1660,7 +1714,10 @@ class _ReceiptCard extends ConsumerWidget {
                     style: SatType.labelL(color: sc.textHi),
                   ),
                   const SizedBox(height: Sp.s3),
-                  Text(l10n.cshRefundLeg, style: SatType.labelS(color: sc.textLo)),
+                  Text(
+                    l10n.cshRefundLeg,
+                    style: SatType.labelS(color: sc.textLo),
+                  ),
                   const SizedBox(height: Sp.s2),
                   Wrap(
                     spacing: 8,

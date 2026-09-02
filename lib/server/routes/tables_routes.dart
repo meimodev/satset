@@ -106,6 +106,7 @@ Future<String> ensureVisit(
           guestNotes: Value(t?.guestNotes),
           reservationId: Value(t?.reservationId),
           memberId: Value(reservationMemberId),
+          memberAttributionVersion: const Value(2),
           lastActorId: Value(actorId ?? t?.lastActorId),
           createdAt: now,
         ),
@@ -192,6 +193,7 @@ Future<Visit> createTakeawayVisit(
               _takeawayChannels.contains(channel) ? channel : 'bungkus',
             ),
             prepaid: Value(prepaid),
+            memberAttributionVersion: const Value(2),
           ),
         );
   });
@@ -330,6 +332,7 @@ Future<void> snapshotVisitAndDelete(
             // spend and the punch card are all read off settled history, so a
             // member the snapshot drops is a member whose past disappears.
             memberId: Value(visit.memberId),
+            memberAttributionVersion: Value(visit.memberAttributionVersion),
           ),
         );
     for (final t in tickets) {
@@ -340,6 +343,7 @@ Future<void> snapshotVisitAndDelete(
               id: _uuid.v4(),
               sessionId: sid,
               ticketId: t.id,
+              memberId: Value(t.memberId),
               itemId: t.itemId,
               name: t.name,
               variantName: Value(t.variantName),
@@ -454,6 +458,7 @@ Future<void> snapshotVisitAndDelete(
                 id: p.id,
                 sessionId: sid,
                 receiptId: rec.id,
+                memberId: Value(p.memberId),
                 method: p.method,
                 amount: p.amount,
                 isRefund: Value(p.isRefund),

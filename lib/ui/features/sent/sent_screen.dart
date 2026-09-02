@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:satset/core/localization/report_copy.dart';
 
 import 'package:satset/core/localization/locale_view_model.dart';
@@ -29,21 +30,33 @@ class _SentScreenState extends ConsumerState<SentScreen>
   // Set once the waiter taps "Cetak struk" so the auto-return doesn't yank the
   // screen out from under the printer picker.
   bool _engaged = false;
+  Timer? _autoReturnTimer;
 
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 1900), () {
+    _autoReturnTimer = Timer(const Duration(milliseconds: 1900), () {
       if (!mounted || _engaged) return;
-      // Pop back to the original table detail (sent → review → menu → detail)
-      // instead of go(), so the still-mounted detail keeps its lock rather
-      // than disposing and re-acquiring. Router ref is captured because this
-      // screen's context unmounts after the first pop.
-      final router = GoRouter.of(context);
-      for (var i = 0; i < 3 && router.canPop(); i++) {
-        router.pop();
+      // Only return if this screen is still the active route (not covered by a dialog or sheet).
+      if (ModalRoute.of(context)?.isCurrent == true) {
+        final router = GoRouter.maybeOf(context);
+        if (router != null) {
+          if (router.canPop()) {
+            router.pop();
+          } else {
+            context.go('/table/${widget.tableId}');
+          }
+        } else if (mounted) {
+          Navigator.of(context).maybePop();
+        }
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _autoReturnTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -119,6 +132,7 @@ class _SentScreenState extends ConsumerState<SentScreen>
                   icon: Icons.receipt_long_rounded,
                   label: context.l10n.cshPrintReceipt,
                   onTap: () {
+                    _autoReturnTimer?.cancel();
                     setState(() => _engaged = true);
                     printTableStruk(
                       context: context,

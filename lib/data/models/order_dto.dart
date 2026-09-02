@@ -26,6 +26,7 @@ abstract class CartLineDto with _$CartLineDto {
     required String name,
     required String variantId,
     required String variantName,
+    String? memberId,
     required List<CartModifierDto> modifiers,
     required String? note,
     required String course,
@@ -64,6 +65,7 @@ abstract class SubmitOrderResponseDto with _$SubmitOrderResponseDto {
     /// offending lines are dropped — the rest of the order still lands — so
     /// this must be surfaced, or lines vanish silently.
     @Default(<RejectedLineDto>[]) List<RejectedLineDto> rejected,
+    @Default(<String>[]) List<String> attributionWarnings,
   }) = _SubmitOrderResponseDto;
 
   factory SubmitOrderResponseDto.fromJson(Map<String, dynamic> json) =>

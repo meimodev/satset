@@ -2816,6 +2816,17 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _memberAttributionVersionMeta =
+      const VerificationMeta('memberAttributionVersion');
+  @override
+  late final GeneratedColumn<int> memberAttributionVersion =
+      GeneratedColumn<int>(
+        'member_attribution_version',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _tableFreedAtMeta = const VerificationMeta(
     'tableFreedAt',
   );
@@ -2922,6 +2933,7 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
     reservationId,
     lastActorId,
     memberId,
+    memberAttributionVersion,
     tableFreedAt,
     billClosedAt,
     billClosedBy,
@@ -3014,6 +3026,15 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
       context.handle(
         _memberIdMeta,
         memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
+    }
+    if (data.containsKey('member_attribution_version')) {
+      context.handle(
+        _memberAttributionVersionMeta,
+        memberAttributionVersion.isAcceptableOrUnknown(
+          data['member_attribution_version']!,
+          _memberAttributionVersionMeta,
+        ),
       );
     }
     if (data.containsKey('table_freed_at')) {
@@ -3128,6 +3149,10 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
         DriftSqlType.string,
         data['${effectivePrefix}member_id'],
       ),
+      memberAttributionVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}member_attribution_version'],
+      ),
       tableFreedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}table_freed_at'],
@@ -3190,6 +3215,10 @@ class Visit extends DataClass implements Insertable<Visit> {
   /// (ADR-0092) — the visit *was* a member visit, and history does not rewrite.
   final String? memberId;
 
+  /// Null marks a visit opened before ticket attribution existed. New visits
+  /// use version 2 and read membership from their tickets (ADR-0125).
+  final int? memberAttributionVersion;
+
   /// Set when the waiter frees the table (table-close / detach). Non-null ⇒
   /// the visit is detached: floor shows the table kosong, the cashier still
   /// lists this bill, flagged.
@@ -3236,6 +3265,7 @@ class Visit extends DataClass implements Insertable<Visit> {
     this.reservationId,
     this.lastActorId,
     this.memberId,
+    this.memberAttributionVersion,
     this.tableFreedAt,
     this.billClosedAt,
     this.billClosedBy,
@@ -3272,6 +3302,11 @@ class Visit extends DataClass implements Insertable<Visit> {
     }
     if (!nullToAbsent || memberId != null) {
       map['member_id'] = Variable<String>(memberId);
+    }
+    if (!nullToAbsent || memberAttributionVersion != null) {
+      map['member_attribution_version'] = Variable<int>(
+        memberAttributionVersion,
+      );
     }
     if (!nullToAbsent || tableFreedAt != null) {
       map['table_freed_at'] = Variable<DateTime>(tableFreedAt);
@@ -3317,6 +3352,9 @@ class Visit extends DataClass implements Insertable<Visit> {
       memberId: memberId == null && nullToAbsent
           ? const Value.absent()
           : Value(memberId),
+      memberAttributionVersion: memberAttributionVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(memberAttributionVersion),
       tableFreedAt: tableFreedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(tableFreedAt),
@@ -3351,6 +3389,9 @@ class Visit extends DataClass implements Insertable<Visit> {
       reservationId: serializer.fromJson<String?>(json['reservationId']),
       lastActorId: serializer.fromJson<String?>(json['lastActorId']),
       memberId: serializer.fromJson<String?>(json['memberId']),
+      memberAttributionVersion: serializer.fromJson<int?>(
+        json['memberAttributionVersion'],
+      ),
       tableFreedAt: serializer.fromJson<DateTime?>(json['tableFreedAt']),
       billClosedAt: serializer.fromJson<DateTime?>(json['billClosedAt']),
       billClosedBy: serializer.fromJson<String?>(json['billClosedBy']),
@@ -3376,6 +3417,9 @@ class Visit extends DataClass implements Insertable<Visit> {
       'reservationId': serializer.toJson<String?>(reservationId),
       'lastActorId': serializer.toJson<String?>(lastActorId),
       'memberId': serializer.toJson<String?>(memberId),
+      'memberAttributionVersion': serializer.toJson<int?>(
+        memberAttributionVersion,
+      ),
       'tableFreedAt': serializer.toJson<DateTime?>(tableFreedAt),
       'billClosedAt': serializer.toJson<DateTime?>(billClosedAt),
       'billClosedBy': serializer.toJson<String?>(billClosedBy),
@@ -3399,6 +3443,7 @@ class Visit extends DataClass implements Insertable<Visit> {
     Value<String?> reservationId = const Value.absent(),
     Value<String?> lastActorId = const Value.absent(),
     Value<String?> memberId = const Value.absent(),
+    Value<int?> memberAttributionVersion = const Value.absent(),
     Value<DateTime?> tableFreedAt = const Value.absent(),
     Value<DateTime?> billClosedAt = const Value.absent(),
     Value<String?> billClosedBy = const Value.absent(),
@@ -3421,6 +3466,9 @@ class Visit extends DataClass implements Insertable<Visit> {
         : this.reservationId,
     lastActorId: lastActorId.present ? lastActorId.value : this.lastActorId,
     memberId: memberId.present ? memberId.value : this.memberId,
+    memberAttributionVersion: memberAttributionVersion.present
+        ? memberAttributionVersion.value
+        : this.memberAttributionVersion,
     tableFreedAt: tableFreedAt.present ? tableFreedAt.value : this.tableFreedAt,
     billClosedAt: billClosedAt.present ? billClosedAt.value : this.billClosedAt,
     billClosedBy: billClosedBy.present ? billClosedBy.value : this.billClosedBy,
@@ -3451,6 +3499,9 @@ class Visit extends DataClass implements Insertable<Visit> {
           ? data.lastActorId.value
           : this.lastActorId,
       memberId: data.memberId.present ? data.memberId.value : this.memberId,
+      memberAttributionVersion: data.memberAttributionVersion.present
+          ? data.memberAttributionVersion.value
+          : this.memberAttributionVersion,
       tableFreedAt: data.tableFreedAt.present
           ? data.tableFreedAt.value
           : this.tableFreedAt,
@@ -3484,6 +3535,7 @@ class Visit extends DataClass implements Insertable<Visit> {
           ..write('reservationId: $reservationId, ')
           ..write('lastActorId: $lastActorId, ')
           ..write('memberId: $memberId, ')
+          ..write('memberAttributionVersion: $memberAttributionVersion, ')
           ..write('tableFreedAt: $tableFreedAt, ')
           ..write('billClosedAt: $billClosedAt, ')
           ..write('billClosedBy: $billClosedBy, ')
@@ -3509,6 +3561,7 @@ class Visit extends DataClass implements Insertable<Visit> {
     reservationId,
     lastActorId,
     memberId,
+    memberAttributionVersion,
     tableFreedAt,
     billClosedAt,
     billClosedBy,
@@ -3533,6 +3586,7 @@ class Visit extends DataClass implements Insertable<Visit> {
           other.reservationId == this.reservationId &&
           other.lastActorId == this.lastActorId &&
           other.memberId == this.memberId &&
+          other.memberAttributionVersion == this.memberAttributionVersion &&
           other.tableFreedAt == this.tableFreedAt &&
           other.billClosedAt == this.billClosedAt &&
           other.billClosedBy == this.billClosedBy &&
@@ -3555,6 +3609,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
   final Value<String?> reservationId;
   final Value<String?> lastActorId;
   final Value<String?> memberId;
+  final Value<int?> memberAttributionVersion;
   final Value<DateTime?> tableFreedAt;
   final Value<DateTime?> billClosedAt;
   final Value<String?> billClosedBy;
@@ -3576,6 +3631,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     this.reservationId = const Value.absent(),
     this.lastActorId = const Value.absent(),
     this.memberId = const Value.absent(),
+    this.memberAttributionVersion = const Value.absent(),
     this.tableFreedAt = const Value.absent(),
     this.billClosedAt = const Value.absent(),
     this.billClosedBy = const Value.absent(),
@@ -3598,6 +3654,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     this.reservationId = const Value.absent(),
     this.lastActorId = const Value.absent(),
     this.memberId = const Value.absent(),
+    this.memberAttributionVersion = const Value.absent(),
     this.tableFreedAt = const Value.absent(),
     this.billClosedAt = const Value.absent(),
     this.billClosedBy = const Value.absent(),
@@ -3622,6 +3679,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     Expression<String>? reservationId,
     Expression<String>? lastActorId,
     Expression<String>? memberId,
+    Expression<int>? memberAttributionVersion,
     Expression<DateTime>? tableFreedAt,
     Expression<DateTime>? billClosedAt,
     Expression<String>? billClosedBy,
@@ -3644,6 +3702,8 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
       if (reservationId != null) 'reservation_id': reservationId,
       if (lastActorId != null) 'last_actor_id': lastActorId,
       if (memberId != null) 'member_id': memberId,
+      if (memberAttributionVersion != null)
+        'member_attribution_version': memberAttributionVersion,
       if (tableFreedAt != null) 'table_freed_at': tableFreedAt,
       if (billClosedAt != null) 'bill_closed_at': billClosedAt,
       if (billClosedBy != null) 'bill_closed_by': billClosedBy,
@@ -3668,6 +3728,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     Value<String?>? reservationId,
     Value<String?>? lastActorId,
     Value<String?>? memberId,
+    Value<int?>? memberAttributionVersion,
     Value<DateTime?>? tableFreedAt,
     Value<DateTime?>? billClosedAt,
     Value<String?>? billClosedBy,
@@ -3690,6 +3751,8 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
       reservationId: reservationId ?? this.reservationId,
       lastActorId: lastActorId ?? this.lastActorId,
       memberId: memberId ?? this.memberId,
+      memberAttributionVersion:
+          memberAttributionVersion ?? this.memberAttributionVersion,
       tableFreedAt: tableFreedAt ?? this.tableFreedAt,
       billClosedAt: billClosedAt ?? this.billClosedAt,
       billClosedBy: billClosedBy ?? this.billClosedBy,
@@ -3738,6 +3801,11 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     if (memberId.present) {
       map['member_id'] = Variable<String>(memberId.value);
     }
+    if (memberAttributionVersion.present) {
+      map['member_attribution_version'] = Variable<int>(
+        memberAttributionVersion.value,
+      );
+    }
     if (tableFreedAt.present) {
       map['table_freed_at'] = Variable<DateTime>(tableFreedAt.value);
     }
@@ -3782,6 +3850,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
           ..write('reservationId: $reservationId, ')
           ..write('lastActorId: $lastActorId, ')
           ..write('memberId: $memberId, ')
+          ..write('memberAttributionVersion: $memberAttributionVersion, ')
           ..write('tableFreedAt: $tableFreedAt, ')
           ..write('billClosedAt: $billClosedAt, ')
           ..write('billClosedBy: $billClosedBy, ')
@@ -5689,6 +5758,17 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
   @override
   late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
@@ -5901,6 +5981,7 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
     id,
     tableId,
     visitId,
+    memberId,
     itemId,
     name,
     variantName,
@@ -5951,6 +6032,12 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
       context.handle(
         _visitIdMeta,
         visitId.isAcceptableOrUnknown(data['visit_id']!, _visitIdMeta),
+      );
+    }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
       );
     }
     if (data.containsKey('item_id')) {
@@ -6127,6 +6214,10 @@ class $TicketsTable extends Tickets with TableInfo<$TicketsTable, Ticket> {
         DriftSqlType.string,
         data['${effectivePrefix}visit_id'],
       ),
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      ),
       itemId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}item_id'],
@@ -6225,6 +6316,10 @@ class Ticket extends DataClass implements Insertable<Ticket> {
   /// reused across visits). Stamped at create from the table's
   /// `currentVisitId`. See ADR-0024. Nullable only for pre-v29 rows.
   final String? visitId;
+
+  /// The member who owns this order line. Nullable means deliberately
+  /// unassigned; payment ownership is recorded separately (ADR-0125).
+  final String? memberId;
   final String itemId;
   final String name;
   final String variantName;
@@ -6281,6 +6376,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     required this.id,
     required this.tableId,
     this.visitId,
+    this.memberId,
     required this.itemId,
     required this.name,
     required this.variantName,
@@ -6309,6 +6405,9 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     map['table_id'] = Variable<String>(tableId);
     if (!nullToAbsent || visitId != null) {
       map['visit_id'] = Variable<String>(visitId);
+    }
+    if (!nullToAbsent || memberId != null) {
+      map['member_id'] = Variable<String>(memberId);
     }
     map['item_id'] = Variable<String>(itemId);
     map['name'] = Variable<String>(name);
@@ -6362,6 +6461,9 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       visitId: visitId == null && nullToAbsent
           ? const Value.absent()
           : Value(visitId),
+      memberId: memberId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(memberId),
       itemId: Value(itemId),
       name: Value(name),
       variantName: Value(variantName),
@@ -6414,6 +6516,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       id: serializer.fromJson<String>(json['id']),
       tableId: serializer.fromJson<String>(json['tableId']),
       visitId: serializer.fromJson<String?>(json['visitId']),
+      memberId: serializer.fromJson<String?>(json['memberId']),
       itemId: serializer.fromJson<String>(json['itemId']),
       name: serializer.fromJson<String>(json['name']),
       variantName: serializer.fromJson<String>(json['variantName']),
@@ -6443,6 +6546,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       'id': serializer.toJson<String>(id),
       'tableId': serializer.toJson<String>(tableId),
       'visitId': serializer.toJson<String?>(visitId),
+      'memberId': serializer.toJson<String?>(memberId),
       'itemId': serializer.toJson<String>(itemId),
       'name': serializer.toJson<String>(name),
       'variantName': serializer.toJson<String>(variantName),
@@ -6470,6 +6574,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     String? id,
     String? tableId,
     Value<String?> visitId = const Value.absent(),
+    Value<String?> memberId = const Value.absent(),
     String? itemId,
     String? name,
     String? variantName,
@@ -6494,6 +6599,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     id: id ?? this.id,
     tableId: tableId ?? this.tableId,
     visitId: visitId.present ? visitId.value : this.visitId,
+    memberId: memberId.present ? memberId.value : this.memberId,
     itemId: itemId ?? this.itemId,
     name: name ?? this.name,
     variantName: variantName ?? this.variantName,
@@ -6530,6 +6636,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
       id: data.id.present ? data.id.value : this.id,
       tableId: data.tableId.present ? data.tableId.value : this.tableId,
       visitId: data.visitId.present ? data.visitId.value : this.visitId,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
       itemId: data.itemId.present ? data.itemId.value : this.itemId,
       name: data.name.present ? data.name.value : this.name,
       variantName: data.variantName.present
@@ -6577,6 +6684,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           ..write('id: $id, ')
           ..write('tableId: $tableId, ')
           ..write('visitId: $visitId, ')
+          ..write('memberId: $memberId, ')
           ..write('itemId: $itemId, ')
           ..write('name: $name, ')
           ..write('variantName: $variantName, ')
@@ -6606,6 +6714,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
     id,
     tableId,
     visitId,
+    memberId,
     itemId,
     name,
     variantName,
@@ -6634,6 +6743,7 @@ class Ticket extends DataClass implements Insertable<Ticket> {
           other.id == this.id &&
           other.tableId == this.tableId &&
           other.visitId == this.visitId &&
+          other.memberId == this.memberId &&
           other.itemId == this.itemId &&
           other.name == this.name &&
           other.variantName == this.variantName &&
@@ -6660,6 +6770,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
   final Value<String> id;
   final Value<String> tableId;
   final Value<String?> visitId;
+  final Value<String?> memberId;
   final Value<String> itemId;
   final Value<String> name;
   final Value<String> variantName;
@@ -6685,6 +6796,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     this.id = const Value.absent(),
     this.tableId = const Value.absent(),
     this.visitId = const Value.absent(),
+    this.memberId = const Value.absent(),
     this.itemId = const Value.absent(),
     this.name = const Value.absent(),
     this.variantName = const Value.absent(),
@@ -6711,6 +6823,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     required String id,
     required String tableId,
     this.visitId = const Value.absent(),
+    this.memberId = const Value.absent(),
     required String itemId,
     required String name,
     this.variantName = const Value.absent(),
@@ -6744,6 +6857,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Expression<String>? id,
     Expression<String>? tableId,
     Expression<String>? visitId,
+    Expression<String>? memberId,
     Expression<String>? itemId,
     Expression<String>? name,
     Expression<String>? variantName,
@@ -6770,6 +6884,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       if (id != null) 'id': id,
       if (tableId != null) 'table_id': tableId,
       if (visitId != null) 'visit_id': visitId,
+      if (memberId != null) 'member_id': memberId,
       if (itemId != null) 'item_id': itemId,
       if (name != null) 'name': name,
       if (variantName != null) 'variant_name': variantName,
@@ -6798,6 +6913,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     Value<String>? id,
     Value<String>? tableId,
     Value<String?>? visitId,
+    Value<String?>? memberId,
     Value<String>? itemId,
     Value<String>? name,
     Value<String>? variantName,
@@ -6824,6 +6940,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
       id: id ?? this.id,
       tableId: tableId ?? this.tableId,
       visitId: visitId ?? this.visitId,
+      memberId: memberId ?? this.memberId,
       itemId: itemId ?? this.itemId,
       name: name ?? this.name,
       variantName: variantName ?? this.variantName,
@@ -6859,6 +6976,9 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
     }
     if (visitId.present) {
       map['visit_id'] = Variable<String>(visitId.value);
+    }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
     }
     if (itemId.present) {
       map['item_id'] = Variable<String>(itemId.value);
@@ -6932,6 +7052,7 @@ class TicketsCompanion extends UpdateCompanion<Ticket> {
           ..write('id: $id, ')
           ..write('tableId: $tableId, ')
           ..write('visitId: $visitId, ')
+          ..write('memberId: $memberId, ')
           ..write('itemId: $itemId, ')
           ..write('name: $name, ')
           ..write('variantName: $variantName, ')
@@ -12905,6 +13026,17 @@ class $TableSessionsTable extends TableSessions
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _memberAttributionVersionMeta =
+      const VerificationMeta('memberAttributionVersion');
+  @override
+  late final GeneratedColumn<int> memberAttributionVersion =
+      GeneratedColumn<int>(
+        'member_attribution_version',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -12930,6 +13062,7 @@ class $TableSessionsTable extends TableSessions
     channel,
     prepaid,
     memberId,
+    memberAttributionVersion,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -13107,6 +13240,15 @@ class $TableSessionsTable extends TableSessions
         memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
       );
     }
+    if (data.containsKey('member_attribution_version')) {
+      context.handle(
+        _memberAttributionVersionMeta,
+        memberAttributionVersion.isAcceptableOrUnknown(
+          data['member_attribution_version']!,
+          _memberAttributionVersionMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -13208,6 +13350,10 @@ class $TableSessionsTable extends TableSessions
         DriftSqlType.string,
         data['${effectivePrefix}member_id'],
       ),
+      memberAttributionVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}member_attribution_version'],
+      ),
     );
   }
 
@@ -13277,6 +13423,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
   /// member's past trade still count in the member/non-member split while the
   /// person themselves is gone (ADR-0092).
   final String? memberId;
+  final int? memberAttributionVersion;
   const TableSession({
     required this.id,
     required this.tableId,
@@ -13301,6 +13448,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
     required this.channel,
     required this.prepaid,
     this.memberId,
+    this.memberAttributionVersion,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -13337,6 +13485,11 @@ class TableSession extends DataClass implements Insertable<TableSession> {
     map['prepaid'] = Variable<bool>(prepaid);
     if (!nullToAbsent || memberId != null) {
       map['member_id'] = Variable<String>(memberId);
+    }
+    if (!nullToAbsent || memberAttributionVersion != null) {
+      map['member_attribution_version'] = Variable<int>(
+        memberAttributionVersion,
+      );
     }
     return map;
   }
@@ -13376,6 +13529,9 @@ class TableSession extends DataClass implements Insertable<TableSession> {
       memberId: memberId == null && nullToAbsent
           ? const Value.absent()
           : Value(memberId),
+      memberAttributionVersion: memberAttributionVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(memberAttributionVersion),
     );
   }
 
@@ -13408,6 +13564,9 @@ class TableSession extends DataClass implements Insertable<TableSession> {
       channel: serializer.fromJson<String>(json['channel']),
       prepaid: serializer.fromJson<bool>(json['prepaid']),
       memberId: serializer.fromJson<String?>(json['memberId']),
+      memberAttributionVersion: serializer.fromJson<int?>(
+        json['memberAttributionVersion'],
+      ),
     );
   }
   @override
@@ -13437,6 +13596,9 @@ class TableSession extends DataClass implements Insertable<TableSession> {
       'channel': serializer.toJson<String>(channel),
       'prepaid': serializer.toJson<bool>(prepaid),
       'memberId': serializer.toJson<String?>(memberId),
+      'memberAttributionVersion': serializer.toJson<int?>(
+        memberAttributionVersion,
+      ),
     };
   }
 
@@ -13464,6 +13626,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
     String? channel,
     bool? prepaid,
     Value<String?> memberId = const Value.absent(),
+    Value<int?> memberAttributionVersion = const Value.absent(),
   }) => TableSession(
     id: id ?? this.id,
     tableId: tableId ?? this.tableId,
@@ -13488,6 +13651,9 @@ class TableSession extends DataClass implements Insertable<TableSession> {
     channel: channel ?? this.channel,
     prepaid: prepaid ?? this.prepaid,
     memberId: memberId.present ? memberId.value : this.memberId,
+    memberAttributionVersion: memberAttributionVersion.present
+        ? memberAttributionVersion.value
+        : this.memberAttributionVersion,
   );
   TableSession copyWithCompanion(TableSessionsCompanion data) {
     return TableSession(
@@ -13534,6 +13700,9 @@ class TableSession extends DataClass implements Insertable<TableSession> {
       channel: data.channel.present ? data.channel.value : this.channel,
       prepaid: data.prepaid.present ? data.prepaid.value : this.prepaid,
       memberId: data.memberId.present ? data.memberId.value : this.memberId,
+      memberAttributionVersion: data.memberAttributionVersion.present
+          ? data.memberAttributionVersion.value
+          : this.memberAttributionVersion,
     );
   }
 
@@ -13562,7 +13731,8 @@ class TableSession extends DataClass implements Insertable<TableSession> {
           ..write('kind: $kind, ')
           ..write('channel: $channel, ')
           ..write('prepaid: $prepaid, ')
-          ..write('memberId: $memberId')
+          ..write('memberId: $memberId, ')
+          ..write('memberAttributionVersion: $memberAttributionVersion')
           ..write(')'))
         .toString();
   }
@@ -13592,6 +13762,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
     channel,
     prepaid,
     memberId,
+    memberAttributionVersion,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -13619,7 +13790,8 @@ class TableSession extends DataClass implements Insertable<TableSession> {
           other.kind == this.kind &&
           other.channel == this.channel &&
           other.prepaid == this.prepaid &&
-          other.memberId == this.memberId);
+          other.memberId == this.memberId &&
+          other.memberAttributionVersion == this.memberAttributionVersion);
 }
 
 class TableSessionsCompanion extends UpdateCompanion<TableSession> {
@@ -13646,6 +13818,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
   final Value<String> channel;
   final Value<bool> prepaid;
   final Value<String?> memberId;
+  final Value<int?> memberAttributionVersion;
   final Value<int> rowid;
   const TableSessionsCompanion({
     this.id = const Value.absent(),
@@ -13671,6 +13844,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     this.channel = const Value.absent(),
     this.prepaid = const Value.absent(),
     this.memberId = const Value.absent(),
+    this.memberAttributionVersion = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TableSessionsCompanion.insert({
@@ -13697,6 +13871,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     this.channel = const Value.absent(),
     this.prepaid = const Value.absent(),
     this.memberId = const Value.absent(),
+    this.memberAttributionVersion = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        tableId = Value(tableId),
@@ -13726,6 +13901,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     Expression<String>? channel,
     Expression<bool>? prepaid,
     Expression<String>? memberId,
+    Expression<int>? memberAttributionVersion,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -13752,6 +13928,8 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
       if (channel != null) 'channel': channel,
       if (prepaid != null) 'prepaid': prepaid,
       if (memberId != null) 'member_id': memberId,
+      if (memberAttributionVersion != null)
+        'member_attribution_version': memberAttributionVersion,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -13780,6 +13958,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     Value<String>? channel,
     Value<bool>? prepaid,
     Value<String?>? memberId,
+    Value<int?>? memberAttributionVersion,
     Value<int>? rowid,
   }) {
     return TableSessionsCompanion(
@@ -13806,6 +13985,8 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
       channel: channel ?? this.channel,
       prepaid: prepaid ?? this.prepaid,
       memberId: memberId ?? this.memberId,
+      memberAttributionVersion:
+          memberAttributionVersion ?? this.memberAttributionVersion,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -13882,6 +14063,11 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     if (memberId.present) {
       map['member_id'] = Variable<String>(memberId.value);
     }
+    if (memberAttributionVersion.present) {
+      map['member_attribution_version'] = Variable<int>(
+        memberAttributionVersion.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -13914,6 +14100,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
           ..write('channel: $channel, ')
           ..write('prepaid: $prepaid, ')
           ..write('memberId: $memberId, ')
+          ..write('memberAttributionVersion: $memberAttributionVersion, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -13956,6 +14143,17 @@ class $TableSessionTicketsTable extends TableSessionTickets
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
   @override
@@ -14147,6 +14345,7 @@ class $TableSessionTicketsTable extends TableSessionTickets
     id,
     sessionId,
     ticketId,
+    memberId,
     itemId,
     name,
     variantName,
@@ -14198,6 +14397,12 @@ class $TableSessionTicketsTable extends TableSessionTickets
       );
     } else if (isInserting) {
       context.missing(_ticketIdMeta);
+    }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
     }
     if (data.containsKey('item_id')) {
       context.handle(
@@ -14358,6 +14563,10 @@ class $TableSessionTicketsTable extends TableSessionTickets
         DriftSqlType.string,
         data['${effectivePrefix}ticket_id'],
       )!,
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      ),
       itemId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}item_id'],
@@ -14444,6 +14653,7 @@ class TableSessionTicket extends DataClass
   final String id;
   final String sessionId;
   final String ticketId;
+  final String? memberId;
   final String itemId;
   final String name;
   final String variantName;
@@ -14476,6 +14686,7 @@ class TableSessionTicket extends DataClass
     required this.id,
     required this.sessionId,
     required this.ticketId,
+    this.memberId,
     required this.itemId,
     required this.name,
     required this.variantName,
@@ -14501,6 +14712,9 @@ class TableSessionTicket extends DataClass
     map['id'] = Variable<String>(id);
     map['session_id'] = Variable<String>(sessionId);
     map['ticket_id'] = Variable<String>(ticketId);
+    if (!nullToAbsent || memberId != null) {
+      map['member_id'] = Variable<String>(memberId);
+    }
     map['item_id'] = Variable<String>(itemId);
     map['name'] = Variable<String>(name);
     map['variant_name'] = Variable<String>(variantName);
@@ -14545,6 +14759,9 @@ class TableSessionTicket extends DataClass
       id: Value(id),
       sessionId: Value(sessionId),
       ticketId: Value(ticketId),
+      memberId: memberId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(memberId),
       itemId: Value(itemId),
       name: Value(name),
       variantName: Value(variantName),
@@ -14591,6 +14808,7 @@ class TableSessionTicket extends DataClass
       id: serializer.fromJson<String>(json['id']),
       sessionId: serializer.fromJson<String>(json['sessionId']),
       ticketId: serializer.fromJson<String>(json['ticketId']),
+      memberId: serializer.fromJson<String?>(json['memberId']),
       itemId: serializer.fromJson<String>(json['itemId']),
       name: serializer.fromJson<String>(json['name']),
       variantName: serializer.fromJson<String>(json['variantName']),
@@ -14618,6 +14836,7 @@ class TableSessionTicket extends DataClass
       'id': serializer.toJson<String>(id),
       'sessionId': serializer.toJson<String>(sessionId),
       'ticketId': serializer.toJson<String>(ticketId),
+      'memberId': serializer.toJson<String?>(memberId),
       'itemId': serializer.toJson<String>(itemId),
       'name': serializer.toJson<String>(name),
       'variantName': serializer.toJson<String>(variantName),
@@ -14643,6 +14862,7 @@ class TableSessionTicket extends DataClass
     String? id,
     String? sessionId,
     String? ticketId,
+    Value<String?> memberId = const Value.absent(),
     String? itemId,
     String? name,
     String? variantName,
@@ -14665,6 +14885,7 @@ class TableSessionTicket extends DataClass
     id: id ?? this.id,
     sessionId: sessionId ?? this.sessionId,
     ticketId: ticketId ?? this.ticketId,
+    memberId: memberId.present ? memberId.value : this.memberId,
     itemId: itemId ?? this.itemId,
     name: name ?? this.name,
     variantName: variantName ?? this.variantName,
@@ -14697,6 +14918,7 @@ class TableSessionTicket extends DataClass
       id: data.id.present ? data.id.value : this.id,
       sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       ticketId: data.ticketId.present ? data.ticketId.value : this.ticketId,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
       itemId: data.itemId.present ? data.itemId.value : this.itemId,
       name: data.name.present ? data.name.value : this.name,
       variantName: data.variantName.present
@@ -14738,6 +14960,7 @@ class TableSessionTicket extends DataClass
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
           ..write('ticketId: $ticketId, ')
+          ..write('memberId: $memberId, ')
           ..write('itemId: $itemId, ')
           ..write('name: $name, ')
           ..write('variantName: $variantName, ')
@@ -14765,6 +14988,7 @@ class TableSessionTicket extends DataClass
     id,
     sessionId,
     ticketId,
+    memberId,
     itemId,
     name,
     variantName,
@@ -14791,6 +15015,7 @@ class TableSessionTicket extends DataClass
           other.id == this.id &&
           other.sessionId == this.sessionId &&
           other.ticketId == this.ticketId &&
+          other.memberId == this.memberId &&
           other.itemId == this.itemId &&
           other.name == this.name &&
           other.variantName == this.variantName &&
@@ -14815,6 +15040,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
   final Value<String> id;
   final Value<String> sessionId;
   final Value<String> ticketId;
+  final Value<String?> memberId;
   final Value<String> itemId;
   final Value<String> name;
   final Value<String> variantName;
@@ -14838,6 +15064,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
     this.ticketId = const Value.absent(),
+    this.memberId = const Value.absent(),
     this.itemId = const Value.absent(),
     this.name = const Value.absent(),
     this.variantName = const Value.absent(),
@@ -14862,6 +15089,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     required String id,
     required String sessionId,
     required String ticketId,
+    this.memberId = const Value.absent(),
     required String itemId,
     required String name,
     this.variantName = const Value.absent(),
@@ -14894,6 +15122,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     Expression<String>? id,
     Expression<String>? sessionId,
     Expression<String>? ticketId,
+    Expression<String>? memberId,
     Expression<String>? itemId,
     Expression<String>? name,
     Expression<String>? variantName,
@@ -14918,6 +15147,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
       if (id != null) 'id': id,
       if (sessionId != null) 'session_id': sessionId,
       if (ticketId != null) 'ticket_id': ticketId,
+      if (memberId != null) 'member_id': memberId,
       if (itemId != null) 'item_id': itemId,
       if (name != null) 'name': name,
       if (variantName != null) 'variant_name': variantName,
@@ -14944,6 +15174,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     Value<String>? id,
     Value<String>? sessionId,
     Value<String>? ticketId,
+    Value<String?>? memberId,
     Value<String>? itemId,
     Value<String>? name,
     Value<String>? variantName,
@@ -14968,6 +15199,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
       id: id ?? this.id,
       sessionId: sessionId ?? this.sessionId,
       ticketId: ticketId ?? this.ticketId,
+      memberId: memberId ?? this.memberId,
       itemId: itemId ?? this.itemId,
       name: name ?? this.name,
       variantName: variantName ?? this.variantName,
@@ -15001,6 +15233,9 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
     }
     if (ticketId.present) {
       map['ticket_id'] = Variable<String>(ticketId.value);
+    }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
     }
     if (itemId.present) {
       map['item_id'] = Variable<String>(itemId.value);
@@ -15068,6 +15303,7 @@ class TableSessionTicketsCompanion extends UpdateCompanion<TableSessionTicket> {
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
           ..write('ticketId: $ticketId, ')
+          ..write('memberId: $memberId, ')
           ..write('itemId: $itemId, ')
           ..write('name: $name, ')
           ..write('variantName: $variantName, ')
@@ -17417,6 +17653,17 @@ class $PaymentsTable extends Payments with TableInfo<$PaymentsTable, Payment> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _tenderedAmountMeta = const VerificationMeta(
     'tenderedAmount',
   );
@@ -17474,6 +17721,7 @@ class $PaymentsTable extends Payments with TableInfo<$PaymentsTable, Payment> {
     amount,
     isRefund,
     refundsPaymentId,
+    memberId,
     tenderedAmount,
     cashierUserId,
     note,
@@ -17534,6 +17782,12 @@ class $PaymentsTable extends Payments with TableInfo<$PaymentsTable, Payment> {
           data['refunds_payment_id']!,
           _refundsPaymentIdMeta,
         ),
+      );
+    }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
       );
     }
     if (data.containsKey('tendered_amount')) {
@@ -17604,6 +17858,10 @@ class $PaymentsTable extends Payments with TableInfo<$PaymentsTable, Payment> {
         DriftSqlType.string,
         data['${effectivePrefix}refunds_payment_id'],
       ),
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      ),
       tenderedAmount: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}tendered_amount'],
@@ -17646,6 +17904,9 @@ class Payment extends DataClass implements Insertable<Payment> {
   /// reason `stock_movements.count_id` is not: there is no honest answer to
   /// "which leg" on a struk that could only ever hold one.
   final String? refundsPaymentId;
+
+  /// Debtor explicitly selected for a piutang payment leg (ADR-0125).
+  final String? memberId;
   final int? tenderedAmount;
   final String? cashierUserId;
   final String? note;
@@ -17663,6 +17924,7 @@ class Payment extends DataClass implements Insertable<Payment> {
     required this.amount,
     required this.isRefund,
     this.refundsPaymentId,
+    this.memberId,
     this.tenderedAmount,
     this.cashierUserId,
     this.note,
@@ -17679,6 +17941,9 @@ class Payment extends DataClass implements Insertable<Payment> {
     map['is_refund'] = Variable<bool>(isRefund);
     if (!nullToAbsent || refundsPaymentId != null) {
       map['refunds_payment_id'] = Variable<String>(refundsPaymentId);
+    }
+    if (!nullToAbsent || memberId != null) {
+      map['member_id'] = Variable<String>(memberId);
     }
     if (!nullToAbsent || tenderedAmount != null) {
       map['tendered_amount'] = Variable<int>(tenderedAmount);
@@ -17706,6 +17971,9 @@ class Payment extends DataClass implements Insertable<Payment> {
       refundsPaymentId: refundsPaymentId == null && nullToAbsent
           ? const Value.absent()
           : Value(refundsPaymentId),
+      memberId: memberId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(memberId),
       tenderedAmount: tenderedAmount == null && nullToAbsent
           ? const Value.absent()
           : Value(tenderedAmount),
@@ -17732,6 +18000,7 @@ class Payment extends DataClass implements Insertable<Payment> {
       amount: serializer.fromJson<int>(json['amount']),
       isRefund: serializer.fromJson<bool>(json['isRefund']),
       refundsPaymentId: serializer.fromJson<String?>(json['refundsPaymentId']),
+      memberId: serializer.fromJson<String?>(json['memberId']),
       tenderedAmount: serializer.fromJson<int?>(json['tenderedAmount']),
       cashierUserId: serializer.fromJson<String?>(json['cashierUserId']),
       note: serializer.fromJson<String?>(json['note']),
@@ -17749,6 +18018,7 @@ class Payment extends DataClass implements Insertable<Payment> {
       'amount': serializer.toJson<int>(amount),
       'isRefund': serializer.toJson<bool>(isRefund),
       'refundsPaymentId': serializer.toJson<String?>(refundsPaymentId),
+      'memberId': serializer.toJson<String?>(memberId),
       'tenderedAmount': serializer.toJson<int?>(tenderedAmount),
       'cashierUserId': serializer.toJson<String?>(cashierUserId),
       'note': serializer.toJson<String?>(note),
@@ -17764,6 +18034,7 @@ class Payment extends DataClass implements Insertable<Payment> {
     int? amount,
     bool? isRefund,
     Value<String?> refundsPaymentId = const Value.absent(),
+    Value<String?> memberId = const Value.absent(),
     Value<int?> tenderedAmount = const Value.absent(),
     Value<String?> cashierUserId = const Value.absent(),
     Value<String?> note = const Value.absent(),
@@ -17778,6 +18049,7 @@ class Payment extends DataClass implements Insertable<Payment> {
     refundsPaymentId: refundsPaymentId.present
         ? refundsPaymentId.value
         : this.refundsPaymentId,
+    memberId: memberId.present ? memberId.value : this.memberId,
     tenderedAmount: tenderedAmount.present
         ? tenderedAmount.value
         : this.tenderedAmount,
@@ -17798,6 +18070,7 @@ class Payment extends DataClass implements Insertable<Payment> {
       refundsPaymentId: data.refundsPaymentId.present
           ? data.refundsPaymentId.value
           : this.refundsPaymentId,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
       tenderedAmount: data.tenderedAmount.present
           ? data.tenderedAmount.value
           : this.tenderedAmount,
@@ -17819,6 +18092,7 @@ class Payment extends DataClass implements Insertable<Payment> {
           ..write('amount: $amount, ')
           ..write('isRefund: $isRefund, ')
           ..write('refundsPaymentId: $refundsPaymentId, ')
+          ..write('memberId: $memberId, ')
           ..write('tenderedAmount: $tenderedAmount, ')
           ..write('cashierUserId: $cashierUserId, ')
           ..write('note: $note, ')
@@ -17836,6 +18110,7 @@ class Payment extends DataClass implements Insertable<Payment> {
     amount,
     isRefund,
     refundsPaymentId,
+    memberId,
     tenderedAmount,
     cashierUserId,
     note,
@@ -17852,6 +18127,7 @@ class Payment extends DataClass implements Insertable<Payment> {
           other.amount == this.amount &&
           other.isRefund == this.isRefund &&
           other.refundsPaymentId == this.refundsPaymentId &&
+          other.memberId == this.memberId &&
           other.tenderedAmount == this.tenderedAmount &&
           other.cashierUserId == this.cashierUserId &&
           other.note == this.note &&
@@ -17866,6 +18142,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
   final Value<int> amount;
   final Value<bool> isRefund;
   final Value<String?> refundsPaymentId;
+  final Value<String?> memberId;
   final Value<int?> tenderedAmount;
   final Value<String?> cashierUserId;
   final Value<String?> note;
@@ -17879,6 +18156,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
     this.amount = const Value.absent(),
     this.isRefund = const Value.absent(),
     this.refundsPaymentId = const Value.absent(),
+    this.memberId = const Value.absent(),
     this.tenderedAmount = const Value.absent(),
     this.cashierUserId = const Value.absent(),
     this.note = const Value.absent(),
@@ -17893,6 +18171,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
     required int amount,
     this.isRefund = const Value.absent(),
     this.refundsPaymentId = const Value.absent(),
+    this.memberId = const Value.absent(),
     this.tenderedAmount = const Value.absent(),
     this.cashierUserId = const Value.absent(),
     this.note = const Value.absent(),
@@ -17911,6 +18190,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
     Expression<int>? amount,
     Expression<bool>? isRefund,
     Expression<String>? refundsPaymentId,
+    Expression<String>? memberId,
     Expression<int>? tenderedAmount,
     Expression<String>? cashierUserId,
     Expression<String>? note,
@@ -17925,6 +18205,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
       if (amount != null) 'amount': amount,
       if (isRefund != null) 'is_refund': isRefund,
       if (refundsPaymentId != null) 'refunds_payment_id': refundsPaymentId,
+      if (memberId != null) 'member_id': memberId,
       if (tenderedAmount != null) 'tendered_amount': tenderedAmount,
       if (cashierUserId != null) 'cashier_user_id': cashierUserId,
       if (note != null) 'note': note,
@@ -17941,6 +18222,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
     Value<int>? amount,
     Value<bool>? isRefund,
     Value<String?>? refundsPaymentId,
+    Value<String?>? memberId,
     Value<int?>? tenderedAmount,
     Value<String?>? cashierUserId,
     Value<String?>? note,
@@ -17955,6 +18237,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
       amount: amount ?? this.amount,
       isRefund: isRefund ?? this.isRefund,
       refundsPaymentId: refundsPaymentId ?? this.refundsPaymentId,
+      memberId: memberId ?? this.memberId,
       tenderedAmount: tenderedAmount ?? this.tenderedAmount,
       cashierUserId: cashierUserId ?? this.cashierUserId,
       note: note ?? this.note,
@@ -17984,6 +18267,9 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
     }
     if (refundsPaymentId.present) {
       map['refunds_payment_id'] = Variable<String>(refundsPaymentId.value);
+    }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
     }
     if (tenderedAmount.present) {
       map['tendered_amount'] = Variable<int>(tenderedAmount.value);
@@ -18015,6 +18301,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
           ..write('amount: $amount, ')
           ..write('isRefund: $isRefund, ')
           ..write('refundsPaymentId: $refundsPaymentId, ')
+          ..write('memberId: $memberId, ')
           ..write('tenderedAmount: $tenderedAmount, ')
           ..write('cashierUserId: $cashierUserId, ')
           ..write('note: $note, ')
@@ -19128,6 +19415,17 @@ class $TableSessionPaymentsTable extends TableSessionPayments
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _memberIdMeta = const VerificationMeta(
+    'memberId',
+  );
+  @override
+  late final GeneratedColumn<String> memberId = GeneratedColumn<String>(
+    'member_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _methodMeta = const VerificationMeta('method');
   @override
   late final GeneratedColumn<String> method = GeneratedColumn<String>(
@@ -19195,6 +19493,7 @@ class $TableSessionPaymentsTable extends TableSessionPayments
     id,
     sessionId,
     receiptId,
+    memberId,
     method,
     amount,
     isRefund,
@@ -19234,6 +19533,12 @@ class $TableSessionPaymentsTable extends TableSessionPayments
       );
     } else if (isInserting) {
       context.missing(_receiptIdMeta);
+    }
+    if (data.containsKey('member_id')) {
+      context.handle(
+        _memberIdMeta,
+        memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
+      );
     }
     if (data.containsKey('method')) {
       context.handle(
@@ -19298,6 +19603,10 @@ class $TableSessionPaymentsTable extends TableSessionPayments
         DriftSqlType.string,
         data['${effectivePrefix}receipt_id'],
       )!,
+      memberId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_id'],
+      ),
       method: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}method'],
@@ -19336,6 +19645,7 @@ class TableSessionPayment extends DataClass
   final String id;
   final String sessionId;
   final String receiptId;
+  final String? memberId;
   final String method;
   final int amount;
   final bool isRefund;
@@ -19350,6 +19660,7 @@ class TableSessionPayment extends DataClass
     required this.id,
     required this.sessionId,
     required this.receiptId,
+    this.memberId,
     required this.method,
     required this.amount,
     required this.isRefund,
@@ -19363,6 +19674,9 @@ class TableSessionPayment extends DataClass
     map['id'] = Variable<String>(id);
     map['session_id'] = Variable<String>(sessionId);
     map['receipt_id'] = Variable<String>(receiptId);
+    if (!nullToAbsent || memberId != null) {
+      map['member_id'] = Variable<String>(memberId);
+    }
     map['method'] = Variable<String>(method);
     map['amount'] = Variable<int>(amount);
     map['is_refund'] = Variable<bool>(isRefund);
@@ -19381,6 +19695,9 @@ class TableSessionPayment extends DataClass
       id: Value(id),
       sessionId: Value(sessionId),
       receiptId: Value(receiptId),
+      memberId: memberId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(memberId),
       method: Value(method),
       amount: Value(amount),
       isRefund: Value(isRefund),
@@ -19403,6 +19720,7 @@ class TableSessionPayment extends DataClass
       id: serializer.fromJson<String>(json['id']),
       sessionId: serializer.fromJson<String>(json['sessionId']),
       receiptId: serializer.fromJson<String>(json['receiptId']),
+      memberId: serializer.fromJson<String?>(json['memberId']),
       method: serializer.fromJson<String>(json['method']),
       amount: serializer.fromJson<int>(json['amount']),
       isRefund: serializer.fromJson<bool>(json['isRefund']),
@@ -19418,6 +19736,7 @@ class TableSessionPayment extends DataClass
       'id': serializer.toJson<String>(id),
       'sessionId': serializer.toJson<String>(sessionId),
       'receiptId': serializer.toJson<String>(receiptId),
+      'memberId': serializer.toJson<String?>(memberId),
       'method': serializer.toJson<String>(method),
       'amount': serializer.toJson<int>(amount),
       'isRefund': serializer.toJson<bool>(isRefund),
@@ -19431,6 +19750,7 @@ class TableSessionPayment extends DataClass
     String? id,
     String? sessionId,
     String? receiptId,
+    Value<String?> memberId = const Value.absent(),
     String? method,
     int? amount,
     bool? isRefund,
@@ -19441,6 +19761,7 @@ class TableSessionPayment extends DataClass
     id: id ?? this.id,
     sessionId: sessionId ?? this.sessionId,
     receiptId: receiptId ?? this.receiptId,
+    memberId: memberId.present ? memberId.value : this.memberId,
     method: method ?? this.method,
     amount: amount ?? this.amount,
     isRefund: isRefund ?? this.isRefund,
@@ -19455,6 +19776,7 @@ class TableSessionPayment extends DataClass
       id: data.id.present ? data.id.value : this.id,
       sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       receiptId: data.receiptId.present ? data.receiptId.value : this.receiptId,
+      memberId: data.memberId.present ? data.memberId.value : this.memberId,
       method: data.method.present ? data.method.value : this.method,
       amount: data.amount.present ? data.amount.value : this.amount,
       isRefund: data.isRefund.present ? data.isRefund.value : this.isRefund,
@@ -19472,6 +19794,7 @@ class TableSessionPayment extends DataClass
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
           ..write('receiptId: $receiptId, ')
+          ..write('memberId: $memberId, ')
           ..write('method: $method, ')
           ..write('amount: $amount, ')
           ..write('isRefund: $isRefund, ')
@@ -19487,6 +19810,7 @@ class TableSessionPayment extends DataClass
     id,
     sessionId,
     receiptId,
+    memberId,
     method,
     amount,
     isRefund,
@@ -19501,6 +19825,7 @@ class TableSessionPayment extends DataClass
           other.id == this.id &&
           other.sessionId == this.sessionId &&
           other.receiptId == this.receiptId &&
+          other.memberId == this.memberId &&
           other.method == this.method &&
           other.amount == this.amount &&
           other.isRefund == this.isRefund &&
@@ -19514,6 +19839,7 @@ class TableSessionPaymentsCompanion
   final Value<String> id;
   final Value<String> sessionId;
   final Value<String> receiptId;
+  final Value<String?> memberId;
   final Value<String> method;
   final Value<int> amount;
   final Value<bool> isRefund;
@@ -19525,6 +19851,7 @@ class TableSessionPaymentsCompanion
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
     this.receiptId = const Value.absent(),
+    this.memberId = const Value.absent(),
     this.method = const Value.absent(),
     this.amount = const Value.absent(),
     this.isRefund = const Value.absent(),
@@ -19537,6 +19864,7 @@ class TableSessionPaymentsCompanion
     required String id,
     required String sessionId,
     required String receiptId,
+    this.memberId = const Value.absent(),
     required String method,
     required int amount,
     this.isRefund = const Value.absent(),
@@ -19554,6 +19882,7 @@ class TableSessionPaymentsCompanion
     Expression<String>? id,
     Expression<String>? sessionId,
     Expression<String>? receiptId,
+    Expression<String>? memberId,
     Expression<String>? method,
     Expression<int>? amount,
     Expression<bool>? isRefund,
@@ -19566,6 +19895,7 @@ class TableSessionPaymentsCompanion
       if (id != null) 'id': id,
       if (sessionId != null) 'session_id': sessionId,
       if (receiptId != null) 'receipt_id': receiptId,
+      if (memberId != null) 'member_id': memberId,
       if (method != null) 'method': method,
       if (amount != null) 'amount': amount,
       if (isRefund != null) 'is_refund': isRefund,
@@ -19580,6 +19910,7 @@ class TableSessionPaymentsCompanion
     Value<String>? id,
     Value<String>? sessionId,
     Value<String>? receiptId,
+    Value<String?>? memberId,
     Value<String>? method,
     Value<int>? amount,
     Value<bool>? isRefund,
@@ -19592,6 +19923,7 @@ class TableSessionPaymentsCompanion
       id: id ?? this.id,
       sessionId: sessionId ?? this.sessionId,
       receiptId: receiptId ?? this.receiptId,
+      memberId: memberId ?? this.memberId,
       method: method ?? this.method,
       amount: amount ?? this.amount,
       isRefund: isRefund ?? this.isRefund,
@@ -19613,6 +19945,9 @@ class TableSessionPaymentsCompanion
     }
     if (receiptId.present) {
       map['receipt_id'] = Variable<String>(receiptId.value);
+    }
+    if (memberId.present) {
+      map['member_id'] = Variable<String>(memberId.value);
     }
     if (method.present) {
       map['method'] = Variable<String>(method.value);
@@ -19644,6 +19979,7 @@ class TableSessionPaymentsCompanion
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
           ..write('receiptId: $receiptId, ')
+          ..write('memberId: $memberId, ')
           ..write('method: $method, ')
           ..write('amount: $amount, ')
           ..write('isRefund: $isRefund, ')
@@ -31438,6 +31774,7 @@ typedef $$VisitsTableCreateCompanionBuilder =
       Value<String?> reservationId,
       Value<String?> lastActorId,
       Value<String?> memberId,
+      Value<int?> memberAttributionVersion,
       Value<DateTime?> tableFreedAt,
       Value<DateTime?> billClosedAt,
       Value<String?> billClosedBy,
@@ -31461,6 +31798,7 @@ typedef $$VisitsTableUpdateCompanionBuilder =
       Value<String?> reservationId,
       Value<String?> lastActorId,
       Value<String?> memberId,
+      Value<int?> memberAttributionVersion,
       Value<DateTime?> tableFreedAt,
       Value<DateTime?> billClosedAt,
       Value<String?> billClosedBy,
@@ -31533,6 +31871,11 @@ class $$VisitsTableFilterComposer
 
   ColumnFilters<String> get memberId => $composableBuilder(
     column: $table.memberId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get memberAttributionVersion => $composableBuilder(
+    column: $table.memberAttributionVersion,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -31641,6 +31984,11 @@ class $$VisitsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get memberAttributionVersion => $composableBuilder(
+    column: $table.memberAttributionVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get tableFreedAt => $composableBuilder(
     column: $table.tableFreedAt,
     builder: (column) => ColumnOrderings(column),
@@ -31732,6 +32080,11 @@ class $$VisitsTableAnnotationComposer
   GeneratedColumn<String> get memberId =>
       $composableBuilder(column: $table.memberId, builder: (column) => column);
 
+  GeneratedColumn<int> get memberAttributionVersion => $composableBuilder(
+    column: $table.memberAttributionVersion,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get tableFreedAt => $composableBuilder(
     column: $table.tableFreedAt,
     builder: (column) => column,
@@ -31804,6 +32157,7 @@ class $$VisitsTableTableManager
                 Value<String?> reservationId = const Value.absent(),
                 Value<String?> lastActorId = const Value.absent(),
                 Value<String?> memberId = const Value.absent(),
+                Value<int?> memberAttributionVersion = const Value.absent(),
                 Value<DateTime?> tableFreedAt = const Value.absent(),
                 Value<DateTime?> billClosedAt = const Value.absent(),
                 Value<String?> billClosedBy = const Value.absent(),
@@ -31825,6 +32179,7 @@ class $$VisitsTableTableManager
                 reservationId: reservationId,
                 lastActorId: lastActorId,
                 memberId: memberId,
+                memberAttributionVersion: memberAttributionVersion,
                 tableFreedAt: tableFreedAt,
                 billClosedAt: billClosedAt,
                 billClosedBy: billClosedBy,
@@ -31848,6 +32203,7 @@ class $$VisitsTableTableManager
                 Value<String?> reservationId = const Value.absent(),
                 Value<String?> lastActorId = const Value.absent(),
                 Value<String?> memberId = const Value.absent(),
+                Value<int?> memberAttributionVersion = const Value.absent(),
                 Value<DateTime?> tableFreedAt = const Value.absent(),
                 Value<DateTime?> billClosedAt = const Value.absent(),
                 Value<String?> billClosedBy = const Value.absent(),
@@ -31869,6 +32225,7 @@ class $$VisitsTableTableManager
                 reservationId: reservationId,
                 lastActorId: lastActorId,
                 memberId: memberId,
+                memberAttributionVersion: memberAttributionVersion,
                 tableFreedAt: tableFreedAt,
                 billClosedAt: billClosedAt,
                 billClosedBy: billClosedBy,
@@ -32788,6 +33145,7 @@ typedef $$TicketsTableCreateCompanionBuilder =
       required String id,
       required String tableId,
       Value<String?> visitId,
+      Value<String?> memberId,
       required String itemId,
       required String name,
       Value<String> variantName,
@@ -32815,6 +33173,7 @@ typedef $$TicketsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> tableId,
       Value<String?> visitId,
+      Value<String?> memberId,
       Value<String> itemId,
       Value<String> name,
       Value<String> variantName,
@@ -32859,6 +33218,11 @@ class $$TicketsTableFilterComposer
 
   ColumnFilters<String> get visitId => $composableBuilder(
     column: $table.visitId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberId => $composableBuilder(
+    column: $table.memberId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -32987,6 +33351,11 @@ class $$TicketsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get itemId => $composableBuilder(
     column: $table.itemId,
     builder: (column) => ColumnOrderings(column),
@@ -33106,6 +33475,9 @@ class $$TicketsTableAnnotationComposer
   GeneratedColumn<String> get visitId =>
       $composableBuilder(column: $table.visitId, builder: (column) => column);
 
+  GeneratedColumn<String> get memberId =>
+      $composableBuilder(column: $table.memberId, builder: (column) => column);
+
   GeneratedColumn<String> get itemId =>
       $composableBuilder(column: $table.itemId, builder: (column) => column);
 
@@ -33216,6 +33588,7 @@ class $$TicketsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> tableId = const Value.absent(),
                 Value<String?> visitId = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 Value<String> itemId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> variantName = const Value.absent(),
@@ -33241,6 +33614,7 @@ class $$TicketsTableTableManager
                 id: id,
                 tableId: tableId,
                 visitId: visitId,
+                memberId: memberId,
                 itemId: itemId,
                 name: name,
                 variantName: variantName,
@@ -33268,6 +33642,7 @@ class $$TicketsTableTableManager
                 required String id,
                 required String tableId,
                 Value<String?> visitId = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 required String itemId,
                 required String name,
                 Value<String> variantName = const Value.absent(),
@@ -33293,6 +33668,7 @@ class $$TicketsTableTableManager
                 id: id,
                 tableId: tableId,
                 visitId: visitId,
+                memberId: memberId,
                 itemId: itemId,
                 name: name,
                 variantName: variantName,
@@ -35876,6 +36252,7 @@ typedef $$TableSessionsTableCreateCompanionBuilder =
       Value<String> channel,
       Value<bool> prepaid,
       Value<String?> memberId,
+      Value<int?> memberAttributionVersion,
       Value<int> rowid,
     });
 typedef $$TableSessionsTableUpdateCompanionBuilder =
@@ -35903,6 +36280,7 @@ typedef $$TableSessionsTableUpdateCompanionBuilder =
       Value<String> channel,
       Value<bool> prepaid,
       Value<String?> memberId,
+      Value<int?> memberAttributionVersion,
       Value<int> rowid,
     });
 
@@ -36027,6 +36405,11 @@ class $$TableSessionsTableFilterComposer
 
   ColumnFilters<String> get memberId => $composableBuilder(
     column: $table.memberId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get memberAttributionVersion => $composableBuilder(
+    column: $table.memberAttributionVersion,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -36154,6 +36537,11 @@ class $$TableSessionsTableOrderingComposer
     column: $table.memberId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get memberAttributionVersion => $composableBuilder(
+    column: $table.memberAttributionVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TableSessionsTableAnnotationComposer
@@ -36253,6 +36641,11 @@ class $$TableSessionsTableAnnotationComposer
 
   GeneratedColumn<String> get memberId =>
       $composableBuilder(column: $table.memberId, builder: (column) => column);
+
+  GeneratedColumn<int> get memberAttributionVersion => $composableBuilder(
+    column: $table.memberAttributionVersion,
+    builder: (column) => column,
+  );
 }
 
 class $$TableSessionsTableTableManager
@@ -36309,6 +36702,7 @@ class $$TableSessionsTableTableManager
                 Value<String> channel = const Value.absent(),
                 Value<bool> prepaid = const Value.absent(),
                 Value<String?> memberId = const Value.absent(),
+                Value<int?> memberAttributionVersion = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TableSessionsCompanion(
                 id: id,
@@ -36334,6 +36728,7 @@ class $$TableSessionsTableTableManager
                 channel: channel,
                 prepaid: prepaid,
                 memberId: memberId,
+                memberAttributionVersion: memberAttributionVersion,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -36361,6 +36756,7 @@ class $$TableSessionsTableTableManager
                 Value<String> channel = const Value.absent(),
                 Value<bool> prepaid = const Value.absent(),
                 Value<String?> memberId = const Value.absent(),
+                Value<int?> memberAttributionVersion = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TableSessionsCompanion.insert(
                 id: id,
@@ -36386,6 +36782,7 @@ class $$TableSessionsTableTableManager
                 channel: channel,
                 prepaid: prepaid,
                 memberId: memberId,
+                memberAttributionVersion: memberAttributionVersion,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -36418,6 +36815,7 @@ typedef $$TableSessionTicketsTableCreateCompanionBuilder =
       required String id,
       required String sessionId,
       required String ticketId,
+      Value<String?> memberId,
       required String itemId,
       required String name,
       Value<String> variantName,
@@ -36443,6 +36841,7 @@ typedef $$TableSessionTicketsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> sessionId,
       Value<String> ticketId,
+      Value<String?> memberId,
       Value<String> itemId,
       Value<String> name,
       Value<String> variantName,
@@ -36485,6 +36884,11 @@ class $$TableSessionTicketsTableFilterComposer
 
   ColumnFilters<String> get ticketId => $composableBuilder(
     column: $table.ticketId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberId => $composableBuilder(
+    column: $table.memberId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -36603,6 +37007,11 @@ class $$TableSessionTicketsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get itemId => $composableBuilder(
     column: $table.itemId,
     builder: (column) => ColumnOrderings(column),
@@ -36711,6 +37120,9 @@ class $$TableSessionTicketsTableAnnotationComposer
 
   GeneratedColumn<String> get ticketId =>
       $composableBuilder(column: $table.ticketId, builder: (column) => column);
+
+  GeneratedColumn<String> get memberId =>
+      $composableBuilder(column: $table.memberId, builder: (column) => column);
 
   GeneratedColumn<String> get itemId =>
       $composableBuilder(column: $table.itemId, builder: (column) => column);
@@ -36827,6 +37239,7 @@ class $$TableSessionTicketsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> sessionId = const Value.absent(),
                 Value<String> ticketId = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 Value<String> itemId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> variantName = const Value.absent(),
@@ -36850,6 +37263,7 @@ class $$TableSessionTicketsTableTableManager
                 id: id,
                 sessionId: sessionId,
                 ticketId: ticketId,
+                memberId: memberId,
                 itemId: itemId,
                 name: name,
                 variantName: variantName,
@@ -36875,6 +37289,7 @@ class $$TableSessionTicketsTableTableManager
                 required String id,
                 required String sessionId,
                 required String ticketId,
+                Value<String?> memberId = const Value.absent(),
                 required String itemId,
                 required String name,
                 Value<String> variantName = const Value.absent(),
@@ -36898,6 +37313,7 @@ class $$TableSessionTicketsTableTableManager
                 id: id,
                 sessionId: sessionId,
                 ticketId: ticketId,
+                memberId: memberId,
                 itemId: itemId,
                 name: name,
                 variantName: variantName,
@@ -38077,6 +38493,7 @@ typedef $$PaymentsTableCreateCompanionBuilder =
       required int amount,
       Value<bool> isRefund,
       Value<String?> refundsPaymentId,
+      Value<String?> memberId,
       Value<int?> tenderedAmount,
       Value<String?> cashierUserId,
       Value<String?> note,
@@ -38092,6 +38509,7 @@ typedef $$PaymentsTableUpdateCompanionBuilder =
       Value<int> amount,
       Value<bool> isRefund,
       Value<String?> refundsPaymentId,
+      Value<String?> memberId,
       Value<int?> tenderedAmount,
       Value<String?> cashierUserId,
       Value<String?> note,
@@ -38136,6 +38554,11 @@ class $$PaymentsTableFilterComposer
 
   ColumnFilters<String> get refundsPaymentId => $composableBuilder(
     column: $table.refundsPaymentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberId => $composableBuilder(
+    column: $table.memberId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -38204,6 +38627,11 @@ class $$PaymentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get tenderedAmount => $composableBuilder(
     column: $table.tenderedAmount,
     builder: (column) => ColumnOrderings(column),
@@ -38259,6 +38687,9 @@ class $$PaymentsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get memberId =>
+      $composableBuilder(column: $table.memberId, builder: (column) => column);
+
   GeneratedColumn<int> get tenderedAmount => $composableBuilder(
     column: $table.tenderedAmount,
     builder: (column) => column,
@@ -38313,6 +38744,7 @@ class $$PaymentsTableTableManager
                 Value<int> amount = const Value.absent(),
                 Value<bool> isRefund = const Value.absent(),
                 Value<String?> refundsPaymentId = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 Value<int?> tenderedAmount = const Value.absent(),
                 Value<String?> cashierUserId = const Value.absent(),
                 Value<String?> note = const Value.absent(),
@@ -38326,6 +38758,7 @@ class $$PaymentsTableTableManager
                 amount: amount,
                 isRefund: isRefund,
                 refundsPaymentId: refundsPaymentId,
+                memberId: memberId,
                 tenderedAmount: tenderedAmount,
                 cashierUserId: cashierUserId,
                 note: note,
@@ -38341,6 +38774,7 @@ class $$PaymentsTableTableManager
                 required int amount,
                 Value<bool> isRefund = const Value.absent(),
                 Value<String?> refundsPaymentId = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 Value<int?> tenderedAmount = const Value.absent(),
                 Value<String?> cashierUserId = const Value.absent(),
                 Value<String?> note = const Value.absent(),
@@ -38354,6 +38788,7 @@ class $$PaymentsTableTableManager
                 amount: amount,
                 isRefund: isRefund,
                 refundsPaymentId: refundsPaymentId,
+                memberId: memberId,
                 tenderedAmount: tenderedAmount,
                 cashierUserId: cashierUserId,
                 note: note,
@@ -38960,6 +39395,7 @@ typedef $$TableSessionPaymentsTableCreateCompanionBuilder =
       required String id,
       required String sessionId,
       required String receiptId,
+      Value<String?> memberId,
       required String method,
       required int amount,
       Value<bool> isRefund,
@@ -38973,6 +39409,7 @@ typedef $$TableSessionPaymentsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> sessionId,
       Value<String> receiptId,
+      Value<String?> memberId,
       Value<String> method,
       Value<int> amount,
       Value<bool> isRefund,
@@ -39003,6 +39440,11 @@ class $$TableSessionPaymentsTableFilterComposer
 
   ColumnFilters<String> get receiptId => $composableBuilder(
     column: $table.receiptId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberId => $composableBuilder(
+    column: $table.memberId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -39061,6 +39503,11 @@ class $$TableSessionPaymentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get memberId => $composableBuilder(
+    column: $table.memberId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get method => $composableBuilder(
     column: $table.method,
     builder: (column) => ColumnOrderings(column),
@@ -39109,6 +39556,9 @@ class $$TableSessionPaymentsTableAnnotationComposer
 
   GeneratedColumn<String> get receiptId =>
       $composableBuilder(column: $table.receiptId, builder: (column) => column);
+
+  GeneratedColumn<String> get memberId =>
+      $composableBuilder(column: $table.memberId, builder: (column) => column);
 
   GeneratedColumn<String> get method =>
       $composableBuilder(column: $table.method, builder: (column) => column);
@@ -39177,6 +39627,7 @@ class $$TableSessionPaymentsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> sessionId = const Value.absent(),
                 Value<String> receiptId = const Value.absent(),
+                Value<String?> memberId = const Value.absent(),
                 Value<String> method = const Value.absent(),
                 Value<int> amount = const Value.absent(),
                 Value<bool> isRefund = const Value.absent(),
@@ -39188,6 +39639,7 @@ class $$TableSessionPaymentsTableTableManager
                 id: id,
                 sessionId: sessionId,
                 receiptId: receiptId,
+                memberId: memberId,
                 method: method,
                 amount: amount,
                 isRefund: isRefund,
@@ -39201,6 +39653,7 @@ class $$TableSessionPaymentsTableTableManager
                 required String id,
                 required String sessionId,
                 required String receiptId,
+                Value<String?> memberId = const Value.absent(),
                 required String method,
                 required int amount,
                 Value<bool> isRefund = const Value.absent(),
@@ -39212,6 +39665,7 @@ class $$TableSessionPaymentsTableTableManager
                 id: id,
                 sessionId: sessionId,
                 receiptId: receiptId,
+                memberId: memberId,
                 method: method,
                 amount: amount,
                 isRefund: isRefund,

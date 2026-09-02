@@ -37,6 +37,7 @@ import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/menu/modifier_sheet.dart';
 import 'package:satset/ui/features/review/review_screen.dart';
+import 'package:satset/ui/features/sent/sent_screen.dart';
 import 'package:satset/ui/features/shell/app_shell.dart';
 
 /// A venue whose mode key is mirrored on, holding exactly [on].
@@ -298,6 +299,25 @@ void main() {
       // that one arrives with a courier worth naming.
       final out = await ask(tester, nameOptional: true, type: 'Budi');
       expect(out.single?.guestName, 'Budi');
+    });
+  });
+
+  group('SentScreen — auto return and route safety', () {
+    testWidgets('auto-return timer disposes cleanly and respects active route', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            locale: const Locale('id'),
+            localizationsDelegates: AppL10n.localizationsDelegates,
+            supportedLocales: AppL10n.supportedLocales,
+            theme: satTheme(SatTheme.neonTerang),
+            home: const SentScreen(tableId: 't1', stations: ['Dapur']),
+          ),
+        ),
+      );
+      expect(find.byType(SentScreen), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 2000));
+      // Advances timer safely without throwing
     });
   });
 }

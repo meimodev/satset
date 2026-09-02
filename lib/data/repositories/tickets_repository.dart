@@ -168,6 +168,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     return Ticket(
       id: d.id,
       visitId: d.visitId,
+      memberId: d.memberId,
       tableId: d.tableId,
       itemId: d.itemId,
       name: d.name,
@@ -265,6 +266,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
             name: l.name,
             variantId: l.variantId,
             variantName: l.variantName,
+            memberId: l.memberId,
             course: _courseFromKey(l.course),
             qty: l.qty,
             unitPrice: l.unitPrice,
@@ -334,6 +336,15 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     // device before the tableUpdated echo arrives (ADR-0034).
     ref.read(tablesProvider.notifier).seedCurrentVisit(tableId, res.visitId);
     _reportRejected(res.rejected);
+    for (final warning in res.attributionWarnings) {
+      ref
+          .read(errorBusServiceProvider)
+          .push(
+            warning,
+            level: AppErrorLevel.warning,
+            code: 'member_attribution_dropped',
+          );
+    }
     return res.ticketIds;
   }
 
@@ -368,7 +379,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
             expectedVisitId: (visitId != null && visitId.isNotEmpty)
                 ? visitId
                 : null,
-            payload: {'lines': [for (final l in lines) l.toJson()]},
+            payload: {
+              'lines': [for (final l in lines) l.toJson()],
+            },
           );
     } on SendQueueFull {
       final l = ref.read(l10nProvider);
@@ -436,6 +449,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
             name: l.name,
             variantId: l.variantId,
             variantName: l.variantName,
+            memberId: l.memberId,
             course: _courseFromKey(l.course),
             qty: l.qty,
             unitPrice: l.unitPrice,
@@ -692,6 +706,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
           itemId: cart[i].itemId,
           name: cart[i].name,
           variantName: cart[i].variantName,
+          memberId: cart[i].memberId,
           course: cart[i].course,
           qty: cart[i].qty,
           modifiers: cart[i].selectedModifiers,

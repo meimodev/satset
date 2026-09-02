@@ -27,6 +27,7 @@ abstract class TicketDto with _$TicketDto {
     /// Stable bill key (ADR-0024). Lets the KDS/board label table-less
     /// (takeaway) lines via the visit. Nullable for pre-v29 rows.
     String? visitId,
+    String? memberId,
     required String itemId,
     required String name,
     @Default('') String variantName,

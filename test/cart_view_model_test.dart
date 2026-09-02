@@ -16,12 +16,14 @@ CartItem line({
   CourseId course = CourseId.mains,
   int qty = 1,
   int unitPrice = 28000,
+  String? memberId,
 }) => CartItem(
   id: id,
   itemId: itemId,
   name: 'Nasi Goreng',
   variantId: variantId,
   variantName: 'Reguler',
+  memberId: memberId,
   modifiers: [for (final m in mods) m.display],
   selectedModifiers: mods,
   note: note,
@@ -97,6 +99,17 @@ void main() {
         ..add(line(id: 'C2', variantId: 'jumbo'));
 
       expect(vm.state.length, 2);
+    });
+
+    test('a different member keeps the lines apart', () {
+      final vm = CartViewModel()
+        ..add(line(id: 'C1', memberId: 'ani'))
+        ..add(line(id: 'C2', memberId: 'budi'));
+
+      expect(vm.state.length, 2);
+      vm.setMember('C2', 'ani', 'Ani');
+      expect(vm.state.single.qty, 2);
+      expect(vm.state.single.memberId, 'ani');
     });
 
     test(

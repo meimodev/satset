@@ -16,7 +16,6 @@ import 'package:satset/domain/models/venue_table.dart';
 import 'package:uuid/uuid.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/course.dart';
-import 'package:satset/core/localization/labels.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
@@ -872,12 +871,6 @@ class _TabletCartPane extends ConsumerWidget {
     final taxLabel = context.l10n.mnuTaxPct(_fmtPct(venue.taxRateBps));
     final est = breakdown.total;
 
-    final byCourse = <String, List<int>>{};
-    for (var i = 0; i < cart.length; i++) {
-      final cid = Courses.byId(cart[i].course).serialId;
-      byCourse.putIfAbsent(cid, () => []).add(i);
-    }
-
     return Container(
       width: 380,
       decoration: SatBox.d(
@@ -909,16 +902,6 @@ class _TabletCartPane extends ConsumerWidget {
                       : context.l10n.mnuCartReady(count),
                   style: SatType.h3(color: sc.textHi),
                 ),
-                if (count > 0) ...[
-                  const SizedBox(height: Sp.s1),
-                  Text(
-                    [
-                      if (kit > 0) context.l10n.mnuKitchenCount(kit),
-                      if (bar > 0) context.l10n.mnuBarCount(bar),
-                    ].join('  ·  '),
-                    style: SatType.monoS(color: sc.textLo),
-                  ),
-                ],
               ],
             ),
           ),
@@ -934,75 +917,64 @@ class _TabletCartPane extends ConsumerWidget {
                       ),
                     ),
                   )
-                : ListView(
+                : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(22, 14, 22, 14),
-                    children: [
-                      for (final entry in byCourse.entries) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: Sp.s2),
-                          child: Text(
-                            courseLabel(context.l10n, entry.key).toUpperCase(),
-                            style: SatType.caption(color: sc.textMd),
-                          ),
-                        ),
-                        for (final i in entry.value)
-                          Container(
-                            margin: const EdgeInsets.only(bottom: Sp.s1h),
-                            padding: const EdgeInsets.all(Sp.s3),
-                            decoration: SatBox.d(
-                              color: sc.bg2,
-                              border: SatB.all(color: sc.border0),
-                              borderRadius: SatR.a(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        cart[i].variantName.isEmpty
-                                            ? cart[i].name
-                                            : '${cart[i].name} · ${cart[i].variantName}',
-                                        style: SatType.bodyM(color: sc.textHi),
-                                      ),
-                                    ),
-                                    const SizedBox(width: Sp.s2),
-                                    Text(
-                                      formatIDR(
-                                        cart[i].unitPrice * cart[i].qty,
-                                      ),
-                                      style: SatType.monoM(color: sc.textMd),
-                                    ),
-                                  ],
+                    itemCount: cart.length,
+                    itemBuilder: (context, i) => Container(
+                      margin: const EdgeInsets.only(bottom: Sp.s1h),
+                      padding: const EdgeInsets.all(Sp.s3),
+                      decoration: SatBox.d(
+                        color: sc.bg2,
+                        border: SatB.all(color: sc.border0),
+                        borderRadius: SatR.a(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  cart[i].variantName.isEmpty
+                                      ? cart[i].name
+                                      : '${cart[i].name} · ${cart[i].variantName}',
+                                  style: SatType.bodyM(color: sc.textHi),
                                 ),
-                                if (cart[i].modifiers.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: Sp.s1),
-                                    child: Text(
-                                      cart[i].modifiers.join(' · '),
-                                      style: SatType.bodyS(color: sc.textMd),
-                                    ),
-                                  ),
-                                if (cart[i].note.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: Sp.s1),
-                                    child: Text(
-                                      cart[i].note,
-                                      style: SatType.bodyS(color: sc.textLo),
-                                    ),
-                                  ),
-                                const SizedBox(height: Sp.s2),
-                                CartLineActions(
-                                  tableId: tableId,
-                                  line: cart[i],
+                              ),
+                              const SizedBox(width: Sp.s2),
+                              Text(
+                                formatIDR(
+                                  cart[i].unitPrice * cart[i].qty,
                                 ),
-                              ],
-                            ),
+                                style: SatType.monoM(color: sc.textMd),
+                              ),
+                            ],
                           ),
-                      ],
-                    ],
+                          if (cart[i].modifiers.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: Sp.s1),
+                              child: Text(
+                                cart[i].modifiers.join(' · '),
+                                style: SatType.bodyS(color: sc.textMd),
+                              ),
+                            ),
+                          if (cart[i].note.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: Sp.s1),
+                              child: Text(
+                                cart[i].note,
+                                style: SatType.bodyS(color: sc.textLo),
+                              ),
+                            ),
+                          const SizedBox(height: Sp.s2),
+                          CartLineActions(
+                            tableId: tableId,
+                            line: cart[i],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
           ),
           if (cart.isNotEmpty)

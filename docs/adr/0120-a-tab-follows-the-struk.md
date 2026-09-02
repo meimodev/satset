@@ -1,6 +1,6 @@
 # ADR-0120 — A tab follows the struk
 
-Status: accepted
+Status: superseded by ADR-0125
 Date: 2026-08-30
 
 Amends [ADR-0098](0098-a-tab-is-a-payment-method-not-a-write-off.md) — a

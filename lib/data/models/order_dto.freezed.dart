@@ -287,7 +287,7 @@ as int,
 /// @nodoc
 mixin _$CartLineDto {
 
- String get itemId; String get name; String get variantId; String get variantName; List<CartModifierDto> get modifiers; String? get note; String get course; int get qty; int get unitPrice;
+ String get itemId; String get name; String get variantId; String get variantName; String? get memberId; List<CartModifierDto> get modifiers; String? get note; String get course; int get qty; int get unitPrice;
 /// Create a copy of CartLineDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -300,16 +300,16 @@ $CartLineDtoCopyWith<CartLineDto> get copyWith => _$CartLineDtoCopyWithImpl<Cart
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CartLineDto&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&const DeepCollectionEquality().equals(other.modifiers, modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CartLineDto&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&(identical(other.memberId, memberId) || other.memberId == memberId)&&const DeepCollectionEquality().equals(other.modifiers, modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,itemId,name,variantId,variantName,const DeepCollectionEquality().hash(modifiers),note,course,qty,unitPrice);
+int get hashCode => Object.hash(runtimeType,itemId,name,variantId,variantName,memberId,const DeepCollectionEquality().hash(modifiers),note,course,qty,unitPrice);
 
 @override
 String toString() {
-  return 'CartLineDto(itemId: $itemId, name: $name, variantId: $variantId, variantName: $variantName, modifiers: $modifiers, note: $note, course: $course, qty: $qty, unitPrice: $unitPrice)';
+  return 'CartLineDto(itemId: $itemId, name: $name, variantId: $variantId, variantName: $variantName, memberId: $memberId, modifiers: $modifiers, note: $note, course: $course, qty: $qty, unitPrice: $unitPrice)';
 }
 
 
@@ -320,7 +320,7 @@ abstract mixin class $CartLineDtoCopyWith<$Res>  {
   factory $CartLineDtoCopyWith(CartLineDto value, $Res Function(CartLineDto) _then) = _$CartLineDtoCopyWithImpl;
 @useResult
 $Res call({
- String itemId, String name, String variantId, String variantName, List<CartModifierDto> modifiers, String? note, String course, int qty, int unitPrice
+ String itemId, String name, String variantId, String variantName, String? memberId, List<CartModifierDto> modifiers, String? note, String course, int qty, int unitPrice
 });
 
 
@@ -337,13 +337,14 @@ class _$CartLineDtoCopyWithImpl<$Res>
 
 /// Create a copy of CartLineDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? itemId = null,Object? name = null,Object? variantId = null,Object? variantName = null,Object? modifiers = null,Object? note = freezed,Object? course = null,Object? qty = null,Object? unitPrice = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? itemId = null,Object? name = null,Object? variantId = null,Object? variantName = null,Object? memberId = freezed,Object? modifiers = null,Object? note = freezed,Object? course = null,Object? qty = null,Object? unitPrice = null,}) {
   return _then(_self.copyWith(
 itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,variantId: null == variantId ? _self.variantId : variantId // ignore: cast_nullable_to_non_nullable
 as String,variantName: null == variantName ? _self.variantName : variantName // ignore: cast_nullable_to_non_nullable
-as String,modifiers: null == modifiers ? _self.modifiers : modifiers // ignore: cast_nullable_to_non_nullable
+as String,memberId: freezed == memberId ? _self.memberId : memberId // ignore: cast_nullable_to_non_nullable
+as String?,modifiers: null == modifiers ? _self.modifiers : modifiers // ignore: cast_nullable_to_non_nullable
 as List<CartModifierDto>,note: freezed == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
 as String?,course: null == course ? _self.course : course // ignore: cast_nullable_to_non_nullable
 as String,qty: null == qty ? _self.qty : qty // ignore: cast_nullable_to_non_nullable
@@ -433,10 +434,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String itemId,  String name,  String variantId,  String variantName,  List<CartModifierDto> modifiers,  String? note,  String course,  int qty,  int unitPrice)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String itemId,  String name,  String variantId,  String variantName,  String? memberId,  List<CartModifierDto> modifiers,  String? note,  String course,  int qty,  int unitPrice)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CartLineDto() when $default != null:
-return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.modifiers,_that.note,_that.course,_that.qty,_that.unitPrice);case _:
+return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.memberId,_that.modifiers,_that.note,_that.course,_that.qty,_that.unitPrice);case _:
   return orElse();
 
 }
@@ -454,10 +455,10 @@ return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String itemId,  String name,  String variantId,  String variantName,  List<CartModifierDto> modifiers,  String? note,  String course,  int qty,  int unitPrice)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String itemId,  String name,  String variantId,  String variantName,  String? memberId,  List<CartModifierDto> modifiers,  String? note,  String course,  int qty,  int unitPrice)  $default,) {final _that = this;
 switch (_that) {
 case _CartLineDto():
-return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.modifiers,_that.note,_that.course,_that.qty,_that.unitPrice);case _:
+return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.memberId,_that.modifiers,_that.note,_that.course,_that.qty,_that.unitPrice);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -474,10 +475,10 @@ return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String itemId,  String name,  String variantId,  String variantName,  List<CartModifierDto> modifiers,  String? note,  String course,  int qty,  int unitPrice)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String itemId,  String name,  String variantId,  String variantName,  String? memberId,  List<CartModifierDto> modifiers,  String? note,  String course,  int qty,  int unitPrice)?  $default,) {final _that = this;
 switch (_that) {
 case _CartLineDto() when $default != null:
-return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.modifiers,_that.note,_that.course,_that.qty,_that.unitPrice);case _:
+return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.memberId,_that.modifiers,_that.note,_that.course,_that.qty,_that.unitPrice);case _:
   return null;
 
 }
@@ -489,13 +490,14 @@ return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.
 @JsonSerializable()
 
 class _CartLineDto implements CartLineDto {
-  const _CartLineDto({required this.itemId, required this.name, required this.variantId, required this.variantName, required final  List<CartModifierDto> modifiers, required this.note, required this.course, required this.qty, required this.unitPrice}): _modifiers = modifiers;
+  const _CartLineDto({required this.itemId, required this.name, required this.variantId, required this.variantName, this.memberId, required final  List<CartModifierDto> modifiers, required this.note, required this.course, required this.qty, required this.unitPrice}): _modifiers = modifiers;
   factory _CartLineDto.fromJson(Map<String, dynamic> json) => _$CartLineDtoFromJson(json);
 
 @override final  String itemId;
 @override final  String name;
 @override final  String variantId;
 @override final  String variantName;
+@override final  String? memberId;
  final  List<CartModifierDto> _modifiers;
 @override List<CartModifierDto> get modifiers {
   if (_modifiers is EqualUnmodifiableListView) return _modifiers;
@@ -521,16 +523,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CartLineDto&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&const DeepCollectionEquality().equals(other._modifiers, _modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CartLineDto&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&(identical(other.memberId, memberId) || other.memberId == memberId)&&const DeepCollectionEquality().equals(other._modifiers, _modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,itemId,name,variantId,variantName,const DeepCollectionEquality().hash(_modifiers),note,course,qty,unitPrice);
+int get hashCode => Object.hash(runtimeType,itemId,name,variantId,variantName,memberId,const DeepCollectionEquality().hash(_modifiers),note,course,qty,unitPrice);
 
 @override
 String toString() {
-  return 'CartLineDto(itemId: $itemId, name: $name, variantId: $variantId, variantName: $variantName, modifiers: $modifiers, note: $note, course: $course, qty: $qty, unitPrice: $unitPrice)';
+  return 'CartLineDto(itemId: $itemId, name: $name, variantId: $variantId, variantName: $variantName, memberId: $memberId, modifiers: $modifiers, note: $note, course: $course, qty: $qty, unitPrice: $unitPrice)';
 }
 
 
@@ -541,7 +543,7 @@ abstract mixin class _$CartLineDtoCopyWith<$Res> implements $CartLineDtoCopyWith
   factory _$CartLineDtoCopyWith(_CartLineDto value, $Res Function(_CartLineDto) _then) = __$CartLineDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String itemId, String name, String variantId, String variantName, List<CartModifierDto> modifiers, String? note, String course, int qty, int unitPrice
+ String itemId, String name, String variantId, String variantName, String? memberId, List<CartModifierDto> modifiers, String? note, String course, int qty, int unitPrice
 });
 
 
@@ -558,13 +560,14 @@ class __$CartLineDtoCopyWithImpl<$Res>
 
 /// Create a copy of CartLineDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? itemId = null,Object? name = null,Object? variantId = null,Object? variantName = null,Object? modifiers = null,Object? note = freezed,Object? course = null,Object? qty = null,Object? unitPrice = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? itemId = null,Object? name = null,Object? variantId = null,Object? variantName = null,Object? memberId = freezed,Object? modifiers = null,Object? note = freezed,Object? course = null,Object? qty = null,Object? unitPrice = null,}) {
   return _then(_CartLineDto(
 itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,variantId: null == variantId ? _self.variantId : variantId // ignore: cast_nullable_to_non_nullable
 as String,variantName: null == variantName ? _self.variantName : variantName // ignore: cast_nullable_to_non_nullable
-as String,modifiers: null == modifiers ? _self._modifiers : modifiers // ignore: cast_nullable_to_non_nullable
+as String,memberId: freezed == memberId ? _self.memberId : memberId // ignore: cast_nullable_to_non_nullable
+as String?,modifiers: null == modifiers ? _self._modifiers : modifiers // ignore: cast_nullable_to_non_nullable
 as List<CartModifierDto>,note: freezed == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
 as String?,course: null == course ? _self.course : course // ignore: cast_nullable_to_non_nullable
 as String,qty: null == qty ? _self.qty : qty // ignore: cast_nullable_to_non_nullable
@@ -864,7 +867,7 @@ mixin _$SubmitOrderResponseDto {
  String? get visitId;/// Lines the server refused for want of ingredients (ADR-0041). Only the
 /// offending lines are dropped — the rest of the order still lands — so
 /// this must be surfaced, or lines vanish silently.
- List<RejectedLineDto> get rejected;
+ List<RejectedLineDto> get rejected; List<String> get attributionWarnings;
 /// Create a copy of SubmitOrderResponseDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -877,16 +880,16 @@ $SubmitOrderResponseDtoCopyWith<SubmitOrderResponseDto> get copyWith => _$Submit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SubmitOrderResponseDto&&const DeepCollectionEquality().equals(other.ticketIds, ticketIds)&&(identical(other.visitId, visitId) || other.visitId == visitId)&&const DeepCollectionEquality().equals(other.rejected, rejected));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SubmitOrderResponseDto&&const DeepCollectionEquality().equals(other.ticketIds, ticketIds)&&(identical(other.visitId, visitId) || other.visitId == visitId)&&const DeepCollectionEquality().equals(other.rejected, rejected)&&const DeepCollectionEquality().equals(other.attributionWarnings, attributionWarnings));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(ticketIds),visitId,const DeepCollectionEquality().hash(rejected));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(ticketIds),visitId,const DeepCollectionEquality().hash(rejected),const DeepCollectionEquality().hash(attributionWarnings));
 
 @override
 String toString() {
-  return 'SubmitOrderResponseDto(ticketIds: $ticketIds, visitId: $visitId, rejected: $rejected)';
+  return 'SubmitOrderResponseDto(ticketIds: $ticketIds, visitId: $visitId, rejected: $rejected, attributionWarnings: $attributionWarnings)';
 }
 
 
@@ -897,7 +900,7 @@ abstract mixin class $SubmitOrderResponseDtoCopyWith<$Res>  {
   factory $SubmitOrderResponseDtoCopyWith(SubmitOrderResponseDto value, $Res Function(SubmitOrderResponseDto) _then) = _$SubmitOrderResponseDtoCopyWithImpl;
 @useResult
 $Res call({
- List<String> ticketIds, String? visitId, List<RejectedLineDto> rejected
+ List<String> ticketIds, String? visitId, List<RejectedLineDto> rejected, List<String> attributionWarnings
 });
 
 
@@ -914,12 +917,13 @@ class _$SubmitOrderResponseDtoCopyWithImpl<$Res>
 
 /// Create a copy of SubmitOrderResponseDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? ticketIds = null,Object? visitId = freezed,Object? rejected = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? ticketIds = null,Object? visitId = freezed,Object? rejected = null,Object? attributionWarnings = null,}) {
   return _then(_self.copyWith(
 ticketIds: null == ticketIds ? _self.ticketIds : ticketIds // ignore: cast_nullable_to_non_nullable
 as List<String>,visitId: freezed == visitId ? _self.visitId : visitId // ignore: cast_nullable_to_non_nullable
 as String?,rejected: null == rejected ? _self.rejected : rejected // ignore: cast_nullable_to_non_nullable
-as List<RejectedLineDto>,
+as List<RejectedLineDto>,attributionWarnings: null == attributionWarnings ? _self.attributionWarnings : attributionWarnings // ignore: cast_nullable_to_non_nullable
+as List<String>,
   ));
 }
 
@@ -1004,10 +1008,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<String> ticketIds,  String? visitId,  List<RejectedLineDto> rejected)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<String> ticketIds,  String? visitId,  List<RejectedLineDto> rejected,  List<String> attributionWarnings)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SubmitOrderResponseDto() when $default != null:
-return $default(_that.ticketIds,_that.visitId,_that.rejected);case _:
+return $default(_that.ticketIds,_that.visitId,_that.rejected,_that.attributionWarnings);case _:
   return orElse();
 
 }
@@ -1025,10 +1029,10 @@ return $default(_that.ticketIds,_that.visitId,_that.rejected);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<String> ticketIds,  String? visitId,  List<RejectedLineDto> rejected)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<String> ticketIds,  String? visitId,  List<RejectedLineDto> rejected,  List<String> attributionWarnings)  $default,) {final _that = this;
 switch (_that) {
 case _SubmitOrderResponseDto():
-return $default(_that.ticketIds,_that.visitId,_that.rejected);case _:
+return $default(_that.ticketIds,_that.visitId,_that.rejected,_that.attributionWarnings);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1045,10 +1049,10 @@ return $default(_that.ticketIds,_that.visitId,_that.rejected);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<String> ticketIds,  String? visitId,  List<RejectedLineDto> rejected)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<String> ticketIds,  String? visitId,  List<RejectedLineDto> rejected,  List<String> attributionWarnings)?  $default,) {final _that = this;
 switch (_that) {
 case _SubmitOrderResponseDto() when $default != null:
-return $default(_that.ticketIds,_that.visitId,_that.rejected);case _:
+return $default(_that.ticketIds,_that.visitId,_that.rejected,_that.attributionWarnings);case _:
   return null;
 
 }
@@ -1060,7 +1064,7 @@ return $default(_that.ticketIds,_that.visitId,_that.rejected);case _:
 @JsonSerializable()
 
 class _SubmitOrderResponseDto implements SubmitOrderResponseDto {
-  const _SubmitOrderResponseDto({required final  List<String> ticketIds, this.visitId, final  List<RejectedLineDto> rejected = const <RejectedLineDto>[]}): _ticketIds = ticketIds,_rejected = rejected;
+  const _SubmitOrderResponseDto({required final  List<String> ticketIds, this.visitId, final  List<RejectedLineDto> rejected = const <RejectedLineDto>[], final  List<String> attributionWarnings = const <String>[]}): _ticketIds = ticketIds,_rejected = rejected,_attributionWarnings = attributionWarnings;
   factory _SubmitOrderResponseDto.fromJson(Map<String, dynamic> json) => _$SubmitOrderResponseDtoFromJson(json);
 
  final  List<String> _ticketIds;
@@ -1087,6 +1091,13 @@ class _SubmitOrderResponseDto implements SubmitOrderResponseDto {
   return EqualUnmodifiableListView(_rejected);
 }
 
+ final  List<String> _attributionWarnings;
+@override@JsonKey() List<String> get attributionWarnings {
+  if (_attributionWarnings is EqualUnmodifiableListView) return _attributionWarnings;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_attributionWarnings);
+}
+
 
 /// Create a copy of SubmitOrderResponseDto
 /// with the given fields replaced by the non-null parameter values.
@@ -1101,16 +1112,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SubmitOrderResponseDto&&const DeepCollectionEquality().equals(other._ticketIds, _ticketIds)&&(identical(other.visitId, visitId) || other.visitId == visitId)&&const DeepCollectionEquality().equals(other._rejected, _rejected));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SubmitOrderResponseDto&&const DeepCollectionEquality().equals(other._ticketIds, _ticketIds)&&(identical(other.visitId, visitId) || other.visitId == visitId)&&const DeepCollectionEquality().equals(other._rejected, _rejected)&&const DeepCollectionEquality().equals(other._attributionWarnings, _attributionWarnings));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_ticketIds),visitId,const DeepCollectionEquality().hash(_rejected));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_ticketIds),visitId,const DeepCollectionEquality().hash(_rejected),const DeepCollectionEquality().hash(_attributionWarnings));
 
 @override
 String toString() {
-  return 'SubmitOrderResponseDto(ticketIds: $ticketIds, visitId: $visitId, rejected: $rejected)';
+  return 'SubmitOrderResponseDto(ticketIds: $ticketIds, visitId: $visitId, rejected: $rejected, attributionWarnings: $attributionWarnings)';
 }
 
 
@@ -1121,7 +1132,7 @@ abstract mixin class _$SubmitOrderResponseDtoCopyWith<$Res> implements $SubmitOr
   factory _$SubmitOrderResponseDtoCopyWith(_SubmitOrderResponseDto value, $Res Function(_SubmitOrderResponseDto) _then) = __$SubmitOrderResponseDtoCopyWithImpl;
 @override @useResult
 $Res call({
- List<String> ticketIds, String? visitId, List<RejectedLineDto> rejected
+ List<String> ticketIds, String? visitId, List<RejectedLineDto> rejected, List<String> attributionWarnings
 });
 
 
@@ -1138,12 +1149,13 @@ class __$SubmitOrderResponseDtoCopyWithImpl<$Res>
 
 /// Create a copy of SubmitOrderResponseDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? ticketIds = null,Object? visitId = freezed,Object? rejected = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? ticketIds = null,Object? visitId = freezed,Object? rejected = null,Object? attributionWarnings = null,}) {
   return _then(_SubmitOrderResponseDto(
 ticketIds: null == ticketIds ? _self._ticketIds : ticketIds // ignore: cast_nullable_to_non_nullable
 as List<String>,visitId: freezed == visitId ? _self.visitId : visitId // ignore: cast_nullable_to_non_nullable
 as String?,rejected: null == rejected ? _self._rejected : rejected // ignore: cast_nullable_to_non_nullable
-as List<RejectedLineDto>,
+as List<RejectedLineDto>,attributionWarnings: null == attributionWarnings ? _self._attributionWarnings : attributionWarnings // ignore: cast_nullable_to_non_nullable
+as List<String>,
   ));
 }
 

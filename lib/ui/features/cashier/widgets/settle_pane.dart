@@ -125,12 +125,10 @@ class _SettlePaneState extends State<SettlePane> {
 
   /// Whether the Siapa row is offered: only where a receipt is about to be
   /// minted from tapped lines, and only under the `memberSplit` mode.
-  bool get _canName =>
-      widget.splitEnabled && widget.mode == SettleMode.perItem;
+  bool get _canName => widget.splitEnabled && widget.mode == SettleMode.perItem;
 
-  /// Whose tab a `piutang` payment here would charge (ADR-0120).
-  MemberDto? get _debtor =>
-      debtorFor(_bill, receiptMember: _canName ? _bornFor : null);
+  /// The payer explicitly chosen for this piutang leg (ADR-0125).
+  MemberDto? get _debtor => _bornFor;
 
   /// Amount receipts already minted and still owing — Bagi rata pays the next
   /// one rather than re-splitting.
@@ -212,6 +210,9 @@ class _SettlePaneState extends State<SettlePane> {
     if (_pay.needsProof && _proof == null) {
       return l10n.stlBlkAttachProof;
     }
+    if (_pay == PayMethod.piutang && _debtor == null) {
+      return 'Pilih pelanggan yang berutang';
+    }
     if (_pay == PayMethod.piutang && _amount > _headroom) {
       return l10n.stlBlkOverCredit;
     }
@@ -279,6 +280,7 @@ class _SettlePaneState extends State<SettlePane> {
           amount: amount,
           tendered: tender,
           photoBase64: _proof == null ? null : base64Encode(_proof!),
+          memberId: _pay == PayMethod.piutang ? _debtor?.id : null,
         );
       });
     } finally {
@@ -320,7 +322,7 @@ class _SettlePaneState extends State<SettlePane> {
               _modeRow(sc),
               const SizedBox(height: Sp.s3h),
               _modeBlock(sc),
-              if (_canName) ...[
+              if (_canName || _pay == PayMethod.piutang) ...[
                 const SizedBox(height: Sp.s3h),
                 _whoRow(sc),
               ],

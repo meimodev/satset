@@ -132,6 +132,7 @@ class MembersRepository extends StateNotifier<MembersState> {
 
   final Ref _ref;
   StreamSubscription? _wsSub;
+  bool _lookupOnly = false;
 
   @override
   void dispose() {
@@ -147,7 +148,8 @@ class MembersRepository extends StateNotifier<MembersState> {
 
   /// Prefix search, run server-side against both the name and the number. The
   /// caller debounces; this fires the read it is given.
-  Future<void> search(String q) async {
+  Future<void> search(String q, {bool lookupOnly = false}) async {
+    _lookupOnly = lookupOnly;
     state = state.copyWith(query: q, loading: true, clearError: true);
     await _fetch();
   }
@@ -182,7 +184,7 @@ class MembersRepository extends StateNotifier<MembersState> {
           await _ref
                   .read(apiClientProvider)
                   .getJson(
-                    '/members',
+                    _lookupOnly ? '/members/lookup' : '/members',
                     query: {
                       'limit': '$_kMembersPage',
                       if (state.query.trim().isNotEmpty)

@@ -7,7 +7,7 @@ import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
-import 'package:satset/ui/core/widgets/sat_chip.dart';
+import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 
 /// Payment methods, and what the cashier has to produce for each.
 enum PayMethod {
@@ -59,36 +59,40 @@ enum PayMethod {
 ///
 /// The same subtraction `memberUnitsOf` and `pointsBaseByMember` make on the
 /// server. It lives here rather than in each caller because the till gates the
-/// chip on this member's headroom and the server charges this member — two
-/// copies of one rule is how the chip goes live for a tab the server refuses.
+/// dropdown on this member's headroom and the server charges this member — two
+/// copies of one rule is how the option goes live for a tab the server refuses.
 MemberDto? debtorFor(Bill bill, {MemberDto? receiptMember}) =>
     receiptMember ?? bill.member;
 
-/// Why the Piutang chip is off, or null when it is live. A reason on screen
-/// beats a greyed-out chip — Principle 3.
+/// Why the Piutang option is off, or null when it is live. A reason on screen
+/// beats a missing option without explanation — Principle 3.
 String? piutangOffReason(AppL10n l10n, MemberDto? debtor) {
   if (debtor == null) return l10n.stlPiutangNoMember;
   if (debtor.debtHeadroom <= 0) return l10n.stlPiutangNoRoom;
   return null;
 }
 
-/// The method row, shared by the settle pane and the per-struk pay sheet.
+/// The payment method picker dropdown, shared by the settle pane and the
+/// per-struk pay sheet.
 ///
-/// **There is no lock.** A bill-wide one used to collapse this row to whatever
+/// **There is no lock.** A bill-wide one used to collapse this dropdown to whatever
 /// method paid first; `CONTEXT.md` has always described a struk holding part
 /// Tunai part Kartu, the lock made that unreachable, and it is gone (ADR-0121).
-/// Two copies of the row is how one surface keeps a rule the other dropped,
+/// Two copies of the dropdown is how one surface keeps a rule the other dropped,
 /// which is why this is a widget rather than a method on each screen.
 class PayMethodPicker extends StatelessWidget {
   final PayMethod selected;
   final ValueChanged<PayMethod> onPick;
 
-  /// Whether the venue runs tabs at all (ADR-0098). When false the Piutang chip
-  /// is absent rather than disabled — there is nothing to explain.
+  /// Whether the venue runs tabs at all (ADR-0098). When false the Piutang
+  /// option is absent rather than disabled — there is nothing to explain.
   final bool debtEnabled;
 
   /// Whose tab this payment would charge, from [debtorFor].
   final MemberDto? debtor;
+
+  /// Sits above the field, in caps — same treatment as [SatField]'s.
+  final String? label;
 
   const PayMethodPicker({
     super.key,
@@ -96,6 +100,7 @@ class PayMethodPicker extends StatelessWidget {
     required this.onPick,
     required this.debtEnabled,
     required this.debtor,
+    this.label,
   });
 
   @override
@@ -103,29 +108,25 @@ class PayMethodPicker extends StatelessWidget {
     final sc = context.sat;
     final l10n = context.l10n;
     final offReason = piutangOffReason(l10n, debtor);
+    final includePiutang =
+        debtEnabled && (offReason == null || selected == PayMethod.piutang);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Wrap(
-          spacing: Sp.s2,
-          runSpacing: Sp.s2,
-          children: [
+        SatDropdown<PayMethod>(
+          key: ValueKey(selected),
+          value: selected,
+          label: label,
+          options: [
             for (final m in PayMethod.values)
-              if (m != PayMethod.piutang)
-                SatChip.select(
-                  label: m.label(l10n),
-                  selected: selected == m,
-                  onTap: () => onPick(m),
-                ),
-            if (debtEnabled)
-              SatChip.select(
-                label: PayMethod.piutang.label(l10n),
-                selected: selected == PayMethod.piutang,
-                onTap: offReason != null
-                    ? null
-                    : () => onPick(PayMethod.piutang),
-              ),
+              if (m != PayMethod.piutang || includePiutang)
+                SatOption(m, m.label(l10n)),
           ],
+          onChanged: (m) {
+            if (m != null) onPick(m);
+          },
         ),
         if (debtEnabled && offReason != null) ...[
           const SizedBox(height: Sp.s2),

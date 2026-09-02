@@ -183,13 +183,20 @@ Future<PunchStatus> punchStatus(
             ..where(r.memberId.equals(memberId)))
           .get();
   sessionIds.addAll(attributed.map((row) => row.read(r.sessionId)!));
+  final ticketOwned =
+      await (db.selectOnly(t)
+            ..addColumns([t.sessionId])
+            ..where(t.memberId.equals(memberId)))
+          .get();
+  sessionIds.addAll(ticketOwned.map((row) => row.read(t.sessionId)!));
   if (sessionIds.isEmpty) {
     return PunchStatus(bought: 0, given: 0, target: c.punchTarget);
   }
 
   final tickets =
       await (db.select(t)..where(
-            (x) => x.sessionId.isIn(sessionIds) & x.itemId.equals(c.punchItemId!),
+            (x) =>
+                x.sessionId.isIn(sessionIds) & x.itemId.equals(c.punchItemId!),
           ))
           .get();
   if (tickets.isEmpty) {
@@ -197,13 +204,12 @@ Future<PunchStatus> punchStatus(
   }
 
   // Owner of each session, so an unclaimed unit can fall back to them.
-  final sessionOwner = {
-    for (final row
-        in await (db.selectOnly(s)
-              ..addColumns([s.id, s.memberId])
-              ..where(s.id.isIn(sessionIds)))
-            .get())
-      row.read(s.id)!: row.read(s.memberId),
+  final sessionRows = await (db.select(
+    s,
+  )..where((x) => x.id.isIn(sessionIds))).get();
+  final sessionOwner = {for (final row in sessionRows) row.id: row.memberId};
+  final sessionVersion = {
+    for (final row in sessionRows) row.id: row.memberAttributionVersion,
   };
 
   // Receipt → its [[Pemilik struk]], and the line assignments that point at
@@ -217,8 +223,9 @@ Future<PunchStatus> punchStatus(
   // which is the pre-ADR-0118 reading exactly. The flag gates the *write* and
   // the picker, never the read.
   final receiptOwner = {
-    for (final row
-        in await (db.select(r)..where((x) => x.sessionId.isIn(sessionIds))).get())
+    for (final row in await (db.select(
+      r,
+    )..where((x) => x.sessionId.isIn(sessionIds))).get())
       row.receiptId: row.memberId,
   };
   final lines = await (db.select(
@@ -235,6 +242,7 @@ Future<PunchStatus> punchStatus(
     linesByTicket: linesByTicket,
     receiptOwner: receiptOwner,
     sessionOwner: sessionOwner,
+    sessionVersion: sessionVersion,
   );
 
   var bought = 0;
@@ -277,9 +285,14 @@ Map<String, int> memberUnitsOf(
   required Map<String, List<TableSessionReceiptLine>> linesByTicket,
   required Map<String, String?> receiptOwner,
   required Map<String, String?> sessionOwner,
+  required Map<String, int?> sessionVersion,
 }) {
   final out = <String, int>{};
   for (final tk in tickets) {
+    if (sessionVersion[tk.sessionId] == 2) {
+      if (tk.memberId == memberId) out[tk.id] = tk.qty;
+      continue;
+    }
     final owner = sessionOwner[tk.sessionId];
     var assigned = 0;
     var mine = 0;
@@ -611,9 +624,7 @@ Future<Member> updateMember(
       kelurahan: address == null
           ? const Value.absent()
           : Value(address.kelurahan),
-      addressText: address == null
-          ? const Value.absent()
-          : Value(address.text),
+      addressText: address == null ? const Value.absent() : Value(address.text),
     ),
   );
   final member = (await getMember(db, id))!;
@@ -1055,7 +1066,6 @@ Future<List<MemberPoint>> _liveRedeemRows(
   return live;
 }
 
-
 Future<String?> _nameOf(AppDatabase db, String memberId) async {
   final row = await (db.select(
     db.members,
@@ -1278,6 +1288,7 @@ Future<Map<String, dynamic>> memberReportSection(
   AppDatabase db, {
   required DateTime from,
   required DateTime to,
+
   /// Already-walked scans. The member report walks the same window for its own
   /// finer list, so it hands them over rather than paying for the pass twice.
   MemberWindowTrade? trade,
@@ -1419,11 +1430,9 @@ Future<MemberWindowTrade> memberWindowTrade(
   final attributedBySession = <String, List<TableSessionReceipt>>{};
   if (sessions.isNotEmpty) {
     final ids = sessions.map((x) => x.id).toList();
-    final recs =
-        await (db.select(db.tableSessionReceipts)..where(
-              (x) => x.sessionId.isIn(ids) & x.memberId.isNotNull(),
-            ))
-            .get();
+    final recs = await (db.select(
+      db.tableSessionReceipts,
+    )..where((x) => x.sessionId.isIn(ids) & x.memberId.isNotNull())).get();
     for (final rec in recs) {
       (attributedBySession[rec.sessionId] ??= <TableSessionReceipt>[]).add(rec);
     }
@@ -1766,6 +1775,14 @@ Future<Map<String, dynamic>> memberHistory(
             ..where(r.memberId.equals(memberId)))
           .get();
   candidates.addAll(named.map((row) => row.read(r.sessionId)!));
+  final ticketOwned =
+      await (db.selectOnly(db.tableSessionTickets)
+            ..addColumns([db.tableSessionTickets.sessionId])
+            ..where(db.tableSessionTickets.memberId.equals(memberId)))
+          .get();
+  candidates.addAll(
+    ticketOwned.map((row) => row.read(db.tableSessionTickets.sessionId)!),
+  );
 
   if (candidates.isEmpty) return _emptyHistory(memberId);
 
@@ -1783,6 +1800,9 @@ Future<Map<String, dynamic>> memberHistory(
 
   final sessionIds = sessions.map((x) => x.id).toList();
   final sessionOwner = {for (final row in sessions) row.id: row.memberId};
+  final sessionVersion = {
+    for (final row in sessions) row.id: row.memberAttributionVersion,
+  };
 
   final receipts = await (db.select(
     r,
@@ -1804,8 +1824,8 @@ Future<Map<String, dynamic>> memberHistory(
   final order = {for (var i = 0; i < sessionIds.length; i++) sessionIds[i]: i};
   final tickets =
       await (db.select(
-        db.tableSessionTickets,
-      )..where((x) => x.sessionId.isIn(sessionIds))).get()
+          db.tableSessionTickets,
+        )..where((x) => x.sessionId.isIn(sessionIds))).get()
         ..sort(
           (a, b) =>
               (order[a.sessionId] ?? 0).compareTo(order[b.sessionId] ?? 0),
@@ -1817,6 +1837,7 @@ Future<Map<String, dynamic>> memberHistory(
     linesByTicket: linesByTicket,
     receiptOwner: receiptOwner,
     sessionOwner: sessionOwner,
+    sessionVersion: sessionVersion,
   );
 
   final unitsBySession = <String, int>{};

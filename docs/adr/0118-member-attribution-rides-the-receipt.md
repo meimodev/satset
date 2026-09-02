@@ -1,6 +1,6 @@
 # ADR-0118 — Member attribution rides the receipt
 
-Status: accepted
+Status: superseded by ADR-0125
 Date: 2026-08-29
 
 Amends [ADR-0094](0094-a-bill-discount-has-a-source.md) (the order-scope

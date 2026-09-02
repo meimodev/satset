@@ -558,6 +558,7 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     int? tendered,
     String? note,
     String? photoBase64,
+    String? memberId,
   }) => _actOnReceipt(
     receiptId,
     SettlementEventKind.recordPayment,
@@ -570,6 +571,7 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
       // never enters the projection — the money has to add up offline, the
       // photo only has to arrive.
       'photoBase64': ?photoBase64,
+      'memberId': ?memberId,
     },
     (id) => ref
         .read(apiClientProvider)
@@ -580,6 +582,7 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
           'tendered': ?tendered,
           'note': ?note,
           'photoBase64': ?photoBase64,
+          'memberId': ?memberId,
         }, idempotencyKey: id),
   );
 
@@ -758,6 +761,21 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
           const {},
           idempotencyKey: id,
         ),
+  );
+
+  Future<Bill> assignTicketMembers(
+    String visitId,
+    List<String> ticketIds,
+    String? memberId,
+  ) => _act(
+    visitId: visitId,
+    kind: SettlementEventKind.assignTicketMembers,
+    payload: {'ticketIds': ticketIds, 'memberId': memberId},
+    online: (id) => ref.read(apiClientProvider).postJson(
+      '/settlement/visits/$visitId/ticket-members',
+      {'ticketIds': ticketIds, 'memberId': memberId},
+      idempotencyKey: id,
+    ),
   );
 
   /// Spend points as money off this bill. The ledger row and the discount land

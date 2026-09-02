@@ -158,6 +158,10 @@ class Visits extends Table {
   /// (ADR-0092) — the visit *was* a member visit, and history does not rewrite.
   TextColumn get memberId => text().nullable()();
 
+  /// Null marks a visit opened before ticket attribution existed. New visits
+  /// use version 2 and read membership from their tickets (ADR-0125).
+  IntColumn get memberAttributionVersion => integer().nullable()();
+
   /// Set when the waiter frees the table (table-close / detach). Non-null ⇒
   /// the visit is detached: floor shows the table kosong, the cashier still
   /// lists this bill, flagged.
@@ -320,6 +324,10 @@ class Tickets extends Table {
   /// reused across visits). Stamped at create from the table's
   /// `currentVisitId`. See ADR-0024. Nullable only for pre-v29 rows.
   TextColumn get visitId => text().nullable()();
+
+  /// The member who owns this order line. Nullable means deliberately
+  /// unassigned; payment ownership is recorded separately (ADR-0125).
+  TextColumn get memberId => text().nullable()();
   TextColumn get itemId => text()();
   TextColumn get name => text()();
   TextColumn get variantName => text().withDefault(const Constant(''))();
@@ -550,7 +558,8 @@ class VenueSettings extends Table {
   /// The [[Kartu stempel (punch card)]] program: one menu item, N paid units
   /// earn one free. Null item ⇒ no program running even when the toggle is on.
   TextColumn get memberPunchItemId => text().nullable()();
-  IntColumn get memberPunchTarget => integer().withDefault(const Constant(10))();
+  IntColumn get memberPunchTarget =>
+      integer().withDefault(const Constant(10))();
 
   /// **[[Piutang]]** — the third mechanism nesting under [membersEnabled], off
   /// by default (ADR-0098). Off hides the `piutang` payment method, the till's
@@ -579,7 +588,8 @@ class VenueSettings extends Table {
   /// stays valid before the phone must re-scan.
   BoolColumn get guestNoteEnabled =>
       boolean().withDefault(const Constant(true))();
-  IntColumn get guestHoursStartMin => integer().withDefault(const Constant(0))();
+  IntColumn get guestHoursStartMin =>
+      integer().withDefault(const Constant(0))();
   IntColumn get guestHoursEndMin => integer().withDefault(const Constant(0))();
   IntColumn get guestMaxItems => integer().withDefault(const Constant(20))();
   IntColumn get guestSessionHours => integer().withDefault(const Constant(4))();
@@ -768,6 +778,7 @@ class TableSessions extends Table {
   /// member's past trade still count in the member/non-member split while the
   /// person themselves is gone (ADR-0092).
   TextColumn get memberId => text().nullable()();
+  IntColumn get memberAttributionVersion => integer().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -778,6 +789,7 @@ class TableSessionTickets extends Table {
   TextColumn get id => text()();
   TextColumn get sessionId => text()();
   TextColumn get ticketId => text()();
+  TextColumn get memberId => text().nullable()();
   TextColumn get itemId => text()();
   TextColumn get name => text()();
   TextColumn get variantName => text().withDefault(const Constant(''))();
@@ -983,6 +995,9 @@ class Payments extends Table {
   /// reason `stock_movements.count_id` is not: there is no honest answer to
   /// "which leg" on a struk that could only ever hold one.
   TextColumn get refundsPaymentId => text().nullable()();
+
+  /// Debtor explicitly selected for a piutang payment leg (ADR-0125).
+  TextColumn get memberId => text().nullable()();
   IntColumn get tenderedAmount => integer().nullable()();
   TextColumn get cashierUserId => text().nullable()();
   TextColumn get note => text().nullable()();
@@ -1080,6 +1095,7 @@ class TableSessionPayments extends Table {
   TextColumn get id => text()();
   TextColumn get sessionId => text()();
   TextColumn get receiptId => text()();
+  TextColumn get memberId => text().nullable()();
   TextColumn get method => text()();
   IntColumn get amount => integer()();
   BoolColumn get isRefund => boolean().withDefault(const Constant(false))();

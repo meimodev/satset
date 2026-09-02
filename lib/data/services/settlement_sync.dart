@@ -97,6 +97,11 @@ Future<void> _sendEvent(Ref ref, SettlementEvent e) async {
         });
       case SettlementEventKind.detachMember:
         await post('/settlement/visits/$v/member/detach', const {});
+      case SettlementEventKind.assignTicketMembers:
+        await post('/settlement/visits/$v/ticket-members', {
+          'ticketIds': e.payload['ticketIds'],
+          'memberId': e.arg<String>('memberId'),
+        });
       case SettlementEventKind.attachReceiptMember:
         await post('/settlement/receipts/$r/member', {
           'memberId': e.arg<String>('memberId'),
@@ -123,6 +128,7 @@ Future<void> _sendEvent(Ref ref, SettlementEvent e) async {
           'tendered': ?e.payload['tendered'],
           'note': ?e.arg<String>('note'),
           'photoBase64': ?e.arg<String>('photoBase64'),
+          'memberId': ?e.arg<String>('memberId'),
         });
       case SettlementEventKind.refund:
         await post('/settlement/receipts/$r/refund', {

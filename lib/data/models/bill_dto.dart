@@ -292,6 +292,9 @@ class BillLine {
   final int assignedUnits;
   final String? note;
   final String status;
+  final String? memberId;
+  final String? memberName;
+  final bool memberLocked;
 
   /// Add-ons the guest chose, snapshotted at order time. Shown under the line.
   final List<TicketModifier> modifiers;
@@ -311,6 +314,9 @@ class BillLine {
     required this.assignedUnits,
     required this.note,
     required this.status,
+    this.memberId,
+    this.memberName,
+    this.memberLocked = false,
     required this.modifiers,
     required this.sentAt,
   });
@@ -328,6 +334,9 @@ class BillLine {
     assignedUnits: _int(j['assignedUnits']),
     note: j['note'] as String?,
     status: j['status'] as String? ?? 'sent',
+    memberId: j['memberId'] as String?,
+    memberName: j['memberName'] as String?,
+    memberLocked: j['memberLocked'] == true,
     modifiers: _modifiers(j['modifiersJson']),
     sentAt: DateTime.tryParse(j['sentAt'] as String? ?? ''),
   );
@@ -622,6 +631,7 @@ class Bill {
   /// than re-deriving the same AND from a module list, the rule ADR-0107 puts
   /// on every floor surface.
   final bool splitEnabled;
+  final bool ticketAttribution;
   final int serviceAmount;
   final int taxAmount;
   final int total;
@@ -655,6 +665,7 @@ class Bill {
     required this.billDiscounts,
     required this.member,
     required this.splitEnabled,
+    this.ticketAttribution = false,
     required this.serviceAmount,
     required this.taxAmount,
     required this.total,
@@ -722,6 +733,7 @@ class Bill {
         : MemberDto.fromJson((j['member'] as Map).cast<String, dynamic>()),
     // Absent on an older server: fail closed, exactly as the mode key does.
     splitEnabled: j['splitEnabled'] == true,
+    ticketAttribution: j['ticketAttribution'] == true,
     serviceAmount: _int(j['serviceAmount']),
     taxAmount: _int(j['taxAmount']),
     total: _int(j['total']),

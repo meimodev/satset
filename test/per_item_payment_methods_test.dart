@@ -136,70 +136,81 @@ void main() {
   });
   tearDown(() => db.close());
 
-  test('a tab on a named share charges that member, not the bill owner', () async {
-    await settings();
-    final host = await createMember(db, name: 'Ani', phone: '081100000001');
-    final guest = await createMember(db, name: 'Budi', phone: '081100000002');
-    await visit(memberId: host.id);
-    await line('tk1', 40000);
-    await line('tk2', 60000);
+  test(
+    'a tab on a named share charges that member, not the bill owner',
+    () async {
+      await settings();
+      final host = await createMember(db, name: 'Ani', phone: '081100000001');
+      final guest = await createMember(db, name: 'Budi', phone: '081100000002');
+      await visit(memberId: host.id);
+      await line('tk1', 40000);
+      await line('tk2', 60000);
 
-    final mine = await mint('A', ['tk1'], memberId: guest.id);
-    await mint('B', ['tk2']);
+      final mine = await mint('A', ['tk1'], memberId: guest.id);
+      await mint('B', ['tk2']);
 
-    final res = await post('/settlement/receipts/$mine/payments', {
-      'method': 'piutang',
-      'amount': 40000,
-    });
-    expect(res.statusCode, 200, reason: await res.readAsString());
-
-    expect(await memberDebt(db, guest.id), 40000);
-    expect(
-      await memberDebt(db, host.id),
-      0,
-      reason: 'the host ate none of it and owes none of it',
-    );
-  });
-
-  test('a tab on an unnamed share falls back to the bill owner', () async {
-    await settings();
-    final host = await createMember(db, name: 'Ani', phone: '081100000001');
-    await visit(memberId: host.id);
-    await line('tk1', 35000);
-
-    final r = await mint('A', ['tk1']);
-    expect(
-      (await post('/settlement/receipts/$r/payments', {
+      final res = await post('/settlement/receipts/$mine/payments', {
         'method': 'piutang',
-        'amount': 35000,
-      })).statusCode,
-      200,
-    );
-    expect(await memberDebt(db, host.id), 35000);
-  });
+        'amount': 40000,
+        'memberId': guest.id,
+      });
+      expect(res.statusCode, 200, reason: await res.readAsString());
 
-  test('a struk is born named, and the mint refuses without the mode', () async {
-    await settings(split: false);
-    final guest = await createMember(db, name: 'Budi', phone: '081100000002');
-    await visit();
-    await line('tk1', 20000);
+      expect(await memberDebt(db, guest.id), 40000);
+      expect(
+        await memberDebt(db, host.id),
+        0,
+        reason: 'the host ate none of it and owes none of it',
+      );
+    },
+  );
 
-    final res = await post('/settlement/visits/v1/receipts', {
-      'mode': 'itemized',
-      'label': 'A',
-      'memberId': guest.id,
-      'lines': [
-        {'ticketId': 'tk1', 'qtyUnits': 1},
-      ],
-    });
-    expect(res.statusCode, 409);
-    expect(jsonDecode(await res.readAsString())['code'], 'split_disabled');
-    expect(
-      (await bill())['receipts'],
-      isEmpty,
-      reason: 'a refused mint leaves no half-made receipt behind',
-    );
-  });
+  test(
+    'a tab on an unnamed share charges the explicitly named payer',
+    () async {
+      await settings();
+      final host = await createMember(db, name: 'Ani', phone: '081100000001');
+      await visit(memberId: host.id);
+      await line('tk1', 35000);
+
+      final r = await mint('A', ['tk1']);
+      expect(
+        (await post('/settlement/receipts/$r/payments', {
+          'method': 'piutang',
+          'amount': 35000,
+          'memberId': host.id,
+        })).statusCode,
+        200,
+      );
+      expect(await memberDebt(db, host.id), 35000);
+    },
+  );
+
+  test(
+    'a struk is born named, and the mint refuses without the mode',
+    () async {
+      await settings(split: false);
+      final guest = await createMember(db, name: 'Budi', phone: '081100000002');
+      await visit();
+      await line('tk1', 20000);
+
+      final res = await post('/settlement/visits/v1/receipts', {
+        'mode': 'itemized',
+        'label': 'A',
+        'memberId': guest.id,
+        'lines': [
+          {'ticketId': 'tk1', 'qtyUnits': 1},
+        ],
+      });
+      expect(res.statusCode, 409);
+      expect(jsonDecode(await res.readAsString())['code'], 'split_disabled');
+      expect(
+        (await bill())['receipts'],
+        isEmpty,
+        reason: 'a refused mint leaves no half-made receipt behind',
+      );
+    },
+  );
 
   test('one struk takes part Tunai and part tab', () async {
     await settings();
@@ -222,6 +233,7 @@ void main() {
       (await post('/settlement/receipts/$r/payments', {
         'method': 'piutang',
         'amount': 30000,
+        'memberId': guest.id,
       })).statusCode,
       200,
     );
@@ -271,11 +283,11 @@ void main() {
     await post('/settlement/receipts/$r/payments', {
       'method': 'piutang',
       'amount': 40000,
+      'memberId': guest.id,
     });
     expect(await memberDebt(db, guest.id), 40000);
 
-    final pays = (receiptOf(await bill(), 'A')['payments'] as List)
-        .cast<Map>();
+    final pays = (receiptOf(await bill(), 'A')['payments'] as List).cast<Map>();
     final tab = pays.firstWhere((p) => p['method'] == 'piutang');
     final cash = pays.firstWhere((p) => p['method'] == 'tunai');
 

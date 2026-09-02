@@ -52,6 +52,44 @@ class MemberPanel extends ConsumerWidget {
     // Frozen at the first payment, exactly like a bill discount (ADR-0068).
     final live = bill.billClosedAt == null && bill.paidAmount == 0;
 
+    if (bill.ticketAttribution) {
+      final bulkLive =
+          bill.billClosedAt == null && bill.lines.every((l) => !l.memberLocked);
+      return SatCard.plain(
+        padding: const EdgeInsets.all(Sp.s3h),
+        child: Row(
+          children: [
+            Icon(Icons.badge_outlined, size: 18, color: sc.textLo),
+            const SizedBox(width: Sp.s2),
+            Expanded(
+              child: Text(
+                'Pelanggan per tiket',
+                style: SatType.bodyM(color: sc.textLo),
+              ),
+            ),
+            SatButton.outline(
+              label: l10n.cshMemberFind,
+              icon: Icons.person_search_outlined,
+              size: SatButtonSize.sm,
+              onTap: bulkLive ? () => _lookup(context, ref) : null,
+            ),
+            const SizedBox(width: Sp.s2),
+            SatButton.ghost(
+              label: l10n.cshMemberDetach,
+              size: SatButtonSize.sm,
+              onTap: bulkLive
+                  ? () => run(
+                      () => repo.assignTicketMembers(bill.visitId, [
+                        for (final line in bill.lines) line.ticketId,
+                      ], null),
+                    )
+                  : null,
+            ),
+          ],
+        ),
+      );
+    }
+
     return SatCard.plain(
       padding: const EdgeInsets.all(Sp.s3h),
       child: member == null
@@ -183,10 +221,16 @@ class MemberPanel extends ConsumerWidget {
   Future<void> _lookup(BuildContext context, WidgetRef ref) async {
     final picked = await showSatSheet<MemberDto>(
       context,
-      builder: (_) => const MemberLookupSheet(),
+      builder: (_) => MemberLookupSheet(lookupOnly: bill.ticketAttribution),
     );
     if (picked == null) return;
-    await run(() => repo.attachMember(bill.visitId, picked.id));
+    await run(
+      () => bill.ticketAttribution
+          ? repo.assignTicketMembers(bill.visitId, [
+              for (final line in bill.lines) line.ticketId,
+            ], picked.id)
+          : repo.attachMember(bill.visitId, picked.id),
+    );
   }
 
   Future<void> _redeem(
@@ -215,7 +259,9 @@ class MemberPanel extends ConsumerWidget {
 /// Public because the [[Pemilik struk]] step reaches the same sheet per share
 /// (ADR-0118) — finding a guest is one implementation, whatever it is for.
 class MemberLookupSheet extends ConsumerStatefulWidget {
-  const MemberLookupSheet({super.key});
+  final bool lookupOnly;
+
+  const MemberLookupSheet({super.key, this.lookupOnly = false});
 
   @override
   ConsumerState<MemberLookupSheet> createState() => _LookupSheetState();
@@ -228,7 +274,11 @@ class _LookupSheetState extends ConsumerState<MemberLookupSheet> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(membersProvider.notifier).search(''));
+    Future.microtask(
+      () => ref
+          .read(membersProvider.notifier)
+          .search('', lookupOnly: widget.lookupOnly),
+    );
   }
 
   @override
@@ -242,7 +292,11 @@ class _LookupSheetState extends ConsumerState<MemberLookupSheet> {
     setState(() {});
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 250), () {
-      if (mounted) ref.read(membersProvider.notifier).search(q);
+      if (mounted) {
+        ref
+            .read(membersProvider.notifier)
+            .search(q, lookupOnly: widget.lookupOnly);
+      }
     });
   }
 
@@ -299,33 +353,40 @@ class _LookupSheetState extends ConsumerState<MemberLookupSheet> {
                         separatorBuilder: (_, _) =>
                             const SizedBox(height: Sp.s1h),
                         itemBuilder: (_, i) => SatButton.outline(
-                          label: '${results[i].name} · ${results[i].phone}',
+                          label:
+                              '${results[i].name} · ${widget.lookupOnly ? _maskedPhone(results[i].phone) : results[i].phone}',
                           onTap: () => Navigator.of(context).pop(results[i]),
                         ),
                       ),
               ),
             ),
-            const SizedBox(height: Sp.s3),
-            SatButton.primary(
-              label: l10n.cshMemberEnrol,
-              icon: Icons.person_add_alt_1_rounded,
-              onTap: () async {
-                final made = await showSatSheet<MemberDto>(
-                  context,
-                  // What the cashier typed is almost always the number they
-                  // just read off the guest's phone.
-                  builder: (_) => MemberFormSheet(initialPhone: _q.text.trim()),
-                );
-                if (made != null && context.mounted) {
-                  Navigator.of(context).pop(made);
-                }
-              },
-            ),
+            if (!widget.lookupOnly) ...[
+              const SizedBox(height: Sp.s3),
+              SatButton.primary(
+                label: l10n.cshMemberEnrol,
+                icon: Icons.person_add_alt_1_rounded,
+                onTap: () async {
+                  final made = await showSatSheet<MemberDto>(
+                    context,
+                    builder: (_) =>
+                        MemberFormSheet(initialPhone: _q.text.trim()),
+                  );
+                  if (made != null && context.mounted) {
+                    Navigator.of(context).pop(made);
+                  }
+                },
+              ),
+            ],
           ],
         ),
       ),
     );
   }
+}
+
+String _maskedPhone(String phone) {
+  final tail = phone.length <= 4 ? phone : phone.substring(phone.length - 4);
+  return '•••• $tail';
 }
 
 /// How many points to spend. The ceiling is the smaller of what they have and

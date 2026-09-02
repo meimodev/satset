@@ -66,6 +66,7 @@ class SubmitOrderUseCase {
         name: c.name,
         variantId: c.variantId,
         variantName: c.variantName,
+        memberId: c.memberId,
         modifiers: [
           for (final m in c.selectedModifiers)
             CartModifierDto(
