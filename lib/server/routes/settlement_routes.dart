@@ -203,6 +203,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           }
         }
       }
+      // Every mirror of this bill's members now holds a stale visit count and
+      // a stale `lastVisitAt`, whether or not anybody earned a point (ADR-0129).
+      await touchVisitMembers(db, visitId, ownerId: visit.memberId, at: now);
       final fresh = await _visit(db, visitId);
       final didSnapshot = fresh != null && fresh.tableFreedAt != null;
       if (didSnapshot) {

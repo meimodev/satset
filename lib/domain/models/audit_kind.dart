@@ -140,6 +140,14 @@ enum AuditKind {
   /// `{from}`, `{to}` — the member absorbed and the one that survives.
   memberMerged,
 
+  /// `{from}`, `{to}` — an offline enrolment whose number was already in the
+  /// directory, folded into the standing record at drain (ADR-0129).
+  ///
+  /// Deliberately **not** [memberMerged]: that one means a person chose to
+  /// merge two records, and an owner reading their own directory back has to
+  /// be able to tell "the queue reconciled these" from "somebody did this".
+  memberEnrolFoldedAtDrain,
+
   /// `{name}`, `{points}` (signed, e.g. `+40`). The reason rides `reason`,
   /// where every other explained act keeps it.
   memberPointsAdjusted,

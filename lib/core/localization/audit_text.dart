@@ -106,6 +106,10 @@ String auditText(AppL10n l, AuditEntry e) {
     AuditKind.memberCreated => l.auditMemberCreated(s('name')),
     AuditKind.memberDeleted => l.auditMemberDeleted(s('name')),
     AuditKind.memberMerged => l.auditMemberMerged(s('from'), s('to')),
+    AuditKind.memberEnrolFoldedAtDrain => l.auditMemberEnrolFolded(
+      s('from'),
+      s('to'),
+    ),
     AuditKind.memberPointsAdjusted => l.auditMemberPointsAdjusted(
       s('name'),
       s('points'),

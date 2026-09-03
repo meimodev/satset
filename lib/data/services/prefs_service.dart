@@ -223,6 +223,37 @@ class PrefsService {
     await _stampVenueCache(fingerprint);
   }
 
+  /// Where the [[Salinan pelanggan]] resumes its sync, and which server it came
+  /// from (ADR-0129).
+  ///
+  /// The mirror's rows live in the client database, not here — these are its
+  /// two labels, kept beside the venue cache's own label because they answer
+  /// the same question about the same device.
+  static const _kMemberMirrorCursor = 'satset.member_mirror_cursor';
+  static const _kMemberMirrorFp = 'satset.member_mirror_fp';
+
+  /// Opaque: minted by the host and never parsed here. A cursor a client can
+  /// build is a cursor it can build wrong.
+  String? memberMirrorCursor() => _p.getString(_kMemberMirrorCursor);
+  Future<void> setMemberMirrorCursor(String? v) async {
+    if (v == null || v.isEmpty) {
+      await _p.remove(_kMemberMirrorCursor);
+      return;
+    }
+    await _p.setString(_kMemberMirrorCursor, v);
+  }
+
+  String? memberMirrorFingerprint() => _p.getString(_kMemberMirrorFp);
+  Future<void> setMemberMirrorFingerprint(String v) =>
+      _p.setString(_kMemberMirrorFp, v);
+
+  /// Forget where the mirror was and whose it was. The rows themselves are
+  /// dropped by `MemberMirror.wipe`, which calls this.
+  Future<void> clearMemberMirrorMeta() async {
+    await _p.remove(_kMemberMirrorCursor);
+    await _p.remove(_kMemberMirrorFp);
+  }
+
   /// Which server the cached blobs came from, or null on a device that cached
   /// before this label existed — read as "unknown", never as "foreign", so an
   /// upgrade does not throw away a cache it cannot vouch for.

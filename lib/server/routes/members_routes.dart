@@ -13,6 +13,7 @@ import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart' hide Member;
 import 'package:satset/server/debts.dart';
 import 'package:satset/server/member_import.dart';
+import 'package:satset/server/member_sync.dart';
 import 'package:satset/server/members.dart';
 import 'package:satset/server/routes/reports_routes.dart' show reportWindow;
 import 'package:satset/server/ws_hub.dart';
@@ -355,6 +356,50 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     });
   });
 
+  /// The [[Salinan pelanggan]] feed — everything that changed since the
+  /// cursor the device was last given (ADR-0129).
+  ///
+  /// **Registered before `/members/<id>`**, like every other literal here.
+  ///
+  /// Openable by the three who may already read a member on a device that
+  /// takes orders or settles; `viewReports` is deliberately **not** among them
+  /// — a reporting screen reads live and has no reason to keep a copy of the
+  /// venue's customer list on disk.
+  ///
+  /// The payload is **masked** for a caller who can only take orders: the
+  /// number leaves as a salted hash plus its last four digits, which is the
+  /// same split `/members/lookup` already makes, applied to a copy that
+  /// persists. A till gets the whole record, and that is the accepted risk the
+  /// ADR names rather than a hole to close here.
+  r.get('/members/sync', (Request req) async {
+    final off = await enabledGuard();
+    if (off != null) return off;
+    final cfg = await memberConfig(db);
+    // The owner switched mirroring off: 404, exactly as membership off does,
+    // so a client cannot tell "not for this venue" from "not on this server".
+    if (!cfg.mirrorEnabled) return err(404, 'member_mirror_disabled');
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    final caps = a.$2;
+    final settles =
+        caps.contains(Capability.settleBill.name) ||
+        caps.contains(Capability.manageMembers.name);
+    if (!settles && !caps.contains(Capability.takeOrder.name)) {
+      return forbidden(Capability.takeOrder);
+    }
+    final q = req.url.queryParameters;
+    final limit = int.tryParse(q['limit'] ?? '') ?? kMemberSyncPage;
+    final page = await memberSyncPage(
+      db,
+      cursor: q['since'],
+      limit: limit.clamp(1, 1000),
+    );
+    // Minted on demand, and only when somebody is actually going to mask with
+    // it — a venue whose only paired devices are tills never grows one.
+    final salt = settles ? null : await memberMirrorSalt(db);
+    return json(memberSyncJson(page, salt: salt, masked: !settles));
+  });
+
   r.get('/members/lookup', (Request req) async {
     final off = await enabledGuard();
     if (off != null) return off;
@@ -517,7 +562,34 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       return forbidden(Capability.settleBill);
     }
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    // An offline capture identifies itself by carrying the id it minted and
+    // the moment it was taken (ADR-0129). That, and not the caller, is what
+    // switches enrolment from "refuse a duplicate number so the till can offer
+    // the standing record" to "fold, because there is nobody at the counter
+    // left to ask".
+    final capturedId = _text(body['id']);
+    final capturedAt = _date(body['capturedAt']);
     try {
+      if (capturedId != null && capturedAt != null) {
+        final out = await enrolCapturedMember(
+          db,
+          id: capturedId,
+          name: (body['name'] as String?) ?? '',
+          phone: (body['phone'] as String?) ?? '',
+          note: _text(body['note']),
+          birthday: _date(body['birthday']),
+          address: _address(body['address']) ?? const MemberAddress(),
+          actorUserId: a.$1,
+          hub: hub,
+          capturedAt: capturedAt,
+        );
+        return json({
+          ...memberJson(out.member),
+          // The device rewrites its mirror off this: everything it queued
+          // behind the enrolment names the id it minted, which may have lost.
+          'folded': out.folded,
+        });
+      }
       final member = await createMember(
         db,
         name: (body['name'] as String?) ?? '',

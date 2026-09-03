@@ -38,13 +38,19 @@ Future<void> _sendEvent(Ref ref, SettlementEvent e) async {
   final v = e.visitId;
   final r = e.arg<String>('receiptId') ?? '';
 
-  Future<void> post(String path, Map<String, dynamic> body) async {
-    await api.postJson(path, {
+  Future<Object?> postFor(String path, Map<String, dynamic> body) => api.postJson(
+    path,
+    {
       ...body,
       // Honoured by the host so the money lands in the shift that collected
       // it, not the one the socket came back in.
       'capturedAt': e.capturedAt.toIso8601String(),
-    }, idempotencyKey: e.id);
+    },
+    idempotencyKey: e.id,
+  );
+
+  Future<void> post(String path, Map<String, dynamic> body) async {
+    await postFor(path, body);
   }
 
   try {
@@ -91,6 +97,31 @@ Future<void> _sendEvent(Ref ref, SettlementEvent e) async {
           '/settlement/visits/$v/discounts/${e.arg<String>('discountId')}/remove',
           const {},
         );
+      case SettlementEventKind.enrolMember:
+        // The id was minted on the device and is also this event's
+        // idempotency key, so a replay after a committed-but-timed-out first
+        // attempt reads the member back rather than enrolling them twice.
+        final raw =
+            await postFor('/members', {
+                  'id': e.id,
+                  'name': e.arg<String>('name'),
+                  'phone': e.arg<String>('phone'),
+                  'note': ?e.arg<String>('note'),
+                  'birthday': ?e.arg<String>('birthday'),
+                  if (e.payload['address'] != null)
+                    'address': e.payload['address'],
+                })
+                as Map<String, dynamic>;
+        final winner = raw['id'] as String?;
+        if (winner != null && winner != e.id) {
+          // A [[Pendaftaran terlipat]]: the number was already in the
+          // directory and the standing record won. Everything queued behind
+          // this enrolment names the id this device minted (ADR-0129).
+          await ref
+              .read(settlementJournalProvider.notifier)
+              .rewriteMemberId(e.id, winner);
+        }
+
       case SettlementEventKind.attachMember:
         await post('/settlement/visits/$v/member', {
           'memberId': e.arg<String>('memberId'),

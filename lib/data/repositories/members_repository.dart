@@ -7,8 +7,12 @@ import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/member_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/member_mirror.dart';
+import 'package:satset/data/services/settlement_sync.dart'
+    show settlementJournalProvider;
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/member.dart';
+import 'package:satset/domain/models/settlement_event.dart';
 
 /// How many members one read carries. The directory is a venue's regulars, not
 /// a mailing list — a single page covers most, and the till reaches the rest by
@@ -85,6 +89,19 @@ class MembersState {
   /// show an empty directory (ADR-0091).
   final bool enabled;
 
+  /// When the [[Salinan pelanggan]] these rows came from was last vouched for
+  /// by the host — **null means live** (ADR-0129).
+  ///
+  /// Non-null is what every screen renders its caveat off. It is a timestamp
+  /// and not a `stale` flag on purpose: a stamped number a cashier can read
+  /// aloud is useful, and "offline" alone tells the guest nothing about how old
+  /// their balance is.
+  final DateTime? mirroredAt;
+
+  /// True when the rows are masked — a device that may only take orders holds
+  /// the number as a hash and can show its last four digits, nothing more.
+  final bool masked;
+
   const MembersState({
     this.members = const [],
     this.query = '',
@@ -93,7 +110,12 @@ class MembersState {
     this.loading = false,
     this.error,
     this.enabled = true,
+    this.mirroredAt,
+    this.masked = false,
   });
+
+  /// Whether these rows came off the mirror rather than the host.
+  bool get fromMirror => mirroredAt != null;
 
   MembersState copyWith({
     List<MemberDto>? members,
@@ -106,6 +128,9 @@ class MembersState {
     Object? error,
     bool clearError = false,
     bool? enabled,
+    DateTime? mirroredAt,
+    bool clearMirroredAt = false,
+    bool? masked,
   }) => MembersState(
     members: members ?? this.members,
     query: query ?? this.query,
@@ -116,6 +141,8 @@ class MembersState {
     loading: loading ?? this.loading,
     error: clearError ? null : (error ?? this.error),
     enabled: enabled ?? this.enabled,
+    mirroredAt: clearMirroredAt ? null : (mirroredAt ?? this.mirroredAt),
+    masked: masked ?? this.masked,
   );
 }
 
@@ -203,24 +230,62 @@ class MembersRepository extends StateNotifier<MembersState> {
         ],
         loading: false,
         enabled: true,
+        clearMirroredAt: true,
+        masked: false,
       );
       SatLog.repo('members.loaded n=${state.members.length}');
     } on ApiException catch (e) {
-      // 404 here is the program being off, not a missing route.
+      // 404 here is the program being off, not a missing route. The venue said
+      // no, so the mirror is not a fallback — there is nothing to fall back to.
       if (e.statusCode == 404) {
         state = state.copyWith(
           members: const [],
           loading: false,
           enabled: false,
+          clearMirroredAt: true,
         );
         return;
       }
       SatLog.repo('members.fetch fail $e');
+      if (await _fromMirror()) return;
       state = state.copyWith(loading: false, error: e);
     } catch (e) {
       SatLog.repo('members.fetch fail $e');
+      if (await _fromMirror()) return;
       state = state.copyWith(loading: false, error: e);
     }
+  }
+
+  /// Answer the current query out of the [[Salinan pelanggan]] (ADR-0129).
+  ///
+  /// Tried only **after** the host has actually failed, never instead of
+  /// asking: a live directory is the directory, and a device that can reach its
+  /// host has no business reading a copy. Returns false when there is nothing
+  /// mirrored, so the caller still surfaces the transport error — an empty
+  /// mirror and an empty venue must not look the same.
+  ///
+  /// The birthday and lapsed filters are deliberately **not** answered here.
+  /// Both are server-derived cuts over the whole directory, and a page of
+  /// mirrored rows would answer them wrong rather than not at all; the admin
+  /// screens that use them are online surfaces anyway.
+  Future<bool> _fromMirror() async {
+    if (state.birthdayMonth != null || state.lapsedDays != null) return false;
+    final mirror = _ref.read(memberMirrorProvider);
+    if (mirror == null) return false;
+    final hits = await mirror.search(state.query.trim());
+    if (hits.isEmpty && await mirror.count() == 0) return false;
+    final at = await mirror.syncedAt();
+    if (at == null) return false;
+    state = state.copyWith(
+      members: [for (final h in hits) h.member],
+      loading: false,
+      enabled: true,
+      clearError: true,
+      mirroredAt: at,
+      masked: hits.isNotEmpty && hits.first.masked,
+    );
+    SatLog.repo('members.mirror n=${hits.length} at=$at');
+    return true;
   }
 
   /// One member with their ledger and punch card. Read on demand — the
@@ -253,17 +318,98 @@ class MembersRepository extends StateNotifier<MembersState> {
     String? note,
     DateTime? birthday,
     MemberAddress address = const MemberAddress(),
-  }) => _write(
-    () async =>
-        await _ref.read(apiClientProvider).postJson('/members', {
-              'name': name,
-              'phone': phone,
-              'note': note,
-              'birthday': birthday?.toIso8601String(),
-              if (address.isNotEmpty) 'address': address.toJson(),
-            })
-            as Map<String, dynamic>,
-  );
+  }) async {
+    // The [[Antrean kirim]]'s rule, not a new one (ADR-0090): a device that
+    // knows it has no host does not spend a timeout finding out.
+    if (_ref.read(wsConnStateProvider) != WsConnState.open) {
+      return _captureEnrol(
+        name: name,
+        phone: phone,
+        note: note,
+        birthday: birthday,
+        address: address,
+      );
+    }
+    try {
+      return await _write(
+        () async =>
+            await _ref.read(apiClientProvider).postJson('/members', {
+                  'name': name,
+                  'phone': phone,
+                  'note': note,
+                  'birthday': birthday?.toIso8601String(),
+                  if (address.isNotEmpty) 'address': address.toJson(),
+                })
+                as Map<String, dynamic>,
+      );
+    } on ApiException {
+      // A refusal is the host's answer and it stands: a bad number, a
+      // duplicate the till should be offered rather than enrolling twice,
+      // membership off. `ApiException` means the host answered, so there is
+      // nothing to capture — only a transport failure means there was nobody
+      // to ask (ADR-0129).
+      rethrow;
+    } catch (_) {
+      return _captureEnrol(
+        name: name,
+        phone: phone,
+        note: note,
+        birthday: birthday,
+        address: address,
+      );
+    }
+  }
+
+  /// Enrol into the [[Antrean setelmen]] instead of the host (ADR-0129).
+  ///
+  /// The uuid is minted here and is both the member's id and the event's
+  /// idempotency key, so a replay cannot enrol them twice — and if the number
+  /// turns out to be known, the drain folds and rewrites this id everywhere it
+  /// was queued.
+  ///
+  /// The row goes into the [[Salinan pelanggan]] in the same breath, because
+  /// the whole point of enrolling at the counter is attaching them to the bill
+  /// that is open right now.
+  Future<MemberDto> _captureEnrol({
+    required String name,
+    required String phone,
+    String? note,
+    DateTime? birthday,
+    MemberAddress address = const MemberAddress(),
+  }) async {
+    final journal = _ref.read(settlementJournalProvider.notifier);
+    final ev = await journal.append(
+      visitId: kVenueScopeVisitId,
+      kind: SettlementEventKind.enrolMember,
+      payload: {
+        'name': name,
+        'phone': phone,
+        'note': ?note,
+        'birthday': ?birthday?.toIso8601String(),
+        if (address.isNotEmpty) 'address': address.toJson(),
+      },
+    );
+    final mirror = _ref.read(memberMirrorProvider);
+    await mirror?.insertLocal(
+      id: ev.id,
+      name: name,
+      phone: phone,
+      note: note,
+      birthday: birthday,
+      address: address,
+    );
+    final local = (await mirror?.byId(ev.id))?.member;
+    if (local == null) {
+      // No mirror to write into — the venue switched it off, or prefs is not
+      // up yet. The event is queued either way; there is simply nothing to
+      // hand back to the screen, and pretending otherwise would put a member
+      // on the bill that no read can find.
+      throw StateError('member mirror unavailable');
+    }
+    _upsert(local);
+    SatLog.repo('members.enrol captured id=${ev.id}');
+    return local;
+  }
 
   Future<MemberImportPreviewDto> previewImport(List<int> bytes) async {
     final raw =

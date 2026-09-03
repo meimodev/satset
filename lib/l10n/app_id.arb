@@ -1717,6 +1717,17 @@
       }
     }
   },
+  "auditMemberEnrolFolded": "Pendaftaran luring {from} digabung ke {to}",
+  "@auditMemberEnrolFolded": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
   "auditMemberPointsAdjusted": "Koreksi poin {name} {points}",
   "@auditMemberPointsAdjusted": {
     "placeholders": {
@@ -6928,6 +6939,14 @@
       }
     }
   },
+  "memMirrorAsOf": "Data pelanggan luring · terakhir diperbarui {at}",
+  "@memMirrorAsOf": {
+    "placeholders": {
+      "at": {
+        "type": "String"
+      }
+    }
+  },
   "memSearchHint": "Cari nama atau nomor",
   "memActionAdd": "Tambah",
   "memBirthdayFilter": "Ulang tahun bulan ini",
@@ -7117,6 +7136,8 @@
   "@vstMembersEnableHint": {
     "description": "Membership settings and hub copy."
   },
+  "vstMembersMirror": "Simpan data pelanggan di perangkat",
+  "vstMembersMirrorHint": "Kasir tetap bisa mencari dan memasang pelanggan saat jaringan mati. Data tersimpan di perangkat; matikan bila perangkat sering hilang.",
   "vstMembersPoints": "Poin",
   "@vstMembersPoints": {
     "description": "Membership settings and hub copy."

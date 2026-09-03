@@ -34,6 +34,43 @@ enum SettlementEventKind {
   reopenReceipt,
   closeBill,
   reopenBill,
+
+  /// Enrol a member captured while the host was gone (ADR-0129).
+  ///
+  /// The one kind with **no [[Visit]]** — it rides [kVenueScopeVisitId], the
+  /// chain drained ahead of every per-visit one, because an attach that names
+  /// a member the host has never heard of must land second.
+  enrolMember,
+}
+
+/// The chain visit-less acts share.
+///
+/// Not a real visit and never looked up as one: it is the [[Antrean setelmen]]
+/// admitting that not everything it carries hangs off a bill. Drained first,
+/// and excluded from the local-authority test below like every other
+/// member-scope act.
+const kVenueScopeVisitId = '__venue__';
+
+extension SettlementEventScope on SettlementEventKind {
+  /// Does this act move money?
+  ///
+  /// Only money confers [[Kunjungan otoritatif-lokal|local authority]]. A
+  /// [[Waiter|pelayan]] tagging a regular at order time captures an act on
+  /// **their** handset; if that made the [[Visit]] local-authoritative there,
+  /// the till settling the same bill would hit ADR-0116's two-islanded-devices
+  /// case as routine rather than as the exception it is (ADR-0129).
+  ///
+  /// A redemption is deliberately **not** in here: it takes money off the
+  /// bill, so it is a settlement act that happens to name a member.
+  bool get isMemberScope => switch (this) {
+    SettlementEventKind.attachMember ||
+    SettlementEventKind.detachMember ||
+    SettlementEventKind.assignTicketMembers ||
+    SettlementEventKind.attachReceiptMember ||
+    SettlementEventKind.detachReceiptMember ||
+    SettlementEventKind.enrolMember => true,
+    _ => false,
+  };
 }
 
 /// Read a persisted kind back, tolerating one written by a newer build.

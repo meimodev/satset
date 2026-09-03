@@ -9,6 +9,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
@@ -47,8 +48,12 @@ class DiscountPresetsScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // Pushed from Venue Settings, so the hub stays in the trail.
-          SatAppBar(crumbs: [context.l10n.tabVenue, context.l10n.crumbDiskon]),
+          // Root-routed off Venue Settings, so this bar is the only chrome on
+          // the screen: it owns the back arrow, and the hub stays in the trail.
+          SatAppBar(
+            onBack: () => context.pop(),
+            crumbs: [context.l10n.tabVenue, context.l10n.crumbDiskon],
+          ),
           Expanded(
             child: presets.isEmpty
                 ? SatEmpty(

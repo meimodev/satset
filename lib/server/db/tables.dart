@@ -529,6 +529,29 @@ class VenueSettings extends Table {
   BoolColumn get membersEnabled =>
       boolean().withDefault(const Constant(true))();
 
+  /// Whether the directory mirrors to devices, so a dark handset can still
+  /// find and attach a regular (ADR-0129). **On by default**, and a plain
+  /// boolean rather than a [[Modul]] or a mode key on purpose: a mode key
+  /// fails closed (ADR-0109), which would switch the mirror off on precisely
+  /// the venue that has never phoned home. It is the only lever an owner has
+  /// over "is my customer list on the phone my waiter lost", so it is a switch
+  /// they can find, not an entitlement somebody sells them.
+  BoolColumn get memberMirrorEnabled =>
+      boolean().withDefault(const Constant(true))();
+
+  /// Per-venue salt for the **masked** half of a [[Salinan pelanggan]] — the
+  /// hash a `takeOrder`-only device searches by, in place of the number itself.
+  /// Minted on first sync and never rotated (rotating it blinds every mirror
+  /// until each one refetches). Empty means not yet minted.
+  ///
+  /// It exists because an unsalted hash of a phone number is not a mask: the
+  /// number space is small enough to walk end to end, so a pulled database
+  /// file would hand back every number. The salt travels to the device but is
+  /// kept **out of the sqlite file** — `flutter_secure_storage`, so the file
+  /// alone is not enough.
+  TextColumn get memberMirrorSalt =>
+      text().withDefault(const Constant(''))();
+
   /// The two mechanisms that nest under it, both off by default. Turning
   /// [memberPointsEnabled] off **freezes** the [[Poin]] ledger — balances stay,
   /// redemption hides, flipping it back on restores history (ADR-0095).
@@ -1456,6 +1479,50 @@ class Members extends Table {
   /// Also the escape hatch for a guest from outside Sulawesi Utara, whose
   /// three pickers stay empty.
   TextColumn get addressText => text().nullable()();
+
+  /// The revision a [[Salinan pelanggan]] pages off (ADR-0129).
+  ///
+  /// A **counter, not a clock**. Drift stores a `DateTime` at second
+  /// granularity, so a timestamp cursor drops any change that lands in the
+  /// same second as the cursor and sorts below it — silently, and forever,
+  /// because nothing revisits a row that did not move. A monotonic integer has
+  /// no ties to break.
+  ///
+  /// Stamped by every writer that changes what a mirror *shows* — the identity
+  /// here, and the derived figures on top of it ([[Poin]], [[Piutang]], visit
+  /// count). One helper stamps it, `touchMember`; a writer that skips it drops
+  /// that member out of every device's copy until some unrelated edit moves
+  /// them again, which is the same failure class `writeAudit` and `cash.dart`
+  /// exist to prevent.
+  ///
+  /// Shares one sequence with [MemberTombstones.rev], so one cursor resumes
+  /// both streams. Nullable only for pre-v71 rows, which v71 backfills.
+  IntColumn get mirrorRev => integer().nullable()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// A [[Pelanggan (member)]] that is **gone**, so a [[Salinan pelanggan]] can
+/// learn it (ADR-0129).
+///
+/// [Members] has no soft delete on purpose — deleting the row is how a person
+/// is forgotten — which leaves a device that was dark during the delete holding
+/// them forever. This is the one place that remembers *that* an id went away,
+/// and it stores no name, no number and nothing else about them: a tombstone
+/// that carried the person's details would be the erasure undone.
+class MemberTombstones extends Table {
+  /// The member id that went away.
+  TextColumn get id => text()();
+  DateTimeColumn get deletedAt => dateTime()();
+
+  /// Position in the same sequence as [Members.mirrorRev] — a departure and an
+  /// edit are one ordered stream, so one cursor resumes both.
+  IntColumn get rev => integer().withDefault(const Constant(0))();
+
+  /// Set when the row went by a **merge**: the id that survived, so a local
+  /// reference follows it instead of dangling. Null for a plain delete —
+  /// there is nowhere to follow.
+  TextColumn get mergedInto => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }

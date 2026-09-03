@@ -68,6 +68,16 @@ class MemberConfig {
   final bool splitEnabled;
   final bool pointsEnabled;
   final bool punchEnabled;
+
+  /// Whether the directory mirrors to devices (ADR-0129). ANDed with
+  /// [enabled] here and nowhere else, for the reason [splitEnabled] is: a
+  /// route that asks about the switch for itself is a review finding.
+  ///
+  /// Fails **open** where the other two fail closed — it is a plain venue
+  /// preference, not a mode key, so a venue that has never phoned home still
+  /// mirrors. That is the whole point: the mirror exists for the device that
+  /// cannot reach anything.
+  final bool mirrorEnabled;
   final String? presetId;
   final int earnPerThousand;
   final int pointValue;
@@ -80,6 +90,7 @@ class MemberConfig {
     required this.splitEnabled,
     required this.pointsEnabled,
     required this.punchEnabled,
+    required this.mirrorEnabled,
     required this.presetId,
     required this.earnPerThousand,
     required this.pointValue,
@@ -111,6 +122,10 @@ Future<MemberConfig> memberConfig(AppDatabase db) async {
         venueHasMode(s, modeMemberSplit),
     pointsEnabled: s?.memberPointsEnabled ?? false,
     punchEnabled: s?.memberPunchEnabled ?? false,
+    mirrorEnabled:
+        (s?.membersEnabled ?? false) &&
+        venueHasModule(s, moduleMembers) &&
+        (s?.memberMirrorEnabled ?? true),
     presetId: s?.memberPresetId,
     earnPerThousand: s?.memberEarnPerThousand ?? 1,
     pointValue: s?.memberPointValue ?? 1000,
@@ -121,6 +136,114 @@ Future<MemberConfig> memberConfig(AppDatabase db) async {
 }
 
 /// What a member has right now.
+/// Advance `members.mirror_rev`, so the [[Salinan pelanggan]] on every device
+/// learns this member changed (ADR-0129).
+///
+/// **The one stamper.** Every writer that changes what a mirror *shows* calls
+/// it — the identity here, the [[Poin]] ledger, the [[Piutang]] ledger in
+/// `debts.dart`, and a [[Bill (tab)]] close that names somebody, because the
+/// visit count and `lastVisitAt` a mirror carries are derived from trade rather
+/// than from this row. A writer that skips it does not fail; it silently drops
+/// that member out of every device's copy until the next unrelated edit, which
+/// is exactly why there is one function and not five inline `Value(now)`s.
+///
+/// Deliberately **not** transactional on its own — every caller already wraps
+/// its own act, and a stamp that lands without the change it describes would
+/// push a stale row to every mirror.
+///
+/// [at] is accepted and ignored: the revision is a counter, not a clock, so a
+/// backdated act still lands at the *end* of the stream. That is the point — a
+/// device syncs in the order changes were made, not in the order they are
+/// filed.
+Future<void> touchMember(
+  AppDatabase db,
+  String memberId, {
+  DateTime? at,
+}) async {
+  await (db.update(db.members)..where((m) => m.id.equals(memberId))).write(
+    MembersCompanion(mirrorRev: Value(await nextMirrorRev(db))),
+  );
+}
+
+/// The next position in the mirror stream.
+///
+/// One sequence across both tables, because an edit and a departure are one
+/// ordered stream to the device reading them. `MAX + 1` rather than a stored
+/// counter for the reason the balances here have no column: a second place to
+/// keep it is a second place for it to be wrong, and this server is one
+/// process.
+Future<int> nextMirrorRev(AppDatabase db) async {
+  final m = db.members.mirrorRev.max();
+  final t = db.memberTombstones.rev.max();
+  final mRow = await (db.selectOnly(db.members)..addColumns([m])).getSingle();
+  final tRow = await (db.selectOnly(
+    db.memberTombstones,
+  )..addColumns([t])).getSingle();
+  final high = [mRow.read(m) ?? 0, tRow.read(t) ?? 0].reduce((a, b) => a > b ? a : b);
+  return high + 1;
+}
+
+/// Remember that an id went away, so a device that was dark through the delete
+/// stops offering a member who no longer exists (ADR-0129).
+///
+/// [mergedInto] is the survivor when the row went by a fold, and null for a
+/// plain delete. Stores nothing about the person: a tombstone carrying their
+/// name would be the erasure undone.
+Future<void> _tombstone(
+  AppDatabase db,
+  String memberId, {
+  String? mergedInto,
+  DateTime? at,
+}) async {
+  await db
+      .into(db.memberTombstones)
+      .insertOnConflictUpdate(
+        MemberTombstonesCompanion.insert(
+          id: memberId,
+          deletedAt: at ?? SatClock.now(),
+          mergedInto: Value(mergedInto),
+          rev: Value(await nextMirrorRev(db)),
+        ),
+      );
+}
+
+/// Stamp every member a closing [[Bill (tab)]] names — the [[Pemilik tagihan]]
+/// and every [[Pemilik struk]] and ticket owner on it (ADR-0129).
+///
+/// Separate from the earn loop on purpose: `visitCount`, `lifetimeSpend`,
+/// `lastVisitAt` and stempel progress are derived from the **trade**, not from
+/// the [[Poin]] ledger, so a venue running membership with points switched off
+/// earns nothing at close and still has four figures on every mirror go stale.
+Future<void> touchVisitMembers(
+  AppDatabase db,
+  String visitId, {
+  String? ownerId,
+  DateTime? at,
+}) async {
+  final ids = <String>{?ownerId};
+  final recs =
+      await (db.selectOnly(db.receipts)
+            ..addColumns([db.receipts.memberId])
+            ..where(db.receipts.visitId.equals(visitId)))
+          .get();
+  for (final r in recs) {
+    final id = r.read(db.receipts.memberId);
+    if (id != null) ids.add(id);
+  }
+  final tix =
+      await (db.selectOnly(db.tickets)
+            ..addColumns([db.tickets.memberId])
+            ..where(db.tickets.visitId.equals(visitId)))
+          .get();
+  for (final t in tix) {
+    final id = t.read(db.tickets.memberId);
+    if (id != null) ids.add(id);
+  }
+  for (final id in ids) {
+    await touchMember(db, id, at: at);
+  }
+}
+
 Future<int> memberPoints(AppDatabase db, String memberId) async {
   final sum = db.memberPoints.delta.sum();
   final row =
@@ -348,7 +471,7 @@ Future<Member?> getMember(AppDatabase db, String id) async {
     db.members,
   )..where((m) => m.id.equals(id))).getSingleOrNull();
   if (row == null) return null;
-  final list = await _decorate(db, [row]);
+  final list = await decorateMembers(db, [row]);
   return list.first;
 }
 
@@ -361,7 +484,7 @@ Future<Member?> findMemberByPhone(AppDatabase db, String phone) async {
     db.members,
   )..where((m) => m.phone.equals(normalised))).getSingleOrNull();
   if (row == null) return null;
-  return (await _decorate(db, [row])).first;
+  return (await decorateMembers(db, [row])).first;
 }
 
 /// The directory, and the cashier's prefix search behind one function.
@@ -399,7 +522,7 @@ Future<List<Member>> listMembers(
   if (birthdayMonth != null) {
     rows = rows.where((m) => m.birthday?.month == birthdayMonth).toList();
   }
-  final page = await _decorate(db, rows);
+  final page = await decorateMembers(db, rows);
   if (lapsedDays == null) return page;
   // Filtered after the page, like the birthday cut above: `lastVisitAt` is
   // derived in _decorate, not a column to put in a WHERE.
@@ -411,7 +534,14 @@ Future<List<Member>> listMembers(
 
 /// Attach the derived figures to a page of rows with two grouped queries rather
 /// than two per member — the directory is read on every till lookup.
-Future<List<Member>> _decorate(
+/// Hang the derived figures off a page of rows — [[Poin]], stempel progress,
+/// visit count, lifetime spend, [[Piutang]] and the effective credit limit.
+///
+/// Public because the [[Salinan pelanggan]] must be handed **the same numbers**
+/// `/members` hands a live screen (ADR-0129): a mirror that computed its own
+/// would be a second answer to `SUM(delta)`, which is the thing this whole
+/// module refuses to have.
+Future<List<Member>> decorateMembers(
   AppDatabase db,
   List<rows.Member> page, {
   MemberConfig? cfg,
@@ -508,6 +638,12 @@ Future<Member> createMember(
   WsHub? hub,
   DateTime? at,
   String? idPrefix,
+
+  /// The id to enrol under, when the caller has already minted one — an
+  /// offline enrol drained out of the [[Antrean setelmen]], whose uuid is also
+  /// its idempotency key (ADR-0129). Absent everywhere else: a route mints
+  /// here, as it always did.
+  String? id,
 }) async {
   final cleanName = name.trim();
   final cleanPhone = normalizePhone(phone);
@@ -522,16 +658,17 @@ Future<Member> createMember(
   if (existing != null) {
     throw MemberException('phone_taken', memberId: existing.id);
   }
-  final id = '${idPrefix ?? ''}${_uuid.v4()}';
+  final memberId = id ?? '${idPrefix ?? ''}${_uuid.v4()}';
   final when = at ?? SatClock.now();
   await db
       .into(db.members)
       .insert(
         MembersCompanion.insert(
-          id: id,
+          id: memberId,
           name: cleanName,
           phone: cleanPhone,
           joinedAt: when,
+          mirrorRev: Value(await nextMirrorRev(db)),
           code: Value(_codeFor(cleanPhone)),
           note: Value(note),
           birthday: Value(birthday),
@@ -552,9 +689,74 @@ Future<Member> createMember(
     at: at,
     idPrefix: idPrefix,
   );
-  final member = (await getMember(db, id))!;
+  final member = (await getMember(db, memberId))!;
   _broadcast(hub, member);
   return member;
+}
+
+/// Enrol an offline capture, folding by phone when the number is already known
+/// (ADR-0129).
+///
+/// The three outcomes, in the order they are tried:
+///
+/// 1. **The id is already here.** A replay of a drain that landed — the uuid is
+///    the idempotency key, so this returns the standing record and writes
+///    nothing.
+/// 2. **The number is already here.** A [[Pendaftaran terlipat]]: two dark
+///    tills enrolled the same walk-in, or the guest was a member all along.
+///    Under ADR-0092 the number *is* the identity, so this is the same person
+///    arriving twice and refusing would be wrong rather than safe. The standing
+///    record wins, the arrival's details are **not** written over it, and one
+///    [[Audit]] row says the queue did it.
+/// 3. **Neither.** An ordinary enrolment under the client's own id.
+///
+/// The caller gets back the member *and* whether it folded, because the device
+/// has to rewrite the id it minted — anything it queued behind this names the
+/// loser otherwise.
+Future<({Member member, bool folded})> enrolCapturedMember(
+  AppDatabase db, {
+  required String id,
+  required String name,
+  required String phone,
+  String? note,
+  DateTime? birthday,
+  MemberAddress address = const MemberAddress(),
+  String? actorUserId,
+  WsHub? hub,
+
+  /// When the cashier actually enrolled them. The row is filed under this, not
+  /// under the drain, for the reason a late settlement is backdated (ADR-0123):
+  /// a person who joined on Tuesday did not join on Thursday.
+  DateTime? capturedAt,
+}) async {
+  final standing = await getMember(db, id);
+  if (standing != null) return (member: standing, folded: false);
+  final existing = await findMemberByPhone(db, phone);
+  if (existing != null) {
+    await writeAudit(
+      db,
+      type: AuditType.memberChanged,
+      kind: AuditKind.memberEnrolFoldedAtDrain,
+      params: {'from': name.trim(), 'to': existing.name},
+      actorUserId: actorUserId,
+      hub: hub,
+      at: capturedAt,
+    );
+    return (member: existing, folded: true);
+  }
+  final member = await createMember(
+    db,
+    id: id,
+    name: name,
+    phone: phone,
+    note: note,
+    birthday: birthday,
+    address: address,
+    actorUserId: actorUserId,
+    hub: hub,
+    at: capturedAt,
+  );
+  return (member: member, folded: false);
 }
 
 /// Last six digits — short enough to read back over a counter, long enough not
@@ -625,6 +827,7 @@ Future<Member> updateMember(
           ? const Value.absent()
           : Value(address.kelurahan),
       addressText: address == null ? const Value.absent() : Value(address.text),
+      mirrorRev: Value(await nextMirrorRev(db)),
     ),
   );
   final member = (await getMember(db, id))!;
@@ -667,6 +870,9 @@ Future<void> deleteMember(
     // rows would rewrite last month's bad-debt total from a delete button.
     // Same rule as the bills: the person goes, the trade stays counted.
     await (db.delete(db.members)..where((m) => m.id.equals(id))).go();
+    // Inside the transaction with the delete, or a device that syncs between
+    // the two keeps a member the venue has forgotten (ADR-0129).
+    await _tombstone(db, id);
     await writeAudit(
       db,
       type: AuditType.memberChanged,
@@ -721,6 +927,13 @@ Future<Member> mergeMembers(
     await (db.update(db.reservations)..where((x) => x.memberId.equals(fromId)))
         .write(ReservationsCompanion(memberId: Value(toId)));
     await (db.delete(db.members)..where((m) => m.id.equals(fromId))).go();
+    // The tombstone names the survivor, so a mirror holding a reference to the
+    // absorbed id follows it rather than dangling — the same redirect a
+    // [[Pendaftaran terlipat]] needs at drain (ADR-0129).
+    await _tombstone(db, fromId, mergedInto: toId);
+    // The survivor's own row is untouched by the fold, but everything derived
+    // on top of it just moved.
+    await touchMember(db, toId);
     await writeAudit(
       db,
       type: AuditType.memberChanged,
@@ -1118,6 +1331,9 @@ Future<void> _post(
             actorName: Value(actor?.name),
           ),
         );
+    // A balance is `SUM(delta)` and lives nowhere, so the row above is the only
+    // thing that changed — and a mirror carries that balance (ADR-0129).
+    await touchMember(db, memberId, at: at);
   });
 }
 

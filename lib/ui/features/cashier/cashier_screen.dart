@@ -340,7 +340,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
         BillCard.fromPastBill(
           p,
           l10n: context.l10n,
-          onTap: () => Navigator.of(context).push(
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(
               builder: (_) => PastBillDetailScreen(
                 sessionId: p.sessionId,

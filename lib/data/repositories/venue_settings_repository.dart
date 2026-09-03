@@ -235,6 +235,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     String? soundUngreeted,
     String? soundPickup,
     bool? membersEnabled,
+    bool? memberMirrorEnabled,
     bool? memberPointsEnabled,
     bool? memberPunchEnabled,
     int? memberEarnPerThousand,
@@ -303,6 +304,8 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       soundUngreeted: soundUngreeted ?? state.soundUngreeted,
       soundPickup: soundPickup ?? state.soundPickup,
       membersEnabled: membersEnabled ?? state.membersEnabled,
+      memberMirrorEnabled:
+          memberMirrorEnabled ?? state.memberMirrorEnabled,
       memberPointsEnabled: memberPointsEnabled ?? state.memberPointsEnabled,
       memberPunchEnabled: memberPunchEnabled ?? state.memberPunchEnabled,
       memberEarnPerThousand:
@@ -363,6 +366,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         'soundUngreeted': ?soundUngreeted,
         'soundPickup': ?soundPickup,
         'membersEnabled': ?membersEnabled,
+        'memberMirrorEnabled': ?memberMirrorEnabled,
         'memberPointsEnabled': ?memberPointsEnabled,
         'memberPunchEnabled': ?memberPunchEnabled,
         'memberEarnPerThousand': ?memberEarnPerThousand,

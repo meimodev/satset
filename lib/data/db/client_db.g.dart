@@ -1119,6 +1119,528 @@ class CachedPayableCompanion extends UpdateCompanion<CachedPayableRow> {
   }
 }
 
+class $CachedMembersTable extends CachedMembers
+    with TableInfo<$CachedMembersTable, CachedMemberRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CachedMembersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
+  @override
+  late final GeneratedColumn<String> phone = GeneratedColumn<String>(
+    'phone',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _phoneHashMeta = const VerificationMeta(
+    'phoneHash',
+  );
+  @override
+  late final GeneratedColumn<String> phoneHash = GeneratedColumn<String>(
+    'phone_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _phoneTailMeta = const VerificationMeta(
+    'phoneTail',
+  );
+  @override
+  late final GeneratedColumn<String> phoneTail = GeneratedColumn<String>(
+    'phone_tail',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+    'code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncedAtMeta = const VerificationMeta(
+    'syncedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> syncedAt = GeneratedColumn<DateTime>(
+    'synced_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    phone,
+    phoneHash,
+    phoneTail,
+    code,
+    payloadJson,
+    syncedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cached_members';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CachedMemberRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('phone')) {
+      context.handle(
+        _phoneMeta,
+        phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
+      );
+    }
+    if (data.containsKey('phone_hash')) {
+      context.handle(
+        _phoneHashMeta,
+        phoneHash.isAcceptableOrUnknown(data['phone_hash']!, _phoneHashMeta),
+      );
+    }
+    if (data.containsKey('phone_tail')) {
+      context.handle(
+        _phoneTailMeta,
+        phoneTail.isAcceptableOrUnknown(data['phone_tail']!, _phoneTailMeta),
+      );
+    }
+    if (data.containsKey('code')) {
+      context.handle(
+        _codeMeta,
+        code.isAcceptableOrUnknown(data['code']!, _codeMeta),
+      );
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    if (data.containsKey('synced_at')) {
+      context.handle(
+        _syncedAtMeta,
+        syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_syncedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CachedMemberRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CachedMemberRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      phone: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phone'],
+      )!,
+      phoneHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phone_hash'],
+      )!,
+      phoneTail: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phone_tail'],
+      )!,
+      code: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}code'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+      syncedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}synced_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CachedMembersTable createAlias(String alias) {
+    return $CachedMembersTable(attachedDatabase, alias);
+  }
+}
+
+class CachedMemberRow extends DataClass implements Insertable<CachedMemberRow> {
+  final String id;
+  final String name;
+
+  /// The number, in the clear — **only on a device that may settle**. A
+  /// handset that can only take orders stores `''` here and searches by
+  /// [phoneHash] instead, which is the same split `/members/lookup` makes on
+  /// the wire, applied to a copy that sits on disk.
+  final String phone;
+
+  /// Salted digest of the number, for the masked half. The salt lives in
+  /// `flutter_secure_storage` and never in this file — a pulled database is
+  /// then not enough to walk the (small) space of phone numbers back.
+  final String phoneHash;
+
+  /// Last four digits, so an identity can still be read back over a counter.
+  final String phoneTail;
+  final String code;
+
+  /// The whole `memberJson` payload, stored as it arrived. Parsed back through
+  /// the ordinary `MemberDto.fromJson`, so an offline member and an online one
+  /// are the same object to every screen above.
+  final String payloadJson;
+
+  /// When the host said this was true. **Every stale figure renders with it**
+  /// — a stamped number a cashier can caveat is useful; a bare one the guest
+  /// photographs is what ADR-0123 was avoiding.
+  final DateTime syncedAt;
+  const CachedMemberRow({
+    required this.id,
+    required this.name,
+    required this.phone,
+    required this.phoneHash,
+    required this.phoneTail,
+    required this.code,
+    required this.payloadJson,
+    required this.syncedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['phone'] = Variable<String>(phone);
+    map['phone_hash'] = Variable<String>(phoneHash);
+    map['phone_tail'] = Variable<String>(phoneTail);
+    map['code'] = Variable<String>(code);
+    map['payload_json'] = Variable<String>(payloadJson);
+    map['synced_at'] = Variable<DateTime>(syncedAt);
+    return map;
+  }
+
+  CachedMembersCompanion toCompanion(bool nullToAbsent) {
+    return CachedMembersCompanion(
+      id: Value(id),
+      name: Value(name),
+      phone: Value(phone),
+      phoneHash: Value(phoneHash),
+      phoneTail: Value(phoneTail),
+      code: Value(code),
+      payloadJson: Value(payloadJson),
+      syncedAt: Value(syncedAt),
+    );
+  }
+
+  factory CachedMemberRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CachedMemberRow(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      phone: serializer.fromJson<String>(json['phone']),
+      phoneHash: serializer.fromJson<String>(json['phoneHash']),
+      phoneTail: serializer.fromJson<String>(json['phoneTail']),
+      code: serializer.fromJson<String>(json['code']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      syncedAt: serializer.fromJson<DateTime>(json['syncedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'phone': serializer.toJson<String>(phone),
+      'phoneHash': serializer.toJson<String>(phoneHash),
+      'phoneTail': serializer.toJson<String>(phoneTail),
+      'code': serializer.toJson<String>(code),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'syncedAt': serializer.toJson<DateTime>(syncedAt),
+    };
+  }
+
+  CachedMemberRow copyWith({
+    String? id,
+    String? name,
+    String? phone,
+    String? phoneHash,
+    String? phoneTail,
+    String? code,
+    String? payloadJson,
+    DateTime? syncedAt,
+  }) => CachedMemberRow(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    phone: phone ?? this.phone,
+    phoneHash: phoneHash ?? this.phoneHash,
+    phoneTail: phoneTail ?? this.phoneTail,
+    code: code ?? this.code,
+    payloadJson: payloadJson ?? this.payloadJson,
+    syncedAt: syncedAt ?? this.syncedAt,
+  );
+  CachedMemberRow copyWithCompanion(CachedMembersCompanion data) {
+    return CachedMemberRow(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      phone: data.phone.present ? data.phone.value : this.phone,
+      phoneHash: data.phoneHash.present ? data.phoneHash.value : this.phoneHash,
+      phoneTail: data.phoneTail.present ? data.phoneTail.value : this.phoneTail,
+      code: data.code.present ? data.code.value : this.code,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+      syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedMemberRow(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('phone: $phone, ')
+          ..write('phoneHash: $phoneHash, ')
+          ..write('phoneTail: $phoneTail, ')
+          ..write('code: $code, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('syncedAt: $syncedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    phone,
+    phoneHash,
+    phoneTail,
+    code,
+    payloadJson,
+    syncedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CachedMemberRow &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.phone == this.phone &&
+          other.phoneHash == this.phoneHash &&
+          other.phoneTail == this.phoneTail &&
+          other.code == this.code &&
+          other.payloadJson == this.payloadJson &&
+          other.syncedAt == this.syncedAt);
+}
+
+class CachedMembersCompanion extends UpdateCompanion<CachedMemberRow> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> phone;
+  final Value<String> phoneHash;
+  final Value<String> phoneTail;
+  final Value<String> code;
+  final Value<String> payloadJson;
+  final Value<DateTime> syncedAt;
+  final Value<int> rowid;
+  const CachedMembersCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.phoneHash = const Value.absent(),
+    this.phoneTail = const Value.absent(),
+    this.code = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.syncedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CachedMembersCompanion.insert({
+    required String id,
+    required String name,
+    this.phone = const Value.absent(),
+    this.phoneHash = const Value.absent(),
+    this.phoneTail = const Value.absent(),
+    this.code = const Value.absent(),
+    required String payloadJson,
+    required DateTime syncedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       payloadJson = Value(payloadJson),
+       syncedAt = Value(syncedAt);
+  static Insertable<CachedMemberRow> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? phone,
+    Expression<String>? phoneHash,
+    Expression<String>? phoneTail,
+    Expression<String>? code,
+    Expression<String>? payloadJson,
+    Expression<DateTime>? syncedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (phone != null) 'phone': phone,
+      if (phoneHash != null) 'phone_hash': phoneHash,
+      if (phoneTail != null) 'phone_tail': phoneTail,
+      if (code != null) 'code': code,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (syncedAt != null) 'synced_at': syncedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CachedMembersCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? phone,
+    Value<String>? phoneHash,
+    Value<String>? phoneTail,
+    Value<String>? code,
+    Value<String>? payloadJson,
+    Value<DateTime>? syncedAt,
+    Value<int>? rowid,
+  }) {
+    return CachedMembersCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      phoneHash: phoneHash ?? this.phoneHash,
+      phoneTail: phoneTail ?? this.phoneTail,
+      code: code ?? this.code,
+      payloadJson: payloadJson ?? this.payloadJson,
+      syncedAt: syncedAt ?? this.syncedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (phone.present) {
+      map['phone'] = Variable<String>(phone.value);
+    }
+    if (phoneHash.present) {
+      map['phone_hash'] = Variable<String>(phoneHash.value);
+    }
+    if (phoneTail.present) {
+      map['phone_tail'] = Variable<String>(phoneTail.value);
+    }
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (syncedAt.present) {
+      map['synced_at'] = Variable<DateTime>(syncedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedMembersCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('phone: $phone, ')
+          ..write('phoneHash: $phoneHash, ')
+          ..write('phoneTail: $phoneTail, ')
+          ..write('code: $code, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('syncedAt: $syncedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$ClientDb extends GeneratedDatabase {
   _$ClientDb(QueryExecutor e) : super(e);
   $ClientDbManager get managers => $ClientDbManager(this);
@@ -1127,6 +1649,7 @@ abstract class _$ClientDb extends GeneratedDatabase {
   );
   late final $CachedBillsTable cachedBills = $CachedBillsTable(this);
   late final $CachedPayableTable cachedPayable = $CachedPayableTable(this);
+  late final $CachedMembersTable cachedMembers = $CachedMembersTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1135,6 +1658,7 @@ abstract class _$ClientDb extends GeneratedDatabase {
     settlementEvents,
     cachedBills,
     cachedPayable,
+    cachedMembers,
   ];
 }
 
@@ -1748,6 +2272,265 @@ typedef $$CachedPayableTableProcessedTableManager =
       CachedPayableRow,
       PrefetchHooks Function()
     >;
+typedef $$CachedMembersTableCreateCompanionBuilder =
+    CachedMembersCompanion Function({
+      required String id,
+      required String name,
+      Value<String> phone,
+      Value<String> phoneHash,
+      Value<String> phoneTail,
+      Value<String> code,
+      required String payloadJson,
+      required DateTime syncedAt,
+      Value<int> rowid,
+    });
+typedef $$CachedMembersTableUpdateCompanionBuilder =
+    CachedMembersCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> phone,
+      Value<String> phoneHash,
+      Value<String> phoneTail,
+      Value<String> code,
+      Value<String> payloadJson,
+      Value<DateTime> syncedAt,
+      Value<int> rowid,
+    });
+
+class $$CachedMembersTableFilterComposer
+    extends Composer<_$ClientDb, $CachedMembersTable> {
+  $$CachedMembersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get phoneHash => $composableBuilder(
+    column: $table.phoneHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get phoneTail => $composableBuilder(
+    column: $table.phoneTail,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get syncedAt => $composableBuilder(
+    column: $table.syncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CachedMembersTableOrderingComposer
+    extends Composer<_$ClientDb, $CachedMembersTable> {
+  $$CachedMembersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get phoneHash => $composableBuilder(
+    column: $table.phoneHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get phoneTail => $composableBuilder(
+    column: $table.phoneTail,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get syncedAt => $composableBuilder(
+    column: $table.syncedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CachedMembersTableAnnotationComposer
+    extends Composer<_$ClientDb, $CachedMembersTable> {
+  $$CachedMembersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get phone =>
+      $composableBuilder(column: $table.phone, builder: (column) => column);
+
+  GeneratedColumn<String> get phoneHash =>
+      $composableBuilder(column: $table.phoneHash, builder: (column) => column);
+
+  GeneratedColumn<String> get phoneTail =>
+      $composableBuilder(column: $table.phoneTail, builder: (column) => column);
+
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get syncedAt =>
+      $composableBuilder(column: $table.syncedAt, builder: (column) => column);
+}
+
+class $$CachedMembersTableTableManager
+    extends
+        RootTableManager<
+          _$ClientDb,
+          $CachedMembersTable,
+          CachedMemberRow,
+          $$CachedMembersTableFilterComposer,
+          $$CachedMembersTableOrderingComposer,
+          $$CachedMembersTableAnnotationComposer,
+          $$CachedMembersTableCreateCompanionBuilder,
+          $$CachedMembersTableUpdateCompanionBuilder,
+          (
+            CachedMemberRow,
+            BaseReferences<_$ClientDb, $CachedMembersTable, CachedMemberRow>,
+          ),
+          CachedMemberRow,
+          PrefetchHooks Function()
+        > {
+  $$CachedMembersTableTableManager(_$ClientDb db, $CachedMembersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CachedMembersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CachedMembersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CachedMembersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> phone = const Value.absent(),
+                Value<String> phoneHash = const Value.absent(),
+                Value<String> phoneTail = const Value.absent(),
+                Value<String> code = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<DateTime> syncedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CachedMembersCompanion(
+                id: id,
+                name: name,
+                phone: phone,
+                phoneHash: phoneHash,
+                phoneTail: phoneTail,
+                code: code,
+                payloadJson: payloadJson,
+                syncedAt: syncedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                Value<String> phone = const Value.absent(),
+                Value<String> phoneHash = const Value.absent(),
+                Value<String> phoneTail = const Value.absent(),
+                Value<String> code = const Value.absent(),
+                required String payloadJson,
+                required DateTime syncedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => CachedMembersCompanion.insert(
+                id: id,
+                name: name,
+                phone: phone,
+                phoneHash: phoneHash,
+                phoneTail: phoneTail,
+                code: code,
+                payloadJson: payloadJson,
+                syncedAt: syncedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CachedMembersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ClientDb,
+      $CachedMembersTable,
+      CachedMemberRow,
+      $$CachedMembersTableFilterComposer,
+      $$CachedMembersTableOrderingComposer,
+      $$CachedMembersTableAnnotationComposer,
+      $$CachedMembersTableCreateCompanionBuilder,
+      $$CachedMembersTableUpdateCompanionBuilder,
+      (
+        CachedMemberRow,
+        BaseReferences<_$ClientDb, $CachedMembersTable, CachedMemberRow>,
+      ),
+      CachedMemberRow,
+      PrefetchHooks Function()
+    >;
 
 class $ClientDbManager {
   final _$ClientDb _db;
@@ -1758,4 +2541,6 @@ class $ClientDbManager {
       $$CachedBillsTableTableManager(_db, _db.cachedBills);
   $$CachedPayableTableTableManager get cachedPayable =>
       $$CachedPayableTableTableManager(_db, _db.cachedPayable);
+  $$CachedMembersTableTableManager get cachedMembers =>
+      $$CachedMembersTableTableManager(_db, _db.cachedMembers);
 }

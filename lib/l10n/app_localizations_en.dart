@@ -2558,6 +2558,11 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String auditMemberEnrolFolded(String from, String to) {
+    return 'Offline enrolment $from folded into $to';
+  }
+
+  @override
   String auditMemberPointsAdjusted(String name, String points) {
     return 'Point correction for $name: $points';
   }
@@ -8823,6 +8828,11 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String memMirrorAsOf(String at) {
+    return 'Offline member data · last updated $at';
+  }
+
+  @override
   String get memSearchHint => 'Search name or number';
 
   @override
@@ -9126,6 +9136,13 @@ class AppL10nEn extends AppL10n {
   @override
   String get vstMembersEnableHint =>
       'The member directory, points and stamps. Leave off if the venue runs no loyalty program.';
+
+  @override
+  String get vstMembersMirror => 'Keep member data on devices';
+
+  @override
+  String get vstMembersMirrorHint =>
+      'The till can still search and attach a member while the network is down. The data sits on the device; switch this off if devices go missing.';
 
   @override
   String get vstMembersPoints => 'Points';

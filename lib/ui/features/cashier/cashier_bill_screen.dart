@@ -2703,13 +2703,16 @@ class PastBillDetailScreen extends ConsumerWidget {
       backgroundColor: sc.bg0,
       body: Column(
         children: [
-          // No crumbs: this pushes on the shell navigator, so on a tablet the
-          // shell's own bar sits right above with the venue → Kasir trail
-          // already on it. The back arrow is what this bar is for. The phone
-          // bar renders no crumbs at all, so there the name rides as a pill —
-          // otherwise the screen would go unnamed.
+          // Root-pushed like [openCashierBill], so this bar is the only chrome
+          // on the screen and owns the whole trail. A settled bill is the same
+          // object as a live one and gets the same crumbs. The phone bar renders
+          // no crumbs at all, so there the name rides as a pill instead.
           SatAppBar(
             onBack: () => Navigator.of(context).pop(),
+            crumbs: [
+              context.l10n.cshCrumbCashier,
+              (tableLabel ?? '').isEmpty ? context.l10n.cshCrumbBill : tableLabel!,
+            ],
             showAvatar: false,
             trailingPills: context.layout.useTabletShell
                 ? const []

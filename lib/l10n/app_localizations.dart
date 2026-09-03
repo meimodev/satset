@@ -4309,6 +4309,12 @@ abstract class AppL10n {
   /// **'Gabung pelanggan {from} ke {to}'**
   String auditMemberMerged(String from, String to);
 
+  /// No description provided for @auditMemberEnrolFolded.
+  ///
+  /// In id, this message translates to:
+  /// **'Pendaftaran luring {from} digabung ke {to}'**
+  String auditMemberEnrolFolded(String from, String to);
+
   /// No description provided for @auditMemberPointsAdjusted.
   ///
   /// In id, this message translates to:
@@ -13843,6 +13849,12 @@ abstract class AppL10n {
   /// **'{count} terdaftar'**
   String memCount(int count);
 
+  /// No description provided for @memMirrorAsOf.
+  ///
+  /// In id, this message translates to:
+  /// **'Data pelanggan luring · terakhir diperbarui {at}'**
+  String memMirrorAsOf(String at);
+
   /// No description provided for @memSearchHint.
   ///
   /// In id, this message translates to:
@@ -14370,6 +14382,18 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Daftar pelanggan, poin, dan stempel. Venue tanpa program langganan biarkan mati.'**
   String get vstMembersEnableHint;
+
+  /// No description provided for @vstMembersMirror.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan data pelanggan di perangkat'**
+  String get vstMembersMirror;
+
+  /// No description provided for @vstMembersMirrorHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Kasir tetap bisa mencari dan memasang pelanggan saat jaringan mati. Data tersimpan di perangkat; matikan bila perangkat sering hilang.'**
+  String get vstMembersMirrorHint;
 
   /// Membership settings and hub copy.
   ///

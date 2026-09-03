@@ -39,7 +39,8 @@ import 'package:satset/server/db/database.dart' as rows show MemberDebt;
 // Cyclic with this file, and deliberately: the delete guard lives over there
 // and the balance lives here. Dart resolves it; splitting a third file to
 // avoid it would put the two halves of one rule in three places.
-import 'package:satset/server/members.dart' show getMember, memberJson;
+import 'package:satset/server/members.dart'
+    show getMember, memberJson, touchMember;
 import 'package:satset/server/ws_hub.dart';
 
 const _uuid = Uuid();
@@ -541,6 +542,11 @@ Future<void> _post(
       at: at,
       idPrefix: idPrefix,
     );
+    // A [[Salinan pelanggan]] carries this balance, and it is `SUM(delta)` over
+    // rows like the one above — so the member row itself must say it changed or
+    // the mirror never re-reads it (ADR-0129). Inside the transaction: a
+    // rolled-back movement must not leave a stamp claiming one landed.
+    await touchMember(db, memberId, at: at);
   });
   // The directory row and the till panel both render the balance, so every
   // movement re-broadcasts the member rather than inventing a second event.

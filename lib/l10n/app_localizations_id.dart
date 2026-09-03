@@ -2542,6 +2542,11 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String auditMemberEnrolFolded(String from, String to) {
+    return 'Pendaftaran luring $from digabung ke $to';
+  }
+
+  @override
   String auditMemberPointsAdjusted(String name, String points) {
     return 'Koreksi poin $name $points';
   }
@@ -8712,6 +8717,11 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String memMirrorAsOf(String at) {
+    return 'Data pelanggan luring · terakhir diperbarui $at';
+  }
+
+  @override
   String get memSearchHint => 'Cari nama atau nomor';
 
   @override
@@ -9013,6 +9023,13 @@ class AppL10nId extends AppL10n {
   @override
   String get vstMembersEnableHint =>
       'Daftar pelanggan, poin, dan stempel. Venue tanpa program langganan biarkan mati.';
+
+  @override
+  String get vstMembersMirror => 'Simpan data pelanggan di perangkat';
+
+  @override
+  String get vstMembersMirrorHint =>
+      'Kasir tetap bisa mencari dan memasang pelanggan saat jaringan mati. Data tersimpan di perangkat; matikan bila perangkat sering hilang.';
 
   @override
   String get vstMembersPoints => 'Poin';

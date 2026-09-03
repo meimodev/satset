@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/data/services/error_bus_service.dart';
+import 'package:satset/data/services/member_mirror.dart';
 import 'package:satset/data/services/send_queue_drain.dart';
 import 'package:satset/data/services/send_queue_service.dart';
 import 'package:satset/ui/features/shell/send_result_dialog.dart';
@@ -170,6 +171,11 @@ class AppShell extends ConsumerWidget {
     // Constructing it on the shell means the cache is painted and the fetch is
     // spent while the venue still has a host.
     ref.watch(discountPresetsRepositoryProvider);
+    // The [[Salinan pelanggan]] fills here for the same reason, and with more
+    // riding on it: its whole value is being *already there* when the host goes
+    // away, so nothing may wait for a cashier to open the lookup sheet
+    // (ADR-0129).
+    ref.watch(memberMirrorSyncProvider);
     // A clean drain stays silent — the lines landing on the table say it. Only
     // a refusal, a stock drop or a stalled drain is worth a blocking overlay.
     ref.listen<SendReport?>(sendReportProvider, (_, r) {

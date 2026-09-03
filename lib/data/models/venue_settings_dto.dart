@@ -60,6 +60,12 @@ abstract class VenueSettingsDto with _$VenueSettingsDto {
     // Membership (ADR-0091). Off by default — a venue opts in, and until it
     // does the member row, the directory and the receipt lines do not exist.
     @Default(false) bool membersEnabled,
+
+    /// Whether the [[Salinan pelanggan]] mirrors to this device (ADR-0129).
+    /// Defaults **true**, unlike every other flag on this DTO: it is the one
+    /// switch whose safe answer is on, because the feature it gates is what a
+    /// device falls back to when it can ask nobody anything.
+    @Default(true) bool memberMirrorEnabled,
     @Default(false) bool memberPointsEnabled,
     @Default(false) bool memberPunchEnabled,
 
@@ -162,6 +168,10 @@ extension VenueSettingsModules on VenueSettingsDto {
   /// *born* as, and every surface here only decides what to draw.
   bool get bypassKds => modules?.contains(modeBypassKds) ?? false;
   bool get membersOn => membersEnabled && hasModule(moduleMembers);
+
+  /// The mirror needs membership itself, the entitlement, and the owner's own
+  /// switch — composed here, so no screen ANDs it for itself (ADR-0107 §3).
+  bool get memberMirrorOn => membersOn && memberMirrorEnabled;
 
   /// Whether a share of a split bill may name its own [[Pemilik struk]]
   /// (ADR-0118). Fails **closed**, like the other mode keys, and ANDs with

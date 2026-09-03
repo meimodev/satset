@@ -50,6 +50,11 @@ String formatBookingDayId(DateTime d) => DateFormat('EEEE d MMM').format(d);
 /// symbols are now loaded for tests in `test/flutter_test_config.dart`.
 String formatBarClockId(DateTime d) => DateFormat('HH:mm · EEE').format(d);
 
+/// When a stale figure was last true: "12 Agu 09:41". Date **and** clock,
+/// because a [[Salinan pelanggan]] read at the till is usually hours old rather
+/// than days, and "12 Agu" alone would read as fresh at 23:00 (ADR-0129).
+String formatStampShort(DateTime d) => DateFormat('d MMM HH:mm').format(d);
+
 /// A calendar date with no time: "12 Agu 2026", "12 Aug 2026". For dates that
 /// are a *fact* rather than a moment in service — a billing period's end, a
 /// paid-until.

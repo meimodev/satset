@@ -53,6 +53,7 @@ part 'database.g.dart';
     StockCountLines,
     CashEntries,
     Members,
+    MemberTombstones,
     MemberPoints,
     MemberDebts,
     Shifts,
@@ -79,7 +80,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 70;
+  int get schemaVersion => 71;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -136,6 +137,21 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_guest_order_lines_order '
       'ON guest_order_lines(order_id)',
+    );
+  }
+
+  /// Split out from [_createMemberIndexes] because that helper is called from
+  /// migration branches that run **before** v71 adds `members.updated_at` —
+  /// indexing a column that does not exist yet fails the whole upgrade.
+  Future<void> _createMemberSyncIndexes() async {
+    // The [[Salinan pelanggan]] cursor is one integer shared by both streams
+    // (ADR-0129).
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_members_rev ON members (mirror_rev)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_member_tombstones_rev '
+      'ON member_tombstones (rev)',
     );
   }
 
@@ -1309,8 +1325,24 @@ class AppDatabase extends _$AppDatabase {
         // rebuilt from the declared schema. Small tables — venue_settings
         // holds one row and venue_tables holds a floor's worth — and the
         // column sets are unchanged, so every value copies across by name.
+        //
+        // **A column added to `venue_settings` after v71 belongs in
+        // `newColumns` here too.** The rebuild copies the *declared* schema, so
+        // a column this branch has never heard of is selected out of a table
+        // that predates it — which fails the upgrade, not the test.
         // ignore: experimental_member_use
-        await m.alterTable(TableMigration(venueSettings));
+        await m.alterTable(
+          TableMigration(
+            venueSettings,
+            newColumns: [
+              // Added by v71 (ADR-0129) and therefore absent from any database
+              // this branch is rebuilding. Both carry defaults, so they need
+              // no transformer — just exclusion from the copy.
+              venueSettings.memberMirrorEnabled,
+              venueSettings.memberMirrorSalt,
+            ],
+          ),
+        );
         // ignore: experimental_member_use
         await m.alterTable(TableMigration(venueTables));
         // The rebuild drops the indexes that hung off venue_tables.
@@ -1432,6 +1464,34 @@ class AppDatabase extends _$AppDatabase {
           type: 'TEXT NULL',
         );
       }
+      if (from < 71 && to >= 71) {
+        // ADR-0129 — the [[Salinan pelanggan]] pages off `members.updated_at`
+        // and learns a departure from the tombstone table. Backfilled from
+        // `joined_at` rather than left null: a first sync pulls the whole
+        // directory anyway, and a real timestamp keeps the cursor monotonic
+        // from the very first page.
+        await _safeAddColumnOn('members', 'mirror_rev', type: 'INTEGER NULL');
+        // Backfilled with a sequence rather than left null: a first sync pulls
+        // the whole directory anyway, and every row holding a real position
+        // keeps the cursor monotonic from the very first page.
+        await customStatement(
+          'UPDATE members SET mirror_rev = ('
+          'SELECT COUNT(*) FROM members m2 WHERE m2.rowid <= members.rowid'
+          ') WHERE mirror_rev IS NULL',
+        );
+        await m.createTable(memberTombstones);
+        await _createMemberSyncIndexes();
+        await _safeAddColumnOn(
+          'venue_settings',
+          'member_mirror_enabled',
+          type: 'INTEGER NOT NULL DEFAULT 1',
+        );
+        await _safeAddColumnOn(
+          'venue_settings',
+          'member_mirror_salt',
+          type: "TEXT NOT NULL DEFAULT ''",
+        );
+      }
     },
     onCreate: (m) async {
       await m.createAll();
@@ -1446,6 +1506,7 @@ class AppDatabase extends _$AppDatabase {
       );
       await _createDiscountIndexes();
       await _createMemberIndexes();
+      await _createMemberSyncIndexes();
       await _createGuestIndexes();
       await _createShiftIndexes();
       await _createLookupIndexes();

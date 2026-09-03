@@ -198,6 +198,9 @@ Router venueSettingsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         // Membership (ADR-0091). Switching the program off leaves every row
         // standing — a balance is a debt to a guest, not a feature flag, so the
         // ledger freezes rather than clears.
+        memberMirrorEnabled: body.containsKey('memberMirrorEnabled')
+            ? Value(body['memberMirrorEnabled'] == true)
+            : const Value.absent(),
         membersEnabled: body.containsKey('membersEnabled')
             ? Value(body['membersEnabled'] == true)
             : const Value.absent(),
@@ -446,6 +449,7 @@ Map<String, dynamic> _toJson(VenueSetting s) => {
   // the bill overlay needs to know whether the program is running before it can
   // decide whether to offer a member row.
   'membersEnabled': s.membersEnabled,
+  'memberMirrorEnabled': s.memberMirrorEnabled,
   'memberPointsEnabled': s.memberPointsEnabled,
   'memberPunchEnabled': s.memberPunchEnabled,
   'memberPresetId': s.memberPresetId,

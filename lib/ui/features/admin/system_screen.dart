@@ -663,7 +663,9 @@ class _SystemScreenState extends ConsumerState<SystemScreen> {
     String title,
     Widget Function(BuildContext, SatColors) builder,
   ) {
-    Navigator.of(context).push(
+    // A pushed task page owns its chrome: on the root navigator the
+    // shell bar is gone, so this page's own title row is the only one.
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (_) => _SystemPhoneDetail(title: title, builder: builder),
       ),

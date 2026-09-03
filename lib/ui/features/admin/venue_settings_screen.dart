@@ -854,7 +854,9 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
     String title,
     Widget Function(BuildContext, SatColors) builder,
   ) {
-    Navigator.of(context).push(
+    // A pushed task page owns its chrome: on the root navigator the
+    // shell bar is gone, so this page's own title row is the only one.
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (_) =>
             _VenueSettingsPhoneDetail(title: title, builder: builder),
@@ -1409,6 +1411,18 @@ class _KeanggotaanCard extends ConsumerWidget {
             onToggle: () => n.patch(membersEnabled: !s.membersEnabled),
           ),
           if (s.membersEnabled) ...[
+            Divider(height: 28, color: sc.border0),
+            _MemberToggle(
+              label: l10n.vstMembersMirror,
+              // The owner's one lever over where their customer list lives
+              // (ADR-0129). On by default, because the feature it gates is what
+              // a device falls back to when it can reach nobody — and off is a
+              // real choice for a venue that loses handsets.
+              hint: l10n.vstMembersMirrorHint,
+              on: s.memberMirrorEnabled,
+              onToggle: () =>
+                  n.patch(memberMirrorEnabled: !s.memberMirrorEnabled),
+            ),
             Divider(height: 28, color: sc.border0),
             _MemberToggle(
               label: l10n.vstMembersPoints,

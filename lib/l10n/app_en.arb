@@ -948,6 +948,17 @@
       }
     }
   },
+  "auditMemberEnrolFolded": "Offline enrolment {from} folded into {to}",
+  "@auditMemberEnrolFolded": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
   "auditMemberPointsAdjusted": "Point correction for {name}: {points}",
   "@auditMemberPointsAdjusted": {
     "placeholders": {
@@ -2795,6 +2806,14 @@
       }
     }
   },
+  "memMirrorAsOf": "Offline member data · last updated {at}",
+  "@memMirrorAsOf": {
+    "placeholders": {
+      "at": {
+        "type": "String"
+      }
+    }
+  },
   "memSearchHint": "Search name or number",
   "memActionAdd": "Add",
   "memBirthdayFilter": "Birthdays this month",
@@ -2963,6 +2982,8 @@
   "vstMembersTag": "Program",
   "vstMembersEnable": "Enable membership",
   "vstMembersEnableHint": "The member directory, points and stamps. Leave off if the venue runs no loyalty program.",
+  "vstMembersMirror": "Keep member data on devices",
+  "vstMembersMirrorHint": "The till can still search and attach a member while the network is down. The data sits on the device; switch this off if devices go missing.",
   "vstMembersPoints": "Points",
   "vstMembersPointsHint": "Turning this off freezes points rather than clearing them — balances stay intact.",
   "vstMembersEarnRate": "Points per Rp 1,000",

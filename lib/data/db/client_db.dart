@@ -91,12 +91,65 @@ class CachedPayable extends Table {
 /// The single row [CachedPayable] ever holds.
 const payableRowId = 'payable';
 
+/// The **[[Salinan pelanggan]]** — this device's copy of the venue's member
+/// directory, so a dark handset can still find and attach a regular (ADR-0129).
+///
+/// A copy and never a source. Every derived figure below arrives already
+/// computed by the host and is rendered **with [syncedAt]** beside it, because
+/// a balance is `SUM(delta)` over a ledger this device holds no rows of — the
+/// same rule that keeps the till from summing points online (ADR-0092,
+/// ADR-0095).
+///
+/// It lives in this database rather than prefs for one reason: a directory of
+/// low thousands, searched by prefix on two columns, is a query. That widens
+/// ADR-0124's charter from "money it cannot send" to "money it cannot send, and
+/// the directory that money names" — deliberately, and stated in ADR-0129.
+@DataClassName('CachedMemberRow')
+class CachedMembers extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+
+  /// The number, in the clear — **only on a device that may settle**. A
+  /// handset that can only take orders stores `''` here and searches by
+  /// [phoneHash] instead, which is the same split `/members/lookup` makes on
+  /// the wire, applied to a copy that sits on disk.
+  TextColumn get phone => text().withDefault(const Constant(''))();
+
+  /// Salted digest of the number, for the masked half. The salt lives in
+  /// `flutter_secure_storage` and never in this file — a pulled database is
+  /// then not enough to walk the (small) space of phone numbers back.
+  TextColumn get phoneHash => text().withDefault(const Constant(''))();
+
+  /// Last four digits, so an identity can still be read back over a counter.
+  TextColumn get phoneTail => text().withDefault(const Constant(''))();
+
+  TextColumn get code => text().withDefault(const Constant(''))();
+
+  /// The whole `memberJson` payload, stored as it arrived. Parsed back through
+  /// the ordinary `MemberDto.fromJson`, so an offline member and an online one
+  /// are the same object to every screen above.
+  TextColumn get payloadJson => text()();
+
+  /// When the host said this was true. **Every stale figure renders with it**
+  /// — a stamped number a cashier can caveat is useful; a bare one the guest
+  /// photographs is what ADR-0123 was avoiding.
+  DateTimeColumn get syncedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// The client-side store, for money it cannot send yet (ADR-0124).
 ///
 /// A cache and a journal, never a source of truth: nothing here survives its
 /// chain draining, and the host's answer replaces it. Belongs to the **device**,
 /// not the session — handsets are shared and a backlog must outlive a handover.
-@DriftDatabase(tables: [SettlementEvents, CachedBills, CachedPayable])
+///
+/// Since ADR-0129 it also holds the [[Salinan pelanggan]] — still a cache, and
+/// still never a source: the host's directory is the directory.
+@DriftDatabase(
+  tables: [SettlementEvents, CachedBills, CachedPayable, CachedMembers],
+)
 class ClientDb extends _$ClientDb {
   ClientDb(super.e);
 
@@ -104,7 +157,7 @@ class ClientDb extends _$ClientDb {
   ClientDb.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   /// Drift's default `onUpgrade` throws, so a bump without this bricks every
   /// till that already carries a journal — which is exactly the device this
@@ -114,6 +167,23 @@ class ClientDb extends _$ClientDb {
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
       if (from < 2 && to >= 2) await m.createTable(cachedPayable);
+      if (from < 3 && to >= 3) {
+        await m.createTable(cachedMembers);
+        // Prefix search runs against both, and the masked half only ever has
+        // the hash — an exact match, but indexed the same way.
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_cached_members_name '
+          'ON cached_members (name)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_cached_members_phone '
+          'ON cached_members (phone)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_cached_members_hash '
+          'ON cached_members (phone_hash)',
+        );
+      }
     },
   );
 

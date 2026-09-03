@@ -100,6 +100,11 @@ always wins.
   cached bill. Redeeming their [[Poin]] offline *is* allowed: the balance is a
   read the client already holds, a stale one over-redeems by a little, and
   `spendPoints` refuses it at drain (ADR-0100) where the cashier can re-collect.
+  **Overturned by [ADR-0129](0129-the-member-directory-travels-with-the-device.md)**
+  for lookup only: the directory now mirrors to the device, masked on a handset
+  that may only take orders, and offline enrolment folds by phone at drain. The
+  reasoning above is still the reasoning — it is the accepted risk there. The
+  step-up stays online-only.
 - **Offline printing is device-scope only, and drops the points block.** A
   server-scope printer is unreachable by definition. A points or stempel balance
   printed from stale local data is a number the guest can photograph and argue

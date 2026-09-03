@@ -183,7 +183,12 @@ class SettlementJournal extends StateNotifier<JournalState> {
     return [for (final r in rows) _fromRow(r)];
   }
 
-  /// Visit ids holding anything undelivered, oldest capture first.
+  /// Visit ids holding anything undelivered, oldest capture first — with the
+  /// **venue-scope chain first of all** (ADR-0129).
+  ///
+  /// An offline enrolment has no visit and everything that names that member
+  /// does, so the order is not cosmetic: an attach replayed before its
+  /// enrolment names somebody the host has never heard of.
   Future<List<String>> pendingVisitIds() async {
     final rows =
         await (db.select(db.settlementEvents)
@@ -193,7 +198,31 @@ class SettlementJournal extends StateNotifier<JournalState> {
     for (final r in rows) {
       seen.add(r.visitId);
     }
-    return seen.toList();
+    final ids = seen.toList();
+    if (ids.remove(kVenueScopeVisitId)) ids.insert(0, kVenueScopeVisitId);
+    return ids;
+  }
+
+  /// Rewrite every queued reference to a member id the host discarded.
+  ///
+  /// Called when an enrolment drained into a [[Pendaftaran terlipat]]: the
+  /// standing record won, so the attach and the redeem queued behind it name
+  /// a member that does not exist. Payload-level and blunt on purpose — the id
+  /// is a uuid, so a substring match cannot collide with anything else in the
+  /// blob (ADR-0129).
+  Future<void> rewriteMemberId(String from, String to) async {
+    if (from == to) return;
+    final rows = await db.select(db.settlementEvents).get();
+    for (final r in rows) {
+      if (!r.payloadJson.contains(from)) continue;
+      await (db.update(db.settlementEvents)..where((e) => e.id.equals(r.id)))
+          .write(
+            SettlementEventsCompanion(
+              payloadJson: Value(r.payloadJson.replaceAll(from, to)),
+            ),
+          );
+    }
+    SatLog.repo('settlement.rewriteMember $from -> $to');
   }
 
   // ── the cached bill (ADR-0123 §Q19) ───────────────────────────────────────
@@ -419,7 +448,15 @@ class SettlementJournal extends StateNotifier<JournalState> {
   Future<void> _refreshState() async {
     final rows = await db.select(db.settlementEvents).get();
     state = state.copyWith(
-      pendingVisits: {for (final r in rows) r.visitId},
+      // **Money only.** A visit holding nothing but member-scope acts is not
+      // [[Kunjungan otoritatif-lokal]] — see `isMemberScope` (ADR-0129). The
+      // venue-scope chain hangs off no visit and never appears here at all.
+      pendingVisits: {
+        for (final r in rows)
+          if (r.visitId != kVenueScopeVisitId &&
+              !(settlementKindFromName(r.kind)?.isMemberScope ?? false))
+            r.visitId,
+      },
       parkedVisits: {
         for (final r in rows)
           if (r.status == 'parked') r.visitId,

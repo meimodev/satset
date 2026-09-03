@@ -233,6 +233,13 @@ void _apply(
 
     case SettlementEventKind.reopenBill:
       bill['billClosedAt'] = null;
+
+    case SettlementEventKind.enrolMember:
+      // Nothing. An enrolment hangs off no bill and moves no money — it rides
+      // the journal only so one queue has one drain order (ADR-0129). The act
+      // that *attaches* the new member is a separate event, and that one this
+      // projection does apply.
+      break;
   }
 }
 

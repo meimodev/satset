@@ -319,11 +319,14 @@ class _LookupSheetState extends ConsumerState<MemberLookupSheet> {
     final l10n = context.l10n;
     final members = ref.watch(membersProvider);
     final results = members.members;
-    // The directory is read from the host and nowhere else (ADR-0123 keeps the
-    // phone as the identity, so there is no mirrored copy to search). Say that
-    // rather than render an empty list — "not a member" and "no host" must
-    // never look the same to a cashier holding the guest's card.
-    final offline = ref.watch(wsConnStateProvider) != WsConnState.open;
+    // The directory now mirrors to the device (ADR-0129), so a dark till
+    // searches its [[Salinan pelanggan]] instead of saying it cannot. The empty
+    // state below still distinguishes the two cases that must never look alike:
+    // "not a member" is a list with nothing in it, while "this device holds no
+    // copy at all" keeps the old explanation.
+    final mirrored = members.fromMirror;
+    final offline =
+        ref.watch(wsConnStateProvider) != WsConnState.open && !mirrored;
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -403,13 +406,27 @@ class _LookupSheetState extends ConsumerState<MemberLookupSheet> {
                         separatorBuilder: (_, _) =>
                             const SizedBox(height: Sp.s1h),
                         itemBuilder: (_, i) => SatButton.outline(
+                          // A mirrored row on a handset that may only take
+                          // orders holds no number at all — `_maskedPhone` of an
+                          // empty string is the same `••••` the wire already
+                          // sends, so nothing here has to know which it got.
                           label:
-                              '${results[i].name} · ${widget.lookupOnly ? _maskedPhone(results[i].phone) : results[i].phone}',
+                              '${results[i].name} · ${widget.lookupOnly || members.masked ? _maskedPhone(results[i].phone) : results[i].phone}',
                           onTap: () => Navigator.of(context).pop(results[i]),
                         ),
                       ),
               ),
             ),
+            // The stamp, not the word "offline": a cashier reading a balance
+            // aloud needs to know *when* it was true (ADR-0129).
+            if (mirrored) ...[
+              const SizedBox(height: Sp.s2),
+              Text(
+                l10n.memMirrorAsOf(formatStampShort(members.mirroredAt!)),
+                textAlign: TextAlign.center,
+                style: SatType.bodyS(color: sc.textDim),
+              ),
+            ],
             if (!widget.lookupOnly && !offline) ...[
               const SizedBox(height: Sp.s3),
               SatButton.primary(

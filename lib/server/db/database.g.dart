@@ -9399,6 +9399,32 @@ class $VenueSettingsTable extends VenueSettings
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _memberMirrorEnabledMeta =
+      const VerificationMeta('memberMirrorEnabled');
+  @override
+  late final GeneratedColumn<bool> memberMirrorEnabled = GeneratedColumn<bool>(
+    'member_mirror_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("member_mirror_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _memberMirrorSaltMeta = const VerificationMeta(
+    'memberMirrorSalt',
+  );
+  @override
+  late final GeneratedColumn<String> memberMirrorSalt = GeneratedColumn<String>(
+    'member_mirror_salt',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _memberPointsEnabledMeta =
       const VerificationMeta('memberPointsEnabled');
   @override
@@ -9696,6 +9722,8 @@ class $VenueSettingsTable extends VenueSettings
     soundUngreeted,
     soundPickup,
     membersEnabled,
+    memberMirrorEnabled,
+    memberMirrorSalt,
     memberPointsEnabled,
     memberPunchEnabled,
     memberPresetId,
@@ -10041,6 +10069,24 @@ class $VenueSettingsTable extends VenueSettings
         membersEnabled.isAcceptableOrUnknown(
           data['members_enabled']!,
           _membersEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('member_mirror_enabled')) {
+      context.handle(
+        _memberMirrorEnabledMeta,
+        memberMirrorEnabled.isAcceptableOrUnknown(
+          data['member_mirror_enabled']!,
+          _memberMirrorEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('member_mirror_salt')) {
+      context.handle(
+        _memberMirrorSaltMeta,
+        memberMirrorSalt.isAcceptableOrUnknown(
+          data['member_mirror_salt']!,
+          _memberMirrorSaltMeta,
         ),
       );
     }
@@ -10391,6 +10437,14 @@ class $VenueSettingsTable extends VenueSettings
         DriftSqlType.bool,
         data['${effectivePrefix}members_enabled'],
       )!,
+      memberMirrorEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}member_mirror_enabled'],
+      )!,
+      memberMirrorSalt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}member_mirror_salt'],
+      )!,
       memberPointsEnabled: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}member_points_enabled'],
@@ -10586,6 +10640,27 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
   /// stored, so nobody's deliberate "off" is flipped by an upgrade.
   final bool membersEnabled;
 
+  /// Whether the directory mirrors to devices, so a dark handset can still
+  /// find and attach a regular (ADR-0129). **On by default**, and a plain
+  /// boolean rather than a [[Modul]] or a mode key on purpose: a mode key
+  /// fails closed (ADR-0109), which would switch the mirror off on precisely
+  /// the venue that has never phoned home. It is the only lever an owner has
+  /// over "is my customer list on the phone my waiter lost", so it is a switch
+  /// they can find, not an entitlement somebody sells them.
+  final bool memberMirrorEnabled;
+
+  /// Per-venue salt for the **masked** half of a [[Salinan pelanggan]] — the
+  /// hash a `takeOrder`-only device searches by, in place of the number itself.
+  /// Minted on first sync and never rotated (rotating it blinds every mirror
+  /// until each one refetches). Empty means not yet minted.
+  ///
+  /// It exists because an unsalted hash of a phone number is not a mask: the
+  /// number space is small enough to walk end to end, so a pulled database
+  /// file would hand back every number. The salt travels to the device but is
+  /// kept **out of the sqlite file** — `flutter_secure_storage`, so the file
+  /// alone is not enough.
+  final String memberMirrorSalt;
+
   /// The two mechanisms that nest under it, both off by default. Turning
   /// [memberPointsEnabled] off **freezes** the [[Poin]] ledger — balances stay,
   /// redemption hides, flipping it back on restores history (ADR-0095).
@@ -10719,6 +10794,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     required this.soundUngreeted,
     required this.soundPickup,
     required this.membersEnabled,
+    required this.memberMirrorEnabled,
+    required this.memberMirrorSalt,
     required this.memberPointsEnabled,
     required this.memberPunchEnabled,
     this.memberPresetId,
@@ -10784,6 +10861,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     map['sound_ungreeted'] = Variable<String>(soundUngreeted);
     map['sound_pickup'] = Variable<String>(soundPickup);
     map['members_enabled'] = Variable<bool>(membersEnabled);
+    map['member_mirror_enabled'] = Variable<bool>(memberMirrorEnabled);
+    map['member_mirror_salt'] = Variable<String>(memberMirrorSalt);
     map['member_points_enabled'] = Variable<bool>(memberPointsEnabled);
     map['member_punch_enabled'] = Variable<bool>(memberPunchEnabled);
     if (!nullToAbsent || memberPresetId != null) {
@@ -10860,6 +10939,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       soundUngreeted: Value(soundUngreeted),
       soundPickup: Value(soundPickup),
       membersEnabled: Value(membersEnabled),
+      memberMirrorEnabled: Value(memberMirrorEnabled),
+      memberMirrorSalt: Value(memberMirrorSalt),
       memberPointsEnabled: Value(memberPointsEnabled),
       memberPunchEnabled: Value(memberPunchEnabled),
       memberPresetId: memberPresetId == null && nullToAbsent
@@ -10948,6 +11029,10 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       soundUngreeted: serializer.fromJson<String>(json['soundUngreeted']),
       soundPickup: serializer.fromJson<String>(json['soundPickup']),
       membersEnabled: serializer.fromJson<bool>(json['membersEnabled']),
+      memberMirrorEnabled: serializer.fromJson<bool>(
+        json['memberMirrorEnabled'],
+      ),
+      memberMirrorSalt: serializer.fromJson<String>(json['memberMirrorSalt']),
       memberPointsEnabled: serializer.fromJson<bool>(
         json['memberPointsEnabled'],
       ),
@@ -11025,6 +11110,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       'soundUngreeted': serializer.toJson<String>(soundUngreeted),
       'soundPickup': serializer.toJson<String>(soundPickup),
       'membersEnabled': serializer.toJson<bool>(membersEnabled),
+      'memberMirrorEnabled': serializer.toJson<bool>(memberMirrorEnabled),
+      'memberMirrorSalt': serializer.toJson<String>(memberMirrorSalt),
       'memberPointsEnabled': serializer.toJson<bool>(memberPointsEnabled),
       'memberPunchEnabled': serializer.toJson<bool>(memberPunchEnabled),
       'memberPresetId': serializer.toJson<String?>(memberPresetId),
@@ -11088,6 +11175,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     String? soundUngreeted,
     String? soundPickup,
     bool? membersEnabled,
+    bool? memberMirrorEnabled,
+    String? memberMirrorSalt,
     bool? memberPointsEnabled,
     bool? memberPunchEnabled,
     Value<String?> memberPresetId = const Value.absent(),
@@ -11148,6 +11237,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     soundUngreeted: soundUngreeted ?? this.soundUngreeted,
     soundPickup: soundPickup ?? this.soundPickup,
     membersEnabled: membersEnabled ?? this.membersEnabled,
+    memberMirrorEnabled: memberMirrorEnabled ?? this.memberMirrorEnabled,
+    memberMirrorSalt: memberMirrorSalt ?? this.memberMirrorSalt,
     memberPointsEnabled: memberPointsEnabled ?? this.memberPointsEnabled,
     memberPunchEnabled: memberPunchEnabled ?? this.memberPunchEnabled,
     memberPresetId: memberPresetId.present
@@ -11282,6 +11373,12 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
       membersEnabled: data.membersEnabled.present
           ? data.membersEnabled.value
           : this.membersEnabled,
+      memberMirrorEnabled: data.memberMirrorEnabled.present
+          ? data.memberMirrorEnabled.value
+          : this.memberMirrorEnabled,
+      memberMirrorSalt: data.memberMirrorSalt.present
+          ? data.memberMirrorSalt.value
+          : this.memberMirrorSalt,
       memberPointsEnabled: data.memberPointsEnabled.present
           ? data.memberPointsEnabled.value
           : this.memberPointsEnabled,
@@ -11387,6 +11484,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           ..write('soundUngreeted: $soundUngreeted, ')
           ..write('soundPickup: $soundPickup, ')
           ..write('membersEnabled: $membersEnabled, ')
+          ..write('memberMirrorEnabled: $memberMirrorEnabled, ')
+          ..write('memberMirrorSalt: $memberMirrorSalt, ')
           ..write('memberPointsEnabled: $memberPointsEnabled, ')
           ..write('memberPunchEnabled: $memberPunchEnabled, ')
           ..write('memberPresetId: $memberPresetId, ')
@@ -11452,6 +11551,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
     soundUngreeted,
     soundPickup,
     membersEnabled,
+    memberMirrorEnabled,
+    memberMirrorSalt,
     memberPointsEnabled,
     memberPunchEnabled,
     memberPresetId,
@@ -11516,6 +11617,8 @@ class VenueSetting extends DataClass implements Insertable<VenueSetting> {
           other.soundUngreeted == this.soundUngreeted &&
           other.soundPickup == this.soundPickup &&
           other.membersEnabled == this.membersEnabled &&
+          other.memberMirrorEnabled == this.memberMirrorEnabled &&
+          other.memberMirrorSalt == this.memberMirrorSalt &&
           other.memberPointsEnabled == this.memberPointsEnabled &&
           other.memberPunchEnabled == this.memberPunchEnabled &&
           other.memberPresetId == this.memberPresetId &&
@@ -11578,6 +11681,8 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
   final Value<String> soundUngreeted;
   final Value<String> soundPickup;
   final Value<bool> membersEnabled;
+  final Value<bool> memberMirrorEnabled;
+  final Value<String> memberMirrorSalt;
   final Value<bool> memberPointsEnabled;
   final Value<bool> memberPunchEnabled;
   final Value<String?> memberPresetId;
@@ -11639,6 +11744,8 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.soundUngreeted = const Value.absent(),
     this.soundPickup = const Value.absent(),
     this.membersEnabled = const Value.absent(),
+    this.memberMirrorEnabled = const Value.absent(),
+    this.memberMirrorSalt = const Value.absent(),
     this.memberPointsEnabled = const Value.absent(),
     this.memberPunchEnabled = const Value.absent(),
     this.memberPresetId = const Value.absent(),
@@ -11701,6 +11808,8 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     this.soundUngreeted = const Value.absent(),
     this.soundPickup = const Value.absent(),
     this.membersEnabled = const Value.absent(),
+    this.memberMirrorEnabled = const Value.absent(),
+    this.memberMirrorSalt = const Value.absent(),
     this.memberPointsEnabled = const Value.absent(),
     this.memberPunchEnabled = const Value.absent(),
     this.memberPresetId = const Value.absent(),
@@ -11763,6 +11872,8 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Expression<String>? soundUngreeted,
     Expression<String>? soundPickup,
     Expression<bool>? membersEnabled,
+    Expression<bool>? memberMirrorEnabled,
+    Expression<String>? memberMirrorSalt,
     Expression<bool>? memberPointsEnabled,
     Expression<bool>? memberPunchEnabled,
     Expression<String>? memberPresetId,
@@ -11831,6 +11942,9 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       if (soundUngreeted != null) 'sound_ungreeted': soundUngreeted,
       if (soundPickup != null) 'sound_pickup': soundPickup,
       if (membersEnabled != null) 'members_enabled': membersEnabled,
+      if (memberMirrorEnabled != null)
+        'member_mirror_enabled': memberMirrorEnabled,
+      if (memberMirrorSalt != null) 'member_mirror_salt': memberMirrorSalt,
       if (memberPointsEnabled != null)
         'member_points_enabled': memberPointsEnabled,
       if (memberPunchEnabled != null)
@@ -11901,6 +12015,8 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     Value<String>? soundUngreeted,
     Value<String>? soundPickup,
     Value<bool>? membersEnabled,
+    Value<bool>? memberMirrorEnabled,
+    Value<String>? memberMirrorSalt,
     Value<bool>? memberPointsEnabled,
     Value<bool>? memberPunchEnabled,
     Value<String?>? memberPresetId,
@@ -11965,6 +12081,8 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
       soundUngreeted: soundUngreeted ?? this.soundUngreeted,
       soundPickup: soundPickup ?? this.soundPickup,
       membersEnabled: membersEnabled ?? this.membersEnabled,
+      memberMirrorEnabled: memberMirrorEnabled ?? this.memberMirrorEnabled,
+      memberMirrorSalt: memberMirrorSalt ?? this.memberMirrorSalt,
       memberPointsEnabled: memberPointsEnabled ?? this.memberPointsEnabled,
       memberPunchEnabled: memberPunchEnabled ?? this.memberPunchEnabled,
       memberPresetId: memberPresetId ?? this.memberPresetId,
@@ -12115,6 +12233,12 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
     if (membersEnabled.present) {
       map['members_enabled'] = Variable<bool>(membersEnabled.value);
     }
+    if (memberMirrorEnabled.present) {
+      map['member_mirror_enabled'] = Variable<bool>(memberMirrorEnabled.value);
+    }
+    if (memberMirrorSalt.present) {
+      map['member_mirror_salt'] = Variable<String>(memberMirrorSalt.value);
+    }
     if (memberPointsEnabled.present) {
       map['member_points_enabled'] = Variable<bool>(memberPointsEnabled.value);
     }
@@ -12231,6 +12355,8 @@ class VenueSettingsCompanion extends UpdateCompanion<VenueSetting> {
           ..write('soundUngreeted: $soundUngreeted, ')
           ..write('soundPickup: $soundPickup, ')
           ..write('membersEnabled: $membersEnabled, ')
+          ..write('memberMirrorEnabled: $memberMirrorEnabled, ')
+          ..write('memberMirrorSalt: $memberMirrorSalt, ')
           ..write('memberPointsEnabled: $memberPointsEnabled, ')
           ..write('memberPunchEnabled: $memberPunchEnabled, ')
           ..write('memberPresetId: $memberPresetId, ')
@@ -25977,6 +26103,17 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _mirrorRevMeta = const VerificationMeta(
+    'mirrorRev',
+  );
+  @override
+  late final GeneratedColumn<int> mirrorRev = GeneratedColumn<int>(
+    'mirror_rev',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -25991,6 +26128,7 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
     kecamatan,
     kelurahan,
     addressText,
+    mirrorRev,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -26084,6 +26222,12 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
         ),
       );
     }
+    if (data.containsKey('mirror_rev')) {
+      context.handle(
+        _mirrorRevMeta,
+        mirrorRev.isAcceptableOrUnknown(data['mirror_rev']!, _mirrorRevMeta),
+      );
+    }
     return context;
   }
 
@@ -26140,6 +26284,10 @@ class $MembersTable extends Members with TableInfo<$MembersTable, Member> {
       addressText: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}address_text'],
+      ),
+      mirrorRev: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}mirror_rev'],
       ),
     );
   }
@@ -26199,6 +26347,25 @@ class Member extends DataClass implements Insertable<Member> {
   /// Also the escape hatch for a guest from outside Sulawesi Utara, whose
   /// three pickers stay empty.
   final String? addressText;
+
+  /// The revision a [[Salinan pelanggan]] pages off (ADR-0129).
+  ///
+  /// A **counter, not a clock**. Drift stores a `DateTime` at second
+  /// granularity, so a timestamp cursor drops any change that lands in the
+  /// same second as the cursor and sorts below it — silently, and forever,
+  /// because nothing revisits a row that did not move. A monotonic integer has
+  /// no ties to break.
+  ///
+  /// Stamped by every writer that changes what a mirror *shows* — the identity
+  /// here, and the derived figures on top of it ([[Poin]], [[Piutang]], visit
+  /// count). One helper stamps it, `touchMember`; a writer that skips it drops
+  /// that member out of every device's copy until some unrelated edit moves
+  /// them again, which is the same failure class `writeAudit` and `cash.dart`
+  /// exist to prevent.
+  ///
+  /// Shares one sequence with [MemberTombstones.rev], so one cursor resumes
+  /// both streams. Nullable only for pre-v71 rows, which v71 backfills.
+  final int? mirrorRev;
   const Member({
     required this.id,
     required this.name,
@@ -26212,6 +26379,7 @@ class Member extends DataClass implements Insertable<Member> {
     this.kecamatan,
     this.kelurahan,
     this.addressText,
+    this.mirrorRev,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -26242,6 +26410,9 @@ class Member extends DataClass implements Insertable<Member> {
     if (!nullToAbsent || addressText != null) {
       map['address_text'] = Variable<String>(addressText);
     }
+    if (!nullToAbsent || mirrorRev != null) {
+      map['mirror_rev'] = Variable<int>(mirrorRev);
+    }
     return map;
   }
 
@@ -26271,6 +26442,9 @@ class Member extends DataClass implements Insertable<Member> {
       addressText: addressText == null && nullToAbsent
           ? const Value.absent()
           : Value(addressText),
+      mirrorRev: mirrorRev == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mirrorRev),
     );
   }
 
@@ -26292,6 +26466,7 @@ class Member extends DataClass implements Insertable<Member> {
       kecamatan: serializer.fromJson<String?>(json['kecamatan']),
       kelurahan: serializer.fromJson<String?>(json['kelurahan']),
       addressText: serializer.fromJson<String?>(json['addressText']),
+      mirrorRev: serializer.fromJson<int?>(json['mirrorRev']),
     );
   }
   @override
@@ -26310,6 +26485,7 @@ class Member extends DataClass implements Insertable<Member> {
       'kecamatan': serializer.toJson<String?>(kecamatan),
       'kelurahan': serializer.toJson<String?>(kelurahan),
       'addressText': serializer.toJson<String?>(addressText),
+      'mirrorRev': serializer.toJson<int?>(mirrorRev),
     };
   }
 
@@ -26326,6 +26502,7 @@ class Member extends DataClass implements Insertable<Member> {
     Value<String?> kecamatan = const Value.absent(),
     Value<String?> kelurahan = const Value.absent(),
     Value<String?> addressText = const Value.absent(),
+    Value<int?> mirrorRev = const Value.absent(),
   }) => Member(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -26339,6 +26516,7 @@ class Member extends DataClass implements Insertable<Member> {
     kecamatan: kecamatan.present ? kecamatan.value : this.kecamatan,
     kelurahan: kelurahan.present ? kelurahan.value : this.kelurahan,
     addressText: addressText.present ? addressText.value : this.addressText,
+    mirrorRev: mirrorRev.present ? mirrorRev.value : this.mirrorRev,
   );
   Member copyWithCompanion(MembersCompanion data) {
     return Member(
@@ -26356,6 +26534,7 @@ class Member extends DataClass implements Insertable<Member> {
       addressText: data.addressText.present
           ? data.addressText.value
           : this.addressText,
+      mirrorRev: data.mirrorRev.present ? data.mirrorRev.value : this.mirrorRev,
     );
   }
 
@@ -26373,7 +26552,8 @@ class Member extends DataClass implements Insertable<Member> {
           ..write('kabupaten: $kabupaten, ')
           ..write('kecamatan: $kecamatan, ')
           ..write('kelurahan: $kelurahan, ')
-          ..write('addressText: $addressText')
+          ..write('addressText: $addressText, ')
+          ..write('mirrorRev: $mirrorRev')
           ..write(')'))
         .toString();
   }
@@ -26392,6 +26572,7 @@ class Member extends DataClass implements Insertable<Member> {
     kecamatan,
     kelurahan,
     addressText,
+    mirrorRev,
   );
   @override
   bool operator ==(Object other) =>
@@ -26408,7 +26589,8 @@ class Member extends DataClass implements Insertable<Member> {
           other.kabupaten == this.kabupaten &&
           other.kecamatan == this.kecamatan &&
           other.kelurahan == this.kelurahan &&
-          other.addressText == this.addressText);
+          other.addressText == this.addressText &&
+          other.mirrorRev == this.mirrorRev);
 }
 
 class MembersCompanion extends UpdateCompanion<Member> {
@@ -26424,6 +26606,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
   final Value<String?> kecamatan;
   final Value<String?> kelurahan;
   final Value<String?> addressText;
+  final Value<int?> mirrorRev;
   final Value<int> rowid;
   const MembersCompanion({
     this.id = const Value.absent(),
@@ -26438,6 +26621,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     this.kecamatan = const Value.absent(),
     this.kelurahan = const Value.absent(),
     this.addressText = const Value.absent(),
+    this.mirrorRev = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MembersCompanion.insert({
@@ -26453,6 +26637,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     this.kecamatan = const Value.absent(),
     this.kelurahan = const Value.absent(),
     this.addressText = const Value.absent(),
+    this.mirrorRev = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -26471,6 +26656,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     Expression<String>? kecamatan,
     Expression<String>? kelurahan,
     Expression<String>? addressText,
+    Expression<int>? mirrorRev,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -26486,6 +26672,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
       if (kecamatan != null) 'kecamatan': kecamatan,
       if (kelurahan != null) 'kelurahan': kelurahan,
       if (addressText != null) 'address_text': addressText,
+      if (mirrorRev != null) 'mirror_rev': mirrorRev,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -26503,6 +26690,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
     Value<String?>? kecamatan,
     Value<String?>? kelurahan,
     Value<String?>? addressText,
+    Value<int?>? mirrorRev,
     Value<int>? rowid,
   }) {
     return MembersCompanion(
@@ -26518,6 +26706,7 @@ class MembersCompanion extends UpdateCompanion<Member> {
       kecamatan: kecamatan ?? this.kecamatan,
       kelurahan: kelurahan ?? this.kelurahan,
       addressText: addressText ?? this.addressText,
+      mirrorRev: mirrorRev ?? this.mirrorRev,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -26561,6 +26750,9 @@ class MembersCompanion extends UpdateCompanion<Member> {
     if (addressText.present) {
       map['address_text'] = Variable<String>(addressText.value);
     }
+    if (mirrorRev.present) {
+      map['mirror_rev'] = Variable<int>(mirrorRev.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -26582,6 +26774,324 @@ class MembersCompanion extends UpdateCompanion<Member> {
           ..write('kecamatan: $kecamatan, ')
           ..write('kelurahan: $kelurahan, ')
           ..write('addressText: $addressText, ')
+          ..write('mirrorRev: $mirrorRev, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MemberTombstonesTable extends MemberTombstones
+    with TableInfo<$MemberTombstonesTable, MemberTombstone> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MemberTombstonesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _revMeta = const VerificationMeta('rev');
+  @override
+  late final GeneratedColumn<int> rev = GeneratedColumn<int>(
+    'rev',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _mergedIntoMeta = const VerificationMeta(
+    'mergedInto',
+  );
+  @override
+  late final GeneratedColumn<String> mergedInto = GeneratedColumn<String>(
+    'merged_into',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, deletedAt, rev, mergedInto];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'member_tombstones';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MemberTombstone> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deletedAtMeta);
+    }
+    if (data.containsKey('rev')) {
+      context.handle(
+        _revMeta,
+        rev.isAcceptableOrUnknown(data['rev']!, _revMeta),
+      );
+    }
+    if (data.containsKey('merged_into')) {
+      context.handle(
+        _mergedIntoMeta,
+        mergedInto.isAcceptableOrUnknown(data['merged_into']!, _mergedIntoMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MemberTombstone map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MemberTombstone(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      )!,
+      rev: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rev'],
+      )!,
+      mergedInto: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}merged_into'],
+      ),
+    );
+  }
+
+  @override
+  $MemberTombstonesTable createAlias(String alias) {
+    return $MemberTombstonesTable(attachedDatabase, alias);
+  }
+}
+
+class MemberTombstone extends DataClass implements Insertable<MemberTombstone> {
+  /// The member id that went away.
+  final String id;
+  final DateTime deletedAt;
+
+  /// Position in the same sequence as [Members.mirrorRev] — a departure and an
+  /// edit are one ordered stream, so one cursor resumes both.
+  final int rev;
+
+  /// Set when the row went by a **merge**: the id that survived, so a local
+  /// reference follows it instead of dangling. Null for a plain delete —
+  /// there is nowhere to follow.
+  final String? mergedInto;
+  const MemberTombstone({
+    required this.id,
+    required this.deletedAt,
+    required this.rev,
+    this.mergedInto,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['deleted_at'] = Variable<DateTime>(deletedAt);
+    map['rev'] = Variable<int>(rev);
+    if (!nullToAbsent || mergedInto != null) {
+      map['merged_into'] = Variable<String>(mergedInto);
+    }
+    return map;
+  }
+
+  MemberTombstonesCompanion toCompanion(bool nullToAbsent) {
+    return MemberTombstonesCompanion(
+      id: Value(id),
+      deletedAt: Value(deletedAt),
+      rev: Value(rev),
+      mergedInto: mergedInto == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mergedInto),
+    );
+  }
+
+  factory MemberTombstone.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MemberTombstone(
+      id: serializer.fromJson<String>(json['id']),
+      deletedAt: serializer.fromJson<DateTime>(json['deletedAt']),
+      rev: serializer.fromJson<int>(json['rev']),
+      mergedInto: serializer.fromJson<String?>(json['mergedInto']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'deletedAt': serializer.toJson<DateTime>(deletedAt),
+      'rev': serializer.toJson<int>(rev),
+      'mergedInto': serializer.toJson<String?>(mergedInto),
+    };
+  }
+
+  MemberTombstone copyWith({
+    String? id,
+    DateTime? deletedAt,
+    int? rev,
+    Value<String?> mergedInto = const Value.absent(),
+  }) => MemberTombstone(
+    id: id ?? this.id,
+    deletedAt: deletedAt ?? this.deletedAt,
+    rev: rev ?? this.rev,
+    mergedInto: mergedInto.present ? mergedInto.value : this.mergedInto,
+  );
+  MemberTombstone copyWithCompanion(MemberTombstonesCompanion data) {
+    return MemberTombstone(
+      id: data.id.present ? data.id.value : this.id,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      rev: data.rev.present ? data.rev.value : this.rev,
+      mergedInto: data.mergedInto.present
+          ? data.mergedInto.value
+          : this.mergedInto,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MemberTombstone(')
+          ..write('id: $id, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rev: $rev, ')
+          ..write('mergedInto: $mergedInto')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, deletedAt, rev, mergedInto);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MemberTombstone &&
+          other.id == this.id &&
+          other.deletedAt == this.deletedAt &&
+          other.rev == this.rev &&
+          other.mergedInto == this.mergedInto);
+}
+
+class MemberTombstonesCompanion extends UpdateCompanion<MemberTombstone> {
+  final Value<String> id;
+  final Value<DateTime> deletedAt;
+  final Value<int> rev;
+  final Value<String?> mergedInto;
+  final Value<int> rowid;
+  const MemberTombstonesCompanion({
+    this.id = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rev = const Value.absent(),
+    this.mergedInto = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MemberTombstonesCompanion.insert({
+    required String id,
+    required DateTime deletedAt,
+    this.rev = const Value.absent(),
+    this.mergedInto = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       deletedAt = Value(deletedAt);
+  static Insertable<MemberTombstone> custom({
+    Expression<String>? id,
+    Expression<DateTime>? deletedAt,
+    Expression<int>? rev,
+    Expression<String>? mergedInto,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rev != null) 'rev': rev,
+      if (mergedInto != null) 'merged_into': mergedInto,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MemberTombstonesCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? deletedAt,
+    Value<int>? rev,
+    Value<String?>? mergedInto,
+    Value<int>? rowid,
+  }) {
+    return MemberTombstonesCompanion(
+      id: id ?? this.id,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rev: rev ?? this.rev,
+      mergedInto: mergedInto ?? this.mergedInto,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (rev.present) {
+      map['rev'] = Variable<int>(rev.value);
+    }
+    if (mergedInto.present) {
+      map['merged_into'] = Variable<String>(mergedInto.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MemberTombstonesCompanion(')
+          ..write('id: $id, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rev: $rev, ')
+          ..write('mergedInto: $mergedInto, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -30542,6 +31052,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $CashEntriesTable cashEntries = $CashEntriesTable(this);
   late final $MembersTable members = $MembersTable(this);
+  late final $MemberTombstonesTable memberTombstones = $MemberTombstonesTable(
+    this,
+  );
   late final $MemberPointsTable memberPoints = $MemberPointsTable(this);
   late final $MemberDebtsTable memberDebts = $MemberDebtsTable(this);
   late final $ShiftsTable shifts = $ShiftsTable(this);
@@ -30592,6 +31105,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     stockCountLines,
     cashEntries,
     members,
+    memberTombstones,
     memberPoints,
     memberDebts,
     shifts,
@@ -34794,6 +35308,8 @@ typedef $$VenueSettingsTableCreateCompanionBuilder =
       Value<String> soundUngreeted,
       Value<String> soundPickup,
       Value<bool> membersEnabled,
+      Value<bool> memberMirrorEnabled,
+      Value<String> memberMirrorSalt,
       Value<bool> memberPointsEnabled,
       Value<bool> memberPunchEnabled,
       Value<String?> memberPresetId,
@@ -34857,6 +35373,8 @@ typedef $$VenueSettingsTableUpdateCompanionBuilder =
       Value<String> soundUngreeted,
       Value<String> soundPickup,
       Value<bool> membersEnabled,
+      Value<bool> memberMirrorEnabled,
+      Value<String> memberMirrorSalt,
       Value<bool> memberPointsEnabled,
       Value<bool> memberPunchEnabled,
       Value<String?> memberPresetId,
@@ -35077,6 +35595,16 @@ class $$VenueSettingsTableFilterComposer
 
   ColumnFilters<bool> get membersEnabled => $composableBuilder(
     column: $table.membersEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get memberMirrorEnabled => $composableBuilder(
+    column: $table.memberMirrorEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get memberMirrorSalt => $composableBuilder(
+    column: $table.memberMirrorSalt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -35385,6 +35913,16 @@ class $$VenueSettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get memberMirrorEnabled => $composableBuilder(
+    column: $table.memberMirrorEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get memberMirrorSalt => $composableBuilder(
+    column: $table.memberMirrorSalt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get memberPointsEnabled => $composableBuilder(
     column: $table.memberPointsEnabled,
     builder: (column) => ColumnOrderings(column),
@@ -35676,6 +36214,16 @@ class $$VenueSettingsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get memberMirrorEnabled => $composableBuilder(
+    column: $table.memberMirrorEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get memberMirrorSalt => $composableBuilder(
+    column: $table.memberMirrorSalt,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get memberPointsEnabled => $composableBuilder(
     column: $table.memberPointsEnabled,
     builder: (column) => column,
@@ -35849,6 +36397,8 @@ class $$VenueSettingsTableTableManager
                 Value<String> soundUngreeted = const Value.absent(),
                 Value<String> soundPickup = const Value.absent(),
                 Value<bool> membersEnabled = const Value.absent(),
+                Value<bool> memberMirrorEnabled = const Value.absent(),
+                Value<String> memberMirrorSalt = const Value.absent(),
                 Value<bool> memberPointsEnabled = const Value.absent(),
                 Value<bool> memberPunchEnabled = const Value.absent(),
                 Value<String?> memberPresetId = const Value.absent(),
@@ -35910,6 +36460,8 @@ class $$VenueSettingsTableTableManager
                 soundUngreeted: soundUngreeted,
                 soundPickup: soundPickup,
                 membersEnabled: membersEnabled,
+                memberMirrorEnabled: memberMirrorEnabled,
+                memberMirrorSalt: memberMirrorSalt,
                 memberPointsEnabled: memberPointsEnabled,
                 memberPunchEnabled: memberPunchEnabled,
                 memberPresetId: memberPresetId,
@@ -35973,6 +36525,8 @@ class $$VenueSettingsTableTableManager
                 Value<String> soundUngreeted = const Value.absent(),
                 Value<String> soundPickup = const Value.absent(),
                 Value<bool> membersEnabled = const Value.absent(),
+                Value<bool> memberMirrorEnabled = const Value.absent(),
+                Value<String> memberMirrorSalt = const Value.absent(),
                 Value<bool> memberPointsEnabled = const Value.absent(),
                 Value<bool> memberPunchEnabled = const Value.absent(),
                 Value<String?> memberPresetId = const Value.absent(),
@@ -36034,6 +36588,8 @@ class $$VenueSettingsTableTableManager
                 soundUngreeted: soundUngreeted,
                 soundPickup: soundPickup,
                 membersEnabled: membersEnabled,
+                memberMirrorEnabled: memberMirrorEnabled,
+                memberMirrorSalt: memberMirrorSalt,
                 memberPointsEnabled: memberPointsEnabled,
                 memberPunchEnabled: memberPunchEnabled,
                 memberPresetId: memberPresetId,
@@ -42706,6 +43262,7 @@ typedef $$MembersTableCreateCompanionBuilder =
       Value<String?> kecamatan,
       Value<String?> kelurahan,
       Value<String?> addressText,
+      Value<int?> mirrorRev,
       Value<int> rowid,
     });
 typedef $$MembersTableUpdateCompanionBuilder =
@@ -42722,6 +43279,7 @@ typedef $$MembersTableUpdateCompanionBuilder =
       Value<String?> kecamatan,
       Value<String?> kelurahan,
       Value<String?> addressText,
+      Value<int?> mirrorRev,
       Value<int> rowid,
     });
 
@@ -42791,6 +43349,11 @@ class $$MembersTableFilterComposer
 
   ColumnFilters<String> get addressText => $composableBuilder(
     column: $table.addressText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get mirrorRev => $composableBuilder(
+    column: $table.mirrorRev,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -42863,6 +43426,11 @@ class $$MembersTableOrderingComposer
     column: $table.addressText,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get mirrorRev => $composableBuilder(
+    column: $table.mirrorRev,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MembersTableAnnotationComposer
@@ -42911,6 +43479,9 @@ class $$MembersTableAnnotationComposer
     column: $table.addressText,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get mirrorRev =>
+      $composableBuilder(column: $table.mirrorRev, builder: (column) => column);
 }
 
 class $$MembersTableTableManager
@@ -42953,6 +43524,7 @@ class $$MembersTableTableManager
                 Value<String?> kecamatan = const Value.absent(),
                 Value<String?> kelurahan = const Value.absent(),
                 Value<String?> addressText = const Value.absent(),
+                Value<int?> mirrorRev = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MembersCompanion(
                 id: id,
@@ -42967,6 +43539,7 @@ class $$MembersTableTableManager
                 kecamatan: kecamatan,
                 kelurahan: kelurahan,
                 addressText: addressText,
+                mirrorRev: mirrorRev,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -42983,6 +43556,7 @@ class $$MembersTableTableManager
                 Value<String?> kecamatan = const Value.absent(),
                 Value<String?> kelurahan = const Value.absent(),
                 Value<String?> addressText = const Value.absent(),
+                Value<int?> mirrorRev = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MembersCompanion.insert(
                 id: id,
@@ -42997,6 +43571,7 @@ class $$MembersTableTableManager
                 kecamatan: kecamatan,
                 kelurahan: kelurahan,
                 addressText: addressText,
+                mirrorRev: mirrorRev,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -43019,6 +43594,195 @@ typedef $$MembersTableProcessedTableManager =
       $$MembersTableUpdateCompanionBuilder,
       (Member, BaseReferences<_$AppDatabase, $MembersTable, Member>),
       Member,
+      PrefetchHooks Function()
+    >;
+typedef $$MemberTombstonesTableCreateCompanionBuilder =
+    MemberTombstonesCompanion Function({
+      required String id,
+      required DateTime deletedAt,
+      Value<int> rev,
+      Value<String?> mergedInto,
+      Value<int> rowid,
+    });
+typedef $$MemberTombstonesTableUpdateCompanionBuilder =
+    MemberTombstonesCompanion Function({
+      Value<String> id,
+      Value<DateTime> deletedAt,
+      Value<int> rev,
+      Value<String?> mergedInto,
+      Value<int> rowid,
+    });
+
+class $$MemberTombstonesTableFilterComposer
+    extends Composer<_$AppDatabase, $MemberTombstonesTable> {
+  $$MemberTombstonesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rev => $composableBuilder(
+    column: $table.rev,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mergedInto => $composableBuilder(
+    column: $table.mergedInto,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MemberTombstonesTableOrderingComposer
+    extends Composer<_$AppDatabase, $MemberTombstonesTable> {
+  $$MemberTombstonesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rev => $composableBuilder(
+    column: $table.rev,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mergedInto => $composableBuilder(
+    column: $table.mergedInto,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MemberTombstonesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MemberTombstonesTable> {
+  $$MemberTombstonesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get rev =>
+      $composableBuilder(column: $table.rev, builder: (column) => column);
+
+  GeneratedColumn<String> get mergedInto => $composableBuilder(
+    column: $table.mergedInto,
+    builder: (column) => column,
+  );
+}
+
+class $$MemberTombstonesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MemberTombstonesTable,
+          MemberTombstone,
+          $$MemberTombstonesTableFilterComposer,
+          $$MemberTombstonesTableOrderingComposer,
+          $$MemberTombstonesTableAnnotationComposer,
+          $$MemberTombstonesTableCreateCompanionBuilder,
+          $$MemberTombstonesTableUpdateCompanionBuilder,
+          (
+            MemberTombstone,
+            BaseReferences<
+              _$AppDatabase,
+              $MemberTombstonesTable,
+              MemberTombstone
+            >,
+          ),
+          MemberTombstone,
+          PrefetchHooks Function()
+        > {
+  $$MemberTombstonesTableTableManager(
+    _$AppDatabase db,
+    $MemberTombstonesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MemberTombstonesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MemberTombstonesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MemberTombstonesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> deletedAt = const Value.absent(),
+                Value<int> rev = const Value.absent(),
+                Value<String?> mergedInto = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MemberTombstonesCompanion(
+                id: id,
+                deletedAt: deletedAt,
+                rev: rev,
+                mergedInto: mergedInto,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required DateTime deletedAt,
+                Value<int> rev = const Value.absent(),
+                Value<String?> mergedInto = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MemberTombstonesCompanion.insert(
+                id: id,
+                deletedAt: deletedAt,
+                rev: rev,
+                mergedInto: mergedInto,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MemberTombstonesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MemberTombstonesTable,
+      MemberTombstone,
+      $$MemberTombstonesTableFilterComposer,
+      $$MemberTombstonesTableOrderingComposer,
+      $$MemberTombstonesTableAnnotationComposer,
+      $$MemberTombstonesTableCreateCompanionBuilder,
+      $$MemberTombstonesTableUpdateCompanionBuilder,
+      (
+        MemberTombstone,
+        BaseReferences<_$AppDatabase, $MemberTombstonesTable, MemberTombstone>,
+      ),
+      MemberTombstone,
       PrefetchHooks Function()
     >;
 typedef $$MemberPointsTableCreateCompanionBuilder =
@@ -45013,6 +45777,8 @@ class $AppDatabaseManager {
       $$CashEntriesTableTableManager(_db, _db.cashEntries);
   $$MembersTableTableManager get members =>
       $$MembersTableTableManager(_db, _db.members);
+  $$MemberTombstonesTableTableManager get memberTombstones =>
+      $$MemberTombstonesTableTableManager(_db, _db.memberTombstones);
   $$MemberPointsTableTableManager get memberPoints =>
       $$MemberPointsTableTableManager(_db, _db.memberPoints);
   $$MemberDebtsTableTableManager get memberDebts =>
