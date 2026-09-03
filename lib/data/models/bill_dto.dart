@@ -547,10 +547,21 @@ class BillReceipt {
     return null;
   }
 
-  /// The line discount on [ticketId], if any. At most one per line.
-  BillDiscount? lineDiscount(String ticketId) {
+  /// Every discount on [ticketId] — one row per
+  /// [[Sumber diskon (discount source)|source]] since ADR-0126, so a
+  /// [[Pemilik tiket]]'s tier and the cashier's promo appear side by side
+  /// rather than one locking the other out.
+  List<BillDiscount> lineDiscounts(String ticketId) => [
+    for (final d in discounts)
+      if (d.ticketId == ticketId) d,
+  ];
+
+  /// The cashier's own line discount on [ticketId] — the only one their
+  /// discount button may add or remove. The tier and redemption rows belong to
+  /// the member panel, exactly as at order scope.
+  BillDiscount? manualLineDiscount(String ticketId) {
     for (final d in discounts) {
-      if (d.ticketId == ticketId) return d;
+      if (d.ticketId == ticketId && d.source == 'manual') return d;
     }
     return null;
   }

@@ -5021,12 +5021,6 @@ abstract class AppL10n {
   /// **'Hapus \"{label}\" ({amount}) dari {name}?'**
   String cshRemoveLineDiscountBody(String label, String amount, String name);
 
-  /// No description provided for @cshLineDiscountLocked.
-  ///
-  /// In id, this message translates to:
-  /// **'Diskon member aktif; diskon manual tidak tersedia'**
-  String get cshLineDiscountLocked;
-
   /// No description provided for @cshAddReceipt.
   ///
   /// In id, this message translates to:
@@ -14459,60 +14453,6 @@ abstract class AppL10n {
   /// **'Preset diskon tagihan yang otomatis dipasang begitu pelanggan dikaitkan ke tagihan.'**
   String get vstMembersPresetHint;
 
-  /// Title of the step that names a member per receipt on a split bill.
-  ///
-  /// In id, this message translates to:
-  /// **'Siapa'**
-  String get cshWho;
-
-  /// Subtitle under the Siapa sheet header.
-  ///
-  /// In id, this message translates to:
-  /// **'Pilih pelanggan tiap struk. Poin dan diskonnya ikut yang dipilih.'**
-  String get cshWhoHint;
-
-  /// Placeholder on a receipt nobody has been named for.
-  ///
-  /// In id, this message translates to:
-  /// **'Belum dipilih'**
-  String get cshWhoUnset;
-
-  /// Shown when a receipt names a member record that has since been deleted.
-  ///
-  /// In id, this message translates to:
-  /// **'Pelanggan terhapus'**
-  String get cshWhoGone;
-
-  /// Chip on a receipt whose attribution is frozen because it has a payment.
-  ///
-  /// In id, this message translates to:
-  /// **'Sudah dibayar'**
-  String get cshWhoPaid;
-
-  /// Footer naming the bill owner, who gets any money no receipt claims.
-  ///
-  /// In id, this message translates to:
-  /// **'Sisanya masuk ke {name}'**
-  String cshWhoRest(String name);
-
-  /// Footer when the bill has no owner, so unclaimed money earns for nobody.
-  ///
-  /// In id, this message translates to:
-  /// **'Sisanya tidak masuk poin siapa pun'**
-  String get cshWhoRestNone;
-
-  /// Button back into the Siapa step when every receipt is already named.
-  ///
-  /// In id, this message translates to:
-  /// **'Ubah pemilik struk'**
-  String get cshWhoEdit;
-
-  /// Button into the Siapa step, counting the receipts still unnamed.
-  ///
-  /// In id, this message translates to:
-  /// **'Pilih pelanggan ({count})'**
-  String cshWhoSet(int count);
-
   /// The member row on a live bill.
   ///
   /// In id, this message translates to:
@@ -15376,6 +15316,42 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Riwayat belanja dan produk favorit pelanggan'**
   String get hubMemberReportSub;
+
+  /// Label above the debtor picker on the settle pane.
+  ///
+  /// In id, this message translates to:
+  /// **'Penanggung utang'**
+  String get stlDebtor;
+
+  /// Placeholder when no debtor has been confirmed.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum dipilih'**
+  String get stlDebtorUnset;
+
+  /// Offers the lines’ ticket owner as the debtor; opens the lookup filtered to them.
+  ///
+  /// In id, this message translates to:
+  /// **'Pakai {name} — pemilik item'**
+  String stlDebtorSuggest(String name);
+
+  /// Blocker under the confirm button when a piutang payment has no debtor.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih pelanggan yang berutang'**
+  String get stlBlkPickDebtor;
+
+  /// Row in the Per item breakdown totalling the pending line discounts.
+  ///
+  /// In id, this message translates to:
+  /// **'Diskon item'**
+  String get stlRowLineDiscounts;
+
+  /// Shown on a line whose receipt is paid, so its discounts can no longer change.
+  ///
+  /// In id, this message translates to:
+  /// **'Diskon terkunci'**
+  String get cshDiscountFrozen;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

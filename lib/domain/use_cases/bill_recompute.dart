@@ -187,17 +187,33 @@ RcResult recomputeBill({
         if (d.receiptId == rec.id) d,
     ];
     // A line discount's base is the value of the units THIS receipt owns.
+    //
+    // A line holds one row per [[Sumber diskon (discount source)|source]] since
+    // ADR-0126 — a [[Pemilik tiket]]'s tier and the cashier's promo stack — so
+    // the rows are grouped by ticket and the *stack* is clamped to the line's
+    // own base. Clamping each row on its own would let 10% + 100% take 110% of
+    // a dish and drive the receipt negative.
     var lineDisc = 0;
+    final byTicket = <String, List<RcDiscount>>{};
     for (final d in ds.where((d) => d.ticketId != null)) {
-      final price = priceOf[d.ticketId] ?? 0;
-      final base = price * (units[d.ticketId] ?? 0);
-      final amt = resolveDiscountAmount(
-        kind: d.kind,
-        value: d.value,
-        base: base,
-      );
-      resolved[d.id] = amt;
-      lineDisc += amt;
+      (byTicket[d.ticketId!] ??= <RcDiscount>[]).add(d);
+    }
+    for (final entry in byTicket.entries) {
+      final base = (priceOf[entry.key] ?? 0) * (units[entry.key] ?? 0);
+      var stack = 0;
+      for (final d in entry.value) {
+        final amt = resolveDiscountAmount(
+          kind: d.kind,
+          value: d.value,
+          base: base,
+        );
+        resolved[d.id] = amt;
+        stack += amt;
+      }
+      // ponytail: clamped as a stack, not reconciled row by row — the printed
+      // rows stay honest about what each promised, exactly as bill scope does
+      // below. Only reachable when the slots together exceed the line.
+      lineDisc += stack > base ? base : stack;
     }
     final net = gross - lineDisc;
     var orderDisc = 0;

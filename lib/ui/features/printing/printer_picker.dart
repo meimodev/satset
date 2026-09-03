@@ -199,6 +199,11 @@ Future<void> printBillSelection({
   required WidgetRef ref,
   required Bill bill,
   required Map<String, int> selection,
+
+  /// The line give-backs the till already has off the quote (ADR-0126), as
+  /// `ticketId → (label, amount)`. Printing without them hands the guest a
+  /// bigger number than the confirm button shows.
+  Map<String, ({String label, int amount})> pending = const {},
 }) async {
   final l = context.l10n;
   final venue = ref.read(venueSettingsProvider);
@@ -208,6 +213,7 @@ Future<void> printBillSelection({
     bill: bill,
     selection: selection,
     venue: venue,
+    pending: pending,
     logoBytes: logo,
   );
   if (data.lines.isEmpty) {

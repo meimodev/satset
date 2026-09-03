@@ -26,10 +26,10 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/receipt_visuals.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/ui/features/cashier/discount_sheet.dart';
 import 'package:satset/ui/features/cashier/member_panel.dart';
 import 'package:satset/ui/features/cashier/receipt_badge.dart';
-import 'package:satset/ui/features/cashier/who_sheet.dart';
 import 'package:satset/ui/features/cashier/widgets/pay_method_picker.dart';
 import 'package:satset/ui/features/cashier/widgets/settle_pane.dart';
 import 'package:satset/ui/features/printing/printer_picker.dart';
@@ -194,11 +194,12 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
                 bill: bill,
                 receipt: r,
               ),
-              printSelection: (sel) => printBillSelection(
+              printSelection: (sel, pending) => printBillSelection(
                 context: context,
                 ref: ref,
                 bill: bill,
                 selection: sel,
+                pending: pending,
               ),
             ),
           ),
@@ -362,7 +363,11 @@ class _BillBody extends StatefulWidget {
   /// Print the tapped-but-unminted Per item selection (ADR-0122). Injected
   /// from the ConsumerState above for the same reason [printDoc] is — this
   /// widget holds the selection but has no `ref`.
-  final Future<void> Function(Map<String, int>) printSelection;
+  final Future<void> Function(
+    Map<String, int> selection,
+    Map<String, ({String label, int amount})> pending,
+  )
+  printSelection;
 
   const _BillBody({
     required this.bill,
@@ -400,48 +405,44 @@ class _BillBodyState extends State<_BillBody> {
     });
   }
 
+  /// ticketId → a [[Diskon (discount)]] the cashier has put on a line no
+  /// receipt owns yet (ADR-0126). Lives here, beside [_selection], because both
+  /// are the same kind of thing: a pick that becomes real at confirm.
+  final Map<String, PendingLineDiscount> _pending = {};
+
+  void _setPending(BillLine l, PendingLineDiscount? d) {
+    setState(() {
+      if (d == null) {
+        _pending.remove(l.ticketId);
+      } else {
+        _pending[l.ticketId] = d;
+      }
+    });
+  }
+
+  void _clearPending() {
+    if (_pending.isEmpty) return;
+    setState(_pending.clear);
+  }
+
   void _setUnits(BillLine l, int units) {
     setState(() {
       if (units <= 0) {
         _selection.remove(l.ticketId);
+        // Priced against the units that were tapped — dropping the line makes
+        // the quote refer to nothing.
+        _pending.remove(l.ticketId);
       } else {
         _selection[l.ticketId] = units.clamp(1, l.unassignedUnits);
       }
     });
   }
 
-  /// The [[Pemilik struk]] step offers itself once, the first time a split
-  /// appears with a share nobody has named (ADR-0118). A cashier who closed it
-  /// answered "later" — asking again on every refetch is how a sheet becomes
-  /// the thing you tap past without reading.
-  bool _whoOffered = false;
-
-  @override
-  void didUpdateWidget(covariant _BillBody old) {
-    super.didUpdateWidget(old);
-    final b = widget.bill;
-    if (_whoOffered ||
-        b.ticketAttribution ||
-        !b.splitEnabled ||
-        b.receipts.length < 2 ||
-        b.receipts.length <= old.bill.receipts.length ||
-        b.receipts.every((r) => r.memberId != null)) {
-      return;
-    }
-    _whoOffered = true;
-    // Not during a build: the split that minted these shares is very often the
-    // same frame that rebuilt this body.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      showWhoSheet(
-        context,
-        visitId: b.visitId,
-        bill: b,
-        run: widget.run,
-        repo: widget.repo,
-      );
-    });
-  }
+  // The **Siapa** step is gone with ADR-0126. Naming a share was a second
+  // attribution grain beside the [[Pemilik tiket]] chip on each line, and two
+  // gestures that both look like "whose is this" is how the wrong guest gets
+  // the points. `receipts.member_id` is still read for visits that closed
+  // under ADR-0118; nothing writes it any more.
 
   /// A payment landed, or the mode changed — the picks no longer refer to
   /// anything, and a stale selection is how a cashier double-charges an item.
@@ -502,11 +503,16 @@ class _BillBodyState extends State<_BillBody> {
       onMode: (m) {
         setState(() => _mode = m);
         _clearSelection();
+        _clearPending();
       },
       onClearSelection: _clearSelection,
-      onPrintSelection: () => widget.printSelection(_selection),
+      pendingDiscounts: _pending,
+      onClearPending: _clearPending,
+      onPrintSelection: () => widget.printSelection(_selection, {
+        for (final e in _pending.entries)
+          e.key: (label: e.value.label, amount: e.value.amount),
+      }),
       debtEnabled: widget.debtEnabled,
-      splitEnabled: bill.splitEnabled,
     );
   }
 
@@ -560,8 +566,11 @@ class _BillBodyState extends State<_BillBody> {
             bill: bill,
             run: widget.run,
             repo: widget.repo,
+            canDiscount: !bill.fullySettled && bill.billClosedAt == null,
             selectable: picking,
             selection: _selection,
+            pendingDiscounts: _pending,
+            onPending: _setPending,
             onToggle: _toggle,
             onUnits: _setUnits,
           ),
@@ -571,26 +580,6 @@ class _BillBodyState extends State<_BillBody> {
           // An even split's shares own no items and are interchangeable by
           // design, so N near-identical cards are scroll with no signal in it.
           // They collapse into one card of thin rows. ADR-0063.
-          // Above the shares, not inside either branch: "who is A, who is B"
-          // is asked of the split as a whole, and an even split and an itemized
-          // one draw their shares two different ways (ADR-0063).
-          if (!bill.ticketAttribution &&
-              bill.splitEnabled &&
-              bill.receipts.isNotEmpty) ...[
-            rv(
-              _WhoCard(
-                bill: bill,
-                onOpen: () => showWhoSheet(
-                  context,
-                  visitId: bill.visitId,
-                  bill: bill,
-                  run: widget.run,
-                  repo: widget.repo,
-                ),
-              ),
-            ),
-            const SizedBox(height: Sp.s2h),
-          ],
           if (bill.mode == 'even' && bill.receipts.isNotEmpty)
             rv(
               _EvenSplitCard(
@@ -745,7 +734,7 @@ class _TotalsCard extends StatelessWidget {
 // wallet yet. The question is now asked per payment by `SettlePane`'s mode row,
 // where the answer is known.
 
-class _LinesSection extends StatelessWidget {
+class _LinesSection extends ConsumerWidget {
   final Bill bill;
   final Future<void> Function(Future<Bill> Function()) run;
   final SettlementRepository repo;
@@ -754,8 +743,16 @@ class _LinesSection extends StatelessWidget {
   /// on the receipt the settle pane is about to mint (ADR-0067).
   final bool selectable;
 
+  /// The bill is still open, so a give-back can still be given. A settled or
+  /// closed bill freezes them (ADR-0037).
+  final bool canDiscount;
+
   /// ticketId → units chosen for the pending payment.
   final Map<String, int> selection;
+
+  /// ticketId → a line [[Diskon (discount)]] waiting for a receipt (ADR-0126).
+  final Map<String, PendingLineDiscount> pendingDiscounts;
+  final void Function(BillLine, PendingLineDiscount?)? onPending;
   final void Function(BillLine)? onToggle;
   final void Function(BillLine, int)? onUnits;
 
@@ -764,13 +761,16 @@ class _LinesSection extends StatelessWidget {
     required this.run,
     required this.repo,
     this.selectable = false,
+    this.canDiscount = false,
     this.selection = const {},
+    this.pendingDiscounts = const {},
+    this.onPending,
     this.onToggle,
     this.onUnits,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     // Pre-assignment (`Atur`) and tap-to-pick are the same act at different
     // speeds, so they never share a row: picking wins while it is on.
@@ -812,7 +812,7 @@ class _LinesSection extends StatelessWidget {
         );
       }
       for (final l in lines) {
-        children.add(_lineTile(context, l, assignable));
+        children.add(_lineTile(context, ref, l, assignable));
       }
     });
 
@@ -832,7 +832,12 @@ class _LinesSection extends StatelessWidget {
     );
   }
 
-  Widget _lineTile(BuildContext context, BillLine l, bool assignable) {
+  Widget _lineTile(
+    BuildContext context,
+    WidgetRef ref,
+    BillLine l,
+    bool assignable,
+  ) {
     final sc = context.sat;
     final assigned = l.assignedUnits;
     final hasNote = l.note?.trim().isNotEmpty == true;
@@ -919,6 +924,11 @@ class _LinesSection extends StatelessWidget {
                 ],
               ),
             ),
+          // The give-backs on this line, and the way to add one. Same row
+          // shape as the [[Pemilik tiket]] chip above it on purpose (ADR-0126):
+          // "whose is this" and "what came off this" are asked of the same
+          // thing — the line — so they are answered in the same place.
+          _discountChips(context, ref, l),
           // Where this dish's units went, not just how many are placed: a
           // "2/3 diatur" count never answered *whose*. One chip per owning
           // receipt, plus an amber `?` chip for units still free. ADR-0063.
@@ -993,6 +1003,146 @@ class _LinesSection extends StatelessWidget {
     if (picked == null) return;
     await run(
       () => repo.assignTicketMembers(bill.visitId, [line.ticketId], picked.id),
+    );
+  }
+
+  /// Every [[Diskon (discount)]] on [l], live or pending, plus the button that
+  /// adds the cashier's own.
+  ///
+  /// A line reachable two ways: units a receipt already owns discount through
+  /// that receipt immediately, free units hold the pick until the settle pane
+  /// mints. One gesture either way — the cashier taps the same chip and the
+  /// difference is only *when* the row is written.
+  Widget _discountChips(BuildContext context, WidgetRef ref, BillLine l) {
+    final sc = context.sat;
+    final owner = _receiptOwning(l);
+    final live = owner == null
+        ? const <BillDiscount>[]
+        : owner.lineDiscounts(l.ticketId);
+    final held = pendingDiscounts[l.ticketId];
+    final frozen = owner != null && owner.status == 'paid';
+    final mine = owner?.manualLineDiscount(l.ticketId);
+    final offer = canDiscount && onPending != null && !frozen;
+    if (live.isEmpty && held == null && !offer) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: Sp.s1),
+      child: Wrap(
+        spacing: Sp.s2,
+        runSpacing: Sp.s1,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          for (final d in live)
+            SatChip.tag(
+              icon: Icons.sell_outlined,
+              label: '${d.label} −${groupRupiah(d.amount)}',
+              size: SatChipSize.sm,
+            ),
+          if (held != null)
+            SatChip.tag(
+              icon: Icons.sell_outlined,
+              label: '${held.label} −${groupRupiah(held.amount)}',
+              size: SatChipSize.sm,
+            ),
+          if (offer)
+            SatButton.ghost(
+              key: ValueKey('line-discount-${l.ticketId}'),
+              label: (mine != null || held != null)
+                  ? context.l10n.cshRemoveDiscount
+                  : context.l10n.cshDiscount,
+              size: SatButtonSize.sm,
+              onTap: () => _lineDiscount(context, ref, l, owner, mine, held),
+            ),
+          if (frozen)
+            Text(
+              context.l10n.cshDiscountFrozen,
+              style: SatType.labelS(color: sc.textLo),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// The receipt claiming units of [l], or null while it is still free. A line
+  /// split across two receipts discounts through the first — the rare case,
+  /// and the receipt sheet remains the precise way in.
+  BillReceipt? _receiptOwning(BillLine l) {
+    for (final r in bill.receipts) {
+      if (r.lines.any((x) => x.ticketId == l.ticketId)) return r;
+    }
+    return null;
+  }
+
+  Future<void> _lineDiscount(
+    BuildContext context,
+    WidgetRef ref,
+    BillLine l,
+    BillReceipt? owner,
+    BillDiscount? mine,
+    PendingLineDiscount? held,
+  ) async {
+    // Removing: the pending pick is dropped locally, a written row through the
+    // route that wrote it.
+    if (held != null) {
+      onPending!(l, null);
+      return;
+    }
+    if (mine != null && owner != null) {
+      if (await _confirm(
+        context,
+        title: context.l10n.cshRemoveLineDiscountTitle,
+        message: context.l10n.cshRemoveLineDiscountBody(
+          mine.label,
+          formatIDR(mine.amount),
+          l.name,
+        ),
+        confirmLabel: context.l10n.cshConfirmDelete,
+      )) {
+        await run(() => repo.removeDiscount(owner.id, mine.id));
+      }
+      return;
+    }
+
+    // The units this discount is priced against: what the owning receipt holds,
+    // or the whole free line when nothing owns it yet.
+    final units = owner == null
+        ? l.qty
+        : owner.lines
+              .where((x) => x.ticketId == l.ticketId)
+              .fold<int>(0, (a, b) => a + b.qtyUnits);
+    final base = l.unitPrice * units;
+    final picked = await showDiscountSheet(
+      context,
+      ref,
+      DiscountTarget.line(base: base, title: l.name, ticketId: l.ticketId),
+    );
+    if (picked == null) return;
+    if (owner != null) {
+      await run(
+        () => repo.applyDiscount(
+          owner.id,
+          presetId: picked.presetId,
+          ticketId: l.ticketId,
+          approverPin: picked.approverPin,
+        ),
+      );
+      return;
+    }
+    final preset = picked.preset;
+    onPending!(
+      l,
+      PendingLineDiscount(
+        presetId: preset.id,
+        label: preset.kind == 'percent'
+            ? '${preset.name} ${(preset.value / 100).toStringAsFixed(0)}%'
+            : preset.name,
+        amount: resolveDiscountAmount(
+          kind: preset.kind,
+          value: preset.value,
+          base: base,
+        ),
+        approverPin: picked.approverPin,
+      ),
     );
   }
 
@@ -1762,70 +1912,6 @@ class _ReceiptCard extends ConsumerWidget {
 /// Every per-share act stays reachable: a row opens that share's own
 /// [_ReceiptCard] in a sheet, so pay / reopen / refund / diskon / cetak run
 /// through exactly one implementation. See ADR-0063.
-/// Who each share is for, at a glance, and the way back into the **Siapa**
-/// step. A summary and the header action in one widget: the fact a cashier
-/// scans for — *is anyone still unnamed* — is the same fact that decides
-/// whether they need to open the sheet again.
-class _WhoCard extends StatelessWidget {
-  final Bill bill;
-  final VoidCallback onOpen;
-  const _WhoCard({required this.bill, required this.onOpen});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final l10n = context.l10n;
-    final unnamed = bill.receipts.where((r) => r.memberId == null).length;
-    return SatCard.section(
-      header: l10n.cshWho,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final r in bill.receipts)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: Sp.s1),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: Sp.s7,
-                    child: Text(
-                      r.label,
-                      style: SatType.labelM(color: sc.textHi),
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      r.member?.name ??
-                          (r.memberId == null
-                              ? l10n.cshWhoUnset
-                              : l10n.cshWhoGone),
-                      style: r.member == null
-                          ? SatType.bodyS(color: sc.textLo)
-                          : SatType.bodyS(color: sc.textHi),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Text(
-                    formatIDR(r.total),
-                    style: SatType.mono(color: sc.textLo),
-                  ),
-                ],
-              ),
-            ),
-          const SizedBox(height: Sp.s2),
-          SatButton.outline(
-            label: unnamed == 0 ? l10n.cshWhoEdit : l10n.cshWhoSet(unnamed),
-            icon: Icons.people_alt_outlined,
-            size: SatButtonSize.sm,
-            onTap: onOpen,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _EvenSplitCard extends StatelessWidget {
   final Bill bill;
   final Future<void> Function(Future<Bill> Function()) run;
@@ -2102,11 +2188,11 @@ class _ReceiptItemRow extends ConsumerWidget {
     final variant = (l?.variantName.isNotEmpty ?? false)
         ? ' · ${l!.variantName}'
         : '';
-    final existing = receipt.lineDiscount(ticketId);
-    final manualDiscount = existing?.source == 'manual' ? existing : null;
-    final lockedByAutomaticDiscount =
-        existing != null && existing.source != 'manual';
-    final canEditDiscount = canDiscount && !lockedByAutomaticDiscount;
+    // One row per source stacks on a line since ADR-0126, so the automatic
+    // tier no longer locks the cashier out — it sits beside their promo.
+    final existing = receipt.lineDiscounts(ticketId);
+    final manualDiscount = receipt.manualLineDiscount(ticketId);
+    final canEditDiscount = canDiscount;
     // The units THIS receipt owns — a qty:3 line split 2/1 discounts only its
     // own share. Preview only; the server re-resolves authoritatively.
     final base = (l?.unitPrice ?? 0) * qtyUnits;
@@ -2164,39 +2250,30 @@ class _ReceiptItemRow extends ConsumerWidget {
                     style: SatType.bodyS(color: sc.textHi),
                   ),
                 ),
-                if (canEditDiscount && existing == null)
+                if (canEditDiscount && manualDiscount == null)
                   Icon(Icons.sell_outlined, size: 14, color: sc.textLo),
-                if (lockedByAutomaticDiscount)
-                  Tooltip(
-                    message: context.l10n.cshLineDiscountLocked,
-                    child: Icon(Icons.lock_outline, size: 14, color: sc.textLo),
-                  ),
               ],
             ),
-            if (existing != null)
+            // Every source that gave something away on this line, each on its
+            // own row. Tapping edits the cashier's; the tier and redemption
+            // rows are shown so the guest's slip and this pane agree, and are
+            // removed from the member panel.
+            for (final d in existing)
               Padding(
                 padding: const EdgeInsets.only(left: Sp.s3, top: Sp.sHair),
                 child: Row(
                   children: [
                     Expanded(
                       child: Text(
-                        existing.label,
+                        d.label,
                         style: SatType.bodyS(color: sc.warn),
                       ),
                     ),
                     Text(
-                      '-${formatIDR(existing.amount)}',
+                      '-${formatIDR(d.amount)}',
                       style: SatType.monoS(color: sc.warn),
                     ),
                   ],
-                ),
-              ),
-            if (lockedByAutomaticDiscount)
-              Padding(
-                padding: const EdgeInsets.only(left: Sp.s3, top: Sp.sHair),
-                child: Text(
-                  context.l10n.cshLineDiscountLocked,
-                  style: SatType.labelS(color: sc.textLo),
                 ),
               ),
           ],

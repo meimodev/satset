@@ -3044,10 +3044,6 @@ class AppL10nId extends AppL10n {
   }
 
   @override
-  String get cshLineDiscountLocked =>
-      'Diskon member aktif; diskon manual tidak tersedia';
-
-  @override
   String get cshAddReceipt => 'Tambah struk';
 
   @override
@@ -9062,38 +9058,6 @@ class AppL10nId extends AppL10n {
       'Preset diskon tagihan yang otomatis dipasang begitu pelanggan dikaitkan ke tagihan.';
 
   @override
-  String get cshWho => 'Siapa';
-
-  @override
-  String get cshWhoHint =>
-      'Pilih pelanggan tiap struk. Poin dan diskonnya ikut yang dipilih.';
-
-  @override
-  String get cshWhoUnset => 'Belum dipilih';
-
-  @override
-  String get cshWhoGone => 'Pelanggan terhapus';
-
-  @override
-  String get cshWhoPaid => 'Sudah dibayar';
-
-  @override
-  String cshWhoRest(String name) {
-    return 'Sisanya masuk ke $name';
-  }
-
-  @override
-  String get cshWhoRestNone => 'Sisanya tidak masuk poin siapa pun';
-
-  @override
-  String get cshWhoEdit => 'Ubah pemilik struk';
-
-  @override
-  String cshWhoSet(int count) {
-    return 'Pilih pelanggan ($count)';
-  }
-
-  @override
   String get cshMemberNone => 'Belum ada pelanggan';
 
   @override
@@ -9658,4 +9622,24 @@ class AppL10nId extends AppL10n {
   @override
   String get hubMemberReportSub =>
       'Riwayat belanja dan produk favorit pelanggan';
+
+  @override
+  String get stlDebtor => 'Penanggung utang';
+
+  @override
+  String get stlDebtorUnset => 'Belum dipilih';
+
+  @override
+  String stlDebtorSuggest(String name) {
+    return 'Pakai $name — pemilik item';
+  }
+
+  @override
+  String get stlBlkPickDebtor => 'Pilih pelanggan yang berutang';
+
+  @override
+  String get stlRowLineDiscounts => 'Diskon item';
+
+  @override
+  String get cshDiscountFrozen => 'Diskon terkunci';
 }

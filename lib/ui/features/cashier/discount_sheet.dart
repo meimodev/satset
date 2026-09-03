@@ -57,16 +57,29 @@ class DiscountTarget {
     : receipt = null,
       ticketId = null;
 
+  /// One line, before any receipt claims it (ADR-0126). Scope is `line`
+  /// despite the null receipt: the picker offers presets for what was *tapped*,
+  /// and what was tapped is a dish.
+  const DiscountTarget.line({
+    required this.base,
+    required this.title,
+    required String this.ticketId,
+  }) : receipt = null;
+
   bool get isLine => ticketId != null;
-  String get scope => receipt == null
-      ? 'bill'
-      : isLine
+  String get scope => isLine
       ? 'line'
+      : receipt == null
+      ? 'bill'
       : 'order';
 }
 
-/// Returns `(presetId, approverPin)` to apply, or null if dismissed.
-Future<({String presetId, String? approverPin})?> showDiscountSheet(
+/// Returns the chosen [[Preset diskon]] and the approver PIN, or null if
+/// dismissed. The preset rides back whole so a caller that cannot write yet —
+/// a pending line discount (ADR-0126) — can render what it promised without
+/// looking the preset up a second time.
+Future<({String presetId, DiscountPresetDto preset, String? approverPin})?>
+showDiscountSheet(
   BuildContext context,
   WidgetRef ref,
   DiscountTarget target,
@@ -171,7 +184,7 @@ Future<({String presetId, String? approverPin})?> showDiscountSheet(
     pin = await _askApproverPin(context);
     if (pin == null || pin.isEmpty) return null;
   }
-  return (presetId: chosen.id, approverPin: pin);
+  return (presetId: chosen.id, preset: chosen, approverPin: pin);
 }
 
 Future<String?> _askApproverPin(BuildContext context) async {

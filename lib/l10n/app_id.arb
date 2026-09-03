@@ -2324,7 +2324,6 @@
   "cshItemFallback": "Item",
   "cshRemoveLineDiscountTitle": "Hapus diskon item",
   "cshRemoveLineDiscountBody": "Hapus \"{label}\" ({amount}) dari {name}?",
-  "cshLineDiscountLocked": "Diskon member aktif; diskon manual tidak tersedia",
   "@cshRemoveLineDiscountBody": {
     "placeholders": {
       "label": {
@@ -7166,52 +7165,6 @@
   "@vstMembersPresetHint": {
     "description": "Membership settings and hub copy."
   },
-  "cshWho": "Siapa",
-  "@cshWho": {
-    "description": "Title of the step that names a member per receipt on a split bill."
-  },
-  "cshWhoHint": "Pilih pelanggan tiap struk. Poin dan diskonnya ikut yang dipilih.",
-  "@cshWhoHint": {
-    "description": "Subtitle under the Siapa sheet header."
-  },
-  "cshWhoUnset": "Belum dipilih",
-  "@cshWhoUnset": {
-    "description": "Placeholder on a receipt nobody has been named for."
-  },
-  "cshWhoGone": "Pelanggan terhapus",
-  "@cshWhoGone": {
-    "description": "Shown when a receipt names a member record that has since been deleted."
-  },
-  "cshWhoPaid": "Sudah dibayar",
-  "@cshWhoPaid": {
-    "description": "Chip on a receipt whose attribution is frozen because it has a payment."
-  },
-  "cshWhoRest": "Sisanya masuk ke {name}",
-  "@cshWhoRest": {
-    "description": "Footer naming the bill owner, who gets any money no receipt claims.",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "cshWhoRestNone": "Sisanya tidak masuk poin siapa pun",
-  "@cshWhoRestNone": {
-    "description": "Footer when the bill has no owner, so unclaimed money earns for nobody."
-  },
-  "cshWhoEdit": "Ubah pemilik struk",
-  "@cshWhoEdit": {
-    "description": "Button back into the Siapa step when every receipt is already named."
-  },
-  "cshWhoSet": "Pilih pelanggan ({count})",
-  "@cshWhoSet": {
-    "description": "Button into the Siapa step, counting the receipts still unnamed.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "cshMemberNone": "Belum ada pelanggan",
   "@cshMemberNone": {
     "description": "The member row on a live bill."
@@ -7771,5 +7724,34 @@
     }
   },
   "hubMemberReport": "Laporan anggota",
-  "hubMemberReportSub": "Riwayat belanja dan produk favorit pelanggan"
+  "hubMemberReportSub": "Riwayat belanja dan produk favorit pelanggan",
+  "stlDebtor": "Penanggung utang",
+  "@stlDebtor": {
+    "description": "Label above the debtor picker on the settle pane."
+  },
+  "stlDebtorUnset": "Belum dipilih",
+  "@stlDebtorUnset": {
+    "description": "Placeholder when no debtor has been confirmed."
+  },
+  "stlDebtorSuggest": "Pakai {name} — pemilik item",
+  "@stlDebtorSuggest": {
+    "description": "Offers the lines’ ticket owner as the debtor; opens the lookup filtered to them.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stlBlkPickDebtor": "Pilih pelanggan yang berutang",
+  "@stlBlkPickDebtor": {
+    "description": "Blocker under the confirm button when a piutang payment has no debtor."
+  },
+  "stlRowLineDiscounts": "Diskon item",
+  "@stlRowLineDiscounts": {
+    "description": "Row in the Per item breakdown totalling the pending line discounts."
+  },
+  "cshDiscountFrozen": "Diskon terkunci",
+  "@cshDiscountFrozen": {
+    "description": "Shown on a line whose receipt is paid, so its discounts can no longer change."
+  }
 }

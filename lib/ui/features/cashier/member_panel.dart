@@ -261,7 +261,17 @@ class MemberPanel extends ConsumerWidget {
 class MemberLookupSheet extends ConsumerStatefulWidget {
   final bool lookupOnly;
 
-  const MemberLookupSheet({super.key, this.lookupOnly = false});
+  /// Opens with the list already filtered — used where the till has a
+  /// *suggestion* worth confirming (the line's [[Pemilik tiket]] offered as the
+  /// debtor, ADR-0126). A filter, never a selection: the cashier still taps the
+  /// person, because that tap is the agreement to owe.
+  final String? initialQuery;
+
+  const MemberLookupSheet({
+    super.key,
+    this.lookupOnly = false,
+    this.initialQuery,
+  });
 
   @override
   ConsumerState<MemberLookupSheet> createState() => _LookupSheetState();
@@ -274,10 +284,11 @@ class _LookupSheetState extends ConsumerState<MemberLookupSheet> {
   @override
   void initState() {
     super.initState();
+    _q.text = widget.initialQuery ?? '';
     Future.microtask(
       () => ref
           .read(membersProvider.notifier)
-          .search('', lookupOnly: widget.lookupOnly),
+          .search(_q.text, lookupOnly: widget.lookupOnly),
     );
   }
 

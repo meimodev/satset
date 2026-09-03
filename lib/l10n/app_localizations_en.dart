@@ -3066,10 +3066,6 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
-  String get cshLineDiscountLocked =>
-      'Member discount active; manual discount unavailable';
-
-  @override
   String get cshAddReceipt => 'Add receipt';
 
   @override
@@ -9175,38 +9171,6 @@ class AppL10nEn extends AppL10n {
       'The bill discount preset applied automatically the moment a member is attached to a bill.';
 
   @override
-  String get cshWho => 'Who';
-
-  @override
-  String get cshWhoHint =>
-      'Name a member on each receipt. Their points and discount follow the name.';
-
-  @override
-  String get cshWhoUnset => 'Not chosen';
-
-  @override
-  String get cshWhoGone => 'Member deleted';
-
-  @override
-  String get cshWhoPaid => 'Already paid';
-
-  @override
-  String cshWhoRest(String name) {
-    return 'The rest goes to $name';
-  }
-
-  @override
-  String get cshWhoRestNone => 'The rest earns for no one';
-
-  @override
-  String get cshWhoEdit => 'Change receipt owners';
-
-  @override
-  String cshWhoSet(int count) {
-    return 'Choose members ($count)';
-  }
-
-  @override
   String get cshMemberNone => 'No member on this bill';
 
   @override
@@ -9778,4 +9742,24 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get hubMemberReportSub => 'Spending history and favourite items';
+
+  @override
+  String get stlDebtor => 'Who owes this';
+
+  @override
+  String get stlDebtorUnset => 'Not chosen yet';
+
+  @override
+  String stlDebtorSuggest(String name) {
+    return 'Use $name — owns the items';
+  }
+
+  @override
+  String get stlBlkPickDebtor => 'Choose who takes this on account';
+
+  @override
+  String get stlRowLineDiscounts => 'Item discounts';
+
+  @override
+  String get cshDiscountFrozen => 'Discounts frozen';
 }

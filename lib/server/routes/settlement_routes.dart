@@ -810,15 +810,23 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       }
     }
 
+    // This route only ever writes the `manual` slot, so it may only refuse on
+    // one (ADR-0126). Scoping the check to the source is what lets a
+    // [[Pemilik tiket]]'s tier row and the cashier's promo share a line — and
+    // it is also what stops `getSingleOrNull` throwing the moment two rows of
+    // different sources sit on the same ticket, which is now the normal case.
     final existing =
         await (db.select(db.discounts)..where(
-              (x) => ticketId == null
-                  ? x.receiptId.equals(receiptId) & x.ticketId.isNull()
-                  : x.receiptId.equals(receiptId) & x.ticketId.equals(ticketId),
+              (x) =>
+                  x.receiptId.equals(receiptId) &
+                  x.source.equals('manual') &
+                  (ticketId == null
+                      ? x.ticketId.isNull()
+                      : x.ticketId.equals(ticketId)),
             ))
             .getSingleOrNull();
     if (existing != null) {
-      // No stacking (ADR-0037) — swap by removing first.
+      // Still one *manual* row per slot (ADR-0037) — swap by removing first.
       return _err(
         409,
         'discount_exists',

@@ -23,6 +23,30 @@ import 'package:satset/ui/features/cashier/member_panel.dart'
 import 'package:satset/ui/features/cashier/widgets/cash_pad.dart';
 import 'package:satset/ui/features/cashier/widgets/pay_method_picker.dart';
 
+/// A [[Diskon (discount)]] the [[Cashier]] has put on a line that no receipt
+/// owns yet (ADR-0126).
+///
+/// Held here rather than written because a line discount needs a receipt to
+/// hang on, and the pane mints at confirm — so a selection the cashier tries
+/// and abandons leaves nothing behind, the same contract the rest of this pane
+/// keeps. [amount] is the pick-time preview; the server re-resolves it.
+class PendingLineDiscount {
+  final String presetId;
+  final String label;
+  final int amount;
+
+  /// Collected when the picker ran, spent at confirm. The step-up belongs to
+  /// the discount the manager actually looked at, not to the batch.
+  final String? approverPin;
+
+  const PendingLineDiscount({
+    required this.presetId,
+    required this.label,
+    required this.amount,
+    required this.approverPin,
+  });
+}
+
 /// How the next payment carves up what is left. Chosen **per payment**, not per
 /// bill (ADR-0067) — a table where two friends go halves and a third pays for
 /// his own steak switches between these without anything being reset.
@@ -60,6 +84,12 @@ class SettlePane extends StatefulWidget {
   final ValueChanged<SettleMode> onMode;
   final VoidCallback onClearSelection;
 
+  /// ticketId → the line discount waiting for a receipt to exist (ADR-0126).
+  /// Owned by the parent for the same reason [selection] is: the *lines* pane
+  /// draws it and this pane spends it.
+  final Map<String, PendingLineDiscount> pendingDiscounts;
+  final VoidCallback onClearPending;
+
   /// Print the selection as a provisional [[Rincian pilihan]] slip before any
   /// money moves (ADR-0122). Nothing is minted — the guest checks the lines,
   /// then the cashier mints the same selection for discount review.
@@ -68,11 +98,6 @@ class SettlePane extends StatefulWidget {
   /// Whether the venue runs tabs at all (ADR-0098). Passed rather than watched
   /// because this pane holds no `WidgetRef`, and the parent already has one.
   final bool debtEnabled;
-
-  /// Whether a share may name a [[Pemilik struk]] (the `memberSplit` mode,
-  /// ADR-0118). Passed for the same reason as [debtEnabled]. When off, a tab
-  /// falls back to the [[Pemilik tagihan]] and the Siapa row never renders.
-  final bool splitEnabled;
 
   const SettlePane({
     super.key,
@@ -83,9 +108,10 @@ class SettlePane extends StatefulWidget {
     required this.mode,
     required this.onMode,
     required this.onClearSelection,
+    required this.pendingDiscounts,
+    required this.onClearPending,
     required this.onPrintSelection,
     this.debtEnabled = false,
-    this.splitEnabled = false,
   });
 
   @override
@@ -99,10 +125,13 @@ class _SettlePaneState extends State<SettlePane> {
   int _splitN = 2;
   bool _busy = false;
 
-  /// The [[Pemilik struk]] the next **Per item** share will be born for
-  /// (ADR-0120 §3). Held here rather than written anywhere because the pane
-  /// mints at confirm — there is no receipt to name until the cashier commits.
-  MemberDto? _bornFor;
+  /// The [[Pelanggan (member)]] who has accepted this `piutang` leg (ADR-0125).
+  ///
+  /// Not derived from the lines' [[Pemilik tiket]]: eating a dish is not
+  /// agreeing to owe for it. The owner is only *suggested* — see
+  /// [_suggestedDebtor] — and the cashier still confirms them through the
+  /// lookup, which is also where the credit headroom comes from.
+  MemberDto? _debtor;
 
   @override
   void didUpdateWidget(SettlePane old) {
@@ -112,7 +141,7 @@ class _SettlePaneState extends State<SettlePane> {
     if (old.mode != widget.mode) {
       setState(() {
         _tender = 0;
-        _bornFor = null;
+        _debtor = null;
       });
     }
   }
@@ -123,12 +152,23 @@ class _SettlePaneState extends State<SettlePane> {
   /// any more (ADR-0121) — every method is live on every payment.
   PayMethod get _pay => _method;
 
-  /// Whether the Siapa row is offered: only where a receipt is about to be
-  /// minted from tapped lines, and only under the `memberSplit` mode.
-  bool get _canName => widget.splitEnabled && widget.mode == SettleMode.perItem;
-
-  /// The payer explicitly chosen for this piutang leg (ADR-0125).
-  MemberDto? get _debtor => _bornFor;
+  /// The one [[Pemilik tiket]] every line about to be charged shares, or null
+  /// when they differ or any is unowned. A suggestion for the debtor picker,
+  /// never the debtor itself (ADR-0126).
+  BillLine? get _suggestedDebtor {
+    final ids = <String>{};
+    BillLine? first;
+    for (final l in _bill.lines) {
+      if (widget.mode == SettleMode.perItem &&
+          (widget.selection[l.ticketId] ?? 0) == 0) {
+        continue;
+      }
+      if (l.memberId == null) return null;
+      ids.add(l.memberId!);
+      first ??= l;
+    }
+    return ids.length == 1 ? first : null;
+  }
 
   /// Amount receipts already minted and still owing — Bagi rata pays the next
   /// one rather than re-splitting.
@@ -162,8 +202,9 @@ class _SettlePaneState extends State<SettlePane> {
     return left < 0 ? 0 : left;
   }
 
-  /// Gross value of the tapped units, before service and tax.
-  int get _selectionSubtotal {
+  /// Gross value of the tapped units, before service, tax and any pending
+  /// line discount.
+  int get _selectionGross {
     var sum = 0;
     for (final l in _bill.lines) {
       final units = widget.selection[l.ticketId] ?? 0;
@@ -171,6 +212,25 @@ class _SettlePaneState extends State<SettlePane> {
     }
     return sum;
   }
+
+  /// Pending line discounts on the tapped lines, previewed (ADR-0126). Clamped
+  /// per line the way `recomputeBill` clamps the stack, so the pane can never
+  /// quote a negative share.
+  int get _pendingDiscount {
+    var sum = 0;
+    for (final l in _bill.lines) {
+      final units = widget.selection[l.ticketId] ?? 0;
+      if (units == 0) continue;
+      final d = widget.pendingDiscounts[l.ticketId];
+      if (d == null) continue;
+      final base = l.unitPrice * units;
+      sum += d.amount > base ? base : d.amount;
+    }
+    return sum;
+  }
+
+  /// What the tapped units are worth once the pending give-backs come off.
+  int get _selectionSubtotal => _selectionGross - _pendingDiscount;
 
   /// The number the confirm button is about to take.
   int get _amount => switch (widget.mode) {
@@ -211,7 +271,7 @@ class _SettlePaneState extends State<SettlePane> {
       return l10n.stlBlkAttachProof;
     }
     if (_pay == PayMethod.piutang && _debtor == null) {
-      return 'Pilih pelanggan yang berutang';
+      return l10n.stlBlkPickDebtor;
     }
     if (_pay == PayMethod.piutang && _amount > _headroom) {
       return l10n.stlBlkOverCredit;
@@ -245,14 +305,23 @@ class _SettlePaneState extends State<SettlePane> {
     }
   }
 
-  /// Mint the receipt this mode implies, then pay it. Two calls, but the mint
-  /// is transactional server-side (`createReceipt(lines:)`), so a failure can
-  /// never leave a half-assigned receipt on the bill.
+  /// Mint the receipt this mode implies, hang the pending line discounts on
+  /// it, then pay it.
+  ///
+  /// A chain of calls rather than one fat endpoint, because every id it names
+  /// is minted here (ADR-0123) — so each step can name the row the step before
+  /// it made, online and captured alike, and the [[Antrean setelmen]] replays
+  /// the same sequence with no new event kind.
+  ///
+  /// ponytail: not atomic. A refused discount (preset deleted, PIN rejected)
+  /// leaves the receipt standing unpaid and visible in the struk list, which
+  /// the cashier can pay or delete. Fold the discounts into `mintReceipt` if
+  /// that refusal ever turns out to be common.
   Future<void> _confirm() async {
     if (_blocker != null || _busy) return;
     setState(() => _busy = true);
-    final amount = _amount;
     final tender = _pay == PayMethod.tunai ? _tender : null;
+    final fallback = _amount;
     try {
       await widget.run(() async {
         final receiptId = switch (widget.mode) {
@@ -268,12 +337,31 @@ class _SettlePaneState extends State<SettlePane> {
               for (final e in widget.selection.entries)
                 BillReceiptLine(e.key, e.value),
             ],
-            // Born named, so the tab this payment may raise reaches the guest
-            // who ate rather than whoever was seated first (ADR-0120).
-            memberId: _canName ? _bornFor?.id : null,
           )).receiptId,
           SettleMode.bagiRata => await _nextShareId(),
         };
+        // An even share owns no lines, so a line discount has nothing to hang
+        // on — the server refuses one, and the picker never offers it there.
+        var bill = _bill;
+        if (widget.mode != SettleMode.bagiRata) {
+          for (final e in widget.pendingDiscounts.entries) {
+            if (widget.mode == SettleMode.perItem &&
+                (widget.selection[e.key] ?? 0) == 0) {
+              continue;
+            }
+            bill = await widget.repo.applyDiscount(
+              receiptId,
+              presetId: e.value.presetId,
+              ticketId: e.key,
+              approverPin: e.value.approverPin,
+            );
+          }
+        }
+        // Pay what the receipt actually came to, not the preview: the give-back
+        // has landed by now and both sides run the same `recomputeBill`, so the
+        // two agree — but the receipt is the one that decides.
+        final rec = bill.receipts.where((r) => r.id == receiptId).firstOrNull;
+        final amount = rec?.outstanding ?? fallback;
         return widget.repo.recordPayment(
           receiptId,
           method: _pay.id,
@@ -289,9 +377,10 @@ class _SettlePaneState extends State<SettlePane> {
           _busy = false;
           _tender = 0;
           _proof = null;
-          _bornFor = null;
+          _debtor = null;
         });
         widget.onClearSelection();
+        widget.onClearPending();
       }
     }
   }
@@ -322,9 +411,9 @@ class _SettlePaneState extends State<SettlePane> {
               _modeRow(sc),
               const SizedBox(height: Sp.s3h),
               _modeBlock(sc),
-              if (_canName || _pay == PayMethod.piutang) ...[
+              if (_pay == PayMethod.piutang) ...[
                 const SizedBox(height: Sp.s3h),
-                _whoRow(sc),
+                _debtorRow(sc),
               ],
               const SizedBox(height: Sp.s3h),
               _methodRow(sc),
@@ -431,8 +520,16 @@ class _SettlePaneState extends State<SettlePane> {
             : [
                 row(
                   l10n.stlRowNItems(widget.selection.length),
-                  formatIDR(_selectionSubtotal),
+                  formatIDR(_selectionGross),
                 ),
+                // Stated as its own line rather than folded into the subtotal:
+                // the guest is being told what came off, and a quote that just
+                // looks cheap is the one they query at the till (ADR-0126).
+                if (_pendingDiscount > 0)
+                  row(
+                    l10n.stlRowLineDiscounts,
+                    '-${formatIDR(_pendingDiscount)}',
+                  ),
                 row(
                   l10n.stlRowServiceTax,
                   formatIDR(_amount - _selectionSubtotal),
@@ -525,24 +622,27 @@ class _SettlePaneState extends State<SettlePane> {
     ],
   );
 
-  /// Who the share about to be minted is *for* — the [[Pemilik struk]] step,
-  /// offered here because the pane mints at confirm and a struk is born named
-  /// (ADR-0120 §3). Naming somebody moves the tab, the tier discount and the
-  /// points to them; leaving it empty leaves all three with the bill's owner.
-  Widget _whoRow(SatColors sc) {
+  /// Who has taken this `piutang` leg on their tab (ADR-0125).
+  ///
+  /// When every line about to be charged belongs to one [[Pemilik tiket]] the
+  /// row offers them as a suggestion — one tap into a pre-filtered lookup, not
+  /// a silent fill. Debt follows the person who agrees to owe, so it is always
+  /// confirmed; the lookup is also where the credit headroom comes from.
+  Widget _debtorRow(SatColors sc) {
     final l10n = context.l10n;
+    final suggestion = _debtor == null ? _suggestedDebtor : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.cshWho, style: SatType.labelS(color: sc.textLo)),
+        Text(l10n.stlDebtor, style: SatType.labelS(color: sc.textLo)),
         const SizedBox(height: Sp.s2),
         Row(
           children: [
             Expanded(
               child: Text(
-                _bornFor?.name ?? l10n.cshWhoUnset,
+                _debtor?.name ?? l10n.stlDebtorUnset,
                 style: SatType.bodyM(
-                  color: _bornFor == null ? sc.textLo : sc.textHi,
+                  color: _debtor == null ? sc.textLo : sc.textHi,
                 ),
               ),
             ),
@@ -550,35 +650,42 @@ class _SettlePaneState extends State<SettlePane> {
             SatButton.outline(
               size: SatButtonSize.sm,
               label: l10n.cshMemberFind,
-              onTap: _pickWho,
+              onTap: () => _pickDebtor(),
             ),
-            if (_bornFor != null) ...[
+            if (_debtor != null) ...[
               const SizedBox(width: Sp.s2),
               SatButton.neutral(
                 size: SatButtonSize.sm,
                 label: l10n.cshMemberDetach,
                 onTap: () => setState(() {
-                  _bornFor = null;
+                  _debtor = null;
                   // The tab may have been reachable only through them.
-                  if (_method == PayMethod.piutang) {
-                    _method = PayMethod.tunai;
-                  }
+                  _method = PayMethod.tunai;
                 }),
               ),
             ],
           ],
         ),
+        if (suggestion?.memberName != null) ...[
+          const SizedBox(height: Sp.s2),
+          SatButton.ghost(
+            size: SatButtonSize.sm,
+            icon: Icons.badge_outlined,
+            label: l10n.stlDebtorSuggest(suggestion!.memberName!),
+            onTap: () => _pickDebtor(query: suggestion.memberName),
+          ),
+        ],
       ],
     );
   }
 
-  Future<void> _pickWho() async {
+  Future<void> _pickDebtor({String? query}) async {
     final picked = await showSatSheet<MemberDto>(
       context,
-      builder: (_) => const MemberLookupSheet(),
+      builder: (_) => MemberLookupSheet(initialQuery: query),
     );
     if (picked == null || !mounted) return;
-    setState(() => _bornFor = picked);
+    setState(() => _debtor = picked);
   }
 
   void _pick(PayMethod m) => setState(() {

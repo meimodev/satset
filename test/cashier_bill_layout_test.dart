@@ -8,9 +8,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 
 import 'package:satset/data/models/bill_dto.dart';
+import 'package:satset/data/models/discount_dto.dart';
+import 'package:satset/data/repositories/discount_presets_repository.dart';
+import 'package:satset/domain/models/capability.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
+import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/ui/core/design/sat_theme.dart';
@@ -33,6 +37,13 @@ import 'package:satset/l10n/app_localizations.dart';
 ///
 /// It also pins that every payment method stays available after a payment has
 /// landed, so a receipt can use more than one tender (ADR-0121).
+/// Points nowhere on purpose: the preset repository bootstraps off a socket,
+/// and this file stubs its state rather than serving it.
+final _cfg = ApiConfig(
+  baseUri: Uri.parse('https://127.0.0.1:45678/'),
+  trustedFingerprint: '',
+);
+
 void main() {
   setUpAll(() => SatType.useSystemFonts = true);
   tearDownAll(() => SatType.useSystemFonts = false);
@@ -168,13 +179,25 @@ void main() {
       ProviderScope(
         overrides: [
           wsConnStateProvider.overrideWithValue(WsConnState.open),
+          wsClientProvider.overrideWith((ref) {
+            final ws = WsClient(config: _cfg, storage: SecureStorageService());
+            ref.onDispose(ws.dispose);
+            return ws;
+          }),
           authStateProvider.overrideWith(
             (ref) => _StubAuth(
               ref: ref,
               storage: ref.watch(secureStorageServiceProvider),
-              seed: const AuthState(isAuthenticated: true, user: cashier),
+              seed: const AuthState(
+                isAuthenticated: true,
+                user: cashier,
+                // Holds the capability outright, so the picker never detours
+                // through the manager step-up.
+                capabilities: {Capability.settleBill, Capability.applyDiscount},
+              ),
             ),
           ),
+          discountPresetsRepositoryProvider.overrideWith(_PresetRepo.new),
           settlementProvider.overrideWith((ref) {
             final settlement = _StubSettlement(ref: ref, bill: fixture ?? bill);
             onSettlement?.call(settlement);
@@ -327,6 +350,63 @@ void main() {
     expect(actions(), findsOneWidget);
   });
 
+  testWidgets('per item hangs a line discount on the struk it mints', (
+    tester,
+  ) async {
+    // ADR-0126: there is no "Tinjau struk" detour any more. The cashier taps a
+    // line, taps a give-back on it, and confirms — mint, discount and payment
+    // are one gesture, chained on ids this side already holds (ADR-0123).
+    late _StubSettlement settlement;
+    await pumpBill(
+      tester,
+      tablet: true,
+      onSettlement: (value) => settlement = value,
+    );
+    await pickMode(tester, 'Per item');
+
+    // Tap the first line into the selection.
+    await tester.tap(find.text('Nasi Goreng').first);
+    await drain(tester);
+    tester.takeException();
+
+    // The chip that was only reachable through the receipt sheet before.
+    final chip = find.byKey(const ValueKey('line-discount-tk1'));
+    await tester.ensureVisible(chip);
+    await tester.tap(chip);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Promo item').last);
+    await drain(tester);
+    tester.takeException();
+
+    // Held, not written: nothing has been minted for it to hang on yet.
+    expect(settlement.applied, isEmpty);
+
+    // The quote already carries the give-back: 70.000 − 7.000, grown by the
+    // bill's own service and tax rate.
+    expect(find.text('-Rp. 7.000', skipOffstage: false), findsOneWidget);
+    expect(find.textContaining('Terima 1 item · Rp. 73.427'), findsOneWidget);
+
+    // Tender the exact amount, or the confirm button stays blocked.
+    final exact = find.text('Pas');
+    await tester.ensureVisible(exact);
+    await tester.tap(exact);
+    await drain(tester);
+
+    final confirm = find.textContaining('Terima 1 item');
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await drain(tester);
+
+    // Minted first, then the give-back, then the money — in that order and
+    // naming the receipt this side minted.
+    expect(settlement.mintedLines.single.ticketId, 'tk1');
+    expect(settlement.applied, hasLength(1));
+    expect(settlement.applied.single.receiptId, 'r2');
+    expect(settlement.applied.single.ticketId, 'tk1');
+    expect(settlement.applied.single.presetId, 'line-10');
+    expect(settlement.paymentMethod, 'tunai');
+  });
+
   testWidgets('unpaid bill offers every payment method', (tester) async {
     await pumpBill(tester, tablet: true);
 
@@ -364,7 +444,13 @@ class _StubSettlement extends SettlementRepository {
   final Bill bill;
   String? paymentMethod;
   String? paymentPhoto;
+  int? paidAmount;
   List<BillReceiptLine> mintedLines = const [];
+
+  /// Every line discount the pane hung on the receipt it just minted, in the
+  /// order it did — the chain ADR-0126 replaced "Tinjau struk" with.
+  final List<({String receiptId, String? ticketId, String presetId})> applied =
+      [];
 
   @override
   Future<({String receiptId, Bill bill})> mintReceipt(
@@ -380,6 +466,21 @@ class _StubSettlement extends SettlementRepository {
   }
 
   @override
+  Future<Bill> applyDiscount(
+    String receiptId, {
+    required String presetId,
+    String? ticketId,
+    String? approverPin,
+  }) async {
+    applied.add((
+      receiptId: receiptId,
+      ticketId: ticketId,
+      presetId: presetId,
+    ));
+    return bill;
+  }
+
+  @override
   Future<Bill> recordPayment(
     String receiptId, {
     required String method,
@@ -391,7 +492,21 @@ class _StubSettlement extends SettlementRepository {
   }) async {
     paymentMethod = method;
     paymentPhoto = photoBase64;
+    paidAmount = amount;
     return bill;
+  }
+}
+
+class _PresetRepo extends DiscountPresetsRepository {
+  _PresetRepo(Ref ref) : super(ref: ref) {
+    state = const [
+      DiscountPresetDto(
+        id: 'line-10',
+        name: 'Promo item',
+        scope: 'line',
+        value: 1000, // 10%
+      ),
+    ];
   }
 }
 

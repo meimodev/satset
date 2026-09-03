@@ -221,11 +221,18 @@ class BillStrukBuilder {
   /// not mistake.
   ///
   /// [selection] is `ticketId → units`, the map the settle pane holds.
+  ///
+  /// [pending] is the line [[Diskon (discount)]] the cashier has put on a line
+  /// that no receipt owns yet (ADR-0126), as `ticketId → (label, amount)`. A
+  /// plain record rather than the pane's own type, so this file keeps its back
+  /// to `ui/`. It must be quoted: the confirm button already has it off, and a
+  /// slip that says a bigger number than the till is the one the guest queries.
   static BillStrukData fromSelection({
     required AppL10n l,
     required Bill bill,
     required Map<String, int> selection,
     required VenueSettingsDto venue,
+    Map<String, ({String label, int amount})> pending = const {},
     List<int>? logoBytes,
   }) {
     final lines = <BillStrukLine>[];
@@ -234,16 +241,23 @@ class BillStrukBuilder {
       if (line.status == 'voided') continue;
       final units = selection[line.ticketId] ?? 0;
       if (units <= 0) continue;
-      final lineTotal = line.unitPrice * units;
-      subtotal += lineTotal;
+      final gross = line.unitPrice * units;
+      final held = pending[line.ticketId];
+      // Clamped to the line, the way `recomputeBill` clamps the stack.
+      final off = held == null
+          ? 0
+          : (held.amount > gross ? gross : held.amount);
+      subtotal += gross - off;
       lines.add(
         BillStrukLine(
           qty: units,
           name: line.name,
           variant: line.variantName,
-          lineTotal: lineTotal,
+          lineTotal: gross,
           modifiers: [for (final m in line.modifiers) m.display],
           note: line.note ?? '',
+          discountLabel: held?.label ?? '',
+          discountAmount: off,
         ),
       );
     }
@@ -289,9 +303,10 @@ class BillStrukBuilder {
       docLabel: l.printSelectionDocLabel,
       lines: lines,
       subtotal: subtotal,
-      // No receipt exists yet, so no give-back can be attached to one. A bill
-      // discount applied later only makes the guest's share smaller than this
-      // quote, which is the harmless direction.
+      // A *line* give-back is quoted above; a whole-order or bill one still
+      // cannot be, because no receipt exists to carry it. One applied later
+      // only makes the guest's share smaller than this quote, which is the
+      // harmless direction.
       taxAfterDiscount: bill.taxAfterDiscount,
       serviceAmount: service,
       taxAmount: tax,
@@ -314,7 +329,9 @@ class BillStrukBuilder {
     for (final rl in receipt.lines) {
       final l = byTicket[rl.ticketId];
       if (l == null || rl.qtyUnits <= 0) continue;
-      final ld = receipt.lineDiscount(rl.ticketId);
+      // One row per source since ADR-0126, and the slip must name them all or
+      // it will not reach its own total.
+      final lds = receipt.lineDiscounts(rl.ticketId);
       out.add(
         BillStrukLine(
           qty: rl.qtyUnits,
@@ -323,8 +340,8 @@ class BillStrukBuilder {
           lineTotal: l.unitPrice * rl.qtyUnits,
           modifiers: [for (final m in l.modifiers) m.display],
           note: l.note ?? '',
-          discountLabel: ld?.label ?? '',
-          discountAmount: ld?.amount ?? 0,
+          discountLabel: lds.map((d) => d.label).join(' + '),
+          discountAmount: lds.fold<int>(0, (a, d) => a + d.amount),
         ),
       );
     }
@@ -332,8 +349,11 @@ class BillStrukBuilder {
   }
 
   /// One composed line per share on a split the [[Pemilik struk]] mode named —
-  /// `'A · Budi'` — and an empty list otherwise, which is every bill at a venue
-  /// that never held the mode.
+  /// `'A · Budi'` — and an empty list otherwise.
+  ///
+  /// Nothing writes a receipt member since ADR-0126, so this is the legacy
+  /// path: it still prints for a bill that closed under ADR-0118, and reads
+  /// empty on every bill since.
   ///
   /// A share nobody named is skipped rather than printed blank: its money is
   /// the bill owner's, and the header already says who that is.

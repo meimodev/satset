@@ -1090,7 +1090,6 @@
   "cshItemFallback": "Item",
   "cshRemoveLineDiscountTitle": "Remove item discount",
   "cshRemoveLineDiscountBody": "Remove \"{label}\" ({amount}) from {name}?",
-  "cshLineDiscountLocked": "Member discount active; manual discount unavailable",
   "cshAddReceipt": "Add receipt",
   "cshBillWrittenOff": "Bill written off",
   "cshBillSettled": "Bill settled",
@@ -2978,15 +2977,6 @@
   "vstMembersPreset": "Member discount",
   "vstMembersPresetNone": "No standing discount",
   "vstMembersPresetHint": "The bill discount preset applied automatically the moment a member is attached to a bill.",
-  "cshWho": "Who",
-  "cshWhoHint": "Name a member on each receipt. Their points and discount follow the name.",
-  "cshWhoUnset": "Not chosen",
-  "cshWhoGone": "Member deleted",
-  "cshWhoPaid": "Already paid",
-  "cshWhoRest": "The rest goes to {name}",
-  "cshWhoRestNone": "The rest earns for no one",
-  "cshWhoEdit": "Change receipt owners",
-  "cshWhoSet": "Choose members ({count})",
   "cshMemberNone": "No member on this bill",
   "cshMemberFind": "Find member",
   "cshMemberEnrol": "Enrol someone new",
@@ -3322,5 +3312,11 @@
     }
   },
   "hubMemberReport": "Member report",
-  "hubMemberReportSub": "Spending history and favourite items"
+  "hubMemberReportSub": "Spending history and favourite items",
+  "stlDebtor": "Who owes this",
+  "stlDebtorUnset": "Not chosen yet",
+  "stlDebtorSuggest": "Use {name} — owns the items",
+  "stlBlkPickDebtor": "Choose who takes this on account",
+  "stlRowLineDiscounts": "Item discounts",
+  "cshDiscountFrozen": "Discounts frozen"
 }
