@@ -57,7 +57,13 @@ const MODULES = ["members", "selfOrder"];
 // per-receipt member picker at a venue that never mirrored would write
 // mis-attributed rows into a points ledger that never expires. Meaningless
 // without `members`, which the server ANDs it with.
-const MODE_MODULES = ["counterService", "bypassKds", "memberSplit"];
+//
+// `serviceTerm` (ADR-0127) is the fourth: the venue sells service, not seats,
+// so every user-facing "Meja" reads "Layanan · Service". It gates nothing and
+// branches no writer — the client resolves it to a locale variant and the
+// whole app, struk and exports included, follow. Fail-closed like the rest:
+// a restaurant that has not mirrored must not wake up renaming its floor.
+const MODE_MODULES = ["counterService", "bypassKds", "memberSplit", "serviceTerm"];
 
 // Everything `addOns` may contain. Must stay equal to `venueEntitlementKeys` in
 // lib/domain/models/venue_module.dart.

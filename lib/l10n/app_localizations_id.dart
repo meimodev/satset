@@ -916,7 +916,7 @@ class AppL10nId extends AppL10n {
   String get venueSettingsQrCaption => 'QR (keterangan)';
 
   @override
-  String get venueSettingsSectionTax => 'Pajak & layanan';
+  String get venueSettingsSectionTax => 'Pajak & biaya layanan';
 
   @override
   String get venueSettingsSectionReports => 'Laporan & shift';
@@ -1750,7 +1750,7 @@ class AppL10nId extends AppL10n {
 
   @override
   String get expAccountingNote =>
-      'Pajak & service = nilai riil dari sesi terselesaikan, sama dengan angka di layar. Rentang mengikuti aturan yang sama dengan laporan di layar (ADR-0032).';
+      'Pajak & biaya layanan = nilai riil dari sesi terselesaikan, sama dengan angka di layar. Rentang mengikuti aturan yang sama dengan laporan di layar (ADR-0032).';
 
   @override
   String get expSessionCount => 'Jumlah sesi';
@@ -1782,7 +1782,7 @@ class AppL10nId extends AppL10n {
   String get expNet => 'Net';
 
   @override
-  String get expService => 'Service';
+  String get expService => 'Biaya layanan';
 
   @override
   String get expTax => 'Pajak';
@@ -2096,7 +2096,7 @@ class AppL10nId extends AppL10n {
     String tax,
     String total,
   ) {
-    return 'Subtotal $subtotal$discount  ·  Service $service  ·  Pajak $tax  ·  Total $total';
+    return 'Subtotal $subtotal$discount  ·  Biaya layanan $service  ·  Pajak $tax  ·  Total $total';
   }
 
   @override
@@ -2194,7 +2194,7 @@ class AppL10nId extends AppL10n {
   String get strukDiscount => 'Diskon';
 
   @override
-  String get strukService => 'Layanan';
+  String get strukService => 'Biaya layanan';
 
   @override
   String get strukTax => 'Pajak';
@@ -2811,7 +2811,7 @@ class AppL10nId extends AppL10n {
   String get cshDiscount => 'Diskon';
 
   @override
-  String get cshService => 'Layanan';
+  String get cshService => 'Biaya layanan';
 
   @override
   String get cshTax => 'Pajak';
@@ -3212,7 +3212,7 @@ class AppL10nId extends AppL10n {
   String get rptKpiGross => 'Gross';
 
   @override
-  String get rptKpiTaxService => 'Pajak + Service';
+  String get rptKpiTaxService => 'Pajak + biaya layanan';
 
   @override
   String get rptKpiVoid => 'Void';
@@ -5157,7 +5157,7 @@ class AppL10nId extends AppL10n {
 
   @override
   String mnuServicePct(String pct) {
-    return 'Layanan · $pct';
+    return 'Biaya layanan · $pct';
   }
 
   @override
@@ -5552,7 +5552,7 @@ class AppL10nId extends AppL10n {
   }
 
   @override
-  String get stlRowServiceTax => 'Layanan + pajak';
+  String get stlRowServiceTax => 'Biaya layanan + pajak';
 
   @override
   String get stlRowPayingNow => 'Dibayar sekarang';
@@ -5747,11 +5747,11 @@ class AppL10nId extends AppL10n {
   String get vstTaxOff => 'PPN off';
 
   @override
-  String get vstServiceOff => 'Layanan off';
+  String get vstServiceOff => 'Biaya layanan off';
 
   @override
   String vstServiceValue(String value) {
-    return 'Layanan $value';
+    return 'Biaya layanan $value';
   }
 
   @override
@@ -5764,24 +5764,24 @@ class AppL10nId extends AppL10n {
   String get vstTaxRate => 'Tarif PPN';
 
   @override
-  String get vstEnableService => 'Aktifkan layanan';
+  String get vstEnableService => 'Aktifkan biaya layanan';
 
   @override
-  String get vstServiceRate => 'Tarif layanan';
+  String get vstServiceRate => 'Tarif biaya layanan';
 
   @override
-  String get vstServiceAmount => 'Jumlah layanan';
+  String get vstServiceAmount => 'Jumlah biaya layanan';
 
   @override
   String get vstTaxAfterDiscount => 'Pajak dihitung setelah diskon';
 
   @override
   String get vstTaxAfterDiscountOn =>
-      'Diskon mengurangi dasar pengenaan — pajak & layanan dihitung dari jumlah setelah diskon.';
+      'Diskon mengurangi dasar pengenaan — pajak & biaya layanan dihitung dari jumlah setelah diskon.';
 
   @override
   String get vstTaxAfterDiscountOff =>
-      'Pajak & layanan dihitung dari subtotal kotor, diskon dipotong dari total akhir.';
+      'Pajak & biaya layanan dihitung dari subtotal kotor, diskon dipotong dari total akhir.';
 
   @override
   String get vstItemDiscountNote =>
@@ -6694,6 +6694,11 @@ class AppL10nId extends AppL10n {
   String get meSignOut => 'Keluar';
 
   @override
+  String meVersion(String version, String build) {
+    return 'Versi $version ($build)';
+  }
+
+  @override
   String get liaFireNow => 'Bakar sekarang';
 
   @override
@@ -6937,7 +6942,7 @@ class AppL10nId extends AppL10n {
   }
 
   @override
-  String get rptSubTaxService => 'Pajak & service tertagih';
+  String get rptSubTaxService => 'Pajak & biaya layanan tertagih';
 
   @override
   String rptSubVoid(int count) {
@@ -8412,6 +8417,13 @@ class AppL10nId extends AppL10n {
   String get fltModeBypassKdsOnYes => 'Hilangkan';
 
   @override
+  String get fltModeServiceTerm => 'Kata layanan';
+
+  @override
+  String get fltModeServiceTermHint =>
+      'Untuk venue jasa: tiap tempat di lantai disebut \"Layanan\", bukan sebutan restoran. Tidak ada yang disembunyikan — hanya katanya yang berubah.';
+
+  @override
   String get fltModeMemberSplit => 'Pemilik struk';
 
   @override
@@ -8638,7 +8650,7 @@ class AppL10nId extends AppL10n {
 
   @override
   String venueHubBadgeVenue(String tax, String svc) {
-    return 'Pajak $tax% · Service $svc%';
+    return 'Pajak $tax% · Biaya layanan $svc%';
   }
 
   @override
@@ -8648,11 +8660,11 @@ class AppL10nId extends AppL10n {
 
   @override
   String venueHubBadgeVenueSvc(String svc) {
-    return 'Service $svc%';
+    return 'Biaya layanan $svc%';
   }
 
   @override
-  String get venueHubBadgeVenueNone => 'Tanpa pajak & service';
+  String get venueHubBadgeVenueNone => 'Tanpa pajak & biaya layanan';
 
   @override
   String get venueHubLanActive => 'LAN AKTIF';
@@ -9642,4 +9654,603 @@ class AppL10nId extends AppL10n {
 
   @override
   String get cshDiscountFrozen => 'Diskon terkunci';
+}
+
+/// The translations for Indonesian, as used in El Salvador (`id_SV`).
+class AppL10nIdSv extends AppL10nId {
+  AppL10nIdSv() : super('id_SV');
+
+  @override
+  String get venueHubSectionZonaSub =>
+      'Atur zona, layanan, dan kapasitas ruangan';
+
+  @override
+  String get soTabQr => 'QR & layanan';
+
+  @override
+  String get soTableTitle => 'Kode layanan';
+
+  @override
+  String get soTableSub =>
+      'Satu kode per layanan. Cetak QR-nya dan tempel di layanan.';
+
+  @override
+  String get soRotateConfirmTitle => 'Ganti semua kode layanan?';
+
+  @override
+  String get soRotateConfirmBody =>
+      'Semua QR yang sudah dicetak berhenti berfungsi saat ini juga. Cetak ulang seluruh layanan setelah ini.';
+
+  @override
+  String soQrFor(String table) {
+    return 'Layanan $table';
+  }
+
+  @override
+  String get soTableOn => 'Layanan ini menerima pesan mandiri';
+
+  @override
+  String get venueHubSeedBody =>
+      'Muat contoh data restoran umum: 4 zona dengan 20 layanan, menu lengkap, 4 staf (2 pelayan & 2 dapur), dan sebulan riwayat penjualan supaya laporan dan catatan audit langsung terbaca. Semua bisa diubah atau dihapus kapan saja.';
+
+  @override
+  String get venueHubSeedBodyLoaded =>
+      'Venue ini memakai contoh data. Hapus untuk membuang riwayat penjualan buatan; zona, layanan, menu dan staf tetap ada.';
+
+  @override
+  String get venueSettingsTimingPickupHint =>
+      'Makanan siap tapi belum diantar selama ini. Saklar mematikan bunyinya saja — tanda di kartu layanan tetap jalan.';
+
+  @override
+  String get venueSettingsTimingUngreetedHint =>
+      'Layanan terisi tapi belum ada pesanan terkirim. Saklar mematikan bunyinya saja — tanda di kartu layanan tetap jalan.';
+
+  @override
+  String get venueSettingsTimingLongStay => 'Layanan terlalu lama';
+
+  @override
+  String get venueSettingsTimingIdle => 'Layanan selesai';
+
+  @override
+  String staleReservationLate(int mins) {
+    return 'Tamu telat $mins mnt — lepas layanan?';
+  }
+
+  @override
+  String get tableNoReservationTable => 'Belum ada layanan';
+
+  @override
+  String get tablesEmptyZoneAddTableHint =>
+      'Tambahkan layanan lewat Manajer › Zona';
+
+  @override
+  String get zoneAdminAddTable => 'Tambah layanan';
+
+  @override
+  String get zoneAdminEmptyZone => 'Belum ada layanan di';
+
+  @override
+  String get zoneAdminNoZonesCreate => 'Buat zona dulu untuk menata layanan.';
+
+  @override
+  String get zoneAdminNewTable => 'Layanan baru';
+
+  @override
+  String get zoneAdminTableName => 'Nama layanan';
+
+  @override
+  String get zoneAdminTableActive => 'Layanan aktif';
+
+  @override
+  String get zoneAdminDeleteTableConfirmTitle => 'Hapus layanan?';
+
+  @override
+  String get tabMeja => 'Layanan';
+
+  @override
+  String get a11yTableLocked => 'Layanan terkunci';
+
+  @override
+  String expTableVisit(String label) {
+    return 'Layanan $label';
+  }
+
+  @override
+  String get expAuditCsvHeader =>
+      'Waktu,Jenis,Pengguna,Peran,Kejadian,Layanan,Jumlah,Alasan,Disetujui';
+
+  @override
+  String strukTableLine(String label, int pax, String time) {
+    return 'Layanan $label  ·  $pax org  ·  $time';
+  }
+
+  @override
+  String get strukEvenHeading => 'Patungan layanan:';
+
+  @override
+  String printJobOrderSlip(String label) {
+    return 'Cetak struk layanan $label';
+  }
+
+  @override
+  String auditFire(String course, String table) {
+    return 'Course $course dibakar untuk Layanan $table';
+  }
+
+  @override
+  String auditModifyAtTable(String name, String table) {
+    return '$name diubah di Layanan $table';
+  }
+
+  @override
+  String auditVoidItemAtTable(String name, String table) {
+    return '$name dibatalkan di Layanan $table';
+  }
+
+  @override
+  String auditTableMoved(String src, String tgt) {
+    return 'Pindah layanan $src → $tgt';
+  }
+
+  @override
+  String auditPaymentAtTable(String method, String table) {
+    return 'Pembayaran $method Layanan $table';
+  }
+
+  @override
+  String auditDiscountAtTable(String percent, String table) {
+    return 'Diskon $percent% di Layanan $table';
+  }
+
+  @override
+  String auditGuestCodesRotated(num tables) {
+    final intl.NumberFormat tablesNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String tablesString = tablesNumberFormat.format(tables);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tablesString layanan',
+    );
+    return 'Ganti kode layanan — $_temp0';
+  }
+
+  @override
+  String cshBillTableCrumb(String table) {
+    return 'Tagihan · Layanan $table';
+  }
+
+  @override
+  String cshReceiptTableCrumb(String table) {
+    return 'Struk · Layanan $table';
+  }
+
+  @override
+  String cshCloseBillBody(String table) {
+    return 'Kunci tagihan Layanan $table sebagai lunas? Tindakan ini mengakhiri tagihan.';
+  }
+
+  @override
+  String get cshErrNoLines => 'Layanan tidak punya pesanan.';
+
+  @override
+  String get cshPrintTableReceipt => 'Cetak struk layanan';
+
+  @override
+  String get cshPrintTableBill => 'Cetak tagihan layanan';
+
+  @override
+  String get cshTableClosedUnpaid =>
+      'Layanan sudah ditutup waiter — tagihan belum lunas';
+
+  @override
+  String rptMethodTable(String method, String table) {
+    return '$method · Layanan $table';
+  }
+
+  @override
+  String get rptSortCovers => 'Layanan';
+
+  @override
+  String get rptSortMostTables => 'Paling banyak layanan';
+
+  @override
+  String get rptColTables => 'LAYANAN';
+
+  @override
+  String tblTakenBy(String holder) {
+    return 'Layanan diambil oleh $holder';
+  }
+
+  @override
+  String tblAlreadySeated(String holder) {
+    return 'Layanan sudah diisi oleh $holder';
+  }
+
+  @override
+  String get tblReleaseTable => 'Lepaskan Layanan';
+
+  @override
+  String get tblMenuLoadFailed => 'Gagal memuat menu layanan';
+
+  @override
+  String get tblReleaseTableQ => 'Lepaskan Layanan?';
+
+  @override
+  String tblReleaseBody(String table) {
+    return 'Belum ada pesanan. Kosongkan layanan $table?';
+  }
+
+  @override
+  String tblFinishBody(String table) {
+    return 'Semua tiket telah selesai. Kosongkan layanan $table untuk tamu berikutnya? Tagihan tetap di kasir sampai dibayar.';
+  }
+
+  @override
+  String tblFinishBodyPaid(String table) {
+    return 'Semua tiket telah selesai. Kosongkan layanan $table untuk tamu berikutnya? Tagihan sudah lunas.';
+  }
+
+  @override
+  String tblCloseFailed(String error) {
+    return 'Gagal menutup layanan: $error';
+  }
+
+  @override
+  String get tblContextTitle => 'Konteks layanan';
+
+  @override
+  String tblKosong(String table) {
+    return 'Layanan $table kosong';
+  }
+
+  @override
+  String get tblStartService => 'Mulai layanan';
+
+  @override
+  String get tblPrintTableReceipt => 'Cetak struk layanan';
+
+  @override
+  String get tblMoveTable => 'Pindahkan layanan';
+
+  @override
+  String mnuAddToTable(String table) {
+    return 'Tambah ke Layanan $table';
+  }
+
+  @override
+  String get mnuHeadTakeaway => 'BAWA PULANG · TANPA LAYANAN';
+
+  @override
+  String get mnuHeadTableless => 'PESANAN BARU · TANPA LAYANAN';
+
+  @override
+  String mnuHeadTable(String table) {
+    return 'PESANAN BARU · LAYANAN $table';
+  }
+
+  @override
+  String revHeadTableless(int n) {
+    return 'TANPA LAYANAN · $n ITEM · PILIH LAYANAN SAAT KIRIM';
+  }
+
+  @override
+  String revHeadTable(String table, int pax, int n) {
+    return 'LAYANAN $table · $pax TAMU · $n ITEM';
+  }
+
+  @override
+  String get revTableTaken => 'Layanan keburu terisi. Pilih layanan lain.';
+
+  @override
+  String revSeatFailed(String error) {
+    return 'Gagal menempati layanan: $error';
+  }
+
+  @override
+  String get revCommitDineIn => 'Di tempat';
+
+  @override
+  String get revCommitDineInSub => 'Tetapkan ke layanan kosong';
+
+  @override
+  String get revCommitTakeawaySub => 'Takeaway tanpa layanan';
+
+  @override
+  String zoneAdminSummary(int zones, int tables, int seats) {
+    String _temp0 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zona',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables layanan',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      seats,
+      locale: localeName,
+      other: '$seats kursi',
+    );
+    return '$_temp0 · $_temp1 · $_temp2';
+  }
+
+  @override
+  String zoneAdminMoveTablesFirst(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Pindahkan $count layanan dulu sebelum hapus zona.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get zoneAdminNoTablesHere => 'Belum ada layanan di zona ini.';
+
+  @override
+  String zoneAdminTablesHere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count layanan saat ini ada di zona ini.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String mvtTitle(String table) {
+    return 'Pindahkan layanan $table';
+  }
+
+  @override
+  String mvtSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Pilih layanan kosong tujuan · $count tamu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mvtNoTargets => 'Tidak ada layanan kosong untuk dituju.';
+
+  @override
+  String mvtConfirmTitle(String table) {
+    return 'Pindahkan layanan $table?';
+  }
+
+  @override
+  String mvtConfirmOver(String table, int capacity, int pax) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pax,
+      locale: localeName,
+      other: '$pax tamu',
+    );
+    return 'Tujuan: layanan $table (kapasitas $capacity). $_temp0 melebihi kapasitas — lanjutkan?';
+  }
+
+  @override
+  String mvtConfirmBody(String table) {
+    return 'Seluruh pesanan dan tamu pindah ke layanan $table.';
+  }
+
+  @override
+  String mvtFailed(String error) {
+    return 'Gagal memindahkan layanan: $error';
+  }
+
+  @override
+  String get asgTitle => 'Tetapkan ke layanan';
+
+  @override
+  String get asgSubtitle => 'Atur tamu lalu pilih layanan kosong';
+
+  @override
+  String get asgNoTargets => 'Tidak ada layanan kosong.';
+
+  @override
+  String gstTableLabel(String table) {
+    return 'Layanan $table';
+  }
+
+  @override
+  String liaTableAt(String table, String time) {
+    return 'LAYANAN $table · $time';
+  }
+
+  @override
+  String resNoTableForParty(int size) {
+    return 'Tidak ada layanan kapasitas ≥ $size di zona ini.';
+  }
+
+  @override
+  String get resAlreadySeated => 'Layanan sudah diisi tamu lain';
+
+  @override
+  String cshSummary(int running, int takeaway, int settled) {
+    String _temp0 = intl.Intl.pluralLogic(
+      running,
+      locale: localeName,
+      other: '$running tagihan',
+    );
+    return '$_temp0 berjalan · $takeaway tanpa layanan · $settled lunas';
+  }
+
+  @override
+  String tblNoTablesInZone(String zone) {
+    return 'Belum ada layanan di $zone';
+  }
+
+  @override
+  String zonTablesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count layanan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sntBodyNoPrep(String table) {
+    return 'Pesanan Layanan $table sudah siap diambil.';
+  }
+
+  @override
+  String sntBody(String table) {
+    return 'Pesanan Layanan $table sudah live di display dapur dan bar.';
+  }
+
+  @override
+  String rtoTableNow(String table, String zone) {
+    return 'LAYANAN $table · $zone · SEKARANG';
+  }
+
+  @override
+  String get blcTableClosed => 'Layanan ditutup';
+
+  @override
+  String get cshEmptyDetached => 'Tidak ada layanan tertutup yang belum lunas';
+
+  @override
+  String get cshStatClosed => 'Layanan ditutup';
+
+  @override
+  String zonAdminSub(int tables, int zones, int seats) {
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables layanan',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zona',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      seats,
+      locale: localeName,
+      other: '$seats kursi',
+    );
+    return '$_temp0 · $_temp1 · $_temp2';
+  }
+
+  @override
+  String venueHubTablesZones(int tables, int zones) {
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables layanan',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zona)',
+    );
+    return '$_temp0 ($_temp1';
+  }
+
+  @override
+  String get vrsWrongOrderDesc => 'Salah layanan, tap ganda, salah ring';
+
+  @override
+  String get sendQueueCorrupt =>
+      'Antrean kirim rusak dan tidak bisa dibaca. Pesanan yang tertahan di dalamnya tidak terkirim — periksa layanan yang belum dapat pesanannya.';
+
+  @override
+  String get sendFailVisitChanged =>
+      'Layanan sudah ganti tamu — pesanan tidak dipasang';
+
+  @override
+  String get mvtTargetOccupied => 'Layanan tujuan sudah terisi.';
+
+  @override
+  String get mvtTableLocked => 'Layanan sedang dipakai pengguna lain.';
+
+  @override
+  String get mvtSourceEmpty => 'Layanan asal sudah kosong.';
+
+  @override
+  String get liaServeDesc => 'Konfirmasi diambil & diantar ke layanan';
+
+  @override
+  String meEndServerBodyLive(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n layanan',
+    );
+    return '$_temp0 masih aktif. Keluar akan mematikan server — semua staff terputus dan tidak bisa menyambung sampai admin masuk lagi.';
+  }
+
+  @override
+  String tableNamed(String label) {
+    return 'Layanan $label';
+  }
+
+  @override
+  String tblZoneAlarmCrit(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n layanan kritis',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tblZoneAlarmWarn(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n layanan perlu perhatian',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String venueHubBadgeFloor(int tables, int zones) {
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables layanan',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zona',
+    );
+    return '$_temp0 · $_temp1';
+  }
+
+  @override
+  String get rcpSampleTable => 'Layanan 4 · Contoh';
+
+  @override
+  String meAuditTable(String table) {
+    return 'Layanan $table';
+  }
+
+  @override
+  String resvSeatToTable(String action) {
+    return '$action ke layanan:';
+  }
+
+  @override
+  String get resvZoneTableOptional => 'Zona & layanan (opsional)';
+
+  @override
+  String get fltCounterRestartNote =>
+      'Saklar baru berlaku saat admin venue masuk lagi. QR konter muncul begitu admin membuka tab QR & layanan. Kalau Pesan mandiri sendiri baru dinyalakan, server perlu di-restart dulu.';
+
+  @override
+  String get memVisitNoTable => 'Tanpa layanan';
+
+  @override
+  String get mrpColTable => 'Layanan';
 }

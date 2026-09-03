@@ -403,7 +403,7 @@
   "venueSettingsThankYou": "Ucapan terima kasih",
   "venueSettingsQrUrl": "QR (URL)",
   "venueSettingsQrCaption": "QR (keterangan)",
-  "venueSettingsSectionTax": "Pajak & layanan",
+  "venueSettingsSectionTax": "Pajak & biaya layanan",
   "venueSettingsSectionReports": "Laporan & shift",
   "venueSettingsSectionSound": "Suara",
   "venueSettingsSoundNewOrder": "Pesanan baru",
@@ -882,7 +882,7 @@
       }
     }
   },
-  "expAccountingNote": "Pajak & service = nilai riil dari sesi terselesaikan, sama dengan angka di layar. Rentang mengikuti aturan yang sama dengan laporan di layar (ADR-0032).",
+  "expAccountingNote": "Pajak & biaya layanan = nilai riil dari sesi terselesaikan, sama dengan angka di layar. Rentang mengikuti aturan yang sama dengan laporan di layar (ADR-0032).",
   "@expAccountingNote": {
     "description": "Footnote under the accounting revenue summary. ADR-0032."
   },
@@ -905,7 +905,7 @@
   "expVoidCorrection": "Void / koreksi",
   "expDiscount": "Diskon",
   "expNet": "Net",
-  "expService": "Service",
+  "expService": "Biaya layanan",
   "expTax": "Pajak",
   "expCollectedBilled": "Terkumpul (tagihan)",
   "expRefund": "Refund",
@@ -1091,7 +1091,7 @@
       }
     }
   },
-  "expReceiptTotals": "Subtotal {subtotal}{discount}  ·  Service {service}  ·  Pajak {tax}  ·  Total {total}",
+  "expReceiptTotals": "Subtotal {subtotal}{discount}  ·  Biaya layanan {service}  ·  Pajak {tax}  ·  Total {total}",
   "@expReceiptTotals": {
     "description": "The {discount} slot is either empty or the pre-rendered expReceiptDiscountPart.",
     "placeholders": {
@@ -1237,7 +1237,7 @@
   "@strukDiscount": {
     "description": "Fallback row label when the applied discount snapshot carries no name."
   },
-  "strukService": "Layanan",
+  "strukService": "Biaya layanan",
   "strukTax": "Pajak",
   "strukTotal": "TOTAL",
   "strukPaid": "Bayar {method}",
@@ -2080,7 +2080,7 @@
   },
   "cshSubtotal": "Subtotal",
   "cshDiscount": "Diskon",
-  "cshService": "Layanan",
+  "cshService": "Biaya layanan",
   "cshTax": "Pajak",
   "cshTotal": "Total",
   "cshPaidAmount": "Terbayar",
@@ -2479,7 +2479,7 @@
   },
   "rptKpiNet": "Net",
   "rptKpiGross": "Gross",
-  "rptKpiTaxService": "Pajak + Service",
+  "rptKpiTaxService": "Pajak + biaya layanan",
   "rptKpiVoid": "Void",
   "rptNoData": "Belum ada data",
   "rptNoDataDot": "Belum ada data.",
@@ -3990,7 +3990,7 @@
       }
     }
   },
-  "mnuServicePct": "Layanan · {pct}",
+  "mnuServicePct": "Biaya layanan · {pct}",
   "@mnuServicePct": {
     "placeholders": {
       "pct": {
@@ -4236,7 +4236,7 @@
       }
     }
   },
-  "stlRowServiceTax": "Layanan + pajak",
+  "stlRowServiceTax": "Biaya layanan + pajak",
   "stlRowPayingNow": "Dibayar sekarang",
   "stlRowRemainderAfter": "Sisa setelah ini",
   "stlRowPerHead": "Per orang (bulat 100)",
@@ -4368,8 +4368,8 @@
     }
   },
   "vstTaxOff": "PPN off",
-  "vstServiceOff": "Layanan off",
-  "vstServiceValue": "Layanan {value}",
+  "vstServiceOff": "Biaya layanan off",
+  "vstServiceValue": "Biaya layanan {value}",
   "@vstServiceValue": {
     "placeholders": {
       "value": {
@@ -4380,12 +4380,12 @@
   "vstFeesTag": "BIAYA",
   "vstEnableTax": "Aktifkan PPN",
   "vstTaxRate": "Tarif PPN",
-  "vstEnableService": "Aktifkan layanan",
-  "vstServiceRate": "Tarif layanan",
-  "vstServiceAmount": "Jumlah layanan",
+  "vstEnableService": "Aktifkan biaya layanan",
+  "vstServiceRate": "Tarif biaya layanan",
+  "vstServiceAmount": "Jumlah biaya layanan",
   "vstTaxAfterDiscount": "Pajak dihitung setelah diskon",
-  "vstTaxAfterDiscountOn": "Diskon mengurangi dasar pengenaan — pajak & layanan dihitung dari jumlah setelah diskon.",
-  "vstTaxAfterDiscountOff": "Pajak & layanan dihitung dari subtotal kotor, diskon dipotong dari total akhir.",
+  "vstTaxAfterDiscountOn": "Diskon mengurangi dasar pengenaan — pajak & biaya layanan dihitung dari jumlah setelah diskon.",
+  "vstTaxAfterDiscountOff": "Pajak & biaya layanan dihitung dari subtotal kotor, diskon dipotong dari total akhir.",
   "vstItemDiscountNote": "Diskon per item selalu dihitung sebelum pajak.",
   "vstDiscountPresets": "Preset diskon",
   "vstFeeType": "Tipe biaya",
@@ -5115,6 +5115,18 @@
   "meKpiOpenTickets": "Tiket terbuka",
   "meKpiCovers": "Cover dilayani",
   "meSignOut": "Keluar",
+  "meVersion": "Versi {version} ({build})",
+  "@meVersion": {
+    "description": "App version and build number, at the foot of /me.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
+  },
   "liaFireNow": "Bakar sekarang",
   "liaEditItem": "Ubah item",
   "liaUnserve": "Batalkan sajian",
@@ -5326,7 +5338,7 @@
       }
     }
   },
-  "rptSubTaxService": "Pajak & service tertagih",
+  "rptSubTaxService": "Pajak & biaya layanan tertagih",
   "rptSubVoid": "{count, plural, other{{count} item void}}",
   "@rptSubVoid": {
     "placeholders": {
@@ -6518,6 +6530,14 @@
   "@fltModeBypassKdsOnYes": {
     "description": "Confirm button for turning the no-prep-queue mode on."
   },
+  "fltModeServiceTerm": "Kata layanan",
+  "@fltModeServiceTerm": {
+    "description": "CONTEXT: Konsol armada — mode Kata layanan (ADR-0127)."
+  },
+  "fltModeServiceTermHint": "Untuk venue jasa: tiap tempat di lantai disebut \"Layanan\", bukan sebutan restoran. Tidak ada yang disembunyikan — hanya katanya yang berubah.",
+  "@fltModeServiceTermHint": {
+    "description": "CONTEXT: Konsol armada — penjelasan mode Kata layanan."
+  },
   "fltModeMemberSplit": "Pemilik struk",
   "@fltModeMemberSplit": {
     "description": "Fleet console label for the per-receipt member attribution mode."
@@ -6826,7 +6846,7 @@
       }
     }
   },
-  "venueHubBadgeVenue": "Pajak {tax}% · Service {svc}%",
+  "venueHubBadgeVenue": "Pajak {tax}% · Biaya layanan {svc}%",
   "@venueHubBadgeVenue": {
     "description": "Venue settings card badge: tax and service rates",
     "placeholders": {
@@ -6847,7 +6867,7 @@
       }
     }
   },
-  "venueHubBadgeVenueSvc": "Service {svc}%",
+  "venueHubBadgeVenueSvc": "Biaya layanan {svc}%",
   "@venueHubBadgeVenueSvc": {
     "description": "Venue settings card badge when only service is charged",
     "placeholders": {
@@ -6856,7 +6876,7 @@
       }
     }
   },
-  "venueHubBadgeVenueNone": "Tanpa pajak & service",
+  "venueHubBadgeVenueNone": "Tanpa pajak & biaya layanan",
   "@venueHubBadgeVenueNone": {
     "description": "Venue settings card badge when the venue charges neither"
   },

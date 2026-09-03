@@ -122,4 +122,98 @@ void main() {
           'the template with an `other` arm only.',
     );
   });
+
+  // --- [[Kata layanan]] variants (ADR-0127) -------------------------------
+  //
+  // `app_id_SV.arb` / `app_en_SV.arb` override only the strings that name a
+  // [[Meja]] and inherit the rest, which is what keeps a vocabulary switch to
+  // ~120 entries instead of 4000. The cost of inheritance is **silent drift**:
+  // a new "Meja" string added to the template and forgotten here renders
+  // "Meja" at a salon, and nothing at runtime says so. These fail instead.
+
+  /// ICU spans masked, so the placeholder named `table` is never read as the
+  /// word "table".
+  String words(String v) =>
+      v.replaceAll(RegExp(r'\{\w+[,}]'), ' ');
+
+  late Map<String, dynamic> idSv;
+  late Map<String, dynamic> enSv;
+
+  setUpAll(() {
+    idSv = load('app_id_SV.arb');
+    enSv = load('app_en_SV.arb');
+  });
+
+  test('every string naming a table has a service-term override', () {
+    for (final (base, variant, word, file) in [
+      (id, () => idSv, RegExp(r'\bmeja\b', caseSensitive: false), 'app_id_SV.arb'),
+      (en, () => enSv, RegExp(r'\btables?\b', caseSensitive: false), 'app_en_SV.arb'),
+    ]) {
+      final v = variant();
+      final missing = [
+        for (final k in messages(base))
+          if (word.hasMatch(words(base[k] as String)) && !v.containsKey(k)) k,
+      ];
+      expect(
+        missing,
+        isEmpty,
+        reason:
+            'missing from $file — a venue in [[Kata layanan]] mode would read '
+            'the table word on these. Add the override, or if the word is not '
+            'the floor here, reword the template.',
+      );
+    }
+  });
+
+  test('a service-term override neither invents nor keeps the table word', () {
+    for (final (base, variant, word, file) in [
+      (id, () => idSv, RegExp(r'\bmeja\b', caseSensitive: false), 'app_id_SV.arb'),
+      (en, () => enSv, RegExp(r'\btables?\b', caseSensitive: false), 'app_en_SV.arb'),
+    ]) {
+      final v = variant();
+      expect(
+        messages(v).difference(messages(base)),
+        isEmpty,
+        reason:
+            '$file overrides a key its base locale does not have — gen-l10n '
+            'generates from the template, so these are dead',
+      );
+      final leftovers = [
+        for (final k in messages(v))
+          if (word.hasMatch(words(v[k] as String))) k,
+      ];
+      expect(
+        leftovers,
+        isEmpty,
+        reason: '$file still says the table word on these',
+      );
+    }
+  });
+
+  test('a service-term override keeps its base placeholders and plural', () {
+    final ph = RegExp(r'\{(\w+)[,}]');
+    for (final (base, variant, file) in [
+      (id, () => idSv, 'app_id_SV.arb'),
+      (en, () => enSv, 'app_en_SV.arb'),
+    ]) {
+      final v = variant();
+      for (final k in messages(v)) {
+        final a = ph.allMatches(base[k] as String).map((m) => m[1]).toSet();
+        final b = ph.allMatches(v[k] as String).map((m) => m[1]).toSet();
+        expect(
+          b,
+          a,
+          reason:
+              '$file/$k: placeholders disagree with the base locale. '
+              'gen-l10n derives the signature from the template, so this '
+              'will not build.',
+        );
+        expect(
+          (v[k] as String).contains(', plural,'),
+          (base[k] as String).contains(', plural,'),
+          reason: '$file/$k: disagrees with the base about being a plural',
+        );
+      }
+    }
+  });
 }

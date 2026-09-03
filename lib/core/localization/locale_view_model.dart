@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:satset/core/log/sat_log.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/l10n/app_localizations.dart';
 
@@ -16,11 +18,24 @@ const List<Locale> satSupportedLocales = [Locale('id'), Locale('en')];
 /// English on first run — a worse first five minutes than one setting can be.
 const Locale satDefaultLocale = Locale('id');
 
-Locale _localeFromTag(String? tag) => switch (tag) {
-  'en' => const Locale('en'),
-  'id' => const Locale('id'),
-  _ => satDefaultLocale,
-};
+/// The **[[Kata layanan]]** country subtag (ADR-0127).
+///
+/// Not a country: `SV` is borrowed as a *variant* marker, because gen-l10n
+/// resolves `app_id_SV.arb` from `Locale('id', 'SV')` and nothing else in the
+/// app resolves a locale from the platform — the language is picked on `/me`
+/// and this half is picked by the venue. Borrowing the region slot is what
+/// lets one ARB file override ~120 strings and inherit the other ~3900,
+/// instead of a second generator or 120 branches at call sites.
+const String serviceTermSubtag = 'SV';
+
+Locale _localeFromTag(String? tag, {required bool serviceTerm}) {
+  final lang = switch (tag) {
+    'en' => 'en',
+    'id' => 'id',
+    _ => satDefaultLocale.languageCode,
+  };
+  return Locale(lang, serviceTerm ? serviceTermSubtag : null);
+}
 
 /// Device-local language selection (ADR-0083).
 ///
@@ -43,11 +58,18 @@ Locale _localeFromTag(String? tag) => switch (tag) {
 AppL10n satL10n = lookupAppL10n(satDefaultLocale);
 
 class SatLocaleNotifier extends StateNotifier<Locale> {
-  SatLocaleNotifier(this._prefs) : super(_localeFromTag(_prefs?.localeTag())) {
+  SatLocaleNotifier(this._prefs, this._serviceTerm)
+    : super(_localeFromTag(_prefs?.localeTag(), serviceTerm: _serviceTerm)) {
     _sync(state);
   }
 
   final PrefsService? _prefs;
+
+  /// Whether this venue calls a table a **Layanan · Service** (ADR-0127). Not
+  /// a device setting and not on the picker: it arrives with the venue's own
+  /// shape and the device has no say, which is why only the language half is
+  /// written back to prefs.
+  final bool _serviceTerm;
 
   /// `format.dart` builds its `DateFormat`s against `Intl.defaultLocale`, which
   /// is how a date follows the picker without every widget threading a locale
@@ -59,19 +81,29 @@ class SatLocaleNotifier extends StateNotifier<Locale> {
   }
 
   Future<void> select(Locale l) async {
-    if (state == l) return;
-    SatLog.vm('Locale select ${l.languageCode}');
-    state = l;
-    _sync(l);
-    await _prefs?.setLocaleTag(l.languageCode);
+    final next = _localeFromTag(l.languageCode, serviceTerm: _serviceTerm);
+    if (state == next) return;
+    SatLog.vm('Locale select ${next.languageCode}${next.countryCode ?? ''}');
+    state = next;
+    _sync(next);
+    await _prefs?.setLocaleTag(next.languageCode);
   }
 }
 
+/// Language from the device, vocabulary from the venue (ADR-0083 + ADR-0127).
+///
+/// The venue half is watched rather than read once, so a fleet toggle lands
+/// when the settings mirror does instead of waiting for a cold boot — and
+/// because `VenueSettingsRepository` paints its cached shape before the fetch,
+/// a handset that boots away from its host still opens in the right words.
 final satLocaleProvider = StateNotifierProvider<SatLocaleNotifier, Locale>((
   ref,
 ) {
   final prefs = ref.watch(prefsServiceProvider).valueOrNull;
-  return SatLocaleNotifier(prefs);
+  final serviceTerm = ref.watch(
+    venueSettingsProvider.select((s) => s.serviceTerm),
+  );
+  return SatLocaleNotifier(prefs, serviceTerm);
 });
 
 /// The strings, reachable **without a `BuildContext`**.

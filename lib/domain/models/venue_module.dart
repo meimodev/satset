@@ -60,10 +60,34 @@ const modeBypassKds = 'bypassKds';
 /// both **once**, in `MemberConfig.splitEnabled`, and never at a route.
 const modeMemberSplit = 'memberSplit';
 
+/// **[[Kata layanan]]** (ADR-0127) — the venue sells service, not seats, so
+/// every user-facing "[[Meja]]" reads **Layanan · Service** instead.
+///
+/// A mode key, read through [venueHasMode] so it fails **closed**: the
+/// fail-open that protects a paid [[Modul]] would rename the floor at every
+/// restaurant that has not mirrored yet, and a cafe waking from a cold boot
+/// calling its tables "Layanan" is a worse first minute than a salon waiting
+/// one sign-in for its vocabulary.
+///
+/// It **branches no writer and gates nothing** — the floor, zones, capacity,
+/// locks and moves are all still there, doing what they always did. It changes
+/// the *words*, and does it the way ADR-0083 already resolves words: by
+/// picking a locale. `Locale('id', 'SV')` / `Locale('en', 'SV')` resolve to
+/// `app_id_SV.arb` / `app_en_SV.arb`, which override only the ~120 strings
+/// that name a table and inherit the other ~3900. Nothing reads this key at a
+/// call site; `SatLocaleNotifier` reads it once and the whole app — including
+/// the ESC/POS struk and the CSV exporters, which read the process-wide
+/// `satL10n` — follows.
+///
+/// Independent of [modeCounterService]: a salon is not a counter shop, and a
+/// kedai still has meja.
+const modeServiceTerm = 'serviceTerm';
+
 const venueModeKeys = <String>[
   modeCounterService,
   modeBypassKds,
   modeMemberSplit,
+  modeServiceTerm,
 ];
 
 /// Everything the console may write to `addOns` and the mirror may carry down.

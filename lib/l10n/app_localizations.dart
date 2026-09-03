@@ -94,7 +94,9 @@ abstract class AppL10n {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
+    Locale('en', 'SV'),
     Locale('id'),
+    Locale('id', 'SV'),
   ];
 
   /// No description provided for @cancel.
@@ -1654,7 +1656,7 @@ abstract class AppL10n {
   /// No description provided for @venueSettingsSectionTax.
   ///
   /// In id, this message translates to:
-  /// **'Pajak & layanan'**
+  /// **'Pajak & biaya layanan'**
   String get venueSettingsSectionTax;
 
   /// No description provided for @venueSettingsSectionReports.
@@ -3064,7 +3066,7 @@ abstract class AppL10n {
   /// Footnote under the accounting revenue summary. ADR-0032.
   ///
   /// In id, this message translates to:
-  /// **'Pajak & service = nilai riil dari sesi terselesaikan, sama dengan angka di layar. Rentang mengikuti aturan yang sama dengan laporan di layar (ADR-0032).'**
+  /// **'Pajak & biaya layanan = nilai riil dari sesi terselesaikan, sama dengan angka di layar. Rentang mengikuti aturan yang sama dengan laporan di layar (ADR-0032).'**
   String get expAccountingNote;
 
   /// No description provided for @expSessionCount.
@@ -3124,7 +3126,7 @@ abstract class AppL10n {
   /// No description provided for @expService.
   ///
   /// In id, this message translates to:
-  /// **'Service'**
+  /// **'Biaya layanan'**
   String get expService;
 
   /// No description provided for @expTax.
@@ -3706,7 +3708,7 @@ abstract class AppL10n {
   /// The {discount} slot is either empty or the pre-rendered expReceiptDiscountPart.
   ///
   /// In id, this message translates to:
-  /// **'Subtotal {subtotal}{discount}  ·  Service {service}  ·  Pajak {tax}  ·  Total {total}'**
+  /// **'Subtotal {subtotal}{discount}  ·  Biaya layanan {service}  ·  Pajak {tax}  ·  Total {total}'**
   String expReceiptTotals(
     String subtotal,
     String discount,
@@ -3868,7 +3870,7 @@ abstract class AppL10n {
   /// No description provided for @strukService.
   ///
   /// In id, this message translates to:
-  /// **'Layanan'**
+  /// **'Biaya layanan'**
   String get strukService;
 
   /// No description provided for @strukTax.
@@ -4682,7 +4684,7 @@ abstract class AppL10n {
   /// No description provided for @cshService.
   ///
   /// In id, this message translates to:
-  /// **'Layanan'**
+  /// **'Biaya layanan'**
   String get cshService;
 
   /// No description provided for @cshTax.
@@ -5294,7 +5296,7 @@ abstract class AppL10n {
   /// No description provided for @rptKpiTaxService.
   ///
   /// In id, this message translates to:
-  /// **'Pajak + Service'**
+  /// **'Pajak + biaya layanan'**
   String get rptKpiTaxService;
 
   /// No description provided for @rptKpiVoid.
@@ -8270,7 +8272,7 @@ abstract class AppL10n {
   /// No description provided for @mnuServicePct.
   ///
   /// In id, this message translates to:
-  /// **'Layanan · {pct}'**
+  /// **'Biaya layanan · {pct}'**
   String mnuServicePct(String pct);
 
   /// No description provided for @mnuTaxPct.
@@ -8954,7 +8956,7 @@ abstract class AppL10n {
   /// No description provided for @stlRowServiceTax.
   ///
   /// In id, this message translates to:
-  /// **'Layanan + pajak'**
+  /// **'Biaya layanan + pajak'**
   String get stlRowServiceTax;
 
   /// No description provided for @stlRowPayingNow.
@@ -9230,13 +9232,13 @@ abstract class AppL10n {
   /// No description provided for @vstServiceOff.
   ///
   /// In id, this message translates to:
-  /// **'Layanan off'**
+  /// **'Biaya layanan off'**
   String get vstServiceOff;
 
   /// No description provided for @vstServiceValue.
   ///
   /// In id, this message translates to:
-  /// **'Layanan {value}'**
+  /// **'Biaya layanan {value}'**
   String vstServiceValue(String value);
 
   /// No description provided for @vstFeesTag.
@@ -9260,19 +9262,19 @@ abstract class AppL10n {
   /// No description provided for @vstEnableService.
   ///
   /// In id, this message translates to:
-  /// **'Aktifkan layanan'**
+  /// **'Aktifkan biaya layanan'**
   String get vstEnableService;
 
   /// No description provided for @vstServiceRate.
   ///
   /// In id, this message translates to:
-  /// **'Tarif layanan'**
+  /// **'Tarif biaya layanan'**
   String get vstServiceRate;
 
   /// No description provided for @vstServiceAmount.
   ///
   /// In id, this message translates to:
-  /// **'Jumlah layanan'**
+  /// **'Jumlah biaya layanan'**
   String get vstServiceAmount;
 
   /// No description provided for @vstTaxAfterDiscount.
@@ -9284,13 +9286,13 @@ abstract class AppL10n {
   /// No description provided for @vstTaxAfterDiscountOn.
   ///
   /// In id, this message translates to:
-  /// **'Diskon mengurangi dasar pengenaan — pajak & layanan dihitung dari jumlah setelah diskon.'**
+  /// **'Diskon mengurangi dasar pengenaan — pajak & biaya layanan dihitung dari jumlah setelah diskon.'**
   String get vstTaxAfterDiscountOn;
 
   /// No description provided for @vstTaxAfterDiscountOff.
   ///
   /// In id, this message translates to:
-  /// **'Pajak & layanan dihitung dari subtotal kotor, diskon dipotong dari total akhir.'**
+  /// **'Pajak & biaya layanan dihitung dari subtotal kotor, diskon dipotong dari total akhir.'**
   String get vstTaxAfterDiscountOff;
 
   /// No description provided for @vstItemDiscountNote.
@@ -10697,6 +10699,12 @@ abstract class AppL10n {
   /// **'Keluar'**
   String get meSignOut;
 
+  /// App version and build number, at the foot of /me.
+  ///
+  /// In id, this message translates to:
+  /// **'Versi {version} ({build})'**
+  String meVersion(String version, String build);
+
   /// No description provided for @liaFireNow.
   ///
   /// In id, this message translates to:
@@ -10970,7 +10978,7 @@ abstract class AppL10n {
   /// No description provided for @rptSubTaxService.
   ///
   /// In id, this message translates to:
-  /// **'Pajak & service tertagih'**
+  /// **'Pajak & biaya layanan tertagih'**
   String get rptSubTaxService;
 
   /// No description provided for @rptSubVoid.
@@ -13385,6 +13393,18 @@ abstract class AppL10n {
   /// **'Hilangkan'**
   String get fltModeBypassKdsOnYes;
 
+  /// CONTEXT: Konsol armada — mode Kata layanan (ADR-0127).
+  ///
+  /// In id, this message translates to:
+  /// **'Kata layanan'**
+  String get fltModeServiceTerm;
+
+  /// CONTEXT: Konsol armada — penjelasan mode Kata layanan.
+  ///
+  /// In id, this message translates to:
+  /// **'Untuk venue jasa: tiap tempat di lantai disebut \"Layanan\", bukan sebutan restoran. Tidak ada yang disembunyikan — hanya katanya yang berubah.'**
+  String get fltModeServiceTermHint;
+
   /// Fleet console label for the per-receipt member attribution mode.
   ///
   /// In id, this message translates to:
@@ -13736,7 +13756,7 @@ abstract class AppL10n {
   /// Venue settings card badge: tax and service rates
   ///
   /// In id, this message translates to:
-  /// **'Pajak {tax}% · Service {svc}%'**
+  /// **'Pajak {tax}% · Biaya layanan {svc}%'**
   String venueHubBadgeVenue(String tax, String svc);
 
   /// Venue settings card badge when only tax is charged
@@ -13748,13 +13768,13 @@ abstract class AppL10n {
   /// Venue settings card badge when only service is charged
   ///
   /// In id, this message translates to:
-  /// **'Service {svc}%'**
+  /// **'Biaya layanan {svc}%'**
   String venueHubBadgeVenueSvc(String svc);
 
   /// Venue settings card badge when the venue charges neither
   ///
   /// In id, this message translates to:
-  /// **'Tanpa pajak & service'**
+  /// **'Tanpa pajak & biaya layanan'**
   String get venueHubBadgeVenueNone;
 
   /// Venue header chip when the LAN server is reachable
@@ -15371,6 +15391,26 @@ class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {
 }
 
 AppL10n lookupAppL10n(Locale locale) {
+  // Lookup logic when language+country codes are specified.
+  switch (locale.languageCode) {
+    case 'en':
+      {
+        switch (locale.countryCode) {
+          case 'SV':
+            return AppL10nEnSv();
+        }
+        break;
+      }
+    case 'id':
+      {
+        switch (locale.countryCode) {
+          case 'SV':
+            return AppL10nIdSv();
+        }
+        break;
+      }
+  }
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
     case 'en':

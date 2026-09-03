@@ -922,7 +922,7 @@ class AppL10nEn extends AppL10n {
   String get venueSettingsQrCaption => 'QR (caption)';
 
   @override
-  String get venueSettingsSectionTax => 'Tax & service';
+  String get venueSettingsSectionTax => 'Tax & service charge';
 
   @override
   String get venueSettingsSectionReports => 'Reports & shift';
@@ -1762,7 +1762,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get expAccountingNote =>
-      'Tax & service are the real figures from settled sessions, the same ones shown on screen. The range follows the same rule as the on-screen report (ADR-0032).';
+      'Tax & service charge are the real figures from settled sessions, the same ones shown on screen. The range follows the same rule as the on-screen report (ADR-0032).';
 
   @override
   String get expSessionCount => 'Sessions';
@@ -1794,7 +1794,7 @@ class AppL10nEn extends AppL10n {
   String get expNet => 'Net';
 
   @override
-  String get expService => 'Service';
+  String get expService => 'Service charge';
 
   @override
   String get expTax => 'Tax';
@@ -2108,7 +2108,7 @@ class AppL10nEn extends AppL10n {
     String tax,
     String total,
   ) {
-    return 'Subtotal $subtotal$discount  ·  Service $service  ·  Tax $tax  ·  Total $total';
+    return 'Subtotal $subtotal$discount  ·  Service charge $service  ·  Tax $tax  ·  Total $total';
   }
 
   @override
@@ -2206,7 +2206,7 @@ class AppL10nEn extends AppL10n {
   String get strukDiscount => 'Discount';
 
   @override
-  String get strukService => 'Service';
+  String get strukService => 'Service charge';
 
   @override
   String get strukTax => 'Tax';
@@ -2830,7 +2830,7 @@ class AppL10nEn extends AppL10n {
   String get cshDiscount => 'Discount';
 
   @override
-  String get cshService => 'Service';
+  String get cshService => 'Service charge';
 
   @override
   String get cshTax => 'Tax';
@@ -3234,7 +3234,7 @@ class AppL10nEn extends AppL10n {
   String get rptKpiGross => 'Gross';
 
   @override
-  String get rptKpiTaxService => 'Tax + service';
+  String get rptKpiTaxService => 'Tax + service charge';
 
   @override
   String get rptKpiVoid => 'Void';
@@ -5208,7 +5208,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String mnuServicePct(String pct) {
-    return 'Service · $pct';
+    return 'Service charge · $pct';
   }
 
   @override
@@ -5608,7 +5608,7 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
-  String get stlRowServiceTax => 'Service + tax';
+  String get stlRowServiceTax => 'Service charge + tax';
 
   @override
   String get stlRowPayingNow => 'Paying now';
@@ -5811,11 +5811,11 @@ class AppL10nEn extends AppL10n {
   String get vstTaxOff => 'Tax off';
 
   @override
-  String get vstServiceOff => 'Service off';
+  String get vstServiceOff => 'Service charge off';
 
   @override
   String vstServiceValue(String value) {
-    return 'Service $value';
+    return 'Service charge $value';
   }
 
   @override
@@ -5828,24 +5828,24 @@ class AppL10nEn extends AppL10n {
   String get vstTaxRate => 'Tax rate';
 
   @override
-  String get vstEnableService => 'Charge service';
+  String get vstEnableService => 'Charge a service fee';
 
   @override
-  String get vstServiceRate => 'Service rate';
+  String get vstServiceRate => 'Service charge rate';
 
   @override
-  String get vstServiceAmount => 'Service amount';
+  String get vstServiceAmount => 'Service charge amount';
 
   @override
   String get vstTaxAfterDiscount => 'Tax is calculated after the discount';
 
   @override
   String get vstTaxAfterDiscountOn =>
-      'A discount lowers the taxable base — tax and service are calculated on the discounted amount.';
+      'A discount lowers the taxable base — tax and service charge are calculated on the discounted amount.';
 
   @override
   String get vstTaxAfterDiscountOff =>
-      'Tax and service are calculated on the gross subtotal; the discount comes off the final total.';
+      'Tax and service charge are calculated on the gross subtotal; the discount comes off the final total.';
 
   @override
   String get vstItemDiscountNote =>
@@ -6770,6 +6770,11 @@ class AppL10nEn extends AppL10n {
   String get meSignOut => 'Sign out';
 
   @override
+  String meVersion(String version, String build) {
+    return 'Version $version ($build)';
+  }
+
+  @override
   String get liaFireNow => 'Fire now';
 
   @override
@@ -7025,7 +7030,7 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
-  String get rptSubTaxService => 'Tax & service collected';
+  String get rptSubTaxService => 'Tax & service charge collected';
 
   @override
   String rptSubVoid(int count) {
@@ -8520,6 +8525,13 @@ class AppL10nEn extends AppL10n {
   String get fltModeBypassKdsOnYes => 'Remove';
 
   @override
+  String get fltModeServiceTerm => 'Service wording';
+
+  @override
+  String get fltModeServiceTermHint =>
+      'For a service venue: every spot on the floor is called a \"Service\" instead of the restaurant word. Nothing is hidden — only the wording changes.';
+
+  @override
   String get fltModeMemberSplit => 'Receipt owner';
 
   @override
@@ -8749,7 +8761,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String venueHubBadgeVenue(String tax, String svc) {
-    return 'Tax $tax% · Service $svc%';
+    return 'Tax $tax% · Service charge $svc%';
   }
 
   @override
@@ -8759,11 +8771,11 @@ class AppL10nEn extends AppL10n {
 
   @override
   String venueHubBadgeVenueSvc(String svc) {
-    return 'Service $svc%';
+    return 'Service charge $svc%';
   }
 
   @override
-  String get venueHubBadgeVenueNone => 'No tax or service';
+  String get venueHubBadgeVenueNone => 'No tax or service charge';
 
   @override
   String get venueHubLanActive => 'LAN ACTIVE';
@@ -9762,4 +9774,618 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get cshDiscountFrozen => 'Discounts frozen';
+}
+
+/// The translations for English, as used in El Salvador (`en_SV`).
+class AppL10nEnSv extends AppL10nEn {
+  AppL10nEnSv() : super('en_SV');
+
+  @override
+  String get venueHubSectionZonaSub =>
+      'Set up zones, services and room capacity';
+
+  @override
+  String get soTabQr => 'QR & services';
+
+  @override
+  String get soTableTitle => 'Service codes';
+
+  @override
+  String get soTableSub =>
+      'One code per service. Print its QR and stick it on the service.';
+
+  @override
+  String get soRotateConfirmTitle => 'Rotate every service code?';
+
+  @override
+  String get soRotateConfirmBody =>
+      'Every QR already printed stops working immediately. Reprint every service afterwards.';
+
+  @override
+  String soQrFor(String table) {
+    return 'Service $table';
+  }
+
+  @override
+  String get soTableOn => 'This service accepts self-order';
+
+  @override
+  String get venueHubSeedBody =>
+      'Load sample data for a generic restaurant: 4 zones with 20 services, a full menu, 4 staff (2 waiters & 2 kitchen), and a month of sales history so reports and the audit log read properly from day one. All of it can be edited or cleared at any time.';
+
+  @override
+  String get venueHubSeedBodyLoaded =>
+      'This venue is running on sample data. Clear it to drop the invented sales history; zones, services, menu and staff stay.';
+
+  @override
+  String get venueSettingsTimingPickupHint =>
+      'Food ready but not yet run for this long. The switch silences the sound only — the mark on the service card keeps working.';
+
+  @override
+  String get venueSettingsTimingUngreetedHint =>
+      'Service seated but nothing sent yet. The switch silences the sound only — the mark on the service card keeps working.';
+
+  @override
+  String get venueSettingsTimingIdle => 'Finished';
+
+  @override
+  String staleReservationLate(int mins) {
+    return 'Guest $mins min late — release service?';
+  }
+
+  @override
+  String get tableNoReservationTable => 'No service yet';
+
+  @override
+  String get tablesEmptyZoneAddTableHint => 'Add services via Manager › Zones';
+
+  @override
+  String get zoneAdminAddTable => 'Add service';
+
+  @override
+  String get zoneAdminEmptyZone => 'No services yet in';
+
+  @override
+  String get zoneAdminNoZonesCreate =>
+      'Create a zone first to lay out services.';
+
+  @override
+  String get zoneAdminNewTable => 'New service';
+
+  @override
+  String get zoneAdminTableName => 'Service name';
+
+  @override
+  String get zoneAdminTableActive => 'Service active';
+
+  @override
+  String get zoneAdminDeleteTableConfirmTitle => 'Delete service?';
+
+  @override
+  String get tabMeja => 'Services';
+
+  @override
+  String get a11yTableLocked => 'Service locked';
+
+  @override
+  String expTableVisit(String label) {
+    return 'Service $label';
+  }
+
+  @override
+  String get expAuditCsvHeader =>
+      'Time,Type,User,Role,Event,Service,Amount,Reason,Approved';
+
+  @override
+  String strukTableLine(String label, int pax, String time) {
+    return 'Service $label  ·  $pax pax  ·  $time';
+  }
+
+  @override
+  String get strukEvenHeading => 'Service split:';
+
+  @override
+  String printJobOrderSlip(String label) {
+    return 'Print order slip · Service $label';
+  }
+
+  @override
+  String auditFire(String course, String table) {
+    return 'Fired $course for Service $table';
+  }
+
+  @override
+  String auditModifyAtTable(String name, String table) {
+    return '$name edited at Service $table';
+  }
+
+  @override
+  String auditVoidItemAtTable(String name, String table) {
+    return '$name voided at Service $table';
+  }
+
+  @override
+  String auditTableMoved(String src, String tgt) {
+    return 'Moved service $src → $tgt';
+  }
+
+  @override
+  String auditPaymentAtTable(String method, String table) {
+    return '$method payment at Service $table';
+  }
+
+  @override
+  String auditDiscountAtTable(String percent, String table) {
+    return '$percent% discount at Service $table';
+  }
+
+  @override
+  String auditGuestCodesRotated(num tables) {
+    final intl.NumberFormat tablesNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String tablesString = tablesNumberFormat.format(tables);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tablesString services',
+      one: '1 service',
+    );
+    return 'Rotated service codes — $_temp0';
+  }
+
+  @override
+  String cshBillTableCrumb(String table) {
+    return 'Bill · Service $table';
+  }
+
+  @override
+  String cshReceiptTableCrumb(String table) {
+    return 'Receipt · Service $table';
+  }
+
+  @override
+  String cshCloseBillBody(String table) {
+    return 'Lock service $table\'s bill as settled? This ends the bill.';
+  }
+
+  @override
+  String get cshErrNoLines => 'The service has no orders.';
+
+  @override
+  String get cshPrintTableReceipt => 'Print service receipt';
+
+  @override
+  String get cshPrintTableBill => 'Print service bill';
+
+  @override
+  String get cshTableClosedUnpaid =>
+      'Service closed by the waiter — bill unsettled';
+
+  @override
+  String rptMethodTable(String method, String table) {
+    return '$method · Service $table';
+  }
+
+  @override
+  String get rptSortCovers => 'Services';
+
+  @override
+  String get rptSortMostTables => 'Most services';
+
+  @override
+  String get rptColTables => 'SERVICES';
+
+  @override
+  String tblTakenBy(String holder) {
+    return 'Service taken by $holder';
+  }
+
+  @override
+  String tblAlreadySeated(String holder) {
+    return 'Service already seated by $holder';
+  }
+
+  @override
+  String get tblReleaseTable => 'Release service';
+
+  @override
+  String get tblMenuLoadFailed => 'Couldn\'t load the service menu';
+
+  @override
+  String get tblReleaseTableQ => 'Release the service?';
+
+  @override
+  String tblReleaseBody(String table) {
+    return 'Nothing was ordered. Clear service $table?';
+  }
+
+  @override
+  String tblFinishBody(String table) {
+    return 'Every ticket is done. Clear service $table for the next guests? The bill stays with the cashier until it is paid.';
+  }
+
+  @override
+  String tblFinishBodyPaid(String table) {
+    return 'Every ticket is done. Clear service $table for the next guests? The bill is already paid.';
+  }
+
+  @override
+  String tblCloseFailed(String error) {
+    return 'Couldn\'t close the service: $error';
+  }
+
+  @override
+  String get tblContextTitle => 'Service context';
+
+  @override
+  String tblKosong(String table) {
+    return 'Service $table is empty';
+  }
+
+  @override
+  String get tblPrintTableReceipt => 'Print service receipt';
+
+  @override
+  String get tblMoveTable => 'Move service';
+
+  @override
+  String mnuAddToTable(String table) {
+    return 'Add to service $table';
+  }
+
+  @override
+  String get mnuHeadTakeaway => 'TAKEAWAY · UNASSIGNED';
+
+  @override
+  String get mnuHeadTableless => 'NEW ORDER · UNASSIGNED';
+
+  @override
+  String mnuHeadTable(String table) {
+    return 'NEW ORDER · SERVICE $table';
+  }
+
+  @override
+  String revHeadTableless(int n) {
+    return 'UNASSIGNED · $n ITEMS · PICK ONE WHEN SENDING';
+  }
+
+  @override
+  String revHeadTable(String table, int pax, int n) {
+    return 'SERVICE $table · $pax GUESTS · $n ITEMS';
+  }
+
+  @override
+  String get revTableTaken => 'The service was taken. Pick another one.';
+
+  @override
+  String revSeatFailed(String error) {
+    return 'Couldn\'t seat the service: $error';
+  }
+
+  @override
+  String get revCommitDineIn => 'In-house';
+
+  @override
+  String get revCommitDineInSub => 'Assign it to an empty service';
+
+  @override
+  String get revCommitTakeawaySub => 'Takeaway, unassigned';
+
+  @override
+  String zoneAdminSummary(int zones, int tables, int seats) {
+    String _temp0 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zones',
+      one: '1 zone',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables services',
+      one: '1 service',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      seats,
+      locale: localeName,
+      other: '$seats seats',
+      one: '1 seat',
+    );
+    return '$_temp0 · $_temp1 · $_temp2';
+  }
+
+  @override
+  String zoneAdminMoveTablesFirst(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Move $count services out before deleting this zone.',
+      one: 'Move 1 service out before deleting this zone.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get zoneAdminNoTablesHere => 'No services in this zone yet.';
+
+  @override
+  String zoneAdminTablesHere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count services are in this zone.',
+      one: '1 service is in this zone.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String mvtTitle(String table) {
+    return 'Move service $table';
+  }
+
+  @override
+  String mvtSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Pick a free service · $count guests',
+      one: 'Pick a free service · 1 guest',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mvtNoTargets => 'No free service to move to.';
+
+  @override
+  String mvtConfirmTitle(String table) {
+    return 'Move service $table?';
+  }
+
+  @override
+  String mvtConfirmOver(String table, int capacity, int pax) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pax,
+      locale: localeName,
+      other: '$pax guests are',
+      one: '1 guest is',
+    );
+    return 'Destination: service $table (seats $capacity). $_temp0 over capacity — go ahead?';
+  }
+
+  @override
+  String mvtConfirmBody(String table) {
+    return 'Every order and guest moves to service $table.';
+  }
+
+  @override
+  String mvtFailed(String error) {
+    return 'Couldn\'t move the service: $error';
+  }
+
+  @override
+  String get asgTitle => 'Assign to a service';
+
+  @override
+  String get asgSubtitle => 'Set the guests, then pick a free service';
+
+  @override
+  String get asgNoTargets => 'No free services.';
+
+  @override
+  String gstTableLabel(String table) {
+    return 'Service $table';
+  }
+
+  @override
+  String liaTableAt(String table, String time) {
+    return 'SERVICE $table · $time';
+  }
+
+  @override
+  String resNoTableForParty(int size) {
+    return 'No service in this zone seats $size or more.';
+  }
+
+  @override
+  String get resAlreadySeated => 'Another party is already at that service';
+
+  @override
+  String cshSummary(int running, int takeaway, int settled) {
+    String _temp0 = intl.Intl.pluralLogic(
+      running,
+      locale: localeName,
+      other: '$running bills',
+      one: '1 bill',
+    );
+    return '$_temp0 running · $takeaway without a service · $settled settled';
+  }
+
+  @override
+  String tblNoTablesInZone(String zone) {
+    return 'No services in $zone yet';
+  }
+
+  @override
+  String zonTablesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count services',
+      one: '1 service',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sntBodyNoPrep(String table) {
+    return 'Service $table\'s order is ready to run.';
+  }
+
+  @override
+  String sntBody(String table) {
+    return 'Service $table\'s order is live on the kitchen and bar displays.';
+  }
+
+  @override
+  String rtoTableNow(String table, String zone) {
+    return 'SERVICE $table · $zone · NOW';
+  }
+
+  @override
+  String get blcTableClosed => 'Service released';
+
+  @override
+  String get cshEmptyDetached => 'No released service is still unpaid';
+
+  @override
+  String get cshStatClosed => 'Service released';
+
+  @override
+  String zonAdminSub(int tables, int zones, int seats) {
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables services',
+      one: '1 service',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zones',
+      one: '1 zone',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      seats,
+      locale: localeName,
+      other: '$seats seats',
+      one: '1 seat',
+    );
+    return '$_temp0 · $_temp1 · $_temp2';
+  }
+
+  @override
+  String venueHubTablesZones(int tables, int zones) {
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables services',
+      one: '1 service',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zones',
+      one: '1 zone',
+    );
+    return '$_temp0 ($_temp1)';
+  }
+
+  @override
+  String get vrsWrongOrderDesc => 'Wrong service, double tap, wrong ring';
+
+  @override
+  String get sendQueueCorrupt =>
+      'The send queue was unreadable and could not be replayed. Any orders held in it were not sent — check the services still waiting.';
+
+  @override
+  String get sendFailVisitChanged =>
+      'Service has changed guests — the order was not attached';
+
+  @override
+  String get mvtTargetOccupied =>
+      'The destination service is already occupied.';
+
+  @override
+  String get mvtTableLocked => 'Another device is using this service.';
+
+  @override
+  String get mvtSourceEmpty => 'The source service is already empty.';
+
+  @override
+  String get liaServeDesc => 'Confirm picked up & delivered to the service';
+
+  @override
+  String meEndServerBodyLive(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n services are',
+      one: '1 service is',
+    );
+    return '$_temp0 still live. Signing out shuts the server down — every staff device disconnects and cannot reconnect until an admin signs in again.';
+  }
+
+  @override
+  String tableNamed(String label) {
+    return 'Service $label';
+  }
+
+  @override
+  String tblZoneAlarmCrit(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n services critical',
+      one: '1 service critical',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tblZoneAlarmWarn(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n services need attention',
+      one: '1 service needs attention',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String venueHubBadgeFloor(int tables, int zones) {
+    String _temp0 = intl.Intl.pluralLogic(
+      tables,
+      locale: localeName,
+      other: '$tables services',
+      one: '1 service',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      zones,
+      locale: localeName,
+      other: '$zones zones',
+      one: '1 zone',
+    );
+    return '$_temp0 · $_temp1';
+  }
+
+  @override
+  String get rcpSampleTable => 'Service 4 · Sample';
+
+  @override
+  String meAuditTable(String table) {
+    return 'Service $table';
+  }
+
+  @override
+  String resvSeatToTable(String action) {
+    return '$action at service:';
+  }
+
+  @override
+  String get resvZoneTableOptional => 'Zone & service (optional)';
+
+  @override
+  String get fltCounterRestartNote =>
+      'Switches reach the floor at the venue\'s next admin sign-in. The counter QR appears as soon as an admin opens the QR & services tab. If Pesan mandiri itself was only just switched on, the server needs a restart first.';
+
+  @override
+  String get memVisitNoTable => 'Unassigned';
+
+  @override
+  String get mrpColTable => 'Service';
 }

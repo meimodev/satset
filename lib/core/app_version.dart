@@ -12,18 +12,27 @@ import 'package:package_info_plus/package_info_plus.dart';
 /// said `1.0.0` for every release after 1.0.0.
 abstract final class AppVersion {
   static String _value = '';
+  static String _build = '';
 
   /// Empty until [load] has run. Empty **fails the gate open** — an
   /// unparseable version is never blocked — which is the right answer for the
   /// sliver of boot before the package is read.
   static String get value => _value;
 
+  /// The `versionCode` this build was installed as — CI overrides the pubspec
+  /// `+N` with a timestamp, so it identifies the build the way the semver
+  /// cannot. Shown on `/me`; nothing gates on it. Empty until [load].
+  static String get build => _build;
+
   static Future<void> load() async {
     try {
-      _value = (await PackageInfo.fromPlatform()).version.trim();
+      final info = await PackageInfo.fromPlatform();
+      _value = info.version.trim();
+      _build = info.buildNumber.trim();
     } catch (_) {
       // A platform that cannot answer leaves it empty rather than guessing.
       _value = '';
+      _build = '';
     }
   }
 }

@@ -658,6 +658,8 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           _bypassKdsSection(sc, can),
           const SizedBox(height: Sp.s3),
           _memberSplitSection(sc, can),
+          const SizedBox(height: Sp.s3),
+          _serviceTermSection(sc, can),
         ],
       ),
     );
@@ -706,6 +708,46 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
   ///
   /// Dead without the `members` module, because attribution with no membership
   /// to attribute to is a picker whose every route answers 404.
+  /// **[[Kata layanan]]** (ADR-0127). The only mode key that takes nothing
+  /// away and adds nothing: it swaps a noun. Unconfirmed on the way on for
+  /// exactly that reason — there is no mechanism to lose and no row to
+  /// rewrite, so the way back is the same tap.
+  Widget _serviceTermSection(SatColors sc, bool can) {
+    final on = _modules.contains(modeServiceTerm);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            SatToggle(
+              value: on,
+              semanticLabel: context.l10n.fltModeServiceTerm,
+              onChanged: can
+                  ? (v) => setState(
+                      () => _modules = v
+                          ? {..._modules, modeServiceTerm}
+                          : ({..._modules}..remove(modeServiceTerm)),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: Sp.s2),
+            Expanded(
+              child: Text(
+                context.l10n.fltModeServiceTerm,
+                style: SatType.bodyM(color: sc.textHi),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: Sp.s2),
+        Text(
+          context.l10n.fltModeServiceTermHint,
+          style: SatType.bodyS(color: sc.textLo),
+        ),
+      ],
+    );
+  }
+
   Widget _memberSplitSection(SatColors sc, bool can) {
     final holdsMembers = _modules.contains(moduleMembers);
     final on = _modules.contains(modeMemberSplit);

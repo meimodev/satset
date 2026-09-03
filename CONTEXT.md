@@ -1202,6 +1202,17 @@ The shape of a venue where whoever takes the order also makes it, so there is no
 
 _Avoid_: "bypass KDS" as user-facing copy; a `counterConfig` switch for this (a switch may not branch a writer); reading it through the fail-open module resolver; writing the born status as `served` (it costs a manager to void what a waiter mis-keyed); revoking `viewKds` instead of hiding it.
 
+### Kata layanan (service term)
+**ID · EN** — Layanan · Service (the spot); Biaya layanan · Service charge (the money). _Not_ "Layanan" for the charge any more — that word now belongs to the spot, in every venue. _Not_ "Aktivitas"/"Activity", and _not_ "Sesi"/"Session": the venue sells service. _Not_ a rename of [[Meja]] in the domain — the concept, the grid, the [[Table lock]] and [[Pindah meja (Move table)|the move]] are unchanged; only the word a person reads is.
+
+The shape of a venue that sells service rather than seats — a salon, a barbershop, a klinik — where the numbered spots on the floor are chairs or rooms. Held as the `serviceTerm` **mode key** in `addOns`, read through the same fail-closed resolver as [[Kedai (counter mode)|Kedai]] and [[Tanpa antrian persiapan]], and independent of both (ADR-0127).
+
+**The word is a locale, not a branch.** `Locale('id','SV')` / `Locale('en','SV')` resolve to `app_id_SV.arb` / `app_en_SV.arb`, which override the ~120 strings naming a table and inherit the other ~3900. One reader — `SatLocaleNotifier` — folds the key into the locale, and `MaterialApp`, the process-wide `satL10n`, the ESC/POS struk and the CSV exporters all follow with no code of their own.
+
+**It gates nothing and hides nothing.** Unlike every other mode key, no surface disappears and no writer changes: zones, capacity, locks and moves are all still there, still written, still legal. Unticking the key finds the venue exactly as it left it, because nothing but the words ever moved.
+
+_Avoid_: "Layanan" for the service charge (it is **Biaya layanan** now, in both modes); reading `serviceTerm` at a screen (that is a copy branch, and copy lives in the ARB); renaming venue-authored zone or table labels (those are the owner's rows); adding a "Meja" string to the template without its override — `arb_parity_test.dart` fails, because inheritance is silent.
+
 ### Buka kedai / Tutup kedai (venue day)
 **ID · EN** — Buka kedai · Open shop; Tutup kedai · Close shop. _Not_ "Buka/Tutup shift" — a [[Shift]] belongs to one person and there may be three of them in a day; this happens once, to the venue.
 

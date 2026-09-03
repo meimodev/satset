@@ -3,6 +3,7 @@ import 'package:satset/core/localization/audit_text.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/core/app_version.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/design/skin.dart';
@@ -408,7 +409,13 @@ class _MePhone extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-              child: _EndShiftButton(onPressed: onEndShift),
+              child: Column(
+                children: [
+                  _EndShiftButton(onPressed: onEndShift),
+                  const SizedBox(height: Sp.s2),
+                  const _VersionLine(),
+                ],
+              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
@@ -499,6 +506,8 @@ class _MeTablet extends StatelessWidget {
                       _Identity(m: m, big: true, showShiftLine: false),
                       const SizedBox(height: Sp.s3h),
                       _EndShiftButton(onPressed: onEndShift),
+                      const SizedBox(height: Sp.s2),
+                      const _VersionLine(),
                       const SizedBox(height: Sp.s3h),
                       _MyPendingCard(tableNames: tableNames),
                       _KpiGrid(m: m, columns: 4),
@@ -1019,6 +1028,24 @@ class _AuditRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Which build this is. Read from the installed package rather than a constant
+/// (see [AppVersion]) — a number kept in step with `pubspec.yaml` by hand is a
+/// number that says 1.0.0 forever. Empty on a platform that cannot answer, and
+/// the line is then absent rather than showing an empty bracket.
+class _VersionLine extends StatelessWidget {
+  const _VersionLine();
+
+  @override
+  Widget build(BuildContext context) {
+    if (AppVersion.value.isEmpty) return const SizedBox.shrink();
+    return Text(
+      context.l10n.meVersion(AppVersion.value, AppVersion.build),
+      textAlign: TextAlign.center,
+      style: SatType.monoS(color: context.sat.textDim),
     );
   }
 }

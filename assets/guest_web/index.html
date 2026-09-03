@@ -204,8 +204,8 @@ var CODES = {
   modifier_required: 'Ada pilihan wajib yang belum diisi.',
   modifier_invalid: 'Pilihan tidak sah.',
   already_decided: 'Pesanan sudah diproses kasir.',
-  session_expired: 'Sesi habis. Pindai ulang QR di meja.',
-  not_found: 'Meja tidak ditemukan. Pindai ulang QR.',
+  session_expired: 'Sesi habis. Pindai ulang QR.',
+  not_found: 'Kode tidak ditemukan. Pindai ulang QR.',
   out_of_stock: 'Bahan habis.',
   menu_changed: 'Menu diganti.',
   closed: 'Dapur sudah tutup.',
@@ -237,8 +237,9 @@ function boot(){
     el('venue').textContent = venue.venue;
     // Konter (ADR-0109): satu QR untuk seluruh kedai, tanpa meja. Pesanan
     // yang diterima jadi nota bawa pulang sendiri, jadi kata "Meja" salah.
+    // serviceTerm (ADR-0127): venue jasa menyebut mejanya "Layanan".
     el('tbl').textContent = venue.counter ? 'Pesan di konter'
-                                          : 'Meja ' + venue.tableLabel;
+      : (venue.serviceTerm ? 'Layanan ' : 'Meja ') + venue.tableLabel;
     el('bar').hidden = false;
     if (!sid()) return openSession();
   }).then(function(){
@@ -247,7 +248,7 @@ function boot(){
     poll = setInterval(refreshOrders, 5000);
   }).catch(function(){
     el('main').innerHTML = '<div class="empty"><p style="font-size:44px;margin:0">🔍</p>' +
-      '<p><b>Meja tidak ditemukan</b></p><p>Pindai ulang kode QR di meja Anda.</p></div>';
+      '<p><b>Kode tidak ditemukan</b></p><p>Pindai ulang kode QR Anda.</p></div>';
   });
 }
 

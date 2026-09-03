@@ -70,7 +70,10 @@ class _LocaleSheet extends ConsumerWidget {
                   _ => context.l10n.localeIndonesian,
                 },
                 code: l.languageCode.toUpperCase(),
-                selected: l == active,
+                // Language only: the venue's [[Kata layanan]] rides the
+                // region subtag (ADR-0127), and the picker offers the
+                // language half alone.
+                selected: l.languageCode == active.languageCode,
                 onTap: () {
                   ref.read(satLocaleProvider.notifier).select(l);
                   Navigator.of(context).pop();

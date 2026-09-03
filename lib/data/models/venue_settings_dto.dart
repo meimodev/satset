@@ -174,4 +174,13 @@ extension VenueSettingsModules on VenueSettingsDto {
       membersOn && (modules?.contains(modeMemberSplit) ?? false);
   bool get guestOrderingOn =>
       guestOrderingEnabled && hasModule(moduleSelfOrder);
+
+  /// Whether this venue calls a [[Meja]] a **Layanan · Service** (ADR-0127).
+  /// Fails **closed**, like the other mode keys, and ANDs with nothing — it is
+  /// vocabulary, not entitlement, so there is no owner switch beneath it.
+  ///
+  /// Read in exactly one place, `SatLocaleNotifier`: it picks the locale and
+  /// every string in the app follows. A screen that asks this for itself is a
+  /// review finding — that is a copy branch, and copy lives in the ARB.
+  bool get serviceTerm => modules?.contains(modeServiceTerm) ?? false;
 }

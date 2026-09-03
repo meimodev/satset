@@ -7,6 +7,7 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/members.dart';
+import 'package:satset/server/modules.dart';
 import 'package:satset/server/self_order.dart';
 import 'package:satset/server/ws_hub.dart';
 
@@ -182,6 +183,10 @@ Router guestRoutes(AppDatabase db, WsHub hub) {
       // venue-level fact, not a member one — it says a card exists here, never
       // that anyone holds it.
       'punch': (await memberConfig(db)).punchRunning,
+      // The venue's word for a table (ADR-0127). The guest page is outside the
+      // ARB pipeline, so it carries its own two words and picks with this —
+      // the same shape the counter branch beside it already uses.
+      'serviceTerm': venueHasMode(s, modeServiceTerm),
     });
   });
 
