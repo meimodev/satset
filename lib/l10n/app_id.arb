@@ -6932,6 +6932,8 @@
   "memActionAdd": "Tambah",
   "memBirthdayFilter": "Ulang tahun bulan ini",
   "memEmptyTitle": "Belum ada pelanggan",
+  "memLookupOfflineTitle": "Perlu koneksi ke host",
+  "memLookupOfflineBody": "Daftar pelanggan dibaca dari server, jadi pencarian dan pendaftaran menunggu sambungan. Pelanggan yang sudah menempel di tagihan ini tetap bisa dipakai.",
   "memEmptyBody": "Daftarkan tamu langganan lewat tombol Tambah, atau dari layar tagihan saat mereka bayar.",
   "memFilterEmptyTitle": "Tidak ada yang cocok",
   "memFilterEmptyBody": "Ubah pencarian atau lepas filternya untuk melihat semua pelanggan.",

@@ -11,6 +11,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/data/repositories/discount_presets_repository.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/self_order_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
@@ -162,6 +163,13 @@ class AppShell extends ConsumerWidget {
     // Nobody else holds it, and a drain trigger nobody holds never subscribes.
     // The shell outlives every tab, which is the lifetime a backlog needs.
     ref.watch(sendQueueDrainProvider);
+    // Warm the [[Preset diskon]] catalogue here rather than at the picker
+    // (ADR-0128). The repository is lazy, so the first watch used to be the
+    // cashier opening the sheet — and if that first watch happened on a dark
+    // handset the fetch failed and the list stayed empty until reconnect.
+    // Constructing it on the shell means the cache is painted and the fetch is
+    // spent while the venue still has a host.
+    ref.watch(discountPresetsRepositoryProvider);
     // A clean drain stays silent — the lines landing on the table say it. Only
     // a refusal, a stock drop or a stalled drain is worth a blocking overlay.
     ref.listen<SendReport?>(sendReportProvider, (_, r) {

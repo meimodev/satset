@@ -38,7 +38,10 @@ class _FakeApi extends ApiClient {
 void main() {
   /// A phone with the soft keyboard up: roughly half the screen left, which is
   /// what `viewInsets` reports to the sheet.
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    WsConnState conn = WsConnState.open,
+  }) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 3.0;
     tester.view.viewInsets = const FakeViewPadding(bottom: 1100);
@@ -51,6 +54,9 @@ void main() {
           wsClientProvider.overrideWith(
             (_) => WsClient(config: _config, storage: SecureStorageService()),
           ),
+          // The directory is read from the host, so the sheet asks whether it
+          // has one before it renders a list (ADR-0128). A till has.
+          wsConnStateProvider.overrideWith((_) => conn),
         ],
         child: MaterialApp(
           locale: const Locale('id'),
@@ -89,5 +95,25 @@ void main() {
         tester.view.physicalSize.height / tester.view.devicePixelRatio -
         tester.view.viewInsets.bottom / tester.view.devicePixelRatio;
     expect(box.bottom, lessThanOrEqualTo(safeBottom));
+  });
+
+  testWidgets('offline, the sheet says so instead of showing nobody', (
+    tester,
+  ) async {
+    await pump(tester, conn: WsConnState.closed);
+
+    final l10n = await AppL10n.delegate.load(const Locale('id'));
+    expect(find.text(l10n.memLookupOfflineTitle), findsOneWidget);
+    expect(
+      find.text('Pelanggan 0 · 081200001000'),
+      findsNothing,
+      reason: 'a directory read needs the host; a stale list is a lie',
+    );
+    expect(
+      find.text(l10n.cshMemberEnrol),
+      findsNothing,
+      reason: 'enrolling is a write, and it has nowhere to land',
+    );
+    expect(tester.takeException(), isNull);
   });
 }

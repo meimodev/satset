@@ -9,11 +9,14 @@
 /// decides whether the step-up was valid, it only collects the PIN.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/discount_dto.dart';
 import 'package:satset/data/repositories/discount_presets_repository.dart';
@@ -94,7 +97,22 @@ showDiscountSheet(
   // cashier is told the owner authored no preset when they did. Refetch before
   // believing it — one round-trip, and only on the empty path.
   if (presets.isEmpty) {
-    await repo.refresh();
+    // …and a refetch is a round trip, which on a slow link is several seconds
+    // of a Diskon button that appears to have done nothing. Hold the screen
+    // while it flies (ADR-0128).
+    final nav = Navigator.of(context, rootNavigator: true);
+    unawaited(
+      showSatDialog<void>(
+        context,
+        dismissible: false,
+        builder: (_) => const Center(child: SatSpinner(size: SatSpinnerSize.md)),
+      ),
+    );
+    try {
+      await repo.refresh();
+    } finally {
+      if (nav.canPop()) nav.pop();
+    }
     if (!context.mounted) return null;
     presets = repo.forScope(target.scope);
   }

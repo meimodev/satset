@@ -2799,6 +2799,8 @@
   "memActionAdd": "Add",
   "memBirthdayFilter": "Birthdays this month",
   "memEmptyTitle": "No members yet",
+  "memLookupOfflineTitle": "Needs the host",
+  "memLookupOfflineBody": "The member directory is read from the server, so search and enrolment wait for the connection. A member already attached to this bill still works.",
   "memEmptyBody": "Enrol a regular with the Add button, or from the bill screen while they pay.",
   "memFilterEmptyTitle": "Nothing matches",
   "memFilterEmptyBody": "Change the search or clear the filter to see every member.",

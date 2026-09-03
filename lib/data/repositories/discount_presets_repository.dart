@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +7,7 @@ import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/discount_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 
 /// The [[Preset diskon]] catalogue, cached on every paired device so the
@@ -21,14 +23,52 @@ final discountPresetsStatusProvider = StateProvider<AsyncValue<void>>(
 class DiscountPresetsRepository extends StateNotifier<List<DiscountPresetDto>> {
   DiscountPresetsRepository({required this.ref})
     : super(const <DiscountPresetDto>[]) {
+    // Synchronously: the picker can open on the same frame this is created.
+    _paintCache();
     Future.microtask(_bootstrap);
   }
 
   final Ref ref;
   StreamSubscription? _wsSub;
 
+  /// Paint the last catalogue this device heard, then fetch over it (ADR-0128).
+  ///
+  /// Without it the picker is empty on any cold boot away from the host — and
+  /// the picker opens mid-transaction, where "the venue has no promos" and
+  /// "this handset has not asked yet" look identical to a cashier.
+  void _paintCache() {
+    final raw = ref
+        .read(prefsServiceProvider)
+        .valueOrNull
+        ?.discountPresetsJson();
+    if (raw == null) return;
+    try {
+      _adopt(jsonDecode(raw), persist: false);
+    } catch (e) {
+      SatLog.repo('discountPresets cache decode fail $e');
+    }
+  }
+
+  void _persist() {
+    final prefs = ref.read(prefsServiceProvider).valueOrNull;
+    if (prefs == null) return;
+    unawaited(
+      prefs.setDiscountPresetsJson(
+        jsonEncode([for (final p in state) p.toJson()]),
+        fingerprint: ref.read(apiConfigProvider)?.trustedFingerprint,
+      ),
+    );
+  }
+
   Future<void> _bootstrap() async {
+    // Again, for the cold launch where prefs was still resolving in the
+    // constructor — `prefsServiceProvider` is a `FutureProvider`.
+    if (state.isEmpty) _paintCache();
     await refresh();
+    // The fetch is an await gap, and a container can be torn down inside it —
+    // a shell that unmounts while the first read is in flight. Subscribing
+    // through a disposed ref throws where nobody is listening.
+    if (!mounted) return;
     _wsSub = ref.read(wsClientProvider).events.listen((ev) {
       switch (ev.type) {
         // A preset was created, edited, or deleted — the payload is the whole
@@ -43,13 +83,14 @@ class DiscountPresetsRepository extends StateNotifier<List<DiscountPresetDto>> {
     });
   }
 
-  void _adopt(Object? raw) {
+  void _adopt(Object? raw, {bool persist = true}) {
     if (raw is! List) return;
     try {
       state = [
         for (final e in raw)
           DiscountPresetDto.fromJson((e as Map).cast<String, dynamic>()),
       ];
+      if (persist) _persist();
     } catch (e) {
       SatLog.repo('discountPresets decode fail $e');
     }
@@ -149,6 +190,7 @@ class DiscountPresetsRepository extends StateNotifier<List<DiscountPresetDto>> {
   Future<void> remove(String id) async {
     await ref.read(apiClientProvider).deleteJson('/venue/discount-presets/$id');
     state = state.where((p) => p.id != id).toList();
+    _persist();
   }
 
   @override

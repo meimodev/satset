@@ -27,6 +27,7 @@ import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_inline_error.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
@@ -215,7 +216,13 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
         Expanded(
           child: RefreshIndicator(
             onRefresh: ref.read(membersProvider.notifier).refresh,
-            child: rows.isEmpty && !state.loading
+            // A directory read is a round trip, and the filter chips fire one
+            // on every tap. Without this the list simply held the previous
+            // answer while the new one flew, which reads as a chip that did
+            // nothing (ADR-0128).
+            child: rows.isEmpty && state.loading
+                ? const Center(child: SatSpinner(size: SatSpinnerSize.md))
+                : rows.isEmpty && !state.loading
                 ? ListView(
                     children: [
                       Padding(

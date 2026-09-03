@@ -44,17 +44,47 @@ class PrefsService {
   /// clearable by force-quitting the app.
   static const _kReleaseGate = 'satset.release_gate';
 
-  /// The venue's **shape** as last mirrored — `modules` + `counterConfig`
-  /// (ADR-0115). Cached because every mode key fails *closed*, so a client
-  /// that cold-boots away from its host would otherwise render the restaurant
-  /// shape at a counter shop: a [[Floor]] `menuHome` hides, a KDS tab
-  /// [[Tanpa antrian persiapan]] removes. The venue's own answer, once heard,
-  /// outlives the connection that carried it.
+  /// The venue's settings as last mirrored, **whole** (ADR-0128).
   ///
-  /// Stored as JSON rather than two string lists because `modules: null`
+  /// Supersedes the two-field shape cache of ADR-0115. Every switch on the DTO
+  /// fails *closed* through its freezed default, so a client that cold-boots
+  /// away from its host does not merely render the wrong shape — it renders a
+  /// venue with membership off, guest ordering off and every threshold at the
+  /// factory number. The venue's own answer, once heard, outlives the
+  /// connection that carried it; stale beats absent, because absent is a lie
+  /// the operator cannot see.
+  ///
+  /// Stored as the wire JSON, for the reason [_kSendQueue] is: the DTO owns
+  /// its own shape and prefs is only the shelf it sits on. `modules: null`
   /// ("never mirrored", reads as entitled) and `modules: []` ("holds no
-  /// module") are different answers and a missing key must not collapse them.
+  /// module") stay different answers through it.
+  static const _kVenueSettings = 'satset.venue_settings';
+
+  /// The pre-ADR-0128 shape cache. **Read once, never written.** A device that
+  /// upgrades and cold-boots before it next reaches its host would otherwise
+  /// find [_kVenueSettings] empty and re-acquire the exact flicker ADR-0115
+  /// was written to remove.
   static const _kVenueShape = 'satset.venue_shape';
+
+  /// The server fingerprint the venue cache below was mirrored from
+  /// (ADR-0128, corrected).
+  ///
+  /// **The certificate is the venue's identity, not the address** (ADR-0080).
+  /// `relocateServer` rewrites the paired host whenever a DHCP lease turns
+  /// over, so keying the cache on host:port threw a venue's own settings away
+  /// on a router reboot — at the exact moment the device could not reach its
+  /// host and the cache was the only thing it had.
+  ///
+  /// Lives in prefs rather than beside the fingerprint in secure storage
+  /// because it is not a secret: it is a *label* saying which server these
+  /// blobs came from, and it has to be readable in the same breath as them.
+  static const _kVenueCacheFp = 'satset.venue_cache_fp';
+
+  /// The [[Preset diskon]] catalogue as last mirrored (ADR-0128). Cached for
+  /// the same reason the settings above are: the picker opens mid-transaction,
+  /// and a cashier settling on a dark handset needs the venue's own promos,
+  /// not an empty sheet.
+  static const _kDiscountPresets = 'satset.discount_presets';
 
   AppMode appMode() => appModeFromKey(_p.getString(_kMode));
   Future<void> setAppMode(AppMode m) async {
@@ -160,8 +190,18 @@ class PrefsService {
   ///
   /// Stored as an opaque key — resolving it to a palette is the UI layer's job,
   /// since `data/` must not import `ui/`.
-  /// The cached venue shape, or null when this device has never heard one.
-  ({List<String>? modules, List<String>? counterConfig})? venueShape() {
+  /// The cached venue settings JSON, or null when this device has never heard
+  /// any. Kept opaque — `VenueSettingsDto` owns the parse.
+  String? venueSettingsJson() => _p.getString(_kVenueSettings);
+
+  Future<void> setVenueSettingsJson(String v, {String? fingerprint}) async {
+    await _p.setString(_kVenueSettings, v);
+    await _stampVenueCache(fingerprint);
+  }
+
+  /// The pre-ADR-0128 shape cache, for the one boot after an upgrade where
+  /// [venueSettingsJson] is still empty. See [_kVenueShape].
+  ({List<String>? modules, List<String>? counterConfig})? legacyVenueShape() {
     final raw = _p.getString(_kVenueShape);
     if (raw == null) return null;
     try {
@@ -175,14 +215,35 @@ class PrefsService {
     }
   }
 
-  Future<void> setVenueShape(
-    List<String>? modules,
-    List<String>? counterConfig,
-  ) async {
-    await _p.setString(
-      _kVenueShape,
-      jsonEncode({'modules': modules, 'counterConfig': counterConfig}),
-    );
+  /// Raw JSON array of discount presets. Opaque here, like the send queue.
+  String? discountPresetsJson() => _p.getString(_kDiscountPresets);
+
+  Future<void> setDiscountPresetsJson(String v, {String? fingerprint}) async {
+    await _p.setString(_kDiscountPresets, v);
+    await _stampVenueCache(fingerprint);
+  }
+
+  /// Which server the cached blobs came from, or null on a device that cached
+  /// before this label existed — read as "unknown", never as "foreign", so an
+  /// upgrade does not throw away a cache it cannot vouch for.
+  String? venueCacheFingerprint() => _p.getString(_kVenueCacheFp);
+
+  Future<void> _stampVenueCache(String? fingerprint) async {
+    if (fingerprint == null || fingerprint.isEmpty) return;
+    await _p.setString(_kVenueCacheFp, fingerprint);
+  }
+
+  /// Forget everything this device mirrored from a venue.
+  ///
+  /// Called when the paired **certificate** changes, never when its address
+  /// does: venue A's `membersEnabled`, earn rate, debt limit and promos must
+  /// never paint venue B's first offline frame, while venue A's own server
+  /// moving to a new DHCP address is still venue A (ADR-0080, ADR-0128).
+  Future<void> clearVenueCache() async {
+    await _p.remove(_kVenueSettings);
+    await _p.remove(_kVenueShape);
+    await _p.remove(_kDiscountPresets);
+    await _p.remove(_kVenueCacheFp);
   }
 
   String? themeKey() => _p.getString(_kTheme);

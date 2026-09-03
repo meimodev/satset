@@ -8835,6 +8835,13 @@ class AppL10nEn extends AppL10n {
   String get memEmptyTitle => 'No members yet';
 
   @override
+  String get memLookupOfflineTitle => 'Needs the host';
+
+  @override
+  String get memLookupOfflineBody =>
+      'The member directory is read from the server, so search and enrolment wait for the connection. A member already attached to this bill still works.';
+
+  @override
   String get memEmptyBody =>
       'Enrol a regular with the Add button, or from the bill screen while they pay.';
 

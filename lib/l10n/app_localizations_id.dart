@@ -8724,6 +8724,13 @@ class AppL10nId extends AppL10n {
   String get memEmptyTitle => 'Belum ada pelanggan';
 
   @override
+  String get memLookupOfflineTitle => 'Perlu koneksi ke host';
+
+  @override
+  String get memLookupOfflineBody =>
+      'Daftar pelanggan dibaca dari server, jadi pencarian dan pendaftaran menunggu sambungan. Pelanggan yang sudah menempel di tagihan ini tetap bisa dipakai.';
+
+  @override
   String get memEmptyBody =>
       'Daftarkan tamu langganan lewat tombol Tambah, atau dari layar tagihan saat mereka bayar.';
 

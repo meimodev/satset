@@ -13867,6 +13867,18 @@ abstract class AppL10n {
   /// **'Belum ada pelanggan'**
   String get memEmptyTitle;
 
+  /// No description provided for @memLookupOfflineTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Perlu koneksi ke host'**
+  String get memLookupOfflineTitle;
+
+  /// No description provided for @memLookupOfflineBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftar pelanggan dibaca dari server, jadi pencarian dan pendaftaran menunggu sambungan. Pelanggan yang sudah menempel di tagihan ini tetap bisa dipakai.'**
+  String get memLookupOfflineBody;
+
   /// No description provided for @memEmptyBody.
   ///
   /// In id, this message translates to:

@@ -9,6 +9,7 @@ import 'package:satset/data/models/member_dto.dart';
 import 'package:satset/data/repositories/members_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -19,6 +20,7 @@ import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 import 'package:satset/ui/features/admin/members_screen.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 
@@ -315,7 +317,13 @@ class _LookupSheetState extends ConsumerState<MemberLookupSheet> {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final l10n = context.l10n;
-    final results = ref.watch(membersProvider).members;
+    final members = ref.watch(membersProvider);
+    final results = members.members;
+    // The directory is read from the host and nowhere else (ADR-0123 keeps the
+    // phone as the identity, so there is no mirrored copy to search). Say that
+    // rather than render an empty list — "not a member" and "no host" must
+    // never look the same to a cashier holding the guest's card.
+    final offline = ref.watch(wsConnStateProvider) != WsConnState.open;
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -351,7 +359,38 @@ class _LookupSheetState extends ConsumerState<MemberLookupSheet> {
             Flexible(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 280),
-                child: results.isEmpty
+                child: offline
+                    ? SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: Sp.s5,
+                            horizontal: Sp.s3,
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.cloud_off_rounded,
+                                color: sc.textDim,
+                              ),
+                              const SizedBox(height: Sp.s2),
+                              Text(
+                                l10n.memLookupOfflineTitle,
+                                textAlign: TextAlign.center,
+                                style: SatType.labelM(color: sc.textHi),
+                              ),
+                              const SizedBox(height: Sp.s1),
+                              Text(
+                                l10n.memLookupOfflineBody,
+                                textAlign: TextAlign.center,
+                                style: SatType.bodyS(color: sc.textLo),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : members.loading
+                    ? const Center(child: SatSpinner())
+                    : results.isEmpty
                     ? Center(
                         child: Text(
                           l10n.memEmptyTitle,
@@ -371,7 +410,7 @@ class _LookupSheetState extends ConsumerState<MemberLookupSheet> {
                       ),
               ),
             ),
-            if (!widget.lookupOnly) ...[
+            if (!widget.lookupOnly && !offline) ...[
               const SizedBox(height: Sp.s3),
               SatButton.primary(
                 label: l10n.cshMemberEnrol,
