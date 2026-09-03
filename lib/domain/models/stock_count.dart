@@ -73,6 +73,12 @@ class StockCount {
   final String id;
   final String? userId;
   final String? closedBy;
+
+  /// Who walked it and who filed it, by name. Frozen server-side at write, so
+  /// a document renders after a rename — the same reason a line carries the
+  /// bahan's [StockCountLine.name]. Null on a session opened before v70.
+  final String? userName;
+  final String? closedByName;
   final StockCountScopeKind scope;
 
   /// Whether the expected number was hidden while counting. Rendered on the
@@ -93,6 +99,8 @@ class StockCount {
     required this.id,
     this.userId,
     this.closedBy,
+    this.userName,
+    this.closedByName,
     required this.scope,
     required this.blind,
     this.note,
@@ -123,6 +131,8 @@ class StockCount {
       id: j['id'] as String,
       userId: j['userId'] as String?,
       closedBy: j['closedBy'] as String?,
+      userName: j['userName'] as String?,
+      closedByName: j['closedByName'] as String?,
       scope: stockCountScopeFrom(j['scope'] as String?),
       blind: j['blind'] as bool? ?? true,
       note: j['note'] as String?,

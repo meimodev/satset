@@ -274,11 +274,21 @@ class _CountTile extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: Sp.s1),
+          // Attribution on the tile, not only inside the document: the archive
+          // is scanned to find *whose* count is being argued about.
+          Text(
+            stockCountActorLine(l10n, count),
+            style: SatType.caption(color: sc.textLo),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
   }
 }
+
 
 class _OpnTag extends StatelessWidget {
   const _OpnTag({required this.text, this.muted = false});
@@ -360,6 +370,11 @@ class _Document extends ConsumerWidget {
                 count.blind ? l10n.opnTagBlind : l10n.opnTagSighted,
               ),
               style: SatType.bodyS(color: sc.textLo),
+            ),
+            const SizedBox(height: Sp.sHair),
+            Text(
+              stockCountActorLine(l10n, count),
+              style: SatType.bodyS(color: sc.textMd),
             ),
             const SizedBox(height: Sp.s4),
             Row(

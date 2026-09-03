@@ -224,6 +224,21 @@ String stockCountScopeLabel(AppL10n l10n, StockCountScopeKind s) => switch (s) {
   StockCountScopeKind.partial => l10n.stkOpnameScopePartial,
 };
 
+/// Who walked an opname, and who filed it when that was somebody else.
+///
+/// One composer, read by the archive tile, the document header and both
+/// exporters — a second copy is how the tile and the printed sheet come to
+/// name different people for the same session.
+///
+/// A session with no attribution at all renders "not recorded" rather than
+/// omitting the line: an unattributed stocktake is a finding, not a blank.
+String stockCountActorLine(AppL10n l10n, StockCount c) {
+  final counted = l10n.opnCountedBy(c.userName ?? l10n.opnActorUnknown);
+  final closer = c.closedByName;
+  if (closer == null || closer == c.userName) return counted;
+  return '$counted · ${l10n.opnClosedBy(closer)}';
+}
+
 /// Which movement of the petty cash box a row is.
 String cashEntryKindLabel(AppL10n l10n, CashEntryKind k) => switch (k) {
   CashEntryKind.topUp => l10n.cashKindTopUp,

@@ -6121,6 +6121,30 @@ abstract class AppL10n {
   /// **'{scope} · {blind}'**
   String opnDocSub(Object scope, Object blind);
 
+  /// No description provided for @opnCountedBy.
+  ///
+  /// In id, this message translates to:
+  /// **'Dihitung oleh {name}'**
+  String opnCountedBy(Object name);
+
+  /// No description provided for @opnClosedBy.
+  ///
+  /// In id, this message translates to:
+  /// **'Ditutup oleh {name}'**
+  String opnClosedBy(Object name);
+
+  /// No description provided for @opnCsvActor.
+  ///
+  /// In id, this message translates to:
+  /// **'Petugas'**
+  String get opnCsvActor;
+
+  /// No description provided for @opnActorUnknown.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak tercatat'**
+  String get opnActorUnknown;
+
   /// No description provided for @opnKpiLines.
   ///
   /// In id, this message translates to:

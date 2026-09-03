@@ -3780,6 +3780,22 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String opnCountedBy(Object name) {
+    return 'Dihitung oleh $name';
+  }
+
+  @override
+  String opnClosedBy(Object name) {
+    return 'Ditutup oleh $name';
+  }
+
+  @override
+  String get opnCsvActor => 'Petugas';
+
+  @override
+  String get opnActorUnknown => 'Tidak tercatat';
+
+  @override
   String get opnKpiLines => 'Baris';
 
   @override

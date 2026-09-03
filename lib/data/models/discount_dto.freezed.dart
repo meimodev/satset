@@ -15,9 +15,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$DiscountPresetDto {
 
- String get id; String get name;/// `order` (whole receipt) | `line` (one bill line). The picker only offers
-/// presets valid for what the cashier tapped — this is what stops a fixed
-/// whole-bill amount landing on a single cheap line.
+ String get id; String get name;/// `bill` (whole tab) | `order` (one receipt) | `line` (one bill line).
+/// The picker only offers presets valid for what the cashier tapped — this
+/// is what stops a fixed whole-bill amount landing on a single cheap line.
  String get scope;/// `percent` (value in basis points) | `fixed` (value in rupiah).
  String get kind; int get value; bool get active; int get sortOrder;
 /// Create a copy of DiscountPresetDto
@@ -224,9 +224,9 @@ class _DiscountPresetDto implements DiscountPresetDto {
 
 @override final  String id;
 @override@JsonKey() final  String name;
-/// `order` (whole receipt) | `line` (one bill line). The picker only offers
-/// presets valid for what the cashier tapped — this is what stops a fixed
-/// whole-bill amount landing on a single cheap line.
+/// `bill` (whole tab) | `order` (one receipt) | `line` (one bill line).
+/// The picker only offers presets valid for what the cashier tapped — this
+/// is what stops a fixed whole-bill amount landing on a single cheap line.
 @override@JsonKey() final  String scope;
 /// `percent` (value in basis points) | `fixed` (value in rupiah).
 @override@JsonKey() final  String kind;

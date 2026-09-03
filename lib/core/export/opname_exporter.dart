@@ -62,6 +62,7 @@ String buildOpnameCsv(AppL10n l, StockCount c) {
     csvRow([l.opnCsvStarted, _stampOf(c.startedAt)]),
     csvRow([l.opnCsvClosed, _stampOf(c.closedAt)]),
     csvRow([l.opnCsvMode, _scopeLine(l, c)]),
+    csvRow([l.opnCsvActor, stockCountActorLine(l, c)]),
     csvRow([l.opnKpiLines, '${c.lines.length}']),
     csvRow([l.opnKpiVariance, formatIDR(c.varianceValue)]),
     if (c.note != null && c.note!.isNotEmpty) csvRow([l.opnCsvNote, c.note]),
@@ -104,6 +105,9 @@ Future<Uint8List> buildOpnamePdf(
             l.opnMetaClosed(_stampOf(c.closedAt)),
             l.opnMetaTally(c.lines.length, exact),
             l.opnMetaVariance(formatIDR(c.varianceValue)),
+            // The filing copy names its counter, or it is a sheet of numbers
+            // nobody signed.
+            stockCountActorLine(l, c),
           ],
         ),
         pw.SizedBox(height: 18),

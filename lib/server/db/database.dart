@@ -79,7 +79,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 69;
+  int get schemaVersion => 70;
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -1420,6 +1420,17 @@ class AppDatabase extends _$AppDatabase {
         await customStatement('DROP INDEX IF EXISTS idx_discounts_line_uniq');
         await _createDiscountIndexes();
         await _createMemberIndexes();
+      }
+      if (from < 70 && to >= 70) {
+        // Attribution frozen onto the opname header. No backfill: a session
+        // closed before v70 keeps a null name and is decorated by the live
+        // join on read, exactly as a pre-v43 audit row is.
+        await _safeAddColumnOn('stock_counts', 'user_name', type: 'TEXT NULL');
+        await _safeAddColumnOn(
+          'stock_counts',
+          'closed_by_name',
+          type: 'TEXT NULL',
+        );
       }
     },
     onCreate: (m) async {

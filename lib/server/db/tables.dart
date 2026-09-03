@@ -1285,6 +1285,13 @@ class StockCounts extends Table {
   TextColumn get userId => text().nullable()();
   TextColumn get closedBy => text().nullable()();
 
+  /// Their names, **frozen at write** — same rule as `audit_entries.actorName`
+  /// and `stock_count_lines.name`: a filing copy printed a year later must name
+  /// the person who counted, not whoever holds that user row today. Null on a
+  /// session opened before v70; the read path fills those with a live join.
+  TextColumn get userName => text().nullable()();
+  TextColumn get closedByName => text().nullable()();
+
   /// `full | partial` — whether this session claims to have seen *every* active
   /// [Ingredients] row. Without the claim, "did we count everything in March?"
   /// has no answer.

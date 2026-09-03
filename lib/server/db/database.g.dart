@@ -23993,6 +23993,28 @@ class $StockCountsTable extends StockCounts
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _userNameMeta = const VerificationMeta(
+    'userName',
+  );
+  @override
+  late final GeneratedColumn<String> userName = GeneratedColumn<String>(
+    'user_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _closedByNameMeta = const VerificationMeta(
+    'closedByName',
+  );
+  @override
+  late final GeneratedColumn<String> closedByName = GeneratedColumn<String>(
+    'closed_by_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _scopeMeta = const VerificationMeta('scope');
   @override
   late final GeneratedColumn<String> scope = GeneratedColumn<String>(
@@ -24052,6 +24074,8 @@ class $StockCountsTable extends StockCounts
     id,
     userId,
     closedBy,
+    userName,
+    closedByName,
     scope,
     blind,
     note,
@@ -24085,6 +24109,21 @@ class $StockCountsTable extends StockCounts
       context.handle(
         _closedByMeta,
         closedBy.isAcceptableOrUnknown(data['closed_by']!, _closedByMeta),
+      );
+    }
+    if (data.containsKey('user_name')) {
+      context.handle(
+        _userNameMeta,
+        userName.isAcceptableOrUnknown(data['user_name']!, _userNameMeta),
+      );
+    }
+    if (data.containsKey('closed_by_name')) {
+      context.handle(
+        _closedByNameMeta,
+        closedByName.isAcceptableOrUnknown(
+          data['closed_by_name']!,
+          _closedByNameMeta,
+        ),
       );
     }
     if (data.containsKey('scope')) {
@@ -24140,6 +24179,14 @@ class $StockCountsTable extends StockCounts
         DriftSqlType.string,
         data['${effectivePrefix}closed_by'],
       ),
+      userName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_name'],
+      ),
+      closedByName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}closed_by_name'],
+      ),
       scope: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}scope'],
@@ -24176,6 +24223,13 @@ class StockCountRow extends DataClass implements Insertable<StockCountRow> {
   final String? userId;
   final String? closedBy;
 
+  /// Their names, **frozen at write** — same rule as `audit_entries.actorName`
+  /// and `stock_count_lines.name`: a filing copy printed a year later must name
+  /// the person who counted, not whoever holds that user row today. Null on a
+  /// session opened before v70; the read path fills those with a live join.
+  final String? userName;
+  final String? closedByName;
+
   /// `full | partial` — whether this session claims to have seen *every* active
   /// [Ingredients] row. Without the claim, "did we count everything in March?"
   /// has no answer.
@@ -24195,6 +24249,8 @@ class StockCountRow extends DataClass implements Insertable<StockCountRow> {
     required this.id,
     this.userId,
     this.closedBy,
+    this.userName,
+    this.closedByName,
     required this.scope,
     required this.blind,
     this.note,
@@ -24210,6 +24266,12 @@ class StockCountRow extends DataClass implements Insertable<StockCountRow> {
     }
     if (!nullToAbsent || closedBy != null) {
       map['closed_by'] = Variable<String>(closedBy);
+    }
+    if (!nullToAbsent || userName != null) {
+      map['user_name'] = Variable<String>(userName);
+    }
+    if (!nullToAbsent || closedByName != null) {
+      map['closed_by_name'] = Variable<String>(closedByName);
     }
     map['scope'] = Variable<String>(scope);
     map['blind'] = Variable<bool>(blind);
@@ -24232,6 +24294,12 @@ class StockCountRow extends DataClass implements Insertable<StockCountRow> {
       closedBy: closedBy == null && nullToAbsent
           ? const Value.absent()
           : Value(closedBy),
+      userName: userName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userName),
+      closedByName: closedByName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(closedByName),
       scope: Value(scope),
       blind: Value(blind),
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
@@ -24251,6 +24319,8 @@ class StockCountRow extends DataClass implements Insertable<StockCountRow> {
       id: serializer.fromJson<String>(json['id']),
       userId: serializer.fromJson<String?>(json['userId']),
       closedBy: serializer.fromJson<String?>(json['closedBy']),
+      userName: serializer.fromJson<String?>(json['userName']),
+      closedByName: serializer.fromJson<String?>(json['closedByName']),
       scope: serializer.fromJson<String>(json['scope']),
       blind: serializer.fromJson<bool>(json['blind']),
       note: serializer.fromJson<String?>(json['note']),
@@ -24265,6 +24335,8 @@ class StockCountRow extends DataClass implements Insertable<StockCountRow> {
       'id': serializer.toJson<String>(id),
       'userId': serializer.toJson<String?>(userId),
       'closedBy': serializer.toJson<String?>(closedBy),
+      'userName': serializer.toJson<String?>(userName),
+      'closedByName': serializer.toJson<String?>(closedByName),
       'scope': serializer.toJson<String>(scope),
       'blind': serializer.toJson<bool>(blind),
       'note': serializer.toJson<String?>(note),
@@ -24277,6 +24349,8 @@ class StockCountRow extends DataClass implements Insertable<StockCountRow> {
     String? id,
     Value<String?> userId = const Value.absent(),
     Value<String?> closedBy = const Value.absent(),
+    Value<String?> userName = const Value.absent(),
+    Value<String?> closedByName = const Value.absent(),
     String? scope,
     bool? blind,
     Value<String?> note = const Value.absent(),
@@ -24286,6 +24360,8 @@ class StockCountRow extends DataClass implements Insertable<StockCountRow> {
     id: id ?? this.id,
     userId: userId.present ? userId.value : this.userId,
     closedBy: closedBy.present ? closedBy.value : this.closedBy,
+    userName: userName.present ? userName.value : this.userName,
+    closedByName: closedByName.present ? closedByName.value : this.closedByName,
     scope: scope ?? this.scope,
     blind: blind ?? this.blind,
     note: note.present ? note.value : this.note,
@@ -24297,6 +24373,10 @@ class StockCountRow extends DataClass implements Insertable<StockCountRow> {
       id: data.id.present ? data.id.value : this.id,
       userId: data.userId.present ? data.userId.value : this.userId,
       closedBy: data.closedBy.present ? data.closedBy.value : this.closedBy,
+      userName: data.userName.present ? data.userName.value : this.userName,
+      closedByName: data.closedByName.present
+          ? data.closedByName.value
+          : this.closedByName,
       scope: data.scope.present ? data.scope.value : this.scope,
       blind: data.blind.present ? data.blind.value : this.blind,
       note: data.note.present ? data.note.value : this.note,
@@ -24311,6 +24391,8 @@ class StockCountRow extends DataClass implements Insertable<StockCountRow> {
           ..write('id: $id, ')
           ..write('userId: $userId, ')
           ..write('closedBy: $closedBy, ')
+          ..write('userName: $userName, ')
+          ..write('closedByName: $closedByName, ')
           ..write('scope: $scope, ')
           ..write('blind: $blind, ')
           ..write('note: $note, ')
@@ -24325,6 +24407,8 @@ class StockCountRow extends DataClass implements Insertable<StockCountRow> {
     id,
     userId,
     closedBy,
+    userName,
+    closedByName,
     scope,
     blind,
     note,
@@ -24338,6 +24422,8 @@ class StockCountRow extends DataClass implements Insertable<StockCountRow> {
           other.id == this.id &&
           other.userId == this.userId &&
           other.closedBy == this.closedBy &&
+          other.userName == this.userName &&
+          other.closedByName == this.closedByName &&
           other.scope == this.scope &&
           other.blind == this.blind &&
           other.note == this.note &&
@@ -24349,6 +24435,8 @@ class StockCountsCompanion extends UpdateCompanion<StockCountRow> {
   final Value<String> id;
   final Value<String?> userId;
   final Value<String?> closedBy;
+  final Value<String?> userName;
+  final Value<String?> closedByName;
   final Value<String> scope;
   final Value<bool> blind;
   final Value<String?> note;
@@ -24359,6 +24447,8 @@ class StockCountsCompanion extends UpdateCompanion<StockCountRow> {
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
     this.closedBy = const Value.absent(),
+    this.userName = const Value.absent(),
+    this.closedByName = const Value.absent(),
     this.scope = const Value.absent(),
     this.blind = const Value.absent(),
     this.note = const Value.absent(),
@@ -24370,6 +24460,8 @@ class StockCountsCompanion extends UpdateCompanion<StockCountRow> {
     required String id,
     this.userId = const Value.absent(),
     this.closedBy = const Value.absent(),
+    this.userName = const Value.absent(),
+    this.closedByName = const Value.absent(),
     this.scope = const Value.absent(),
     this.blind = const Value.absent(),
     this.note = const Value.absent(),
@@ -24382,6 +24474,8 @@ class StockCountsCompanion extends UpdateCompanion<StockCountRow> {
     Expression<String>? id,
     Expression<String>? userId,
     Expression<String>? closedBy,
+    Expression<String>? userName,
+    Expression<String>? closedByName,
     Expression<String>? scope,
     Expression<bool>? blind,
     Expression<String>? note,
@@ -24393,6 +24487,8 @@ class StockCountsCompanion extends UpdateCompanion<StockCountRow> {
       if (id != null) 'id': id,
       if (userId != null) 'user_id': userId,
       if (closedBy != null) 'closed_by': closedBy,
+      if (userName != null) 'user_name': userName,
+      if (closedByName != null) 'closed_by_name': closedByName,
       if (scope != null) 'scope': scope,
       if (blind != null) 'blind': blind,
       if (note != null) 'note': note,
@@ -24406,6 +24502,8 @@ class StockCountsCompanion extends UpdateCompanion<StockCountRow> {
     Value<String>? id,
     Value<String?>? userId,
     Value<String?>? closedBy,
+    Value<String?>? userName,
+    Value<String?>? closedByName,
     Value<String>? scope,
     Value<bool>? blind,
     Value<String?>? note,
@@ -24417,6 +24515,8 @@ class StockCountsCompanion extends UpdateCompanion<StockCountRow> {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       closedBy: closedBy ?? this.closedBy,
+      userName: userName ?? this.userName,
+      closedByName: closedByName ?? this.closedByName,
       scope: scope ?? this.scope,
       blind: blind ?? this.blind,
       note: note ?? this.note,
@@ -24437,6 +24537,12 @@ class StockCountsCompanion extends UpdateCompanion<StockCountRow> {
     }
     if (closedBy.present) {
       map['closed_by'] = Variable<String>(closedBy.value);
+    }
+    if (userName.present) {
+      map['user_name'] = Variable<String>(userName.value);
+    }
+    if (closedByName.present) {
+      map['closed_by_name'] = Variable<String>(closedByName.value);
     }
     if (scope.present) {
       map['scope'] = Variable<String>(scope.value);
@@ -24465,6 +24571,8 @@ class StockCountsCompanion extends UpdateCompanion<StockCountRow> {
           ..write('id: $id, ')
           ..write('userId: $userId, ')
           ..write('closedBy: $closedBy, ')
+          ..write('userName: $userName, ')
+          ..write('closedByName: $closedByName, ')
           ..write('scope: $scope, ')
           ..write('blind: $blind, ')
           ..write('note: $note, ')
@@ -41685,6 +41793,8 @@ typedef $$StockCountsTableCreateCompanionBuilder =
       required String id,
       Value<String?> userId,
       Value<String?> closedBy,
+      Value<String?> userName,
+      Value<String?> closedByName,
       Value<String> scope,
       Value<bool> blind,
       Value<String?> note,
@@ -41697,6 +41807,8 @@ typedef $$StockCountsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String?> userId,
       Value<String?> closedBy,
+      Value<String?> userName,
+      Value<String?> closedByName,
       Value<String> scope,
       Value<bool> blind,
       Value<String?> note,
@@ -41726,6 +41838,16 @@ class $$StockCountsTableFilterComposer
 
   ColumnFilters<String> get closedBy => $composableBuilder(
     column: $table.closedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userName => $composableBuilder(
+    column: $table.userName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get closedByName => $composableBuilder(
+    column: $table.closedByName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -41779,6 +41901,16 @@ class $$StockCountsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get userName => $composableBuilder(
+    column: $table.userName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get closedByName => $composableBuilder(
+    column: $table.closedByName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get scope => $composableBuilder(
     column: $table.scope,
     builder: (column) => ColumnOrderings(column),
@@ -41822,6 +41954,14 @@ class $$StockCountsTableAnnotationComposer
 
   GeneratedColumn<String> get closedBy =>
       $composableBuilder(column: $table.closedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get userName =>
+      $composableBuilder(column: $table.userName, builder: (column) => column);
+
+  GeneratedColumn<String> get closedByName => $composableBuilder(
+    column: $table.closedByName,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get scope =>
       $composableBuilder(column: $table.scope, builder: (column) => column);
@@ -41873,6 +42013,8 @@ class $$StockCountsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String?> userId = const Value.absent(),
                 Value<String?> closedBy = const Value.absent(),
+                Value<String?> userName = const Value.absent(),
+                Value<String?> closedByName = const Value.absent(),
                 Value<String> scope = const Value.absent(),
                 Value<bool> blind = const Value.absent(),
                 Value<String?> note = const Value.absent(),
@@ -41883,6 +42025,8 @@ class $$StockCountsTableTableManager
                 id: id,
                 userId: userId,
                 closedBy: closedBy,
+                userName: userName,
+                closedByName: closedByName,
                 scope: scope,
                 blind: blind,
                 note: note,
@@ -41895,6 +42039,8 @@ class $$StockCountsTableTableManager
                 required String id,
                 Value<String?> userId = const Value.absent(),
                 Value<String?> closedBy = const Value.absent(),
+                Value<String?> userName = const Value.absent(),
+                Value<String?> closedByName = const Value.absent(),
                 Value<String> scope = const Value.absent(),
                 Value<bool> blind = const Value.absent(),
                 Value<String?> note = const Value.absent(),
@@ -41905,6 +42051,8 @@ class $$StockCountsTableTableManager
                 id: id,
                 userId: userId,
                 closedBy: closedBy,
+                userName: userName,
+                closedByName: closedByName,
                 scope: scope,
                 blind: blind,
                 note: note,

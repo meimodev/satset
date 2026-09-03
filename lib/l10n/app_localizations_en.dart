@@ -3814,6 +3814,22 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String opnCountedBy(Object name) {
+    return 'Counted by $name';
+  }
+
+  @override
+  String opnClosedBy(Object name) {
+    return 'Filed by $name';
+  }
+
+  @override
+  String get opnCsvActor => 'Counted by';
+
+  @override
+  String get opnActorUnknown => 'Not recorded';
+
+  @override
   String get opnKpiLines => 'Lines';
 
   @override

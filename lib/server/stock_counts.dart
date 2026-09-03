@@ -48,12 +48,16 @@ Future<String> openCount(
   String? idPrefix,
 }) async {
   final id = '${idPrefix ?? ''}${_uuid.v4()}';
+  // Frozen now, not resolved on read: a document printed a year later must
+  // name whoever walked the pantry, even after a rename or a staff delete.
+  final opener = await resolveActor(db, userId);
   await db
       .into(db.stockCounts)
       .insert(
         StockCountsCompanion.insert(
           id: id,
           userId: Value(userId),
+          userName: Value(opener?.name),
           scope: Value(scope.name),
           blind: Value(blind),
           note: Value(note),
@@ -214,10 +218,18 @@ Future<CloseCountResult?> closeCount(
       );
     }
 
+    final closer = closedBy ?? session.userId;
+    // Falls back to the name frozen at open, for the case the closer *is* the
+    // opener and that user row has since gone.
+    final closerName =
+        (await resolveActor(db, closer))?.name ??
+        (closer == session.userId ? session.userName : null);
+
     await (db.update(db.stockCounts)..where((c) => c.id.equals(countId))).write(
       StockCountsCompanion(
         closedAt: Value(when),
-        closedBy: Value(closedBy ?? session.userId),
+        closedBy: Value(closer),
+        closedByName: Value(closerName),
       ),
     );
 
@@ -247,6 +259,20 @@ Future<CloseCountResult?> closeCount(
 }
 
 // ------------------------------------------------------------------- reads
+
+/// Live names for the ids on pre-v70 headers. Read-path only, and only ever a
+/// *fallback* — see [countRowToJson].
+Future<Map<String, String>> staffNamesFor(
+  AppDatabase db,
+  Iterable<String?> ids,
+) async {
+  final wanted = ids.whereType<String>().toSet();
+  if (wanted.isEmpty) return const {};
+  final rows = await (db.select(
+    db.users,
+  )..where((u) => u.id.isIn(wanted))).get();
+  return {for (final u in rows) u.id: u.name};
+}
 
 Future<StockCountRow?> countById(AppDatabase db, String id) => (db.select(
   db.stockCounts,
@@ -294,15 +320,21 @@ enum StockCountScope { full, partial }
 StockCountScope stockCountScopeFromKey(String? key) => StockCountScope.values
     .firstWhere((s) => s.name == key, orElse: () => StockCountScope.partial);
 
+/// [staff] fills in for a session opened or closed before v70, which carries
+/// no frozen name — the same job `fallbackName` does for a pre-v43 audit row.
+/// A frozen name always wins; this never overrides one.
 Map<String, dynamic> countRowToJson(
   StockCountRow c, {
   List<StockCountLineRow>? lines,
   Map<String, String> names = const {},
   Map<String, String> units = const {},
+  Map<String, String> staff = const {},
 }) => {
   'id': c.id,
   'userId': c.userId,
   'closedBy': c.closedBy,
+  'userName': c.userName ?? staff[c.userId],
+  'closedByName': c.closedByName ?? staff[c.closedBy],
   'scope': c.scope,
   'blind': c.blind,
   'note': c.note,

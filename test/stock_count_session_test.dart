@@ -207,6 +207,75 @@ void main() {
     expect(await countLines(db, countId), hasLength(1));
   });
 
+  test('attribution is frozen at write, not resolved on read', () async {
+    Future<void> staff(String id, String name) => db
+        .into(db.users)
+        .insertOnConflictUpdate(
+          UsersCompanion.insert(
+            id: id,
+            name: name,
+            initials: name.substring(0, 1),
+            roleId: 'role-admin',
+            pinHash: 'x',
+          ),
+        );
+
+    await staff('u-budi', 'Budi');
+    await staff('u-sari', 'Sari');
+
+    final id = await openCount(db, userId: 'u-budi');
+    await recordCountLine(
+      db,
+      countId: id,
+      ingredientId: 'beras',
+      counted: StockUnit.kg.toBase(9),
+    );
+    await closeCount(db, countId: id, closedBy: 'u-sari');
+
+    // The whole point: the archive must not follow a rename, and must survive
+    // the counter leaving the venue.
+    await staff('u-budi', 'Budi Yang Lain');
+    await (db.delete(db.users)..where((u) => u.id.equals('u-sari'))).go();
+
+    final row = (await countById(db, id))!;
+    expect(row.userName, 'Budi');
+    expect(row.closedByName, 'Sari');
+
+    final json = countRowToJson(
+      row,
+      staff: await staffNamesFor(db, [row.userId, row.closedBy]),
+    );
+    // A frozen name always wins over the live one.
+    expect(json['userName'], 'Budi');
+    expect(json['closedByName'], 'Sari');
+  });
+
+  test('a pre-v70 session with no frozen name falls back to the live one', () async {
+    await db
+        .into(db.users)
+        .insert(
+          UsersCompanion.insert(
+            id: 'u-old',
+            name: 'Wayan',
+            initials: 'W',
+            roleId: 'role-admin',
+            pinHash: 'x',
+          ),
+        );
+    final id = await openCount(db, userId: 'u-old');
+    // Blank the snapshot, which is what an upgraded row looks like.
+    await (db.update(db.stockCounts)..where((c) => c.id.equals(id))).write(
+      const StockCountsCompanion(userName: Value(null)),
+    );
+
+    final row = (await countById(db, id))!;
+    final json = countRowToJson(
+      row,
+      staff: await staffNamesFor(db, [row.userId, row.closedBy]),
+    );
+    expect(json['userName'], 'Wayan');
+  });
+
   test('closeCount opens its own transaction rather than assuming one', () {
     // The doc comment used to say "assumes it is called inside a
     // db.transaction", which put a guard's correctness in four call sites.

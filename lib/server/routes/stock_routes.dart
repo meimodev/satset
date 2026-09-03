@@ -312,16 +312,30 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     );
     // The list carries each session's totals, because a list of opnames with
     // no variance figures is a list of dates.
+    final open = await openCountSession(db);
+    // One lookup for the whole page, and only for the pre-v70 headers that
+    // carry no frozen name.
+    final staff = await staffNamesFor(db, [
+      for (final c in [...rows, ?open]) ...[
+        c.userId,
+        c.closedBy,
+      ],
+    ]);
     final counts = <Map<String, dynamic>>[];
     for (final c in rows) {
-      counts.add(countRowToJson(c, lines: await countLines(db, c.id)));
+      counts.add(
+        countRowToJson(c, lines: await countLines(db, c.id), staff: staff),
+      );
     }
-    final open = await openCountSession(db);
     return _json({
       'counts': counts,
       'open': open == null
           ? null
-          : countRowToJson(open, lines: await countLines(db, open.id)),
+          : countRowToJson(
+              open,
+              lines: await countLines(db, open.id),
+              staff: staff,
+            ),
     });
   });
 
@@ -344,6 +358,7 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         lines: lines,
         names: {for (final i in ings) i.id: i.name},
         units: {for (final i in ings) i.id: i.unit},
+        staff: await staffNamesFor(db, [row.userId, row.closedBy]),
       ),
     );
   });
@@ -454,7 +469,11 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     await broadcastIfFlipped();
     final row = await countById(db, id);
     return _json({
-      ...countRowToJson(row!, lines: await countLines(db, id)),
+      ...countRowToJson(
+        row!,
+        lines: await countLines(db, id),
+        staff: await staffNamesFor(db, [row.userId, row.closedBy]),
+      ),
       'movements': result.movements,
       'deltas': result.deltas,
     });
