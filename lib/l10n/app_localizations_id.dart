@@ -8444,7 +8444,7 @@ class AppL10nId extends AppL10n {
 
   @override
   String get fltModeMemberSplitHint =>
-      'Tagihan yang dipisah bisa diberi pelanggan per struk, jadi tiap anggota dapat poin dan diskonnya sendiri.';
+      'Tagihan yang dipisah bisa diberi pelanggan per struk, jadi tiap pelanggan dapat poin dan diskonnya sendiri.';
 
   @override
   String get fltModeMemberSplitNeedsMembers =>
@@ -9076,7 +9076,7 @@ class AppL10nId extends AppL10n {
       'Berapa porsi dibeli sebelum yang berikutnya gratis.';
 
   @override
-  String get vstMembersPreset => 'Diskon anggota';
+  String get vstMembersPreset => 'Diskon pelanggan';
 
   @override
   String get vstMembersPresetNone => 'Tanpa diskon tetap';
@@ -9360,7 +9360,7 @@ class AppL10nId extends AppL10n {
   }
 
   @override
-  String get mrpTitle => 'Laporan anggota';
+  String get mrpTitle => 'Laporan pelanggan';
 
   @override
   String get mrpSub => 'Riwayat belanja pelanggan terdaftar';
@@ -9374,7 +9374,7 @@ class AppL10nId extends AppL10n {
 
   @override
   String mrpActiveOf(int active, int total) {
-    return '$active dari $total anggota berbelanja';
+    return '$active dari $total pelanggan berbelanja';
   }
 
   @override
@@ -9408,13 +9408,13 @@ class AppL10nId extends AppL10n {
   }
 
   @override
-  String get mrpKpiActive => 'Anggota aktif';
+  String get mrpKpiActive => 'Pelanggan aktif';
 
   @override
-  String get mrpKpiNew => 'Anggota baru';
+  String get mrpKpiNew => 'Pelanggan baru';
 
   @override
-  String get mrpKpiSpend => 'Belanja anggota';
+  String get mrpKpiSpend => 'Belanja pelanggan';
 
   @override
   String get mrpKpiAvg => 'Rata-rata tagihan';
@@ -9432,7 +9432,7 @@ class AppL10nId extends AppL10n {
   String get mrpHideDetail => 'Tutup detail';
 
   @override
-  String get mrpMemberBills => 'Tagihan anggota';
+  String get mrpMemberBills => 'Tagihan pelanggan';
 
   @override
   String get mrpGuestBills => 'Tagihan tamu';
@@ -9483,7 +9483,7 @@ class AppL10nId extends AppL10n {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '+$count anggota lainnya tidak ditampilkan',
+      other: '+$count pelanggan lainnya tidak ditampilkan',
     );
     return '$_temp0';
   }
@@ -9512,14 +9512,14 @@ class AppL10nId extends AppL10n {
   }
 
   @override
-  String get mrpEmptyTitle => 'Belum ada belanja anggota';
+  String get mrpEmptyTitle => 'Belum ada belanja pelanggan';
 
   @override
   String get mrpEmptyBody =>
-      'Tidak ada anggota yang bertransaksi dalam rentang ini.';
+      'Tidak ada pelanggan yang bertransaksi dalam rentang ini.';
 
   @override
-  String get mrpPickTitle => 'Pilih satu anggota';
+  String get mrpPickTitle => 'Pilih satu pelanggan';
 
   @override
   String get mrpPickBody =>
@@ -9600,7 +9600,7 @@ class AppL10nId extends AppL10n {
 
   @override
   String get mrpNoBillsBody =>
-      'Anggota ini tidak bertransaksi dalam rentang yang dipilih.';
+      'Pelanggan ini tidak bertransaksi dalam rentang yang dipilih.';
 
   @override
   String get mrpColItem => 'Item';
@@ -9645,7 +9645,7 @@ class AppL10nId extends AppL10n {
   }
 
   @override
-  String get hubMemberReport => 'Laporan anggota';
+  String get hubMemberReport => 'Laporan pelanggan';
 
   @override
   String get hubMemberReportSub =>

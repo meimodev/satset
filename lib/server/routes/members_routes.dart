@@ -298,7 +298,7 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     );
   }
 
-  /// The member report (§Laporan anggota): the overview numbers, plus every
+  /// The member report (§Laporan pelanggan): the overview numbers, plus every
   /// member who traded in the window ranked by spend.
   ///
   /// Registered **before** `/members/<id>`, which it would otherwise match as

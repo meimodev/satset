@@ -6546,7 +6546,7 @@
   "@fltModeMemberSplit": {
     "description": "Fleet console label for the per-receipt member attribution mode."
   },
-  "fltModeMemberSplitHint": "Tagihan yang dipisah bisa diberi pelanggan per struk, jadi tiap anggota dapat poin dan diskonnya sendiri.",
+  "fltModeMemberSplitHint": "Tagihan yang dipisah bisa diberi pelanggan per struk, jadi tiap pelanggan dapat poin dan diskonnya sendiri.",
   "@fltModeMemberSplitHint": {
     "description": "Fleet console hint under the per-receipt member attribution toggle."
   },
@@ -7177,7 +7177,7 @@
   "@vstMembersPunchTargetHint": {
     "description": "Membership settings and hub copy."
   },
-  "vstMembersPreset": "Diskon anggota",
+  "vstMembersPreset": "Diskon pelanggan",
   "@vstMembersPreset": {
     "description": "Membership settings and hub copy."
   },
@@ -7553,11 +7553,11 @@
       }
     }
   },
-  "mrpTitle": "Laporan anggota",
+  "mrpTitle": "Laporan pelanggan",
   "mrpSub": "Riwayat belanja pelanggan terdaftar",
   "mrpPhoneOnly": "Laporan ini dibaca dengan membandingkan baris satu sama lain. Buka di tablet.",
   "mrpRangeAll": "Semua",
-  "mrpActiveOf": "{active} dari {total} anggota berbelanja",
+  "mrpActiveOf": "{active} dari {total} pelanggan berbelanja",
   "@mrpActiveOf": {
     "placeholders": {
       "active": {
@@ -7616,15 +7616,15 @@
       }
     }
   },
-  "mrpKpiActive": "Anggota aktif",
-  "mrpKpiNew": "Anggota baru",
-  "mrpKpiSpend": "Belanja anggota",
+  "mrpKpiActive": "Pelanggan aktif",
+  "mrpKpiNew": "Pelanggan baru",
+  "mrpKpiSpend": "Belanja pelanggan",
   "mrpKpiAvg": "Rata-rata tagihan",
   "mrpKpiReturn": "Kembali lagi",
   "mrpKpiPoints": "Poin beredar",
   "mrpDetail": "Detail",
   "mrpHideDetail": "Tutup detail",
-  "mrpMemberBills": "Tagihan anggota",
+  "mrpMemberBills": "Tagihan pelanggan",
   "mrpGuestBills": "Tagihan tamu",
   "mrpGuestNet": "Omzet tamu",
   "mrpSplitBills": "Tagihan patungan",
@@ -7646,7 +7646,7 @@
   "mrpSortRecent": "Terakhir datang",
   "mrpSortName": "Nama",
   "mrpNoMatch": "Tidak ada yang cocok.",
-  "mrpTruncated": "{count, plural, other{+{count} anggota lainnya tidak ditampilkan}}",
+  "mrpTruncated": "{count, plural, other{+{count} pelanggan lainnya tidak ditampilkan}}",
   "@mrpTruncated": {
     "placeholders": {
       "count": {
@@ -7671,9 +7671,9 @@
       }
     }
   },
-  "mrpEmptyTitle": "Belum ada belanja anggota",
-  "mrpEmptyBody": "Tidak ada anggota yang bertransaksi dalam rentang ini.",
-  "mrpPickTitle": "Pilih satu anggota",
+  "mrpEmptyTitle": "Belum ada belanja pelanggan",
+  "mrpEmptyBody": "Tidak ada pelanggan yang bertransaksi dalam rentang ini.",
+  "mrpPickTitle": "Pilih satu pelanggan",
   "mrpPickBody": "Riwayat kunjungan dan rincian produknya muncul di sini.",
   "mrpTabProducts": "Produk",
   "mrpTabVisits": "Kunjungan",
@@ -7721,7 +7721,7 @@
   "mrpNoProductsTitle": "Tidak ada rincian item",
   "mrpNoProductsBody": "Belanjanya seluruhnya lewat struk nominal, yang tidak menyimpan item.",
   "mrpNoBillsTitle": "Belum ada tagihan",
-  "mrpNoBillsBody": "Anggota ini tidak bertransaksi dalam rentang yang dipilih.",
+  "mrpNoBillsBody": "Pelanggan ini tidak bertransaksi dalam rentang yang dipilih.",
   "mrpColItem": "Item",
   "mrpColQty": "Porsi",
   "mrpColValue": "Nilai",
@@ -7747,7 +7747,7 @@
       }
     }
   },
-  "hubMemberReport": "Laporan anggota",
+  "hubMemberReport": "Laporan pelanggan",
   "hubMemberReportSub": "Riwayat belanja dan produk favorit pelanggan",
   "stlDebtor": "Penanggung utang",
   "@stlDebtor": {

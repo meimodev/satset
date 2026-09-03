@@ -1,4 +1,4 @@
-/// Wire shapes for the member report (§Laporan anggota).
+/// Wire shapes for the member report (§Laporan pelanggan).
 ///
 /// Hand-written like `member_dto.dart` and for the same reason: the server owns
 /// every figure here. A share of a split bill, a product rollup and a points

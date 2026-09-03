@@ -80,7 +80,7 @@ class MemberReportState {
   );
 }
 
-/// The member report (§Laporan anggota), client side.
+/// The member report (§Laporan pelanggan), client side.
 ///
 /// A snapshot, not a live view: it does not subscribe to the WS hub, because a
 /// report answering a window is read and acted on, not watched. It refetches

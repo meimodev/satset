@@ -22,7 +22,7 @@ import 'package:satset/ui/core/widgets/sat_spinner.dart';
 import 'package:satset/ui/core/widgets/sat_tabs.dart';
 import '_common.dart';
 
-/// The member report (§Laporan anggota).
+/// The member report (§Laporan pelanggan).
 ///
 /// Answers, over a window the reader picks: **who came, what they spent, and
 /// what they actually ate.** The Keanggotaan block on `/reports` answers the

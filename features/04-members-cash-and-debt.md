@@ -1,6 +1,6 @@
 # 04 · Membership, petty cash & debt
 
-This area covers the **Pelanggan (member)** directory and everything that hangs off a member — points, stempel, tier discount, split-bill attribution, the **Laporan anggota** report — plus two adjacent venue-local ledgers that share the same architectural shape: the **Kas kecil** petty-cash box and the **Piutang** (tab/debt) ledger. All three are append-only, single-writer ledgers whose balance is `SUM(delta)` and is never stored; all three are venue-local (no cloud sync); and all three are gated fail-closed by a 404 (not 403) when the owner has not opted in.
+This area covers the **Pelanggan (member)** directory and everything that hangs off a member — points, stempel, tier discount, split-bill attribution, the **Laporan pelanggan** report — plus two adjacent venue-local ledgers that share the same architectural shape: the **Kas kecil** petty-cash box and the **Piutang** (tab/debt) ledger. All three are append-only, single-writer ledgers whose balance is `SUM(delta)` and is never stored; all three are venue-local (no cloud sync); and all three are gated fail-closed by a 404 (not 403) when the owner has not opted in.
 
 ## Feature index
 
@@ -12,7 +12,7 @@ This area covers the **Pelanggan (member)** directory and everything that hangs 
 | Points hand-adjust | `/members` (sheet) | `manageMembers` | `POST /members/<id>/points` |
 | Member tier discount / redeem | till bill overlay (`MemberPanel`) | `settleBill` | `POST /settlement/visits/<id>/redeem` etc. |
 | Stempel (punch card) | till bill overlay + guest plane | — (read), `settleBill` (settle) | `punchStatus`, `guestPunchStatus` |
-| Laporan anggota (member report) | `/member-report` | `viewReports` or `manageMembers` | `GET /members/report`, `GET /members/<id>/report` |
+| Laporan pelanggan (member report) | `/member-report` | `viewReports` or `manageMembers` | `GET /members/report`, `GET /members/<id>/report` |
 | Kas kecil (petty cash) | `/kas` | `manageCash` or `editSettings` | `lib/server/routes/cash_routes.dart` |
 | Piutang / tab (debt) — collect | till (`DebtCollectSheet`) + `/members` | `settleBill` (collect), `manageMembers`/`refund` | `lib/server/routes/members_routes.dart` (piutang endpoints), `lib/server/debts.dart` |
 | Piutang charge (pay by tab) | till bill overlay | `settleBill` | `POST /settlement/receipts/<id>/payments` (`method: piutang`) |
@@ -125,7 +125,7 @@ This area covers the **Pelanggan (member)** directory and everything that hangs 
 - One member field, not two: a tab reads `receipts.member_id ?? visit.member_id` — the same fallback subtraction as points/units, deliberately not a second "debt-only member" field.
 - Reports keep counting **bills** by owner (so saved comparisons don't change meaning); the finer per-member rollup lives in the ranked list / member history only.
 
-## Laporan anggota — member report (ID · EN: Laporan anggota · Member report)
+## Laporan pelanggan — member report (ID · EN: Laporan pelanggan · Member report)
 
 **What** A dedicated report answering what the venue Reports' Keanggotaan block can't: who are the members (browsable, sortable, searchable directory of trade) and what do they actually buy (product rollup per member). Two panes: a ranked list on the left (sortable/filterable client-side over a server-capped 500 rows), one member's bills + product rollup on the right.
 
@@ -134,7 +134,7 @@ This area covers the **Pelanggan (member)** directory and everything that hangs 
 **Where** `/member-report`, tablet-only, reached from the Venue hub.
 
 **How to use**
-1. Open Venue hub → **Laporan anggota** (`mrpTitle`). Subtitle: "Riwayat belanja pelanggan terdaftar" (`mrpSub`) or, once loaded, "N aktif dari M pelanggan" (`mrpActiveOf`).
+1. Open Venue hub → **Laporan pelanggan** (`mrpTitle`). Subtitle: "Riwayat belanja pelanggan terdaftar" (`mrpSub`) or, once loaded, "N aktif dari M pelanggan" (`mrpActiveOf`).
 2. Pick a range chip: Hari ini / Kemarin / 7 hari / 30 hari / Bulan ini / **Semua** (`mrpRangeAll`, this report's only, since it's aggregated not per-bill) / custom.
 3. The overview tiles show enrolled, active members, member vs. guest bill split, split-bill count (only non-zero under `memberSplit`), points earned/redeemed/outstanding, and the estimated points liability.
 4. Scroll the ranked list (spend, visits, points, name, or "recent" sort — `MemberSort` enum) and tap a member to open the **Drill** sheet.
@@ -238,6 +238,6 @@ This area covers the **Pelanggan (member)** directory and everything that hangs 
 | Kartu stempel / Hadiah | Punch card / Reward |
 | Piutang / Batas kredit / Sisa kredit / Piutang tak tertagih | Receivable / Credit limit / Remaining credit / Bad debt |
 | Kas kecil | Petty cash |
-| Laporan anggota / Anggota aktif / Kembali lagi / Belanja anggota / Belanja tanpa rincian | Member report / Active members / Returning members / Member spend / Untracked spend |
+| Laporan pelanggan / Pelanggan aktif / Kembali lagi / Belanja pelanggan / Belanja tanpa rincian | Member report / Active members / Returning members / Member spend / Untracked spend |
 
 **Avoid** (per CONTEXT.md): "Langganan" for a member (it means the venue's own SatSet subscription); "Customer" in English UI copy (no non-member customers exist to contrast against); "Kasbon" or "Bon" for Piutang (workplace salary advance / the paper bill, respectively); treating a piutang payment as money received; keeping a visit open as a tab (there is no such state — `snapshotVisitAndDelete` hard-deletes the visit at close); folding a Kas collection into Piutang or vice-versa; a stored "lapsed"/"churned" status (both are derived at read time).

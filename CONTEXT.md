@@ -943,8 +943,8 @@ The ledger is **append-only** and its balance is `SUM(delta)` — **derived, nev
 
 _Avoid_: treating a `piutang` payment as money received; keeping a visit open as a tab; folding a collection into revenue or into [[Kas kecil (petty cash)]] (guest money is the drawer, the box is a float that only pays out); a negative balance as a stored-value deposit; giving a tab a due date without an ADR.
 
-### Laporan anggota (member report)
-**ID · EN** — Laporan anggota · Member report; Anggota aktif · Active members; Kembali lagi · Returning members; Belanja anggota · Member spend; Belanja tanpa rincian · Untracked spend. _Avoid_: **Riwayat pelanggan** for this screen — the directory already shows a member's bills, and this is the venue-wide reading; **Laporan pelanggan**, which reads as a report *for* the guest.
+### Laporan pelanggan (member report)
+**ID · EN** — Laporan pelanggan · Member report; Pelanggan aktif · Active members; Kembali lagi · Returning members; Belanja pelanggan · Member spend; Belanja tanpa rincian · Untracked spend. _Avoid_: **Riwayat pelanggan** for this screen — the directory already shows a member's bills, and this is the venue-wide reading; **Laporan anggota**, the screen's own former name, which called the same people by a word no other surface uses — the directory, the till panel and the audit log have all said **Pelanggan** since ADR-0092, and one screen holding out is how a reader concludes there are two populations. The ambiguity once feared here — that *Laporan pelanggan* reads as a report *for* the guest — never arose: this is a `viewReports` tablet screen inside the Venue hub, and no guest-facing surface competes for the phrase.
 
 What the [[Pelanggan (member)]] program bought the venue, over a window the reader picks (ADR-0119). Two readings of the same trade: **who came and what they spent**, ranked across the directory, and **what one of them actually ate**, per menu item. Distinct from the Keanggotaan block in [[Report freshness (Live vs Snapshot)|Reports]], which answers the first for the venue as a whole and is deliberately unchanged — this is the per-person, per-dish surface.
 
@@ -952,7 +952,7 @@ Under `memberSplit`, spend and products divide by [[Pemilik tiket]] (ADR-0125): 
 
 The window has an **open-ended** setting (Semua) the accounting report deliberately lacks: this payload is aggregated to a capped list plus a rollup, where that one is per bill. A [[Pelanggan (member)|deleted member]] keeps a row and keeps opening — the trade is the venue's record and outlives the person (ADR-0092).
 
-_Avoid_: reading **anggota aktif** as everyone enrolled (it is everyone who traded *in the window*); reading a product rollup as the venue's menu mix (it is one member's); adding a figure here that the Keanggotaan block computes separately rather than from the same walk.
+_Avoid_: reading **pelanggan aktif** as everyone enrolled (it is everyone who traded *in the window*); reading a product rollup as the venue's menu mix (it is one member's); adding a figure here that the Keanggotaan block computes separately rather than from the same walk.
 
 ### Sumber diskon (discount source)
 **ID · EN** — internal; not shown. Slots: `manual` · `member` · `redeem`.

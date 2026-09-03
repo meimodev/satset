@@ -1,4 +1,4 @@
-// The member report (§Laporan anggota): the ranked list, and one member's own
+// The member report (§Laporan pelanggan): the ranked list, and one member's own
 // bills and product rollup.
 //
 // What is being pinned:

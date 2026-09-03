@@ -13438,7 +13438,7 @@ abstract class AppL10n {
   /// Fleet console hint under the per-receipt member attribution toggle.
   ///
   /// In id, this message translates to:
-  /// **'Tagihan yang dipisah bisa diberi pelanggan per struk, jadi tiap anggota dapat poin dan diskonnya sendiri.'**
+  /// **'Tagihan yang dipisah bisa diberi pelanggan per struk, jadi tiap pelanggan dapat poin dan diskonnya sendiri.'**
   String get fltModeMemberSplitHint;
 
   /// Shown in place of the hint when the venue does not hold the members module.
@@ -14482,7 +14482,7 @@ abstract class AppL10n {
   /// Membership settings and hub copy.
   ///
   /// In id, this message translates to:
-  /// **'Diskon anggota'**
+  /// **'Diskon pelanggan'**
   String get vstMembersPreset;
 
   /// Membership settings and hub copy.
@@ -14920,7 +14920,7 @@ abstract class AppL10n {
   /// No description provided for @mrpTitle.
   ///
   /// In id, this message translates to:
-  /// **'Laporan anggota'**
+  /// **'Laporan pelanggan'**
   String get mrpTitle;
 
   /// No description provided for @mrpSub.
@@ -14944,7 +14944,7 @@ abstract class AppL10n {
   /// No description provided for @mrpActiveOf.
   ///
   /// In id, this message translates to:
-  /// **'{active} dari {total} anggota berbelanja'**
+  /// **'{active} dari {total} pelanggan berbelanja'**
   String mrpActiveOf(int active, int total);
 
   /// No description provided for @mrpOfEnrolled.
@@ -14986,19 +14986,19 @@ abstract class AppL10n {
   /// No description provided for @mrpKpiActive.
   ///
   /// In id, this message translates to:
-  /// **'Anggota aktif'**
+  /// **'Pelanggan aktif'**
   String get mrpKpiActive;
 
   /// No description provided for @mrpKpiNew.
   ///
   /// In id, this message translates to:
-  /// **'Anggota baru'**
+  /// **'Pelanggan baru'**
   String get mrpKpiNew;
 
   /// No description provided for @mrpKpiSpend.
   ///
   /// In id, this message translates to:
-  /// **'Belanja anggota'**
+  /// **'Belanja pelanggan'**
   String get mrpKpiSpend;
 
   /// No description provided for @mrpKpiAvg.
@@ -15034,7 +15034,7 @@ abstract class AppL10n {
   /// No description provided for @mrpMemberBills.
   ///
   /// In id, this message translates to:
-  /// **'Tagihan anggota'**
+  /// **'Tagihan pelanggan'**
   String get mrpMemberBills;
 
   /// No description provided for @mrpGuestBills.
@@ -15124,7 +15124,7 @@ abstract class AppL10n {
   /// No description provided for @mrpTruncated.
   ///
   /// In id, this message translates to:
-  /// **'{count, plural, other{+{count} anggota lainnya tidak ditampilkan}}'**
+  /// **'{count, plural, other{+{count} pelanggan lainnya tidak ditampilkan}}'**
   String mrpTruncated(int count);
 
   /// No description provided for @mrpDeleted.
@@ -15148,19 +15148,19 @@ abstract class AppL10n {
   /// No description provided for @mrpEmptyTitle.
   ///
   /// In id, this message translates to:
-  /// **'Belum ada belanja anggota'**
+  /// **'Belum ada belanja pelanggan'**
   String get mrpEmptyTitle;
 
   /// No description provided for @mrpEmptyBody.
   ///
   /// In id, this message translates to:
-  /// **'Tidak ada anggota yang bertransaksi dalam rentang ini.'**
+  /// **'Tidak ada pelanggan yang bertransaksi dalam rentang ini.'**
   String get mrpEmptyBody;
 
   /// No description provided for @mrpPickTitle.
   ///
   /// In id, this message translates to:
-  /// **'Pilih satu anggota'**
+  /// **'Pilih satu pelanggan'**
   String get mrpPickTitle;
 
   /// No description provided for @mrpPickBody.
@@ -15280,7 +15280,7 @@ abstract class AppL10n {
   /// No description provided for @mrpNoBillsBody.
   ///
   /// In id, this message translates to:
-  /// **'Anggota ini tidak bertransaksi dalam rentang yang dipilih.'**
+  /// **'Pelanggan ini tidak bertransaksi dalam rentang yang dipilih.'**
   String get mrpNoBillsBody;
 
   /// No description provided for @mrpColItem.
@@ -15352,7 +15352,7 @@ abstract class AppL10n {
   /// No description provided for @hubMemberReport.
   ///
   /// In id, this message translates to:
-  /// **'Laporan anggota'**
+  /// **'Laporan pelanggan'**
   String get hubMemberReport;
 
   /// No description provided for @hubMemberReportSub.
