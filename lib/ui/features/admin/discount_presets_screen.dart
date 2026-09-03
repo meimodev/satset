@@ -189,7 +189,12 @@ Future<void> _edit(
     builder: (c) {
       final sc = c.sat;
       return StatefulBuilder(
-        builder: (c, setState) => Padding(
+        // Scrollable, because the keyboard is up for most of this form: the
+        // name and value fields both open it, and `viewInsets` then takes the
+        // height the scope, kind and Simpan rows still need. Without this the
+        // sheet overflows and the save button is unreachable — which is a form
+        // that cannot be submitted on a phone at all.
+        builder: (c, setState) => SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             16,
             0,
