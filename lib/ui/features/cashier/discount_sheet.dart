@@ -85,10 +85,19 @@ showDiscountSheet(
   DiscountTarget target,
 ) async {
   final sc = context.sat;
-  final presets = ref
-      .read(discountPresetsRepositoryProvider.notifier)
-      .forScope(target.scope);
+  final repo = ref.read(discountPresetsRepositoryProvider.notifier);
+  var presets = repo.forScope(target.scope);
   final canApply = ref.read(authStateProvider).has(Capability.applyDiscount);
+
+  // Empty may mean "not fetched yet": the repository bootstraps in a microtask
+  // after a cold launch, so the first pick of the shift can outrun it and the
+  // cashier is told the owner authored no preset when they did. Refetch before
+  // believing it — one round-trip, and only on the empty path.
+  if (presets.isEmpty) {
+    await repo.refresh();
+    if (!context.mounted) return null;
+    presets = repo.forScope(target.scope);
+  }
 
   if (presets.isEmpty) {
     await showSatDialog<void>(
