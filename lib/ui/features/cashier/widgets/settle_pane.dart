@@ -618,6 +618,7 @@ class _SettlePaneState extends State<SettlePane> {
         onPick: _pick,
         debtEnabled: widget.debtEnabled,
         debtor: _debtor,
+        debtorPickable: true,
       ),
     ],
   );

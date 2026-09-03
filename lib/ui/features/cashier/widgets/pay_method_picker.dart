@@ -75,8 +75,17 @@ MemberDto? debtorFor(Bill bill, {MemberDto? receiptMember}) =>
 
 /// Why the Piutang option is off, or null when it is live. A reason on screen
 /// beats a missing option without explanation — Principle 3.
-String? piutangOffReason(AppL10n l10n, MemberDto? debtor) {
-  if (debtor == null) return l10n.stlPiutangNoMember;
+///
+/// [pickable] is the settle pane: there the debtor is chosen *after* the method
+/// (ADR-0125), so "no member yet" is the normal starting state and hiding the
+/// option on it locks the pane out of Piutang for good — the debtor row only
+/// renders once Piutang is picked.
+String? piutangOffReason(
+  AppL10n l10n,
+  MemberDto? debtor, {
+  bool pickable = false,
+}) {
+  if (debtor == null) return pickable ? null : l10n.stlPiutangNoMember;
   if (debtor.debtHeadroom <= 0) return l10n.stlPiutangNoRoom;
   return null;
 }
@@ -100,6 +109,10 @@ class PayMethodPicker extends StatelessWidget {
   /// Whose tab this payment would charge, from [debtorFor].
   final MemberDto? debtor;
 
+  /// Whether the caller lets the cashier pick the debtor after the method.
+  /// See [piutangOffReason].
+  final bool debtorPickable;
+
   /// Sits above the field, in caps — same treatment as [SatField]'s.
   final String? label;
 
@@ -109,6 +122,7 @@ class PayMethodPicker extends StatelessWidget {
     required this.onPick,
     required this.debtEnabled,
     required this.debtor,
+    this.debtorPickable = false,
     this.label,
   });
 
@@ -116,7 +130,7 @@ class PayMethodPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final l10n = context.l10n;
-    final offReason = piutangOffReason(l10n, debtor);
+    final offReason = piutangOffReason(l10n, debtor, pickable: debtorPickable);
     final includePiutang =
         debtEnabled && (offReason == null || selected == PayMethod.piutang);
 
