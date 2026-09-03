@@ -4,6 +4,7 @@ import 'package:satset/core/localization/report_copy.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:satset/data/repositories/member_names_repository.dart';
 import 'package:satset/data/repositories/staff_repository.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/user.dart';
@@ -14,6 +15,7 @@ import 'package:satset/ui/core/widgets/elapsed_pill.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/widgets/tag_badge_row.dart';
+import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/status_chip.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -191,6 +193,8 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                                 ),
                           ),
                           if (!isVoided) MenuTagBadges(itemId: ticket.itemId),
+                          if (ticket.memberId != null)
+                            _MemberChip(memberId: ticket.memberId!),
                           if (ticket.modifiers.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(top: Sp.s1),
@@ -316,6 +320,35 @@ class _SmallSuccessButton extends StatelessWidget {
           label.toUpperCase(),
           style: SatType.labelS(color: sc.success),
         ),
+      ),
+    );
+  }
+}
+
+/// The line's [[Pemilik tiket]], named.
+///
+/// Display-only: reassigning a *sent* line is a settlement act at `/kasir`
+/// (ADR-0126), and the waiter holding `takeOrder` names an owner in the cart,
+/// before send. A non-null `memberId` is self-gating — only `memberSplit`
+/// writes one — so nothing here re-reads the mode; switching it off freezes
+/// rather than deletes, and a closed line keeps the owner it was sent with.
+class _MemberChip extends ConsumerWidget {
+  final String memberId;
+  const _MemberChip({required this.memberId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final names = ref.watch(memberNamesProvider);
+    // Not asked yet, or the ask failed: say nothing rather than guess. Only a
+    // resolved miss is a deleted member (ADR-0092).
+    if (!names.containsKey(memberId)) return const SizedBox.shrink();
+    final name = names[memberId];
+    return Padding(
+      padding: const EdgeInsets.only(top: Sp.s1),
+      child: SatChip.tag(
+        icon: Icons.badge_outlined,
+        label: name ?? context.l10n.rptMembersGone,
+        size: SatChipSize.sm,
       ),
     );
   }

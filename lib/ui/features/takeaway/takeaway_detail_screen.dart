@@ -4,6 +4,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:satset/data/repositories/member_names_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/data/repositories/takeaway_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
@@ -57,6 +58,11 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
         .where((t) => t.status != TicketStatus.voided)
         .toList();
     final total = active.fold<int>(0, (s, t) => s + t.price * t.qty);
+    // Same bulk resolve as the table detail — the line card is shared, so the
+    // name behind it must be fetched on both mounts (ADR-0026).
+    ref
+        .read(memberNamesProvider.notifier)
+        .resolve(tickets.map((t) => t.memberId));
     final label = visit?.label ?? context.l10n.tkwFallbackLabel;
     final guest = visit?.guestName;
     final handedOver = visit?.handedOver ?? false;

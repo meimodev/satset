@@ -157,7 +157,7 @@ All collapse to a static final frame under reduced motion. Callers never branch 
 
 | Widget | File | Use for |
 |---|---|---|
-| `OrderLineCard` | `order_line_card.dart` | **Canonical** sent-line card: qty, name/variant, badges, modifiers, note, void reason, status chip, elapsed pill, orderer avatar, price, mark-served. Table detail + takeaway detail share it (ADR-0026). Table-agnostic — host supplies `onTap`/`onMarkServed`/`readOnly`. |
+| `OrderLineCard` | `order_line_card.dart` | **Canonical** sent-line card: qty, name/variant, badges, the line's [[Pemilik tiket]] under `memberSplit` (display-only — reassignment is a settlement act, ADR-0126), modifiers, note, void reason, status chip, elapsed pill, orderer avatar, price, mark-served. Table detail + takeaway detail share it (ADR-0026). Table-agnostic — host supplies `onTap`/`onMarkServed`/`readOnly`. |
 | `StatusChip` | `status_chip.dart` | **The** ticket-status pill — one colour vocabulary per `TicketStatus`, shared by the line card, the orders board and the void sheet. Morphs its fill and cross-fades the label when a WS push changes the status under your thumb. |
 | `ElapsedPill` | `elapsed_pill.dart` | Time-since-sent. Ticks live, freezes when terminal, escalates to `urgent` at `prepTargetMins` (ADR-0013). |
 | `NoteLine` | `note_line.dart` | Guest note / item note. Quiet reference text — never `urgent`-colored. One exception: `alert: true` renders a filled `urgentSoft` block with `textHi` ink, for the KDS ticket card only — at the pass the note is a constraint, not a jotting (ADR-0051). |

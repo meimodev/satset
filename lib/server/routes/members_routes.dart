@@ -364,17 +364,36 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         !a.$2.contains(Capability.takeOrder.name)) {
       return forbidden(Capability.takeOrder);
     }
-    final list = await listMembers(
-      db,
-      query: req.url.queryParameters['q'] ?? '',
-      limit: 50,
-    );
     String masked(String phone) {
       final tail = phone.length <= 4
           ? phone
           : phone.substring(phone.length - 4);
       return '•••• $tail';
     }
+
+    // Resolving a known set of ids rather than searching — the floor naming
+    // the [[Pemilik tiket]] on a line it has already sent. Deliberately not a
+    // second route: same gate, same minimal identity, only the key differs. An
+    // id with no row is a member since deleted (ADR-0092) and is simply absent
+    // from the answer, which is what the caller renders the placeholder from.
+    final ids = (req.url.queryParameters['ids'] ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toSet();
+    if (ids.isNotEmpty) {
+      final named = await memberNamesOf(db, ids.take(200).toList());
+      return json([
+        for (final e in named.entries)
+          {'id': e.key, 'name': e.value.name, 'phone': masked(e.value.phone)},
+      ]);
+    }
+
+    final list = await listMembers(
+      db,
+      query: req.url.queryParameters['q'] ?? '',
+      limit: 50,
+    );
 
     return json([
       for (final member in list)

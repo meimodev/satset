@@ -29,6 +29,7 @@ import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/domain/models/zone.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/member_names_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/services/send_queue_service.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
@@ -248,6 +249,11 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
     final l = context.layout;
     final tables = ref.watch(tablesProvider);
     final tickets = ref.watch(ticketsForTableProvider(_tableId));
+    // One request for every [[Pemilik tiket]] on screen, not one per card.
+    // Known ids are a no-op, so calling this from build costs nothing.
+    ref
+        .read(memberNamesProvider.notifier)
+        .resolve(tickets.map((t) => t.memberId));
     final table = tables.firstWhere(
       (t) => t.id == _tableId,
       orElse: () => VenueTable(id: _tableId, zoneId: ''),
