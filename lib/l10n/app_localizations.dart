@@ -15372,6 +15372,114 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Diskon terkunci'**
   String get cshDiscountFrozen;
+
+  /// No description provided for @memImportCsv.
+  ///
+  /// In id, this message translates to:
+  /// **'Impor CSV'**
+  String get memImportCsv;
+
+  /// No description provided for @memImportTooLarge.
+  ///
+  /// In id, this message translates to:
+  /// **'Berkas CSV melebihi 5 MB.'**
+  String get memImportTooLarge;
+
+  /// No description provided for @memImportUnreadable.
+  ///
+  /// In id, this message translates to:
+  /// **'Berkas CSV tidak dapat dibaca.'**
+  String get memImportUnreadable;
+
+  /// No description provided for @memImportRejected.
+  ///
+  /// In id, this message translates to:
+  /// **'Impor ditolak: {code}'**
+  String memImportRejected(String code);
+
+  /// No description provided for @memImportFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Impor gagal. Coba lagi.'**
+  String get memImportFailed;
+
+  /// No description provided for @memImportPreviewTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pratinjau impor CSV'**
+  String get memImportPreviewTitle;
+
+  /// No description provided for @memImportCounts.
+  ///
+  /// In id, this message translates to:
+  /// **'{newCount} baru · {skipped} dilewati · {invalid} tidak valid'**
+  String memImportCounts(int newCount, int skipped, int invalid);
+
+  /// No description provided for @memImportColumns.
+  ///
+  /// In id, this message translates to:
+  /// **'Kolom: nama, telepon, tanggal_lahir, catatan, kabupaten_kota, kecamatan, kelurahan_desa, alamat, batas_kredit'**
+  String get memImportColumns;
+
+  /// No description provided for @memImportRowSkipped.
+  ///
+  /// In id, this message translates to:
+  /// **'Sudah ada — dilewati'**
+  String get memImportRowSkipped;
+
+  /// No description provided for @memImportRowNew.
+  ///
+  /// In id, this message translates to:
+  /// **'Baru'**
+  String get memImportRowNew;
+
+  /// No description provided for @memImportSubmit.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{Impor {count} pelanggan}}'**
+  String memImportSubmit(int count);
+
+  /// No description provided for @memImportErrColumnCount.
+  ///
+  /// In id, this message translates to:
+  /// **'jumlah kolom salah'**
+  String get memImportErrColumnCount;
+
+  /// No description provided for @memImportErrNameRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'nama wajib'**
+  String get memImportErrNameRequired;
+
+  /// No description provided for @memImportErrPhoneRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'telepon tidak valid'**
+  String get memImportErrPhoneRequired;
+
+  /// No description provided for @memImportErrBirthday.
+  ///
+  /// In id, this message translates to:
+  /// **'tanggal lahir harus YYYY-MM-DD'**
+  String get memImportErrBirthday;
+
+  /// No description provided for @memImportErrCreditLimit.
+  ///
+  /// In id, this message translates to:
+  /// **'batas kredit harus rupiah bulat non-negatif'**
+  String get memImportErrCreditLimit;
+
+  /// No description provided for @memImportErrDuplicatePhone.
+  ///
+  /// In id, this message translates to:
+  /// **'telepon ganda dalam berkas'**
+  String get memImportErrDuplicatePhone;
+
+  /// No description provided for @cshMemberPerTicket.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan per tiket'**
+  String get cshMemberPerTicket;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

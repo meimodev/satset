@@ -7773,5 +7773,50 @@
   "cshDiscountFrozen": "Diskon terkunci",
   "@cshDiscountFrozen": {
     "description": "Shown on a line whose receipt is paid, so its discounts can no longer change."
-  }
+  },
+  "memImportCsv": "Impor CSV",
+  "memImportTooLarge": "Berkas CSV melebihi 5 MB.",
+  "memImportUnreadable": "Berkas CSV tidak dapat dibaca.",
+  "memImportRejected": "Impor ditolak: {code}",
+  "@memImportRejected": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "memImportFailed": "Impor gagal. Coba lagi.",
+  "memImportPreviewTitle": "Pratinjau impor CSV",
+  "memImportCounts": "{newCount} baru · {skipped} dilewati · {invalid} tidak valid",
+  "@memImportCounts": {
+    "placeholders": {
+      "newCount": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      },
+      "invalid": {
+        "type": "int"
+      }
+    }
+  },
+  "memImportColumns": "Kolom: nama, telepon, tanggal_lahir, catatan, kabupaten_kota, kecamatan, kelurahan_desa, alamat, batas_kredit",
+  "memImportRowSkipped": "Sudah ada — dilewati",
+  "memImportRowNew": "Baru",
+  "memImportSubmit": "{count, plural, other{Impor {count} pelanggan}}",
+  "@memImportSubmit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "memImportErrColumnCount": "jumlah kolom salah",
+  "memImportErrNameRequired": "nama wajib",
+  "memImportErrPhoneRequired": "telepon tidak valid",
+  "memImportErrBirthday": "tanggal lahir harus YYYY-MM-DD",
+  "memImportErrCreditLimit": "batas kredit harus rupiah bulat non-negatif",
+  "memImportErrDuplicatePhone": "telepon ganda dalam berkas",
+  "cshMemberPerTicket": "Pelanggan per tiket"
 }

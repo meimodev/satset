@@ -278,3 +278,16 @@ String staffErrorMessage(AppL10n l10n, StaffException e) => switch (e.code) {
   'lastAdmin' => l10n.staffErrLastAdmin,
   _ => e.code,
 };
+
+/// The words for a member CSV import row error. The importer emits codes, not
+/// sentences (ADR-0085); an unknown one renders as itself so a newer server
+/// never leaves a row unexplained.
+String memberImportErrorLabel(AppL10n l10n, String code) => switch (code) {
+  'column_count' => l10n.memImportErrColumnCount,
+  'name_required' => l10n.memImportErrNameRequired,
+  'phone_required' => l10n.memImportErrPhoneRequired,
+  'invalid_birthday' => l10n.memImportErrBirthday,
+  'invalid_credit_limit' => l10n.memImportErrCreditLimit,
+  'duplicate_phone' => l10n.memImportErrDuplicatePhone,
+  _ => code,
+};

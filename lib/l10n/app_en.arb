@@ -3321,5 +3321,50 @@
   "stlDebtorSuggest": "Use {name} — owns the items",
   "stlBlkPickDebtor": "Choose who takes this on account",
   "stlRowLineDiscounts": "Item discounts",
-  "cshDiscountFrozen": "Discounts frozen"
+  "cshDiscountFrozen": "Discounts frozen",
+  "memImportCsv": "Import CSV",
+  "memImportTooLarge": "CSV file is over 5 MB.",
+  "memImportUnreadable": "CSV file could not be read.",
+  "memImportRejected": "Import rejected: {code}",
+  "@memImportRejected": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "memImportFailed": "Import failed. Try again.",
+  "memImportPreviewTitle": "CSV import preview",
+  "memImportCounts": "{newCount} new · {skipped} skipped · {invalid} invalid",
+  "@memImportCounts": {
+    "placeholders": {
+      "newCount": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      },
+      "invalid": {
+        "type": "int"
+      }
+    }
+  },
+  "memImportColumns": "Columns: nama, telepon, tanggal_lahir, catatan, kabupaten_kota, kecamatan, kelurahan_desa, alamat, batas_kredit",
+  "memImportRowSkipped": "Already enrolled — skipped",
+  "memImportRowNew": "New",
+  "memImportSubmit": "{count, plural, =1{Import 1 member} other{Import {count} members}}",
+  "@memImportSubmit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "memImportErrColumnCount": "wrong column count",
+  "memImportErrNameRequired": "name required",
+  "memImportErrPhoneRequired": "invalid phone",
+  "memImportErrBirthday": "birthday must be YYYY-MM-DD",
+  "memImportErrCreditLimit": "credit limit must be a whole non-negative rupiah amount",
+  "memImportErrDuplicatePhone": "duplicate phone in file",
+  "cshMemberPerTicket": "Per-ticket member"
 }

@@ -9774,6 +9774,74 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get cshDiscountFrozen => 'Discounts frozen';
+
+  @override
+  String get memImportCsv => 'Import CSV';
+
+  @override
+  String get memImportTooLarge => 'CSV file is over 5 MB.';
+
+  @override
+  String get memImportUnreadable => 'CSV file could not be read.';
+
+  @override
+  String memImportRejected(String code) {
+    return 'Import rejected: $code';
+  }
+
+  @override
+  String get memImportFailed => 'Import failed. Try again.';
+
+  @override
+  String get memImportPreviewTitle => 'CSV import preview';
+
+  @override
+  String memImportCounts(int newCount, int skipped, int invalid) {
+    return '$newCount new · $skipped skipped · $invalid invalid';
+  }
+
+  @override
+  String get memImportColumns =>
+      'Columns: nama, telepon, tanggal_lahir, catatan, kabupaten_kota, kecamatan, kelurahan_desa, alamat, batas_kredit';
+
+  @override
+  String get memImportRowSkipped => 'Already enrolled — skipped';
+
+  @override
+  String get memImportRowNew => 'New';
+
+  @override
+  String memImportSubmit(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Import $count members',
+      one: 'Import 1 member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get memImportErrColumnCount => 'wrong column count';
+
+  @override
+  String get memImportErrNameRequired => 'name required';
+
+  @override
+  String get memImportErrPhoneRequired => 'invalid phone';
+
+  @override
+  String get memImportErrBirthday => 'birthday must be YYYY-MM-DD';
+
+  @override
+  String get memImportErrCreditLimit =>
+      'credit limit must be a whole non-negative rupiah amount';
+
+  @override
+  String get memImportErrDuplicatePhone => 'duplicate phone in file';
+
+  @override
+  String get cshMemberPerTicket => 'Per-ticket member';
 }
 
 /// The translations for English, as used in El Salvador (`en_SV`).

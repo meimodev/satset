@@ -9654,6 +9654,73 @@ class AppL10nId extends AppL10n {
 
   @override
   String get cshDiscountFrozen => 'Diskon terkunci';
+
+  @override
+  String get memImportCsv => 'Impor CSV';
+
+  @override
+  String get memImportTooLarge => 'Berkas CSV melebihi 5 MB.';
+
+  @override
+  String get memImportUnreadable => 'Berkas CSV tidak dapat dibaca.';
+
+  @override
+  String memImportRejected(String code) {
+    return 'Impor ditolak: $code';
+  }
+
+  @override
+  String get memImportFailed => 'Impor gagal. Coba lagi.';
+
+  @override
+  String get memImportPreviewTitle => 'Pratinjau impor CSV';
+
+  @override
+  String memImportCounts(int newCount, int skipped, int invalid) {
+    return '$newCount baru · $skipped dilewati · $invalid tidak valid';
+  }
+
+  @override
+  String get memImportColumns =>
+      'Kolom: nama, telepon, tanggal_lahir, catatan, kabupaten_kota, kecamatan, kelurahan_desa, alamat, batas_kredit';
+
+  @override
+  String get memImportRowSkipped => 'Sudah ada — dilewati';
+
+  @override
+  String get memImportRowNew => 'Baru';
+
+  @override
+  String memImportSubmit(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Impor $count pelanggan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get memImportErrColumnCount => 'jumlah kolom salah';
+
+  @override
+  String get memImportErrNameRequired => 'nama wajib';
+
+  @override
+  String get memImportErrPhoneRequired => 'telepon tidak valid';
+
+  @override
+  String get memImportErrBirthday => 'tanggal lahir harus YYYY-MM-DD';
+
+  @override
+  String get memImportErrCreditLimit =>
+      'batas kredit harus rupiah bulat non-negatif';
+
+  @override
+  String get memImportErrDuplicatePhone => 'telepon ganda dalam berkas';
+
+  @override
+  String get cshMemberPerTicket => 'Pelanggan per tiket';
 }
 
 /// The translations for Indonesian, as used in El Salvador (`id_SV`).

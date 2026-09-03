@@ -63,7 +63,7 @@ class MemberPanel extends ConsumerWidget {
             const SizedBox(width: Sp.s2),
             Expanded(
               child: Text(
-                'Pelanggan per tiket',
+                l10n.cshMemberPerTicket,
                 style: SatType.bodyM(color: sc.textLo),
               ),
             ),

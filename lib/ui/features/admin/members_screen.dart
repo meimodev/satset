@@ -136,7 +136,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               SatButton.outline(
-                label: 'Impor CSV',
+                label: l10n.memImportCsv,
                 icon: Icons.upload_file_rounded,
                 size: SatButtonSize.sm,
                 onTap: _importCsv,
@@ -271,8 +271,8 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
             .read(errorBusServiceProvider)
             .push(
               e.code == 'file_too_large'
-                  ? 'Berkas CSV melebihi 5 MB.'
-                  : 'Berkas CSV tidak dapat dibaca.',
+                  ? context.l10n.memImportTooLarge
+                  : context.l10n.memImportUnreadable,
             );
       }
       return;
@@ -325,8 +325,8 @@ class _MemberImportDialogState extends ConsumerState<_MemberImportDialog> {
       setState(() {
         _busy = false;
         _error = e is ApiException && e.code != null
-            ? 'Impor ditolak: ${e.code}'
-            : 'Impor gagal. Coba lagi.';
+            ? context.l10n.memImportRejected(e.code!)
+            : context.l10n.memImportFailed;
       });
     }
   }
@@ -334,6 +334,7 @@ class _MemberImportDialogState extends ConsumerState<_MemberImportDialog> {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    final l10n = context.l10n;
     final preview = widget.preview;
     final canImport = preview.invalidCount == 0 && preview.newCount > 0;
     return Dialog(
@@ -344,18 +345,22 @@ class _MemberImportDialogState extends ConsumerState<_MemberImportDialog> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Pratinjau impor CSV', style: SatType.h3(color: sc.textHi)),
+              Text(
+                context.l10n.memImportPreviewTitle,
+                style: SatType.h3(color: sc.textHi),
+              ),
               const SizedBox(height: Sp.s1),
               Text(
-                '${preview.newCount} baru · ${preview.skippedCount} dilewati · '
-                '${preview.invalidCount} tidak valid',
+                context.l10n.memImportCounts(
+                  preview.newCount,
+                  preview.skippedCount,
+                  preview.invalidCount,
+                ),
                 style: SatType.bodyS(color: sc.textMd),
               ),
               const SizedBox(height: Sp.s1),
               Text(
-                'Kolom: nama, telepon, tanggal_lahir, catatan, '
-                'kabupaten_kota, kecamatan, kelurahan_desa, alamat, '
-                'batas_kredit',
+                context.l10n.memImportColumns,
                 style: SatType.monoS(color: sc.textLo),
               ),
               const SizedBox(height: Sp.s4),
@@ -368,10 +373,12 @@ class _MemberImportDialogState extends ConsumerState<_MemberImportDialog> {
                     final invalid = row.status == 'invalid';
                     final skipped = row.status == 'skip';
                     final status = invalid
-                        ? row.errors.map(_importError).join(', ')
+                        ? row.errors
+                              .map((c) => memberImportErrorLabel(l10n, c))
+                              .join(', ')
                         : skipped
-                        ? 'Sudah ada — dilewati'
-                        : 'Baru';
+                        ? l10n.memImportRowSkipped
+                        : l10n.memImportRowNew;
                     return Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: Sp.s3,
@@ -387,7 +394,7 @@ class _MemberImportDialogState extends ConsumerState<_MemberImportDialog> {
                       child: Row(
                         children: [
                           SizedBox(
-                            width: 48,
+                            width: Sp.s12,
                             child: Text(
                               '#${row.row}',
                               style: SatType.monoS(color: sc.textLo),
@@ -433,7 +440,7 @@ class _MemberImportDialogState extends ConsumerState<_MemberImportDialog> {
                   const SizedBox(width: Sp.s2),
                   Expanded(
                     child: SatButton.primary(
-                      label: 'Impor ${preview.newCount} pelanggan',
+                      label: context.l10n.memImportSubmit(preview.newCount),
                       busy: _busy,
                       onTap: canImport ? _commit : null,
                     ),
@@ -448,15 +455,6 @@ class _MemberImportDialogState extends ConsumerState<_MemberImportDialog> {
   }
 }
 
-String _importError(String code) => switch (code) {
-  'column_count' => 'jumlah kolom salah',
-  'name_required' => 'nama wajib',
-  'phone_required' => 'telepon tidak valid',
-  'invalid_birthday' => 'tanggal lahir harus YYYY-MM-DD',
-  'invalid_credit_limit' => 'batas kredit harus rupiah bulat non-negatif',
-  'duplicate_phone' => 'telepon ganda dalam berkas',
-  _ => code,
-};
 
 /// One member, read the way they are asked after: who, which number, what they
 /// have banked, how often they come.
