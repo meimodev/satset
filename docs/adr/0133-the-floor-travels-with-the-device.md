@@ -166,6 +166,20 @@ by a host that just vanished.
   Riverpod provider. The repositories set it from inside their own constructors,
   and Riverpod forbids a provider mutating another provider while it builds.
   Restoring *is* construction, so the stamp cannot live in the provider graph.
-- `test/offline_floor_cache_test.dart` pins the cold boot, the stamp, the
+- Every collection in the copy is warmed on `AppShell`, and the list is pinned
+  by `test/app_shell_warming_test.dart` rather than remembered. Tables and
+  tickets were already warm but only *incidentally* — the tab-badge providers
+  happen to watch them — so deleting a badge would have silently stopped the
+  floor copy filling, with nothing failing until a device cold-booted offline.
+  Zones were not warm at all: every watcher is a screen, so a device landing on
+  `/kasir` or `/kitchen` kept tables with no zones to file them under. This is
+  the fourth time the lazy-repository trap has bitten (ADR-0128, ADR-0130, and
+  twice here), which is why it is now a test and not a habit.
+- The printer list is warmed for a weaker reason and is **not** cached: fetched
+  first when the kasir taps Cetak, it is fetched at the moment the host is
+  already gone. Reservations are the same trade but their GET costs
+  `takeOrder`, so they are warmed only for a user who has it — otherwise every
+  kasir and KDS boot would 403 onto the error bus.
+- - `test/offline_floor_cache_test.dart` pins the cold boot, the stamp, the
   fingerprint wipe, the server-mode exclusion, one bad payload not taking the
   other three down, and a local mutation reaching disk.
