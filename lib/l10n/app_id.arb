@@ -5896,7 +5896,7 @@
   "capManageCashDesc": "Catat pengeluaran dari kas kecil. Mengisi dan mengopname kas butuh izin pengaturan.",
   "capEditMenuDesc": "Tambah, ubah, dan hapus item serta kategori menu.",
   "capMarkSoldOutDesc": "Tandai item habis tanpa mengubah stok bahan.",
-  "capAdjustStockDesc": "Catat opname, terima barang, dan buang bahan.",
+  "capAdjustStockDesc": "Terima barang, buang bahan, produksi batch, dan jalankan opname.",
   "capManageIngredientsDesc": "Tambah dan ubah bahan beserta resepnya.",
   "capSellOpenItemDesc": "Ketik satu baris dengan nama dan harga sendiri, tanpa baris menu.",
   "capOverrideStockDesc": "Kirim pesanan meski bahan tercatat habis.",

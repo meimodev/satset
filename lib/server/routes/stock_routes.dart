@@ -61,6 +61,24 @@ Response _json(Object body) => Response.ok(
 /// are fetched on demand by the one screen that needs them, gated by capability
 /// rather than by app mode so an admin-client can run stock without hunting for
 /// the host tablet (ADR-0040).
+///
+/// **Two authorities, cut between the catalogue and the ledger** (ADR-0132):
+///
+/// - `manageIngredients` defines what a bahan *is* — create, archive, and the
+///   batch recipe that says what one costs to make.
+/// - `adjustStock` moves the numbers a bahan carries — receive, waste, produce,
+///   and the whole opname session from open to close. ADR-0042's rule, stated
+///   as a gate: the people who physically receive and count stock are the ones
+///   who record it, and they are not always the ones who author the catalogue.
+///
+/// Neither implies the other. Reads take either (plus `viewReports` on the
+/// archive and the report, and `editMenu` on the ingredient list, which the
+/// item editor needs to pick from) — you cannot count what you cannot list.
+///
+/// v36 merged the two by granting `manageIngredients` to every `adjustStock`
+/// holder, which left `adjustStock` enforced nowhere and the seeded Manager —
+/// who holds it and not `manageIngredients` — locked out of stock entirely. The
+/// v73 backfill grants the mirror so no existing role loses the ledger here.
 Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   final r = Router();
 
@@ -79,7 +97,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
     if (!actor.$2.contains(Capability.manageIngredients.name) &&
-        !actor.$2.contains(Capability.editMenu.name)) {
+        !actor.$2.contains(Capability.editMenu.name) &&
+        !actor.$2.contains(Capability.adjustStock.name)) {
       return _forbidden(Capability.manageIngredients);
     }
     final rows =
@@ -183,7 +202,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   r.get('/stock/ingredients/<id>/movements', (Request req, String id) async {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
-    if (!actor.$2.contains(Capability.manageIngredients.name)) {
+    if (!actor.$2.contains(Capability.manageIngredients.name) &&
+        !actor.$2.contains(Capability.adjustStock.name)) {
       return _forbidden(Capability.manageIngredients);
     }
     final limit = int.tryParse(req.url.queryParameters['limit'] ?? '') ?? 100;
@@ -203,8 +223,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   r.post('/stock/receive', (Request req) async {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
-    if (!actor.$2.contains(Capability.manageIngredients.name)) {
-      return _forbidden(Capability.manageIngredients);
+    if (!actor.$2.contains(Capability.adjustStock.name)) {
+      return _forbidden(Capability.adjustStock);
     }
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final ingredientId = body['ingredientId'] as String;
@@ -241,8 +261,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   r.post('/stock/waste', (Request req) async {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
-    if (!actor.$2.contains(Capability.manageIngredients.name)) {
-      return _forbidden(Capability.manageIngredients);
+    if (!actor.$2.contains(Capability.adjustStock.name)) {
+      return _forbidden(Capability.adjustStock);
     }
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final qty = (body['qty'] as num?)?.toInt() ?? 0;
@@ -300,7 +320,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
     if (!actor.$2.contains(Capability.viewReports.name) &&
-        !actor.$2.contains(Capability.manageIngredients.name)) {
+        !actor.$2.contains(Capability.manageIngredients.name) &&
+        !actor.$2.contains(Capability.adjustStock.name)) {
       return _forbidden(Capability.viewReports);
     }
     final q = req.url.queryParameters;
@@ -345,7 +366,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
     if (!actor.$2.contains(Capability.viewReports.name) &&
-        !actor.$2.contains(Capability.manageIngredients.name)) {
+        !actor.$2.contains(Capability.manageIngredients.name) &&
+        !actor.$2.contains(Capability.adjustStock.name)) {
       return _forbidden(Capability.viewReports);
     }
     final row = await countById(db, id);
@@ -369,8 +391,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   r.post('/stock/counts', (Request req) async {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
-    if (!actor.$2.contains(Capability.manageIngredients.name)) {
-      return _forbidden(Capability.manageIngredients);
+    if (!actor.$2.contains(Capability.adjustStock.name)) {
+      return _forbidden(Capability.adjustStock);
     }
     final existing = await openCountSession(db);
     if (existing != null) {
@@ -399,8 +421,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   r.put('/stock/counts/<id>/lines', (Request req, String id) async {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
-    if (!actor.$2.contains(Capability.manageIngredients.name)) {
-      return _forbidden(Capability.manageIngredients);
+    if (!actor.$2.contains(Capability.adjustStock.name)) {
+      return _forbidden(Capability.adjustStock);
     }
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final line = await recordCountLine(
@@ -423,8 +445,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   ) async {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
-    if (!actor.$2.contains(Capability.manageIngredients.name)) {
-      return _forbidden(Capability.manageIngredients);
+    if (!actor.$2.contains(Capability.adjustStock.name)) {
+      return _forbidden(Capability.adjustStock);
     }
     await removeCountLine(db, countId: id, ingredientId: ingredientId);
     return _json({'ok': true});
@@ -435,8 +457,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   r.delete('/stock/counts/<id>', (Request req, String id) async {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
-    if (!actor.$2.contains(Capability.manageIngredients.name)) {
-      return _forbidden(Capability.manageIngredients);
+    if (!actor.$2.contains(Capability.adjustStock.name)) {
+      return _forbidden(Capability.adjustStock);
     }
     await discardCount(db, id);
     return _json({'ok': true});
@@ -448,8 +470,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   r.post('/stock/counts/<id>/close', (Request req, String id) async {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
-    if (!actor.$2.contains(Capability.manageIngredients.name)) {
-      return _forbidden(Capability.manageIngredients);
+    if (!actor.$2.contains(Capability.adjustStock.name)) {
+      return _forbidden(Capability.adjustStock);
     }
     // No wrapper here any more: `closeCount` opens its own, which is what lets
     // this read like the one call it is.
@@ -485,8 +507,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   r.post('/stock/count', (Request req) async {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
-    if (!actor.$2.contains(Capability.manageIngredients.name)) {
-      return _forbidden(Capability.manageIngredients);
+    if (!actor.$2.contains(Capability.adjustStock.name)) {
+      return _forbidden(Capability.adjustStock);
     }
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final counts = (body['counts'] as List?) ?? const [];
@@ -525,8 +547,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   r.post('/stock/produce', (Request req) async {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
-    if (!actor.$2.contains(Capability.manageIngredients.name)) {
-      return _forbidden(Capability.manageIngredients);
+    if (!actor.$2.contains(Capability.adjustStock.name)) {
+      return _forbidden(Capability.adjustStock);
     }
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     String? batchId;
@@ -589,7 +611,8 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final actor = await _actor(req, db, auth);
     if (actor == null) return Response(401);
     if (!actor.$2.contains(Capability.viewReports.name) &&
-        !actor.$2.contains(Capability.manageIngredients.name)) {
+        !actor.$2.contains(Capability.manageIngredients.name) &&
+        !actor.$2.contains(Capability.adjustStock.name)) {
       return _forbidden(Capability.viewReports);
     }
     final q = req.url.queryParameters;

@@ -351,7 +351,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
     _loadDraftIfNeeded();
     final sc = context.sat;
     final perm = ref.watch(menuPermissionProvider);
-    final readOnly = perm == MenuPermission.staff;
+    final readOnly = perm != MenuPermission.full;
     final cats = ref.watch(menuRealCategoriesProvider);
 
     return Container(

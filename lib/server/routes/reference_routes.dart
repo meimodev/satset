@@ -399,6 +399,21 @@ Router referenceRoutes(AppDatabase db, WsHub? hub, ServerAuth auth) {
     if (newCaps.contains(Capability.manageStaff.name)) {
       return _adminRoleForbidden();
     }
+    // Creating a role stays `manageStaff` — but minting one that already
+    // *carries* permissions is the same act `PATCH` charges `manageRoles` for,
+    // and leaving it open here would make that gate decorative: create the role
+    // with the capabilities you wanted, assign a person, done. An empty role is
+    // a label with no power, so `manageStaff` alone may still make one and fill
+    // it in through the gated PATCH. See ADR-0132.
+    if (newCaps.isNotEmpty) {
+      final deniedCaps = await _requireCap(
+        req,
+        db,
+        auth,
+        Capability.manageRoles,
+      );
+      if (deniedCaps != null) return deniedCaps;
+    }
     await db
         .into(db.roles)
         .insertOnConflictUpdate(
@@ -451,6 +466,20 @@ Router referenceRoutes(AppDatabase db, WsHub? hub, ServerAuth auth) {
 
     Set<String>? nextCapsKeys;
     if (body.containsKey('capabilities')) {
+      // Defining what a role *may do* is a second authority (ADR-0132).
+      // `manageStaff` above is the door to this screen — hiring, firing, naming
+      // and recolouring a role — and it stays that. Rewriting the permission
+      // set is the act that can quietly hand somebody the till, so it costs
+      // `manageRoles` on top. Checked here rather than at the route because
+      // name, colour and capabilities share one PATCH: gating the whole route
+      // would take renaming away from `manageStaff`, which owns it.
+      final deniedCaps = await _requireCap(
+        req,
+        db,
+        auth,
+        Capability.manageRoles,
+      );
+      if (deniedCaps != null) return deniedCaps;
       nextCapsKeys = <String>{
         for (final c in (body['capabilities'] as List)) c as String,
       };

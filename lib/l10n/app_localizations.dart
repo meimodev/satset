@@ -12400,7 +12400,7 @@ abstract class AppL10n {
   /// No description provided for @capAdjustStockDesc.
   ///
   /// In id, this message translates to:
-  /// **'Catat opname, terima barang, dan buang bahan.'**
+  /// **'Terima barang, buang bahan, produksi batch, dan jalankan opname.'**
   String get capAdjustStockDesc;
 
   /// No description provided for @capManageIngredientsDesc.

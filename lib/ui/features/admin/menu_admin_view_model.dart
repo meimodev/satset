@@ -3,11 +3,30 @@ import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/domain/models/menu_category.dart';
 import 'package:satset/domain/models/menu_item.dart';
-import 'package:satset/domain/models/user.dart';
+import 'package:satset/domain/models/capability.dart';
 
-/// Two-tier role model for the menu admin screen.
-/// Admin = full CRUD. Staff = availability toggle only.
-enum MenuPermission { admin, staff }
+/// What this session may do on the menu admin screen.
+///
+/// Keyed off capabilities, not the legacy `UserRole` bucket: CONTEXT.md is
+/// explicit that `waiter`/`kitchen`/`admin` is a seed-and-reporting
+/// classification and never a permission. Reading it as one meant an `editMenu`
+/// holder was admitted by the route gate and then handed a read-only screen,
+/// while anything carrying `editSettings` got full CRUD it was never granted.
+///
+/// Not persisted anywhere, unlike [Capability] — renaming an arm costs nothing.
+enum MenuPermission {
+  /// `editMenu` — the whole catalogue: items, categories, tags, prices.
+  full,
+
+  /// `markSoldOut` without `editMenu`: the availability toggle and nothing
+  /// else. The seeded Kitchen role, which may pull tonight's dish but not
+  /// reprice it (ADR-0132).
+  soldOutOnly,
+
+  /// Neither. The route admits either capability, and a role can lose one while
+  /// the screen is still open.
+  readOnly,
+}
 
 /// Selected category filter ('all' = no filter).
 final menuAdminCategoryFilterProvider = StateProvider<String>((_) => 'all');
@@ -27,10 +46,21 @@ final menuAdminTabProvider = StateProvider<MenuAdminTab>(
 
 final menuPermissionProvider = Provider<MenuPermission>((ref) {
   final auth = ref.watch(authStateProvider);
-  return auth.user?.role == UserRole.admin
-      ? MenuPermission.admin
-      : MenuPermission.staff;
+  if (auth.has(Capability.editMenu)) return MenuPermission.full;
+  if (auth.has(Capability.markSoldOut)) return MenuPermission.soldOutOnly;
+  return MenuPermission.readOnly;
 });
+
+/// Whether this session may flip an item's availability.
+///
+/// Deliberately **not** derived from [MenuPermission]: `editMenu` and
+/// `markSoldOut` are orthogonal, so the tiers cannot express it. An owner may
+/// hold the catalogue and not the toggle, and `MenuPermission.full` would then
+/// render a button whose only outcome is the 403 this exists to stop — the same
+/// shape of bug, one enum further along. Ask the capability the write costs.
+final menuCanMarkSoldOutProvider = Provider<bool>(
+  (ref) => ref.watch(authStateProvider).has(Capability.markSoldOut),
+);
 
 /// Filtered list (search + category) used by the admin list.
 final menuAdminFilteredItemsProvider = Provider<List<MenuItem>>((ref) {

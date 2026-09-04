@@ -78,7 +78,15 @@ List<Capability>? _capabilityFor(String loc) {
     return const [Capability.openDrawer, Capability.closeShift];
   }
   if (loc.startsWith('/alerts')) return const [Capability.editSettings];
-  if (loc.startsWith('/stock')) return const [Capability.manageIngredients];
+  // Stock has two authorities, cut between the catalogue and the ledger
+  // (ADR-0132): `manageIngredients` authors a bahan, `adjustStock` moves its
+  // numbers. Either one opens the screen and each half renders for whoever
+  // holds it — the `/kas` shape. Narrowing to `manageIngredients` is what left
+  // the seeded Manager, who holds only `adjustStock`, bounced to /forbidden
+  // from the screen their capability is named after.
+  if (loc.startsWith('/stock')) {
+    return const [Capability.manageIngredients, Capability.adjustStock];
+  }
   if (loc.startsWith('/reports')) return const [Capability.viewReports];
   // Same permission as reports: both answer "what really happened in my
   // venue". Admin rows inside the log carry a second `manageStaff` check
@@ -134,7 +142,15 @@ List<Capability>? _capabilityFor(String loc) {
   // writes the screen makes. They used to share one `manageStaff` arm, which
   // meant a menu editor holding `editMenu` was bounced to /forbidden and only
   // an admin could open the screen their own capability was made for.
-  if (loc.startsWith('/menuadm')) return const [Capability.editMenu];
+  // Two authorities, and the menu list is where the second one is spent:
+  // `markSoldOut` is the staff availability toggle (CONTEXT.md §soldOut), and
+  // the seeded Kitchen role holds it with no `editMenu`, so gating on `editMenu`
+  // alone left that capability enforced server-side and reachable from nowhere.
+  // A `markSoldOut`-only holder gets the list and the toggle, nothing else —
+  // see `menuPermissionProvider`.
+  if (loc.startsWith('/menuadm')) {
+    return const [Capability.editMenu, Capability.markSoldOut];
+  }
   if (loc.startsWith('/zone-admin')) return const [Capability.editSettings];
   // `/system` is the seed and sample-data screen; every route behind it is
   // `manageStaff` server-side, and so is the hub that leads to it.

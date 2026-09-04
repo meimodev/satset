@@ -10,6 +10,7 @@ import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/repositories/roles_repository.dart';
 import 'package:satset/data/repositories/staff_repository.dart';
@@ -1271,6 +1272,16 @@ class _RolePermissionsDrawer extends ConsumerWidget {
     // The admin role is read-only end to end (ADR-0077). Locked here means the
     // whole sheet states rather than offers: no toggles, no rename, no delete.
     final locked = role.has(Capability.manageStaff);
+    // Defining what a role may do is its own authority (ADR-0132).
+    // `manageStaff` opens this screen and owns the name, the colour and
+    // the delete; rewriting the permission set costs `manageRoles`, which
+    // the server now demands of that half of the PATCH. Without it the
+    // rows still render — reading a role's permissions is the point of the
+    // sheet — but as state, the shape `roleLocked` already gives the admin
+    // role, rather than as a toggle that answers 403 on tap.
+    final canEditCaps = ref.watch(
+      authStateProvider.select((a) => a.has(Capability.manageRoles)),
+    );
     final memberCount = users
         .where((u) => u.roleId == role.id && !u.disabled)
         .length;
@@ -1408,7 +1419,11 @@ class _RolePermissionsDrawer extends ConsumerWidget {
                         child: Column(
                           children: [
                             for (final c in grouped[g]!)
-                              _CapRow(role: role, cap: c, roleLocked: locked),
+                              _CapRow(
+                                role: role,
+                                cap: c,
+                                roleLocked: locked || !canEditCaps,
+                              ),
                           ],
                         ),
                       ),

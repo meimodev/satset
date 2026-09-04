@@ -45,8 +45,15 @@ class DummyData {
         Capability.closeShift,
         Capability.editMenu,
         Capability.markSoldOut,
+        // The ledger, not the catalogue (ADR-0132): a manager receives the
+        // delivery and walks the opname; authoring a bahan changes what every
+        // recipe costs and stays the owner's, one tap away in the role sheet.
         Capability.adjustStock,
         Capability.manageStaff,
+        // Editing another role's permissions is a second authority on top of
+        // `manageStaff`. A manager holds both — theirs is the screen — but an
+        // upgraded venue gets it from the v73 backfill, not from here.
+        Capability.manageRoles,
         Capability.viewReports,
         Capability.editSettings,
         // A manager is exactly who spends from the box (§Kas kecil). Admin gets

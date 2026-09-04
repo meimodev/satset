@@ -7796,7 +7796,7 @@ class AppL10nId extends AppL10n {
 
   @override
   String get capAdjustStockDesc =>
-      'Catat opname, terima barang, dan buang bahan.';
+      'Terima barang, buang bahan, produksi batch, dan jalankan opname.';
 
   @override
   String get capManageIngredientsDesc =>

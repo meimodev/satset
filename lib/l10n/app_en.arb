@@ -2655,7 +2655,7 @@
   "capManageCashDesc": "Record expenses from the petty cash box. Funding and counting it need the settings permission.",
   "capEditMenuDesc": "Add, edit and remove menu items and categories.",
   "capMarkSoldOutDesc": "Flag an item sold out without touching ingredient stock.",
-  "capAdjustStockDesc": "Record a stocktake, receive goods and log waste.",
+  "capAdjustStockDesc": "Receive goods, log waste, produce batches and run a stocktake.",
   "capManageIngredientsDesc": "Add and edit ingredients and their recipes.",
   "capSellOpenItemDesc": "Type a line with its own name and price, with no menu row behind it.",
   "capOverrideStockDesc": "Send an order even when an ingredient reads empty.",
