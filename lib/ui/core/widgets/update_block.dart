@@ -10,8 +10,9 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/ui/core/widgets/update_action.dart';
 
-/// The mandatory-update block (ADR-0087). Covers everything, cannot be
+/// The mandatory-update block (ADR-0130). Covers everything, cannot be
 /// dismissed, and arrives the moment the floor does — not at the next launch.
 ///
 /// **A layer in the app builder, not a pushed route.** Pushing it would mean
@@ -24,6 +25,11 @@ import 'package:satset/ui/core/widgets/sat_button.dart';
 /// **It never stops the embedded server.** A host that tore its server down
 /// while blocked would tell every client "host offline" instead of "fetch an
 /// admin", which is the wrong instruction at the worst possible moment.
+///
+/// **Every device installs from here** (ADR-0131). This is the one place the
+/// action is ungated: the screen is already full-screen and already
+/// interrupting, so the button costs no quiet, and self-rescue matters most on
+/// a device that is out of service.
 class UpdateBlock extends ConsumerWidget {
   const UpdateBlock({super.key, required this.child});
 
@@ -52,10 +58,10 @@ class _BlockBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final min = ref.watch(releaseGateProvider).min ?? '';
-    // The Main Device is the only device that can act. Every other one — a
-    // staff client and an admin-client alike — is told who to fetch, because
-    // updating a hand-distributed app means a person holding the device.
-    final isHost = ref.watch(isHostDeviceProvider);
+    // Every device installs from here, ungated (ADR-0131, reversing ADR-0130).
+    // A device below `min` is out of service; refusing to let it unblock itself
+    // protects nobody and turns a two-minute install into a stranded handset
+    // waiting for someone with an admin session to walk over.
     final install = ref.watch(appUpdateServiceProvider);
 
     return Material(
@@ -85,13 +91,16 @@ class _BlockBody extends ConsumerWidget {
                   style: SatType.bodyM(color: sc.textDim),
                 ),
                 const SizedBox(height: Sp.s4),
-                if (isHost)
-                  _HostAction(install: install)
-                else
-                  Text(
-                    context.l10n.updateBlockedAskAdmin,
-                    style: SatType.bodyM(color: sc.textHi),
-                  ),
+                _InstallAction(install: install),
+                const SizedBox(height: Sp.s3),
+                // Kept, and demoted to a footnote. Every device can install
+                // now, but a device whose holder cannot get past Android's
+                // "install unknown apps" dialog still needs to be told who to
+                // fetch, and this screen is the only thing they can reach.
+                Text(
+                  context.l10n.updateBlockedAskAdmin,
+                  style: SatType.labelS(color: sc.textDim),
+                ),
               ],
             ),
           ),
@@ -101,8 +110,8 @@ class _BlockBody extends ConsumerWidget {
   }
 }
 
-class _HostAction extends ConsumerWidget {
-  const _HostAction({required this.install});
+class _InstallAction extends ConsumerWidget {
+  const _InstallAction({required this.install});
 
   final UpdateInstall install;
 
@@ -133,11 +142,7 @@ class _HostAction extends ConsumerWidget {
               ? context.l10n.updateRetry
               : context.l10n.updateAction,
           icon: Icons.download_rounded,
-          onTap: busy
-              ? null
-              : () => ref
-                    .read(appUpdateServiceProvider.notifier)
-                    .downloadAndInstall(),
+          onTap: busy ? null : () => startUpdate(context, ref),
         ),
       ],
     );

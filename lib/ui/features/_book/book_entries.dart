@@ -135,7 +135,7 @@ Override _grace(AdminGrace? g) =>
 Override _billing(VenueBillingNotice? n) =>
     venueBillingNoticeProvider.overrideWithValue(n);
 
-/// The release gate (ADR-0087), parked. `listen: false` keeps the notifier off
+/// The release gate (ADR-0130), parked. `listen: false` keeps the notifier off
 /// the cloud and off the socket, so a book state is exactly the gate it names.
 /// [host] is the Main Device question both widgets branch on.
 List<Override> _gate(ReleaseGate g, {bool host = true}) => [
@@ -148,13 +148,13 @@ List<Override> _gate(ReleaseGate g, {bool host = true}) => [
 /// The installer mid-flight. Inert — [AppUpdateService] starts nothing until
 /// `downloadAndInstall` is called, so seeding `state` touches no network.
 class _BookInstall extends AppUpdateService {
-  _BookInstall(UpdateInstall s) {
+  _BookInstall(super.ref, UpdateInstall s) {
     state = s;
   }
 }
 
 Override _install(UpdateInstall s) =>
-    appUpdateServiceProvider.overrideWith((ref) => _BookInstall(s));
+    appUpdateServiceProvider.overrideWith((ref) => _BookInstall(ref, s));
 
 final _menu = <Override>[
   menuItemsProvider.overrideWith((ref) => BookStubs.menuItems),

@@ -18,7 +18,7 @@
 #        FIREBASE_SERVICE_ACCOUNT = full JSON of a service account that has the
 #        "Firebase App Distribution Admin" role on project satset-3a795. The
 #        last step of this workflow also writes the release gate at
-#        config/release_gate (ADR-0087), which needs datastore.entities.create
+#        config/release_gate (ADR-0130), which needs datastore.entities.create
 #        / .update — the project's `firebase-adminsdk` account already carries
 #        both, via roles/firebase.sdkAdminServiceAgent, so a key generated from
 #        the Firebase console needs nothing added. A hand-rolled account with
@@ -68,7 +68,7 @@ workflows:
           set -e
           APK=build/app/outputs/flutter-apk/app-release.apk
           # Tags carry an optional severity suffix that drives the in-app update
-          # gate (ADR-0015): v1.0.2-recommended. It is not part of the version.
+          # gate (ADR-0130): v1.0.2-recommended. It is not part of the version.
           VERSION="${CM_TAG#v}"
           VERSION="${VERSION%%-*}"
           # Two names for one file: the versioned copy is the archive, the plain
@@ -82,7 +82,7 @@ workflows:
             "satset-$VERSION.apk" "satset.apk"
       # LAST step, deliberately. Raising the floor before the APK is published
       # points every device in the fleet at a download that does not exist yet,
-      # and nothing inside the app recovers from that. See ADR-0087.
+      # and nothing inside the app recovers from that. See ADR-0130.
       - name: Publish the release gate
         script: node tool/publish_release_gate.mjs "$CM_TAG"
     artifacts:

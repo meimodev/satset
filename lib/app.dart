@@ -46,7 +46,7 @@ class SatSetApp extends ConsumerWidget {
             child: MediaQuery.withClampedTextScaling(
               maxScaleFactor: 1.3,
               // Outermost of the two hosts: a device below the release floor
-              // must not be reachable by a ready toast either. See ADR-0087.
+              // must not be reachable by a ready toast either. See ADR-0130.
               child: UpdateBlock(
                 child: AlertHost(child: child ?? const SizedBox.shrink()),
               ),

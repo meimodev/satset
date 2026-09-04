@@ -10,15 +10,17 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/ui/core/widgets/update_action.dart';
 
-/// Shell notice that a newer build is out (ADR-0087). Third in the stack under
+/// Shell notice that a newer build is out (ADR-0130). Third in the stack under
 /// [AdminGraceBanner] and [VenueBillingBanner], and quieter than both: nothing
 /// is wrong, something is merely available.
 ///
-/// **Main Device only** — `serverRuntimeProvider` non-null. Not a capability
-/// check, because this is not about privilege: it is the one device that can
-/// act. A waiter cannot install, and an unactionable strip on a 360dp handset
-/// competes with the phone bar budget (ADR-0062) for no gain.
+/// **Main Device only** — `serverRuntimeProvider` non-null. Every device can
+/// install since ADR-0131, so this is no longer about who *can* act; it is the
+/// one surface that interrupts, and a strip a waiter did not ask for competes
+/// with the phone bar budget (ADR-0062) mid-rush for no gain. A handset learns
+/// about a newer build on the `/me` version line, where it went looking.
 ///
 /// No sheet, no snooze, no release notes. Two version numbers is the whole
 /// message — CI notes are `--generate-notes`, which is English commit subjects
@@ -58,10 +60,7 @@ class UpdateBanner extends ConsumerWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: busy
-              ? null
-              : () =>
-                    ref.read(appUpdateServiceProvider.notifier).downloadAndInstall(),
+          onTap: busy ? null : () => startUpdate(context, ref),
           borderRadius: SatR.a(12),
           child: Container(
             width: double.infinity,

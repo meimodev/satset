@@ -1384,6 +1384,24 @@ class AppL10nEn extends AppL10n {
       'Allow app installs from SatSet, then try again.';
 
   @override
+  String get updateHostWarnTitle => 'Update the main device?';
+
+  @override
+  String updateHostWarnBodyLive(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tables are',
+      one: '1 table is',
+    );
+    return '$_temp0 still live. Installing shuts the server down — every staff device disconnects until the install finishes.';
+  }
+
+  @override
+  String get updateHostWarnBody =>
+      'Installing shuts the server down. Staff devices cannot reconnect until the install finishes.';
+
+  @override
   String get fltReleaseGate => 'Release gate';
 
   @override
@@ -6796,6 +6814,11 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String meVersionUpdate(String installed, String latest) {
+    return 'Version $installed · $latest available';
+  }
+
+  @override
   String get liaFireNow => 'Fire now';
 
   @override
@@ -9974,6 +9997,17 @@ class AppL10nEnSv extends AppL10nEn {
 
   @override
   String get a11yTableLocked => 'Service locked';
+
+  @override
+  String updateHostWarnBodyLive(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n services are',
+      one: '1 service is',
+    );
+    return '$_temp0 still live. Installing shuts the server down — every staff device disconnects until the install finishes.';
+  }
 
   @override
   String expTableVisit(String label) {

@@ -869,11 +869,12 @@ redirect-ladder rung); `UpdateBanner`
 blocked (it has no host to have heard from). A paired client persists the
 last gate it saw and stays gated (or ungated) with the host down.
 
-**ADRs** — `docs/adr/0087-the-update-gate.md` (the whole feature — this
-repo carries two unrelated ADRs both numbered 0087; always cite by full
-filename, never "ADR-0087" alone, since
-`0087-permissions-are-edited-one-role-at-a-time.md` is a different decision
-entirely).
+**ADRs** — ADR-0130 (the whole feature) and ADR-0131 (the reversal: every
+device installs, the host mirrors the APK over the LAN, the `/me` version
+line becomes the pull surface). ADR-0130 was numbered 0087 until the
+collision with `0087-permissions-are-edited-one-role-at-a-time.md` was
+resolved; a pre-0131 comment citing "ADR-0087" for the update gate means
+0130.
 
 **Gotchas** — `min` is a **policy** floor, not a wire-compatibility floor —
 the LAN protocol is unaffected, and the host never rejects a client for its

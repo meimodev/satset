@@ -97,7 +97,7 @@ service cloud.firestore {
     }
 
     // Fleet-wide configuration that belongs to no venue and no admin. Today
-    // that is `config/release_gate` (ADR-0087): the min/recommended/latest
+    // that is `config/release_gate` (ADR-0130): the min/recommended/latest
     // versions the fleet may run. Every signed-in admin reads it — a host that
     // could not read the gate would fail open and never update — and no client
     // writes it. Codemagic writes it with a service account (which bypasses

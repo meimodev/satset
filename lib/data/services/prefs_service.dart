@@ -39,7 +39,7 @@ class PrefsService {
   /// tablets a venue actually buys ship `en_US` and never have it changed.
   static const _kLocale = 'satset.locale';
 
-  /// Last-known release gate (ADR-0087). Device-local like everything else
+  /// Last-known release gate (ADR-0130). Device-local like everything else
   /// here, and deliberately survives a restart: the block it drives must not be
   /// clearable by force-quitting the app.
   static const _kReleaseGate = 'satset.release_gate';
@@ -291,7 +291,7 @@ class PrefsService {
   }
 
   /// The last release gate this device heard, cached so a client stays gated
-  /// with its host down (ADR-0087).
+  /// with its host down (ADR-0130).
   ///
   /// Without it a blocked waiter phone would unblock itself by losing the
   /// wifi — the floor exists precisely for builds that must stop running, and

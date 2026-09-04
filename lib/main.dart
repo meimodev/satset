@@ -49,7 +49,7 @@ Future<void> main() async {
       await initializeDateFormatting('en_US');
       SatLog.init();
       // Before anything reads it: the mDNS advert carries it, and the release
-      // gate compares against it (ADR-0087).
+      // gate compares against it (ADR-0130).
       await AppVersion.load();
       FlutterError.onError = (details) {
         SatLog.err('flutter', details.exception, details.stack);

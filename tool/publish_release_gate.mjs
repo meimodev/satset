@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Publishes the release gate (ADR-0087) from a git tag.
+// Publishes the release gate (ADR-0130) from a git tag.
 //
 //   node tool/publish_release_gate.mjs v1.2.0-breaking
 //

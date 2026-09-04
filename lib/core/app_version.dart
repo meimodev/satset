@@ -5,7 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 /// A static rather than a provider because the two earliest readers are outside
 /// the widget tree: `main()` hands it to `ServerRuntime.boot`, which advertises
 /// it as `ver` in the mDNS TXT record before any `ProviderScope` exists. The
-/// release gate (ADR-0087) compares against this exact string.
+/// release gate (ADR-0130) compares against this exact string.
 ///
 /// Read from the package, never from a constant kept in step with
 /// `pubspec.yaml`: `ServerRuntime.defaultVersion` was such a constant, and it

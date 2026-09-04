@@ -30,6 +30,7 @@
   "liaTableAt": "LAYANAN {table} · {time}",
   "meAuditTable": "Layanan {table}",
   "meEndServerBodyLive": "{n, plural, other{{n} layanan}} masih aktif. Keluar akan mematikan server — semua staff terputus dan tidak bisa menyambung sampai admin masuk lagi.",
+  "updateHostWarnBodyLive": "{n, plural, other{{n} layanan}} masih aktif. Memasang akan mematikan server — semua staff terputus sampai pemasangan selesai.",
   "memVisitNoTable": "Tanpa layanan",
   "mnuAddToTable": "Tambah ke Layanan {table}",
   "mnuHeadTable": "PESANAN BARU · LAYANAN {table}",

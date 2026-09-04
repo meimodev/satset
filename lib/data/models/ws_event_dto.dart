@@ -97,7 +97,7 @@ class WsEventTypes {
   /// cashier list + any open bill detail re-fetch. See ADR-0023.
   static const billUpdated = 'bill.updated';
 
-  /// The [[Release gate]] changed in the cloud (ADR-0087). Payload is the gate
+  /// The [[Release gate]] changed in the cloud (ADR-0130). Payload is the gate
   /// itself — `{min, recommended, latest}`, any key absent. Only the host reads
   /// Firebase, so this is how a client hears that a floor moved without waiting
   /// for its next `/healthz` poll.

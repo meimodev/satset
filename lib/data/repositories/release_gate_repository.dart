@@ -13,7 +13,7 @@ import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/domain/models/release_gate.dart';
 import 'package:satset/server/server.dart';
 
-/// Owns this device's view of the [[Release gate]] (ADR-0087), from whichever
+/// Owns this device's view of the [[Release gate]] (ADR-0130), from whichever
 /// of the two sources it has.
 ///
 /// **The host reads the cloud; everyone else reads the host.** Clients never
@@ -112,12 +112,24 @@ class ReleaseGateRepository extends StateNotifier<ReleaseGate> {
   }
 
   void _apply(ReleaseGate next) {
+    // The provider watches prefs and `apiConfig`, so this notifier is rebuilt
+    // mid-boot — and an in-flight `/healthz` from the disposed instance lands
+    // afterwards. Writing `state` then throws, which on a client means the one
+    // gate read that happens before login is swallowed by a stack trace.
+    if (!mounted) return;
+    // Relay to the LAN *before* the equality check, and unconditionally. Only
+    // the host has a runtime; on a client this is null and the write is
+    // skipped. It cannot sit below the early return: this notifier restarts
+    // from the prefs cache while `ServerRuntime.releaseGate` restarts at
+    // `unknown`, so on the common boot — cloud agrees with the cache — the
+    // runtime would never learn the gate at all. `/healthz` would omit it, no
+    // `releaseGate` broadcast would fire, and the [[Salinan APK]] would never
+    // prefetch. `publishReleaseGate` is itself idempotent, so relaying every
+    // time costs nothing.
+    ref.read(serverRuntimeProvider)?.publishReleaseGate(next);
     if (next == state) return;
     state = next;
     SatLog.repo('release gate = $next (installed ${AppVersion.value})');
-    // Relay to the LAN. Only the host has a runtime; on a client this is null
-    // and the write is skipped.
-    ref.read(serverRuntimeProvider)?.publishReleaseGate(next);
     unawaited(ref.read(prefsServiceProvider).valueOrNull?.setReleaseGate(next) ??
         Future<void>.value());
   }
@@ -140,6 +152,13 @@ final releaseGateProvider =
       // carries the floor. Watching prefs (not reading) means the seed lands as
       // soon as SharedPreferences resolves.
       final prefs = ref.watch(prefsServiceProvider).valueOrNull;
+      // And watched, not read, for the same reason ADR-0128 gives for the
+      // venue settings: `_start` gives up when there is no paired address, so a
+      // device that pairs *after* launch would never re-enter it and would sit
+      // with no gate — no `/healthz` read, no socket wired — until the next
+      // cold boot. A `min` floor that waits for a restart is not the immediate
+      // block ADR-0130 specifies.
+      ref.watch(apiConfigProvider);
       return ReleaseGateRepository(
         ref: ref,
         seed: prefs?.releaseGate() ?? ReleaseGate.unknown,
@@ -160,7 +179,7 @@ final updateVerdictProvider = Provider<UpdateVerdict>(
 
 /// True on the Main Device. Not a capability — the question the update UI asks
 /// is "can this device install the APK", and only the one running the server
-/// can (ADR-0087). Its own provider so the book can answer it without a
+/// can (ADR-0130). Its own provider so the book can answer it without a
 /// [ServerRuntime].
 final isHostDeviceProvider = Provider<bool>(
   (ref) => ref.watch(serverRuntimeProvider) != null,

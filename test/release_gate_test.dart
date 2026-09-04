@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:satset/domain/models/release_gate.dart';
 
 /// The gate decides whether a restaurant keeps trading, so the two things worth
-/// pinning are the ordering and the fail-open. See ADR-0087.
+/// pinning are the ordering and the fail-open. See ADR-0130.
 void main() {
   test('parses only three plain integers', () {
     expect(parseVersion('1.2.3'), [1, 2, 3]);
@@ -25,13 +25,27 @@ void main() {
     expect(compareVersions('1.0.0', 'nonsense'), 0);
   });
 
-  test('verdict: below min blocks, below recommended nags, else nothing', () {
+  test('verdict: blocked, then nagged, then offered, then nothing', () {
     const g = ReleaseGate(min: '1.2.0', recommended: '1.4.0', latest: '1.5.0');
     expect(g.verdictFor('1.1.9'), UpdateVerdict.blocked);
     expect(g.verdictFor('1.2.0'), UpdateVerdict.recommended);
     expect(g.verdictFor('1.3.9'), UpdateVerdict.recommended);
-    expect(g.verdictFor('1.4.0'), UpdateVerdict.none);
+    // The gap ADR-0131 closed: at or past `recommended` but behind `latest`
+    // used to read as "nothing to say", so a plain-tagged release was
+    // unreachable from inside the app on every device in the fleet.
+    expect(g.verdictFor('1.4.0'), UpdateVerdict.available);
+    expect(g.verdictFor('1.4.9'), UpdateVerdict.available);
+    expect(g.verdictFor('1.5.0'), UpdateVerdict.none);
     expect(g.verdictFor('2.0.0'), UpdateVerdict.none);
+  });
+
+  test('a plain tag is offered even with no floors set', () {
+    // The whole fleet's normal case: CI moved `latest` and nothing else.
+    const g = ReleaseGate(latest: '1.0.9');
+    expect(g.verdictFor('1.0.8'), UpdateVerdict.available);
+    expect(g.verdictFor('1.0.9'), UpdateVerdict.none);
+    // Still fails open on a version nobody can parse.
+    expect(g.verdictFor('1.0.8+9'), UpdateVerdict.none);
   });
 
   test('everything unknown fails open', () {

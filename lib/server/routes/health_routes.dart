@@ -6,7 +6,7 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:satset/domain/models/release_gate.dart';
 
 /// Liveness probe, and the one carrier of the release gate that a client can
-/// read **before it logs in** (ADR-0087).
+/// read **before it logs in** (ADR-0130).
 ///
 /// `/healthz` is in the auth middleware's skip set and is already polled by
 /// `ping_repository`, which is exactly why the gate rides here rather than on a

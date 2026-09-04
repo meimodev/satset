@@ -38,11 +38,13 @@ import 'routes/self_order_routes.dart';
 import 'routes/settlement_routes.dart';
 import 'routes/tables_routes.dart';
 import 'routes/tickets_routes.dart';
+import 'routes/update_routes.dart';
 import 'routes/venue_day_routes.dart';
 import 'routes/venue_settings_routes.dart';
 import 'guest/guest_plane.dart';
 import 'self_order.dart' show guestRules;
 import 'tls.dart';
+import 'update_mirror.dart';
 import 'ws_hub.dart';
 
 /// App-level handle to the in-process server. Boot wires this for
@@ -81,7 +83,7 @@ class ServerRuntime {
   final int port;
 
   /// The release gate this host last saw in the cloud, relayed to every client
-  /// over the LAN (ADR-0087).
+  /// over the LAN (ADR-0130).
   ///
   /// Held on the runtime rather than fetched per request because only the host
   /// has Firebase — a client learns the floor from `/healthz` and from the
@@ -89,6 +91,10 @@ class ServerRuntime {
   /// cannot reach. [ReleaseGate.unknown] until the listener delivers, which
   /// fails every device open.
   ReleaseGate releaseGate = ReleaseGate.unknown;
+
+  /// The [[Salinan APK]] this host serves to the LAN (ADR-0131). Filled by
+  /// [publishReleaseGate], read by `/update/apk`.
+  final UpdateMirror updateMirror = UpdateMirror();
 
   /// Stores the gate and, when it actually changed, tells the floor.
   ///
@@ -100,6 +106,11 @@ class ServerRuntime {
     releaseGate = next;
     SatLog.srv('release gate → $next');
     hub.broadcast(WsEventTypes.releaseGate, next.toJson());
+    // Eagerly, not on demand (ADR-0131): the mirror exists for the venue whose
+    // uplink is down, and a cache that fills when somebody asks is empty
+    // exactly then. Unawaited and best-effort — a host with no internet is not
+    // a host with a problem to report.
+    unawaited(updateMirror.ensure(next.latest, version));
   }
   HttpServer? _http;
 
@@ -201,6 +212,9 @@ class ServerRuntime {
     await rt._syncGuestPlane();
     rt._startStatusTicker();
     rt._startPrinterHeartbeat();
+    // Re-derive what survived the last process before any client can ask. The
+    // version is the filename, so there is no state file to reconcile.
+    await rt.updateMirror.load();
     return rt;
   }
 
@@ -339,6 +353,7 @@ class ServerRuntime {
   Router _buildRouter() {
     final r = Router();
     r.mount('/', healthRoutes(() => releaseGate).call);
+    r.mount('/', updateRoutes(updateMirror).call);
     r.mount('/', authRoutes(auth).call);
     r.mount('/', menuRoutes(db, hub, auth).call);
     r.mount('/', stockRoutes(db, hub, auth).call);
@@ -529,7 +544,14 @@ const _corsHeaders = {
 };
 
 Middleware _authMiddleware(ServerAuth auth) {
-  const skip = {'/healthz', '/auth/login', '/pair/auto-claim'};
+  const skip = {
+    '/healthz',
+    '/auth/login',
+    '/pair/auto-claim',
+    // The [[Salinan APK]] (ADR-0131). A blocked device may have no session to
+    // present, and the body is a public GitHub artefact byte for byte.
+    '/update/apk',
+  };
   return (Handler inner) {
     return (Request req) async {
       final path = '/${req.url.path}';

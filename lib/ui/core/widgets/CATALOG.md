@@ -148,8 +148,9 @@ All collapse to a static final frame under reduced motion. Callers never branch 
 | `AlertHost` | `alert_host.dart` | App-wide alert sound keep-alive + `ReadyToast` host. Wrap the router child. |
 | `AdminGraceBanner` | `admin_grace_banner.dart` | Offline-stale countdown on a Server-mode device. |
 | `VenueBillingBanner` | `venue_billing_banner.dart` | Subscription ending/lapsed notice. `editSettings` only; taps to WhatsApp. |
-| `UpdateBanner` | `update_banner.dart` | "A newer build is out" nag. Main Device only; taps to download + install (ADR-0087). |
-| `UpdateBlock` | `update_block.dart` | Mandatory-update cover. Non-dismissible layer above the router; wrap the router child. |
+| `UpdateBanner` | `update_banner.dart` | "A newer build is out" nag. `recommended` only, Main Device only — the one update surface that interrupts (ADR-0130, ADR-0131). |
+| `UpdateBlock` | `update_block.dart` | Mandatory-update cover. Non-dismissible layer above the router; wrap the router child. Installs on **every** device, ungated (ADR-0131). |
+| `startUpdate()` | `update_action.dart` | Not a widget — the one entry into the installer from the UI. Warns with the live-table count on the host, whose install stops the server (ADR-0131). Banner, block and the `/me` version line all go through it. |
 
 ---
 

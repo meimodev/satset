@@ -2427,7 +2427,7 @@ abstract class AppL10n {
   /// **'Ketuk untuk perpanjang lewat WhatsApp.'**
   String get billingCta;
 
-  /// Shell banner on the Main Device only (ADR-0087). Version numbers only — no release notes.
+  /// Shell banner on the Main Device only (ADR-0130). Version numbers only — no release notes.
   ///
   /// In id, this message translates to:
   /// **'Versi {latest} tersedia. Perangkat ini di {installed}.'**
@@ -2486,6 +2486,24 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Izinkan pemasangan aplikasi dari SatSet, lalu coba lagi.'**
   String get updatePermissionNeeded;
+
+  /// Confirm dialog before the host installs — the install replaces the process and stops the embedded server (ADR-0131).
+  ///
+  /// In id, this message translates to:
+  /// **'Perbarui perangkat utama?'**
+  String get updateHostWarnTitle;
+
+  /// Host install warning while tables are still live.
+  ///
+  /// In id, this message translates to:
+  /// **'{n, plural, other{{n} meja}} masih aktif. Memasang akan mematikan server — semua staff terputus sampai pemasangan selesai.'**
+  String updateHostWarnBodyLive(int n);
+
+  /// Host install warning with no live tables.
+  ///
+  /// In id, this message translates to:
+  /// **'Memasang akan mematikan server. Staff tidak bisa menyambung sampai pemasangan selesai.'**
+  String get updateHostWarnBody;
 
   /// No description provided for @fltReleaseGate.
   ///
@@ -10734,6 +10752,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Versi {version} ({build})'**
   String meVersion(String version, String build);
+
+  /// The /me version line when a newer build exists (ADR-0131). The only surface a plain-tagged release reaches.
+  ///
+  /// In id, this message translates to:
+  /// **'Versi {installed} · {latest} tersedia'**
+  String meVersionUpdate(String installed, String latest);
 
   /// No description provided for @liaFireNow.
   ///

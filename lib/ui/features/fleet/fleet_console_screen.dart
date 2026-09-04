@@ -145,7 +145,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
                         ),
                         const SizedBox(width: Sp.s1),
                         // Fleet-wide, not per-venue — so it sits in the
-                        // toolbar and not on a tile. See ADR-0087.
+                        // toolbar and not on a tile. See ADR-0130.
                         SatIconButton.plain(
                           icon: Icons.system_update_alt_rounded,
                           tooltip: context.l10n.fltReleaseGate,
@@ -567,7 +567,7 @@ class _FleetConsoleScreenState extends ConsumerState<FleetConsoleScreen> {
     );
   }
 
-  /// The manual override on the gate CI writes from the tag (ADR-0087). Rare,
+  /// The manual override on the gate CI writes from the tag (ADR-0130). Rare,
   /// fleet-wide, and the only way back from a `-breaking` tag that blocked a
   /// fleet mid-service — so it is a toolbar button and not a venue action.
   Future<void> _releaseGateDialog() async {
@@ -772,7 +772,7 @@ class _NewVenueDialogState extends State<NewVenueDialog> {
   }
 }
 
-/// The release gate override (ADR-0087). Three version fields, no version
+/// The release gate override (ADR-0130). Three version fields, no version
 /// picker and no release list: the super admin is reading the tag they just
 /// pushed off another screen, and a picker here would need its own source of
 /// truth for what has been built.

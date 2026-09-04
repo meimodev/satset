@@ -346,7 +346,7 @@ class FirebaseAdminService {
   Stream<Venue?> watchVenue(String vid) =>
       _venueDoc(vid).snapshots().map((s) => _venueFromSnap(vid, s));
 
-  /// Live release-gate listener (`config/release_gate`). See ADR-0087.
+  /// Live release-gate listener (`config/release_gate`). See ADR-0130.
   ///
   /// The one document in this app that belongs to no venue and no admin — it
   /// describes which builds of SatSet the fleet may run, which is a fact about

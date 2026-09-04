@@ -543,7 +543,7 @@ The venue-side counterpart to [[Venue billing]] — a shell banner on the [[Main
 **Gated on `editSettings`**, which the grace banner deliberately is not: reconnecting the wifi is operational and any staff member can act on it, while "the restaurant has not paid" read by a waiter mid-shift is a different message with no action attached. Tapping opens WhatsApp to the developer with the venue's **name and id** prefilled — names repeat across the fleet, the id is what makes the venue findable in one tap on the other end. There is no in-app payment; this is the whole of the renewal path. _Avoid_: showing it to the floor; wording it as a shutdown warning; a second definition of "ending" that disagrees with the console's.
 
 ### Release gate (Gerbang versi)
-**ID · EN** — Pembaruan · Update; Perbarui · Update (the button); Versi · Version; Pembaruan wajib · Mandatory update.
+**ID · EN** — Pembaruan · Update; Perbarui · Update (the button); Versi · Version; Pembaruan wajib · Mandatory update; Pembaruan tersedia · Update available.
 
 Three semver strings — `min`, `recommended`, `latest` — in **one global Firestore doc**, `config/release_gate`, describing what the fleet is allowed to be running. Not per-venue: the gate says which builds of SatSet are acceptable anywhere, and a venue-by-venue floor would be a rollout schedule, which is a different thing nobody asked for.
 
@@ -553,7 +553,9 @@ Written by **Codemagic, from the release tag** — `/push-deploy`'s `-breaking` 
 
 **An unknown gate never blocks.** No doc, no network, an unparseable version — every one of them fails open. Comparison is on `versionName` alone; the build number is invisible to the gate, because CI is free to move it and the tag is not.
 
-_Avoid_: a per-venue gate; a gate written before the artefact exists; blocking on a version the device could not read; reading the build number.
+Four verdicts, in order: **blocked** (below `min`), **recommended** (below `recommended`), **[[Pembaruan tersedia]]** (below `latest`) and none. The first two are pushed at the device; the third is only ever offered.
+
+_Avoid_: a per-venue gate; a gate written before the artefact exists; blocking on a version the device could not read; reading the build number; a plain release that no surface in the app can reach.
 
 ### Pembaruan wajib (Mandatory update)
 **ID · EN** — Pembaruan wajib · Mandatory update; "Versi ini tidak didukung lagi" · "This version is no longer supported"; "Minta admin memperbarui perangkat ini" · "Ask an admin to update this device".
@@ -562,9 +564,25 @@ A **policy floor, not a wire-compatibility floor**. `min` is a decree — a bad 
 
 Below `min` the device shows a **non-dismissible block, immediately, wherever the user is** — not at the next cold launch. This is deliberately harsher than the [[Offline grace period]] lock, which "only bites on restart": that guard protects against a network the venue can fix, this one against a build the venue must stop running. The cost is real and accepted — a wrong `-breaking` tag darkens the fleet mid-service, and the console override is the mitigation, not a cure. **The block never stops the embedded server**, or a client would report the host offline instead of telling its holder to fetch an admin.
 
-Between `recommended` and `latest` the [[Main Device]] alone carries a **persistent shell banner** — no sheet, no snooze, no release notes, just the two version numbers. Nothing else is nagged: a waiter cannot install and telling them is noise on the one screen that must stay quiet under chaos.
+Between `recommended` and `latest` the [[Main Device]] alone carries a **persistent shell banner** — no sheet, no snooze, no release notes, just the two version numbers. Nothing else is nagged: the banner is the one surface that interrupts, and a strip on a waiter's handset mid-rush buys nothing the version line does not (ADR-0131).
 
-**Only the [[Main Device]] ever installs.** It downloads the signed APK from the GitHub Release the website already links to and hands it to Android's package installer. Every other device — staff client and admin-client alike — is told to fetch an admin, because SatSet is distributed by hand and updating a device means someone holding it. _Avoid_: a staff-installable update; a block that also tears down the server; a nag on a device that cannot act on it; release notes written for developers on a screen read by a restaurant owner.
+**Every device installs, and the block screen is where any of them may** (ADR-0131, reversing ADR-0130). Install is **ungated while blocked** — a device below `min` is out of service and unblocking it is never the wrong act — and needs **`editSettings`** otherwise, because a discretionary 60 MB pull and a process restart on a live handset is a manager's call. Discretionary installs happen on the **[[Pembaruan tersedia]]** version line; a device without the capability sees that line as state, never as a tap that refuses.
+
+**A host install takes the venue down and says so** — the process is replaced, so the embedded server stops and every client loses its host. It warns with the live-table count and proceeds, mirroring the [[Admin session (Firebase-gated)|admin logout]]; refusing while tables are live would leave a venue that never closes one unable to comply with a floor. A client install takes down only itself. _Avoid_: a block that also tears down the server; a nag on a device that cannot act on it; refusing an install to protect a live service a floor already condemned; release notes written for developers on a screen read by a restaurant owner.
+
+### Pembaruan tersedia (Update available)
+**ID · EN** — Pembaruan tersedia · Update available; "Versi 1.0.8 · 1.0.9 tersedia" · "Version 1.0.8 · 1.0.9 available".
+
+The verdict for a device below `latest` that has crossed no floor — the ordinary plain-tagged release. **Offered, never pushed**: it draws no banner and interrupts nothing, and lives as a second number on the `/me` version line every device already shows. `editSettings` makes that line a control; without it the line states the fact and stops.
+
+It exists because the fleet's normal release moves `latest` alone, and for eight releases nothing in the app could reach one — the update was in-app in principle and a website download in practice. _Avoid_: promoting it to a banner; treating it as a weaker `recommended` (the difference is who initiates, not how urgent it is).
+
+### Salinan APK (APK mirror)
+**ID · EN** — Salinan APK · APK mirror.
+
+The [[Main Device]]'s cached copy of the release APK, served to the LAN at the unauthenticated `GET /update/apk?v=<versi>` and **prefetched** the moment the gate's `latest` passes the host's own version. One file, in the app support directory rather than the cache — it exists to still be there during the uplink outage that is the only reason to hold it, and Android evicts caches without asking. The host 404s a version it does not hold and the client falls back to the GitHub Release directly.
+
+No hash and no signature check of SatSet's own: Android refuses an APK signed by a different key over an installed package, which is the actual protection. _Avoid_: serving it on the cleartext guest plane (ADR-0105); keeping more than one release; a mirror that only fills when someone updates the host.
 
 ### Shift
 **ID · EN** — Shift · Shift; Ringkasan shift · Shift summary; Saya · Me. The exit: "Keluar" · "Sign out". There is exactly one, so it needs no qualifier — the longer "Akhiri shift & keluar" named the exit that had a twin to be told apart from, and the twin is gone.

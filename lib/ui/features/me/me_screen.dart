@@ -29,6 +29,10 @@ import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/features/me/widgets/theme_sheet.dart';
 import 'package:satset/ui/features/orders/view_models/orders_scope.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/data/repositories/release_gate_repository.dart';
+import 'package:satset/data/services/app_update_service.dart';
+import 'package:satset/domain/models/release_gate.dart';
+import 'package:satset/ui/core/widgets/update_action.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
 import 'package:satset/ui/core/state/tickers.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
@@ -1032,20 +1036,92 @@ class _AuditRow extends StatelessWidget {
   }
 }
 
-/// Which build this is. Read from the installed package rather than a constant
-/// (see [AppVersion]) — a number kept in step with `pubspec.yaml` by hand is a
-/// number that says 1.0.0 forever. Empty on a platform that cannot answer, and
-/// the line is then absent rather than showing an empty bracket.
-class _VersionLine extends StatelessWidget {
+/// Which build this is, and — since ADR-0131 — the **[[Pembaruan tersedia]]**
+/// pull surface.
+///
+/// Read from the installed package rather than a constant (see [AppVersion]) —
+/// a number kept in step with `pubspec.yaml` by hand is a number that says
+/// 1.0.0 forever. Empty on a platform that cannot answer, and the line is then
+/// absent rather than showing an empty bracket.
+///
+/// **This is the only surface a plain release reaches.** A plain tag moves
+/// `latest` alone, the banner is `recommended` and host-only, and for eight
+/// releases that combination meant no device in the fleet could see a newer
+/// build from inside the app at all.
+///
+/// **A device without `editSettings` sees state, not a refused tap** — text, no
+/// gesture target, one `Semantics` label. Same shape ADR-0087 settled for
+/// locked capability rows, and the same reason: a control that exists only to
+/// refuse you is worse than a fact. This is how a waiter's handset gets
+/// updated in practice — a manager takes the phone and signs in.
+class _VersionLine extends ConsumerWidget {
   const _VersionLine();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (AppVersion.value.isEmpty) return const SizedBox.shrink();
-    return Text(
-      context.l10n.meVersion(AppVersion.value, AppVersion.build),
-      textAlign: TextAlign.center,
-      style: SatType.monoS(color: context.sat.textDim),
+    final sc = context.sat;
+    final base = context.l10n.meVersion(AppVersion.value, AppVersion.build);
+
+    // Offered whenever a newer build exists, not on one verdict: `available`
+    // and `recommended` are the same job here (the banner is the thing that
+    // differs, and it is elsewhere), and `blocked` is already covered by a
+    // screen the user cannot get past.
+    final latest = ref.watch(releaseGateProvider).latest;
+    if (latest == null || compareVersions(AppVersion.value, latest) >= 0) {
+      return Text(
+        base,
+        textAlign: TextAlign.center,
+        style: SatType.monoS(color: sc.textDim),
+      );
+    }
+
+    final install = ref.watch(appUpdateServiceProvider);
+    final busy = install is UpdateDownloading || install is UpdateOpening;
+    final line = switch (install) {
+      UpdateDownloading(:final percent) =>
+        context.l10n.updateDownloading(percent ?? 0),
+      UpdateOpening() => context.l10n.updateInstalling,
+      UpdateFailed() => context.l10n.updateFailed,
+      UpdateNeedsPermission() => context.l10n.updatePermissionNeeded,
+      UpdateIdle() => context.l10n.meVersionUpdate(AppVersion.value, latest),
+    };
+
+    final may = ref.watch(authStateProvider).has(Capability.editSettings);
+    if (!may || busy) {
+      return Semantics(
+        label: line,
+        child: ExcludeSemantics(
+          child: Text(
+            line,
+            textAlign: TextAlign.center,
+            style: SatType.monoS(color: sc.info),
+          ),
+        ),
+      );
+    }
+
+    final cta = install is UpdateFailed || install is UpdateNeedsPermission
+        ? context.l10n.updateRetry
+        : context.l10n.updateAction;
+    return Semantics(
+      button: true,
+      label: '$line $cta',
+      child: InkWell(
+        onTap: () => startUpdate(context, ref),
+        borderRadius: SatR.a(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Sp.s2,
+            vertical: Sp.s1,
+          ),
+          child: Text(
+            '$line · $cta',
+            textAlign: TextAlign.center,
+            style: SatType.monoS(color: sc.info),
+          ),
+        ),
+      ),
     );
   }
 }

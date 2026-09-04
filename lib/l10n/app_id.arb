@@ -606,7 +606,7 @@
   "billingCta": "Ketuk untuk perpanjang lewat WhatsApp.",
   "updateAvailable": "Versi {latest} tersedia. Perangkat ini di {installed}.",
   "@updateAvailable": {
-    "description": "Shell banner on the Main Device only (ADR-0087). Version numbers only — no release notes.",
+    "description": "Shell banner on the Main Device only (ADR-0130). Version numbers only — no release notes.",
     "placeholders": {
       "latest": {
         "type": "String"
@@ -642,6 +642,23 @@
   "updateFailed": "Unduhan gagal. Periksa koneksi lalu coba lagi.",
   "updateRetry": "Coba lagi",
   "updatePermissionNeeded": "Izinkan pemasangan aplikasi dari SatSet, lalu coba lagi.",
+  "updateHostWarnTitle": "Perbarui perangkat utama?",
+  "@updateHostWarnTitle": {
+    "description": "Confirm dialog before the host installs — the install replaces the process and stops the embedded server (ADR-0131)."
+  },
+  "updateHostWarnBodyLive": "{n, plural, other{{n} meja}} masih aktif. Memasang akan mematikan server — semua staff terputus sampai pemasangan selesai.",
+  "@updateHostWarnBodyLive": {
+    "description": "Host install warning while tables are still live.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "updateHostWarnBody": "Memasang akan mematikan server. Staff tidak bisa menyambung sampai pemasangan selesai.",
+  "@updateHostWarnBody": {
+    "description": "Host install warning with no live tables."
+  },
   "fltReleaseGate": "Gerbang versi",
   "fltReleaseGateHint": "Kosongkan untuk menghapus batas.",
   "fltReleaseGateMin": "Minimum (wajib)",
@@ -5131,6 +5148,18 @@
   "meKpiCovers": "Cover dilayani",
   "meSignOut": "Keluar",
   "meVersion": "Versi {version} ({build})",
+  "meVersionUpdate": "Versi {installed} · {latest} tersedia",
+  "@meVersionUpdate": {
+    "description": "The /me version line when a newer build exists (ADR-0131). The only surface a plain-tagged release reaches.",
+    "placeholders": {
+      "installed": {
+        "type": "String"
+      },
+      "latest": {
+        "type": "String"
+      }
+    }
+  },
   "@meVersion": {
     "description": "App version and build number, at the foot of /me.",
     "placeholders": {

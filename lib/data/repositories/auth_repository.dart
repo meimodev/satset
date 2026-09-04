@@ -594,7 +594,7 @@ class AuthRepository extends StateNotifier<AuthState> {
     // listener, but it needs the same trigger: a Firebase session exists now
     // where none did at construction. It is deliberately *not* torn down beside
     // the others — a host whose venue was suspended still relays the floor to
-    // clients that are showing the suspension notice. See ADR-0087.
+    // clients that are showing the suspension notice. See ADR-0130.
     ref.read(releaseGateProvider.notifier).refreshCloudWatch();
 
     _eligibilitySub = fb.watch(uid).listen((profile) async {

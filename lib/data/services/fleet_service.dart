@@ -38,7 +38,7 @@ class FleetService {
       .snapshots(includeMetadataChanges: true)
       .map((q) => [for (final d in q.docs) _admin(d)]);
 
-  /// The one global release gate (ADR-0087). Not per-venue: a floor that some
+  /// The one global release gate (ADR-0130). Not per-venue: a floor that some
   /// venues are under and others are not is a fleet nobody can reason about.
   Stream<ReleaseGate> watchReleaseGate() => _fs
       .collection('config')
@@ -189,7 +189,7 @@ class FleetService {
   /// Overrides the gate CI wrote from the tag. The only undo for a `-breaking`
   /// tag that should not have been one — every device in the fleet is blocked
   /// until this doc says otherwise. Empty string clears a floor; the callable
-  /// rejects `min > recommended > latest`. See ADR-0087.
+  /// rejects `min > recommended > latest`. See ADR-0130.
   Future<void> setReleaseGate({
     required String min,
     required String recommended,

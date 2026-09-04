@@ -1,6 +1,12 @@
-# ADR-0087 — The update gate: a nudge on the host, a floor for everyone
+# ADR-0130 — The update gate: a nudge on the host, a floor for everyone
 
-Status: accepted
+Status: accepted — the install half is amended by
+[ADR-0131](0131-the-update-reaches-every-device.md), which reverses "only the
+Main Device installs" and adds the LAN mirror. The gate itself (`min` /
+`recommended` / `latest`, who reads the cloud, how the block renders) is
+unchanged. Numbered 0087 until the collision with
+[0087-permissions-are-edited-one-role-at-a-time.md](0087-permissions-are-edited-one-role-at-a-time.md)
+was resolved.
 Date: 2026-08-08
 
 Amends [ADR-0015](0015-firebase-admin-auth-and-server-kill-switch.md) (a second

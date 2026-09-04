@@ -1,4 +1,4 @@
-/// The release gate (ADR-0087): which builds of SatSet the fleet may run.
+/// The release gate (ADR-0130): which builds of SatSet the fleet may run.
 ///
 /// Three plain `MAJOR.MINOR.PATCH` strings, any of which may be absent. The
 /// build number never appears — CI is free to move it and the release tag never
@@ -10,6 +10,17 @@
 /// that turns it into a verdict must be the same code on both sides.
 library;
 
+/// The download every device installs from, and the one the [[Salinan APK]]
+/// mirrors (ADR-0130, ADR-0131).
+///
+/// Stable by construction — GitHub resolves `/latest/` to whatever the newest
+/// release holds — so nothing in the app is ever told a URL and a rolled-back
+/// release fixes every device at once. It lives beside the gate rather than in
+/// either half of the app because both halves fetch it: the host mirrors it to
+/// the LAN, a client falls back to it when the host cannot serve.
+const satsetApkUrl =
+    'https://github.com/meimodev/satset/releases/latest/download/satset.apk';
+
 /// What the gate says about one installed version.
 enum UpdateVerdict {
   /// Current enough. The overwhelmingly common case, and what every unknown
@@ -17,11 +28,25 @@ enum UpdateVerdict {
   none,
 
   /// At or above [ReleaseGate.min] but below [ReleaseGate.recommended]. The
-  /// Main Device nags; nothing else is told (ADR-0087).
+  /// Main Device nags; nothing else is told (ADR-0130).
   recommended,
 
   /// Below [ReleaseGate.min]. Non-dismissible block, immediately.
   blocked,
+
+  /// At or above [ReleaseGate.recommended] but below [ReleaseGate.latest] —
+  /// the ordinary plain-tagged release (ADR-0131).
+  ///
+  /// **Offered, never pushed.** It draws no banner and interrupts nothing; it
+  /// exists so that a newer build is reachable from inside the app at all. For
+  /// eight releases it was not: a plain tag moves only `latest`, and nothing
+  /// read `latest`.
+  ///
+  /// Declared last rather than in severity order because the order that
+  /// matters is the one [ReleaseGate.verdictFor] tests in, and putting it
+  /// third here would imply an ordering on the enum that no caller may rely
+  /// on.
+  available,
 }
 
 class ReleaseGate {
@@ -31,7 +56,10 @@ class ReleaseGate {
   /// Below this, the host nags.
   final String? recommended;
 
-  /// What the GitHub Release currently holds. Shown, never enforced.
+  /// What the GitHub Release currently holds.
+  ///
+  /// Shown and now **offerable** — [UpdateVerdict.available] reads it — but
+  /// still never enforced: nothing is blocked or nagged for being below it.
   final String? latest;
 
   const ReleaseGate({this.min, this.recommended, this.latest});
@@ -73,6 +101,7 @@ class ReleaseGate {
     if (compareVersions(installed, recommended) < 0) {
       return UpdateVerdict.recommended;
     }
+    if (compareVersions(installed, latest) < 0) return UpdateVerdict.available;
     return UpdateVerdict.none;
   }
 

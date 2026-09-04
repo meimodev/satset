@@ -1379,6 +1379,23 @@ class AppL10nId extends AppL10n {
       'Izinkan pemasangan aplikasi dari SatSet, lalu coba lagi.';
 
   @override
+  String get updateHostWarnTitle => 'Perbarui perangkat utama?';
+
+  @override
+  String updateHostWarnBodyLive(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n meja',
+    );
+    return '$_temp0 masih aktif. Memasang akan mematikan server — semua staff terputus sampai pemasangan selesai.';
+  }
+
+  @override
+  String get updateHostWarnBody =>
+      'Memasang akan mematikan server. Staff tidak bisa menyambung sampai pemasangan selesai.';
+
+  @override
   String get fltReleaseGate => 'Gerbang versi';
 
   @override
@@ -6720,6 +6737,11 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String meVersionUpdate(String installed, String latest) {
+    return 'Versi $installed · $latest tersedia';
+  }
+
+  @override
   String get liaFireNow => 'Bakar sekarang';
 
   @override
@@ -9856,6 +9878,16 @@ class AppL10nIdSv extends AppL10nId {
 
   @override
   String get a11yTableLocked => 'Layanan terkunci';
+
+  @override
+  String updateHostWarnBodyLive(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n layanan',
+    );
+    return '$_temp0 masih aktif. Memasang akan mematikan server — semua staff terputus sampai pemasangan selesai.';
+  }
 
   @override
   String expTableVisit(String label) {
