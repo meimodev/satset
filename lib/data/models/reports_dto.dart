@@ -26,6 +26,11 @@ abstract class ReportsSnapshotDto with _$ReportsSnapshotDto {
     /// [sales], and no figure in [sales] is net of it.
     @Default(KasSectionDto()) KasSectionDto kas,
 
+    /// The [[Pengeluaran kunjungan]] block over the same window (ADR-0130).
+    /// Its own section, the mirror of [kas]: petty cash is not revenue and
+    /// this is, which is exactly why neither may sit inside `sales`.
+    @Default(PengeluaranSectionDto()) PengeluaranSectionDto pengeluaran,
+
     /// [[Keanggotaan (membership)]] over the same window. Its own section for
     /// the mirror-image reason [kas] is: points are a claim on future takings,
     /// not a channel — folding a give-away into [sales] would let it read as
@@ -395,6 +400,44 @@ abstract class KasSectionDto with _$KasSectionDto {
 
   factory KasSectionDto.fromJson(Map<String, dynamic> json) =>
       _$KasSectionDtoFromJson(json);
+}
+
+/// The [[Pengeluaran kunjungan]] block (ADR-0130).
+///
+/// `byCategory` is keyed by the **venue's own word**, not a code: this
+/// vocabulary is venue-authored, so unlike [KasSectionDto.byCategory] there is
+/// nothing to resolve at read time and nothing in the ARB to resolve it with.
+@freezed
+abstract class PengeluaranSectionDto with _$PengeluaranSectionDto {
+  const factory PengeluaranSectionDto({
+    @Default(0) int total,
+
+    /// Expenses in the window. Zero is what the empty line keys off.
+    @Default(0) int count,
+    @Default(0) int visitCount,
+    @Default(<String, int>{}) Map<String, int> byCategory,
+    @Default(<String, int>{}) Map<String, int> byStaff,
+    @Default(<PengeluaranVisitDto>[]) List<PengeluaranVisitDto> visits,
+  }) = _PengeluaranSectionDto;
+
+  factory PengeluaranSectionDto.fromJson(Map<String, dynamic> json) =>
+      _$PengeluaranSectionDtoFromJson(json);
+}
+
+/// One visit that cost something, so a manager can see where the money went
+/// rather than only how much of it did.
+@freezed
+abstract class PengeluaranVisitDto with _$PengeluaranVisitDto {
+  const factory PengeluaranVisitDto({
+    @Default('') String sessionId,
+    @Default('') String tableLabel,
+    @Default(0) int settledTotal,
+    @Default(0) int expenseAmount,
+    DateTime? closedAt,
+  }) = _PengeluaranVisitDto;
+
+  factory PengeluaranVisitDto.fromJson(Map<String, dynamic> json) =>
+      _$PengeluaranVisitDtoFromJson(json);
 }
 
 /// The Jam kerja (attendance) block — [[Shift]] hours per staff member.

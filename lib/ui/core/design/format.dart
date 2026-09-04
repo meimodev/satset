@@ -67,6 +67,13 @@ String formatShortDateId(DateTime d) => DateFormat('d MMM yyyy').format(d);
 /// (ADR-0084): `jt` and `rb` abbreviate juta and ribu, which are Indonesian
 /// words an English reader cannot expand. The digits and the `Rp` stay put.
 String formatCompactIDR(AppL10n l10n, int v) {
+  // `netAfterExpense` is the first tile that can go negative (ADR-0130) — a
+  // venue that spent on a party before that party's bill closed. Every
+  // threshold below is `>=`, so a negative used to fall through to the plain
+  // arm and print an ungrouped `Rp -70000` in a row of `Rp 70rb` tiles. Found
+  // on a device. Sign peeled off and put back, so the compact arms are
+  // unchanged.
+  if (v < 0) return '-${formatCompactIDR(l10n, -v)}';
   if (v >= 1000000) {
     return l10n.moneyCompactJt((v / 1000000).toStringAsFixed(1));
   }

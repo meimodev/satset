@@ -14,6 +14,7 @@ import 'package:satset/core/printing/struk_socket.dart';
 import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/self_order.dart' show mintMissingGuestCodes;
+import 'package:satset/server/visit_expenses.dart';
 import 'package:satset/server/ws_hub.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/capability.dart';
@@ -318,6 +319,11 @@ Future<void> snapshotVisitAndDelete(
             netTotal: Value(breakdown.total),
             discountAmount: Value(discountTotal),
             settledTotal: Value(settled),
+            // What this visit cost the venue to serve (ADR-0130). Frozen
+            // beside the other money figures and folded into none of them:
+            // `settledTotal` keeps ADR-0039's formula, and cash in hand is
+            // that minus this, subtracted once, in the report.
+            expenseAmount: Value(await visitExpenseTotal(db, visit.id)),
             ticketCount: Value(tickets.length),
             lossAmount: Value(lossAmount),
             billClosedBy: Value(billClosedBy),

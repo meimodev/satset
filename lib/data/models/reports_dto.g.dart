@@ -27,6 +27,11 @@ _ReportsSnapshotDto _$ReportsSnapshotDtoFromJson(Map<String, dynamic> json) =>
       kas: json['kas'] == null
           ? const KasSectionDto()
           : KasSectionDto.fromJson(json['kas'] as Map<String, dynamic>),
+      pengeluaran: json['pengeluaran'] == null
+          ? const PengeluaranSectionDto()
+          : PengeluaranSectionDto.fromJson(
+              json['pengeluaran'] as Map<String, dynamic>,
+            ),
       members: json['members'] == null
           ? const MembersSectionDto()
           : MembersSectionDto.fromJson(json['members'] as Map<String, dynamic>),
@@ -53,6 +58,7 @@ Map<String, dynamic> _$ReportsSnapshotDtoToJson(_ReportsSnapshotDto instance) =>
       'ops': instance.ops,
       'moneyAudit': instance.moneyAudit,
       'kas': instance.kas,
+      'pengeluaran': instance.pengeluaran,
       'members': instance.members,
       'piutang': instance.piutang,
       'jamKerja': instance.jamKerja,
@@ -529,6 +535,61 @@ Map<String, dynamic> _$KasSectionDtoToJson(_KasSectionDto instance) =>
       'byCategory': instance.byCategory,
       'count': instance.count,
     };
+
+_PengeluaranSectionDto _$PengeluaranSectionDtoFromJson(
+  Map<String, dynamic> json,
+) => _PengeluaranSectionDto(
+  total: (json['total'] as num?)?.toInt() ?? 0,
+  count: (json['count'] as num?)?.toInt() ?? 0,
+  visitCount: (json['visitCount'] as num?)?.toInt() ?? 0,
+  byCategory:
+      (json['byCategory'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, (e as num).toInt()),
+      ) ??
+      const <String, int>{},
+  byStaff:
+      (json['byStaff'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, (e as num).toInt()),
+      ) ??
+      const <String, int>{},
+  visits:
+      (json['visits'] as List<dynamic>?)
+          ?.map((e) => PengeluaranVisitDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <PengeluaranVisitDto>[],
+);
+
+Map<String, dynamic> _$PengeluaranSectionDtoToJson(
+  _PengeluaranSectionDto instance,
+) => <String, dynamic>{
+  'total': instance.total,
+  'count': instance.count,
+  'visitCount': instance.visitCount,
+  'byCategory': instance.byCategory,
+  'byStaff': instance.byStaff,
+  'visits': instance.visits,
+};
+
+_PengeluaranVisitDto _$PengeluaranVisitDtoFromJson(Map<String, dynamic> json) =>
+    _PengeluaranVisitDto(
+      sessionId: json['sessionId'] as String? ?? '',
+      tableLabel: json['tableLabel'] as String? ?? '',
+      settledTotal: (json['settledTotal'] as num?)?.toInt() ?? 0,
+      expenseAmount: (json['expenseAmount'] as num?)?.toInt() ?? 0,
+      closedAt: json['closedAt'] == null
+          ? null
+          : DateTime.parse(json['closedAt'] as String),
+    );
+
+Map<String, dynamic> _$PengeluaranVisitDtoToJson(
+  _PengeluaranVisitDto instance,
+) => <String, dynamic>{
+  'sessionId': instance.sessionId,
+  'tableLabel': instance.tableLabel,
+  'settledTotal': instance.settledTotal,
+  'expenseAmount': instance.expenseAmount,
+  'closedAt': instance.closedAt?.toIso8601String(),
+};
 
 _JamKerjaSectionDto _$JamKerjaSectionDtoFromJson(Map<String, dynamic> json) =>
     _JamKerjaSectionDto(
