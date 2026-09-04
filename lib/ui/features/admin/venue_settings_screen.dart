@@ -1017,6 +1017,51 @@ class _PajakLayananCard extends ConsumerWidget {
             context.l10n.vstItemDiscountNote,
             style: SatType.bodyS(color: sc.textLo),
           ),
+          Divider(height: 28, color: sc.border0),
+          // ADR-0130. In this card because it is the other thing that takes
+          // money off what a visit was worth — but note it is *not* a discount:
+          // the guest still pays in full, and nothing here touches a bill.
+          _toggleRow(
+            context,
+            sc,
+            label: context.l10n.vstTableExpense,
+            on: s.tableExpenseEnabled,
+            onToggle: () => n.patch(
+              tableExpenseEnabled: !s.tableExpenseEnabled,
+            ),
+          ),
+          const SizedBox(height: Sp.s1h),
+          Text(
+            context.l10n.vstTableExpenseHint,
+            style: SatType.bodyS(color: sc.textLo),
+          ),
+          if (s.tableExpenseEnabled) ...[
+            const SizedBox(height: Sp.s2h),
+            InkWell(
+              onTap: () => context.push('/venue/pengeluaran'),
+              borderRadius: SatR.a(10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: Sp.s2h),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 18,
+                      color: sc.textHi,
+                    ),
+                    const SizedBox(width: Sp.s2h),
+                    Expanded(
+                      child: Text(
+                        context.l10n.expCatCrumb,
+                        style: SatType.bodyM(color: sc.textHi),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, size: 18, color: sc.textLo),
+                  ],
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: Sp.s2h),
           // The catalogue itself lives on its own screen — it is list-shaped
           // and edited rarely, so it does not belong inline in settings.
