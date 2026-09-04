@@ -33,6 +33,7 @@ import 'routes/reports_routes.dart';
 import 'routes/reservations_routes.dart';
 import 'routes/server_routes.dart';
 import 'routes/cash_routes.dart';
+import 'routes/visit_expense_routes.dart';
 import 'routes/members_routes.dart';
 import 'routes/self_order_routes.dart';
 import 'routes/settlement_routes.dart';
@@ -358,6 +359,11 @@ class ServerRuntime {
     // most of its acts are not naturally idempotent (ADR-0123).
     r.mount('/', idempotent(db, settlementRoutes(db, hub, auth).call));
     r.mount('/', cashRoutes(db, hub, auth).call);
+    // Wrapped like the settlement router: the client mints the expense id and
+    // the [[Antrean kirim]] replays under it, so a request that timed out after
+    // the server committed must read back the stored response rather than post
+    // the photo twice (ADR-0130).
+    r.mount('/', idempotent(db, visitExpenseRoutes(db, hub, auth).call));
     r.mount('/', venueDayRoutes(db, hub, auth).call);
     r.mount('/', membersRoutes(db, hub, auth).call);
     r.mount('/', selfOrderRoutes(db, hub, auth).call);

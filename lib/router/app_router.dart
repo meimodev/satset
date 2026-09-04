@@ -25,6 +25,7 @@ import 'package:satset/ui/features/review/review_screen.dart';
 import 'package:satset/ui/features/sent/sent_screen.dart';
 import 'package:satset/ui/features/takeaway/takeaway_detail_screen.dart';
 import 'package:satset/ui/features/admin/discount_presets_screen.dart';
+import 'package:satset/ui/features/admin/expense_categories_screen.dart';
 import 'package:satset/ui/features/admin/kitchen_screen.dart';
 import 'package:satset/ui/features/admin/zone_admin_screen.dart';
 import 'package:satset/ui/features/admin/menu_admin_screen.dart';
@@ -106,6 +107,11 @@ List<Capability>? _capabilityFor(String loc) {
     return const [Capability.takeOrder, Capability.editSettings];
   }
   if (loc.startsWith('/venue/diskon')) return const [Capability.editSettings];
+  // The venue's own [[Pengeluaran kunjungan]] vocabulary (ADR-0130). The
+  // owner's authority, like the preset catalogue beside it.
+  if (loc.startsWith('/venue/pengeluaran')) {
+    return const [Capability.editSettings];
+  }
   // The member report. Two authorities, like `/kas` and `/opname`: the person
   // who enrols the guests keeps the directory, the person who reads their
   // spending back reads reports, and they are rarely the same one. Matched
@@ -446,6 +452,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/venue/diskon',
         builder: (_, _) => const DiscountPresetsScreen(),
+      ),
+      // Pengeluaran kunjungan categories (ADR-0130), pushed from Venue
+      // Settings for the same reason: list-shaped and edited rarely.
+      GoRoute(
+        path: '/venue/pengeluaran',
+        builder: (_, _) => const ExpenseCategoriesScreen(),
       ),
     ],
   );
