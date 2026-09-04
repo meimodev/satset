@@ -2188,6 +2188,43 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             const SizedBox(height: Sp.s2),
             ..._kasCategoryRows(context, kas.byCategory),
           ],
+          // Only once the venue actually keeps more than one tin (ADR-0131):
+          // the block above already *is* the single-box answer, and repeating
+          // it under a heading would read as two different figures.
+          if (kas.byBox.length > 1) ...[
+            const SizedBox(height: Sp.s4),
+            Text(
+              l10n.rptKasByBox.toUpperCase(),
+              style: SatType.monoS(color: sc.textLo),
+            ),
+            const SizedBox(height: Sp.s2),
+            for (final b in kas.byBox)
+              Padding(
+                padding: const EdgeInsets.only(bottom: Sp.s2),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        b.name,
+                        style: SatType.bodyS(
+                          color: b.active ? sc.textMd : sc.textDim,
+                        ),
+                      ),
+                    ),
+                    _kasFigure(context, l10n.rptKasIn, b.inflow, sc.success),
+                    const SizedBox(width: Sp.s5),
+                    _kasFigure(context, l10n.rptKasOut, b.outflow, sc.warn),
+                    const SizedBox(width: Sp.s5),
+                    _kasFigure(
+                      context,
+                      l10n.rptKasClosing,
+                      b.closing,
+                      sc.textHi,
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ],
       ),
     );

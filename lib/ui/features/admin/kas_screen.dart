@@ -26,6 +26,7 @@ import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import '_common.dart';
@@ -33,8 +34,12 @@ import 'package:satset/core/time/sat_clock.dart';
 
 /// "Kas kecil" — the petty cash box (§Kas kecil).
 ///
-/// One append-only ledger and the balance it derives. Not the drawer: nothing
-/// on this screen touches a bill, a payment or revenue (ADR-0089).
+/// One append-only ledger over the venue's named boxes (ADR-0131), and the
+/// balances it derives. Not the drawer: nothing on this screen touches a bill,
+/// a payment or revenue (ADR-0089).
+///
+/// The box selector is drawn only when there is more than one box, so a venue
+/// that keeps a single tin sees the screen it has always seen.
 ///
 /// Tablet only, like the venue log and for the same reason: the value of a
 /// ledger is reading a column of movements against each other, and a phone can
@@ -79,6 +84,9 @@ class _KasScreenState extends ConsumerState<KasScreen> {
     final auth = ref.watch(authStateProvider);
     final canSpend = auth.has(Capability.manageCash);
     final canFund = auth.has(Capability.editSettings);
+    // A count is one person holding one tin: there is nothing to count on the
+    // "Semua" arm, and a transfer has no source there either.
+    final onOneBox = state.selectedBoxId != null || !state.multiBox;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -105,13 +113,32 @@ class _KasScreenState extends ConsumerState<KasScreen> {
                   onTap: () => _post(CashEntryKind.expense),
                 ),
               ],
+              if (canFund && state.multiBox) ...[
+                const SizedBox(width: Sp.s2),
+                SatButton.outline(
+                  label: l10n.kasActionTransfer,
+                  icon: Icons.swap_horiz_rounded,
+                  size: SatButtonSize.sm,
+                  onTap: onOneBox ? _transfer : null,
+                ),
+              ],
               if (canFund) ...[
                 const SizedBox(width: Sp.s2),
                 SatButton.primary(
                   label: l10n.kasActionCount,
                   icon: Icons.savings_outlined,
                   size: SatButtonSize.sm,
-                  onTap: () => _post(CashEntryKind.count),
+                  onTap: onOneBox
+                      ? () => _post(CashEntryKind.count)
+                      : null,
+                ),
+              ],
+              if (canFund) ...[
+                const SizedBox(width: Sp.s2),
+                SatIconButton.outline(
+                  icon: Icons.tune_rounded,
+                  tooltip: l10n.kasBoxesTitle,
+                  onTap: _manageBoxes,
                 ),
               ],
             ],
@@ -131,7 +158,19 @@ class _KasScreenState extends ConsumerState<KasScreen> {
                       Sp.s7,
                       Sp.s4,
                     ),
-                    child: _BalanceHero(balance: state.balance),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (state.multiBox) ...[
+                          _BoxStrip(state: state),
+                          const SizedBox(height: Sp.s4),
+                        ],
+                        _BalanceHero(
+                          balance: state.shownBalance,
+                          caption: state.heroCaption,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 if (state.entries.isEmpty && !state.loading)
@@ -155,6 +194,11 @@ class _KasScreenState extends ConsumerState<KasScreen> {
                           const SizedBox(height: Sp.s1h),
                       itemBuilder: (_, i) => _KasRow(
                         entry: state.entries[i],
+                        // Only on the mixed list: a filtered ledger already
+                        // says which box it is at the top of the screen.
+                        boxName: state.selectedBoxId == null && state.multiBox
+                            ? state.boxNameOf(state.entries[i].boxId)
+                            : null,
                         onTap: () => _detail(state.entries[i]),
                       ),
                     ),
@@ -199,6 +243,12 @@ class _KasScreenState extends ConsumerState<KasScreen> {
         builder: (_) => _PostSheet(kind: kind, target: target),
       );
 
+  Future<void> _transfer() =>
+      showSatSheet<void>(context, builder: (_) => const _TransferSheet());
+
+  Future<void> _manageBoxes() =>
+      showSatSheet<void>(context, builder: (_) => const _BoxesSheet());
+
   Future<void> _detail(CashEntry entry) => showSatSheet<void>(
     context,
     builder: (_) => _DetailSheet(
@@ -210,9 +260,13 @@ class _KasScreenState extends ConsumerState<KasScreen> {
 
 /// The balance, at the size a number this consequential deserves. Never summed
 /// client-side — see [CashState.balance].
+///
+/// [caption] names the box in view. Null is the "Semua" arm, where the figure
+/// is the sum of every box rather than any one tin.
 class _BalanceHero extends StatelessWidget {
   final int balance;
-  const _BalanceHero({required this.balance});
+  final String? caption;
+  const _BalanceHero({required this.balance, this.caption});
 
   @override
   Widget build(BuildContext context) {
@@ -236,7 +290,7 @@ class _BalanceHero extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                context.l10n.kasBalance.toUpperCase(),
+                (caption ?? context.l10n.kasVenueTotal).toUpperCase(),
                 style: SatType.monoS(color: sc.textLo),
               ),
               const SizedBox(height: Sp.s1),
@@ -257,12 +311,55 @@ class _BalanceHero extends StatelessWidget {
   }
 }
 
+/// The box selector (ADR-0131). Drawn only when the venue keeps more than one
+/// tin — see [CashState.multiBox].
+///
+/// "Semua" is the arm with no box: every box's rows in one list and the venue
+/// total in the hero. It is deliberately first, because it is the view that
+/// answers "how much cash does this venue hold" without arithmetic.
+class _BoxStrip extends ConsumerWidget {
+  final CashState state;
+  const _BoxStrip({required this.state});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final repo = ref.read(cashProvider.notifier);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          SatChip.select(
+            label: l10n.kasBoxAll,
+            selected: state.selectedBoxId == null,
+            onTap: () => repo.selectBox(null),
+          ),
+          for (final b in state.pickableBoxes) ...[
+            const SizedBox(width: Sp.s2),
+            SatChip.select(
+              // The balance rides the chip: picking a box to spend from is a
+              // decision about which tin has the notes in it.
+              label: '${b.name} · ${formatIDR(b.balance)}',
+              selected: state.selectedBoxId == b.id,
+              onTap: () => repo.selectBox(b.id),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /// One movement. Reads left to right the way it is questioned: when, what kind,
 /// how much, why, who.
 class _KasRow extends StatelessWidget {
   final CashEntry entry;
+
+  /// Which box this movement moved — set only on the mixed "Semua" list, where
+  /// the header cannot say it for the whole column.
+  final String? boxName;
   final VoidCallback onTap;
-  const _KasRow({required this.entry, required this.onTap});
+  const _KasRow({required this.entry, required this.onTap, this.boxName});
 
   @override
   Widget build(BuildContext context) {
@@ -307,6 +404,18 @@ class _KasRow extends StatelessWidget {
                   ),
                 ),
               ),
+              if (boxName != null) ...[
+                const SizedBox(width: Sp.s3),
+                SizedBox(
+                  width: 120,
+                  child: Text(
+                    boxName!,
+                    style: SatType.labelS(color: sc.textMd),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
               const SizedBox(width: Sp.s3),
               SizedBox(width: 140, child: _amount(context)),
               const SizedBox(width: Sp.s3),
@@ -522,6 +631,18 @@ class _Line extends StatelessWidget {
 /// fields show and which repository call fires; everything else — the busy
 /// latch, the error line, the mapping from a server code to a sentence — is
 /// shared on purpose.
+/// The inset every sheet on this screen uses. One definition rather than three:
+/// they are the same shape, and a keyboard that pushes one up must push all of
+/// them up by the same amount.
+EdgeInsets _sheetPadding(BuildContext context) => EdgeInsets.fromLTRB(
+  Sp.s5,
+  0,
+  Sp.s5,
+  MediaQuery.of(context).viewInsets.bottom + Sp.s5,
+);
+
+const _kSheetHeaderPad = EdgeInsets.fromLTRB(0, Sp.s3, 0, Sp.s2);
+
 class _PostSheet extends ConsumerStatefulWidget {
   final CashEntryKind kind;
 
@@ -541,7 +662,23 @@ class _PostSheetState extends ConsumerState<_PostSheet> {
   bool _busy = false;
   String? _error;
 
+  /// Which box the movement lands in. Pre-filled from the selected box, and
+  /// left for the reader to choose on the "Semua" arm — a movement must never
+  /// default into a tin nobody named.
+  String? _boxId;
+
   CashEntryKind get _kind => widget.kind;
+
+  @override
+  void initState() {
+    super.initState();
+    final state = ref.read(cashProvider);
+    _boxId =
+        state.selectedBoxId ??
+        (state.multiBox
+            ? null
+            : (state.boxes.isEmpty ? null : state.boxes.first.id));
+  }
 
   @override
   void dispose() {
@@ -559,13 +696,19 @@ class _PostSheetState extends ConsumerState<_PostSheet> {
   /// button reads as "still refused".
   void _touch() => setState(() => _error = null);
 
-  bool get _ready => switch (_kind) {
-    CashEntryKind.topUp || CashEntryKind.expense => _value > 0,
-    // A count of zero is a real finding — an empty box — so only a blank field
-    // blocks, not a zero.
-    CashEntryKind.count => _amount.text.trim().isNotEmpty,
-    CashEntryKind.reversal => _note.text.trim().isNotEmpty,
-  };
+  /// A reversal names no box of its own — it lands wherever the row it undoes
+  /// did — so only the three posting kinds need one picked.
+  bool get _needsBox => _kind != CashEntryKind.reversal;
+
+  bool get _ready =>
+      (!_needsBox || _boxId != null) &&
+      switch (_kind) {
+        CashEntryKind.topUp || CashEntryKind.expense => _value > 0,
+        // A count of zero is a real finding — an empty box — so only a blank
+        // field blocks, not a zero.
+        CashEntryKind.count => _amount.text.trim().isNotEmpty,
+        CashEntryKind.reversal => _note.text.trim().isNotEmpty,
+      };
 
   Future<void> _shoot() async {
     final l10n = context.l10n;
@@ -595,16 +738,17 @@ class _PostSheetState extends ConsumerState<_PostSheet> {
     try {
       switch (_kind) {
         case CashEntryKind.topUp:
-          await repo.topUp(amount: _value, note: note);
+          await repo.topUp(boxId: _boxId!, amount: _value, note: note);
         case CashEntryKind.expense:
           await repo.spend(
+            boxId: _boxId!,
             amount: _value,
             category: _category,
             note: note,
             photoBase64: _photo == null ? null : base64Encode(_photo!),
           );
         case CashEntryKind.count:
-          await repo.count(counted: _value, note: note);
+          await repo.count(boxId: _boxId!, counted: _value, note: note);
         case CashEntryKind.reversal:
           await repo.reverse(id: widget.target!.id, note: note ?? '');
       }
@@ -622,25 +766,42 @@ class _PostSheetState extends ConsumerState<_PostSheet> {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final l10n = context.l10n;
-    final balance = ref.watch(cashProvider).balance;
+    final state = ref.watch(cashProvider);
+    // The guard is per box (ADR-0131), so the helper line and the variance must
+    // read the same tin the movement will land in — the venue total would
+    // promise cash this box does not hold.
+    final balance = _boxId == null
+        ? state.balance
+        : (state.boxes
+                  .where((b) => b.id == _boxId)
+                  .map((b) => b.balance)
+                  .firstOrNull ??
+              0);
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          Sp.s5,
-          0,
-          Sp.s5,
-          MediaQuery.of(context).viewInsets.bottom + Sp.s5,
-        ),
+        padding: _sheetPadding(context),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SatSheetHeader(
-                padding: const EdgeInsets.fromLTRB(0, Sp.s3, 0, Sp.s2),
+                padding: _kSheetHeaderPad,
                 onClose: () => Navigator.of(context).pop(),
                 child: Text(_title(l10n), style: SatType.h3(color: sc.textHi)),
               ),
+              if (_needsBox && state.multiBox) ...[
+                SatDropdown<String>(
+                  value: _boxId,
+                  label: l10n.kasBoxLabel,
+                  options: [
+                    for (final b in state.pickableBoxes)
+                      SatOption(b.id, b.name),
+                  ],
+                  onChanged: (id) => setState(() => _boxId = id),
+                ),
+                const SizedBox(height: Sp.s3),
+              ],
               ..._fields(context, balance),
               if (_error != null) ...[
                 const SizedBox(height: Sp.s3),
@@ -760,6 +921,303 @@ class _PostSheetState extends ConsumerState<_PostSheet> {
   }
 }
 
+/// Move money between two boxes (ADR-0131).
+///
+/// Two rows, one act: an expense out of the source and a top-up into the
+/// destination. Nothing was bought, so there is no category to pick — a
+/// transfer must never appear in the report's by-category breakdown.
+class _TransferSheet extends ConsumerStatefulWidget {
+  const _TransferSheet();
+
+  @override
+  ConsumerState<_TransferSheet> createState() => _TransferSheetState();
+}
+
+class _TransferSheetState extends ConsumerState<_TransferSheet> {
+  final _amount = TextEditingController();
+  final _note = TextEditingController();
+  String? _from;
+  String? _to;
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final state = ref.read(cashProvider);
+    _from = state.selectedBoxId ?? state.pickableBoxes.firstOrNull?.id;
+  }
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _note.dispose();
+    super.dispose();
+  }
+
+  int get _value =>
+      int.tryParse(_amount.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+
+  bool get _ready =>
+      _value > 0 && _from != null && _to != null && _from != _to;
+
+  Future<void> _submit() async {
+    if (!_ready || _busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref
+          .read(cashProvider.notifier)
+          .transfer(
+            fromId: _from!,
+            toId: _to!,
+            amount: _value,
+            note: _note.text.trim().isEmpty ? null : _note.text.trim(),
+          );
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = cashErrorText(context.l10n, e);
+      });
+    }
+  }
+
+  int _balanceOf(CashState state, String? id) => state.boxes
+      .where((b) => b.id == id)
+      .map((b) => b.balance)
+      .firstOrNull ??
+      0;
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    final state = ref.watch(cashProvider);
+    final boxes = state.pickableBoxes;
+    return SafeArea(
+      child: Padding(
+        padding: _sheetPadding(context),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SatSheetHeader(
+                padding: _kSheetHeaderPad,
+                onClose: () => Navigator.of(context).pop(),
+                child: Text(
+                  l10n.kasSheetTransferTitle,
+                  style: SatType.h3(color: sc.textHi),
+                ),
+              ),
+              SatDropdown<String>(
+                value: _from,
+                label: l10n.kasFieldFromBox,
+                options: [
+                  for (final b in boxes) SatOption(b.id, b.name),
+                ],
+                onChanged: (id) => setState(() => _from = id),
+              ),
+              const SizedBox(height: Sp.s3),
+              SatDropdown<String>(
+                value: _to,
+                label: l10n.kasFieldToBox,
+                options: [
+                  // The source is left out rather than shown and refused: a
+                  // transfer into itself is not a decision anyone means to make.
+                  for (final b in boxes)
+                    if (b.id != _from) SatOption(b.id, b.name),
+                ],
+                onChanged: (id) => setState(() => _to = id),
+              ),
+              const SizedBox(height: Sp.s3),
+              SatField.money(
+                controller: _amount,
+                label: l10n.kasFieldAmount,
+                hint: '',
+                helperText: l10n.kasLedgerSays(
+                  formatIDR(_balanceOf(state, _from)),
+                ),
+                onChanged: (_) => setState(() => _error = null),
+              ),
+              const SizedBox(height: Sp.s3),
+              SatField.text(
+                controller: _note,
+                label: l10n.kasFieldNote,
+                hint: '',
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: Sp.s3),
+                Text(_error!, style: SatType.bodyS(color: sc.urgent)),
+              ],
+              const SizedBox(height: Sp.s4),
+              SatButton.primary(
+                label: l10n.kasTransfer,
+                busy: _busy,
+                onTap: _ready ? _submit : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The boxes themselves — create, rename, retire, bring back (ADR-0131).
+///
+/// Lives here rather than on its own admin screen, unlike the discount presets
+/// and expense categories: `/kas` is the box's home screen and already opens to
+/// `editSettings`, so a second route would only add a place to look.
+///
+/// There is no delete. Retiring is refused server-side while the box still
+/// holds money, so no rupiah can be hidden behind an inactive row.
+class _BoxesSheet extends ConsumerStatefulWidget {
+  const _BoxesSheet();
+
+  @override
+  ConsumerState<_BoxesSheet> createState() => _BoxesSheetState();
+}
+
+class _BoxesSheetState extends ConsumerState<_BoxesSheet> {
+  final _name = TextEditingController();
+  String? _editingId;
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await action();
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _editingId = null;
+          _name.clear();
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = cashErrorText(context.l10n, e);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    final state = ref.watch(cashProvider);
+    final repo = ref.read(cashProvider.notifier);
+    return SafeArea(
+      child: Padding(
+        padding: _sheetPadding(context),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SatSheetHeader(
+                padding: _kSheetHeaderPad,
+                onClose: () => Navigator.of(context).pop(),
+                child: Text(
+                  l10n.kasBoxesTitle,
+                  style: SatType.h3(color: sc.textHi),
+                ),
+              ),
+              for (final b in state.boxes) ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Sp.s2),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              b.name,
+                              style: SatType.labelM(
+                                color: b.active ? sc.textHi : sc.textDim,
+                              ),
+                            ),
+                            Text(
+                              b.active
+                                  ? formatIDR(b.balance)
+                                  : '${formatIDR(b.balance)} · '
+                                        '${l10n.kasBoxInactive}',
+                              style: SatType.bodyS(color: sc.textMd),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SatButton.outline(
+                        label: b.active
+                            ? l10n.kasBoxRetire
+                            : l10n.kasBoxReopen,
+                        size: SatButtonSize.sm,
+                        onTap: () => _run(
+                          () => repo.updateBox(id: b.id, active: !b.active),
+                        ),
+                      ),
+                      const SizedBox(width: Sp.s2),
+                      SatIconButton.plain(
+                        icon: Icons.edit_outlined,
+                        tooltip: l10n.kasFieldBoxName,
+                        onTap: () => setState(() {
+                          _editingId = b.id;
+                          _name.text = b.name;
+                        }),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: Sp.s3),
+              SatField.text(
+                controller: _name,
+                label: _editingId == null
+                    ? l10n.kasBoxNew
+                    : l10n.kasFieldBoxName,
+                hint: '',
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: Sp.s3),
+                Text(_error!, style: SatType.bodyS(color: sc.urgent)),
+              ],
+              const SizedBox(height: Sp.s4),
+              SatButton.primary(
+                label: _editingId == null ? l10n.kasBoxNew : l10n.save,
+                busy: _busy,
+                onTap: () => _run(
+                  () => _editingId == null
+                      ? repo.createBox(_name.text.trim())
+                      : repo.updateBox(id: _editingId!, name: _name.text.trim()),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// A server refusal, as a sentence. Codes cross the layer, never words
 /// (ADR-0085); an unknown code still prints itself rather than nothing.
 String cashErrorText(AppL10n l10n, Object error) {
@@ -772,6 +1230,10 @@ String cashErrorText(AppL10n l10n, Object error) {
     'already_reversed' => l10n.kasErrAlreadyReversed,
     'not_reversible' => l10n.kasErrNotReversible,
     'invalid_amount' => l10n.kasErrInvalidAmount,
+    'box_not_empty' => l10n.kasErrBoxNotEmpty(formatIDR(err?.balance ?? 0)),
+    'same_box' => l10n.kasErrSameBox,
+    'name_required' => l10n.kasErrNameRequired,
+    'box_not_found' => l10n.kasErrBoxNotFound,
     final code? => l10n.kasErrFailed(code),
     null => l10n.kasErrFailed('$error'),
   };

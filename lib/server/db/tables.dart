@@ -1455,7 +1455,30 @@ class StockCountLines extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// The [[Kas kecil]] ledger — the venue's petty cash box, append-only.
+/// One **[[Kas (cash box)|kas]]** — a named tin of physical cash (ADR-0131).
+///
+/// Venue-authored, shaped like [VisitExpenseCategories] and [DiscountPresets]:
+/// a name here is content, not copy, so it never reaches the ARB. **Soft-delete
+/// only** — a closed month's rows must still be able to name the box they came
+/// out of, and `active` is what hides a retired one from the picker.
+///
+/// There is no balance column here either, for the reason [CashEntries] gives:
+/// a box's balance is `SUM(delta)` over its own rows and nothing else.
+// Named explicitly: drift would singularise this to `CashBoxe`, and the name a
+// reader would reach for — `CashBox` — is already the domain model in
+// `domain/models/cash_entry.dart`. The row and what a reader sees are two
+// different things, so the row takes the suffix.
+@DataClassName('CashBoxRow')
+class CashBoxes extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  BoolColumn get active => boolean().withDefault(const Constant(true))();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// The [[Kas kecil]] ledger — the venue's petty cash boxes, append-only.
 ///
 /// **There is no balance column and there never will be.** The balance is
 /// `SUM(delta)`, derived on every read: a box sees tens of rows a week, so the
@@ -1506,6 +1529,27 @@ class CashEntries extends Table {
   /// rewrite the trail.
   TextColumn get actorName => text().nullable()();
   DateTimeColumn get at => dateTime()();
+
+  // The two ADR-0131 columns sit last, in the order the v73 migration ALTERs
+  // them in. SQLite can only append, so declaring them where they read best
+  // would leave an upgraded venue's columns in a different order from a fresh
+  // install's; matching the migration keeps the two populations identical.
+  /// Which [[Kas (cash box)|kas]] this movement moved (ADR-0131). Never null:
+  /// the default names the box every pre-v73 row was backfilled to, so the
+  /// migrated population and a fresh install agree about the column.
+  TextColumn get boxId => text().withDefault(const Constant('box-main'))();
+
+  /// The other leg of a transfer between two boxes (ADR-0131) — the out-leg
+  /// names the in-leg and vice versa. Non-null is the whole "this is internal
+  /// movement" test.
+  ///
+  /// A transfer is deliberately **not** a fifth `CashEntryKind`: it is an
+  /// ordinary `expense` out of one box and an ordinary `topUp` into another,
+  /// written in one transaction, so every reader that already sums a box needs
+  /// no new arm. The link is what stops half a transfer from being reversed —
+  /// see `reverseCash`.
+  TextColumn get transferPeerId => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

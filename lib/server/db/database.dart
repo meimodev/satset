@@ -54,6 +54,7 @@ part 'database.g.dart';
     StockCounts,
     StockCountLines,
     CashEntries,
+    CashBoxes,
     Members,
     MemberTombstones,
     MemberPoints,
@@ -82,7 +83,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 72;
+  int get schemaVersion => 73;
 
   /// The cap sums a visit's expenses on every capture, inside the transaction
   /// that writes the next one (ADR-0100), so the lookup is on the hot path of
@@ -1536,6 +1537,43 @@ class AppDatabase extends _$AppDatabase {
         // categories, and never rewrites them afterwards.
         await _seedVisitExpenseCategories();
       }
+
+      if (from < 73 && to >= 73) {
+        // ADR-0131 — a venue counts more than one tin. The ledger gains the box
+        // it moved and the other leg of a transfer; the boxes themselves are a
+        // venue-authored catalogue.
+        await m.createTable(cashBoxes);
+        await _seedCashBoxes();
+        // Both spelled out in full for the reason the v72 branch gives: a raw
+        // type string here must match what a fresh install declares, or the two
+        // populations diverge and the schema harness refuses.
+        await _safeAddColumnOn(
+          'cash_entries',
+          'box_id',
+          type: "TEXT NOT NULL DEFAULT 'box-main'",
+        );
+        // `NULL` spelled out: drift's `createAll` emits it for a nullable
+        // column, so an ALTER that leaves it off gives an upgraded venue a
+        // different constraint list from a fresh install — the divergence
+        // `test/schema_migration_test.dart` compares and refuses.
+        await _safeAddColumnOn(
+          'cash_entries',
+          'transfer_peer_id',
+          type: 'TEXT NULL',
+        );
+        await _createCashIndexes();
+        // Every existing row already carries `box-main` through the column
+        // default; what needs saying out loud is the audit trail, whose params
+        // are frozen JSON. Without this backfill a pre-v73 movement renders its
+        // sentence with an empty box name — `auditText` reads a missing param
+        // as '' — which is worse than the single-box screen it replaced.
+        await customStatement(
+          "UPDATE audit_entries "
+          "SET params = json_set(COALESCE(params, '{}'), '\$.box', 'Kas Utama') "
+          "WHERE type = 'cashMovement' "
+          "AND json_extract(COALESCE(params, '{}'), '\$.box') IS NULL",
+        );
+      }
     },
     onCreate: (m) async {
       await m.createAll();
@@ -1550,6 +1588,7 @@ class AppDatabase extends _$AppDatabase {
       );
       await _createDiscountIndexes();
       await _createVisitExpenseIndexes();
+      await _createCashIndexes();
       await _createMemberIndexes();
       await _createMemberSyncIndexes();
       await _createGuestIndexes();
@@ -1568,6 +1607,7 @@ class AppDatabase extends _$AppDatabase {
       );
       await _seedMenuTags();
       await _seedVisitExpenseCategories();
+      await _seedCashBoxes();
     },
   );
 
@@ -1579,6 +1619,30 @@ class AppDatabase extends _$AppDatabase {
   /// undo a rename on every boot, so this inserts and does nothing else. Ids
   /// are fixed, which is what makes a re-run after a half-finished migration
   /// idempotent rather than duplicating the four.
+  /// Every balance is `SUM(delta)` over one box (ADR-0131), and the negative
+  /// guard re-reads it inside the write transaction (ADR-0100) — so the box
+  /// filter is on the hot path of the one invariant this ledger has.
+  Future<void> _createCashIndexes() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_cash_entries_box '
+      'ON cash_entries(box_id)',
+    );
+  }
+
+  /// The one box every venue starts with (ADR-0131), and the one every pre-v73
+  /// row was backfilled to. Its name is venue content — renamable in a tap —
+  /// which is why it is a literal here and not an ARB key.
+  ///
+  /// `insertOrIgnore` for the reason [_seedVisitExpenseCategories] gives: this
+  /// runs on create, on the v73 upgrade and on every Server boot, and a rename
+  /// must survive all three.
+  Future<void> _seedCashBoxes() async {
+    await into(cashBoxes).insert(
+      CashBoxesCompanion.insert(id: 'box-main', name: 'Kas Utama'),
+      mode: InsertMode.insertOrIgnore,
+    );
+  }
+
   Future<void> _seedVisitExpenseCategories() async {
     const defaults = [
       ('vexc-tissue', 'Tisu & perlengkapan', 0),

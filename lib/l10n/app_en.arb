@@ -824,15 +824,18 @@
   "auditBillClosed": "Closed bill {table}",
   "auditBillWrittenOff": "Bill written off {amount} {table}",
   "auditSettlementArrivedLate": "Late settlement {amount} {table} — collected {captured}",
-  "auditCashToppedUp": "Topped up petty cash {amount}",
+  "auditCashToppedUp": "Topped up {box} {amount}",
   "@auditCashToppedUp": {
     "placeholders": {
       "amount": {
         "type": "String"
+      },
+      "box": {
+        "type": "String"
       }
     }
   },
-  "auditCashSpent": "Petty cash expense {amount} — {category}",
+  "auditCashSpent": "Expense from {box} {amount} — {category}",
   "@auditCashSpent": {
     "placeholders": {
       "amount": {
@@ -840,10 +843,13 @@
       },
       "category": {
         "type": "String"
+      },
+      "box": {
+        "type": "String"
       }
     }
   },
-  "auditCashCounted": "Counted petty cash {counted} (variance {variance})",
+  "auditCashCounted": "Counted {box} {counted} (variance {variance})",
   "@auditCashCounted": {
     "placeholders": {
       "counted": {
@@ -851,13 +857,68 @@
       },
       "variance": {
         "type": "String"
+      },
+      "box": {
+        "type": "String"
       }
     }
   },
-  "auditCashReversed": "Reversed cash movement {amount}",
+  "auditCashReversed": "Reversed movement in {box} {amount}",
   "@auditCashReversed": {
     "placeholders": {
       "amount": {
+        "type": "String"
+      },
+      "box": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashTransferred": "Cash transfer {amount} — {from} → {to}",
+  "@auditCashTransferred": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashBoxCreated": "New cash box — {box}",
+  "@auditCashBoxCreated": {
+    "placeholders": {
+      "box": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashBoxRenamed": "Renamed cash box — {from} → {to}",
+  "@auditCashBoxRenamed": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashBoxRetired": "Retired cash box — {box}",
+  "@auditCashBoxRetired": {
+    "placeholders": {
+      "box": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashBoxReopened": "Reopened cash box — {box}",
+  "@auditCashBoxReopened": {
+    "placeholders": {
+      "box": {
         "type": "String"
       }
     }
@@ -2439,6 +2500,50 @@
     }
   },
   "kasPhoneOnly": "Petty cash is read on a tablet.",
+  "kasBoxAll": "All",
+  "@kasBoxAll": {},
+  "kasBoxLabel": "Cash box",
+  "@kasBoxLabel": {},
+  "kasVenueTotal": "All boxes total",
+  "@kasVenueTotal": {},
+  "kasActionTransfer": "Transfer",
+  "@kasActionTransfer": {},
+  "kasSheetTransferTitle": "Transfer between boxes",
+  "@kasSheetTransferTitle": {},
+  "kasTransfer": "Transfer",
+  "@kasTransfer": {},
+  "kasFieldFromBox": "From box",
+  "@kasFieldFromBox": {},
+  "kasFieldToBox": "To box",
+  "@kasFieldToBox": {},
+  "kasBoxesTitle": "Manage cash boxes",
+  "@kasBoxesTitle": {},
+  "kasBoxNew": "New box",
+  "@kasBoxNew": {},
+  "kasFieldBoxName": "Box name",
+  "@kasFieldBoxName": {},
+  "kasBoxRetire": "Retire",
+  "@kasBoxRetire": {},
+  "kasBoxReopen": "Reopen",
+  "@kasBoxReopen": {},
+  "kasBoxInactive": "Retired",
+  "@kasBoxInactive": {},
+  "kasErrBoxNotEmpty": "This box still holds {amount}. Empty it before retiring it.",
+  "@kasErrBoxNotEmpty": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "kasErrSameBox": "Pick two different boxes.",
+  "@kasErrSameBox": {},
+  "kasErrNameRequired": "A cash box needs a name.",
+  "@kasErrNameRequired": {},
+  "kasErrBoxNotFound": "That cash box no longer exists.",
+  "@kasErrBoxNotFound": {},
+  "rptKasByBox": "Per box",
+  "@rptKasByBox": {},
   "rptSecKas": "Petty cash",
   "rptSecPiutang": "Tabs",
   "rptPiutangSub": "Member bills not yet paid",

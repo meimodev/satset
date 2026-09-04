@@ -2431,23 +2431,48 @@ class AppL10nId extends AppL10n {
   }
 
   @override
-  String auditCashToppedUp(String amount) {
-    return 'Isi kas kecil $amount';
+  String auditCashToppedUp(String amount, String box) {
+    return 'Isi kas $box $amount';
   }
 
   @override
-  String auditCashSpent(String amount, String category) {
-    return 'Pengeluaran kas $amount — $category';
+  String auditCashSpent(String amount, String category, String box) {
+    return 'Pengeluaran $box $amount — $category';
   }
 
   @override
-  String auditCashCounted(String counted, String variance) {
-    return 'Opname kas $counted (selisih $variance)';
+  String auditCashCounted(String counted, String variance, String box) {
+    return 'Opname $box $counted (selisih $variance)';
   }
 
   @override
-  String auditCashReversed(String amount) {
-    return 'Batalkan mutasi kas $amount';
+  String auditCashReversed(String amount, String box) {
+    return 'Batalkan mutasi $box $amount';
+  }
+
+  @override
+  String auditCashTransferred(String amount, String from, String to) {
+    return 'Pindah kas $amount — $from → $to';
+  }
+
+  @override
+  String auditCashBoxCreated(String box) {
+    return 'Kas baru — $box';
+  }
+
+  @override
+  String auditCashBoxRenamed(String from, String to) {
+    return 'Ganti nama kas — $from → $to';
+  }
+
+  @override
+  String auditCashBoxRetired(String box) {
+    return 'Nonaktifkan kas — $box';
+  }
+
+  @override
+  String auditCashBoxReopened(String box) {
+    return 'Aktifkan lagi kas — $box';
   }
 
   @override
@@ -7427,6 +7452,65 @@ class AppL10nId extends AppL10n {
 
   @override
   String get kasPhoneOnly => 'Kas kecil dibaca di tablet.';
+
+  @override
+  String get kasBoxAll => 'Semua';
+
+  @override
+  String get kasBoxLabel => 'Kas';
+
+  @override
+  String get kasVenueTotal => 'Total semua kas';
+
+  @override
+  String get kasActionTransfer => 'Pindah';
+
+  @override
+  String get kasSheetTransferTitle => 'Pindah kas';
+
+  @override
+  String get kasTransfer => 'Pindahkan';
+
+  @override
+  String get kasFieldFromBox => 'Dari kas';
+
+  @override
+  String get kasFieldToBox => 'Ke kas';
+
+  @override
+  String get kasBoxesTitle => 'Kelola kas';
+
+  @override
+  String get kasBoxNew => 'Kas baru';
+
+  @override
+  String get kasFieldBoxName => 'Nama kas';
+
+  @override
+  String get kasBoxRetire => 'Nonaktifkan';
+
+  @override
+  String get kasBoxReopen => 'Aktifkan';
+
+  @override
+  String get kasBoxInactive => 'Nonaktif';
+
+  @override
+  String kasErrBoxNotEmpty(String amount) {
+    return 'Kas masih berisi $amount. Kosongkan dulu sebelum dinonaktifkan.';
+  }
+
+  @override
+  String get kasErrSameBox => 'Pilih dua kas yang berbeda.';
+
+  @override
+  String get kasErrNameRequired => 'Nama kas wajib diisi.';
+
+  @override
+  String get kasErrBoxNotFound => 'Kas tidak ditemukan.';
+
+  @override
+  String get rptKasByBox => 'Rincian per kas';
 
   @override
   String get rptSecKas => 'Kas kecil';

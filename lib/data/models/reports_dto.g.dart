@@ -522,6 +522,11 @@ _KasSectionDto _$KasSectionDtoFromJson(Map<String, dynamic> json) =>
             (k, e) => MapEntry(k, (e as num).toInt()),
           ) ??
           const <String, int>{},
+      byBox:
+          (json['byBox'] as List<dynamic>?)
+              ?.map((e) => KasBoxSectionDto.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <KasBoxSectionDto>[],
       count: (json['count'] as num?)?.toInt() ?? 0,
     );
 
@@ -533,7 +538,32 @@ Map<String, dynamic> _$KasSectionDtoToJson(_KasSectionDto instance) =>
       'variance': instance.variance,
       'closing': instance.closing,
       'byCategory': instance.byCategory,
+      'byBox': instance.byBox,
       'count': instance.count,
+    };
+
+_KasBoxSectionDto _$KasBoxSectionDtoFromJson(Map<String, dynamic> json) =>
+    _KasBoxSectionDto(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      active: json['active'] as bool? ?? true,
+      opening: (json['opening'] as num?)?.toInt() ?? 0,
+      inflow: (json['inflow'] as num?)?.toInt() ?? 0,
+      outflow: (json['outflow'] as num?)?.toInt() ?? 0,
+      variance: (json['variance'] as num?)?.toInt() ?? 0,
+      closing: (json['closing'] as num?)?.toInt() ?? 0,
+    );
+
+Map<String, dynamic> _$KasBoxSectionDtoToJson(_KasBoxSectionDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'active': instance.active,
+      'opening': instance.opening,
+      'inflow': instance.inflow,
+      'outflow': instance.outflow,
+      'variance': instance.variance,
+      'closing': instance.closing,
     };
 
 _PengeluaranSectionDto _$PengeluaranSectionDtoFromJson(

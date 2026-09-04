@@ -2443,23 +2443,48 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
-  String auditCashToppedUp(String amount) {
-    return 'Topped up petty cash $amount';
+  String auditCashToppedUp(String amount, String box) {
+    return 'Topped up $box $amount';
   }
 
   @override
-  String auditCashSpent(String amount, String category) {
-    return 'Petty cash expense $amount — $category';
+  String auditCashSpent(String amount, String category, String box) {
+    return 'Expense from $box $amount — $category';
   }
 
   @override
-  String auditCashCounted(String counted, String variance) {
-    return 'Counted petty cash $counted (variance $variance)';
+  String auditCashCounted(String counted, String variance, String box) {
+    return 'Counted $box $counted (variance $variance)';
   }
 
   @override
-  String auditCashReversed(String amount) {
-    return 'Reversed cash movement $amount';
+  String auditCashReversed(String amount, String box) {
+    return 'Reversed movement in $box $amount';
+  }
+
+  @override
+  String auditCashTransferred(String amount, String from, String to) {
+    return 'Cash transfer $amount — $from → $to';
+  }
+
+  @override
+  String auditCashBoxCreated(String box) {
+    return 'New cash box — $box';
+  }
+
+  @override
+  String auditCashBoxRenamed(String from, String to) {
+    return 'Renamed cash box — $from → $to';
+  }
+
+  @override
+  String auditCashBoxRetired(String box) {
+    return 'Retired cash box — $box';
+  }
+
+  @override
+  String auditCashBoxReopened(String box) {
+    return 'Reopened cash box — $box';
   }
 
   @override
@@ -7523,6 +7548,65 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get kasPhoneOnly => 'Petty cash is read on a tablet.';
+
+  @override
+  String get kasBoxAll => 'All';
+
+  @override
+  String get kasBoxLabel => 'Cash box';
+
+  @override
+  String get kasVenueTotal => 'All boxes total';
+
+  @override
+  String get kasActionTransfer => 'Transfer';
+
+  @override
+  String get kasSheetTransferTitle => 'Transfer between boxes';
+
+  @override
+  String get kasTransfer => 'Transfer';
+
+  @override
+  String get kasFieldFromBox => 'From box';
+
+  @override
+  String get kasFieldToBox => 'To box';
+
+  @override
+  String get kasBoxesTitle => 'Manage cash boxes';
+
+  @override
+  String get kasBoxNew => 'New box';
+
+  @override
+  String get kasFieldBoxName => 'Box name';
+
+  @override
+  String get kasBoxRetire => 'Retire';
+
+  @override
+  String get kasBoxReopen => 'Reopen';
+
+  @override
+  String get kasBoxInactive => 'Retired';
+
+  @override
+  String kasErrBoxNotEmpty(String amount) {
+    return 'This box still holds $amount. Empty it before retiring it.';
+  }
+
+  @override
+  String get kasErrSameBox => 'Pick two different boxes.';
+
+  @override
+  String get kasErrNameRequired => 'A cash box needs a name.';
+
+  @override
+  String get kasErrBoxNotFound => 'That cash box no longer exists.';
+
+  @override
+  String get rptKasByBox => 'Per box';
 
   @override
   String get rptSecKas => 'Petty cash';

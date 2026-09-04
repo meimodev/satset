@@ -4222,26 +4222,56 @@ abstract class AppL10n {
   /// No description provided for @auditCashToppedUp.
   ///
   /// In id, this message translates to:
-  /// **'Isi kas kecil {amount}'**
-  String auditCashToppedUp(String amount);
+  /// **'Isi kas {box} {amount}'**
+  String auditCashToppedUp(String amount, String box);
 
   /// No description provided for @auditCashSpent.
   ///
   /// In id, this message translates to:
-  /// **'Pengeluaran kas {amount} — {category}'**
-  String auditCashSpent(String amount, String category);
+  /// **'Pengeluaran {box} {amount} — {category}'**
+  String auditCashSpent(String amount, String category, String box);
 
   /// No description provided for @auditCashCounted.
   ///
   /// In id, this message translates to:
-  /// **'Opname kas {counted} (selisih {variance})'**
-  String auditCashCounted(String counted, String variance);
+  /// **'Opname {box} {counted} (selisih {variance})'**
+  String auditCashCounted(String counted, String variance, String box);
 
   /// No description provided for @auditCashReversed.
   ///
   /// In id, this message translates to:
-  /// **'Batalkan mutasi kas {amount}'**
-  String auditCashReversed(String amount);
+  /// **'Batalkan mutasi {box} {amount}'**
+  String auditCashReversed(String amount, String box);
+
+  /// No description provided for @auditCashTransferred.
+  ///
+  /// In id, this message translates to:
+  /// **'Pindah kas {amount} — {from} → {to}'**
+  String auditCashTransferred(String amount, String from, String to);
+
+  /// No description provided for @auditCashBoxCreated.
+  ///
+  /// In id, this message translates to:
+  /// **'Kas baru — {box}'**
+  String auditCashBoxCreated(String box);
+
+  /// No description provided for @auditCashBoxRenamed.
+  ///
+  /// In id, this message translates to:
+  /// **'Ganti nama kas — {from} → {to}'**
+  String auditCashBoxRenamed(String from, String to);
+
+  /// No description provided for @auditCashBoxRetired.
+  ///
+  /// In id, this message translates to:
+  /// **'Nonaktifkan kas — {box}'**
+  String auditCashBoxRetired(String box);
+
+  /// No description provided for @auditCashBoxReopened.
+  ///
+  /// In id, this message translates to:
+  /// **'Aktifkan lagi kas — {box}'**
+  String auditCashBoxReopened(String box);
 
   /// CONTEXT.md: Item bebas · Open item.
   ///
@@ -11772,6 +11802,120 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Kas kecil dibaca di tablet.'**
   String get kasPhoneOnly;
+
+  /// Kas kecil box selector: the arm showing every box's rows at once, with the venue total in the hero.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua'**
+  String get kasBoxAll;
+
+  /// CONTEXT.md: Kas · Cash box — one named tin inside Kas kecil. Field label on the movement sheets.
+  ///
+  /// In id, this message translates to:
+  /// **'Kas'**
+  String get kasBoxLabel;
+
+  /// Hero caption on the Semua arm — the sum of every box, never a figure of its own.
+  ///
+  /// In id, this message translates to:
+  /// **'Total semua kas'**
+  String get kasVenueTotal;
+
+  /// Toolbar action: move money from one cash box to another.
+  ///
+  /// In id, this message translates to:
+  /// **'Pindah'**
+  String get kasActionTransfer;
+
+  /// Sheet title for a transfer between two boxes.
+  ///
+  /// In id, this message translates to:
+  /// **'Pindah kas'**
+  String get kasSheetTransferTitle;
+
+  /// Confirm button on the transfer sheet.
+  ///
+  /// In id, this message translates to:
+  /// **'Pindahkan'**
+  String get kasTransfer;
+
+  /// Transfer source box.
+  ///
+  /// In id, this message translates to:
+  /// **'Dari kas'**
+  String get kasFieldFromBox;
+
+  /// Transfer destination box.
+  ///
+  /// In id, this message translates to:
+  /// **'Ke kas'**
+  String get kasFieldToBox;
+
+  /// Sheet title: create, rename and retire the venue's cash boxes.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelola kas'**
+  String get kasBoxesTitle;
+
+  /// Add a cash box.
+  ///
+  /// In id, this message translates to:
+  /// **'Kas baru'**
+  String get kasBoxNew;
+
+  /// Cash box name — venue content, never translated.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama kas'**
+  String get kasFieldBoxName;
+
+  /// Retire a cash box. Only possible at a zero balance.
+  ///
+  /// In id, this message translates to:
+  /// **'Nonaktifkan'**
+  String get kasBoxRetire;
+
+  /// Bring a retired cash box back.
+  ///
+  /// In id, this message translates to:
+  /// **'Aktifkan'**
+  String get kasBoxReopen;
+
+  /// Badge on a retired cash box.
+  ///
+  /// In id, this message translates to:
+  /// **'Nonaktif'**
+  String get kasBoxInactive;
+
+  /// Refusal when retiring a box that still holds money — hiding a tin must never hide rupiah.
+  ///
+  /// In id, this message translates to:
+  /// **'Kas masih berisi {amount}. Kosongkan dulu sebelum dinonaktifkan.'**
+  String kasErrBoxNotEmpty(String amount);
+
+  /// Refusal: a transfer needs a source and a destination that differ.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih dua kas yang berbeda.'**
+  String get kasErrSameBox;
+
+  /// Refusal: a cash box needs a name.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama kas wajib diisi.'**
+  String get kasErrNameRequired;
+
+  /// Refusal: the cash box named no longer exists.
+  ///
+  /// In id, this message translates to:
+  /// **'Kas tidak ditemukan.'**
+  String get kasErrBoxNotFound;
+
+  /// Reports · Kas card: the per-box breakdown under the venue totals.
+  ///
+  /// In id, this message translates to:
+  /// **'Rincian per kas'**
+  String get rptKasByBox;
 
   /// No description provided for @rptSecKas.
   ///

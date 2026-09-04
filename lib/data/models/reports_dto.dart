@@ -382,7 +382,13 @@ abstract class VoidReasonDto with _$VoidReasonDto {
 /// way a shortfall reads as a shortfall rather than as a purchase.
 ///
 /// [byCategory] is keyed by `CashCategory.name` — a code, not a word, resolved
-/// at read time (ADR-0085).
+/// at read time (ADR-0085). It stays **venue-wide** even now that a venue keeps
+/// several boxes: a category says what was bought, not which tin paid for it.
+///
+/// Every figure above is the **sum of [byBox]** (ADR-0131), which is what makes
+/// a transfer between two boxes vanish from the totals with no rule to exclude
+/// it — the two legs are equal and opposite. Per box they are counted, because
+/// a transfer is real movement for that tin.
 @freezed
 abstract class KasSectionDto with _$KasSectionDto {
   const factory KasSectionDto({
@@ -392,6 +398,7 @@ abstract class KasSectionDto with _$KasSectionDto {
     @Default(0) int variance,
     @Default(0) int closing,
     @Default(<String, int>{}) Map<String, int> byCategory,
+    @Default(<KasBoxSectionDto>[]) List<KasBoxSectionDto> byBox,
 
     /// Movements in the window. Zero is what the empty line keys off — a box
     /// with a balance and no movements is still nothing to report on.
@@ -400,6 +407,28 @@ abstract class KasSectionDto with _$KasSectionDto {
 
   factory KasSectionDto.fromJson(Map<String, dynamic> json) =>
       _$KasSectionDtoFromJson(json);
+}
+
+/// One [[Kas (cash box)]] over the same window (ADR-0131). The same five
+/// figures as the venue block, for one tin.
+///
+/// [name] is venue content and travels as words rather than as a code: unlike a
+/// category, there is no closed set to resolve it against.
+@freezed
+abstract class KasBoxSectionDto with _$KasBoxSectionDto {
+  const factory KasBoxSectionDto({
+    @Default('') String id,
+    @Default('') String name,
+    @Default(true) bool active,
+    @Default(0) int opening,
+    @Default(0) int inflow,
+    @Default(0) int outflow,
+    @Default(0) int variance,
+    @Default(0) int closing,
+  }) = _KasBoxSectionDto;
+
+  factory KasBoxSectionDto.fromJson(Map<String, dynamic> json) =>
+      _$KasBoxSectionDtoFromJson(json);
 }
 
 /// The [[Pengeluaran kunjungan]] block (ADR-0130).

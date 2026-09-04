@@ -1,14 +1,45 @@
-/// The petty cash box — one venue-level fund of physical cash for small
-/// outgoings, kept as an append-only ledger whose balance is `SUM(delta)`.
+/// The petty cash boxes — the venue's named tins of physical cash for small
+/// outgoings, kept as one append-only ledger whose balance is `SUM(delta)`.
 ///
 /// **Not the drawer.** The drawer holds sales cash arriving through payments;
 /// the box holds a float that only ever pays money out. Nothing links the two.
 /// See §Kas kecil in CONTEXT.md, ADR-0088 (it cannot go negative) and ADR-0089
 /// (it is not revenue).
 ///
+/// A venue holds **one or more** boxes (ADR-0131). Every movement names the
+/// [CashBox] it moved and every balance is derived over that box alone: a tin
+/// that cannot pay is refused even while another tin is full, because the notes
+/// are in a different drawer in a different room.
+///
 /// Plain Dart, no Flutter and no codegen: the server writes these rows and the
 /// client renders them, so the model sits below both.
 library;
+
+/// One named tin (ADR-0131).
+///
+/// The name is **venue content**, like a zone's or a menu item's — never an ARB
+/// key, and never localised. A box is retired by clearing [active], never
+/// deleted: a closed month's rows must still be able to name where the money
+/// came from.
+class CashBox {
+  final String id;
+  final String name;
+  final bool active;
+  final int sortOrder;
+
+  /// `SUM(delta)` over this box's rows, computed server-side on every read.
+  /// Never summed client-side — a client holds one page of the ledger and
+  /// cannot see what it does not hold.
+  final int balance;
+
+  const CashBox({
+    required this.id,
+    required this.name,
+    required this.balance,
+    this.active = true,
+    this.sortOrder = 0,
+  });
+}
 
 /// Which of the four movements a row is.
 ///
@@ -79,6 +110,10 @@ CashCategory? cashCategoryFromName(String? name) {
 /// with no time limit.
 class CashEntry {
   final String id;
+
+  /// The [CashBox] this movement moved (ADR-0131).
+  final String boxId;
+
   final CashEntryKind kind;
 
   /// Signed rupiah, plain integers — the box is counted in notes, never in
@@ -96,6 +131,12 @@ class CashEntry {
   /// The row this one reverses, set only on a [CashEntryKind.reversal]. At most
   /// one reversal may point at any given row.
   final String? reversesId;
+
+  /// The other leg of a transfer between two boxes, if this row is one. A
+  /// transfer is an ordinary expense out of one box paired with an ordinary
+  /// top-up into another, so nothing that already sums a box needs a new arm —
+  /// but the two legs live and die together, and `reverseCash` undoes both.
+  final String? transferPeerId;
 
   /// Set on a row that has been reversed, pointing at the reversal. This is the
   /// one field a row ever gains after the fact, and it is a link rather than an
@@ -122,10 +163,12 @@ class CashEntry {
 
   const CashEntry({
     required this.id,
+    required this.boxId,
     required this.kind,
     required this.delta,
     required this.at,
     this.category,
+    this.transferPeerId,
     this.note,
     this.reversesId,
     this.reversedById,

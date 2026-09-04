@@ -1581,15 +1581,18 @@
       }
     }
   },
-  "auditCashToppedUp": "Isi kas kecil {amount}",
+  "auditCashToppedUp": "Isi kas {box} {amount}",
   "@auditCashToppedUp": {
     "placeholders": {
       "amount": {
         "type": "String"
+      },
+      "box": {
+        "type": "String"
       }
     }
   },
-  "auditCashSpent": "Pengeluaran kas {amount} — {category}",
+  "auditCashSpent": "Pengeluaran {box} {amount} — {category}",
   "@auditCashSpent": {
     "placeholders": {
       "amount": {
@@ -1597,10 +1600,13 @@
       },
       "category": {
         "type": "String"
+      },
+      "box": {
+        "type": "String"
       }
     }
   },
-  "auditCashCounted": "Opname kas {counted} (selisih {variance})",
+  "auditCashCounted": "Opname {box} {counted} (selisih {variance})",
   "@auditCashCounted": {
     "placeholders": {
       "counted": {
@@ -1608,13 +1614,68 @@
       },
       "variance": {
         "type": "String"
+      },
+      "box": {
+        "type": "String"
       }
     }
   },
-  "auditCashReversed": "Batalkan mutasi kas {amount}",
+  "auditCashReversed": "Batalkan mutasi {box} {amount}",
   "@auditCashReversed": {
     "placeholders": {
       "amount": {
+        "type": "String"
+      },
+      "box": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashTransferred": "Pindah kas {amount} — {from} → {to}",
+  "@auditCashTransferred": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashBoxCreated": "Kas baru — {box}",
+  "@auditCashBoxCreated": {
+    "placeholders": {
+      "box": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashBoxRenamed": "Ganti nama kas — {from} → {to}",
+  "@auditCashBoxRenamed": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashBoxRetired": "Nonaktifkan kas — {box}",
+  "@auditCashBoxRetired": {
+    "placeholders": {
+      "box": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashBoxReopened": "Aktifkan lagi kas — {box}",
+  "@auditCashBoxReopened": {
+    "placeholders": {
+      "box": {
         "type": "String"
       }
     }
@@ -5608,6 +5669,87 @@
     }
   },
   "kasPhoneOnly": "Kas kecil dibaca di tablet.",
+  "kasBoxAll": "Semua",
+  "@kasBoxAll": {
+    "description": "Kas kecil box selector: the arm showing every box's rows at once, with the venue total in the hero."
+  },
+  "kasBoxLabel": "Kas",
+  "@kasBoxLabel": {
+    "description": "CONTEXT.md: Kas · Cash box — one named tin inside Kas kecil. Field label on the movement sheets."
+  },
+  "kasVenueTotal": "Total semua kas",
+  "@kasVenueTotal": {
+    "description": "Hero caption on the Semua arm — the sum of every box, never a figure of its own."
+  },
+  "kasActionTransfer": "Pindah",
+  "@kasActionTransfer": {
+    "description": "Toolbar action: move money from one cash box to another."
+  },
+  "kasSheetTransferTitle": "Pindah kas",
+  "@kasSheetTransferTitle": {
+    "description": "Sheet title for a transfer between two boxes."
+  },
+  "kasTransfer": "Pindahkan",
+  "@kasTransfer": {
+    "description": "Confirm button on the transfer sheet."
+  },
+  "kasFieldFromBox": "Dari kas",
+  "@kasFieldFromBox": {
+    "description": "Transfer source box."
+  },
+  "kasFieldToBox": "Ke kas",
+  "@kasFieldToBox": {
+    "description": "Transfer destination box."
+  },
+  "kasBoxesTitle": "Kelola kas",
+  "@kasBoxesTitle": {
+    "description": "Sheet title: create, rename and retire the venue's cash boxes."
+  },
+  "kasBoxNew": "Kas baru",
+  "@kasBoxNew": {
+    "description": "Add a cash box."
+  },
+  "kasFieldBoxName": "Nama kas",
+  "@kasFieldBoxName": {
+    "description": "Cash box name — venue content, never translated."
+  },
+  "kasBoxRetire": "Nonaktifkan",
+  "@kasBoxRetire": {
+    "description": "Retire a cash box. Only possible at a zero balance."
+  },
+  "kasBoxReopen": "Aktifkan",
+  "@kasBoxReopen": {
+    "description": "Bring a retired cash box back."
+  },
+  "kasBoxInactive": "Nonaktif",
+  "@kasBoxInactive": {
+    "description": "Badge on a retired cash box."
+  },
+  "kasErrBoxNotEmpty": "Kas masih berisi {amount}. Kosongkan dulu sebelum dinonaktifkan.",
+  "@kasErrBoxNotEmpty": {
+    "description": "Refusal when retiring a box that still holds money — hiding a tin must never hide rupiah.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "kasErrSameBox": "Pilih dua kas yang berbeda.",
+  "@kasErrSameBox": {
+    "description": "Refusal: a transfer needs a source and a destination that differ."
+  },
+  "kasErrNameRequired": "Nama kas wajib diisi.",
+  "@kasErrNameRequired": {
+    "description": "Refusal: a cash box needs a name."
+  },
+  "kasErrBoxNotFound": "Kas tidak ditemukan.",
+  "@kasErrBoxNotFound": {
+    "description": "Refusal: the cash box named no longer exists."
+  },
+  "rptKasByBox": "Rincian per kas",
+  "@rptKasByBox": {
+    "description": "Reports · Kas card: the per-box breakdown under the venue totals."
+  },
   "rptSecKas": "Kas kecil",
   "rptSecPiutang": "Piutang",
   "rptPiutangSub": "Tagihan pelanggan yang belum dibayar",

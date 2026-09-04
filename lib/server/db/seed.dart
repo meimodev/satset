@@ -26,6 +26,7 @@ import 'seed_inventory_data.dart';
 Future<void> seedInfra(AppDatabase db) async {
   await _ensureAdminRole(db);
   await _ensureWaiterCanVoid(db);
+  await _ensureDefaultCashBox(db);
 }
 
 /// Whether the host DB still has no sample restaurant data — drives the
@@ -338,6 +339,20 @@ String _hashPin(String pin) => pin_lib.hashPin(pin);
 /// Backfill `voidItem` onto the waiter role for installs seeded before
 /// self-served voids (ADR-0006). Idempotent: no-op once present or if the
 /// waiter role does not exist yet.
+/// The venue always has somewhere to file a cash movement (ADR-0131).
+///
+/// `onCreate` and the v73 migration both insert `box-main`, so this is a third
+/// belt: a venue whose boxes were all somehow deactivated still boots with one
+/// to post against, and a rename survives because the insert ignores conflicts.
+Future<void> _ensureDefaultCashBox(AppDatabase db) async {
+  await db
+      .into(db.cashBoxes)
+      .insert(
+        CashBoxesCompanion.insert(id: 'box-main', name: 'Kas Utama'),
+        mode: InsertMode.insertOrIgnore,
+      );
+}
+
 Future<void> _ensureWaiterCanVoid(AppDatabase db) async {
   final role = await (db.select(
     db.roles,

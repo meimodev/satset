@@ -306,4 +306,62 @@ void main() {
       expect(tags, isNotEmpty, reason: 'menu tags are seeded by this branch');
     });
   });
+
+  group('v73 — more than one tin', () {
+    test('every pre-v73 movement and its audit line name Kas Utama', () async {
+      final db = await freshDb();
+      addTearDown(db.close);
+
+      // A v72 venue has no boxes table. The ledger column is left in place —
+      // SQLite cannot drop one, and a real v72 row reaches v73 through the
+      // column's own default anyway, which is what the insert below pins.
+      await db.customStatement('DROP TABLE cash_boxes');
+      await db.customStatement(
+        "INSERT INTO cash_entries (id, kind, delta, at) "
+        "VALUES ('c-old', 'expense', -50000, 0)",
+      );
+      await db.customStatement(
+        "INSERT INTO audit_entries (id, type, title, at, kind, params) "
+        "VALUES ('a-old', 'cashMovement', 'Pengeluaran kas', 0, 'cashSpent', ?)",
+        [jsonEncode({'amount': 'Rp. 50.000', 'category': 'ingredients'})],
+      );
+      // An unrelated row must not be touched: the backfill is scoped by type.
+      await db.customStatement(
+        "INSERT INTO audit_entries (id, type, title, at, kind, params) "
+        "VALUES ('a-void', 'void', 'Batal', 0, 'voidItem', ?)",
+        [jsonEncode({'name': 'Nasi Goreng'})],
+      );
+
+      await replayFrom(db, 72, to: 73);
+
+      // The venue starts with exactly one box, and it is the one every row was
+      // backfilled to.
+      final boxes = await db.select(db.cashBoxes).get();
+      expect(boxes.map((b) => b.id), ['box-main']);
+      expect(boxes.single.name, 'Kas Utama');
+
+      final entry = await db
+          .customSelect("SELECT box_id FROM cash_entries WHERE id = 'c-old'")
+          .getSingle();
+      expect(entry.read<String>('box_id'), 'box-main');
+
+      // The audit params are frozen JSON, so the backfill is the only thing
+      // standing between an upgraded venue and a sentence with a hole in it.
+      final audit = await db
+          .customSelect("SELECT params FROM audit_entries WHERE id = 'a-old'")
+          .getSingle();
+      final params =
+          (jsonDecode(audit.read<String>('params')) as Map).cast<String, dynamic>();
+      expect(params['box'], 'Kas Utama');
+      expect(params['amount'], 'Rp. 50.000', reason: 'nothing else moved');
+
+      final other = await db
+          .customSelect("SELECT params FROM audit_entries WHERE id = 'a-void'")
+          .getSingle();
+      expect(
+        (jsonDecode(other.read<String>('params')) as Map).containsKey('box'),
+        isFalse,
+      );
+    });
+  });
 }
