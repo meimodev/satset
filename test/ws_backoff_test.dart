@@ -56,8 +56,7 @@ void main() {
     test('two handsets on the same attempt do not land on the same tick', () {
       // The whole point. Fifty devices, same outage, same attempt number.
       final spread = {
-        for (var i = 0; i < 50; i++)
-          WsClient.backoffFor(6).inMilliseconds,
+        for (var i = 0; i < 50; i++) WsClient.backoffFor(6).inMilliseconds,
       };
       expect(
         spread.length,
@@ -65,5 +64,26 @@ void main() {
         reason: 'undithered backoff is the thundering herd this prevents',
       );
     });
+  });
+
+  test('the handshake budget sits between the keepalive and the kernel', () {
+    // The bug this pins: `channel.ready` had no timeout, so a connect started
+    // while the interface was half-up blocked on the OS connect timeout
+    // (~110s) instead of failing. Nothing schedules a reconnect while that
+    // attempt hangs, so the 10s backoff ceiling is not what the user waits —
+    // two stalled handshakes was four minutes of OFFLINE on a LAN that came
+    // back at second one.
+    expect(
+      WsClient.handshakeTimeout,
+      greaterThan(const Duration(seconds: 5)),
+      reason:
+          'a budget at or under the keepalive would cut short a handshake that '
+          'is merely slow, on the congested Wi-Fi where it is most needed',
+    );
+    expect(
+      WsClient.handshakeTimeout,
+      lessThan(const Duration(seconds: 30)),
+      reason: 'the whole point is to give up long before the kernel does',
+    );
   });
 }

@@ -66,6 +66,18 @@ class WsClient {
     return Duration(milliseconds: (base * (0.5 + 0.5 * r)).round());
   }
 
+  /// Ceiling on the WebSocket handshake.
+  ///
+  /// `channel.ready` has no timeout of its own, so a connect that starts while
+  /// the interface is half-up does not fail — it blocks on the OS connect
+  /// timeout (~110s, errno 110), the same trap [ApiClient.requestTimeout]
+  /// exists to avoid. Nothing schedules a reconnect while that attempt hangs,
+  /// so the backoff's 10s ceiling is not what the user waits: two stalled
+  /// handshakes is four minutes of OFFLINE on a LAN that came back at second
+  /// one. Matches the HTTP budget — far above any LAN handshake, far below the
+  /// kernel's.
+  static const handshakeTimeout = Duration(seconds: 8);
+
   static final _rng = Random();
 
   final ApiConfig config;
@@ -118,7 +130,14 @@ class WsClient {
       // OPEN and resetting backoff. Otherwise a failed connect (cert/auth)
       // briefly shows LIVE then immediately ricochets to OFFLINE at the
       // 200ms minimum backoff — sub-second flicker on the top bar.
-      await channel.ready;
+      try {
+        await channel.ready.timeout(handshakeTimeout);
+      } on TimeoutException {
+        // Abandon the half-open socket rather than leaking one per attempt —
+        // the retry builds a fresh channel.
+        unawaited(channel.sink.close());
+        rethrow;
+      }
       if (_disposed || _channel != channel) return;
       SatLog.ws('open');
       connState.value = WsConnState.open;

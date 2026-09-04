@@ -8749,11 +8749,11 @@ abstract class AppL10n {
   /// **'Masukkan PIN'**
   String get pinEnterPin;
 
-  /// No description provided for @pinConnectedTo.
+  /// No description provided for @pinPairedWith.
   ///
   /// In id, this message translates to:
-  /// **'Tersambung ke {server}'**
-  String pinConnectedTo(String server);
+  /// **'Dipasangkan ke {server}'**
+  String pinPairedWith(String server);
 
   /// No description provided for @pinWidgetBook.
   ///

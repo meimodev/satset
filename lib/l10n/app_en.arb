@@ -1879,7 +1879,7 @@
   "pinErrPasswordEmpty": "Enter a password.",
   "pinErrPasswordShort": "6 characters minimum.",
   "pinEnterPin": "Enter your PIN",
-  "pinConnectedTo": "Connected to {server}",
+  "pinPairedWith": "Paired with {server}",
   "pinWidgetBook": "Widget book",
   "pinEmail": "Email",
   "pinEmailHint": "admin@warung.id",

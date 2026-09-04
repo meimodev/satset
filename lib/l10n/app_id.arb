@@ -4254,8 +4254,8 @@
   "pinErrPasswordEmpty": "Password belum diisi.",
   "pinErrPasswordShort": "Minimal 6 karakter.",
   "pinEnterPin": "Masukkan PIN",
-  "pinConnectedTo": "Tersambung ke {server}",
-  "@pinConnectedTo": {
+  "pinPairedWith": "Dipasangkan ke {server}",
+  "@pinPairedWith": {
     "placeholders": {
       "server": {
         "type": "String"

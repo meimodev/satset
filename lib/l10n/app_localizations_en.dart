@@ -5511,8 +5511,8 @@ class AppL10nEn extends AppL10n {
   String get pinEnterPin => 'Enter your PIN';
 
   @override
-  String pinConnectedTo(String server) {
-    return 'Connected to $server';
+  String pinPairedWith(String server) {
+    return 'Paired with $server';
   }
 
   @override

@@ -254,7 +254,10 @@ class _PinScreenState extends ConsumerState<PinScreen>
       ok = await showPinSheet(
         context,
         title: context.l10n.pinEnterPin,
-        subtitle: context.l10n.pinConnectedTo(server.label),
+        // "Dipasangkan ke", not "Tersambung ke": the pairing is a fact, the
+        // connection is the pill's job directly below. Claiming a connection
+        // here put "Tersambung ke X" one line above a red "tidak terjangkau".
+        subtitle: context.l10n.pinPairedWith(server.label),
         statusSlot: const _ServerReachabilityPill(),
         blockedReason: blocked,
         onSubmit: (pin) => vm.verifyPin(pin),

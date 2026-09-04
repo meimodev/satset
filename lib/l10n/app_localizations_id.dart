@@ -5457,8 +5457,8 @@ class AppL10nId extends AppL10n {
   String get pinEnterPin => 'Masukkan PIN';
 
   @override
-  String pinConnectedTo(String server) {
-    return 'Tersambung ke $server';
+  String pinPairedWith(String server) {
+    return 'Dipasangkan ke $server';
   }
 
   @override
