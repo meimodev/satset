@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:satset/data/repositories/ping_repository.dart';
+import 'package:satset/data/services/secure_storage_service.dart';
 import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/design/theme.dart';
@@ -97,5 +99,43 @@ void main() {
     await tester.tap(find.text('2'));
     await tester.pumpAndSettle();
     expect(find.text('2 / 6 digit'), findsOneWidget);
+  });
+
+  group('the admitted fingerprint', () {
+    setUp(() => TestWidgetsFlutterBinding.ensureInitialized());
+
+    test(
+      'survives a sign-out, because a shift handover is not an eviction',
+      () async {
+        FlutterSecureStorage.setMockInitialValues({});
+        final s = SecureStorageService();
+        await s.writeToken('jwt');
+        await s.writeMe('{"userId":"u1"}');
+        await s.writeAdmittedFingerprint('FP-A');
+
+        await s.clearSession();
+
+        // The bug this guards: `clearSession` drops the cached `/auth/me`, so
+        // reading admission off that cache told the next waiter on a dark LAN
+        // that the device had never signed in here — on the handover where the
+        // advice most needs to be right.
+        expect(await s.readMe(), isNull);
+        expect(await s.readToken(), isNull);
+        expect(await s.readAdmittedFingerprint(), 'FP-A');
+      },
+    );
+
+    test(
+      'dies with the pairing, so another venue is honestly un-admitted',
+      () async {
+        FlutterSecureStorage.setMockInitialValues({});
+        final s = SecureStorageService();
+        await s.writeAdmittedFingerprint('FP-A');
+
+        await s.clearPairing();
+
+        expect(await s.readAdmittedFingerprint(), isNull);
+      },
+    );
   });
 }

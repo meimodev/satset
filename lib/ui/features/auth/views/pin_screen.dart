@@ -215,11 +215,19 @@ class _PinScreenState extends ConsumerState<PinScreen>
     // typed into a dead end. Which dead end matters: a device that has been
     // admitted here before is only waiting on the Wi-Fi, while one that never
     // has cannot be admitted offline at all (ADR-0099) and the person holding
-    // it needs to walk to the host rather than wait. The cached `/auth/me` is
-    // the record of the difference and reading it is free.
+    // it needs to walk to the host rather than wait.
+    //
+    // The signal is the admitted **fingerprint**, not the cached `/auth/me`.
+    // The cache was the obvious reading and it is wrong in the commonest case:
+    // `clearSession` deletes it, so every shift handover looked like a device
+    // that had never signed in here — the one moment the advice most needs to
+    // be right. Comparing against the current fingerprint is what keeps a
+    // device re-paired to another venue honestly un-admitted there (ADR-0128).
+    final storage = ref.read(secureStorageServiceProvider);
+    final admittedFp = await storage.readAdmittedFingerprint();
+    final currentFp = await storage.readServerFingerprint();
     final everAdmitted =
-        (await ref.read(secureStorageServiceProvider).readMe())?.isNotEmpty ??
-        false;
+        admittedFp != null && admittedFp.isNotEmpty && admittedFp == currentFp;
     if (!mounted) return;
 
     // No retry control: `PingRepository` re-probes every 5s on its own, so the

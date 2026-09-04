@@ -27,6 +27,7 @@ class SecureStorageService {
   static const _kDeviceCert = 'satset.device.cert.pem';
   static const _kDeviceKey = 'satset.device.key.pem';
   static const _kServerFingerprint = 'satset.server.fingerprint';
+  static const _kAdmittedFp = 'satset.admitted.fingerprint';
   static const _kServerCert = 'satset.server.cert.pem';
 
   Future<String?> readToken() => _s.read(key: _kToken);
@@ -66,6 +67,19 @@ class SecureStorageService {
   Future<String?> readDeviceId() => _s.read(key: _kDeviceId);
   Future<void> writeDeviceId(String v) => _s.write(key: _kDeviceId, value: v);
 
+  /// The server fingerprint this device last completed a **live** sign-in
+  /// against — a PIN accepted, or a token the host itself confirmed.
+  ///
+  /// Deliberately **not** cleared by [clearSession]: signing out at the end of
+  /// a shift does not un-admit the device, and the sign-in screen reads this to
+  /// tell "waiting on the Wi-Fi" from "never been admitted here", which are two
+  /// different things for the person holding it to do (ADR-0099). It dies with
+  /// the certificate rather than the address, like every other cached venue
+  /// fact (ADR-0128), so it lives in [clearPairing].
+  Future<String?> readAdmittedFingerprint() => _s.read(key: _kAdmittedFp);
+  Future<void> writeAdmittedFingerprint(String v) =>
+      _s.write(key: _kAdmittedFp, value: v);
+
   Future<String?> readServerFingerprint() => _s.read(key: _kServerFingerprint);
   Future<void> writeServerFingerprint(String? v) => v == null
       ? _s.delete(key: _kServerFingerprint)
@@ -94,6 +108,7 @@ class SecureStorageService {
 
   Future<void> clearPairing() async {
     await _s.delete(key: _kToken);
+    await _s.delete(key: _kAdmittedFp);
     await _s.delete(key: _kServerFingerprint);
     await _s.delete(key: _kServerCert);
     await _s.delete(key: _kDeviceCert);
