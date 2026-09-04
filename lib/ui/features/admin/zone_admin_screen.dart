@@ -11,7 +11,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
-import 'package:satset/domain/models/user.dart';
+import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/domain/models/zone.dart';
 import 'package:satset/ui/core/design/zone_visuals.dart';
@@ -40,7 +40,11 @@ class _ZoneAdminScreenState extends ConsumerState<ZoneAdminScreen> {
     final tables = ref.watch(tablesProvider);
     final layout = context.layout;
     final auth = ref.watch(authStateProvider);
-    final canManage = auth.user?.role == UserRole.admin;
+    // The capability the server actually demands of every write this screen
+    // makes (`POST`/`PATCH`/`DELETE /zones` all gate `editSettings`), not the
+    // legacy `UserRole` bucket — that is a seed-and-reporting classification
+    // and CONTEXT.md forbids reading it as a permission. See ADR-0132.
+    final canManage = auth.has(Capability.editSettings);
 
     if (zones.isEmpty) {
       return SafeArea(child: _noZones(context, sc, canManage));

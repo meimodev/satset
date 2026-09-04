@@ -82,7 +82,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 72;
+  int get schemaVersion => 73;
 
   /// The cap sums a visit's expenses on every capture, inside the transaction
   /// that writes the next one (ADR-0100), so the lookup is on the hot path of
@@ -1536,6 +1536,13 @@ class AppDatabase extends _$AppDatabase {
         // categories, and never rewrites them afterwards.
         await _seedVisitExpenseCategories();
       }
+      if (from < 73 && to >= 73) {
+        // ADR-0132 — `adjustStock` and `manageRoles` become real gates. Both
+        // were grantable toggles that nothing enforced, so every venue holds
+        // them in whatever shape history left; grant each from the authority
+        // that has been doing its job, or the upgrade *removes* access.
+        await backfillRoleAndStockCapabilities();
+      }
     },
     onCreate: (m) async {
       await m.createAll();
@@ -1649,6 +1656,34 @@ class AppDatabase extends _$AppDatabase {
     );
     await grant('adjustStock', 'manageIngredients');
     await grant('markSoldOut', 'overrideStock');
+  }
+
+  /// Grant the v73 capabilities that stopped being decorative (ADR-0132).
+  ///
+  /// Both were toggles an owner could tick with no effect, so a venue's stored
+  /// sets say nothing about who was *meant* to hold them. Enforcing them without
+  /// a backfill would revoke, not restrict: every role that has been receiving
+  /// stock under `manageIngredients` would lose the ledger, and every role that
+  /// has been editing permissions under `manageStaff` would lose the role sheet.
+  ///
+  /// Grants from the nearest existing authority, the v36 shape, and idempotent
+  /// for the same reason. Note the mirror: v36 granted `manageIngredients` *to*
+  /// `adjustStock` holders, and this grants it back the other way, so the two
+  /// populations end up equal and only a role authored **after** this migration
+  /// can hold one without the other — which is the point of splitting them.
+  ///
+  /// A migration branch and deliberately **not** a boot-time reconcile like
+  /// `_ensureAdminRole`: this repairs an upgrade once. Reconciling every boot
+  /// would re-grant what an owner had just chosen to revoke.
+  Future<void> backfillRoleAndStockCapabilities() async {
+    Future<void> grant(String from, String to) => customStatement(
+      'UPDATE roles SET capabilities_json = '
+      'replace(capabilities_json, \'"$from"\', \'"$from","$to"\') '
+      'WHERE capabilities_json LIKE \'%"$from"%\' '
+      'AND capabilities_json NOT LIKE \'%"$to"%\'',
+    );
+    await grant('manageIngredients', 'adjustStock');
+    await grant('manageStaff', 'manageRoles');
   }
 
   /// Recipe lookup is per-owner on every menu render (habis derivation), and

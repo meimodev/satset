@@ -411,15 +411,23 @@ class _ActionList extends ConsumerWidget {
       // Editing is offered only here, and only here it is safe: once the line
       // is fired the kitchen owns it and the sole remedy is a void
       // (ADR-0071). The server enforces the same rule with a 409.
-      rows.add(
-        _ActionItem(
-          id: 'modify',
-          icon: Icons.edit_outlined,
-          title: context.l10n.liaEditItem,
-          desc: context.l10n.liaEditDesc,
-          tone: _Tone.normal,
-        ),
-      );
+      //
+      // `modifyOrder`, not `takeOrder`: `PATCH /tickets/<id>` costs the former
+      // and the two are granted separately, so a venue that revoked amendment
+      // from its floor got the row anyway and a 403 on tap (ADR-0132). Every
+      // seeded role holding one holds the other, so this bites exactly the
+      // venue that meant it.
+      if (ref.watch(authStateProvider).has(Capability.modifyOrder)) {
+        rows.add(
+          _ActionItem(
+            id: 'modify',
+            icon: Icons.edit_outlined,
+            title: context.l10n.liaEditItem,
+            desc: context.l10n.liaEditDesc,
+            tone: _Tone.normal,
+          ),
+        );
+      }
     }
     if (!offline && ticket.status == TicketStatus.ready) {
       rows.add(

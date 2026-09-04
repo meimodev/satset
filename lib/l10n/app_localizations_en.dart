@@ -7789,7 +7789,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get capAdjustStockDesc =>
-      'Record a stocktake, receive goods and log waste.';
+      'Receive goods, log waste, produce batches and run a stocktake.';
 
   @override
   String get capManageIngredientsDesc =>

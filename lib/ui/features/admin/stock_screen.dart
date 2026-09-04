@@ -10,7 +10,9 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/stock_repository.dart';
+import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/ingredient.dart';
 import 'package:satset/domain/models/stock_count.dart';
 import 'package:satset/domain/models/stock_unit.dart';
@@ -104,6 +106,14 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    // Two authorities open this screen (ADR-0132) and each half renders for
+    // whoever holds it, the `/kas` shape. The ledger — receive, waste,
+    // produce, opname — is `adjustStock` and is why the route admitted us.
+    // Authoring a bahan is `manageIngredients`, a separate grant, so those
+    // affordances come off rather than 403 on tap.
+    final canEditCatalogue = ref.watch(
+      authStateProvider.select((a) => a.has(Capability.manageIngredients)),
+    );
     final async = ref.watch(ingredientsProvider);
 
     return Column(
@@ -114,7 +124,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (!_opname) ...[
+              if (!_opname && canEditCatalogue) ...[
                 PressScale(
                   child: IconButton(
                     tooltip: context.l10n.stkAddIngredient,
@@ -171,7 +181,9 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 return _EmptyState(
                   title: context.l10n.stkEmptyTitle,
                   message: context.l10n.stkEmptyBody,
-                  onAction: () => _editIngredient(null),
+                  onAction: canEditCatalogue
+                      ? () => _editIngredient(null)
+                      : null,
                 );
               }
 
@@ -634,6 +646,12 @@ class _StockScreenState extends ConsumerState<StockScreen> {
 
   // ---------------------------------------------------------------- Ingredient Row Card
   Widget _row(SatColors sc, Ingredient i) {
+    // Read here rather than threaded down from `build`: this row is the
+    // other half of the catalogue/ledger split (ADR-0132) and the popup it
+    // renders is the only place that half is spent.
+    final canEditCatalogue = ref.watch(
+      authStateProvider.select((a) => a.has(Capability.manageIngredients)),
+    );
     final negative = i.stockOnHand < 0;
     final statusColor = negative
         ? sc.urgent
@@ -949,33 +967,40 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                                     ],
                                   ),
                                 ),
-                                PopupMenuItem(
-                                  value: 'edit',
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.edit_outlined, size: 16),
-                                      const SizedBox(width: Sp.s2h),
-                                      Text(context.l10n.stkMenuEdit),
-                                    ],
+                                // Catalogue, not ledger: renaming a bahan or
+                                // archiving it is `manageIngredients`.
+                                if (canEditCatalogue) ...[
+                                  PopupMenuItem(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.edit_outlined,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: Sp.s2h),
+                                        Text(context.l10n.stkMenuEdit),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                PopupMenuItem(
-                                  value: 'archive',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.archive_outlined,
-                                        size: 16,
-                                        color: sc.urgent,
-                                      ),
-                                      const SizedBox(width: Sp.s2h),
-                                      Text(
-                                        context.l10n.stkMenuArchive,
-                                        style: TextStyle(color: sc.urgent),
-                                      ),
-                                    ],
+                                  PopupMenuItem(
+                                    value: 'archive',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.archive_outlined,
+                                          size: 16,
+                                          color: sc.urgent,
+                                        ),
+                                        const SizedBox(width: Sp.s2h),
+                                        Text(
+                                          context.l10n.stkMenuArchive,
+                                          style: TextStyle(color: sc.urgent),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                           ],
@@ -1969,7 +1994,9 @@ class _EmptyState extends StatelessWidget {
 
   final String title;
   final String message;
-  final VoidCallback onAction;
+  /// Null when this session holds the ledger but not the catalogue: an empty
+  /// bahan list is then a fact to report, not a call to action it can answer.
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -2002,13 +2029,14 @@ class _EmptyState extends StatelessWidget {
               style: SatType.bodyM(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s5),
-            PressScale(
-              child: SatButton.primary(
-                label: context.l10n.stkAddFirst,
-                icon: Icons.add,
-                onTap: onAction,
+            if (onAction != null)
+              PressScale(
+                child: SatButton.primary(
+                  label: context.l10n.stkAddFirst,
+                  icon: Icons.add,
+                  onTap: onAction,
+                ),
               ),
-            ),
           ],
         ),
       ),

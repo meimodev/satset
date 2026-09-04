@@ -52,7 +52,7 @@ class _TabletLayout extends ConsumerWidget {
     final perm = ref.watch(menuPermissionProvider);
     final selectedId = ref.watch(menuAdminSelectedItemIdProvider);
     final tab = ref.watch(menuAdminTabProvider);
-    final admin = perm == MenuPermission.admin;
+    final admin = perm == MenuPermission.full;
     final onCats = admin && tab == MenuAdminTab.categories;
     final onTags = admin && tab == MenuAdminTab.tags;
 
@@ -131,7 +131,7 @@ class _TabletLayout extends ConsumerWidget {
                             children: [...previous, ?current],
                           ),
                           child:
-                              selectedId == null && perm == MenuPermission.staff
+                              selectedId == null && perm != MenuPermission.full
                               ? const _EmptyDetail(
                                   key: ValueKey('__empty__'),
                                   staff: true,
@@ -261,7 +261,7 @@ class _PhoneLayout extends ConsumerWidget {
     final counts = ref.watch(menuAdminCountsProvider);
     final perm = ref.watch(menuPermissionProvider);
     final tab = ref.watch(menuAdminTabProvider);
-    final admin = perm == MenuPermission.admin;
+    final admin = perm == MenuPermission.full;
     final onCats = admin && tab == MenuAdminTab.categories;
     final onTags = admin && tab == MenuAdminTab.tags;
 
@@ -292,7 +292,7 @@ class _PhoneLayout extends ConsumerWidget {
               ],
             ),
           ),
-          if (perm == MenuPermission.admin)
+          if (perm == MenuPermission.full)
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Align(
@@ -362,7 +362,7 @@ class _ToolbarState extends ConsumerState<_Toolbar> {
                   ref.read(menuAdminSearchProvider.notifier).state = t,
             ),
           ),
-          if (!isTab && perm == MenuPermission.admin) ...[
+          if (!isTab && perm == MenuPermission.full) ...[
             const SizedBox(width: Sp.s2),
             SatButton.primary(
               size: SatButtonSize.sm,
@@ -547,7 +547,7 @@ class _MenuItemRow extends ConsumerWidget {
                     item.id;
               }
             },
-            onLongPress: perm == MenuPermission.admin
+            onLongPress: ref.watch(menuCanMarkSoldOutProvider)
                 ? () => _toggleAvailability(context, ref, item)
                 : null,
             child: AnimatedContainer(
@@ -698,7 +698,11 @@ class _StatusToggle extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final auto = item.isAutoSoldOut;
-    final canToggle = !auto;
+    // The write behind this costs `markSoldOut` server-side, and `editMenu`
+    // does not imply it — the button used to render for every menu editor and
+    // answer 403 (ADR-0132). Asks the capability rather than the tier, because
+    // the two are orthogonal.
+    final canToggle = !auto && ref.watch(menuCanMarkSoldOutProvider);
     final out = item.isSoldOut;
     final fg = out ? sc.urgent : sc.success;
     final label = auto
@@ -1183,7 +1187,7 @@ class _MenuRoleChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = perm == MenuPermission.admin;
+    final isAdmin = perm == MenuPermission.full;
     return SatChip.tag(
       label: isAdmin ? context.l10n.mnaRoleAdmin : context.l10n.mnaRoleStaff,
       hue: isAdmin ? SatChipHue.accent : SatChipHue.neutral,
