@@ -42,6 +42,8 @@ part 'database.g.dart';
     TableSessionReceipts,
     TableSessionReceiptLines,
     TableSessionPayments,
+    VisitExpenses,
+    VisitExpenseCategories,
     DiscountPresets,
     Discounts,
     TableSessionDiscounts,
@@ -80,7 +82,17 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 71;
+  int get schemaVersion => 72;
+
+  /// The cap sums a visit's expenses on every capture, inside the transaction
+  /// that writes the next one (ADR-0100), so the lookup is on the hot path of
+  /// the one guard this ledger has.
+  Future<void> _createVisitExpenseIndexes() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_visit_expenses_visit '
+      'ON visit_expenses(visit_id)',
+    );
+  }
 
   /// At most one discount per target — one bill discount per visit (ADR-0070),
   /// one whole-order discount per receipt, one line discount per line: the
@@ -1340,6 +1352,10 @@ class AppDatabase extends _$AppDatabase {
               // no transformer — just exclusion from the copy.
               venueSettings.memberMirrorEnabled,
               venueSettings.memberMirrorSalt,
+              // Added by v72 (ADR-0130), same reasoning: absent from any
+              // database this branch rebuilds, carries a default, needs no
+              // transformer.
+              venueSettings.tableExpenseEnabled,
             ],
           ),
         );
@@ -1492,6 +1508,34 @@ class AppDatabase extends _$AppDatabase {
           type: "TEXT NOT NULL DEFAULT ''",
         );
       }
+      if (from < 72 && to >= 72) {
+        // ADR-0130 — the [[Pengeluaran kunjungan]] ledger and the venue's own
+        // vocabulary for it.
+        await m.createTable(visitExpenses);
+        await m.createTable(visitExpenseCategories);
+        await _createVisitExpenseIndexes();
+        // Spelled out in full rather than as a bare `INTEGER NOT NULL DEFAULT
+        // 0`: `_safeAddColumnOn` takes a raw type string, and a boolean without
+        // its `CHECK` leaves a migrated venue with a different schema from a
+        // fresh one — the divergence v63 and v64 exist to repair, and the one
+        // `test/schema_migration_test.dart` refuses.
+        await _safeAddColumnOn(
+          'venue_settings',
+          'table_expense_enabled',
+          type:
+              'INTEGER NOT NULL DEFAULT 0 '
+              'CHECK ("table_expense_enabled" IN (0, 1))',
+        );
+        await _safeAddColumnOn(
+          'table_sessions',
+          'expense_amount',
+          type: 'INTEGER NOT NULL DEFAULT 0',
+        );
+        // A venue upgrading into the feature needs somewhere to file the first
+        // expense; the seed owns these four the way it owns its drink
+        // categories, and never rewrites them afterwards.
+        await _seedVisitExpenseCategories();
+      }
     },
     onCreate: (m) async {
       await m.createAll();
@@ -1505,6 +1549,7 @@ class AppDatabase extends _$AppDatabase {
         'ON users(firebase_uid) WHERE firebase_uid IS NOT NULL',
       );
       await _createDiscountIndexes();
+      await _createVisitExpenseIndexes();
       await _createMemberIndexes();
       await _createMemberSyncIndexes();
       await _createGuestIndexes();
@@ -1522,8 +1567,36 @@ class AppDatabase extends _$AppDatabase {
         ),
       );
       await _seedMenuTags();
+      await _seedVisitExpenseCategories();
     },
   );
+
+  /// The venue's starting vocabulary for a [[Pengeluaran kunjungan]]
+  /// (ADR-0130), so a venue that switches the feature on has somewhere to file
+  /// the first one before anybody opens the settings screen.
+  ///
+  /// The list is venue-authored from here on: `insertOnConflictUpdate` would
+  /// undo a rename on every boot, so this inserts and does nothing else. Ids
+  /// are fixed, which is what makes a re-run after a half-finished migration
+  /// idempotent rather than duplicating the four.
+  Future<void> _seedVisitExpenseCategories() async {
+    const defaults = [
+      ('vexc-tissue', 'Tisu & perlengkapan', 0),
+      ('vexc-courtesy', 'Pelengkap tamu', 1),
+      ('vexc-errand', 'Titipan tamu', 2),
+      ('vexc-other', 'Lainnya', 3),
+    ];
+    for (final (id, name, order) in defaults) {
+      await into(visitExpenseCategories).insert(
+        VisitExpenseCategoriesCompanion.insert(
+          id: id,
+          name: name,
+          sortOrder: Value(order),
+        ),
+        mode: InsertMode.insertOrIgnore,
+      );
+    }
+  }
 
   /// Convert the legacy per-item `stock_count` into ingredients (v36, ADR-0040).
   ///

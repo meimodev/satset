@@ -536,6 +536,13 @@ class VenueSettings extends Table {
   /// the venue that has never phoned home. It is the only lever an owner has
   /// over "is my customer list on the phone my waiter lost", so it is a switch
   /// they can find, not an entitlement somebody sells them.
+  /// Whether the floor may record a [[Pengeluaran kunjungan]] against the visit
+  /// it is serving (ADR-0130). Off by default — a venue opts in, and the
+  /// `tableExpense` [[Modul|mode key]] has to be held on top, which is where
+  /// the AND lives.
+  BoolColumn get tableExpenseEnabled =>
+      boolean().withDefault(const Constant(false))();
+
   BoolColumn get memberMirrorEnabled =>
       boolean().withDefault(const Constant(true))();
 
@@ -772,9 +779,16 @@ class TableSessions extends Table {
   /// every receipt). 0 for pre-v35 sessions. ADR-0037.
   IntColumn get discountAmount => integer().withDefault(const Constant(0))();
 
-  /// Money actually collected: `netTotal − discountAmount` (ADR-0039). This is
-  /// the revenue figure every report and export reads. Equals [netTotal] on
+  /// Money **billed and settled**: `netTotal − discountAmount` (ADR-0039). This
+  /// is the revenue figure every report and export reads. Equals [netTotal] on
   /// pre-v35 rows, which carried no discounts.
+  ///
+  /// It used to say *money actually collected*, and ADR-0130 made that false:
+  /// a [[Pengeluaran kunjungan]] takes cash out of the till against this visit,
+  /// so money in hand is `settledTotal − expenseAmount`. The formula here does
+  /// **not** move — it is frozen for the reason ADR-0039 froze [netTotal], and
+  /// redefining it would silently rewrite every historical comparison and every
+  /// accounting export already in a customer's hands. See [expenseAmount].
   IntColumn get settledTotal => integer().withDefault(const Constant(0))();
   IntColumn get ticketCount => integer().withDefault(const Constant(0))();
 
@@ -795,6 +809,20 @@ class TableSessions extends Table {
   /// for pre-v42 rows. ADR-0066.
   TextColumn get channel => text().withDefault(const Constant(''))();
   BoolColumn get prepaid => boolean().withDefault(const Constant(false))();
+
+  /// Total [[Pengeluaran kunjungan]] on this visit — money that left the till
+  /// against this party (ADR-0130). 0 for every row predating v72.
+  ///
+  /// **Frozen, like its neighbours, and deliberately not folded into any of
+  /// them.** [netTotal] and [settledTotal] keep the formulas ADR-0039 gave
+  /// them; what changes is [settledTotal]'s *meaning*, which is now money
+  /// billed and settled. Cash actually in hand is `settledTotal -
+  /// expenseAmount`, and that subtraction happens in the report, once.
+  ///
+  /// Rewritten on a re-close after a reopen, exactly as [discountAmount] is —
+  /// the snapshot mirrors the live visit, and an expense recorded during a
+  /// reopen is as real as one recorded before the first close.
+  IntColumn get expenseAmount => integer().withDefault(const Constant(0))();
 
   /// The [[Pelanggan (member)]] frozen at snapshot. Every member figure in
   /// Reports reads this, not the live directory — which is what lets a deleted
@@ -914,6 +942,68 @@ class Receipts extends Table {
 /// Hard-deleted rather than archived — safe because every applied discount
 /// snapshots these values onto its `discounts` row. `active` hides a seasonal
 /// preset without deleting it.
+/// One **[[Pengeluaran kunjungan]]** — cash a [[Waiter|pelayan]] spent on a
+/// party while serving it, out of the money that [[Visit|kunjungan]] is
+/// producing (ADR-0130).
+///
+/// **Not a [[Kas kecil (petty cash)]] row.** The box is a standing venue float
+/// that only ever leaves the venue and is deliberately not revenue (ADR-0089);
+/// this is money out of one visit's own takings and *is* revenue-affecting. The
+/// two ledgers never meet: nothing here moves a box balance and no top-up funds
+/// it.
+///
+/// Rows are written only by `lib/server/visit_expenses.dart` — the one-writer
+/// rule `writeAudit`, `cash.dart` and `members.dart` hold — and are **never
+/// updated and never deleted**. That is not "not yet": there is no correction
+/// story, by design, because the cash already left.
+class VisitExpenses extends Table {
+  /// Client-minted, and doubles as the idempotency key — the [[Antrean kirim]]
+  /// replays under it, so a request that timed out after the server committed
+  /// reads back the stored response instead of posting the photo twice.
+  TextColumn get id => text()();
+  TextColumn get visitId => text()();
+
+  /// Names a [[VisitExpenseCategories]] row. Deliberately not a foreign key
+  /// with a cascade: a category is soft-deleted, never removed, so a closed
+  /// month keeps rendering the word it was filed under.
+  TextColumn get categoryId => text()();
+
+  /// Positive. The sign lives in the reader — this ledger only ever pays out,
+  /// so storing a negative would be a second way to say the same thing.
+  IntColumn get amount => integer()();
+  TextColumn get note => text().withDefault(const Constant(''))();
+
+  /// **Mandatory** (ADR-0130). Not nullable, and the writer refuses an empty
+  /// one: a photo the client could skip is an optional photo.
+  BlobColumn get photo => blob()();
+
+  /// The waiter who spent it. Survives a handset handover and stays the row's
+  /// author — ADR-0056 never backfills authorship.
+  TextColumn get actorUserId => text().nullable()();
+  DateTimeColumn get at => dateTime()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// The venue's own vocabulary for what a [[Pengeluaran kunjungan]] was for.
+///
+/// Shaped exactly like [DiscountPresets], and venue-authored rather than a
+/// closed enum — which is the opposite of the call `CashCategory` makes for the
+/// petty cash box, and deliberately so (ADR-0130). A name here is content, like
+/// a menu item's, so it is ARB-exempt.
+///
+/// **Soft-delete only.** [active] hides a category from the picker; nothing
+/// removes the row, because a removed one orphans every expense filed under it
+/// and the report then renders an id where a word should be.
+class VisitExpenseCategories extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  BoolColumn get active => boolean().withDefault(const Constant(true))();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 class DiscountPresets extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
