@@ -12,6 +12,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/data/repositories/zones_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/repositories/printers_repository.dart';
@@ -217,6 +218,21 @@ class AppShell extends ConsumerWidget {
       authStateProvider.select((s) => s.has(Capability.takeOrder)),
     )) {
       ref.watch(reservationsRepositoryProvider);
+    }
+    // Bills and the list that reaches them (ADR-0123 §Q19). The prefetch sweep
+    // and the [[Antrean setelmen]]'s payable snapshot both hang off this
+    // repository's refetch, and its only watcher was `/kasir` itself — so the
+    // cache designed to make "a bill nobody happened to open" settleable only
+    // filled once somebody opened the cashier screen. A client-mode till lands
+    // on /tables, so the host could be gone before the sweep had ever run.
+    // The drain half was never affected: it rides `sendQueueDrainProvider`.
+    //
+    // Gated on the capability the GET costs, and the same gate keeps a
+    // waiter's handset from prefetching every open bill in the venue.
+    if (ref.watch(
+      authStateProvider.select((s) => s.has(Capability.settleBill)),
+    )) {
+      ref.watch(settlementProvider);
     }
     // A clean drain stays silent — the lines landing on the table say it. Only
     // a refusal, a stock drop or a stalled drain is worth a blocking overlay.

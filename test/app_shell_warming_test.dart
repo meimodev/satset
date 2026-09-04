@@ -41,6 +41,32 @@ void main() {
     });
   }
 
+  /// Warmed only for a user whose role can make the GET. Warming these
+  /// unconditionally 403s onto the error bus on every boot of a device that
+  /// will never open the screen — and in settlement's case would prefetch
+  /// every open bill in the venue onto a waiter's handset.
+  const gated = <String, String>{
+    'reservationsRepositoryProvider': 'Capability.takeOrder',
+    'settlementProvider': 'Capability.settleBill',
+  };
+
+  for (final e in gated.entries) {
+    test('AppShell warms ${e.key}, behind ${e.value}', () {
+      expect(shell.contains('ref.watch(${e.key})'), isTrue,
+          reason: '${e.key} is no longer warmed at all.');
+      final at = shell.indexOf('ref.watch(${e.key})');
+      final guard = shell.lastIndexOf(e.value, at);
+      expect(guard, greaterThan(-1),
+          reason:
+              '${e.key} must stay behind a ${e.value} check — ungated it '
+              'fetches on every device, including the roles the server '
+              'refuses.');
+      expect(at - guard, lessThan(400),
+          reason: 'the ${e.value} guard is no longer the one wrapping '
+              '${e.key}.');
+    });
+  }
+
   test('tables and tickets are warmed on purpose, not via the tab badges', () {
     // They were warm for months only because `totalReadyCountProvider` and
     // `kitchenNewOrderCountProvider` happen to watch them for the badge

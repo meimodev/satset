@@ -175,7 +175,18 @@ by a host that just vanished.
   `/kasir` or `/kitchen` kept tables with no zones to file them under. This is
   the fourth time the lazy-repository trap has bitten (ADR-0128, ADR-0130, and
   twice here), which is why it is now a test and not a habit.
-- The printer list is warmed for a weaker reason and is **not** cached: fetched
+- **Bills and the payable list had the same hole, and it predates this ADR.**
+  ADR-0123 §Q19 built a prefetch sweep so "a bill nobody happened to open" is
+  still settleable, and `CachedPayable` so the list that reaches those bills
+  survives too. Both hang off `SettlementRepository`'s refetch, and its only
+  watcher was `/kasir` itself — so the cache meant to fill *ahead* of the
+  outage filled only once somebody opened the cashier screen. A client-mode
+  till lands on `/tables`, so the host could be gone before the sweep had ever
+  run. Warmed here now, behind `settleBill` — the capability its GET already
+  costs, which doubles as the reason a waiter's handset does not prefetch every
+  open bill in the venue. The drain half was never affected: it rides
+  `sendQueueDrainProvider` (`send_queue_drain.dart`), which was always warm.
+- - The printer list is warmed for a weaker reason and is **not** cached: fetched
   first when the kasir taps Cetak, it is fetched at the moment the host is
   already gone. Reservations are the same trade but their GET costs
   `takeOrder`, so they are warmed only for a user who has it — otherwise every
