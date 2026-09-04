@@ -11,6 +11,7 @@ import 'package:satset/server/cash.dart';
 import 'package:satset/server/debts.dart';
 import 'package:satset/server/members.dart';
 import 'package:satset/server/shift.dart';
+import 'package:satset/server/visit_expenses.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/service_timing.dart';
@@ -227,6 +228,17 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
       0,
       (a, s) => a + s.taxAmount + s.serviceAmount,
     );
+    // What left the till in this window (ADR-0130). Read off the live rows by
+    // `at` — the moment the cash left — and not off the frozen snapshot's
+    // `expenseAmount`, which enters the window on `closedAt` instead. Mixing
+    // the two axes is what made the Pengeluaran card disagree with its own
+    // breakdown while a visit was still open; `visitExpenseReportSection`
+    // sums the same rows, so the KPI and the card are one number.
+    final expenseTotal = (await visitExpensesBetween(
+      db,
+      from: from,
+      to: to,
+    )).fold<int>(0, (a, e) => a + e.amount);
     // Codes and amounts, not sentences: the reader renders these (ADR-0085).
     // The compact rupiah these used to carry abbreviated *Indonesian* words.
     final salesKpis = [
@@ -241,6 +253,16 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
         'args': [sessionCount],
       },
       {'key': 'taxService', 'rupiah': taxService, 'args': []},
+      // ADR-0130. Two figures, never one: `net` keeps ADR-0039's frozen
+      // formula and its meaning, and the subtraction is shown rather than
+      // folded in — redefining `net` would silently rewrite every historical
+      // comparison and every accounting export already in a customer's hands.
+      // Both are omitted entirely when the venue does not do this, so a
+      // restaurant that never records an expense gains no tiles.
+      if (expenseTotal > 0) ...[
+        {'key': 'expense', 'rupiah': expenseTotal, 'args': []},
+        {'key': 'netAfterExpense', 'rupiah': net - expenseTotal, 'args': []},
+      ],
       {
         'key': 'void',
         'rupiah': voidTotal,
@@ -891,6 +913,11 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
       // not a sales channel, it is a claim on future takings. Reporting it
       // inside `sales` would let a points give-away read as revenue.
       'members': await memberReportSection(db, from: from, to: to),
+      // And its own again (ADR-0130) — the mirror of `kas`. Petty cash is not
+      // revenue and this is: it comes out of what a visit rang up. Which is
+      // exactly why it may not sit inside `sales` either, where it would read
+      // as a deduction from takings rather than a cost of making them.
+      'pengeluaran': await visitExpenseReportSection(db, from: from, to: to),
       // And its own again (ADR-0098). A collection is not revenue — the sale
       // was booked the night it was eaten — so it cannot sit in `sales`. But
       // `opening` and `closing` are venue-wide outstanding rather than window
@@ -1429,6 +1456,13 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
       agg.net += s.settledTotal;
       agg.discount += s.discountAmount;
     }
+    // Expenses ride their own axis (ADR-0130): a day owns the cash that left it,
+    // not the cash spent against a bill that happened to close that day. Same
+    // rule as the venue KPI and the Pengeluaran section, so the three agree.
+    final acctExpenses = await visitExpensesBetween(db, from: from, to: to);
+    for (final e in acctExpenses) {
+      daily.putIfAbsent(ymd(e.at), () => _AcctDayAgg()).expense += e.amount;
+    }
     for (final p in pays) {
       final key = dayKey[p.sessionId];
       if (key == null) continue;
@@ -1450,6 +1484,7 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
                 'tax': e.value.tax,
                 'discount': e.value.discount,
                 'net': e.value.net,
+                'expense': e.value.expense,
                 'collected': e.value.collected,
                 'refunded': e.value.refunded,
               },
@@ -1471,6 +1506,7 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
         'tax': tax,
         'discount': discount,
         'net': net,
+        'expense': acctExpenses.fold<int>(0, (a, e) => a + e.amount),
         'collected': collected,
         'refunded': refunded,
         'sessionCount': sessions.length,
@@ -1514,6 +1550,11 @@ class _StaffVoidAgg {
 /// Per-calendar-day accounting rollup (ADR-0032).
 class _AcctDayAgg {
   int gross = 0;
+  /// [[Pengeluaran kunjungan]] (ADR-0130). Beside `collected` and folded into
+  /// neither it nor `net`: the guest paid in full and the payment row says so —
+  /// what this changes is the cash actually in the drawer at the end of the
+  /// day, which is `collected - expense`.
+  int expense = 0;
   int voidAmount = 0;
   int service = 0;
   int tax = 0;

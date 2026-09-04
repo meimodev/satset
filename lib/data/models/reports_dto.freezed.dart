@@ -21,7 +21,10 @@ mixin _$ReportsSnapshotDto {
  MoneyAuditSectionDto get moneyAudit;/// The petty cash box over the same window (§Kas kecil). Its own section
 /// because none of it is revenue (ADR-0089) — no figure here appears in
 /// [sales], and no figure in [sales] is net of it.
- KasSectionDto get kas;/// [[Keanggotaan (membership)]] over the same window. Its own section for
+ KasSectionDto get kas;/// The [[Pengeluaran kunjungan]] block over the same window (ADR-0130).
+/// Its own section, the mirror of [kas]: petty cash is not revenue and
+/// this is, which is exactly why neither may sit inside `sales`.
+ PengeluaranSectionDto get pengeluaran;/// [[Keanggotaan (membership)]] over the same window. Its own section for
 /// the mirror-image reason [kas] is: points are a claim on future takings,
 /// not a channel — folding a give-away into [sales] would let it read as
 /// revenue (ADR-0095).
@@ -47,16 +50,16 @@ $ReportsSnapshotDtoCopyWith<ReportsSnapshotDto> get copyWith => _$ReportsSnapsho
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReportsSnapshotDto&&(identical(other.generatedAt, generatedAt) || other.generatedAt == generatedAt)&&(identical(other.rangeFrom, rangeFrom) || other.rangeFrom == rangeFrom)&&(identical(other.rangeTo, rangeTo) || other.rangeTo == rangeTo)&&(identical(other.range, range) || other.range == range)&&(identical(other.filterOptions, filterOptions) || other.filterOptions == filterOptions)&&(identical(other.sales, sales) || other.sales == sales)&&(identical(other.staff, staff) || other.staff == staff)&&(identical(other.menu, menu) || other.menu == menu)&&(identical(other.ops, ops) || other.ops == ops)&&(identical(other.moneyAudit, moneyAudit) || other.moneyAudit == moneyAudit)&&(identical(other.kas, kas) || other.kas == kas)&&(identical(other.members, members) || other.members == members)&&(identical(other.piutang, piutang) || other.piutang == piutang)&&(identical(other.jamKerja, jamKerja) || other.jamKerja == jamKerja));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReportsSnapshotDto&&(identical(other.generatedAt, generatedAt) || other.generatedAt == generatedAt)&&(identical(other.rangeFrom, rangeFrom) || other.rangeFrom == rangeFrom)&&(identical(other.rangeTo, rangeTo) || other.rangeTo == rangeTo)&&(identical(other.range, range) || other.range == range)&&(identical(other.filterOptions, filterOptions) || other.filterOptions == filterOptions)&&(identical(other.sales, sales) || other.sales == sales)&&(identical(other.staff, staff) || other.staff == staff)&&(identical(other.menu, menu) || other.menu == menu)&&(identical(other.ops, ops) || other.ops == ops)&&(identical(other.moneyAudit, moneyAudit) || other.moneyAudit == moneyAudit)&&(identical(other.kas, kas) || other.kas == kas)&&(identical(other.pengeluaran, pengeluaran) || other.pengeluaran == pengeluaran)&&(identical(other.members, members) || other.members == members)&&(identical(other.piutang, piutang) || other.piutang == piutang)&&(identical(other.jamKerja, jamKerja) || other.jamKerja == jamKerja));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,generatedAt,rangeFrom,rangeTo,range,filterOptions,sales,staff,menu,ops,moneyAudit,kas,members,piutang,jamKerja);
+int get hashCode => Object.hash(runtimeType,generatedAt,rangeFrom,rangeTo,range,filterOptions,sales,staff,menu,ops,moneyAudit,kas,pengeluaran,members,piutang,jamKerja);
 
 @override
 String toString() {
-  return 'ReportsSnapshotDto(generatedAt: $generatedAt, rangeFrom: $rangeFrom, rangeTo: $rangeTo, range: $range, filterOptions: $filterOptions, sales: $sales, staff: $staff, menu: $menu, ops: $ops, moneyAudit: $moneyAudit, kas: $kas, members: $members, piutang: $piutang, jamKerja: $jamKerja)';
+  return 'ReportsSnapshotDto(generatedAt: $generatedAt, rangeFrom: $rangeFrom, rangeTo: $rangeTo, range: $range, filterOptions: $filterOptions, sales: $sales, staff: $staff, menu: $menu, ops: $ops, moneyAudit: $moneyAudit, kas: $kas, pengeluaran: $pengeluaran, members: $members, piutang: $piutang, jamKerja: $jamKerja)';
 }
 
 
@@ -67,11 +70,11 @@ abstract mixin class $ReportsSnapshotDtoCopyWith<$Res>  {
   factory $ReportsSnapshotDtoCopyWith(ReportsSnapshotDto value, $Res Function(ReportsSnapshotDto) _then) = _$ReportsSnapshotDtoCopyWithImpl;
 @useResult
 $Res call({
- String generatedAt, String rangeFrom, String rangeTo, String range, FilterOptionsDto filterOptions, SalesSectionDto sales, StaffSectionDto staff, MenuSectionDto menu, OpsSectionDto ops, MoneyAuditSectionDto moneyAudit, KasSectionDto kas, MembersSectionDto members, PiutangSectionDto piutang, JamKerjaSectionDto jamKerja
+ String generatedAt, String rangeFrom, String rangeTo, String range, FilterOptionsDto filterOptions, SalesSectionDto sales, StaffSectionDto staff, MenuSectionDto menu, OpsSectionDto ops, MoneyAuditSectionDto moneyAudit, KasSectionDto kas, PengeluaranSectionDto pengeluaran, MembersSectionDto members, PiutangSectionDto piutang, JamKerjaSectionDto jamKerja
 });
 
 
-$FilterOptionsDtoCopyWith<$Res> get filterOptions;$SalesSectionDtoCopyWith<$Res> get sales;$StaffSectionDtoCopyWith<$Res> get staff;$MenuSectionDtoCopyWith<$Res> get menu;$OpsSectionDtoCopyWith<$Res> get ops;$MoneyAuditSectionDtoCopyWith<$Res> get moneyAudit;$KasSectionDtoCopyWith<$Res> get kas;$MembersSectionDtoCopyWith<$Res> get members;$PiutangSectionDtoCopyWith<$Res> get piutang;$JamKerjaSectionDtoCopyWith<$Res> get jamKerja;
+$FilterOptionsDtoCopyWith<$Res> get filterOptions;$SalesSectionDtoCopyWith<$Res> get sales;$StaffSectionDtoCopyWith<$Res> get staff;$MenuSectionDtoCopyWith<$Res> get menu;$OpsSectionDtoCopyWith<$Res> get ops;$MoneyAuditSectionDtoCopyWith<$Res> get moneyAudit;$KasSectionDtoCopyWith<$Res> get kas;$PengeluaranSectionDtoCopyWith<$Res> get pengeluaran;$MembersSectionDtoCopyWith<$Res> get members;$PiutangSectionDtoCopyWith<$Res> get piutang;$JamKerjaSectionDtoCopyWith<$Res> get jamKerja;
 
 }
 /// @nodoc
@@ -84,7 +87,7 @@ class _$ReportsSnapshotDtoCopyWithImpl<$Res>
 
 /// Create a copy of ReportsSnapshotDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? generatedAt = null,Object? rangeFrom = null,Object? rangeTo = null,Object? range = null,Object? filterOptions = null,Object? sales = null,Object? staff = null,Object? menu = null,Object? ops = null,Object? moneyAudit = null,Object? kas = null,Object? members = null,Object? piutang = null,Object? jamKerja = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? generatedAt = null,Object? rangeFrom = null,Object? rangeTo = null,Object? range = null,Object? filterOptions = null,Object? sales = null,Object? staff = null,Object? menu = null,Object? ops = null,Object? moneyAudit = null,Object? kas = null,Object? pengeluaran = null,Object? members = null,Object? piutang = null,Object? jamKerja = null,}) {
   return _then(_self.copyWith(
 generatedAt: null == generatedAt ? _self.generatedAt : generatedAt // ignore: cast_nullable_to_non_nullable
 as String,rangeFrom: null == rangeFrom ? _self.rangeFrom : rangeFrom // ignore: cast_nullable_to_non_nullable
@@ -97,7 +100,8 @@ as StaffSectionDto,menu: null == menu ? _self.menu : menu // ignore: cast_nullab
 as MenuSectionDto,ops: null == ops ? _self.ops : ops // ignore: cast_nullable_to_non_nullable
 as OpsSectionDto,moneyAudit: null == moneyAudit ? _self.moneyAudit : moneyAudit // ignore: cast_nullable_to_non_nullable
 as MoneyAuditSectionDto,kas: null == kas ? _self.kas : kas // ignore: cast_nullable_to_non_nullable
-as KasSectionDto,members: null == members ? _self.members : members // ignore: cast_nullable_to_non_nullable
+as KasSectionDto,pengeluaran: null == pengeluaran ? _self.pengeluaran : pengeluaran // ignore: cast_nullable_to_non_nullable
+as PengeluaranSectionDto,members: null == members ? _self.members : members // ignore: cast_nullable_to_non_nullable
 as MembersSectionDto,piutang: null == piutang ? _self.piutang : piutang // ignore: cast_nullable_to_non_nullable
 as PiutangSectionDto,jamKerja: null == jamKerja ? _self.jamKerja : jamKerja // ignore: cast_nullable_to_non_nullable
 as JamKerjaSectionDto,
@@ -165,6 +169,15 @@ $KasSectionDtoCopyWith<$Res> get kas {
   
   return $KasSectionDtoCopyWith<$Res>(_self.kas, (value) {
     return _then(_self.copyWith(kas: value));
+  });
+}/// Create a copy of ReportsSnapshotDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PengeluaranSectionDtoCopyWith<$Res> get pengeluaran {
+  
+  return $PengeluaranSectionDtoCopyWith<$Res>(_self.pengeluaran, (value) {
+    return _then(_self.copyWith(pengeluaran: value));
   });
 }/// Create a copy of ReportsSnapshotDto
 /// with the given fields replaced by the non-null parameter values.
@@ -275,10 +288,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String generatedAt,  String rangeFrom,  String rangeTo,  String range,  FilterOptionsDto filterOptions,  SalesSectionDto sales,  StaffSectionDto staff,  MenuSectionDto menu,  OpsSectionDto ops,  MoneyAuditSectionDto moneyAudit,  KasSectionDto kas,  MembersSectionDto members,  PiutangSectionDto piutang,  JamKerjaSectionDto jamKerja)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String generatedAt,  String rangeFrom,  String rangeTo,  String range,  FilterOptionsDto filterOptions,  SalesSectionDto sales,  StaffSectionDto staff,  MenuSectionDto menu,  OpsSectionDto ops,  MoneyAuditSectionDto moneyAudit,  KasSectionDto kas,  PengeluaranSectionDto pengeluaran,  MembersSectionDto members,  PiutangSectionDto piutang,  JamKerjaSectionDto jamKerja)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ReportsSnapshotDto() when $default != null:
-return $default(_that.generatedAt,_that.rangeFrom,_that.rangeTo,_that.range,_that.filterOptions,_that.sales,_that.staff,_that.menu,_that.ops,_that.moneyAudit,_that.kas,_that.members,_that.piutang,_that.jamKerja);case _:
+return $default(_that.generatedAt,_that.rangeFrom,_that.rangeTo,_that.range,_that.filterOptions,_that.sales,_that.staff,_that.menu,_that.ops,_that.moneyAudit,_that.kas,_that.pengeluaran,_that.members,_that.piutang,_that.jamKerja);case _:
   return orElse();
 
 }
@@ -296,10 +309,10 @@ return $default(_that.generatedAt,_that.rangeFrom,_that.rangeTo,_that.range,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String generatedAt,  String rangeFrom,  String rangeTo,  String range,  FilterOptionsDto filterOptions,  SalesSectionDto sales,  StaffSectionDto staff,  MenuSectionDto menu,  OpsSectionDto ops,  MoneyAuditSectionDto moneyAudit,  KasSectionDto kas,  MembersSectionDto members,  PiutangSectionDto piutang,  JamKerjaSectionDto jamKerja)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String generatedAt,  String rangeFrom,  String rangeTo,  String range,  FilterOptionsDto filterOptions,  SalesSectionDto sales,  StaffSectionDto staff,  MenuSectionDto menu,  OpsSectionDto ops,  MoneyAuditSectionDto moneyAudit,  KasSectionDto kas,  PengeluaranSectionDto pengeluaran,  MembersSectionDto members,  PiutangSectionDto piutang,  JamKerjaSectionDto jamKerja)  $default,) {final _that = this;
 switch (_that) {
 case _ReportsSnapshotDto():
-return $default(_that.generatedAt,_that.rangeFrom,_that.rangeTo,_that.range,_that.filterOptions,_that.sales,_that.staff,_that.menu,_that.ops,_that.moneyAudit,_that.kas,_that.members,_that.piutang,_that.jamKerja);case _:
+return $default(_that.generatedAt,_that.rangeFrom,_that.rangeTo,_that.range,_that.filterOptions,_that.sales,_that.staff,_that.menu,_that.ops,_that.moneyAudit,_that.kas,_that.pengeluaran,_that.members,_that.piutang,_that.jamKerja);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -316,10 +329,10 @@ return $default(_that.generatedAt,_that.rangeFrom,_that.rangeTo,_that.range,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String generatedAt,  String rangeFrom,  String rangeTo,  String range,  FilterOptionsDto filterOptions,  SalesSectionDto sales,  StaffSectionDto staff,  MenuSectionDto menu,  OpsSectionDto ops,  MoneyAuditSectionDto moneyAudit,  KasSectionDto kas,  MembersSectionDto members,  PiutangSectionDto piutang,  JamKerjaSectionDto jamKerja)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String generatedAt,  String rangeFrom,  String rangeTo,  String range,  FilterOptionsDto filterOptions,  SalesSectionDto sales,  StaffSectionDto staff,  MenuSectionDto menu,  OpsSectionDto ops,  MoneyAuditSectionDto moneyAudit,  KasSectionDto kas,  PengeluaranSectionDto pengeluaran,  MembersSectionDto members,  PiutangSectionDto piutang,  JamKerjaSectionDto jamKerja)?  $default,) {final _that = this;
 switch (_that) {
 case _ReportsSnapshotDto() when $default != null:
-return $default(_that.generatedAt,_that.rangeFrom,_that.rangeTo,_that.range,_that.filterOptions,_that.sales,_that.staff,_that.menu,_that.ops,_that.moneyAudit,_that.kas,_that.members,_that.piutang,_that.jamKerja);case _:
+return $default(_that.generatedAt,_that.rangeFrom,_that.rangeTo,_that.range,_that.filterOptions,_that.sales,_that.staff,_that.menu,_that.ops,_that.moneyAudit,_that.kas,_that.pengeluaran,_that.members,_that.piutang,_that.jamKerja);case _:
   return null;
 
 }
@@ -331,7 +344,7 @@ return $default(_that.generatedAt,_that.rangeFrom,_that.rangeTo,_that.range,_tha
 @JsonSerializable()
 
 class _ReportsSnapshotDto implements ReportsSnapshotDto {
-  const _ReportsSnapshotDto({required this.generatedAt, required this.rangeFrom, required this.rangeTo, required this.range, required this.filterOptions, required this.sales, required this.staff, required this.menu, required this.ops, this.moneyAudit = const MoneyAuditSectionDto(), this.kas = const KasSectionDto(), this.members = const MembersSectionDto(), this.piutang = const PiutangSectionDto(), this.jamKerja = const JamKerjaSectionDto()});
+  const _ReportsSnapshotDto({required this.generatedAt, required this.rangeFrom, required this.rangeTo, required this.range, required this.filterOptions, required this.sales, required this.staff, required this.menu, required this.ops, this.moneyAudit = const MoneyAuditSectionDto(), this.kas = const KasSectionDto(), this.pengeluaran = const PengeluaranSectionDto(), this.members = const MembersSectionDto(), this.piutang = const PiutangSectionDto(), this.jamKerja = const JamKerjaSectionDto()});
   factory _ReportsSnapshotDto.fromJson(Map<String, dynamic> json) => _$ReportsSnapshotDtoFromJson(json);
 
 @override final  String generatedAt;
@@ -351,6 +364,10 @@ class _ReportsSnapshotDto implements ReportsSnapshotDto {
 /// because none of it is revenue (ADR-0089) — no figure here appears in
 /// [sales], and no figure in [sales] is net of it.
 @override@JsonKey() final  KasSectionDto kas;
+/// The [[Pengeluaran kunjungan]] block over the same window (ADR-0130).
+/// Its own section, the mirror of [kas]: petty cash is not revenue and
+/// this is, which is exactly why neither may sit inside `sales`.
+@override@JsonKey() final  PengeluaranSectionDto pengeluaran;
 /// [[Keanggotaan (membership)]] over the same window. Its own section for
 /// the mirror-image reason [kas] is: points are a claim on future takings,
 /// not a channel — folding a give-away into [sales] would let it read as
@@ -381,16 +398,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReportsSnapshotDto&&(identical(other.generatedAt, generatedAt) || other.generatedAt == generatedAt)&&(identical(other.rangeFrom, rangeFrom) || other.rangeFrom == rangeFrom)&&(identical(other.rangeTo, rangeTo) || other.rangeTo == rangeTo)&&(identical(other.range, range) || other.range == range)&&(identical(other.filterOptions, filterOptions) || other.filterOptions == filterOptions)&&(identical(other.sales, sales) || other.sales == sales)&&(identical(other.staff, staff) || other.staff == staff)&&(identical(other.menu, menu) || other.menu == menu)&&(identical(other.ops, ops) || other.ops == ops)&&(identical(other.moneyAudit, moneyAudit) || other.moneyAudit == moneyAudit)&&(identical(other.kas, kas) || other.kas == kas)&&(identical(other.members, members) || other.members == members)&&(identical(other.piutang, piutang) || other.piutang == piutang)&&(identical(other.jamKerja, jamKerja) || other.jamKerja == jamKerja));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReportsSnapshotDto&&(identical(other.generatedAt, generatedAt) || other.generatedAt == generatedAt)&&(identical(other.rangeFrom, rangeFrom) || other.rangeFrom == rangeFrom)&&(identical(other.rangeTo, rangeTo) || other.rangeTo == rangeTo)&&(identical(other.range, range) || other.range == range)&&(identical(other.filterOptions, filterOptions) || other.filterOptions == filterOptions)&&(identical(other.sales, sales) || other.sales == sales)&&(identical(other.staff, staff) || other.staff == staff)&&(identical(other.menu, menu) || other.menu == menu)&&(identical(other.ops, ops) || other.ops == ops)&&(identical(other.moneyAudit, moneyAudit) || other.moneyAudit == moneyAudit)&&(identical(other.kas, kas) || other.kas == kas)&&(identical(other.pengeluaran, pengeluaran) || other.pengeluaran == pengeluaran)&&(identical(other.members, members) || other.members == members)&&(identical(other.piutang, piutang) || other.piutang == piutang)&&(identical(other.jamKerja, jamKerja) || other.jamKerja == jamKerja));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,generatedAt,rangeFrom,rangeTo,range,filterOptions,sales,staff,menu,ops,moneyAudit,kas,members,piutang,jamKerja);
+int get hashCode => Object.hash(runtimeType,generatedAt,rangeFrom,rangeTo,range,filterOptions,sales,staff,menu,ops,moneyAudit,kas,pengeluaran,members,piutang,jamKerja);
 
 @override
 String toString() {
-  return 'ReportsSnapshotDto(generatedAt: $generatedAt, rangeFrom: $rangeFrom, rangeTo: $rangeTo, range: $range, filterOptions: $filterOptions, sales: $sales, staff: $staff, menu: $menu, ops: $ops, moneyAudit: $moneyAudit, kas: $kas, members: $members, piutang: $piutang, jamKerja: $jamKerja)';
+  return 'ReportsSnapshotDto(generatedAt: $generatedAt, rangeFrom: $rangeFrom, rangeTo: $rangeTo, range: $range, filterOptions: $filterOptions, sales: $sales, staff: $staff, menu: $menu, ops: $ops, moneyAudit: $moneyAudit, kas: $kas, pengeluaran: $pengeluaran, members: $members, piutang: $piutang, jamKerja: $jamKerja)';
 }
 
 
@@ -401,11 +418,11 @@ abstract mixin class _$ReportsSnapshotDtoCopyWith<$Res> implements $ReportsSnaps
   factory _$ReportsSnapshotDtoCopyWith(_ReportsSnapshotDto value, $Res Function(_ReportsSnapshotDto) _then) = __$ReportsSnapshotDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String generatedAt, String rangeFrom, String rangeTo, String range, FilterOptionsDto filterOptions, SalesSectionDto sales, StaffSectionDto staff, MenuSectionDto menu, OpsSectionDto ops, MoneyAuditSectionDto moneyAudit, KasSectionDto kas, MembersSectionDto members, PiutangSectionDto piutang, JamKerjaSectionDto jamKerja
+ String generatedAt, String rangeFrom, String rangeTo, String range, FilterOptionsDto filterOptions, SalesSectionDto sales, StaffSectionDto staff, MenuSectionDto menu, OpsSectionDto ops, MoneyAuditSectionDto moneyAudit, KasSectionDto kas, PengeluaranSectionDto pengeluaran, MembersSectionDto members, PiutangSectionDto piutang, JamKerjaSectionDto jamKerja
 });
 
 
-@override $FilterOptionsDtoCopyWith<$Res> get filterOptions;@override $SalesSectionDtoCopyWith<$Res> get sales;@override $StaffSectionDtoCopyWith<$Res> get staff;@override $MenuSectionDtoCopyWith<$Res> get menu;@override $OpsSectionDtoCopyWith<$Res> get ops;@override $MoneyAuditSectionDtoCopyWith<$Res> get moneyAudit;@override $KasSectionDtoCopyWith<$Res> get kas;@override $MembersSectionDtoCopyWith<$Res> get members;@override $PiutangSectionDtoCopyWith<$Res> get piutang;@override $JamKerjaSectionDtoCopyWith<$Res> get jamKerja;
+@override $FilterOptionsDtoCopyWith<$Res> get filterOptions;@override $SalesSectionDtoCopyWith<$Res> get sales;@override $StaffSectionDtoCopyWith<$Res> get staff;@override $MenuSectionDtoCopyWith<$Res> get menu;@override $OpsSectionDtoCopyWith<$Res> get ops;@override $MoneyAuditSectionDtoCopyWith<$Res> get moneyAudit;@override $KasSectionDtoCopyWith<$Res> get kas;@override $PengeluaranSectionDtoCopyWith<$Res> get pengeluaran;@override $MembersSectionDtoCopyWith<$Res> get members;@override $PiutangSectionDtoCopyWith<$Res> get piutang;@override $JamKerjaSectionDtoCopyWith<$Res> get jamKerja;
 
 }
 /// @nodoc
@@ -418,7 +435,7 @@ class __$ReportsSnapshotDtoCopyWithImpl<$Res>
 
 /// Create a copy of ReportsSnapshotDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? generatedAt = null,Object? rangeFrom = null,Object? rangeTo = null,Object? range = null,Object? filterOptions = null,Object? sales = null,Object? staff = null,Object? menu = null,Object? ops = null,Object? moneyAudit = null,Object? kas = null,Object? members = null,Object? piutang = null,Object? jamKerja = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? generatedAt = null,Object? rangeFrom = null,Object? rangeTo = null,Object? range = null,Object? filterOptions = null,Object? sales = null,Object? staff = null,Object? menu = null,Object? ops = null,Object? moneyAudit = null,Object? kas = null,Object? pengeluaran = null,Object? members = null,Object? piutang = null,Object? jamKerja = null,}) {
   return _then(_ReportsSnapshotDto(
 generatedAt: null == generatedAt ? _self.generatedAt : generatedAt // ignore: cast_nullable_to_non_nullable
 as String,rangeFrom: null == rangeFrom ? _self.rangeFrom : rangeFrom // ignore: cast_nullable_to_non_nullable
@@ -431,7 +448,8 @@ as StaffSectionDto,menu: null == menu ? _self.menu : menu // ignore: cast_nullab
 as MenuSectionDto,ops: null == ops ? _self.ops : ops // ignore: cast_nullable_to_non_nullable
 as OpsSectionDto,moneyAudit: null == moneyAudit ? _self.moneyAudit : moneyAudit // ignore: cast_nullable_to_non_nullable
 as MoneyAuditSectionDto,kas: null == kas ? _self.kas : kas // ignore: cast_nullable_to_non_nullable
-as KasSectionDto,members: null == members ? _self.members : members // ignore: cast_nullable_to_non_nullable
+as KasSectionDto,pengeluaran: null == pengeluaran ? _self.pengeluaran : pengeluaran // ignore: cast_nullable_to_non_nullable
+as PengeluaranSectionDto,members: null == members ? _self.members : members // ignore: cast_nullable_to_non_nullable
 as MembersSectionDto,piutang: null == piutang ? _self.piutang : piutang // ignore: cast_nullable_to_non_nullable
 as PiutangSectionDto,jamKerja: null == jamKerja ? _self.jamKerja : jamKerja // ignore: cast_nullable_to_non_nullable
 as JamKerjaSectionDto,
@@ -500,6 +518,15 @@ $KasSectionDtoCopyWith<$Res> get kas {
   
   return $KasSectionDtoCopyWith<$Res>(_self.kas, (value) {
     return _then(_self.copyWith(kas: value));
+  });
+}/// Create a copy of ReportsSnapshotDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PengeluaranSectionDtoCopyWith<$Res> get pengeluaran {
+  
+  return $PengeluaranSectionDtoCopyWith<$Res>(_self.pengeluaran, (value) {
+    return _then(_self.copyWith(pengeluaran: value));
   });
 }/// Create a copy of ReportsSnapshotDto
 /// with the given fields replaced by the non-null parameter values.
@@ -6512,7 +6539,7 @@ as int,
 /// @nodoc
 mixin _$KasSectionDto {
 
- int get opening; int get inflow; int get outflow; int get variance; int get closing; Map<String, int> get byCategory;/// Movements in the window. Zero is what the empty line keys off — a box
+ int get opening; int get inflow; int get outflow; int get variance; int get closing; Map<String, int> get byCategory; List<KasBoxSectionDto> get byBox;/// Movements in the window. Zero is what the empty line keys off — a box
 /// with a balance and no movements is still nothing to report on.
  int get count;
 /// Create a copy of KasSectionDto
@@ -6527,16 +6554,16 @@ $KasSectionDtoCopyWith<KasSectionDto> get copyWith => _$KasSectionDtoCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is KasSectionDto&&(identical(other.opening, opening) || other.opening == opening)&&(identical(other.inflow, inflow) || other.inflow == inflow)&&(identical(other.outflow, outflow) || other.outflow == outflow)&&(identical(other.variance, variance) || other.variance == variance)&&(identical(other.closing, closing) || other.closing == closing)&&const DeepCollectionEquality().equals(other.byCategory, byCategory)&&(identical(other.count, count) || other.count == count));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is KasSectionDto&&(identical(other.opening, opening) || other.opening == opening)&&(identical(other.inflow, inflow) || other.inflow == inflow)&&(identical(other.outflow, outflow) || other.outflow == outflow)&&(identical(other.variance, variance) || other.variance == variance)&&(identical(other.closing, closing) || other.closing == closing)&&const DeepCollectionEquality().equals(other.byCategory, byCategory)&&const DeepCollectionEquality().equals(other.byBox, byBox)&&(identical(other.count, count) || other.count == count));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,opening,inflow,outflow,variance,closing,const DeepCollectionEquality().hash(byCategory),count);
+int get hashCode => Object.hash(runtimeType,opening,inflow,outflow,variance,closing,const DeepCollectionEquality().hash(byCategory),const DeepCollectionEquality().hash(byBox),count);
 
 @override
 String toString() {
-  return 'KasSectionDto(opening: $opening, inflow: $inflow, outflow: $outflow, variance: $variance, closing: $closing, byCategory: $byCategory, count: $count)';
+  return 'KasSectionDto(opening: $opening, inflow: $inflow, outflow: $outflow, variance: $variance, closing: $closing, byCategory: $byCategory, byBox: $byBox, count: $count)';
 }
 
 
@@ -6547,7 +6574,7 @@ abstract mixin class $KasSectionDtoCopyWith<$Res>  {
   factory $KasSectionDtoCopyWith(KasSectionDto value, $Res Function(KasSectionDto) _then) = _$KasSectionDtoCopyWithImpl;
 @useResult
 $Res call({
- int opening, int inflow, int outflow, int variance, int closing, Map<String, int> byCategory, int count
+ int opening, int inflow, int outflow, int variance, int closing, Map<String, int> byCategory, List<KasBoxSectionDto> byBox, int count
 });
 
 
@@ -6564,7 +6591,7 @@ class _$KasSectionDtoCopyWithImpl<$Res>
 
 /// Create a copy of KasSectionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? opening = null,Object? inflow = null,Object? outflow = null,Object? variance = null,Object? closing = null,Object? byCategory = null,Object? count = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? opening = null,Object? inflow = null,Object? outflow = null,Object? variance = null,Object? closing = null,Object? byCategory = null,Object? byBox = null,Object? count = null,}) {
   return _then(_self.copyWith(
 opening: null == opening ? _self.opening : opening // ignore: cast_nullable_to_non_nullable
 as int,inflow: null == inflow ? _self.inflow : inflow // ignore: cast_nullable_to_non_nullable
@@ -6572,7 +6599,8 @@ as int,outflow: null == outflow ? _self.outflow : outflow // ignore: cast_nullab
 as int,variance: null == variance ? _self.variance : variance // ignore: cast_nullable_to_non_nullable
 as int,closing: null == closing ? _self.closing : closing // ignore: cast_nullable_to_non_nullable
 as int,byCategory: null == byCategory ? _self.byCategory : byCategory // ignore: cast_nullable_to_non_nullable
-as Map<String, int>,count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
+as Map<String, int>,byBox: null == byBox ? _self.byBox : byBox // ignore: cast_nullable_to_non_nullable
+as List<KasBoxSectionDto>,count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }
@@ -6658,10 +6686,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int opening,  int inflow,  int outflow,  int variance,  int closing,  Map<String, int> byCategory,  int count)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int opening,  int inflow,  int outflow,  int variance,  int closing,  Map<String, int> byCategory,  List<KasBoxSectionDto> byBox,  int count)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _KasSectionDto() when $default != null:
-return $default(_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing,_that.byCategory,_that.count);case _:
+return $default(_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing,_that.byCategory,_that.byBox,_that.count);case _:
   return orElse();
 
 }
@@ -6679,10 +6707,10 @@ return $default(_that.opening,_that.inflow,_that.outflow,_that.variance,_that.cl
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int opening,  int inflow,  int outflow,  int variance,  int closing,  Map<String, int> byCategory,  int count)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int opening,  int inflow,  int outflow,  int variance,  int closing,  Map<String, int> byCategory,  List<KasBoxSectionDto> byBox,  int count)  $default,) {final _that = this;
 switch (_that) {
 case _KasSectionDto():
-return $default(_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing,_that.byCategory,_that.count);case _:
+return $default(_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing,_that.byCategory,_that.byBox,_that.count);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -6699,10 +6727,10 @@ return $default(_that.opening,_that.inflow,_that.outflow,_that.variance,_that.cl
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int opening,  int inflow,  int outflow,  int variance,  int closing,  Map<String, int> byCategory,  int count)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int opening,  int inflow,  int outflow,  int variance,  int closing,  Map<String, int> byCategory,  List<KasBoxSectionDto> byBox,  int count)?  $default,) {final _that = this;
 switch (_that) {
 case _KasSectionDto() when $default != null:
-return $default(_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing,_that.byCategory,_that.count);case _:
+return $default(_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing,_that.byCategory,_that.byBox,_that.count);case _:
   return null;
 
 }
@@ -6714,7 +6742,7 @@ return $default(_that.opening,_that.inflow,_that.outflow,_that.variance,_that.cl
 @JsonSerializable()
 
 class _KasSectionDto implements KasSectionDto {
-  const _KasSectionDto({this.opening = 0, this.inflow = 0, this.outflow = 0, this.variance = 0, this.closing = 0, final  Map<String, int> byCategory = const <String, int>{}, this.count = 0}): _byCategory = byCategory;
+  const _KasSectionDto({this.opening = 0, this.inflow = 0, this.outflow = 0, this.variance = 0, this.closing = 0, final  Map<String, int> byCategory = const <String, int>{}, final  List<KasBoxSectionDto> byBox = const <KasBoxSectionDto>[], this.count = 0}): _byCategory = byCategory,_byBox = byBox;
   factory _KasSectionDto.fromJson(Map<String, dynamic> json) => _$KasSectionDtoFromJson(json);
 
 @override@JsonKey() final  int opening;
@@ -6727,6 +6755,13 @@ class _KasSectionDto implements KasSectionDto {
   if (_byCategory is EqualUnmodifiableMapView) return _byCategory;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableMapView(_byCategory);
+}
+
+ final  List<KasBoxSectionDto> _byBox;
+@override@JsonKey() List<KasBoxSectionDto> get byBox {
+  if (_byBox is EqualUnmodifiableListView) return _byBox;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_byBox);
 }
 
 /// Movements in the window. Zero is what the empty line keys off — a box
@@ -6746,16 +6781,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _KasSectionDto&&(identical(other.opening, opening) || other.opening == opening)&&(identical(other.inflow, inflow) || other.inflow == inflow)&&(identical(other.outflow, outflow) || other.outflow == outflow)&&(identical(other.variance, variance) || other.variance == variance)&&(identical(other.closing, closing) || other.closing == closing)&&const DeepCollectionEquality().equals(other._byCategory, _byCategory)&&(identical(other.count, count) || other.count == count));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _KasSectionDto&&(identical(other.opening, opening) || other.opening == opening)&&(identical(other.inflow, inflow) || other.inflow == inflow)&&(identical(other.outflow, outflow) || other.outflow == outflow)&&(identical(other.variance, variance) || other.variance == variance)&&(identical(other.closing, closing) || other.closing == closing)&&const DeepCollectionEquality().equals(other._byCategory, _byCategory)&&const DeepCollectionEquality().equals(other._byBox, _byBox)&&(identical(other.count, count) || other.count == count));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,opening,inflow,outflow,variance,closing,const DeepCollectionEquality().hash(_byCategory),count);
+int get hashCode => Object.hash(runtimeType,opening,inflow,outflow,variance,closing,const DeepCollectionEquality().hash(_byCategory),const DeepCollectionEquality().hash(_byBox),count);
 
 @override
 String toString() {
-  return 'KasSectionDto(opening: $opening, inflow: $inflow, outflow: $outflow, variance: $variance, closing: $closing, byCategory: $byCategory, count: $count)';
+  return 'KasSectionDto(opening: $opening, inflow: $inflow, outflow: $outflow, variance: $variance, closing: $closing, byCategory: $byCategory, byBox: $byBox, count: $count)';
 }
 
 
@@ -6766,7 +6801,7 @@ abstract mixin class _$KasSectionDtoCopyWith<$Res> implements $KasSectionDtoCopy
   factory _$KasSectionDtoCopyWith(_KasSectionDto value, $Res Function(_KasSectionDto) _then) = __$KasSectionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- int opening, int inflow, int outflow, int variance, int closing, Map<String, int> byCategory, int count
+ int opening, int inflow, int outflow, int variance, int closing, Map<String, int> byCategory, List<KasBoxSectionDto> byBox, int count
 });
 
 
@@ -6783,7 +6818,7 @@ class __$KasSectionDtoCopyWithImpl<$Res>
 
 /// Create a copy of KasSectionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? opening = null,Object? inflow = null,Object? outflow = null,Object? variance = null,Object? closing = null,Object? byCategory = null,Object? count = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? opening = null,Object? inflow = null,Object? outflow = null,Object? variance = null,Object? closing = null,Object? byCategory = null,Object? byBox = null,Object? count = null,}) {
   return _then(_KasSectionDto(
 opening: null == opening ? _self.opening : opening // ignore: cast_nullable_to_non_nullable
 as int,inflow: null == inflow ? _self.inflow : inflow // ignore: cast_nullable_to_non_nullable
@@ -6791,8 +6826,866 @@ as int,outflow: null == outflow ? _self.outflow : outflow // ignore: cast_nullab
 as int,variance: null == variance ? _self.variance : variance // ignore: cast_nullable_to_non_nullable
 as int,closing: null == closing ? _self.closing : closing // ignore: cast_nullable_to_non_nullable
 as int,byCategory: null == byCategory ? _self._byCategory : byCategory // ignore: cast_nullable_to_non_nullable
-as Map<String, int>,count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
+as Map<String, int>,byBox: null == byBox ? _self._byBox : byBox // ignore: cast_nullable_to_non_nullable
+as List<KasBoxSectionDto>,count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
 as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$KasBoxSectionDto {
+
+ String get id; String get name; bool get active; int get opening; int get inflow; int get outflow; int get variance; int get closing;
+/// Create a copy of KasBoxSectionDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$KasBoxSectionDtoCopyWith<KasBoxSectionDto> get copyWith => _$KasBoxSectionDtoCopyWithImpl<KasBoxSectionDto>(this as KasBoxSectionDto, _$identity);
+
+  /// Serializes this KasBoxSectionDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is KasBoxSectionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.active, active) || other.active == active)&&(identical(other.opening, opening) || other.opening == opening)&&(identical(other.inflow, inflow) || other.inflow == inflow)&&(identical(other.outflow, outflow) || other.outflow == outflow)&&(identical(other.variance, variance) || other.variance == variance)&&(identical(other.closing, closing) || other.closing == closing));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name,active,opening,inflow,outflow,variance,closing);
+
+@override
+String toString() {
+  return 'KasBoxSectionDto(id: $id, name: $name, active: $active, opening: $opening, inflow: $inflow, outflow: $outflow, variance: $variance, closing: $closing)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $KasBoxSectionDtoCopyWith<$Res>  {
+  factory $KasBoxSectionDtoCopyWith(KasBoxSectionDto value, $Res Function(KasBoxSectionDto) _then) = _$KasBoxSectionDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, String name, bool active, int opening, int inflow, int outflow, int variance, int closing
+});
+
+
+
+
+}
+/// @nodoc
+class _$KasBoxSectionDtoCopyWithImpl<$Res>
+    implements $KasBoxSectionDtoCopyWith<$Res> {
+  _$KasBoxSectionDtoCopyWithImpl(this._self, this._then);
+
+  final KasBoxSectionDto _self;
+  final $Res Function(KasBoxSectionDto) _then;
+
+/// Create a copy of KasBoxSectionDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? active = null,Object? opening = null,Object? inflow = null,Object? outflow = null,Object? variance = null,Object? closing = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,active: null == active ? _self.active : active // ignore: cast_nullable_to_non_nullable
+as bool,opening: null == opening ? _self.opening : opening // ignore: cast_nullable_to_non_nullable
+as int,inflow: null == inflow ? _self.inflow : inflow // ignore: cast_nullable_to_non_nullable
+as int,outflow: null == outflow ? _self.outflow : outflow // ignore: cast_nullable_to_non_nullable
+as int,variance: null == variance ? _self.variance : variance // ignore: cast_nullable_to_non_nullable
+as int,closing: null == closing ? _self.closing : closing // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [KasBoxSectionDto].
+extension KasBoxSectionDtoPatterns on KasBoxSectionDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _KasBoxSectionDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _KasBoxSectionDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _KasBoxSectionDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _KasBoxSectionDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _KasBoxSectionDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _KasBoxSectionDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  bool active,  int opening,  int inflow,  int outflow,  int variance,  int closing)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _KasBoxSectionDto() when $default != null:
+return $default(_that.id,_that.name,_that.active,_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  bool active,  int opening,  int inflow,  int outflow,  int variance,  int closing)  $default,) {final _that = this;
+switch (_that) {
+case _KasBoxSectionDto():
+return $default(_that.id,_that.name,_that.active,_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  bool active,  int opening,  int inflow,  int outflow,  int variance,  int closing)?  $default,) {final _that = this;
+switch (_that) {
+case _KasBoxSectionDto() when $default != null:
+return $default(_that.id,_that.name,_that.active,_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _KasBoxSectionDto implements KasBoxSectionDto {
+  const _KasBoxSectionDto({this.id = '', this.name = '', this.active = true, this.opening = 0, this.inflow = 0, this.outflow = 0, this.variance = 0, this.closing = 0});
+  factory _KasBoxSectionDto.fromJson(Map<String, dynamic> json) => _$KasBoxSectionDtoFromJson(json);
+
+@override@JsonKey() final  String id;
+@override@JsonKey() final  String name;
+@override@JsonKey() final  bool active;
+@override@JsonKey() final  int opening;
+@override@JsonKey() final  int inflow;
+@override@JsonKey() final  int outflow;
+@override@JsonKey() final  int variance;
+@override@JsonKey() final  int closing;
+
+/// Create a copy of KasBoxSectionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$KasBoxSectionDtoCopyWith<_KasBoxSectionDto> get copyWith => __$KasBoxSectionDtoCopyWithImpl<_KasBoxSectionDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$KasBoxSectionDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _KasBoxSectionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.active, active) || other.active == active)&&(identical(other.opening, opening) || other.opening == opening)&&(identical(other.inflow, inflow) || other.inflow == inflow)&&(identical(other.outflow, outflow) || other.outflow == outflow)&&(identical(other.variance, variance) || other.variance == variance)&&(identical(other.closing, closing) || other.closing == closing));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name,active,opening,inflow,outflow,variance,closing);
+
+@override
+String toString() {
+  return 'KasBoxSectionDto(id: $id, name: $name, active: $active, opening: $opening, inflow: $inflow, outflow: $outflow, variance: $variance, closing: $closing)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$KasBoxSectionDtoCopyWith<$Res> implements $KasBoxSectionDtoCopyWith<$Res> {
+  factory _$KasBoxSectionDtoCopyWith(_KasBoxSectionDto value, $Res Function(_KasBoxSectionDto) _then) = __$KasBoxSectionDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String name, bool active, int opening, int inflow, int outflow, int variance, int closing
+});
+
+
+
+
+}
+/// @nodoc
+class __$KasBoxSectionDtoCopyWithImpl<$Res>
+    implements _$KasBoxSectionDtoCopyWith<$Res> {
+  __$KasBoxSectionDtoCopyWithImpl(this._self, this._then);
+
+  final _KasBoxSectionDto _self;
+  final $Res Function(_KasBoxSectionDto) _then;
+
+/// Create a copy of KasBoxSectionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? active = null,Object? opening = null,Object? inflow = null,Object? outflow = null,Object? variance = null,Object? closing = null,}) {
+  return _then(_KasBoxSectionDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,active: null == active ? _self.active : active // ignore: cast_nullable_to_non_nullable
+as bool,opening: null == opening ? _self.opening : opening // ignore: cast_nullable_to_non_nullable
+as int,inflow: null == inflow ? _self.inflow : inflow // ignore: cast_nullable_to_non_nullable
+as int,outflow: null == outflow ? _self.outflow : outflow // ignore: cast_nullable_to_non_nullable
+as int,variance: null == variance ? _self.variance : variance // ignore: cast_nullable_to_non_nullable
+as int,closing: null == closing ? _self.closing : closing // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PengeluaranSectionDto {
+
+ int get total;/// Expenses in the window. Zero is what the empty line keys off.
+ int get count; int get visitCount; Map<String, int> get byCategory; Map<String, int> get byStaff; List<PengeluaranVisitDto> get visits;
+/// Create a copy of PengeluaranSectionDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PengeluaranSectionDtoCopyWith<PengeluaranSectionDto> get copyWith => _$PengeluaranSectionDtoCopyWithImpl<PengeluaranSectionDto>(this as PengeluaranSectionDto, _$identity);
+
+  /// Serializes this PengeluaranSectionDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PengeluaranSectionDto&&(identical(other.total, total) || other.total == total)&&(identical(other.count, count) || other.count == count)&&(identical(other.visitCount, visitCount) || other.visitCount == visitCount)&&const DeepCollectionEquality().equals(other.byCategory, byCategory)&&const DeepCollectionEquality().equals(other.byStaff, byStaff)&&const DeepCollectionEquality().equals(other.visits, visits));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,total,count,visitCount,const DeepCollectionEquality().hash(byCategory),const DeepCollectionEquality().hash(byStaff),const DeepCollectionEquality().hash(visits));
+
+@override
+String toString() {
+  return 'PengeluaranSectionDto(total: $total, count: $count, visitCount: $visitCount, byCategory: $byCategory, byStaff: $byStaff, visits: $visits)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PengeluaranSectionDtoCopyWith<$Res>  {
+  factory $PengeluaranSectionDtoCopyWith(PengeluaranSectionDto value, $Res Function(PengeluaranSectionDto) _then) = _$PengeluaranSectionDtoCopyWithImpl;
+@useResult
+$Res call({
+ int total, int count, int visitCount, Map<String, int> byCategory, Map<String, int> byStaff, List<PengeluaranVisitDto> visits
+});
+
+
+
+
+}
+/// @nodoc
+class _$PengeluaranSectionDtoCopyWithImpl<$Res>
+    implements $PengeluaranSectionDtoCopyWith<$Res> {
+  _$PengeluaranSectionDtoCopyWithImpl(this._self, this._then);
+
+  final PengeluaranSectionDto _self;
+  final $Res Function(PengeluaranSectionDto) _then;
+
+/// Create a copy of PengeluaranSectionDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? total = null,Object? count = null,Object? visitCount = null,Object? byCategory = null,Object? byStaff = null,Object? visits = null,}) {
+  return _then(_self.copyWith(
+total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as int,count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
+as int,visitCount: null == visitCount ? _self.visitCount : visitCount // ignore: cast_nullable_to_non_nullable
+as int,byCategory: null == byCategory ? _self.byCategory : byCategory // ignore: cast_nullable_to_non_nullable
+as Map<String, int>,byStaff: null == byStaff ? _self.byStaff : byStaff // ignore: cast_nullable_to_non_nullable
+as Map<String, int>,visits: null == visits ? _self.visits : visits // ignore: cast_nullable_to_non_nullable
+as List<PengeluaranVisitDto>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PengeluaranSectionDto].
+extension PengeluaranSectionDtoPatterns on PengeluaranSectionDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PengeluaranSectionDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PengeluaranSectionDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PengeluaranSectionDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PengeluaranSectionDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PengeluaranSectionDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PengeluaranSectionDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int total,  int count,  int visitCount,  Map<String, int> byCategory,  Map<String, int> byStaff,  List<PengeluaranVisitDto> visits)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PengeluaranSectionDto() when $default != null:
+return $default(_that.total,_that.count,_that.visitCount,_that.byCategory,_that.byStaff,_that.visits);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int total,  int count,  int visitCount,  Map<String, int> byCategory,  Map<String, int> byStaff,  List<PengeluaranVisitDto> visits)  $default,) {final _that = this;
+switch (_that) {
+case _PengeluaranSectionDto():
+return $default(_that.total,_that.count,_that.visitCount,_that.byCategory,_that.byStaff,_that.visits);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int total,  int count,  int visitCount,  Map<String, int> byCategory,  Map<String, int> byStaff,  List<PengeluaranVisitDto> visits)?  $default,) {final _that = this;
+switch (_that) {
+case _PengeluaranSectionDto() when $default != null:
+return $default(_that.total,_that.count,_that.visitCount,_that.byCategory,_that.byStaff,_that.visits);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PengeluaranSectionDto implements PengeluaranSectionDto {
+  const _PengeluaranSectionDto({this.total = 0, this.count = 0, this.visitCount = 0, final  Map<String, int> byCategory = const <String, int>{}, final  Map<String, int> byStaff = const <String, int>{}, final  List<PengeluaranVisitDto> visits = const <PengeluaranVisitDto>[]}): _byCategory = byCategory,_byStaff = byStaff,_visits = visits;
+  factory _PengeluaranSectionDto.fromJson(Map<String, dynamic> json) => _$PengeluaranSectionDtoFromJson(json);
+
+@override@JsonKey() final  int total;
+/// Expenses in the window. Zero is what the empty line keys off.
+@override@JsonKey() final  int count;
+@override@JsonKey() final  int visitCount;
+ final  Map<String, int> _byCategory;
+@override@JsonKey() Map<String, int> get byCategory {
+  if (_byCategory is EqualUnmodifiableMapView) return _byCategory;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_byCategory);
+}
+
+ final  Map<String, int> _byStaff;
+@override@JsonKey() Map<String, int> get byStaff {
+  if (_byStaff is EqualUnmodifiableMapView) return _byStaff;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_byStaff);
+}
+
+ final  List<PengeluaranVisitDto> _visits;
+@override@JsonKey() List<PengeluaranVisitDto> get visits {
+  if (_visits is EqualUnmodifiableListView) return _visits;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_visits);
+}
+
+
+/// Create a copy of PengeluaranSectionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PengeluaranSectionDtoCopyWith<_PengeluaranSectionDto> get copyWith => __$PengeluaranSectionDtoCopyWithImpl<_PengeluaranSectionDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PengeluaranSectionDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PengeluaranSectionDto&&(identical(other.total, total) || other.total == total)&&(identical(other.count, count) || other.count == count)&&(identical(other.visitCount, visitCount) || other.visitCount == visitCount)&&const DeepCollectionEquality().equals(other._byCategory, _byCategory)&&const DeepCollectionEquality().equals(other._byStaff, _byStaff)&&const DeepCollectionEquality().equals(other._visits, _visits));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,total,count,visitCount,const DeepCollectionEquality().hash(_byCategory),const DeepCollectionEquality().hash(_byStaff),const DeepCollectionEquality().hash(_visits));
+
+@override
+String toString() {
+  return 'PengeluaranSectionDto(total: $total, count: $count, visitCount: $visitCount, byCategory: $byCategory, byStaff: $byStaff, visits: $visits)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PengeluaranSectionDtoCopyWith<$Res> implements $PengeluaranSectionDtoCopyWith<$Res> {
+  factory _$PengeluaranSectionDtoCopyWith(_PengeluaranSectionDto value, $Res Function(_PengeluaranSectionDto) _then) = __$PengeluaranSectionDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ int total, int count, int visitCount, Map<String, int> byCategory, Map<String, int> byStaff, List<PengeluaranVisitDto> visits
+});
+
+
+
+
+}
+/// @nodoc
+class __$PengeluaranSectionDtoCopyWithImpl<$Res>
+    implements _$PengeluaranSectionDtoCopyWith<$Res> {
+  __$PengeluaranSectionDtoCopyWithImpl(this._self, this._then);
+
+  final _PengeluaranSectionDto _self;
+  final $Res Function(_PengeluaranSectionDto) _then;
+
+/// Create a copy of PengeluaranSectionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? total = null,Object? count = null,Object? visitCount = null,Object? byCategory = null,Object? byStaff = null,Object? visits = null,}) {
+  return _then(_PengeluaranSectionDto(
+total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as int,count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
+as int,visitCount: null == visitCount ? _self.visitCount : visitCount // ignore: cast_nullable_to_non_nullable
+as int,byCategory: null == byCategory ? _self._byCategory : byCategory // ignore: cast_nullable_to_non_nullable
+as Map<String, int>,byStaff: null == byStaff ? _self._byStaff : byStaff // ignore: cast_nullable_to_non_nullable
+as Map<String, int>,visits: null == visits ? _self._visits : visits // ignore: cast_nullable_to_non_nullable
+as List<PengeluaranVisitDto>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PengeluaranVisitDto {
+
+ String get sessionId; String get tableLabel; int get settledTotal; int get expenseAmount; DateTime? get closedAt;
+/// Create a copy of PengeluaranVisitDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PengeluaranVisitDtoCopyWith<PengeluaranVisitDto> get copyWith => _$PengeluaranVisitDtoCopyWithImpl<PengeluaranVisitDto>(this as PengeluaranVisitDto, _$identity);
+
+  /// Serializes this PengeluaranVisitDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PengeluaranVisitDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.tableLabel, tableLabel) || other.tableLabel == tableLabel)&&(identical(other.settledTotal, settledTotal) || other.settledTotal == settledTotal)&&(identical(other.expenseAmount, expenseAmount) || other.expenseAmount == expenseAmount)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,tableLabel,settledTotal,expenseAmount,closedAt);
+
+@override
+String toString() {
+  return 'PengeluaranVisitDto(sessionId: $sessionId, tableLabel: $tableLabel, settledTotal: $settledTotal, expenseAmount: $expenseAmount, closedAt: $closedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PengeluaranVisitDtoCopyWith<$Res>  {
+  factory $PengeluaranVisitDtoCopyWith(PengeluaranVisitDto value, $Res Function(PengeluaranVisitDto) _then) = _$PengeluaranVisitDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId, String tableLabel, int settledTotal, int expenseAmount, DateTime? closedAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$PengeluaranVisitDtoCopyWithImpl<$Res>
+    implements $PengeluaranVisitDtoCopyWith<$Res> {
+  _$PengeluaranVisitDtoCopyWithImpl(this._self, this._then);
+
+  final PengeluaranVisitDto _self;
+  final $Res Function(PengeluaranVisitDto) _then;
+
+/// Create a copy of PengeluaranVisitDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? tableLabel = null,Object? settledTotal = null,Object? expenseAmount = null,Object? closedAt = freezed,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,tableLabel: null == tableLabel ? _self.tableLabel : tableLabel // ignore: cast_nullable_to_non_nullable
+as String,settledTotal: null == settledTotal ? _self.settledTotal : settledTotal // ignore: cast_nullable_to_non_nullable
+as int,expenseAmount: null == expenseAmount ? _self.expenseAmount : expenseAmount // ignore: cast_nullable_to_non_nullable
+as int,closedAt: freezed == closedAt ? _self.closedAt : closedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PengeluaranVisitDto].
+extension PengeluaranVisitDtoPatterns on PengeluaranVisitDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PengeluaranVisitDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PengeluaranVisitDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PengeluaranVisitDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PengeluaranVisitDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PengeluaranVisitDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PengeluaranVisitDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String tableLabel,  int settledTotal,  int expenseAmount,  DateTime? closedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PengeluaranVisitDto() when $default != null:
+return $default(_that.sessionId,_that.tableLabel,_that.settledTotal,_that.expenseAmount,_that.closedAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String tableLabel,  int settledTotal,  int expenseAmount,  DateTime? closedAt)  $default,) {final _that = this;
+switch (_that) {
+case _PengeluaranVisitDto():
+return $default(_that.sessionId,_that.tableLabel,_that.settledTotal,_that.expenseAmount,_that.closedAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String tableLabel,  int settledTotal,  int expenseAmount,  DateTime? closedAt)?  $default,) {final _that = this;
+switch (_that) {
+case _PengeluaranVisitDto() when $default != null:
+return $default(_that.sessionId,_that.tableLabel,_that.settledTotal,_that.expenseAmount,_that.closedAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PengeluaranVisitDto implements PengeluaranVisitDto {
+  const _PengeluaranVisitDto({this.sessionId = '', this.tableLabel = '', this.settledTotal = 0, this.expenseAmount = 0, this.closedAt});
+  factory _PengeluaranVisitDto.fromJson(Map<String, dynamic> json) => _$PengeluaranVisitDtoFromJson(json);
+
+@override@JsonKey() final  String sessionId;
+@override@JsonKey() final  String tableLabel;
+@override@JsonKey() final  int settledTotal;
+@override@JsonKey() final  int expenseAmount;
+@override final  DateTime? closedAt;
+
+/// Create a copy of PengeluaranVisitDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PengeluaranVisitDtoCopyWith<_PengeluaranVisitDto> get copyWith => __$PengeluaranVisitDtoCopyWithImpl<_PengeluaranVisitDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PengeluaranVisitDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PengeluaranVisitDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.tableLabel, tableLabel) || other.tableLabel == tableLabel)&&(identical(other.settledTotal, settledTotal) || other.settledTotal == settledTotal)&&(identical(other.expenseAmount, expenseAmount) || other.expenseAmount == expenseAmount)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,tableLabel,settledTotal,expenseAmount,closedAt);
+
+@override
+String toString() {
+  return 'PengeluaranVisitDto(sessionId: $sessionId, tableLabel: $tableLabel, settledTotal: $settledTotal, expenseAmount: $expenseAmount, closedAt: $closedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PengeluaranVisitDtoCopyWith<$Res> implements $PengeluaranVisitDtoCopyWith<$Res> {
+  factory _$PengeluaranVisitDtoCopyWith(_PengeluaranVisitDto value, $Res Function(_PengeluaranVisitDto) _then) = __$PengeluaranVisitDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId, String tableLabel, int settledTotal, int expenseAmount, DateTime? closedAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$PengeluaranVisitDtoCopyWithImpl<$Res>
+    implements _$PengeluaranVisitDtoCopyWith<$Res> {
+  __$PengeluaranVisitDtoCopyWithImpl(this._self, this._then);
+
+  final _PengeluaranVisitDto _self;
+  final $Res Function(_PengeluaranVisitDto) _then;
+
+/// Create a copy of PengeluaranVisitDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? tableLabel = null,Object? settledTotal = null,Object? expenseAmount = null,Object? closedAt = freezed,}) {
+  return _then(_PengeluaranVisitDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,tableLabel: null == tableLabel ? _self.tableLabel : tableLabel // ignore: cast_nullable_to_non_nullable
+as String,settledTotal: null == settledTotal ? _self.settledTotal : settledTotal // ignore: cast_nullable_to_non_nullable
+as int,expenseAmount: null == expenseAmount ? _self.expenseAmount : expenseAmount // ignore: cast_nullable_to_non_nullable
+as int,closedAt: freezed == closedAt ? _self.closedAt : closedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 

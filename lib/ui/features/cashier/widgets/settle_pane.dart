@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:satset/ui/core/widgets/proof_photo.dart';
 
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/member_dto.dart';
@@ -287,14 +287,8 @@ class _SettlePaneState extends State<SettlePane> {
   Future<void> _shootProof() async {
     final l10n = context.l10n;
     try {
-      final x = await ImagePicker().pickImage(
-        source: ImageSource.camera,
-        maxWidth: 1080,
-        maxHeight: 1080,
-        imageQuality: 80,
-      );
-      if (x == null) return;
-      final bytes = await x.readAsBytes();
+      final bytes = await shootProofPhoto();
+      if (bytes == null) return;
       if (mounted) setState(() => _proof = bytes);
     } catch (e) {
       if (mounted) {

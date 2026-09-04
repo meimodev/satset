@@ -74,20 +74,54 @@ enum AuditKind {
   billWrittenOff,
 
   // ---------- petty cash ----------
-  /// `{amount}` (pre-formatted rupiah, ADR-0084).
+  // Every movement kind below also carries `{box}` — the [[Kas (cash box)]]
+  // it moved, by name (ADR-0131). The name is venue content, so it travels
+  // pre-rendered rather than as a key: unlike a category, there is no closed
+  // set to look it up in. Rows written before v73 were backfilled in the
+  // migration, so none renders the placeholder empty.
+  /// `{amount}` (pre-formatted rupiah, ADR-0084), `{box}`.
   cashToppedUp,
 
-  /// `{amount}`, `{category}` — the category travels as its **key** and is
-  /// rendered through `cashCategoryLabel`, so it follows the reader's language
-  /// the way `paymentRecorded`'s method key already does.
+  /// `{amount}`, `{category}`, `{box}` — the category travels as its **key**
+  /// and is rendered through `cashCategoryLabel`, so it follows the reader's
+  /// language the way `paymentRecorded`'s method key already does.
   cashSpent,
 
-  /// `{counted}` (what was physically found) and `{variance}` (signed, against
-  /// what the ledger said). Both pre-formatted rupiah.
+  /// `{counted}` (what was physically found), `{variance}` (signed, against
+  /// what the ledger said) and `{box}`. The first two are pre-formatted rupiah.
   cashCounted,
 
-  /// `{amount}` — the magnitude of the movement being undone.
+  /// `{amount}` — the magnitude of the movement being undone — and `{box}`.
   cashReversed,
+
+  /// **A transfer between two boxes** (ADR-0131). `{amount}`, `{from}`, `{to}`.
+  /// One row for the pair: the second leg is the same act seen from the other
+  /// tin, and auditing both would read as two transfers.
+  cashTransferred,
+
+  /// `{box}` — a [[Kas (cash box)]] was created.
+  cashBoxCreated,
+
+  /// `{from}`, `{to}` — a box's name changed. The rows it already owns are
+  /// untouched; only what the picker shows moves.
+  cashBoxRenamed,
+
+  /// `{box}` — a box was retired. Only ever possible at a zero balance, so no
+  /// rupiah can hide behind it.
+  cashBoxRetired,
+
+  /// `{box}` — a retired box was brought back.
+  cashBoxReopened,
+
+  /// **[[Pengeluaran kunjungan]]** (ADR-0130) — a waiter spent cash on the
+  /// party they were serving. Params: `{amount}` (pre-formatted rupiah),
+  /// `{category}` (the venue's own category **name**, not a key — this
+  /// vocabulary is venue-authored and ARB-exempt, unlike [cashSpent]'s closed
+  /// set), `{table}` (the label frozen at write time).
+  ///
+  /// A separate kind from [cashSpent] on purpose: different ledger, different
+  /// money, and the name is persisted forever.
+  tableExpenseRecorded,
 
   // ---------- inventory ----------
   /// A stok opname was closed (ADR-0096). `{lines}` (how many bahan were

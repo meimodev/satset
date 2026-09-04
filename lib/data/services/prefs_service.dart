@@ -223,6 +223,19 @@ class PrefsService {
     await _stampVenueCache(fingerprint);
   }
 
+  /// The [[Pengeluaran kunjungan]] category catalogue (ADR-0130), cached for
+  /// the same reason the presets are: the picker opens on a floor that may have
+  /// no host, and "the venue authored no categories" must not be what a dark
+  /// handset renders.
+  static const _kExpenseCategories = 'satset.expense_categories';
+
+  String? expenseCategoriesJson() => _p.getString(_kExpenseCategories);
+
+  Future<void> setExpenseCategoriesJson(String v, {String? fingerprint}) async {
+    await _p.setString(_kExpenseCategories, v);
+    await _stampVenueCache(fingerprint);
+  }
+
   /// Where the [[Salinan pelanggan]] resumes its sync, and which server it came
   /// from (ADR-0129).
   ///
@@ -274,6 +287,7 @@ class PrefsService {
     await _p.remove(_kVenueSettings);
     await _p.remove(_kVenueShape);
     await _p.remove(_kDiscountPresets);
+    await _p.remove(_kExpenseCategories);
     await _p.remove(_kVenueCacheFp);
   }
 

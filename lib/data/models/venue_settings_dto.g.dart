@@ -65,6 +65,7 @@ _VenueSettingsDto _$VenueSettingsDtoFromJson(
   guestMaxItems: (json['guestMaxItems'] as num?)?.toInt() ?? 20,
   guestSessionHours: (json['guestSessionHours'] as num?)?.toInt() ?? 4,
   soundGuestPending: json['soundGuestPending'] as String? ?? 'chime',
+  tableExpenseEnabled: json['tableExpenseEnabled'] as bool? ?? false,
   modules: (json['modules'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
@@ -131,6 +132,7 @@ Map<String, dynamic> _$VenueSettingsDtoToJson(_VenueSettingsDto instance) =>
       'guestMaxItems': instance.guestMaxItems,
       'guestSessionHours': instance.guestSessionHours,
       'soundGuestPending': instance.soundGuestPending,
+      'tableExpenseEnabled': instance.tableExpenseEnabled,
       'modules': instance.modules,
       'counterConfig': instance.counterConfig,
     };

@@ -74,6 +74,7 @@ enum _Section {
   bahan,
   ops,
   kas,
+  pengeluaran,
   members,
   piutang,
   jamKerja,
@@ -101,6 +102,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.bahan,
     _Section.ops,
     _Section.kas,
+    _Section.pengeluaran,
     _Section.members,
     _Section.piutang,
     _Section.jamKerja,
@@ -121,6 +123,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
     _Section.bahan => l10n.rptSecBahan,
     _Section.ops => l10n.rptSecOps,
     _Section.kas => l10n.rptSecKas,
+    _Section.pengeluaran => l10n.rptSecPengeluaran,
     _Section.members => l10n.rptSecMembers,
     _Section.piutang => l10n.rptSecPiutang,
     _Section.jamKerja => l10n.rptSecJamKerja,
@@ -251,6 +254,16 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
           key: const ValueKey('kas'),
           index: 5,
           child: _kasSection(context, snapshot.kas),
+        ),
+      // Drawn only where money actually left the till: a venue that does not
+      // do this, or a window where nobody spent, gets no card rather than a row
+      // of zeroes.
+      if (_on.contains(_Section.pengeluaran) &&
+          snapshot.pengeluaran.count > 0)
+        Reveal(
+          key: const ValueKey('pengeluaran'),
+          index: 6,
+          child: _pengeluaranSection(context, snapshot.pengeluaran),
         ),
       // Only drawn for a venue that runs a program — an all-zero section on a
       // venue with no members is noise, not a report.
@@ -2175,9 +2188,135 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
             const SizedBox(height: Sp.s2),
             ..._kasCategoryRows(context, kas.byCategory),
           ],
+          // Only once the venue actually keeps more than one tin (ADR-0131):
+          // the block above already *is* the single-box answer, and repeating
+          // it under a heading would read as two different figures.
+          if (kas.byBox.length > 1) ...[
+            const SizedBox(height: Sp.s4),
+            Text(
+              l10n.rptKasByBox.toUpperCase(),
+              style: SatType.monoS(color: sc.textLo),
+            ),
+            const SizedBox(height: Sp.s2),
+            for (final b in kas.byBox)
+              Padding(
+                padding: const EdgeInsets.only(bottom: Sp.s2),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        b.name,
+                        style: SatType.bodyS(
+                          color: b.active ? sc.textMd : sc.textDim,
+                        ),
+                      ),
+                    ),
+                    _kasFigure(context, l10n.rptKasIn, b.inflow, sc.success),
+                    const SizedBox(width: Sp.s5),
+                    _kasFigure(context, l10n.rptKasOut, b.outflow, sc.warn),
+                    const SizedBox(width: Sp.s5),
+                    _kasFigure(
+                      context,
+                      l10n.rptKasClosing,
+                      b.closing,
+                      sc.textHi,
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ],
       ),
     );
+  }
+
+  /// The [[Pengeluaran kunjungan]] block (ADR-0130).
+  ///
+  /// Reads like Kas on purpose — same figures, same bars — because the two
+  /// answer the same shape of question. What it must never do is appear inside
+  /// Sales: this is a cost of making the takings, not a deduction from them.
+  Widget _pengeluaranSection(BuildContext context, PengeluaranSectionDto p) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    return _card(
+      context,
+      l10n.rptSecPengeluaran,
+      sub: l10n.rptPengeluaranSub(p.visitCount),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            spacing: Sp.s6,
+            runSpacing: Sp.s3,
+            children: [
+              _kasFigure(context, l10n.rptKpiExpense, p.total, sc.warn),
+            ],
+          ),
+          if (p.byCategory.isNotEmpty) ...[
+            const SizedBox(height: Sp.s4),
+            Text(
+              l10n.rptKasByCategory.toUpperCase(),
+              style: SatType.monoS(color: sc.textLo),
+            ),
+            const SizedBox(height: Sp.s2),
+            // Venue-authored words, so they are printed as they are — there is
+            // no code here to resolve, unlike the Kas box's closed set.
+            ..._plainAmountRows(context, p.byCategory),
+          ],
+          if (p.byStaff.isNotEmpty) ...[
+            const SizedBox(height: Sp.s4),
+            Text(
+              l10n.rptPengeluaranByStaff.toUpperCase(),
+              style: SatType.monoS(color: sc.textLo),
+            ),
+            const SizedBox(height: Sp.s2),
+            ..._plainAmountRows(context, p.byStaff),
+          ],
+          if (p.visits.isNotEmpty) ...[
+            const SizedBox(height: Sp.s4),
+            Text(
+              l10n.rptPengeluaranByVisit.toUpperCase(),
+              style: SatType.monoS(color: sc.textLo),
+            ),
+            const SizedBox(height: Sp.s2),
+            ..._plainAmountRows(context, {
+              for (final v in p.visits) v.tableLabel: v.expenseAmount,
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Rows whose key is already a word — a venue-authored category, a staff
+  /// name, a table label. `_kasCategoryRows` resolves a code; this one has
+  /// nothing to resolve.
+  List<Widget> _plainAmountRows(BuildContext context, Map<String, int> byKey) {
+    final sc = context.sat;
+    final rows = byKey.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return [
+      for (final e in rows)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: Sp.s1h),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  e.key,
+                  style: SatType.bodyM(color: sc.textHi),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text(
+                formatCompactIDR(context.l10n, e.value),
+                style: SatType.monoM(color: sc.textHi),
+              ),
+            ],
+          ),
+        ),
+    ];
   }
 
   List<Widget> _kasCategoryRows(BuildContext context, Map<String, int> byCat) {

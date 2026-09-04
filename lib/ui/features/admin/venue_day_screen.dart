@@ -69,6 +69,21 @@ class _VenueDayScreenState extends ConsumerState<VenueDayScreen> {
     }
   }
 
+  /// Which [[Kas (cash box)]] the day's ritual funds and counts.
+  ///
+  /// The venue's **first active box** — `box-main` unless somebody reordered
+  /// the picker. A venue that keeps several tins still opens and closes on one,
+  /// which is exactly what the ritual did before ADR-0131; the others are
+  /// counted on `/kas` when their holder counts them. A box picker belongs here
+  /// the day a venue asks to close two tins at once, not before.
+  String _ritualBoxId() {
+    final boxes = ref.read(cashProvider).boxes;
+    for (final b in boxes) {
+      if (b.active) return b.id;
+    }
+    return 'box-main';
+  }
+
   /// Float first, then the mark. Ordered so a failing top-up leaves no audit
   /// row claiming the shop opened — the reverse order would record an opening
   /// whose float never went in, which is exactly the discrepancy the ritual
@@ -78,7 +93,11 @@ class _VenueDayScreenState extends ConsumerState<VenueDayScreen> {
     if (amount > 0) {
       await ref
           .read(cashProvider.notifier)
-          .topUp(amount: amount, note: context.l10n.vdayFloatNote);
+          .topUp(
+            boxId: _ritualBoxId(),
+            amount: amount,
+            note: context.l10n.vdayFloatNote,
+          );
     }
     await ref.read(venueDayProvider).open(note: _note.text.trim());
   });
@@ -88,7 +107,11 @@ class _VenueDayScreenState extends ConsumerState<VenueDayScreen> {
     if (_counted.text.trim().isNotEmpty) {
       await ref
           .read(cashProvider.notifier)
-          .count(counted: _rupiah(_counted), note: context.l10n.vdayCountNote);
+          .count(
+            boxId: _ritualBoxId(),
+            counted: _rupiah(_counted),
+            note: context.l10n.vdayCountNote,
+          );
     }
     await ref.read(venueDayProvider).close(note: _note.text.trim());
   });

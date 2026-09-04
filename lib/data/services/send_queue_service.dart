@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -10,16 +11,33 @@ import 'package:satset/core/time/business_day.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/settlement_sync.dart';
 import 'package:satset/data/services/error_bus_service.dart';
 import 'package:satset/data/services/prefs_service.dart';
 
 const _uuid = Uuid();
 
 /// What a queued intent asks the host to do. Deliberately short: these are the
-/// only two acts a terputus handset may capture (ADR-0090). Editing or voiding
+/// only acts a terputus handset may capture (ADR-0090). Editing or voiding
 /// a line that has not been delivered yet never becomes an intent — it rewrites
 /// the queued [SendIntent] in place, because the host has never heard of it.
-enum SendIntentKind { seatTable, submitOrder, voidTicket }
+///
+/// [tableExpense] (ADR-0130) is the newest, and the only one whose payload has
+/// a companion outside the queue: its **photo** lives in the client database
+/// (ADR-0124), keyed by the intent id, because the queue is a prefs blob loaded
+/// synchronously at boot and a base64 JPEG per queued expense would put
+/// megabytes in a string parsed on every launch.
+enum SendIntentKind { seatTable, submitOrder, voidTicket, tableExpense }
+
+/// Whether an intent still counts once the business day has rolled over.
+///
+/// An order does not: food nobody asked for this morning must not arrive
+/// tonight, and dropping it is the safe direction. A
+/// [[Pengeluaran kunjungan]] does — the cash already left the till, so
+/// discarding it destroys the only record that it did. Same reasoning ADR-0123
+/// gives for settlement events never expiring, arriving at the same answer from
+/// the queue's side.
+bool intentExpires(SendIntentKind kind) => kind != SendIntentKind.tableExpense;
 
 /// One act a waiter performed while their handset could not reach the host.
 ///
@@ -394,7 +412,8 @@ class SendQueue extends StateNotifier<List<SendIntent>> {
           await discard(intent.id);
           continue;
         }
-        if (intent.capturedAt.isBefore(dayStart)) {
+        if (intentExpires(intent.kind) &&
+            intent.capturedAt.isBefore(dayStart)) {
           outcomes.add(
             SendOutcome(intent: intent, kind: SendOutcomeKind.expired),
           );
@@ -418,7 +437,8 @@ class SendQueue extends StateNotifier<List<SendIntent>> {
         } on ApiException catch (e) {
           if (e.statusCode == 401 ||
               (e.statusCode == 403 &&
-                  intent.kind != SendIntentKind.voidTicket)) {
+                  intent.kind != SendIntentKind.voidTicket &&
+                  intent.kind != SendIntentKind.tableExpense)) {
             // The bearer cannot carry this backlog — a role changed, or the
             // handset is now signed in as someone without takeOrder. Stall and
             // say so; never self-authorise, never drop the orders.
@@ -428,6 +448,11 @@ class SendQueue extends StateNotifier<List<SendIntent>> {
             // refusal about one line — not a broken bearer. Stalling on it
             // would strand every order queued behind a comp the venue was
             // never going to allow. 401 still stalls either way.
+            //
+            // An **expense** is the same shape (ADR-0130): `recordTableExpense`
+            // may simply have been revoked, and one refused expense must not
+            // strand the orders queued behind it. Its cap refusal is a 400 and
+            // falls through below, where a refusal already belongs.
             SatLog.repo('sendQueue.drain blocked ${e.statusCode}');
             interrupted = true;
             break;
@@ -469,7 +494,13 @@ class SendQueue extends StateNotifier<List<SendIntent>> {
 /// path rather than a bulk endpoint of its own: a second way to create an
 /// order is a second place for the stock, visit and audit rules to drift
 /// (ADR-0090).
-IntentSender apiIntentSender(ApiClient api) => (intent) async {
+IntentSender apiIntentSender(
+  ApiClient api, {
+  /// Reads a queued expense's photo back out of the client database. Passed in
+  /// rather than reached for, so this function stays a pure function of the
+  /// api client and a test can hand it bytes.
+  Future<Uint8List?> Function(String intentId)? photoFor,
+}) => (intent) async {
   switch (intent.kind) {
     case SendIntentKind.submitOrder:
       final raw = await api.postJson('/orders', {
@@ -500,6 +531,31 @@ IntentSender apiIntentSender(ApiClient api) => (intent) async {
           // (ADR-0006 accountability, ADR-0056 never backfills authorship).
           'actorId': intent.actorId,
         },
+      );
+      return (raw as Map).cast<String, dynamic>();
+    case SendIntentKind.tableExpense:
+      // The photo never lived in the queue, so it is read back here and
+      // base64'd for the length of one request — the same JSON shape the
+      // online path posts, so there is one route and one wire shape.
+      final photo = await photoFor?.call(intent.id);
+      final raw = await api.postJson(
+        '/visits/${intent.payload['visitId']}/expenses',
+        {
+          // The intent id *is* the expense id and the idempotency key, so a
+          // replay after a lost reply reads back the stored response instead
+          // of posting the image twice.
+          'id': intent.id,
+          'amount': (intent.payload['amount'] as num?)?.toInt() ?? 0,
+          'categoryId': intent.payload['categoryId'],
+          'note': ?intent.payload['note'] as String?,
+          'photoBase64': photo == null ? '' : base64Encode(photo),
+          'actorId': intent.actorId,
+          'capturedAt': intent.capturedAt.toIso8601String(),
+        },
+        // The header `idempotent()` actually keys on. The writer refuses a
+        // duplicate id on its own, but sending this short-circuits before the
+        // photo is uploaded a second time.
+        idempotencyKey: intent.id,
       );
       return (raw as Map).cast<String, dynamic>();
     case SendIntentKind.seatTable:
@@ -541,7 +597,18 @@ final sendQueueProvider = StateNotifierProvider<SendQueue, List<SendIntent>>((
       // Resolved per call: the ApiClient is replaced whenever pairing
       // changes, and a queue that captured a stale one would post at the
       // old host.
-      return apiIntentSender(ref.read(apiClientProvider))(intent);
+      final journal = ref.read(settlementJournalProvider.notifier);
+      final res = await apiIntentSender(
+        ref.read(apiClientProvider),
+        photoFor: journal.expensePhoto,
+      )(intent);
+      // Landed, so the parked bytes have nothing left to do. Dropped here
+      // rather than in the sender so a refusal — which also ends the intent —
+      // takes its photo with it.
+      if (intent.kind == SendIntentKind.tableExpense) {
+        await journal.dropExpensePhoto(intent.id);
+      }
+      return res;
     },
   );
 });

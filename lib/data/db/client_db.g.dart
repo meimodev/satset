@@ -1641,6 +1641,221 @@ class CachedMembersCompanion extends UpdateCompanion<CachedMemberRow> {
   }
 }
 
+class $QueuedPhotosTable extends QueuedPhotos
+    with TableInfo<$QueuedPhotosTable, QueuedPhoto> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $QueuedPhotosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _intentIdMeta = const VerificationMeta(
+    'intentId',
+  );
+  @override
+  late final GeneratedColumn<String> intentId = GeneratedColumn<String>(
+    'intent_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bytesMeta = const VerificationMeta('bytes');
+  @override
+  late final GeneratedColumn<Uint8List> bytes = GeneratedColumn<Uint8List>(
+    'bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [intentId, bytes];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'queued_photos';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<QueuedPhoto> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('intent_id')) {
+      context.handle(
+        _intentIdMeta,
+        intentId.isAcceptableOrUnknown(data['intent_id']!, _intentIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_intentIdMeta);
+    }
+    if (data.containsKey('bytes')) {
+      context.handle(
+        _bytesMeta,
+        bytes.isAcceptableOrUnknown(data['bytes']!, _bytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bytesMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {intentId};
+  @override
+  QueuedPhoto map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return QueuedPhoto(
+      intentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}intent_id'],
+      )!,
+      bytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}bytes'],
+      )!,
+    );
+  }
+
+  @override
+  $QueuedPhotosTable createAlias(String alias) {
+    return $QueuedPhotosTable(attachedDatabase, alias);
+  }
+}
+
+class QueuedPhoto extends DataClass implements Insertable<QueuedPhoto> {
+  final String intentId;
+  final Uint8List bytes;
+  const QueuedPhoto({required this.intentId, required this.bytes});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['intent_id'] = Variable<String>(intentId);
+    map['bytes'] = Variable<Uint8List>(bytes);
+    return map;
+  }
+
+  QueuedPhotosCompanion toCompanion(bool nullToAbsent) {
+    return QueuedPhotosCompanion(
+      intentId: Value(intentId),
+      bytes: Value(bytes),
+    );
+  }
+
+  factory QueuedPhoto.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return QueuedPhoto(
+      intentId: serializer.fromJson<String>(json['intentId']),
+      bytes: serializer.fromJson<Uint8List>(json['bytes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'intentId': serializer.toJson<String>(intentId),
+      'bytes': serializer.toJson<Uint8List>(bytes),
+    };
+  }
+
+  QueuedPhoto copyWith({String? intentId, Uint8List? bytes}) => QueuedPhoto(
+    intentId: intentId ?? this.intentId,
+    bytes: bytes ?? this.bytes,
+  );
+  QueuedPhoto copyWithCompanion(QueuedPhotosCompanion data) {
+    return QueuedPhoto(
+      intentId: data.intentId.present ? data.intentId.value : this.intentId,
+      bytes: data.bytes.present ? data.bytes.value : this.bytes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QueuedPhoto(')
+          ..write('intentId: $intentId, ')
+          ..write('bytes: $bytes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(intentId, $driftBlobEquality.hash(bytes));
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is QueuedPhoto &&
+          other.intentId == this.intentId &&
+          $driftBlobEquality.equals(other.bytes, this.bytes));
+}
+
+class QueuedPhotosCompanion extends UpdateCompanion<QueuedPhoto> {
+  final Value<String> intentId;
+  final Value<Uint8List> bytes;
+  final Value<int> rowid;
+  const QueuedPhotosCompanion({
+    this.intentId = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  QueuedPhotosCompanion.insert({
+    required String intentId,
+    required Uint8List bytes,
+    this.rowid = const Value.absent(),
+  }) : intentId = Value(intentId),
+       bytes = Value(bytes);
+  static Insertable<QueuedPhoto> custom({
+    Expression<String>? intentId,
+    Expression<Uint8List>? bytes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (intentId != null) 'intent_id': intentId,
+      if (bytes != null) 'bytes': bytes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  QueuedPhotosCompanion copyWith({
+    Value<String>? intentId,
+    Value<Uint8List>? bytes,
+    Value<int>? rowid,
+  }) {
+    return QueuedPhotosCompanion(
+      intentId: intentId ?? this.intentId,
+      bytes: bytes ?? this.bytes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (intentId.present) {
+      map['intent_id'] = Variable<String>(intentId.value);
+    }
+    if (bytes.present) {
+      map['bytes'] = Variable<Uint8List>(bytes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QueuedPhotosCompanion(')
+          ..write('intentId: $intentId, ')
+          ..write('bytes: $bytes, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$ClientDb extends GeneratedDatabase {
   _$ClientDb(QueryExecutor e) : super(e);
   $ClientDbManager get managers => $ClientDbManager(this);
@@ -1650,6 +1865,7 @@ abstract class _$ClientDb extends GeneratedDatabase {
   late final $CachedBillsTable cachedBills = $CachedBillsTable(this);
   late final $CachedPayableTable cachedPayable = $CachedPayableTable(this);
   late final $CachedMembersTable cachedMembers = $CachedMembersTable(this);
+  late final $QueuedPhotosTable queuedPhotos = $QueuedPhotosTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1659,6 +1875,7 @@ abstract class _$ClientDb extends GeneratedDatabase {
     cachedBills,
     cachedPayable,
     cachedMembers,
+    queuedPhotos,
   ];
 }
 
@@ -2531,6 +2748,149 @@ typedef $$CachedMembersTableProcessedTableManager =
       CachedMemberRow,
       PrefetchHooks Function()
     >;
+typedef $$QueuedPhotosTableCreateCompanionBuilder =
+    QueuedPhotosCompanion Function({
+      required String intentId,
+      required Uint8List bytes,
+      Value<int> rowid,
+    });
+typedef $$QueuedPhotosTableUpdateCompanionBuilder =
+    QueuedPhotosCompanion Function({
+      Value<String> intentId,
+      Value<Uint8List> bytes,
+      Value<int> rowid,
+    });
+
+class $$QueuedPhotosTableFilterComposer
+    extends Composer<_$ClientDb, $QueuedPhotosTable> {
+  $$QueuedPhotosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get intentId => $composableBuilder(
+    column: $table.intentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$QueuedPhotosTableOrderingComposer
+    extends Composer<_$ClientDb, $QueuedPhotosTable> {
+  $$QueuedPhotosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get intentId => $composableBuilder(
+    column: $table.intentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$QueuedPhotosTableAnnotationComposer
+    extends Composer<_$ClientDb, $QueuedPhotosTable> {
+  $$QueuedPhotosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get intentId =>
+      $composableBuilder(column: $table.intentId, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get bytes =>
+      $composableBuilder(column: $table.bytes, builder: (column) => column);
+}
+
+class $$QueuedPhotosTableTableManager
+    extends
+        RootTableManager<
+          _$ClientDb,
+          $QueuedPhotosTable,
+          QueuedPhoto,
+          $$QueuedPhotosTableFilterComposer,
+          $$QueuedPhotosTableOrderingComposer,
+          $$QueuedPhotosTableAnnotationComposer,
+          $$QueuedPhotosTableCreateCompanionBuilder,
+          $$QueuedPhotosTableUpdateCompanionBuilder,
+          (
+            QueuedPhoto,
+            BaseReferences<_$ClientDb, $QueuedPhotosTable, QueuedPhoto>,
+          ),
+          QueuedPhoto,
+          PrefetchHooks Function()
+        > {
+  $$QueuedPhotosTableTableManager(_$ClientDb db, $QueuedPhotosTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$QueuedPhotosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$QueuedPhotosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$QueuedPhotosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> intentId = const Value.absent(),
+                Value<Uint8List> bytes = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => QueuedPhotosCompanion(
+                intentId: intentId,
+                bytes: bytes,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String intentId,
+                required Uint8List bytes,
+                Value<int> rowid = const Value.absent(),
+              }) => QueuedPhotosCompanion.insert(
+                intentId: intentId,
+                bytes: bytes,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$QueuedPhotosTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ClientDb,
+      $QueuedPhotosTable,
+      QueuedPhoto,
+      $$QueuedPhotosTableFilterComposer,
+      $$QueuedPhotosTableOrderingComposer,
+      $$QueuedPhotosTableAnnotationComposer,
+      $$QueuedPhotosTableCreateCompanionBuilder,
+      $$QueuedPhotosTableUpdateCompanionBuilder,
+      (
+        QueuedPhoto,
+        BaseReferences<_$ClientDb, $QueuedPhotosTable, QueuedPhoto>,
+      ),
+      QueuedPhoto,
+      PrefetchHooks Function()
+    >;
 
 class $ClientDbManager {
   final _$ClientDb _db;
@@ -2543,4 +2903,6 @@ class $ClientDbManager {
       $$CachedPayableTableTableManager(_db, _db.cachedPayable);
   $$CachedMembersTableTableManager get cachedMembers =>
       $$CachedMembersTableTableManager(_db, _db.cachedMembers);
+  $$QueuedPhotosTableTableManager get queuedPhotos =>
+      $$QueuedPhotosTableTableManager(_db, _db.queuedPhotos);
 }

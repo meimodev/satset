@@ -43,10 +43,18 @@ class WsEventTypes {
   static const staffDeleted = 'staff.deleted';
   static const auditCreated = 'audit.created';
 
-  /// A petty cash movement. Payload `{entry, balance}` — the new authoritative
-  /// balance rides along because the balance is derived (`SUM(delta)`) and a
-  /// client holding one ledger page cannot compute it. See §Kas kecil.
+  /// A petty cash movement. Payload `{entry, boxId, balance}` — the new
+  /// authoritative balance rides along because the balance is derived
+  /// (`SUM(delta)`) and a client holding one ledger page cannot compute it. It
+  /// is **that box's** balance, not the venue's (ADR-0131): the client patches
+  /// one box and re-sums the total, which is what makes a transfer's two
+  /// broadcasts safe in either order. See §Kas kecil.
   static const cashEntryCreated = 'cash.created';
+
+  /// A [[Kas (cash box)]] was created, renamed or retired. Payload
+  /// `{box, boxes}` — the whole list, because it is a handful of rows and a
+  /// client that patched one would still have to re-sort.
+  static const cashBoxesUpdated = 'cash.boxes';
 
   /// A [[Pelanggan (member)]] changed — enrolled, edited, merged into, or their
   /// [[Poin]] balance moved. Payload is the whole member including the derived
@@ -82,6 +90,8 @@ class WsEventTypes {
   /// The [[Preset diskon]] catalogue changed — clients refetch the list.
   /// Fires on create/update/delete; the payload is the full list (ADR-0037).
   static const discountPresetsUpdated = 'discountPresets.updated';
+  static const visitExpenseRecorded = 'visitExpense.recorded';
+  static const expenseCategoriesUpdated = 'expenseCategories.updated';
   static const systemStatus = 'system.status';
   static const devicePaired = 'device.paired';
   static const deviceRevoked = 'device.revoked';

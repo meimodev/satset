@@ -731,6 +731,11 @@ class DummyData {
         Capability.modifyOrder,
         Capability.voidItem,
         Capability.settleBill,
+        // ADR-0130. Granted because the person who runs out for tissues is the
+        // person on the floor — and granted *separately*, so revoking it costs
+        // an owner one tap and does not stop order-taking. An already-seeded
+        // venue picks it up through the role sheet; there is no backfill.
+        Capability.recordTableExpense,
       },
     ),
     Role(

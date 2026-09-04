@@ -122,5 +122,21 @@
   "zoneAdminSummary": "{zones, plural, other{{zones} zona}} · {tables, plural, other{{tables} layanan}} · {seats, plural, other{{seats} kursi}}",
   "zoneAdminTableActive": "Layanan aktif",
   "zoneAdminTableName": "Nama layanan",
-  "zoneAdminTablesHere": "{count, plural, other{{count} layanan saat ini ada di zona ini.}}"
+  "zoneAdminTablesHere": "{count, plural, other{{count} layanan saat ini ada di zona ini.}}",
+  "tableExpTitle": "Pengeluaran layanan",
+  "auditTableExpense": "Pengeluaran layanan {table} {amount} — {category}",
+  "capRecordTableExpense": "Catat pengeluaran layanan",
+  "capRecordTableExpenseDesc": "Membelanjakan uang tunai untuk tamu yang sedang dilayani, dibatasi nilai tagihan layanan itu.",
+  "tableExpCap": "Tagihan layanan {amount}",
+  "tableExpOffline": "Tagihan layanan belum tersimpan di perangkat ini, jadi batas belum bisa dihitung.",
+  "tableExpErrExceedsBill": "Melebihi tagihan layanan.",
+  "tableExpErrDisabled": "Pengeluaran layanan tidak aktif di venue ini.",
+  "rptKpiExpense": "Pengeluaran layanan",
+  "rptSubNetAfterExpense": "Netto dikurangi pengeluaran layanan",
+  "rptSecPengeluaran": "Pengeluaran layanan",
+  "rptPengeluaranSub": "{count, plural, other{{count} layanan}}",
+  "rptPengeluaranByVisit": "Per layanan",
+  "vstTableExpense": "Pengeluaran layanan",
+  "vstTableExpenseHint": "Pelayan boleh membelanjakan uang tunai untuk tamu yang dilayani, dibatasi nilai tagihan layanan itu, dan wajib foto bukti. Tagihan tamu tidak berubah.",
+  "expColExpense": "Pengeluaran layanan"
 }

@@ -63,6 +63,7 @@ void main() {
         for (var i = 0; i < rows; i++)
           CashEntry(
             id: 'c$i',
+            boxId: 'box-main',
             kind: CashEntryKind.expense,
             category: CashCategory.other,
             delta: -1000,

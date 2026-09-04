@@ -2461,23 +2461,48 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
-  String auditCashToppedUp(String amount) {
-    return 'Topped up petty cash $amount';
+  String auditCashToppedUp(String amount, String box) {
+    return 'Topped up $box $amount';
   }
 
   @override
-  String auditCashSpent(String amount, String category) {
-    return 'Petty cash expense $amount — $category';
+  String auditCashSpent(String amount, String category, String box) {
+    return 'Expense from $box $amount — $category';
   }
 
   @override
-  String auditCashCounted(String counted, String variance) {
-    return 'Counted petty cash $counted (variance $variance)';
+  String auditCashCounted(String counted, String variance, String box) {
+    return 'Counted $box $counted (variance $variance)';
   }
 
   @override
-  String auditCashReversed(String amount) {
-    return 'Reversed cash movement $amount';
+  String auditCashReversed(String amount, String box) {
+    return 'Reversed movement in $box $amount';
+  }
+
+  @override
+  String auditCashTransferred(String amount, String from, String to) {
+    return 'Cash transfer $amount — $from → $to';
+  }
+
+  @override
+  String auditCashBoxCreated(String box) {
+    return 'New cash box — $box';
+  }
+
+  @override
+  String auditCashBoxRenamed(String from, String to) {
+    return 'Renamed cash box — $from → $to';
+  }
+
+  @override
+  String auditCashBoxRetired(String box) {
+    return 'Retired cash box — $box';
+  }
+
+  @override
+  String auditCashBoxReopened(String box) {
+    return 'Reopened cash box — $box';
   }
 
   @override
@@ -7548,6 +7573,65 @@ class AppL10nEn extends AppL10n {
   String get kasPhoneOnly => 'Petty cash is read on a tablet.';
 
   @override
+  String get kasBoxAll => 'All';
+
+  @override
+  String get kasBoxLabel => 'Cash box';
+
+  @override
+  String get kasVenueTotal => 'All boxes total';
+
+  @override
+  String get kasActionTransfer => 'Transfer';
+
+  @override
+  String get kasSheetTransferTitle => 'Transfer between boxes';
+
+  @override
+  String get kasTransfer => 'Transfer';
+
+  @override
+  String get kasFieldFromBox => 'From box';
+
+  @override
+  String get kasFieldToBox => 'To box';
+
+  @override
+  String get kasBoxesTitle => 'Manage cash boxes';
+
+  @override
+  String get kasBoxNew => 'New box';
+
+  @override
+  String get kasFieldBoxName => 'Box name';
+
+  @override
+  String get kasBoxRetire => 'Retire';
+
+  @override
+  String get kasBoxReopen => 'Reopen';
+
+  @override
+  String get kasBoxInactive => 'Retired';
+
+  @override
+  String kasErrBoxNotEmpty(String amount) {
+    return 'This box still holds $amount. Empty it before retiring it.';
+  }
+
+  @override
+  String get kasErrSameBox => 'Pick two different boxes.';
+
+  @override
+  String get kasErrNameRequired => 'A cash box needs a name.';
+
+  @override
+  String get kasErrBoxNotFound => 'That cash box no longer exists.';
+
+  @override
+  String get rptKasByBox => 'Per box';
+
+  @override
   String get rptSecKas => 'Petty cash';
 
   @override
@@ -9905,6 +9989,178 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get cshMemberPerTicket => 'Per-ticket member';
+
+  @override
+  String get tableExpTitle => 'Table expense';
+
+  @override
+  String get tableExpNew => 'Record expense';
+
+  @override
+  String auditTableExpense(String amount, String category, String table) {
+    return 'Table $table expense $amount — $category';
+  }
+
+  @override
+  String get capRecordTableExpense => 'Record table expense';
+
+  @override
+  String get capRecordTableExpenseDesc =>
+      'Spend cash on the party being served, capped at that table’s bill.';
+
+  @override
+  String tableExpRemaining(String amount) {
+    return '$amount left';
+  }
+
+  @override
+  String tableExpSpent(String amount) {
+    return '$amount spent';
+  }
+
+  @override
+  String tableExpCap(String amount) {
+    return 'Table bill $amount';
+  }
+
+  @override
+  String get tableExpAmount => 'Amount';
+
+  @override
+  String get tableExpCategory => 'Category';
+
+  @override
+  String get tableExpNote => 'Note';
+
+  @override
+  String get tableExpPhoto => 'Take proof photo';
+
+  @override
+  String get tableExpPhotoAttached => 'Photo attached — tap to replace';
+
+  @override
+  String tableExpSubmit(String amount) {
+    return 'Record $amount';
+  }
+
+  @override
+  String get tableExpBlkAmount => 'Enter an amount';
+
+  @override
+  String get tableExpBlkCategory => 'Pick a category';
+
+  @override
+  String get tableExpBlkPhoto => 'Proof photo required';
+
+  @override
+  String tableExpBlkOverCap(String amount) {
+    return 'More than the $amount left';
+  }
+
+  @override
+  String get tableExpNone => 'No expenses yet';
+
+  @override
+  String get tableExpNoCategories => 'No expense categories yet.';
+
+  @override
+  String get tableExpOffline =>
+      'This device has no copy of the table bill, so the limit cannot be worked out.';
+
+  @override
+  String tableExpPhotoFailed(String err) {
+    return 'Could not take the photo: $err';
+  }
+
+  @override
+  String get tableExpErrExceedsBill => 'More than the table bill.';
+
+  @override
+  String get tableExpErrBillClosed => 'The bill is closed. Reopen it first.';
+
+  @override
+  String get tableExpErrPhotoRequired => 'A proof photo is required.';
+
+  @override
+  String get tableExpErrInvalidAmount => 'That amount is not valid.';
+
+  @override
+  String get tableExpErrDisabled => 'Table expenses are off for this venue.';
+
+  @override
+  String get tableExpProvisional =>
+      'Provisional limit — this device cannot reach the server.';
+
+  @override
+  String get rptKpiExpense => 'Table expenses';
+
+  @override
+  String get rptSubExpense => 'Cash spent on guests';
+
+  @override
+  String get rptKpiNetAfterExpense => 'Net after expenses';
+
+  @override
+  String get rptSubNetAfterExpense => 'Net less table expenses';
+
+  @override
+  String get rptSecPengeluaran => 'Table expenses';
+
+  @override
+  String rptPengeluaranSub(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tables',
+      one: '1 table',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rptPengeluaranByStaff => 'By staff';
+
+  @override
+  String get rptPengeluaranByVisit => 'By table';
+
+  @override
+  String get expCatCrumb => 'Expense categories';
+
+  @override
+  String get expCatNew => 'New category';
+
+  @override
+  String get expCatEdit => 'Edit category';
+
+  @override
+  String get expCatName => 'Category name';
+
+  @override
+  String get expCatActive => 'In use';
+
+  @override
+  String get expCatParked => 'Parked';
+
+  @override
+  String get expCatNoDelete =>
+      'A category cannot be deleted — park it instead. Past expenses keep its name.';
+
+  @override
+  String get expCatEmpty => 'No categories yet';
+
+  @override
+  String get expCatEmptyBody =>
+      'Add one so a waiter has something to pick when recording an expense.';
+
+  @override
+  String get vstTableExpense => 'Table expenses';
+
+  @override
+  String get vstTableExpenseHint =>
+      'A waiter may spend cash on the party they are serving, capped at that table’s bill, with a proof photo required. The guest’s bill does not change.';
+
+  @override
+  String get expColExpense => 'Table expenses';
 }
 
 /// The translations for English, as used in El Salvador (`en_SV`).
@@ -10530,4 +10786,67 @@ class AppL10nEnSv extends AppL10nEn {
 
   @override
   String get mrpColTable => 'Service';
+
+  @override
+  String get tableExpTitle => 'Service expense';
+
+  @override
+  String auditTableExpense(String amount, String category, String table) {
+    return 'Service $table expense $amount — $category';
+  }
+
+  @override
+  String get capRecordTableExpense => 'Record service expense';
+
+  @override
+  String get capRecordTableExpenseDesc =>
+      'Spend cash on the party being served, capped at that service’s bill.';
+
+  @override
+  String tableExpCap(String amount) {
+    return 'Service bill $amount';
+  }
+
+  @override
+  String get tableExpOffline =>
+      'This device has no copy of the service bill, so the limit cannot be worked out.';
+
+  @override
+  String get tableExpErrExceedsBill => 'More than the service bill.';
+
+  @override
+  String get tableExpErrDisabled => 'Service expenses are off for this venue.';
+
+  @override
+  String get rptKpiExpense => 'Service expenses';
+
+  @override
+  String get rptSubNetAfterExpense => 'Net less service expenses';
+
+  @override
+  String get rptSecPengeluaran => 'Service expenses';
+
+  @override
+  String rptPengeluaranSub(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count services',
+      one: '1 service',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rptPengeluaranByVisit => 'By service';
+
+  @override
+  String get vstTableExpense => 'Service expenses';
+
+  @override
+  String get vstTableExpenseHint =>
+      'A waiter may spend cash on the party they are serving, capped at that service’s bill, with a proof photo required. The guest’s bill does not change.';
+
+  @override
+  String get expColExpense => 'Service expenses';
 }

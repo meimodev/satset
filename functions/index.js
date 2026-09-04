@@ -63,7 +63,20 @@ const MODULES = ["members", "selfOrder"];
 // branches no writer — the client resolves it to a locale variant and the
 // whole app, struk and exports included, follow. Fail-closed like the rest:
 // a restaurant that has not mirrored must not wake up renaming its floor.
-const MODE_MODULES = ["counterService", "bypassKds", "memberSplit", "serviceTerm"];
+//
+// `tableExpense` (ADR-0130) is the fifth: a waiter may spend small cash on a
+// party out of what that visit is producing, capped at the visit's subtotal and
+// photographed. It branches no writer — the bill never learns an expense
+// happened — and gates the route plus the affordance. Fail-closed for the
+// bluntest reason of the five: fail-open would hand a revenue-reducing write to
+// the floor of every venue that has not mirrored yet.
+const MODE_MODULES = [
+  "counterService",
+  "bypassKds",
+  "memberSplit",
+  "serviceTerm",
+  "tableExpense",
+];
 
 // Everything `addOns` may contain. Must stay equal to `venueEntitlementKeys` in
 // lib/domain/models/venue_module.dart.

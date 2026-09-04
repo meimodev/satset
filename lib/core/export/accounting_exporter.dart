@@ -56,6 +56,7 @@ List<String> _dailyHeaders(AppL10n l) => [
   l.expTax,
   l.expDiscount,
   l.expNet,
+  l.expColExpense,
   l.expColCollected,
   l.expRefund,
 ];
@@ -98,6 +99,7 @@ List<String> _dailyRow(AccountingDayRow d) => [
   formatIDR(d.tax),
   formatIDR(d.discount),
   formatIDR(d.net),
+  formatIDR(d.expense),
   formatIDR(d.collected),
   formatIDR(d.refunded),
 ];
@@ -130,6 +132,9 @@ String buildAccountingCsv(AppL10n l, AccountingReport s) {
   rows.add(csvRow([l.expVoidCorrection, formatIDR(r.voidAmount)]));
   rows.add(csvRow([l.expDiscount, formatIDR(r.discount)]));
   rows.add(csvRow([l.expNet, formatIDR(r.net)]));
+  // Beside the collected figure, never inside it (ADR-0130): the guest paid in
+  // full, and this is what left the drawer afterwards.
+  rows.add(csvRow([l.expColExpense, formatIDR(r.expense)]));
   rows.add(csvRow([l.expService, formatIDR(r.service)]));
   rows.add(csvRow([l.expTax, formatIDR(r.tax)]));
   rows.add(csvRow([l.expCollectedBilled, formatIDR(r.collected)]));
@@ -227,6 +232,7 @@ Future<Uint8List> buildAccountingPdf(
         kv(l.expVoidCorrection, formatIDR(r.voidAmount)),
         kv(l.expDiscount, formatIDR(r.discount)),
         kv(l.expNet, formatIDR(r.net), strong: true),
+        kv(l.expColExpense, formatIDR(r.expense)),
         kv(l.expService, formatIDR(r.service)),
         kv(l.expTax, formatIDR(r.tax)),
         kv(l.expCollectedBilled, formatIDR(r.collected), strong: true),

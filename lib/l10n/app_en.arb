@@ -834,15 +834,18 @@
   "auditBillClosed": "Closed bill {table}",
   "auditBillWrittenOff": "Bill written off {amount} {table}",
   "auditSettlementArrivedLate": "Late settlement {amount} {table} — collected {captured}",
-  "auditCashToppedUp": "Topped up petty cash {amount}",
+  "auditCashToppedUp": "Topped up {box} {amount}",
   "@auditCashToppedUp": {
     "placeholders": {
       "amount": {
         "type": "String"
+      },
+      "box": {
+        "type": "String"
       }
     }
   },
-  "auditCashSpent": "Petty cash expense {amount} — {category}",
+  "auditCashSpent": "Expense from {box} {amount} — {category}",
   "@auditCashSpent": {
     "placeholders": {
       "amount": {
@@ -850,10 +853,13 @@
       },
       "category": {
         "type": "String"
+      },
+      "box": {
+        "type": "String"
       }
     }
   },
-  "auditCashCounted": "Counted petty cash {counted} (variance {variance})",
+  "auditCashCounted": "Counted {box} {counted} (variance {variance})",
   "@auditCashCounted": {
     "placeholders": {
       "counted": {
@@ -861,13 +867,68 @@
       },
       "variance": {
         "type": "String"
+      },
+      "box": {
+        "type": "String"
       }
     }
   },
-  "auditCashReversed": "Reversed cash movement {amount}",
+  "auditCashReversed": "Reversed movement in {box} {amount}",
   "@auditCashReversed": {
     "placeholders": {
       "amount": {
+        "type": "String"
+      },
+      "box": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashTransferred": "Cash transfer {amount} — {from} → {to}",
+  "@auditCashTransferred": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashBoxCreated": "New cash box — {box}",
+  "@auditCashBoxCreated": {
+    "placeholders": {
+      "box": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashBoxRenamed": "Renamed cash box — {from} → {to}",
+  "@auditCashBoxRenamed": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashBoxRetired": "Retired cash box — {box}",
+  "@auditCashBoxRetired": {
+    "placeholders": {
+      "box": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCashBoxReopened": "Reopened cash box — {box}",
+  "@auditCashBoxReopened": {
+    "placeholders": {
+      "box": {
         "type": "String"
       }
     }
@@ -2460,6 +2521,50 @@
     }
   },
   "kasPhoneOnly": "Petty cash is read on a tablet.",
+  "kasBoxAll": "All",
+  "@kasBoxAll": {},
+  "kasBoxLabel": "Cash box",
+  "@kasBoxLabel": {},
+  "kasVenueTotal": "All boxes total",
+  "@kasVenueTotal": {},
+  "kasActionTransfer": "Transfer",
+  "@kasActionTransfer": {},
+  "kasSheetTransferTitle": "Transfer between boxes",
+  "@kasSheetTransferTitle": {},
+  "kasTransfer": "Transfer",
+  "@kasTransfer": {},
+  "kasFieldFromBox": "From box",
+  "@kasFieldFromBox": {},
+  "kasFieldToBox": "To box",
+  "@kasFieldToBox": {},
+  "kasBoxesTitle": "Manage cash boxes",
+  "@kasBoxesTitle": {},
+  "kasBoxNew": "New box",
+  "@kasBoxNew": {},
+  "kasFieldBoxName": "Box name",
+  "@kasFieldBoxName": {},
+  "kasBoxRetire": "Retire",
+  "@kasBoxRetire": {},
+  "kasBoxReopen": "Reopen",
+  "@kasBoxReopen": {},
+  "kasBoxInactive": "Retired",
+  "@kasBoxInactive": {},
+  "kasErrBoxNotEmpty": "This box still holds {amount}. Empty it before retiring it.",
+  "@kasErrBoxNotEmpty": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "kasErrSameBox": "Pick two different boxes.",
+  "@kasErrSameBox": {},
+  "kasErrNameRequired": "A cash box needs a name.",
+  "@kasErrNameRequired": {},
+  "kasErrBoxNotFound": "That cash box no longer exists.",
+  "@kasErrBoxNotFound": {},
+  "rptKasByBox": "Per box",
+  "@rptKasByBox": {},
   "rptSecKas": "Petty cash",
   "rptSecPiutang": "Tabs",
   "rptPiutangSub": "Member bills not yet paid",
@@ -3414,5 +3519,115 @@
   "memImportErrBirthday": "birthday must be YYYY-MM-DD",
   "memImportErrCreditLimit": "credit limit must be a whole non-negative rupiah amount",
   "memImportErrDuplicatePhone": "duplicate phone in file",
-  "cshMemberPerTicket": "Per-ticket member"
+  "cshMemberPerTicket": "Per-ticket member",
+  "tableExpTitle": "Table expense",
+  "tableExpNew": "Record expense",
+  "auditTableExpense": "Table {table} expense {amount} — {category}",
+  "@auditTableExpense": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "category": {
+        "type": "String"
+      },
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "capRecordTableExpense": "Record table expense",
+  "capRecordTableExpenseDesc": "Spend cash on the party being served, capped at that table’s bill.",
+  "tableExpRemaining": "{amount} left",
+  "@tableExpRemaining": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpSpent": "{amount} spent",
+  "@tableExpSpent": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpCap": "Table bill {amount}",
+  "@tableExpCap": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpAmount": "Amount",
+  "tableExpCategory": "Category",
+  "tableExpNote": "Note",
+  "tableExpPhoto": "Take proof photo",
+  "tableExpPhotoAttached": "Photo attached — tap to replace",
+  "tableExpSubmit": "Record {amount}",
+  "@tableExpSubmit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpBlkAmount": "Enter an amount",
+  "tableExpBlkCategory": "Pick a category",
+  "tableExpBlkPhoto": "Proof photo required",
+  "tableExpBlkOverCap": "More than the {amount} left",
+  "@tableExpBlkOverCap": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpNone": "No expenses yet",
+  "tableExpNoCategories": "No expense categories yet.",
+  "tableExpOffline": "This device has no copy of the table bill, so the limit cannot be worked out.",
+  "tableExpPhotoFailed": "Could not take the photo: {err}",
+  "@tableExpPhotoFailed": {
+    "placeholders": {
+      "err": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpErrExceedsBill": "More than the table bill.",
+  "tableExpErrBillClosed": "The bill is closed. Reopen it first.",
+  "tableExpErrPhotoRequired": "A proof photo is required.",
+  "tableExpErrInvalidAmount": "That amount is not valid.",
+  "tableExpErrDisabled": "Table expenses are off for this venue.",
+  "tableExpProvisional": "Provisional limit — this device cannot reach the server.",
+  "rptKpiExpense": "Table expenses",
+  "rptSubExpense": "Cash spent on guests",
+  "rptKpiNetAfterExpense": "Net after expenses",
+  "rptSubNetAfterExpense": "Net less table expenses",
+  "rptSecPengeluaran": "Table expenses",
+  "rptPengeluaranSub": "{count, plural, one{1 table} other{{count} tables}}",
+  "rptPengeluaranByStaff": "By staff",
+  "rptPengeluaranByVisit": "By table",
+  "@rptPengeluaranSub": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "expCatCrumb": "Expense categories",
+  "expCatNew": "New category",
+  "expCatEdit": "Edit category",
+  "expCatName": "Category name",
+  "expCatActive": "In use",
+  "expCatParked": "Parked",
+  "expCatNoDelete": "A category cannot be deleted — park it instead. Past expenses keep its name.",
+  "expCatEmpty": "No categories yet",
+  "expCatEmptyBody": "Add one so a waiter has something to pick when recording an expense.",
+  "vstTableExpense": "Table expenses",
+  "vstTableExpenseHint": "A waiter may spend cash on the party they are serving, capped at that table’s bill, with a proof photo required. The guest’s bill does not change.",
+  "expColExpense": "Table expenses"
 }

@@ -18,6 +18,12 @@ class AccountingRevenue {
   /// into gross, so the cost of promos stays visible (ADR-0039).
   final int discount;
   final int net;
+
+  /// [[Pengeluaran kunjungan]] over the window (ADR-0130). Beside [collected],
+  /// folded into neither it nor [net]: the guest paid in full and the payment
+  /// row says so. What this changes is cash in the drawer, `collected -
+  /// expense`.
+  final int expense;
   final int collected;
   final int refunded;
   final int sessionCount;
@@ -29,6 +35,7 @@ class AccountingRevenue {
     required this.tax,
     required this.discount,
     required this.net,
+    this.expense = 0,
     required this.collected,
     required this.refunded,
     required this.sessionCount,
@@ -42,6 +49,7 @@ class AccountingRevenue {
         tax: (j['tax'] as num?)?.toInt() ?? 0,
         discount: (j['discount'] as num?)?.toInt() ?? 0,
         net: (j['net'] as num?)?.toInt() ?? 0,
+        expense: (j['expense'] as num?)?.toInt() ?? 0,
         collected: (j['collected'] as num?)?.toInt() ?? 0,
         refunded: (j['refunded'] as num?)?.toInt() ?? 0,
         sessionCount: (j['sessionCount'] as num?)?.toInt() ?? 0,
@@ -103,6 +111,9 @@ class AccountingDayRow {
   final int tax;
   final int discount;
   final int net;
+
+  /// [[Pengeluaran kunjungan]] booked on this day (ADR-0130).
+  final int expense;
   final int collected;
   final int refunded;
 
@@ -114,6 +125,7 @@ class AccountingDayRow {
     required this.tax,
     required this.discount,
     required this.net,
+    this.expense = 0,
     required this.collected,
     required this.refunded,
   });
@@ -126,6 +138,7 @@ class AccountingDayRow {
     tax: (j['tax'] as num?)?.toInt() ?? 0,
     discount: (j['discount'] as num?)?.toInt() ?? 0,
     net: (j['net'] as num?)?.toInt() ?? 0,
+    expense: (j['expense'] as num?)?.toInt() ?? 0,
     collected: (j['collected'] as num?)?.toInt() ?? 0,
     refunded: (j['refunded'] as num?)?.toInt() ?? 0,
   );

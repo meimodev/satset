@@ -70,13 +70,32 @@ String auditText(AppL10n l, AuditEntry e) {
       s('captured'),
     ),
 
-    AuditKind.cashToppedUp => l.auditCashToppedUp(s('amount')),
+    AuditKind.cashToppedUp => l.auditCashToppedUp(s('amount'), s('box')),
     AuditKind.cashSpent => l.auditCashSpent(
       s('amount'),
       cashCategoryKeyLabel(l, s('category')),
+      s('box'),
     ),
-    AuditKind.cashCounted => l.auditCashCounted(s('counted'), s('variance')),
-    AuditKind.cashReversed => l.auditCashReversed(s('amount')),
+    AuditKind.cashCounted => l.auditCashCounted(
+      s('counted'),
+      s('variance'),
+      s('box'),
+    ),
+    AuditKind.cashReversed => l.auditCashReversed(s('amount'), s('box')),
+    AuditKind.cashTransferred => l.auditCashTransferred(
+      s('amount'),
+      s('from'),
+      s('to'),
+    ),
+    AuditKind.cashBoxCreated => l.auditCashBoxCreated(s('box')),
+    AuditKind.cashBoxRenamed => l.auditCashBoxRenamed(s('from'), s('to')),
+    AuditKind.cashBoxRetired => l.auditCashBoxRetired(s('box')),
+    AuditKind.cashBoxReopened => l.auditCashBoxReopened(s('box')),
+    AuditKind.tableExpenseRecorded => l.auditTableExpense(
+      s('amount'),
+      s('category'),
+      s('table'),
+    ),
 
     AuditKind.stockCountClosed => l.auditStockCountClosed(
       int.tryParse(s('lines')) ?? 0,

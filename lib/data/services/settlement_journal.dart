@@ -255,6 +255,33 @@ class SettlementJournal extends StateNotifier<JournalState> {
     };
   }
 
+  // ── a queued expense's photo (ADR-0130) ──────────────────────────────────
+
+  /// Park the bytes a queued [[Pengeluaran kunjungan]] will post, keyed by the
+  /// intent id. The [[Antrean kirim]] is a prefs blob and cannot hold them.
+  Future<void> parkExpensePhoto(String intentId, Uint8List bytes) async {
+    await db
+        .into(db.queuedPhotos)
+        .insertOnConflictUpdate(
+          QueuedPhotosCompanion.insert(intentId: intentId, bytes: bytes),
+        );
+  }
+
+  Future<Uint8List?> expensePhoto(String intentId) async {
+    final row = await (db.select(
+      db.queuedPhotos,
+    )..where((q) => q.intentId.equals(intentId))).getSingleOrNull();
+    return row?.bytes;
+  }
+
+  /// Called once the intent has landed. A row that outlives its intent is an
+  /// orphan nothing will ever read.
+  Future<void> dropExpensePhoto(String intentId) async {
+    await (db.delete(
+      db.queuedPhotos,
+    )..where((q) => q.intentId.equals(intentId))).go();
+  }
+
   Future<Map<String, dynamic>?> cachedBill(String visitId) async {
     final row = await (db.select(
       db.cachedBills,

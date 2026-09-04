@@ -18,6 +18,20 @@ import 'package:satset/ui/core/design/format.dart';
 
 /// Canonical void reasons (ADR-0006). Same six the void sheet offers, so a
 /// report names a void with the words the waiter picked.
+/// A [[Pengeluaran kunjungan]] refusal, as a sentence (ADR-0130).
+///
+/// The server sends a code and never a sentence (ADR-0085), and this falls
+/// through to the raw code like every other resolver here — an older server or
+/// a newer one never renders blank.
+String visitExpenseErrorText(AppL10n l, String code) => switch (code) {
+  'exceeds_bill' => l.tableExpErrExceedsBill,
+  'bill_closed' => l.tableExpErrBillClosed,
+  'photo_required' => l.tableExpErrPhotoRequired,
+  'invalid_amount' => l.tableExpErrInvalidAmount,
+  'table_expense_disabled' => l.tableExpErrDisabled,
+  _ => code,
+};
+
 String voidReasonLabel(AppL10n l, String code) => switch (code) {
   'wrongOrder' => l.vrsWrongOrder,
   'customerChange' => l.vrsCustomerChange,
@@ -68,11 +82,13 @@ String staffName(AppL10n l, String id, String name) =>
 String kpiValue(AppL10n l, KpiTileDto k) =>
     k.rupiah == null ? k.value : formatCompactIDR(l, k.rupiah!);
 
-/// The eight report headline tiles.
+/// The report headline tiles.
 String kpiLabel(AppL10n l, KpiTileDto k) => switch (k.key) {
   'net' => l.rptKpiNet,
   'gross' => l.rptKpiGross,
   'taxService' => l.rptKpiTaxService,
+  'expense' => l.rptKpiExpense,
+  'netAfterExpense' => l.rptKpiNetAfterExpense,
   'void' => l.rptKpiVoid,
   'turnTime' => l.rptKpiTurnTime,
   'prep' => l.rptKpiPrep,
@@ -89,6 +105,8 @@ String kpiSub(AppL10n l, KpiTileDto k) {
     'net' => l.rptSubNet(arg(0), arg(1)),
     'gross' => l.rptSubGross(arg(0)),
     'taxService' => l.rptSubTaxService,
+    'expense' => l.rptSubExpense,
+    'netAfterExpense' => l.rptSubNetAfterExpense,
     'void' => l.rptSubVoid(arg(0)),
     'turnTime' => l.rptSubTurnTime,
     'prep' => l.rptSubPrep,

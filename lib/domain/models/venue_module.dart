@@ -83,11 +83,35 @@ const modeMemberSplit = 'memberSplit';
 /// kedai still has meja.
 const modeServiceTerm = 'serviceTerm';
 
+/// **[[Pengeluaran kunjungan]]** (ADR-0130) — a [[Waiter|pelayan]] may spend
+/// small cash on a party while serving it (tissues, a complimentary something,
+/// an errand) out of the money that [[Visit|kunjungan]] is producing.
+///
+/// A mode key, read through [venueHasMode] so it fails **closed**, and
+/// **independent of every other key**: a salon, a kedai and a restaurant each
+/// either let their floor spend against a visit or they do not. The fail-open
+/// that protects a paid [[Modul]] would be badly wrong here — it would hand a
+/// revenue-reducing write to the floor of every venue that has not mirrored
+/// yet, which is the one direction a fraud control must never fail.
+///
+/// Like [modeMemberSplit] it **branches no writer**: it decides whether the
+/// route exists and whether the affordance is drawn, and nothing else. The
+/// bill total, its receipts and its outstanding never learn an expense
+/// happened — `recomputeBill` is untouched by this feature, which is what
+/// keeps an expense (a cost the venue absorbed) distinguishable from a
+/// [[Diskon (discount)]] (a give-back to the guest).
+///
+/// Meaningless without the owner's own `tableExpenseEnabled`, so it is ANDed
+/// with it **once**, in `VenueSettingsModules.tableExpenseOn` client-side and
+/// in the feature's own gate server-side — never at a route.
+const modeTableExpense = 'tableExpense';
+
 const venueModeKeys = <String>[
   modeCounterService,
   modeBypassKds,
   modeMemberSplit,
   modeServiceTerm,
+  modeTableExpense,
 ];
 
 /// Everything the console may write to `addOns` and the mirror may carry down.
