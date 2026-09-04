@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/core/time/sat_clock.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -267,6 +268,65 @@ class PrefsService {
     await _p.remove(_kMemberMirrorFp);
   }
 
+  /// The **[[Salinan lantai]]** — this device's copy of the floor (ADR-0133).
+  ///
+  /// Four keys, not one blob: each collection has its own refetch, its own WS
+  /// deltas and its own decode failure, and a single blob would make one bad
+  /// payload throw the other three away.
+  ///
+  /// Stored as the wire JSON each collection already speaks, for the reason
+  /// [_kVenueSettings] is: the parse belongs to whoever owns the shape, and
+  /// prefs is only the shelf. Prefs and not the client database (ADR-0124)
+  /// because nothing here is ever *queried* — the floor is read whole, on the
+  /// first frame, and a lazily-opened sqlite file cannot answer that
+  /// synchronously.
+  ///
+  // ponytail: a ~500-item, ~200-table venue would put low MB through a
+  // synchronous prefs read at boot. Move these four to the client database
+  // (the way ADR-0124 moved the journal) if a venue ever reaches that.
+  static const _kFloorTables = 'satset.floor.tables';
+  static const _kFloorZones = 'satset.floor.zones';
+  static const _kFloorTickets = 'satset.floor.tickets';
+  static const _kFloorMenu = 'satset.floor.menu';
+
+  /// When the [[Salinan lantai]] was last written, as ms since epoch.
+  ///
+  /// **One stamp for all four keys**, because the banner it feeds is one
+  /// venue-level statement and not four (ADR-0133 §Q7). A per-collection
+  /// stamp would let the UI say two different things about one floor.
+  static const _kFloorAt = 'satset.floor.at';
+
+  static const _floorKeys = <String>[
+    _kFloorTables,
+    _kFloorZones,
+    _kFloorTickets,
+    _kFloorMenu,
+    _kFloorAt,
+  ];
+
+  String? floorJson(String slot) => _p.getString('satset.floor.$slot');
+
+  /// Write one slot of the copy and re-stamp the whole of it.
+  ///
+  /// Shares [_stampVenueCache] with the settings cache: both die on the same
+  /// event — a paired **certificate** that names a different venue — so they
+  /// carry one label between them (ADR-0128, ADR-0133).
+  Future<void> setFloorJson(
+    String slot,
+    String v, {
+    String? fingerprint,
+  }) async {
+    await _p.setString('satset.floor.$slot', v);
+    await _p.setInt(_kFloorAt, SatClock.now().millisecondsSinceEpoch);
+    await _stampVenueCache(fingerprint);
+  }
+
+  /// When this device last wrote its copy of the floor, or null if never.
+  DateTime? floorSyncedAt() {
+    final ms = _p.getInt(_kFloorAt);
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
   /// Which server the cached blobs came from, or null on a device that cached
   /// before this label existed — read as "unknown", never as "foreign", so an
   /// upgrade does not throw away a cache it cannot vouch for.
@@ -288,6 +348,9 @@ class PrefsService {
     await _p.remove(_kVenueShape);
     await _p.remove(_kDiscountPresets);
     await _p.remove(_kExpenseCategories);
+    for (final k in _floorKeys) {
+      await _p.remove(k);
+    }
     await _p.remove(_kVenueCacheFp);
   }
 

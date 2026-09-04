@@ -6266,6 +6266,11 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String floorStaleBanner(String waktu) {
+    return 'Tanpa server — data terakhir $waktu';
+  }
+
+  @override
   String get rdyBannerText =>
       'Item siap diambil di pass — tandai disajikan di bawah';
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/time/sat_clock.dart';
@@ -11,6 +12,7 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/floor_cache.dart';
 import 'package:satset/data/services/error_bus_service.dart';
 import 'package:satset/data/services/send_queue_service.dart';
 import 'package:satset/data/services/ws_client.dart';
@@ -27,8 +29,92 @@ final ticketsStatusProvider = StateProvider<AsyncValue<void>>(
 class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   TicketsRepository({required this.ref})
     : super(const <String, List<Ticket>>{}) {
+    // Before the first frame, for ADR-0128's reason. See TablesRepository.
+    _restore();
     Future.microtask(_bootstrap);
   }
+
+  /// Paint the live-lines half of the [[Salinan lantai]] (ADR-0133).
+  ///
+  /// Only the lines the host has already acknowledged. A line captured while
+  /// terputus lives in the [[Antrean kirim]] and is rendered from there
+  /// (`pending_orders_block`), so restoring it here too would show the guest's
+  /// order twice.
+  void _restore() {
+    final cache = ref.read(floorCacheProvider);
+    final raw = cache.read(FloorSlot.tickets);
+    if (raw == null) return;
+    try {
+      final map = (jsonDecode(raw) as Map).cast<String, dynamic>();
+      if (map.isEmpty) return;
+      super.state = {
+        for (final e in map.entries)
+          e.key: [
+            for (final t in e.value as List)
+              _toDomain(TicketDto.fromJson((t as Map).cast<String, dynamic>())),
+          ],
+      };
+      cache.markRestored();
+      SatLog.repo('tickets.restored visits=${super.state.length}');
+    } catch (e) {
+      SatLog.repo('tickets.restore fail $e');
+    }
+  }
+
+  /// Every mutation, one hook — including `sendOrder`'s optimistic rows, which
+  /// have no refetch behind them when the socket is down.
+  @override
+  set state(Map<String, List<Ticket>> value) {
+    super.state = value;
+    ref
+        .read(floorCacheProvider)
+        .remember(
+          FloorSlot.tickets,
+          () => jsonEncode({
+            for (final e in super.state.entries)
+              e.key: [for (final t in e.value) _toDto(t).toJson()],
+          }),
+        );
+  }
+
+  /// Domain back to the wire shape, so the copy speaks what [_toDomain] reads
+  /// (ADR-0133 §Q10).
+  ///
+  /// `capturedAt` and `replayedByUserId` are not round-tripped: [_toDomain]
+  /// drops them, so the domain object never held them to give back. They
+  /// matter to the drain, which reads the queue and not this copy.
+  TicketDto _toDto(Ticket t) => TicketDto(
+    id: t.id,
+    tableId: t.tableId,
+    visitId: t.visitId,
+    memberId: t.memberId,
+    itemId: t.itemId,
+    name: t.name,
+    variantName: t.variantName,
+    course: t.course.name,
+    qty: t.qty,
+    modifiers: [
+      for (final m in t.modifiers)
+        TicketModifierDto(
+          groupId: m.groupId,
+          optionId: m.optionId,
+          label: m.label,
+          priceDelta: m.priceDelta,
+        ),
+    ],
+    note: t.note,
+    price: t.price,
+    status: t.status.name,
+    sentAt: t.sentAtTime,
+    firedAt: t.firedAtTime,
+    readyAt: t.readyAtTime,
+    servedAt: t.servedAtTime,
+    voidReason: t.voidReason,
+    voidReasonCode: t.voidReasonCode,
+    voidApprovedBy: t.voidApprovedBy,
+    createdByUserId: t.createdBy,
+    voidedByUserId: t.voidedBy,
+  );
 
   final Ref ref;
   StreamSubscription? _wsSub;
@@ -52,7 +138,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       );
       return;
     }
-    state = const <String, List<Ticket>>{};
+    // Not cleared — the constructor has already painted the copy (ADR-0133).
     ref.read(ticketsStatusProvider.notifier).state = const AsyncValue.loading();
     try {
       await _refetch();
@@ -113,6 +199,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       grouped.putIfAbsent(_groupKey(dto), () => []).add(_toDomain(dto));
     }
     state = grouped;
+    ref.read(floorCacheProvider).markLive();
     SatLog.repo(
       'tickets.loaded tables=${grouped.length} tickets=${grouped.values.fold<int>(0, (s, l) => s + l.length)}',
     );

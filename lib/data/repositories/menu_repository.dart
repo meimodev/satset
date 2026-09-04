@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/menu_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/floor_cache.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/menu_category.dart';
 import 'package:satset/domain/models/menu_item.dart';
@@ -51,7 +53,39 @@ final menuStatusProvider = StateProvider<AsyncValue<void>>(
 /// the result via [state]. No in-memory fallback.
 class MenuRepository extends StateNotifier<MenuSnapshot> {
   MenuRepository({required this.ref}) : super(MenuSnapshot.empty) {
+    // Before the first frame, for ADR-0128's reason. See TablesRepository.
+    _restore();
     Future.microtask(_bootstrap);
+  }
+
+  /// Paint the menu half of the [[Salinan lantai]] (ADR-0133).
+  ///
+  /// Unlike the floor, this needs no domain-to-wire synthesis: every menu
+  /// mutation ends in a full [_refetch], so the last payload the host sent is
+  /// always the whole truth. [_remember] stores it verbatim.
+  ///
+  /// The sold-out flags freeze with it. An item the kitchen killed while this
+  /// device was dark still reads available, and one since restocked still
+  /// reads dead — shipped as-is, under the one staleness banner, because the
+  /// flag was true when it was written and usually still is (ADR-0133 §Q8).
+  ///
+  /// Photos are not part of the copy: they are fetched per `(id, rev)` and
+  /// auto-dispose, so offline every tile falls back to initials — never a
+  /// broken image (ADR-0014).
+  void _restore() {
+    final cache = ref.read(floorCacheProvider);
+    final raw = cache.read(FloorSlot.menu);
+    if (raw == null) return;
+    try {
+      final dto = MenuSnapshotDto.fromJson(
+        (jsonDecode(raw) as Map).cast<String, dynamic>(),
+      );
+      super.state = _toDomain(dto);
+      cache.markRestored();
+      SatLog.repo('menu.restored items=${super.state.items.length}');
+    } catch (e) {
+      SatLog.repo('menu.restore fail $e');
+    }
   }
 
   final Ref ref;
@@ -65,7 +99,7 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
       ref.read(menuStatusProvider.notifier).state = const AsyncValue.data(null);
       return;
     }
-    state = MenuSnapshot.empty;
+    // Not cleared — the constructor has already painted the copy (ADR-0133).
     ref.read(menuStatusProvider.notifier).state = const AsyncValue.loading();
     try {
       await _refetch();
@@ -124,6 +158,11 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
     final raw = await api.getJson('/menu') as Map<String, dynamic>;
     final dto = MenuSnapshotDto.fromJson(raw);
     state = _toDomain(dto);
+    // Store the payload verbatim, not a re-encode of the domain snapshot:
+    // one wire shape, one parse path (ADR-0133 §Q10).
+    ref
+        .read(floorCacheProvider)
+        .remember(FloorSlot.menu, () => jsonEncode(raw));
     SatLog.repo(
       'menu.loaded cats=${state.categories.length} items=${state.items.length}',
     );

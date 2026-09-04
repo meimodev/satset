@@ -2087,6 +2087,11 @@
   "exitAgainToQuit": "Press back again to exit",
   "olcVoided": "Voided · {reason}",
   "olcVoidedBy": "Voided · {reason} · approved by {approver}",
+  "floorStaleBanner": "No server — data as of {waktu}",
+  "@floorStaleBanner": {
+    "description": "Banner on the tables and orders screens when the floor is painted from this device's Salinan lantai and the host is unreachable (ADR-0133).",
+    "placeholders": { "waktu": { "type": "String" } }
+  },
   "rdyBannerText": "Items are ready at the pass — mark them served below",
   "ppfTitle": "Payment proof",
   "ppfUnavailable": "This proof photo could not be loaded",

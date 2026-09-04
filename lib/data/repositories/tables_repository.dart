@@ -10,6 +10,7 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/error_bus_service.dart';
+import 'package:satset/data/services/floor_cache.dart';
 import 'package:satset/data/services/send_queue_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/venue_table.dart';
@@ -38,10 +39,84 @@ final tablesStatusProvider = StateProvider<AsyncValue<void>>(
 
 class TablesRepository extends StateNotifier<List<VenueTable>> {
   TablesRepository({required this.ref}) : super(const <VenueTable>[]) {
+    // Synchronously, not in the microtask below: a widget's first build reads
+    // this state before any microtask runs, and the first frame is exactly the
+    // one that used to show a venue with no tables at all (ADR-0133, following
+    // ADR-0128's rule).
+    _restore();
     // Defer to a microtask: Riverpod forbids mutating other providers
     // (tablesStatusProvider) during this notifier's own initialization.
     Future.microtask(_bootstrap);
   }
+
+  /// Paint the [[Salinan lantai]], if this device has one.
+  ///
+  /// Writes through `super.state` rather than `state`: the setter below would
+  /// re-stamp the copy with *now*, and a floor restored from yesterday would
+  /// then tell the banner it synced this second.
+  void _restore() {
+    final cache = ref.read(floorCacheProvider);
+    final raw = cache.read(FloorSlot.tables);
+    if (raw == null) return;
+    try {
+      final list = jsonDecode(raw) as List;
+      if (list.isEmpty) return;
+      super.state = [
+        for (final e in list)
+          _toDomain(TableDto.fromJson((e as Map).cast<String, dynamic>())),
+      ];
+      cache.markRestored();
+      SatLog.repo('tables.restored n=${super.state.length}');
+    } catch (e) {
+      SatLog.repo('tables.restore fail $e');
+    }
+  }
+
+  /// Every mutation, one hook. Catches the optimistic seat as well as the WS
+  /// delta — which is the whole point: an offline seat has no refetch behind
+  /// it, so a copy written only on refetch would cold-boot to a free table
+  /// with a queued order hanging under it (ADR-0133 §Q5).
+  @override
+  set state(List<VenueTable> value) {
+    super.state = value;
+    ref
+        .read(floorCacheProvider)
+        .remember(
+          FloorSlot.tables,
+          () => jsonEncode([for (final t in super.state) _toDto(t).toJson()]),
+        );
+  }
+
+  /// Domain back to the wire shape, so the copy speaks what `_toDomain` reads
+  /// and there is one parse path in and out (ADR-0133 §Q10).
+  ///
+  /// `elapsed` is derived at read time and `billClosedAt` survives only as a
+  /// boolean — which is all `_toDomain` ever asks of it.
+  TableDto _toDto(VenueTable t) => TableDto(
+    id: t.id,
+    zoneId: t.zoneId,
+    label: t.label,
+    pax: t.pax,
+    capacity: t.capacity,
+    active: t.active,
+    status: t.status.name,
+    openAmount: t.openAmount,
+    readyCount: t.readyCount,
+    lastActorId: t.lastActorId,
+    lockedBy: t.lockedBy,
+    lockedByName: t.lockedByName,
+    lockedAt: t.lockedAt,
+    lockExpiresAt: t.lockExpiresAt,
+    openedAt: t.openedAt,
+    guestName: t.guestName,
+    guestNotes: t.guestNotes,
+    reservationId: t.reservationId,
+    currentVisitId: t.currentVisitId,
+    billClosedAt: t.billClosed
+        ? (t.openedAt ?? DateTime.fromMillisecondsSinceEpoch(0))
+        : null,
+    moneyState: t.moneyState,
+  );
 
   final Ref ref;
   StreamSubscription? _wsSub;
@@ -57,8 +132,10 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       );
       return;
     }
-    // Clear stale dummy rows when bootstrapping a real LAN session.
-    state = const <VenueTable>[];
+    // Deliberately NOT cleared here. This used to drop stale dummy rows, but
+    // it now runs *after* the constructor painted the [[Salinan lantai]], and
+    // wiping would re-acquire the empty floor ADR-0133 removed. `_refetch`
+    // replaces the list wholesale on success, which is what the wipe was for.
     ref.read(tablesStatusProvider.notifier).state = const AsyncValue.loading();
     try {
       await _refetch();
@@ -124,6 +201,8 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
         .map((e) => TableDto.fromJson((e as Map).cast<String, dynamic>()))
         .toList();
     state = [for (final d in dtos) _toDomain(d)];
+    // The host answered: whatever the copy painted has been replaced.
+    ref.read(floorCacheProvider).markLive();
     SatLog.repo('tables.loaded n=${state.length}');
   }
 

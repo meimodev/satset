@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/ui/core/widgets/floor_stale_banner.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_tabs.dart';
@@ -316,6 +317,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               ],
             ),
           ),
+          const FloorStaleBanner(
+            margin: EdgeInsets.only(left: Sp.s8, right: Sp.s8, bottom: Sp.s3),
+          ),
           Expanded(child: buildBoard(grid: true)),
         ],
       );
@@ -350,6 +354,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             ],
           ),
         ),
+        const FloorStaleBanner(),
         _Segments(
           seg: _seg,
           ready: ready.length,
