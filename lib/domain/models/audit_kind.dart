@@ -89,6 +89,16 @@ enum AuditKind {
   /// `{amount}` — the magnitude of the movement being undone.
   cashReversed,
 
+  /// **[[Pengeluaran kunjungan]]** (ADR-0130) — a waiter spent cash on the
+  /// party they were serving. Params: `{amount}` (pre-formatted rupiah),
+  /// `{category}` (the venue's own category **name**, not a key — this
+  /// vocabulary is venue-authored and ARB-exempt, unlike [cashSpent]'s closed
+  /// set), `{table}` (the label frozen at write time).
+  ///
+  /// A separate kind from [cashSpent] on purpose: different ledger, different
+  /// money, and the name is persisted forever.
+  tableExpenseRecorded,
+
   // ---------- inventory ----------
   /// A stok opname was closed (ADR-0096). `{lines}` (how many bahan were
   /// counted), `{variance}` (signed, pre-formatted rupiah). The session's scope

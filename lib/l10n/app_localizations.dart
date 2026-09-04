@@ -15540,6 +15540,294 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Pelanggan per tiket'**
   String get cshMemberPerTicket;
+
+  /// No description provided for @tableExpTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengeluaran meja'**
+  String get tableExpTitle;
+
+  /// No description provided for @tableExpNew.
+  ///
+  /// In id, this message translates to:
+  /// **'Catat pengeluaran'**
+  String get tableExpNew;
+
+  /// No description provided for @auditTableExpense.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengeluaran meja {table} {amount} — {category}'**
+  String auditTableExpense(String amount, String category, String table);
+
+  /// No description provided for @capRecordTableExpense.
+  ///
+  /// In id, this message translates to:
+  /// **'Catat pengeluaran meja'**
+  String get capRecordTableExpense;
+
+  /// No description provided for @capRecordTableExpenseDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Membelanjakan uang tunai untuk tamu yang sedang dilayani, dibatasi nilai tagihan meja itu.'**
+  String get capRecordTableExpenseDesc;
+
+  /// No description provided for @tableExpRemaining.
+  ///
+  /// In id, this message translates to:
+  /// **'Sisa {amount}'**
+  String tableExpRemaining(String amount);
+
+  /// No description provided for @tableExpSpent.
+  ///
+  /// In id, this message translates to:
+  /// **'Terpakai {amount}'**
+  String tableExpSpent(String amount);
+
+  /// No description provided for @tableExpCap.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagihan meja {amount}'**
+  String tableExpCap(String amount);
+
+  /// No description provided for @tableExpAmount.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah'**
+  String get tableExpAmount;
+
+  /// No description provided for @tableExpCategory.
+  ///
+  /// In id, this message translates to:
+  /// **'Kategori'**
+  String get tableExpCategory;
+
+  /// No description provided for @tableExpNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan'**
+  String get tableExpNote;
+
+  /// No description provided for @tableExpPhoto.
+  ///
+  /// In id, this message translates to:
+  /// **'Ambil foto bukti'**
+  String get tableExpPhoto;
+
+  /// No description provided for @tableExpPhotoAttached.
+  ///
+  /// In id, this message translates to:
+  /// **'Foto terlampir — ketuk untuk ganti'**
+  String get tableExpPhotoAttached;
+
+  /// No description provided for @tableExpSubmit.
+  ///
+  /// In id, this message translates to:
+  /// **'Catat {amount}'**
+  String tableExpSubmit(String amount);
+
+  /// No description provided for @tableExpBlkAmount.
+  ///
+  /// In id, this message translates to:
+  /// **'Masukkan jumlah'**
+  String get tableExpBlkAmount;
+
+  /// No description provided for @tableExpBlkCategory.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih kategori'**
+  String get tableExpBlkCategory;
+
+  /// No description provided for @tableExpBlkPhoto.
+  ///
+  /// In id, this message translates to:
+  /// **'Foto bukti wajib'**
+  String get tableExpBlkPhoto;
+
+  /// No description provided for @tableExpBlkOverCap.
+  ///
+  /// In id, this message translates to:
+  /// **'Lebih dari sisa {amount}'**
+  String tableExpBlkOverCap(String amount);
+
+  /// No description provided for @tableExpNone.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada pengeluaran'**
+  String get tableExpNone;
+
+  /// No description provided for @tableExpNoCategories.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada kategori pengeluaran.'**
+  String get tableExpNoCategories;
+
+  /// No description provided for @tableExpOffline.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagihan meja belum tersimpan di perangkat ini, jadi batas belum bisa dihitung.'**
+  String get tableExpOffline;
+
+  /// No description provided for @tableExpPhotoFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal ambil foto: {err}'**
+  String tableExpPhotoFailed(String err);
+
+  /// No description provided for @tableExpErrExceedsBill.
+  ///
+  /// In id, this message translates to:
+  /// **'Melebihi tagihan meja.'**
+  String get tableExpErrExceedsBill;
+
+  /// No description provided for @tableExpErrBillClosed.
+  ///
+  /// In id, this message translates to:
+  /// **'Tagihan sudah ditutup. Buka kembali dulu.'**
+  String get tableExpErrBillClosed;
+
+  /// No description provided for @tableExpErrPhotoRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'Foto bukti wajib.'**
+  String get tableExpErrPhotoRequired;
+
+  /// No description provided for @tableExpErrInvalidAmount.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah tidak sah.'**
+  String get tableExpErrInvalidAmount;
+
+  /// No description provided for @tableExpErrDisabled.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengeluaran meja tidak aktif di venue ini.'**
+  String get tableExpErrDisabled;
+
+  /// No description provided for @tableExpProvisional.
+  ///
+  /// In id, this message translates to:
+  /// **'Batas sementara — perangkat ini belum tersambung ke server.'**
+  String get tableExpProvisional;
+
+  /// No description provided for @rptKpiExpense.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengeluaran meja'**
+  String get rptKpiExpense;
+
+  /// No description provided for @rptSubExpense.
+  ///
+  /// In id, this message translates to:
+  /// **'Uang tunai yang keluar untuk tamu'**
+  String get rptSubExpense;
+
+  /// No description provided for @rptKpiNetAfterExpense.
+  ///
+  /// In id, this message translates to:
+  /// **'Netto setelah pengeluaran'**
+  String get rptKpiNetAfterExpense;
+
+  /// No description provided for @rptSubNetAfterExpense.
+  ///
+  /// In id, this message translates to:
+  /// **'Netto dikurangi pengeluaran meja'**
+  String get rptSubNetAfterExpense;
+
+  /// No description provided for @rptSecPengeluaran.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengeluaran meja'**
+  String get rptSecPengeluaran;
+
+  /// No description provided for @rptPengeluaranSub.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{{count} meja}}'**
+  String rptPengeluaranSub(int count);
+
+  /// No description provided for @rptPengeluaranByStaff.
+  ///
+  /// In id, this message translates to:
+  /// **'Per staf'**
+  String get rptPengeluaranByStaff;
+
+  /// No description provided for @rptPengeluaranByVisit.
+  ///
+  /// In id, this message translates to:
+  /// **'Per meja'**
+  String get rptPengeluaranByVisit;
+
+  /// No description provided for @expCatCrumb.
+  ///
+  /// In id, this message translates to:
+  /// **'Kategori pengeluaran'**
+  String get expCatCrumb;
+
+  /// No description provided for @expCatNew.
+  ///
+  /// In id, this message translates to:
+  /// **'Kategori baru'**
+  String get expCatNew;
+
+  /// No description provided for @expCatEdit.
+  ///
+  /// In id, this message translates to:
+  /// **'Ubah kategori'**
+  String get expCatEdit;
+
+  /// No description provided for @expCatName.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama kategori'**
+  String get expCatName;
+
+  /// No description provided for @expCatActive.
+  ///
+  /// In id, this message translates to:
+  /// **'Dipakai'**
+  String get expCatActive;
+
+  /// No description provided for @expCatParked.
+  ///
+  /// In id, this message translates to:
+  /// **'Diparkir'**
+  String get expCatParked;
+
+  /// No description provided for @expCatNoDelete.
+  ///
+  /// In id, this message translates to:
+  /// **'Kategori tidak bisa dihapus — matikan saja. Pengeluaran lama tetap memakai namanya.'**
+  String get expCatNoDelete;
+
+  /// No description provided for @expCatEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada kategori'**
+  String get expCatEmpty;
+
+  /// No description provided for @expCatEmptyBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Buat kategori supaya pelayan bisa memilih saat mencatat pengeluaran.'**
+  String get expCatEmptyBody;
+
+  /// No description provided for @vstTableExpense.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengeluaran meja'**
+  String get vstTableExpense;
+
+  /// No description provided for @vstTableExpenseHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelayan boleh membelanjakan uang tunai untuk tamu yang dilayani, dibatasi nilai tagihan meja itu, dan wajib foto bukti. Tagihan tamu tidak berubah.'**
+  String get vstTableExpenseHint;
+
+  /// No description provided for @expColExpense.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengeluaran meja'**
+  String get expColExpense;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

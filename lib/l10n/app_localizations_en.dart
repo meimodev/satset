@@ -9882,6 +9882,178 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get cshMemberPerTicket => 'Per-ticket member';
+
+  @override
+  String get tableExpTitle => 'Table expense';
+
+  @override
+  String get tableExpNew => 'Record expense';
+
+  @override
+  String auditTableExpense(String amount, String category, String table) {
+    return 'Table $table expense $amount — $category';
+  }
+
+  @override
+  String get capRecordTableExpense => 'Record table expense';
+
+  @override
+  String get capRecordTableExpenseDesc =>
+      'Spend cash on the party being served, capped at that table’s bill.';
+
+  @override
+  String tableExpRemaining(String amount) {
+    return '$amount left';
+  }
+
+  @override
+  String tableExpSpent(String amount) {
+    return '$amount spent';
+  }
+
+  @override
+  String tableExpCap(String amount) {
+    return 'Table bill $amount';
+  }
+
+  @override
+  String get tableExpAmount => 'Amount';
+
+  @override
+  String get tableExpCategory => 'Category';
+
+  @override
+  String get tableExpNote => 'Note';
+
+  @override
+  String get tableExpPhoto => 'Take proof photo';
+
+  @override
+  String get tableExpPhotoAttached => 'Photo attached — tap to replace';
+
+  @override
+  String tableExpSubmit(String amount) {
+    return 'Record $amount';
+  }
+
+  @override
+  String get tableExpBlkAmount => 'Enter an amount';
+
+  @override
+  String get tableExpBlkCategory => 'Pick a category';
+
+  @override
+  String get tableExpBlkPhoto => 'Proof photo required';
+
+  @override
+  String tableExpBlkOverCap(String amount) {
+    return 'More than the $amount left';
+  }
+
+  @override
+  String get tableExpNone => 'No expenses yet';
+
+  @override
+  String get tableExpNoCategories => 'No expense categories yet.';
+
+  @override
+  String get tableExpOffline =>
+      'This device has no copy of the table bill, so the limit cannot be worked out.';
+
+  @override
+  String tableExpPhotoFailed(String err) {
+    return 'Could not take the photo: $err';
+  }
+
+  @override
+  String get tableExpErrExceedsBill => 'More than the table bill.';
+
+  @override
+  String get tableExpErrBillClosed => 'The bill is closed. Reopen it first.';
+
+  @override
+  String get tableExpErrPhotoRequired => 'A proof photo is required.';
+
+  @override
+  String get tableExpErrInvalidAmount => 'That amount is not valid.';
+
+  @override
+  String get tableExpErrDisabled => 'Table expenses are off for this venue.';
+
+  @override
+  String get tableExpProvisional =>
+      'Provisional limit — this device cannot reach the server.';
+
+  @override
+  String get rptKpiExpense => 'Table expenses';
+
+  @override
+  String get rptSubExpense => 'Cash spent on guests';
+
+  @override
+  String get rptKpiNetAfterExpense => 'Net after expenses';
+
+  @override
+  String get rptSubNetAfterExpense => 'Net less table expenses';
+
+  @override
+  String get rptSecPengeluaran => 'Table expenses';
+
+  @override
+  String rptPengeluaranSub(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tables',
+      one: '1 table',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rptPengeluaranByStaff => 'By staff';
+
+  @override
+  String get rptPengeluaranByVisit => 'By table';
+
+  @override
+  String get expCatCrumb => 'Expense categories';
+
+  @override
+  String get expCatNew => 'New category';
+
+  @override
+  String get expCatEdit => 'Edit category';
+
+  @override
+  String get expCatName => 'Category name';
+
+  @override
+  String get expCatActive => 'In use';
+
+  @override
+  String get expCatParked => 'Parked';
+
+  @override
+  String get expCatNoDelete =>
+      'A category cannot be deleted — park it instead. Past expenses keep its name.';
+
+  @override
+  String get expCatEmpty => 'No categories yet';
+
+  @override
+  String get expCatEmptyBody =>
+      'Add one so a waiter has something to pick when recording an expense.';
+
+  @override
+  String get vstTableExpense => 'Table expenses';
+
+  @override
+  String get vstTableExpenseHint =>
+      'A waiter may spend cash on the party they are serving, capped at that table’s bill, with a proof photo required. The guest’s bill does not change.';
+
+  @override
+  String get expColExpense => 'Table expenses';
 }
 
 /// The translations for English, as used in El Salvador (`en_SV`).
@@ -10496,4 +10668,67 @@ class AppL10nEnSv extends AppL10nEn {
 
   @override
   String get mrpColTable => 'Service';
+
+  @override
+  String get tableExpTitle => 'Service expense';
+
+  @override
+  String auditTableExpense(String amount, String category, String table) {
+    return 'Service $table expense $amount — $category';
+  }
+
+  @override
+  String get capRecordTableExpense => 'Record service expense';
+
+  @override
+  String get capRecordTableExpenseDesc =>
+      'Spend cash on the party being served, capped at that service’s bill.';
+
+  @override
+  String tableExpCap(String amount) {
+    return 'Service bill $amount';
+  }
+
+  @override
+  String get tableExpOffline =>
+      'This device has no copy of the service bill, so the limit cannot be worked out.';
+
+  @override
+  String get tableExpErrExceedsBill => 'More than the service bill.';
+
+  @override
+  String get tableExpErrDisabled => 'Service expenses are off for this venue.';
+
+  @override
+  String get rptKpiExpense => 'Service expenses';
+
+  @override
+  String get rptSubNetAfterExpense => 'Net less service expenses';
+
+  @override
+  String get rptSecPengeluaran => 'Service expenses';
+
+  @override
+  String rptPengeluaranSub(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count services',
+      one: '1 service',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rptPengeluaranByVisit => 'By service';
+
+  @override
+  String get vstTableExpense => 'Service expenses';
+
+  @override
+  String get vstTableExpenseHint =>
+      'A waiter may spend cash on the party they are serving, capped at that service’s bill, with a proof photo required. The guest’s bill does not change.';
+
+  @override
+  String get expColExpense => 'Service expenses';
 }

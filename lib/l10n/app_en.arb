@@ -3393,5 +3393,115 @@
   "memImportErrBirthday": "birthday must be YYYY-MM-DD",
   "memImportErrCreditLimit": "credit limit must be a whole non-negative rupiah amount",
   "memImportErrDuplicatePhone": "duplicate phone in file",
-  "cshMemberPerTicket": "Per-ticket member"
+  "cshMemberPerTicket": "Per-ticket member",
+  "tableExpTitle": "Table expense",
+  "tableExpNew": "Record expense",
+  "auditTableExpense": "Table {table} expense {amount} — {category}",
+  "@auditTableExpense": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "category": {
+        "type": "String"
+      },
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "capRecordTableExpense": "Record table expense",
+  "capRecordTableExpenseDesc": "Spend cash on the party being served, capped at that table’s bill.",
+  "tableExpRemaining": "{amount} left",
+  "@tableExpRemaining": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpSpent": "{amount} spent",
+  "@tableExpSpent": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpCap": "Table bill {amount}",
+  "@tableExpCap": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpAmount": "Amount",
+  "tableExpCategory": "Category",
+  "tableExpNote": "Note",
+  "tableExpPhoto": "Take proof photo",
+  "tableExpPhotoAttached": "Photo attached — tap to replace",
+  "tableExpSubmit": "Record {amount}",
+  "@tableExpSubmit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpBlkAmount": "Enter an amount",
+  "tableExpBlkCategory": "Pick a category",
+  "tableExpBlkPhoto": "Proof photo required",
+  "tableExpBlkOverCap": "More than the {amount} left",
+  "@tableExpBlkOverCap": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpNone": "No expenses yet",
+  "tableExpNoCategories": "No expense categories yet.",
+  "tableExpOffline": "This device has no copy of the table bill, so the limit cannot be worked out.",
+  "tableExpPhotoFailed": "Could not take the photo: {err}",
+  "@tableExpPhotoFailed": {
+    "placeholders": {
+      "err": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpErrExceedsBill": "More than the table bill.",
+  "tableExpErrBillClosed": "The bill is closed. Reopen it first.",
+  "tableExpErrPhotoRequired": "A proof photo is required.",
+  "tableExpErrInvalidAmount": "That amount is not valid.",
+  "tableExpErrDisabled": "Table expenses are off for this venue.",
+  "tableExpProvisional": "Provisional limit — this device cannot reach the server.",
+  "rptKpiExpense": "Table expenses",
+  "rptSubExpense": "Cash spent on guests",
+  "rptKpiNetAfterExpense": "Net after expenses",
+  "rptSubNetAfterExpense": "Net less table expenses",
+  "rptSecPengeluaran": "Table expenses",
+  "rptPengeluaranSub": "{count, plural, one{1 table} other{{count} tables}}",
+  "rptPengeluaranByStaff": "By staff",
+  "rptPengeluaranByVisit": "By table",
+  "@rptPengeluaranSub": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "expCatCrumb": "Expense categories",
+  "expCatNew": "New category",
+  "expCatEdit": "Edit category",
+  "expCatName": "Category name",
+  "expCatActive": "In use",
+  "expCatParked": "Parked",
+  "expCatNoDelete": "A category cannot be deleted — park it instead. Past expenses keep its name.",
+  "expCatEmpty": "No categories yet",
+  "expCatEmptyBody": "Add one so a waiter has something to pick when recording an expense.",
+  "vstTableExpense": "Table expenses",
+  "vstTableExpenseHint": "A waiter may spend cash on the party they are serving, capped at that table’s bill, with a proof photo required. The guest’s bill does not change.",
+  "expColExpense": "Table expenses"
 }

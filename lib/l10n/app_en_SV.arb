@@ -119,5 +119,21 @@
   "zoneAdminSummary": "{zones, plural, =1{1 zone} other{{zones} zones}} · {tables, plural, =1{1 service} other{{tables} services}} · {seats, plural, =1{1 seat} other{{seats} seats}}",
   "zoneAdminTableActive": "Service active",
   "zoneAdminTableName": "Service name",
-  "zoneAdminTablesHere": "{count, plural, =1{1 service is in this zone.} other{{count} services are in this zone.}}"
+  "zoneAdminTablesHere": "{count, plural, =1{1 service is in this zone.} other{{count} services are in this zone.}}",
+  "tableExpTitle": "Service expense",
+  "auditTableExpense": "Service {table} expense {amount} — {category}",
+  "capRecordTableExpense": "Record service expense",
+  "capRecordTableExpenseDesc": "Spend cash on the party being served, capped at that service’s bill.",
+  "tableExpCap": "Service bill {amount}",
+  "tableExpOffline": "This device has no copy of the service bill, so the limit cannot be worked out.",
+  "tableExpErrExceedsBill": "More than the service bill.",
+  "tableExpErrDisabled": "Service expenses are off for this venue.",
+  "rptKpiExpense": "Service expenses",
+  "rptSubNetAfterExpense": "Net less service expenses",
+  "rptSecPengeluaran": "Service expenses",
+  "rptPengeluaranSub": "{count, plural, one{1 service} other{{count} services}}",
+  "rptPengeluaranByVisit": "By service",
+  "vstTableExpense": "Service expenses",
+  "vstTableExpenseHint": "A waiter may spend cash on the party they are serving, capped at that service’s bill, with a proof photo required. The guest’s bill does not change.",
+  "expColExpense": "Service expenses"
 }

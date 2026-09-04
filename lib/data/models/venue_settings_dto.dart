@@ -104,6 +104,11 @@ abstract class VenueSettingsDto with _$VenueSettingsDto {
     @Default(4) int guestSessionHours,
     @Default('chime') String soundGuestPending,
 
+    /// Whether a [[Waiter|pelayan]] may record a [[Pengeluaran kunjungan]]
+    /// against the visit they are serving (ADR-0130). Off by default — a venue
+    /// opts in, and the [[Modul|mode key]] `tableExpense` has to be held on top.
+    @Default(false) bool tableExpenseEnabled,
+
     /// The [[Modul]] set the venue holds (ADR-0107). Cloud-owned and mirrored
     /// down; no screen writes it.
     ///
@@ -184,6 +189,18 @@ extension VenueSettingsModules on VenueSettingsDto {
       membersOn && (modules?.contains(modeMemberSplit) ?? false);
   bool get guestOrderingOn =>
       guestOrderingEnabled && hasModule(moduleSelfOrder);
+
+  /// Whether the floor may record a [[Pengeluaran kunjungan]] (ADR-0130).
+  /// Fails **closed**, like the other mode keys, and ANDs with the owner's own
+  /// switch — the pair, in one place, for the reason ADR-0107 puts on every
+  /// gate: a surface that reads the bare preference leaves an unentitled venue
+  /// a button whose only outcome is a 404.
+  ///
+  /// This says whether the venue *does this at all*. Whether the person
+  /// holding the handset may is `Capability.recordTableExpense`, and both have
+  /// to be true before the affordance is drawn.
+  bool get tableExpenseOn =>
+      tableExpenseEnabled && (modules?.contains(modeTableExpense) ?? false);
 
   /// Whether this venue calls a [[Meja]] a **Layanan · Service** (ADR-0127).
   /// Fails **closed**, like the other mode keys, and ANDs with nothing — it is

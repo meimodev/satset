@@ -7845,5 +7845,115 @@
   "memImportErrBirthday": "tanggal lahir harus YYYY-MM-DD",
   "memImportErrCreditLimit": "batas kredit harus rupiah bulat non-negatif",
   "memImportErrDuplicatePhone": "telepon ganda dalam berkas",
-  "cshMemberPerTicket": "Pelanggan per tiket"
+  "cshMemberPerTicket": "Pelanggan per tiket",
+  "tableExpTitle": "Pengeluaran meja",
+  "tableExpNew": "Catat pengeluaran",
+  "auditTableExpense": "Pengeluaran meja {table} {amount} — {category}",
+  "@auditTableExpense": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "category": {
+        "type": "String"
+      },
+      "table": {
+        "type": "String"
+      }
+    }
+  },
+  "capRecordTableExpense": "Catat pengeluaran meja",
+  "capRecordTableExpenseDesc": "Membelanjakan uang tunai untuk tamu yang sedang dilayani, dibatasi nilai tagihan meja itu.",
+  "tableExpRemaining": "Sisa {amount}",
+  "@tableExpRemaining": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpSpent": "Terpakai {amount}",
+  "@tableExpSpent": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpCap": "Tagihan meja {amount}",
+  "@tableExpCap": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpAmount": "Jumlah",
+  "tableExpCategory": "Kategori",
+  "tableExpNote": "Catatan",
+  "tableExpPhoto": "Ambil foto bukti",
+  "tableExpPhotoAttached": "Foto terlampir — ketuk untuk ganti",
+  "tableExpSubmit": "Catat {amount}",
+  "@tableExpSubmit": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpBlkAmount": "Masukkan jumlah",
+  "tableExpBlkCategory": "Pilih kategori",
+  "tableExpBlkPhoto": "Foto bukti wajib",
+  "tableExpBlkOverCap": "Lebih dari sisa {amount}",
+  "@tableExpBlkOverCap": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpNone": "Belum ada pengeluaran",
+  "tableExpNoCategories": "Belum ada kategori pengeluaran.",
+  "tableExpOffline": "Tagihan meja belum tersimpan di perangkat ini, jadi batas belum bisa dihitung.",
+  "tableExpPhotoFailed": "Gagal ambil foto: {err}",
+  "@tableExpPhotoFailed": {
+    "placeholders": {
+      "err": {
+        "type": "String"
+      }
+    }
+  },
+  "tableExpErrExceedsBill": "Melebihi tagihan meja.",
+  "tableExpErrBillClosed": "Tagihan sudah ditutup. Buka kembali dulu.",
+  "tableExpErrPhotoRequired": "Foto bukti wajib.",
+  "tableExpErrInvalidAmount": "Jumlah tidak sah.",
+  "tableExpErrDisabled": "Pengeluaran meja tidak aktif di venue ini.",
+  "tableExpProvisional": "Batas sementara — perangkat ini belum tersambung ke server.",
+  "rptKpiExpense": "Pengeluaran meja",
+  "rptSubExpense": "Uang tunai yang keluar untuk tamu",
+  "rptKpiNetAfterExpense": "Netto setelah pengeluaran",
+  "rptSubNetAfterExpense": "Netto dikurangi pengeluaran meja",
+  "rptSecPengeluaran": "Pengeluaran meja",
+  "rptPengeluaranSub": "{count, plural, other{{count} meja}}",
+  "rptPengeluaranByStaff": "Per staf",
+  "rptPengeluaranByVisit": "Per meja",
+  "@rptPengeluaranSub": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "expCatCrumb": "Kategori pengeluaran",
+  "expCatNew": "Kategori baru",
+  "expCatEdit": "Ubah kategori",
+  "expCatName": "Nama kategori",
+  "expCatActive": "Dipakai",
+  "expCatParked": "Diparkir",
+  "expCatNoDelete": "Kategori tidak bisa dihapus — matikan saja. Pengeluaran lama tetap memakai namanya.",
+  "expCatEmpty": "Belum ada kategori",
+  "expCatEmptyBody": "Buat kategori supaya pelayan bisa memilih saat mencatat pengeluaran.",
+  "vstTableExpense": "Pengeluaran meja",
+  "vstTableExpenseHint": "Pelayan boleh membelanjakan uang tunai untuk tamu yang dilayani, dibatasi nilai tagihan meja itu, dan wajib foto bukti. Tagihan tamu tidak berubah.",
+  "expColExpense": "Pengeluaran meja"
 }

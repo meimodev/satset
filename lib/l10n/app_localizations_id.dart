@@ -9761,6 +9761,179 @@ class AppL10nId extends AppL10n {
 
   @override
   String get cshMemberPerTicket => 'Pelanggan per tiket';
+
+  @override
+  String get tableExpTitle => 'Pengeluaran meja';
+
+  @override
+  String get tableExpNew => 'Catat pengeluaran';
+
+  @override
+  String auditTableExpense(String amount, String category, String table) {
+    return 'Pengeluaran meja $table $amount — $category';
+  }
+
+  @override
+  String get capRecordTableExpense => 'Catat pengeluaran meja';
+
+  @override
+  String get capRecordTableExpenseDesc =>
+      'Membelanjakan uang tunai untuk tamu yang sedang dilayani, dibatasi nilai tagihan meja itu.';
+
+  @override
+  String tableExpRemaining(String amount) {
+    return 'Sisa $amount';
+  }
+
+  @override
+  String tableExpSpent(String amount) {
+    return 'Terpakai $amount';
+  }
+
+  @override
+  String tableExpCap(String amount) {
+    return 'Tagihan meja $amount';
+  }
+
+  @override
+  String get tableExpAmount => 'Jumlah';
+
+  @override
+  String get tableExpCategory => 'Kategori';
+
+  @override
+  String get tableExpNote => 'Catatan';
+
+  @override
+  String get tableExpPhoto => 'Ambil foto bukti';
+
+  @override
+  String get tableExpPhotoAttached => 'Foto terlampir — ketuk untuk ganti';
+
+  @override
+  String tableExpSubmit(String amount) {
+    return 'Catat $amount';
+  }
+
+  @override
+  String get tableExpBlkAmount => 'Masukkan jumlah';
+
+  @override
+  String get tableExpBlkCategory => 'Pilih kategori';
+
+  @override
+  String get tableExpBlkPhoto => 'Foto bukti wajib';
+
+  @override
+  String tableExpBlkOverCap(String amount) {
+    return 'Lebih dari sisa $amount';
+  }
+
+  @override
+  String get tableExpNone => 'Belum ada pengeluaran';
+
+  @override
+  String get tableExpNoCategories => 'Belum ada kategori pengeluaran.';
+
+  @override
+  String get tableExpOffline =>
+      'Tagihan meja belum tersimpan di perangkat ini, jadi batas belum bisa dihitung.';
+
+  @override
+  String tableExpPhotoFailed(String err) {
+    return 'Gagal ambil foto: $err';
+  }
+
+  @override
+  String get tableExpErrExceedsBill => 'Melebihi tagihan meja.';
+
+  @override
+  String get tableExpErrBillClosed =>
+      'Tagihan sudah ditutup. Buka kembali dulu.';
+
+  @override
+  String get tableExpErrPhotoRequired => 'Foto bukti wajib.';
+
+  @override
+  String get tableExpErrInvalidAmount => 'Jumlah tidak sah.';
+
+  @override
+  String get tableExpErrDisabled =>
+      'Pengeluaran meja tidak aktif di venue ini.';
+
+  @override
+  String get tableExpProvisional =>
+      'Batas sementara — perangkat ini belum tersambung ke server.';
+
+  @override
+  String get rptKpiExpense => 'Pengeluaran meja';
+
+  @override
+  String get rptSubExpense => 'Uang tunai yang keluar untuk tamu';
+
+  @override
+  String get rptKpiNetAfterExpense => 'Netto setelah pengeluaran';
+
+  @override
+  String get rptSubNetAfterExpense => 'Netto dikurangi pengeluaran meja';
+
+  @override
+  String get rptSecPengeluaran => 'Pengeluaran meja';
+
+  @override
+  String rptPengeluaranSub(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count meja',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rptPengeluaranByStaff => 'Per staf';
+
+  @override
+  String get rptPengeluaranByVisit => 'Per meja';
+
+  @override
+  String get expCatCrumb => 'Kategori pengeluaran';
+
+  @override
+  String get expCatNew => 'Kategori baru';
+
+  @override
+  String get expCatEdit => 'Ubah kategori';
+
+  @override
+  String get expCatName => 'Nama kategori';
+
+  @override
+  String get expCatActive => 'Dipakai';
+
+  @override
+  String get expCatParked => 'Diparkir';
+
+  @override
+  String get expCatNoDelete =>
+      'Kategori tidak bisa dihapus — matikan saja. Pengeluaran lama tetap memakai namanya.';
+
+  @override
+  String get expCatEmpty => 'Belum ada kategori';
+
+  @override
+  String get expCatEmptyBody =>
+      'Buat kategori supaya pelayan bisa memilih saat mencatat pengeluaran.';
+
+  @override
+  String get vstTableExpense => 'Pengeluaran meja';
+
+  @override
+  String get vstTableExpenseHint =>
+      'Pelayan boleh membelanjakan uang tunai untuk tamu yang dilayani, dibatasi nilai tagihan meja itu, dan wajib foto bukti. Tagihan tamu tidak berubah.';
+
+  @override
+  String get expColExpense => 'Pengeluaran meja';
 }
 
 /// The translations for Indonesian, as used in El Salvador (`id_SV`).
@@ -10360,4 +10533,67 @@ class AppL10nIdSv extends AppL10nId {
 
   @override
   String get mrpColTable => 'Layanan';
+
+  @override
+  String get tableExpTitle => 'Pengeluaran layanan';
+
+  @override
+  String auditTableExpense(String amount, String category, String table) {
+    return 'Pengeluaran layanan $table $amount — $category';
+  }
+
+  @override
+  String get capRecordTableExpense => 'Catat pengeluaran layanan';
+
+  @override
+  String get capRecordTableExpenseDesc =>
+      'Membelanjakan uang tunai untuk tamu yang sedang dilayani, dibatasi nilai tagihan layanan itu.';
+
+  @override
+  String tableExpCap(String amount) {
+    return 'Tagihan layanan $amount';
+  }
+
+  @override
+  String get tableExpOffline =>
+      'Tagihan layanan belum tersimpan di perangkat ini, jadi batas belum bisa dihitung.';
+
+  @override
+  String get tableExpErrExceedsBill => 'Melebihi tagihan layanan.';
+
+  @override
+  String get tableExpErrDisabled =>
+      'Pengeluaran layanan tidak aktif di venue ini.';
+
+  @override
+  String get rptKpiExpense => 'Pengeluaran layanan';
+
+  @override
+  String get rptSubNetAfterExpense => 'Netto dikurangi pengeluaran layanan';
+
+  @override
+  String get rptSecPengeluaran => 'Pengeluaran layanan';
+
+  @override
+  String rptPengeluaranSub(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count layanan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rptPengeluaranByVisit => 'Per layanan';
+
+  @override
+  String get vstTableExpense => 'Pengeluaran layanan';
+
+  @override
+  String get vstTableExpenseHint =>
+      'Pelayan boleh membelanjakan uang tunai untuk tamu yang dilayani, dibatasi nilai tagihan layanan itu, dan wajib foto bukti. Tagihan tamu tidak berubah.';
+
+  @override
+  String get expColExpense => 'Pengeluaran layanan';
 }

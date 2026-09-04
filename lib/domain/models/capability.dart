@@ -27,6 +27,16 @@ enum Capability {
   /// Deliberately **not** `openDrawer`, which names the sales drawer and stays
   /// reserved for it. See §Kas kecil in CONTEXT.md.
   manageCash(CapabilityGroup.money),
+
+  /// **[[Pengeluaran kunjungan]]** (ADR-0130) — spend cash on the party you are
+  /// serving, capped at what that visit rang up.
+  ///
+  /// Its own capability rather than a corner of `takeOrder`: this is an
+  /// arbitrary-amount write against revenue, the surface `sellOpenItem` was
+  /// withheld from the floor over, so an owner has to be able to revoke it
+  /// without stopping order-taking. Deliberately not `manageCash` — that opens
+  /// the petty cash box, which this feature never touches.
+  recordTableExpense(CapabilityGroup.money),
   editMenu(CapabilityGroup.inventory),
   markSoldOut(CapabilityGroup.inventory),
   adjustStock(CapabilityGroup.inventory),
