@@ -12,6 +12,7 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/discount_presets_repository.dart';
 import 'package:satset/data/repositories/visit_expense_repository.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
@@ -182,6 +183,13 @@ class AppShell extends ConsumerWidget {
     // away, so nothing may wait for a cashier to open the lookup sheet
     // (ADR-0129).
     ref.watch(memberMirrorSyncProvider);
+    // The menu joins the [[Salinan lantai]] here, and for the fourth time the
+    // same recorded bug (ADR-0128, ADR-0130): this repository is lazy, so its
+    // first watch is a waiter opening a menu screen. A device that never got
+    // there before the host went away cold-booted with the floor restored and
+    // the menu empty — a floor whose only affordance dead-ends one screen
+    // later, which is exactly what ADR-0133 put the menu in scope to prevent.
+    ref.watch(menuRepositoryProvider);
     // A clean drain stays silent — the lines landing on the table say it. Only
     // a refusal, a stock drop or a stalled drain is worth a blocking overlay.
     ref.listen<SendReport?>(sendReportProvider, (_, r) {

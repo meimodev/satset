@@ -126,7 +126,10 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
       );
     } catch (e, st) {
       SatLog.repo('zones.bootstrap fail $e');
-      ref.read(zonesStatusProvider.notifier).state = AsyncValue.error(e, st);
+      // See TablesRepository — a restored list is not an error (ADR-0133).
+      ref.read(zonesStatusProvider.notifier).state = state.isEmpty
+          ? AsyncValue.error(e, st)
+          : const AsyncValue.data(null);
     }
     // Wire WS even if the bootstrap GET failed: the `connected` resync is the
     // recovery path for an empty/401 bootstrap. See ADR-0021.

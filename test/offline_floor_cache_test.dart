@@ -168,6 +168,19 @@ void main() {
     );
   });
 
+  test('a restored collection is not an error', () async {
+    // The status provider means "have I anything to show", not "did the last
+    // fetch succeed". Reporting a failed refetch over a painted copy put a raw
+    // socket exception on the menu screen of a device whose menu was fine.
+    final container = await offlineContainer(await freshPrefs(seededFloor()));
+    container.read(tablesProvider);
+    container.read(menuRepositoryProvider);
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
+    expect(container.read(tablesStatusProvider).hasError, isFalse);
+    expect(container.read(menuStatusProvider).hasError, isFalse);
+  });
+
   test('the copy is written from state, so an offline seat survives', () async {
     // The seat that matters has no refetch behind it: `seat` mutates state
     // optimistically and parks the intent on the send queue. A copy written

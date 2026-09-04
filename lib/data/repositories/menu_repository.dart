@@ -106,7 +106,14 @@ class MenuRepository extends StateNotifier<MenuSnapshot> {
       ref.read(menuStatusProvider.notifier).state = const AsyncValue.data(null);
     } catch (e, st) {
       SatLog.repo('menu.bootstrap fail $e');
-      ref.read(menuStatusProvider.notifier).state = AsyncValue.error(e, st);
+      // Only an *empty* menu is an error worth a page. If the constructor
+      // painted the [[Salinan lantai]], the venue's menu is on screen and a
+      // failed refetch is the ordinary offline case — reporting it would put a
+      // socket exception over a working menu, which is absent beating stale,
+      // exactly backwards (ADR-0133).
+      ref.read(menuStatusProvider.notifier).state = state.items.isEmpty
+          ? AsyncValue.error(e, st)
+          : const AsyncValue.data(null);
     }
     // WS: any peer's menu mutation triggers a full refetch. Cheap; the
     // snapshot is small and refetch keeps modifier-group state consistent.

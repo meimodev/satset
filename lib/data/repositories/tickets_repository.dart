@@ -147,7 +147,10 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       );
     } catch (e, st) {
       SatLog.repo('tickets.bootstrap fail $e');
-      ref.read(ticketsStatusProvider.notifier).state = AsyncValue.error(e, st);
+      // See TablesRepository — a restored board is not an error (ADR-0133).
+      ref.read(ticketsStatusProvider.notifier).state = state.isEmpty
+          ? AsyncValue.error(e, st)
+          : const AsyncValue.data(null);
     }
     // `connected` recovers a bootstrap that raced the auth token (the first
     // GET can 401 on host sign-in) and re-pulls lines that mutated while the

@@ -146,7 +146,11 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       // Surface — do NOT fall back to dummy data when the LAN is supposed
       // to be authoritative. The WS-reconnect resync (below) recovers when
       // the socket next reaches `open` (e.g. once the admin token lands).
-      ref.read(tablesStatusProvider.notifier).state = AsyncValue.error(e, st);
+      // An error only when there is nothing to show; a restored floor is a
+      // floor (ADR-0133). See MenuRepository._bootstrap.
+      ref.read(tablesStatusProvider.notifier).state = state.isEmpty
+          ? AsyncValue.error(e, st)
+          : const AsyncValue.data(null);
     }
     // Wire WS even if the bootstrap GET failed: the `connected` resync is the
     // recovery path for an empty/401 bootstrap. See ADR-0021.
