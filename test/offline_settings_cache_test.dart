@@ -306,7 +306,11 @@ class _CountingApi extends ApiClient {
   final void Function() onGet;
 
   @override
-  Future<dynamic> getJson(String path, {Map<String, String>? query}) async {
+  Future<dynamic> getJson(
+    String path, {
+    Map<String, String>? query,
+    Duration? timeout,
+  }) async {
     onGet();
     return const VenueSettingsDto(membersEnabled: true).toJson();
   }
@@ -325,6 +329,10 @@ class _DeadApi extends ApiClient {
   /// Moved, and still not answering — the relocator case, where the cache is
   /// the only thing the till has.
   @override
-  Future<dynamic> getJson(String path, {Map<String, String>? query}) async =>
+  Future<dynamic> getJson(
+    String path, {
+    Map<String, String>? query,
+    Duration? timeout,
+  }) async =>
       throw const ApiException(0, 'unreachable');
 }

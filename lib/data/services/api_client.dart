@@ -131,8 +131,15 @@ class ApiClient {
     };
   }
 
-  Future<dynamic> getJson(String path, {Map<String, String>? query}) =>
-      _send('GET', path, query: query);
+  Future<dynamic> getJson(
+    String path, {
+    Map<String, String>? query,
+
+    /// Overrides [requestTimeout] for a read whose failure is not a failure —
+    /// the session restore falls back to a local cache, so waiting the full
+    /// ceiling on a host that is off buys nothing but a wedged-looking boot.
+    Duration? timeout,
+  }) => _send('GET', path, query: query, timeout: timeout);
 
   /// [timeout] overrides [requestTimeout] for the rare endpoint that is
   /// legitimately slow — the demo seed writes a month of service and takes

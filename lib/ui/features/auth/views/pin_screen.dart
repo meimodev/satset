@@ -20,6 +20,7 @@ import 'package:satset/ui/core/widgets/pin_sheet.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/ping_repository.dart';
+import 'package:satset/data/services/secure_storage_service.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/ui/features/auth/view_models/pin_view_model.dart';
 import 'package:satset/ui/features/auth/views/change_password_screen.dart';
@@ -201,13 +202,45 @@ class _PinScreenState extends ConsumerState<PinScreen>
     final vm = ref.read(pinViewModelProvider.notifier);
     if (ref.read(pinViewModelProvider).stage == StaffStage.enteringPin) return;
     vm.setStage(StaffStage.enteringPin);
-    // Recheck reachability immediately on open so the status pill reflects the
-    // live connection instead of a heartbeat sample up to 5s stale. Deferred a
-    // frame so the sheet's pill is watching pingProvider (keeps it alive)
-    // before the probe fires.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(ref.read(pingProvider.notifier).recheck());
-    });
+    // Probe *before* the pad, not a frame after it. The pill used to tell a
+    // waiter the host was dead one beat after they had committed to typing six
+    // digits; the point of the check is to be the thing they read first.
+    // `_ConnectedServerCard` on the screen body already keeps the autoDispose
+    // provider alive, so nothing is racing the sheet to subscribe.
+    await ref.read(pingProvider.notifier).recheck();
+    if (!mounted) return;
+
+    // A PIN cannot be verified without the host — the hash and the throttle
+    // both live there (ADR-0112) — so a pad taken while offline is six digits
+    // typed into a dead end. Which dead end matters: a device that has been
+    // admitted here before is only waiting on the Wi-Fi, while one that never
+    // has cannot be admitted offline at all (ADR-0099) and the person holding
+    // it needs to walk to the host rather than wait. The cached `/auth/me` is
+    // the record of the difference and reading it is free.
+    final everAdmitted =
+        (await ref.read(secureStorageServiceProvider).readMe())?.isNotEmpty ??
+        false;
+    if (!mounted) return;
+
+    // No retry control: `PingRepository` re-probes every 5s on its own, so the
+    // pad un-deadens itself and a button would only ask the waiter to do what
+    // the app is already doing.
+    final blocked = ValueNotifier<String?>(null);
+    void syncBlocked(PingState ping) {
+      if (!mounted) return;
+      blocked.value = !pingOffline(ping)
+          ? null
+          : (everAdmitted
+                ? context.l10n.pinBlockedUnreachable
+                : context.l10n.pinBlockedNeverAdmitted);
+    }
+
+    syncBlocked(ref.read(pingProvider));
+    final watch = ref.listenManual<PingState>(
+      pingProvider,
+      (_, next) => syncBlocked(next),
+    );
+
     bool? ok;
     try {
       ok = await showPinSheet(
@@ -215,9 +248,12 @@ class _PinScreenState extends ConsumerState<PinScreen>
         title: context.l10n.pinEnterPin,
         subtitle: context.l10n.pinConnectedTo(server.label),
         statusSlot: const _ServerReachabilityPill(),
+        blockedReason: blocked,
         onSubmit: (pin) => vm.verifyPin(pin),
       );
     } finally {
+      watch.close();
+      blocked.dispose();
       // Leaving the stage on `enteringPin` after a throw is what used to make
       // the pad unopenable for the rest of the session: the guard above saw a
       // sheet that was no longer on screen and refused to build another.
@@ -295,12 +331,26 @@ class _PinScreenState extends ConsumerState<PinScreen>
         : admissionText(context.l10n, state.admission) ??
               _bootBlockText(context.l10n, ref.watch(adminBootBlockProvider));
 
-    // Admin auto-login: while the boot-time session restore is in flight, mask
-    // the sign-in form behind a loading screen so the form never flashes before
-    // the router redirects an already-authenticated admin into the app.
+    // While the boot-time session restore is in flight, mask the sign-in form
+    // behind a loading screen so it never flashes before the router redirects
+    // an already-authenticated user into the app.
+    //
+    // **Both modes**, not just admin. Gating this on `mode == admin` left a
+    // staff device painting the whole PIN screen — pad included — during a
+    // restore that then navigated out from under the waiter mid-keypress.
+    // The copy branches because the two restores fail for different reasons:
+    // an admin is waiting on an account over the WAN, a waiter on a named host
+    // over the LAN, and "memeriksa sesi" teaches the second one nothing.
     final restoring = ref.watch(authStateProvider.select((s) => s.restoring));
-    if (state.mode == SignInMode.admin && restoring) {
-      return const _RestoreLoadingScreen();
+    if (restoring) {
+      final server = state.selectedServer?.label;
+      return _RestoreLoadingScreen(
+        label: state.mode == SignInMode.admin
+            ? context.l10n.pinCheckingSession
+            : (server == null
+                  ? context.l10n.pinReconnecting
+                  : context.l10n.pinReconnectingTo(server)),
+      );
     }
 
     // Signed in at Firebase, refused the venue: another device already hosts it
@@ -1081,10 +1131,14 @@ class _HostOccupiedScreen extends StatelessWidget {
   }
 }
 
-/// Full-screen loader shown to an auto-login admin while the boot-time session
-/// restore runs, masking the sign-in form until the router redirects.
+/// Full-screen loader shown while the boot-time session restore runs, masking
+/// the sign-in form until the router redirects. Both modes — see the call site
+/// for why gating it on admin alone was a bug.
 class _RestoreLoadingScreen extends StatelessWidget {
-  const _RestoreLoadingScreen();
+  const _RestoreLoadingScreen({required this.label});
+
+  /// What is being waited on, in the words of the mode doing the waiting.
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -1100,10 +1154,7 @@ class _RestoreLoadingScreen extends StatelessWidget {
               const SizedBox(height: Sp.s7),
               const SatSpinner(),
               const SizedBox(height: Sp.s4),
-              Text(
-                context.l10n.pinCheckingSession,
-                style: SatType.monoS(color: sc.textLo),
-              ),
+              Text(label, style: SatType.monoS(color: sc.textLo)),
             ],
           ),
         ),
@@ -1239,10 +1290,20 @@ String? _bootBlockText(AppL10n l10n, String? code) => switch (code) {
   _ => null,
 };
 
+/// Whether the host is out of reach, as opposed to merely not having answered
+/// yet. Two failed probes, because one is a Wi-Fi blip and deadening the PIN
+/// pad on a blip is worse than the blip.
+///
+/// The one definition: [_reachabilityVisual] paints the pill from it and
+/// [_PinScreenState._openPinSheet] refuses the pad from it, so the two can
+/// never disagree about the same host.
+bool pingOffline(PingState ping) =>
+    !ping.reachable && ping.consecutiveFailures >= 2;
+
 /// Three-state reachability derived from the live `/healthz` heartbeat
-/// ([pingProvider]) of the currently-published paired server. Debounced: a
-/// single failed probe stays in the neutral "checking" state so a momentary
-/// Wi-Fi blip doesn't flash "down" while the server is actually up.
+/// ([pingProvider]) of the currently-published paired server. Debounced via
+/// [pingOffline], so a momentary Wi-Fi blip doesn't flash "down" while the
+/// server is actually up.
 ({Color dot, Color glow, String label, bool offline}) _reachabilityVisual(
   AppL10n l10n,
   PingState ping,
@@ -1257,7 +1318,7 @@ String? _bootBlockText(AppL10n l10n, String? code) => switch (code) {
       offline: false,
     );
   }
-  if (ping.consecutiveFailures >= 2) {
+  if (pingOffline(ping)) {
     return (
       dot: sc.urgent,
       glow: sc.urgentSoft,

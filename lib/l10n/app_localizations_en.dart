@@ -5558,6 +5558,22 @@ class AppL10nEn extends AppL10n {
   String get pinCheckingSession => 'Checking the session…';
 
   @override
+  String pinReconnectingTo(String server) {
+    return 'Reconnecting to $server…';
+  }
+
+  @override
+  String get pinReconnecting => 'Reconnecting to the server…';
+
+  @override
+  String get pinBlockedUnreachable =>
+      'The server is out of reach. The keypad comes back when the connection does.';
+
+  @override
+  String get pinBlockedNeverAdmitted =>
+      'This device has never signed in here. A PIN cannot be checked without the server — connect to it first.';
+
+  @override
   String get pinReachConnected => 'Connected';
 
   @override

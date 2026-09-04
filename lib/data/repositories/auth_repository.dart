@@ -708,10 +708,12 @@ class AuthRepository extends StateNotifier<AuthState> {
     // Mode keys ride the same array and the same column (ADR-0109) — one
     // transport, two readings. Which reading applies is decided where the value
     // is *read*, never here.
-    final nextModules = venueEntitlementKeys.where(v.hasModule).toList()..sort();
+    final nextModules = venueEntitlementKeys.where(v.hasModule).toList()
+      ..sort();
     final held = settings.modules;
     final needModules =
-        held == null || nextModules.join(',') != (held.toList()..sort()).join(',');
+        held == null ||
+        nextModules.join(',') != (held.toList()..sort()).join(',');
     // The switches, same only-patch-when-different guard.
     final nextCounter = counterSwitchKeys.where(v.counterOn).toList()..sort();
     final heldCounter = settings.counterConfig;
@@ -769,6 +771,14 @@ class AuthRepository extends StateNotifier<AuthState> {
     state = const AuthState();
   }
 
+  /// How long a restore waits on `/auth/me` before falling back to the cache.
+  ///
+  /// Deliberately shorter than [ApiClient.requestTimeout]. That ceiling is
+  /// tuned for a request whose failure *is* a failure; here the fallback is a
+  /// local cache read, so the extra seconds buy nothing but a full-screen
+  /// spinner with no escape hatch on a boot whose host is simply off.
+  static const _restoreProbeTimeout = Duration(seconds: 3);
+
   /// Restore an existing token by calling `/auth/me`. No-op if no API config
   /// or no stored token.
   ///
@@ -799,8 +809,10 @@ class AuthRepository extends StateNotifier<AuthState> {
       if (token == null || token.isEmpty) return;
       try {
         final api = ref.read(apiClientProvider);
-        final raw = (await api.getJson('/auth/me') as Map)
-            .cast<String, dynamic>();
+        final raw =
+            (await api.getJson('/auth/me', timeout: _restoreProbeTimeout)
+                    as Map)
+                .cast<String, dynamic>();
         final me = MeDto.fromJson(raw);
         await storage.writeMe(jsonEncode(raw));
         await _applyMe(me);
