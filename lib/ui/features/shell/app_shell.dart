@@ -13,6 +13,7 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/data/repositories/discount_presets_repository.dart';
+import 'package:satset/data/repositories/visit_expense_repository.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/self_order_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
@@ -171,6 +172,11 @@ class AppShell extends ConsumerWidget {
     // Constructing it on the shell means the cache is painted and the fetch is
     // spent while the venue still has a host.
     ref.watch(discountPresetsRepositoryProvider);
+    // Warmed here for the same reason, and against the same recorded bug
+    // (ADR-0128, ADR-0130): a lazy catalogue's first watch is the waiter
+    // opening the expense sheet, and on a dark handset that fetch fails and the
+    // sheet claims the venue authored no categories.
+    ref.watch(expenseCategoriesRepositoryProvider);
     // The [[Salinan pelanggan]] fills here for the same reason, and with more
     // riding on it: its whole value is being *already there* when the host goes
     // away, so nothing may wait for a cashier to open the lookup sheet

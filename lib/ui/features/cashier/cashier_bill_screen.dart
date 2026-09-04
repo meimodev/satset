@@ -13,7 +13,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:satset/ui/core/widgets/proof_photo.dart';
 
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/member_dto.dart';
@@ -29,6 +29,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/ui/features/cashier/discount_sheet.dart';
 import 'package:satset/ui/features/cashier/member_panel.dart';
+import 'package:satset/ui/features/cashier/visit_expense_panel.dart';
 import 'package:satset/ui/features/cashier/receipt_badge.dart';
 import 'package:satset/ui/features/cashier/widgets/pay_method_picker.dart';
 import 'package:satset/ui/features/cashier/widgets/settle_pane.dart';
@@ -538,6 +539,16 @@ class _BillBodyState extends State<_BillBody> {
           rv(MemberPanel(bill: bill, run: widget.run, repo: widget.repo)),
           const SizedBox(height: Sp.s2),
           rv(_TotalsCard(bill)),
+          // Below the totals, deliberately: this is a cost the venue absorbed,
+          // not part of what the guest owes, and putting it above would read as
+          // a line on the bill (ADR-0130).
+          const SizedBox(height: Sp.s2),
+          rv(
+            VisitExpensePanel(
+              visitId: bill.visitId,
+              billOpen: bill.billClosedAt == null,
+            ),
+          ),
           const SizedBox(height: Sp.s2),
           rv(
             _TopActions(
@@ -1599,14 +1610,8 @@ class _ReceiptCard extends ConsumerWidget {
           final photoMissing = needsPhoto && photoBytes == null;
           Future<void> shootPhoto() async {
             try {
-              final x = await ImagePicker().pickImage(
-                source: ImageSource.camera,
-                maxWidth: 1080,
-                maxHeight: 1080,
-                imageQuality: 80,
-              );
-              if (x == null) return;
-              final bytes = await x.readAsBytes();
+              final bytes = await shootProofPhoto();
+              if (bytes == null) return;
               setState(() => photoBytes = bytes);
             } catch (e) {
               if (ctx.mounted) {

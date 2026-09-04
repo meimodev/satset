@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:satset/ui/core/widgets/proof_photo.dart';
 
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/data/repositories/members_repository.dart';
@@ -191,14 +191,8 @@ class _CollectFormState extends ConsumerState<_CollectForm> {
   }
 
   Future<void> _shoot() async {
-    final x = await ImagePicker().pickImage(
-      source: ImageSource.camera,
-      maxWidth: 1080,
-      maxHeight: 1080,
-      imageQuality: 80,
-    );
-    if (x == null) return;
-    final bytes = await x.readAsBytes();
+    final bytes = await shootProofPhoto();
+    if (bytes == null) return;
     if (mounted) setState(() => _proof = bytes);
   }
 

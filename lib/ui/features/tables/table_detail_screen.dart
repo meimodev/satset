@@ -39,7 +39,10 @@ import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import '../void_flow/line_item_action_sheet.dart';
+import 'visit_expense_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/move_table_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/pending_orders_block.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
@@ -1893,9 +1896,25 @@ class _ContextPane extends ConsumerWidget {
     final sc = context.sat;
     final auth = ref.watch(
       authStateProvider.select(
-        (s) => (id: s.user?.id, canTakeOrder: s.has(Capability.takeOrder)),
+        (s) => (
+          id: s.user?.id,
+          canTakeOrder: s.has(Capability.takeOrder),
+          canSpend: s.has(Capability.recordTableExpense),
+        ),
       ),
     );
+    // Both halves before the affordance is drawn (ADR-0130): the venue does
+    // this at all, and this person may. `tableExpenseOn` is the one place the
+    // owner switch and the fail-closed mode key are ANDed — reading the bare
+    // preference here would leave an unentitled venue a button that can only
+    // 404.
+    final visitId = table.currentVisitId;
+    final canSpend =
+        auth.canSpend &&
+        visitId != null &&
+        ref.watch(
+          venueSettingsProvider.select((c) => c.tableExpenseOn),
+        );
     final actorId = auth.id;
     // Move is offered only on a live table the caller may operate and that
     // isn't actively held by someone else. Server re-checks the lock anyway.
@@ -2061,6 +2080,21 @@ class _ContextPane extends ConsumerWidget {
                   Icons.swap_horiz_rounded,
                   context.l10n.tblMoveTable,
                   onTap: onMove,
+                ),
+              ],
+              if (canSpend) ...[
+                const SizedBox(height: Sp.s1h),
+                _quickAction(
+                  context,
+                  sc,
+                  Icons.shopping_bag_rounded,
+                  context.l10n.tableExpNew,
+                  onTap: () =>
+                      showVisitExpenseSheet(
+                        context,
+                        visitId: visitId,
+                        tableId: table.id,
+                      ),
                 ),
               ],
             ],
