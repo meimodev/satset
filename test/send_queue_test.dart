@@ -275,6 +275,105 @@ void main() {
     expect(q.state, isEmpty);
   });
 
+  test('an expense outlives its business day; an order does not', () async {
+    // ADR-0130. The two intents differ on exactly this: an order nobody wants
+    // this morning is right to drop, while an expense is money that already
+    // left the till — discarding it destroys the only record that it did.
+    final sent = <SendIntentKind>[];
+    final q = SendQueue(
+      prefs: prefs,
+      businessDayStartHour: 4,
+      send: (i) async {
+        sent.add(i.kind);
+        return {'visitId': 'v-1'};
+      },
+    );
+    travelTo(DateTime(2026, 8, 7, 21));
+    await enqueueOrder(q, tableId: 'a');
+    await q.enqueue(
+      kind: SendIntentKind.tableExpense,
+      tableId: 'a',
+      actorId: 'user-1',
+      expectedVisitId: 'v-1',
+      payload: {
+        'visitId': 'v-1',
+        'amount': 15000,
+        'categoryId': 'vexc-other',
+      },
+    );
+    travelTo(DateTime(2026, 8, 8, 10));
+
+    final report = await q.drain();
+
+    expect(sent, [SendIntentKind.tableExpense]);
+    expect(
+      report.outcomes.map((o) => o.kind),
+      [SendOutcomeKind.expired, SendOutcomeKind.delivered],
+    );
+    expect(q.state, isEmpty);
+  });
+
+  test('a refused expense does not stall the orders behind it', () async {
+    // The cap refusal is a 400 and a business fact about one row, so it takes
+    // `voidTicket`'s posture (ADR-0114, ADR-0130): recorded, dropped, and the
+    // backlog keeps moving. Stalling here would strand a shift of orders behind
+    // a tissue receipt the bill could not cover.
+    final sent = <String>[];
+    final q = SendQueue(
+      prefs: prefs,
+      send: (i) async {
+        sent.add(i.kind.name);
+        if (i.kind == SendIntentKind.tableExpense) {
+          throw const ApiException(400, '{"code":"exceeds_bill"}', 'exceeds_bill');
+        }
+        return {'visitId': 'v-1'};
+      },
+    );
+    await q.enqueue(
+      kind: SendIntentKind.tableExpense,
+      tableId: 'a',
+      actorId: 'user-1',
+      payload: {'visitId': 'v-1', 'amount': 999999, 'categoryId': 'c'},
+    );
+    await enqueueOrder(q, tableId: 'b');
+
+    final report = await q.drain();
+
+    expect(sent, ['tableExpense', 'submitOrder']);
+    expect(report.interrupted, isFalse);
+    expect(report.outcomes.first.kind, SendOutcomeKind.refused);
+    expect(report.outcomes.first.code, 'exceeds_bill');
+    expect(report.outcomes.last.kind, SendOutcomeKind.delivered);
+    expect(q.state, isEmpty);
+  });
+
+  test('a revoked capability refuses one expense, not the backlog', () async {
+    // A 403 stalls for an order — the bearer cannot carry the backlog. For an
+    // expense it is `recordTableExpense` having been revoked, which is a fact
+    // about one row.
+    final q = SendQueue(
+      prefs: prefs,
+      send: (i) async {
+        if (i.kind == SendIntentKind.tableExpense) {
+          throw const ApiException(403, '{"code":"forbidden"}', 'forbidden');
+        }
+        return {'visitId': 'v-1'};
+      },
+    );
+    await q.enqueue(
+      kind: SendIntentKind.tableExpense,
+      tableId: 'a',
+      actorId: 'user-1',
+      payload: {'visitId': 'v-1', 'amount': 1000, 'categoryId': 'c'},
+    );
+    await enqueueOrder(q, tableId: 'b');
+
+    final report = await q.drain();
+
+    expect(report.interrupted, isFalse);
+    expect(q.state, isEmpty);
+  });
+
   test('a night that runs past midnight is still one business day', () async {
     var sent = 0;
     final q = SendQueue(

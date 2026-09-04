@@ -147,8 +147,31 @@ class CachedMembers extends Table {
 ///
 /// Since ADR-0129 it also holds the [[Salinan pelanggan]] — still a cache, and
 /// still never a source: the host's directory is the directory.
+/// The photo a queued [[Pengeluaran kunjungan]] is waiting to post (ADR-0130).
+///
+/// Here rather than in the [[Antrean kirim]] itself because that queue is a
+/// **prefs blob**, loaded synchronously at boot: a base64 JPEG per queued
+/// expense would put megabytes in a string parsed on every launch. This
+/// database already exists for exactly this — money the client cannot send yet
+/// (ADR-0124).
+///
+/// Keyed by the intent id, which is also the expense id and the idempotency
+/// key. The row is deleted when the intent drains, so it cannot orphan.
+class QueuedPhotos extends Table {
+  TextColumn get intentId => text()();
+  BlobColumn get bytes => blob()();
+  @override
+  Set<Column> get primaryKey => {intentId};
+}
+
 @DriftDatabase(
-  tables: [SettlementEvents, CachedBills, CachedPayable, CachedMembers],
+  tables: [
+    SettlementEvents,
+    CachedBills,
+    CachedPayable,
+    CachedMembers,
+    QueuedPhotos,
+  ],
 )
 class ClientDb extends _$ClientDb {
   ClientDb(super.e);
@@ -157,7 +180,7 @@ class ClientDb extends _$ClientDb {
   ClientDb.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   /// Drift's default `onUpgrade` throws, so a bump without this bricks every
   /// till that already carries a journal — which is exactly the device this
@@ -184,6 +207,9 @@ class ClientDb extends _$ClientDb {
           'ON cached_members (phone_hash)',
         );
       }
+      // ADR-0130 — a queued expense's photo, which the prefs-backed queue
+      // cannot carry.
+      if (from < 4 && to >= 4) await m.createTable(queuedPhotos);
     },
   );
 
