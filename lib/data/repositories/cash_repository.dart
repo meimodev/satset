@@ -32,6 +32,11 @@ class CashState {
   /// The venue's boxes with their own balances (ADR-0131), in picker order.
   final List<CashBox> boxes;
 
+  /// Every box's [[Kategori kas (cash category)|categories]] (ADR-0135), in one
+  /// flat list — inactive included, because a ledger row filed under a retired
+  /// word still has to render it. Filter with [categoriesFor].
+  final List<CashCategory> categories;
+
   /// Which box the ledger and the hero are showing. **Null is the "Semua"
   /// arm** — every box's rows in one list, the venue total in the hero.
   final String? selectedBoxId;
@@ -53,6 +58,7 @@ class CashState {
   const CashState({
     this.entries = const [],
     this.boxes = const [],
+    this.categories = const [],
     this.selectedBoxId,
     this.balance = 0,
     this.loading = false,
@@ -100,6 +106,24 @@ class CashState {
   /// sees the screen it has always seen.
   bool get multiBox => boxes.where((b) => b.active).length > 1;
 
+  /// One box's categories, in picker order. [activeOnly] is what the expense
+  /// sheet wants; the ledger wants the lot.
+  List<CashCategory> categoriesFor(String boxId, {bool activeOnly = false}) => [
+    for (final c in categories)
+      if (c.boxId == boxId && (!activeOnly || c.active)) c,
+  ];
+
+  /// The word for a row's category, resolved against the row's own box — the
+  /// same id means different things in two tins. Falls back to what the server
+  /// sent on the entry, then to the id, so nothing renders blank.
+  String? categoryNameOf(CashEntry e) {
+    if (e.categoryId == null) return null;
+    for (final c in categories) {
+      if (c.boxId == e.boxId && c.id == e.categoryId) return c.name;
+    }
+    return e.categoryName ?? e.categoryId;
+  }
+
   /// The name for a row's box, for the "Semua" list. Falls back to the id so a
   /// row whose box has somehow gone renders something rather than nothing.
   String boxNameOf(String id) {
@@ -125,6 +149,7 @@ class CashState {
   CashState copyWith({
     List<CashEntry>? entries,
     List<CashBox>? boxes,
+    List<CashCategory>? categories,
     String? selectedBoxId,
     bool clearSelectedBox = false,
     int? balance,
@@ -136,6 +161,7 @@ class CashState {
   }) => CashState(
     entries: entries ?? this.entries,
     boxes: boxes ?? this.boxes,
+    categories: categories ?? this.categories,
     selectedBoxId: clearSelectedBox
         ? null
         : (selectedBoxId ?? this.selectedBoxId),
@@ -232,9 +258,14 @@ class CashRepository extends StateNotifier<CashState> {
         for (final b in (raw['boxes'] as List? ?? const []))
           cashBoxFromJson((b as Map).cast<String, dynamic>()),
       ];
+      final categories = [
+        for (final c in (raw['categories'] as List? ?? const []))
+          cashCategoryFromJson((c as Map).cast<String, dynamic>()),
+      ];
       state = state.copyWith(
         entries: entries,
         boxes: boxes,
+        categories: categories,
         balance: (raw['balance'] as num?)?.toInt() ?? 0,
         loading: false,
         loadingMore: false,
@@ -260,13 +291,13 @@ class CashRepository extends StateNotifier<CashState> {
   Future<void> spend({
     required String boxId,
     required int amount,
-    required CashCategory category,
+    required String categoryId,
     String? note,
     String? photoBase64,
   }) => _post('/cash/expense', {
     'boxId': boxId,
     'amount': amount,
-    'category': category.name,
+    'category': categoryId,
     'note': note,
     'photoBase64': photoBase64,
   });
@@ -280,6 +311,39 @@ class CashRepository extends StateNotifier<CashState> {
     'counted': counted,
     'note': note,
   });
+
+  /// Author a category on one box (ADR-0135). The response carries both lists,
+  /// like every other box act.
+  Future<void> createCategory({
+    required String boxId,
+    required String name,
+  }) async {
+    final raw =
+        await _ref
+                .read(apiClientProvider)
+                .postJson('/cash/boxes/$boxId/categories', {'name': name})
+            as Map<String, dynamic>;
+    _applyBoxes(raw);
+  }
+
+  /// Rename a category, or retire it. Retroactive by design: the ledger stores
+  /// the id, so an older movement re-reads under the new word.
+  Future<void> updateCategory({
+    required String boxId,
+    required String id,
+    String? name,
+    bool? active,
+  }) async {
+    final raw =
+        await _ref
+                .read(apiClientProvider)
+                .patchJson('/cash/boxes/$boxId/categories/$id', {
+                  'name': ?name,
+                  'active': ?active,
+                })
+            as Map<String, dynamic>;
+    _applyBoxes(raw);
+  }
 
   /// Move money between two boxes. Two rows land, so the response is applied and
   /// the window re-read — the caller's own device must see both legs even if it
@@ -359,16 +423,24 @@ class CashRepository extends StateNotifier<CashState> {
     });
   }
 
-  /// Replace the boxes wholesale — the server sends the whole list because it
-  /// is a handful of rows and any change can reorder them.
+  /// Replace the boxes **and their vocabulary** wholesale — the server sends
+  /// both lists because they are a handful of rows and any change can reorder
+  /// them. One frame carries both (ADR-0135): a category hangs off a box.
   void _applyBoxes(Map<String, dynamic> payload) {
     final raw = payload['boxes'];
     if (raw is! List) return;
     final boxes = [
       for (final b in raw) cashBoxFromJson((b as Map).cast<String, dynamic>()),
     ];
+    final rawCats = payload['categories'];
     state = state.copyWith(
       boxes: boxes,
+      categories: rawCats is! List
+          ? null
+          : [
+              for (final c in rawCats)
+                cashCategoryFromJson((c as Map).cast<String, dynamic>()),
+            ],
       balance: boxes.fold<int>(0, (a, b) => a + b.balance),
       // A box the reader was looking at may have just been retired; the ledger
       // for it is still valid, so the selection stands and `pickableBoxes`
@@ -435,12 +507,21 @@ CashBox cashBoxFromJson(Map<String, dynamic> j) => CashBox(
   balance: (j['balance'] as num?)?.toInt() ?? 0,
 );
 
+CashCategory cashCategoryFromJson(Map<String, dynamic> j) => CashCategory(
+  boxId: j['boxId'] as String? ?? 'box-main',
+  id: j['id'] as String,
+  name: j['name'] as String? ?? '',
+  active: j['active'] != false,
+  sortOrder: (j['sortOrder'] as num?)?.toInt() ?? 0,
+);
+
 CashEntry cashEntryFromJson(Map<String, dynamic> j) => CashEntry(
   id: j['id'] as String,
   boxId: j['boxId'] as String? ?? 'box-main',
   kind: cashEntryKindFromName(j['kind'] as String?) ?? CashEntryKind.expense,
   delta: (j['delta'] as num?)?.toInt() ?? 0,
-  category: cashCategoryFromName(j['category'] as String?),
+  categoryId: j['category'] as String?,
+  categoryName: j['categoryName'] as String?,
   note: j['note'] as String?,
   reversesId: j['reversesId'] as String?,
   reversedById: j['reversedById'] as String?,

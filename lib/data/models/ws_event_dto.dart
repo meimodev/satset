@@ -51,9 +51,13 @@ class WsEventTypes {
   /// broadcasts safe in either order. See §Kas kecil.
   static const cashEntryCreated = 'cash.created';
 
-  /// A [[Kas (cash box)]] was created, renamed or retired. Payload
-  /// `{box, boxes}` — the whole list, because it is a handful of rows and a
-  /// client that patched one would still have to re-sort.
+  /// A [[Kas (cash box)]] was created, renamed or retired — or one of its
+  /// [[Kategori kas (cash category)|categories]] was authored, renamed or
+  /// retired (ADR-0135), which rides the same frame because a category hangs
+  /// off a box and the client replaces both lists wholesale. Payload
+  /// `{box?, boxes, categories}` — the whole list, because it is a handful of
+  /// rows and a client that patched one would still have to re-sort. `box` is
+  /// absent when only the vocabulary moved.
   static const cashBoxesUpdated = 'cash.boxes';
 
   /// A [[Pelanggan (member)]] changed — enrolled, edited, merged into, or their

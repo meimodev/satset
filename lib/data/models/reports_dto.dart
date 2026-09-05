@@ -381,9 +381,12 @@ abstract class VoidReasonDto with _$VoidReasonDto {
 /// balance without being money in or out, and keeping it separate is the only
 /// way a shortfall reads as a shortfall rather than as a purchase.
 ///
-/// [byCategory] is keyed by `CashCategory.name` — a code, not a word, resolved
-/// at read time (ADR-0085). It stays **venue-wide** even now that a venue keeps
-/// several boxes: a category says what was bought, not which tin paid for it.
+/// [byCategory] is keyed by the **venue's own word** (ADR-0135), like
+/// [PengeluaranSectionDto.byCategory] — a category is venue-authored content
+/// now, so there is nothing to resolve and nothing in the ARB to resolve it
+/// with. It stays **venue-wide** even though each box authors its own list:
+/// per-box ids cannot merge, and two tins that both wrote *Sayur* are one line
+/// to an owner asking what the venue spent on vegetables.
 ///
 /// Every figure above is the **sum of [byBox]** (ADR-0131), which is what makes
 /// a transfer between two boxes vanish from the totals with no rule to exclude
@@ -412,8 +415,9 @@ abstract class KasSectionDto with _$KasSectionDto {
 /// One [[Kas (cash box)]] over the same window (ADR-0131). The same five
 /// figures as the venue block, for one tin.
 ///
-/// [name] is venue content and travels as words rather than as a code: unlike a
-/// category, there is no closed set to resolve it against.
+/// [name] is venue content and travels as words rather than as a code — as does
+/// [byCategory], this box's own breakdown, keyed the same way the venue block
+/// is so the detail sums to the total (ADR-0135).
 @freezed
 abstract class KasBoxSectionDto with _$KasBoxSectionDto {
   const factory KasBoxSectionDto({
@@ -425,6 +429,7 @@ abstract class KasBoxSectionDto with _$KasBoxSectionDto {
     @Default(0) int outflow,
     @Default(0) int variance,
     @Default(0) int closing,
+    @Default(<String, int>{}) Map<String, int> byCategory,
   }) = _KasBoxSectionDto;
 
   factory KasBoxSectionDto.fromJson(Map<String, dynamic> json) =>
@@ -434,8 +439,10 @@ abstract class KasBoxSectionDto with _$KasBoxSectionDto {
 /// The [[Pengeluaran kunjungan]] block (ADR-0130).
 ///
 /// `byCategory` is keyed by the **venue's own word**, not a code: this
-/// vocabulary is venue-authored, so unlike [KasSectionDto.byCategory] there is
-/// nothing to resolve at read time and nothing in the ARB to resolve it with.
+/// vocabulary is venue-authored, so there is nothing to resolve at read time
+/// and nothing in the ARB to resolve it with. [KasSectionDto.byCategory] was
+/// the contrast here until ADR-0135 made the box's categories venue-authored
+/// too; both keys are words now.
 @freezed
 abstract class PengeluaranSectionDto with _$PengeluaranSectionDto {
   const factory PengeluaranSectionDto({

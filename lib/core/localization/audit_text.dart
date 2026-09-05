@@ -71,9 +71,12 @@ String auditText(AppL10n l, AuditEntry e) {
     ),
 
     AuditKind.cashToppedUp => l.auditCashToppedUp(s('amount'), s('box')),
+    // The category rides as the **word** the venue authored, not a key
+    // (ADR-0135): it is venue content now, so there is nothing to resolve and a
+    // later rename leaves this line saying what was chosen at the time.
     AuditKind.cashSpent => l.auditCashSpent(
       s('amount'),
-      cashCategoryKeyLabel(l, s('category')),
+      s('category'),
       s('box'),
     ),
     AuditKind.cashCounted => l.auditCashCounted(

@@ -10,11 +10,14 @@
 //   - a row can be reversed once and only once;
 //   - the report section keeps a count's variance out of in/out — ADR-0089's
 //     whole point, and the easiest thing to get quietly wrong;
-//   - every guard is *per box* and a transfer is one act in two rows — ADR-0131.
+//   - every guard is *per box* and a transfer is one act in two rows — ADR-0131;
+//   - a category belongs to one box, is the venue's own word, and renaming it
+//     re-reads the whole ledger — ADR-0135.
 //
 // See docs/adr/0088-the-petty-cash-box-cannot-go-negative.md,
 // docs/adr/0089-petty-cash-is-not-revenue.md and
-// docs/adr/0131-a-venue-counts-more-than-one-tin.md.
+// docs/adr/0131-a-venue-counts-more-than-one-tin.md and
+// docs/adr/0135-a-category-is-the-venues-word-and-the-box-owns-it.md.
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:satset/domain/models/cash_entry.dart';
@@ -32,9 +35,9 @@ void main() {
     await topUpCash(db, boxId: 'box-main',
       amount: 500000);
     await spendCash(db, boxId: 'box-main',
-      amount: 120000, category: CashCategory.ingredients);
+      amount: 120000, categoryId: 'ingredients');
     await spendCash(db, boxId: 'box-main',
-      amount: 30000, category: CashCategory.transport);
+      amount: 30000, categoryId: 'transport');
     expect(await cashBalance(db), 350000);
 
     final ledger = await cashLedger(db);
@@ -49,7 +52,7 @@ void main() {
       amount: 100000);
     await expectLater(
       spendCash(db, boxId: 'box-main',
-      amount: 100001, category: CashCategory.other),
+      amount: 100001, categoryId: 'other'),
       throwsA(
         isA<CashException>()
             .having((e) => e.code, 'code', 'insufficient_cash')
@@ -62,7 +65,7 @@ void main() {
 
     // Exactly the balance is allowed — a box emptied to zero is normal.
     await spendCash(db, boxId: 'box-main',
-      amount: 100000, category: CashCategory.other);
+      amount: 100000, categoryId: 'other');
     expect(await cashBalance(db), 0);
   });
 
@@ -138,7 +141,7 @@ void main() {
     final top = await topUpCash(db, boxId: 'box-main',
       amount: 100000);
     await spendCash(db, boxId: 'box-main',
-      amount: 100000, category: CashCategory.ingredients);
+      amount: 100000, categoryId: 'ingredients');
     // The money is gone, but the top-up was still wrong — refusing this is what
     // ADR-0088 exempts, or the error would be permanent.
     await reverseCash(db, entryId: top.id, note: 'uang pribadi, bukan kas');
@@ -157,21 +160,21 @@ void main() {
       db,
       boxId: 'box-main',
       amount: 120000,
-      category: CashCategory.ingredients,
+      categoryId: 'ingredients',
       at: DateTime(2026, 8, 6),
     );
     await spendCash(
       db,
       boxId: 'box-main',
       amount: 80000,
-      category: CashCategory.ingredients,
+      categoryId: 'ingredients',
       at: DateTime(2026, 8, 7),
     );
     await spendCash(
       db,
       boxId: 'box-main',
       amount: 40000,
-      category: CashCategory.transport,
+      categoryId: 'transport',
       at: DateTime(2026, 8, 8),
     );
     // Ledger now says 560000; the box holds 550000.
@@ -185,10 +188,8 @@ void main() {
     expect(s['variance'], -10000, reason: 'the count, not a purchase');
     expect(s['closing'], 550000);
     expect(s['count'], 5);
-    expect(s['byCategory'], {
-      CashCategory.ingredients.name: 200000,
-      CashCategory.transport.name: 40000,
-    });
+    // The venue's own words, not codes (ADR-0135).
+    expect(s['byCategory'], {'Belanja bahan': 200000, 'Transport': 40000});
 
     // The invariant the section exists to keep: opening + in − out + variance.
     expect(
@@ -219,7 +220,7 @@ void main() {
           db,
           boxId: dapur,
           amount: 50000,
-          category: CashCategory.ingredients,
+          categoryId: 'ingredients',
         ),
         throwsA(
           isA<CashException>()
@@ -252,8 +253,8 @@ void main() {
       expect(legs[0].transferPeerId, legs[1].id);
       expect(legs[1].transferPeerId, legs[0].id);
       // Nothing was bought, so neither leg may reach the by-category breakdown.
-      expect(legs[0].category, isNull);
-      expect(legs[1].category, isNull);
+      expect(legs[0].categoryId, isNull);
+      expect(legs[1].categoryId, isNull);
 
       expect(await cashBalance(db, boxId: 'box-main'), 500000);
       expect(await cashBalance(db, boxId: dapur), 300000);
@@ -396,7 +397,7 @@ void main() {
         db,
         boxId: dapur,
         amount: 150000,
-        category: CashCategory.ingredients,
+        categoryId: 'ingredients',
         at: DateTime(2026, 8, 4),
       );
 
@@ -423,7 +424,154 @@ void main() {
         (main['closing'] as int) + (kitchen['closing'] as int),
       );
       // A transfer buys nothing, so it never reaches the category breakdown.
-      expect(s['byCategory'], {CashCategory.ingredients.name: 150000});
+      expect(s['byCategory'], {'Belanja bahan': 150000});
+    });
+  });
+
+  group('the box owns its vocabulary (ADR-0135)', () {
+    test('every box starts with the five stock words, under their old '
+        'enum names', () async {
+      // The whole migration story: a pre-v75 row reading `ingredients` finds
+      // this row under its own box, so nothing had to be backfilled.
+      final main = await cashCategoryList(db, boxId: 'box-main');
+      expect(main.map((c) => c.id), [
+        'ingredients',
+        'operations',
+        'transport',
+        'dailyWage',
+        'other',
+      ]);
+      expect(main.first.name, 'Belanja bahan');
+
+      // And a box created later gets the same five, so a fresh tin can take an
+      // expense the moment it exists.
+      final kitchen = await createCashBox(db, name: 'Kas Dapur');
+      final theirs = await cashCategoryList(db, boxId: kitchen.id);
+      expect(theirs.map((c) => c.id), main.map((c) => c.id));
+    });
+
+    test('a category from another box is refused', () async {
+      final kitchen = await createCashBox(db, name: 'Kas Dapur');
+      await topUpCash(db, boxId: kitchen.id, amount: 100000);
+      final sayur = await createCashCategory(
+        db,
+        boxId: 'box-main',
+        name: 'Sayur',
+      );
+
+      await expectLater(
+        spendCash(db, boxId: kitchen.id, amount: 1000, categoryId: sayur.id),
+        throwsA(
+          isA<CashException>().having((e) => e.code, 'code', 'unknown_category'),
+        ),
+      );
+      // A retired word is refused the same way — the picker hides it, and the
+      // writer is what actually enforces it.
+      await updateCashCategory(
+        db,
+        boxId: kitchen.id,
+        id: 'transport',
+        active: false,
+      );
+      await expectLater(
+        spendCash(db, boxId: kitchen.id, amount: 1000, categoryId: 'transport'),
+        throwsA(
+          isA<CashException>().having((e) => e.code, 'code', 'unknown_category'),
+        ),
+      );
+      // Neither refusal wrote anything.
+      expect(await cashBalance(db, boxId: kitchen.id), 100000);
+    });
+
+    test('a rename re-reads the ledger and the report, and the audit line '
+        'keeps what it wrote', () async {
+      await topUpCash(db, boxId: 'box-main', amount: 500000);
+      await spendCash(
+        db,
+        boxId: 'box-main',
+        amount: 60000,
+        categoryId: 'ingredients',
+      );
+
+      await updateCashCategory(
+        db,
+        boxId: 'box-main',
+        id: 'ingredients',
+        name: 'Belanja pasar',
+      );
+
+      // The entry stores the id, so the word follows the rename.
+      final row = (await cashLedger(db)).firstWhere(
+        (e) => e.kind == CashEntryKind.expense,
+      );
+      expect(row.categoryId, 'ingredients');
+      expect(row.categoryName, 'Belanja pasar');
+
+      final section = await cashReportSection(
+        db,
+        from: DateTime(2000),
+        to: DateTime(2100),
+      );
+      expect(section['byCategory'], {'Belanja pasar': 60000});
+
+      // The audit params are frozen prose: they say what was chosen at the time.
+      final audit = await db
+          .customSelect("SELECT params FROM audit_entries "
+              "WHERE kind = 'cashSpent'")
+          .getSingle();
+      expect(audit.read<String>('params'), contains('Belanja bahan'));
+    });
+
+    test('two tins that authored the same word read as one venue line, '
+        'and each box keeps its own breakdown', () async {
+      final kitchen = await createCashBox(db, name: 'Kas Dapur');
+      await topUpCash(db, boxId: 'box-main', amount: 500000);
+      await topUpCash(db, boxId: kitchen.id, amount: 500000);
+      final a = await createCashCategory(db, boxId: 'box-main', name: 'Sayur');
+      final b = await createCashCategory(db, boxId: kitchen.id, name: 'Sayur');
+      expect(a.id, isNot(b.id), reason: 'two rows, one word');
+
+      await spendCash(db, boxId: 'box-main', amount: 30000, categoryId: a.id);
+      await spendCash(db, boxId: kitchen.id, amount: 20000, categoryId: b.id);
+
+      final section = await cashReportSection(
+        db,
+        from: DateTime(2000),
+        to: DateTime(2100),
+      );
+      expect(section['byCategory'], {'Sayur': 50000});
+      final boxes = (section['byBox'] as List).cast<Map<String, dynamic>>();
+      expect(
+        boxes.firstWhere((x) => x['id'] == 'box-main')['byCategory'],
+        {'Sayur': 30000},
+      );
+      expect(
+        boxes.firstWhere((x) => x['id'] == kitchen.id)['byCategory'],
+        {'Sayur': 20000},
+      );
+    });
+
+    test('a box may be retired down to no categories, and the expense is '
+        'then refused', () async {
+      await topUpCash(db, boxId: 'box-main', amount: 100000);
+      for (final c in await cashCategoryList(db, boxId: 'box-main')) {
+        await updateCashCategory(
+          db,
+          boxId: 'box-main',
+          id: c.id,
+          active: false,
+        );
+      }
+      expect(
+        await cashCategoryList(db, boxId: 'box-main', activeOnly: true),
+        isEmpty,
+      );
+      await expectLater(
+        spendCash(db, boxId: 'box-main', amount: 1000, categoryId: 'other'),
+        throwsA(
+          isA<CashException>().having((e) => e.code, 'code', 'unknown_category'),
+        ),
+      );
     });
   });
 }

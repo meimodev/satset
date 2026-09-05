@@ -55,6 +55,7 @@ part 'database.g.dart';
     StockCountLines,
     CashEntries,
     CashBoxes,
+    CashCategories,
     Members,
     MemberTombstones,
     MemberPoints,
@@ -83,7 +84,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 74;
+  int get schemaVersion => 75;
 
   /// The cap sums a visit's expenses on every capture, inside the transaction
   /// that writes the next one (ADR-0100), so the lookup is on the hot path of
@@ -1576,6 +1577,17 @@ class AppDatabase extends _$AppDatabase {
         );
       }
 
+      if (from < 75 && to >= 75) {
+        // ADR-0135 — a category is the venue's word, and the box owns it. The
+        // five stock slugs go into *every* box under the names the deleted
+        // `CashCategory` enum persisted, so an existing `cash_entries.category`
+        // resolves against the `box_id` its row already carries. Nothing
+        // backfills the ledger: it is append-only, and rewriting a money
+        // column to satisfy an id scheme is the trade this ADR refused.
+        await m.createTable(cashCategories);
+        await seedCashCategories();
+      }
+
       if (from < 74 && to >= 74) {
         // ADR-0132 — `adjustStock` and `manageRoles` become real gates. Both
         // were grantable toggles that nothing enforced, so every venue holds
@@ -1617,6 +1629,7 @@ class AppDatabase extends _$AppDatabase {
       await _seedMenuTags();
       await _seedVisitExpenseCategories();
       await _seedCashBoxes();
+      await seedCashCategories();
     },
   );
 
@@ -1650,6 +1663,44 @@ class AppDatabase extends _$AppDatabase {
       CashBoxesCompanion.insert(id: 'box-main', name: 'Kas Utama'),
       mode: InsertMode.insertOrIgnore,
     );
+  }
+
+  /// The five stock [[Kategori kas (cash category)|categories]] (ADR-0135),
+  /// seeded into **every** box that exists.
+  ///
+  /// The ids are the names the `CashCategory` enum persisted, which is the
+  /// whole migration: a pre-v75 expense reading `category='ingredients'` finds
+  /// this row under its own `box_id` and nothing had to be rewritten. The
+  /// words are Indonesian literals rather than ARB keys because they are
+  /// content now — the venue renames them.
+  ///
+  /// `insertOrIgnore` for [_seedCashBoxes]' reason: this runs on create, on the
+  /// v75 upgrade, on every Server boot and on every box create, and a rename or
+  /// a retirement must survive all four.
+  Future<void> seedCashCategories({String? boxId}) async {
+    const defaults = [
+      ('ingredients', 'Belanja bahan', 0),
+      ('operations', 'Operasional', 1),
+      ('transport', 'Transport', 2),
+      ('dailyWage', 'Upah harian', 3),
+      ('other', 'Lainnya', 4),
+    ];
+    final boxIds = boxId != null
+        ? [boxId]
+        : (await select(cashBoxes).get()).map((b) => b.id).toList();
+    for (final box in boxIds) {
+      for (final (id, name, order) in defaults) {
+        await into(cashCategories).insert(
+          CashCategoriesCompanion.insert(
+            boxId: box,
+            id: id,
+            name: name,
+            sortOrder: Value(order),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+      }
+    }
   }
 
   Future<void> _seedVisitExpenseCategories() async {

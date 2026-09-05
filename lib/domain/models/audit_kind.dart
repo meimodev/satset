@@ -82,9 +82,10 @@ enum AuditKind {
   /// `{amount}` (pre-formatted rupiah, ADR-0084), `{box}`.
   cashToppedUp,
 
-  /// `{amount}`, `{category}`, `{box}` — the category travels as its **key**
-  /// and is rendered through `cashCategoryLabel`, so it follows the reader's
-  /// language the way `paymentRecorded`'s method key already does.
+  /// `{amount}`, `{category}`, `{box}` — the category travels as the **word**
+  /// the venue authored (ADR-0135), not a key: it is venue content, like the
+  /// box name beside it, so there is nothing to resolve and a later rename
+  /// cannot rewrite what this line says was bought.
   cashSpent,
 
   /// `{counted}` (what was physically found), `{variance}` (signed, against

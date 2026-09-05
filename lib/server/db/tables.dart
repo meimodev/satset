@@ -1478,6 +1478,37 @@ class CashBoxes extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// One **[[Kategori kas (cash category)]]** — the venue's own word for what
+/// money left a box *for* (ADR-0135).
+///
+/// **Owned by a box**, which is what the composite key says: Kas Dapur lists
+/// what a kitchen tin buys, the bar tin lists its own, and neither offers the
+/// other's. `id` is a slug for the five stock rows — `ingredients`,
+/// `operations`, `transport`, `dailyWage`, `other`, the names the deleted
+/// `CashCategory` enum persisted — and a uuid for anything the venue authors.
+/// Seeding those five slugs into *every* box is what lets a pre-v75
+/// `cash_entries` row resolve against the `box_id` it already carries, so
+/// **nothing backfills the ledger**.
+///
+/// Venue-authored, so a name here is content and never reaches the ARB — the
+/// call `CashBoxes` already makes, now extended to what a box spends on.
+/// **Soft-delete only**, for [VisitExpenseCategories]' reason: a removed row
+/// orphans every expense filed under it and the report renders an id where a
+/// word should be. A box may be retired down to *no* active categories; the
+/// write path refuses the expense and the sheet says so.
+@DataClassName('CashCategoryRow')
+class CashCategories extends Table {
+  /// The box that owns this word. Half the primary key, not a foreign key with
+  /// a cascade — retiring a box must not take its vocabulary with it.
+  TextColumn get boxId => text()();
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  BoolColumn get active => boolean().withDefault(const Constant(true))();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  @override
+  Set<Column> get primaryKey => {boxId, id};
+}
+
 /// The [[Kas kecil]] ledger — the venue's petty cash boxes, append-only.
 ///
 /// **There is no balance column and there never will be.** The balance is
@@ -1498,8 +1529,14 @@ class CashEntries extends Table {
   /// scaled like `costMicro`: the box is counted in notes.
   IntColumn get delta => integer()();
 
-  /// `ingredients | operations | transport | dailyWage | other`. Set on an
-  /// expense, null on every other kind.
+  /// Names a [CashCategories] row **within this row's [boxId]** (ADR-0135).
+  /// Set on an expense, null on every other kind — a transfer leg bought
+  /// nothing and a count moved nothing.
+  ///
+  /// Deliberately not a foreign key: a category is soft-deleted, never removed,
+  /// so a closed month keeps rendering the word it was filed under. Pre-v75
+  /// rows hold what the `CashCategory` enum persisted, which is exactly the
+  /// slug that migration seeded into every box.
   TextColumn get category => text().nullable()();
 
   /// Optional on top-up / expense / count; **required** on a reversal, enforced

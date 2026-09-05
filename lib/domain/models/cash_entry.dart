@@ -51,7 +51,7 @@ enum CashEntryKind {
   /// funds the box.
   topUp,
 
-  /// Money out of the box. Negative delta, carries a [CashCategory] and an
+  /// Money out of the box. Negative delta, names a [CashCategory] and carries an
   /// optional photo of whatever receipt existed. Gated on `manageCash`.
   expense,
 
@@ -73,34 +73,32 @@ CashEntryKind? cashEntryKindFromName(String? name) {
   return null;
 }
 
-/// What an expense was for. A closed set, deliberately: a venue-authored list
-/// means another CRUD screen and an ARB-exempt string for a ledger that sees
-/// tens of rows a week, and free text cannot be grouped in a report.
+/// One **[[Kategori kas (cash category)]]** — the venue's own word for what
+/// money left a box for (ADR-0135).
 ///
-/// The name is persisted in `cash_entries.category` and is the join to the ARB
-/// entry — see `cashCategoryLabel` in `core/localization/labels.dart`, which is
-/// where the words live. Never rename one.
-enum CashCategory {
-  /// Belanja bahan — market shopping, the common case.
-  ingredients,
+/// **Owned by a box**, which is why [boxId] is here and not inferred: Kas Dapur
+/// lists what a kitchen tin buys and the bar tin lists its own. The word is
+/// venue content, like a [CashBox]'s name — never an ARB key, never localised,
+/// never a code. It replaced a closed enum of five, which survive as seeded
+/// rows the venue may rename.
+///
+/// Retired by clearing [active], never deleted: a removed row would orphan
+/// every expense filed under it and the ledger would render an id where a word
+/// should be.
+class CashCategory {
+  final String boxId;
+  final String id;
+  final String name;
+  final bool active;
+  final int sortOrder;
 
-  /// Operasional — gas, ice, cleaning, small repairs.
-  operations,
-
-  /// Transport — an ojek run, parking, fuel.
-  transport,
-
-  /// Upah harian — a day labourer paid in cash.
-  dailyWage,
-  other,
-}
-
-CashCategory? cashCategoryFromName(String? name) {
-  if (name == null) return null;
-  for (final c in CashCategory.values) {
-    if (c.name == name) return c;
-  }
-  return null;
+  const CashCategory({
+    required this.boxId,
+    required this.id,
+    required this.name,
+    this.active = true,
+    this.sortOrder = 0,
+  });
 }
 
 /// One immutable movement of the box.
@@ -121,8 +119,16 @@ class CashEntry {
   /// an ingredient's cost. Positive into the box, negative out of it.
   final int delta;
 
-  /// Set on an expense, null on every other kind.
-  final CashCategory? category;
+  /// The [CashCategory] this expense was filed under — its **id**, scoped to
+  /// this row's [boxId]. Set on an expense, null on every other kind: a
+  /// transfer leg bought nothing and a count moved nothing.
+  final String? categoryId;
+
+  /// The category's word **as it stands right now**, resolved server-side on
+  /// every read rather than snapshotted (ADR-0135). A rename is therefore
+  /// retroactive here, while the audit trail keeps what it wrote at the time.
+  /// Null when the row carries no category.
+  final String? categoryName;
 
   /// Optional on a top-up, an expense and a count; **required** on a reversal,
   /// which exists to explain something. Enforced server-side.
@@ -167,7 +173,8 @@ class CashEntry {
     required this.kind,
     required this.delta,
     required this.at,
-    this.category,
+    this.categoryId,
+    this.categoryName,
     this.transferPeerId,
     this.note,
     this.reversesId,

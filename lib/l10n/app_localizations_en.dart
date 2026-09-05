@@ -7442,21 +7442,6 @@ class AppL10nEn extends AppL10n {
   String get capManageCash => 'Manage petty cash';
 
   @override
-  String get cashCatIngredients => 'Ingredients';
-
-  @override
-  String get cashCatOperations => 'Operations';
-
-  @override
-  String get cashCatTransport => 'Transport';
-
-  @override
-  String get cashCatDailyWage => 'Daily wages';
-
-  @override
-  String get cashCatOther => 'Other';
-
-  @override
   String get cashKindTopUp => 'Top-up';
 
   @override
@@ -7621,6 +7606,34 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get kasBoxesTitle => 'Manage cash boxes';
+
+  @override
+  String get kasCatTitle => 'Categories';
+
+  @override
+  String get kasCatNew => 'New category';
+
+  @override
+  String get kasFieldCatName => 'Category name';
+
+  @override
+  String get kasCatRetire => 'Retire';
+
+  @override
+  String get kasCatReopen => 'Reactivate';
+
+  @override
+  String get kasCatNoneTitle => 'No categories yet';
+
+  @override
+  String get kasCatNoneHint =>
+      'Add a category under Manage cash boxes before recording an expense.';
+
+  @override
+  String get kasErrCatNameRequired => 'A category needs a name.';
+
+  @override
+  String get kasErrUnknownCategory => 'That category is not in this box.';
 
   @override
   String get kasBoxNew => 'New box';

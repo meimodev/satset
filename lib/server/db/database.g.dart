@@ -26551,8 +26551,14 @@ class CashEntry extends DataClass implements Insertable<CashEntry> {
   /// scaled like `costMicro`: the box is counted in notes.
   final int delta;
 
-  /// `ingredients | operations | transport | dailyWage | other`. Set on an
-  /// expense, null on every other kind.
+  /// Names a [CashCategories] row **within this row's [boxId]** (ADR-0135).
+  /// Set on an expense, null on every other kind — a transfer leg bought
+  /// nothing and a count moved nothing.
+  ///
+  /// Deliberately not a foreign key: a category is soft-deleted, never removed,
+  /// so a closed month keeps rendering the word it was filed under. Pre-v75
+  /// rows hold what the `CashCategory` enum persisted, which is exactly the
+  /// slug that migration seeded into every box.
   final String? category;
 
   /// Optional on top-up / expense / count; **required** on a reversal, enforced
@@ -27345,6 +27351,357 @@ class CashBoxesCompanion extends UpdateCompanion<CashBoxRow> {
   @override
   String toString() {
     return (StringBuffer('CashBoxesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('active: $active, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CashCategoriesTable extends CashCategories
+    with TableInfo<$CashCategoriesTable, CashCategoryRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CashCategoriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _boxIdMeta = const VerificationMeta('boxId');
+  @override
+  late final GeneratedColumn<String> boxId = GeneratedColumn<String>(
+    'box_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _activeMeta = const VerificationMeta('active');
+  @override
+  late final GeneratedColumn<bool> active = GeneratedColumn<bool>(
+    'active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [boxId, id, name, active, sortOrder];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cash_categories';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CashCategoryRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('box_id')) {
+      context.handle(
+        _boxIdMeta,
+        boxId.isAcceptableOrUnknown(data['box_id']!, _boxIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_boxIdMeta);
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('active')) {
+      context.handle(
+        _activeMeta,
+        active.isAcceptableOrUnknown(data['active']!, _activeMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {boxId, id};
+  @override
+  CashCategoryRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CashCategoryRow(
+      boxId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}box_id'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      active: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}active'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+    );
+  }
+
+  @override
+  $CashCategoriesTable createAlias(String alias) {
+    return $CashCategoriesTable(attachedDatabase, alias);
+  }
+}
+
+class CashCategoryRow extends DataClass implements Insertable<CashCategoryRow> {
+  /// The box that owns this word. Half the primary key, not a foreign key with
+  /// a cascade — retiring a box must not take its vocabulary with it.
+  final String boxId;
+  final String id;
+  final String name;
+  final bool active;
+  final int sortOrder;
+  const CashCategoryRow({
+    required this.boxId,
+    required this.id,
+    required this.name,
+    required this.active,
+    required this.sortOrder,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['box_id'] = Variable<String>(boxId);
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['active'] = Variable<bool>(active);
+    map['sort_order'] = Variable<int>(sortOrder);
+    return map;
+  }
+
+  CashCategoriesCompanion toCompanion(bool nullToAbsent) {
+    return CashCategoriesCompanion(
+      boxId: Value(boxId),
+      id: Value(id),
+      name: Value(name),
+      active: Value(active),
+      sortOrder: Value(sortOrder),
+    );
+  }
+
+  factory CashCategoryRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CashCategoryRow(
+      boxId: serializer.fromJson<String>(json['boxId']),
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      active: serializer.fromJson<bool>(json['active']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'boxId': serializer.toJson<String>(boxId),
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'active': serializer.toJson<bool>(active),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+    };
+  }
+
+  CashCategoryRow copyWith({
+    String? boxId,
+    String? id,
+    String? name,
+    bool? active,
+    int? sortOrder,
+  }) => CashCategoryRow(
+    boxId: boxId ?? this.boxId,
+    id: id ?? this.id,
+    name: name ?? this.name,
+    active: active ?? this.active,
+    sortOrder: sortOrder ?? this.sortOrder,
+  );
+  CashCategoryRow copyWithCompanion(CashCategoriesCompanion data) {
+    return CashCategoryRow(
+      boxId: data.boxId.present ? data.boxId.value : this.boxId,
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      active: data.active.present ? data.active.value : this.active,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CashCategoryRow(')
+          ..write('boxId: $boxId, ')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('active: $active, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(boxId, id, name, active, sortOrder);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CashCategoryRow &&
+          other.boxId == this.boxId &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.active == this.active &&
+          other.sortOrder == this.sortOrder);
+}
+
+class CashCategoriesCompanion extends UpdateCompanion<CashCategoryRow> {
+  final Value<String> boxId;
+  final Value<String> id;
+  final Value<String> name;
+  final Value<bool> active;
+  final Value<int> sortOrder;
+  final Value<int> rowid;
+  const CashCategoriesCompanion({
+    this.boxId = const Value.absent(),
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.active = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CashCategoriesCompanion.insert({
+    required String boxId,
+    required String id,
+    required String name,
+    this.active = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : boxId = Value(boxId),
+       id = Value(id),
+       name = Value(name);
+  static Insertable<CashCategoryRow> custom({
+    Expression<String>? boxId,
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<bool>? active,
+    Expression<int>? sortOrder,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (boxId != null) 'box_id': boxId,
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (active != null) 'active': active,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CashCategoriesCompanion copyWith({
+    Value<String>? boxId,
+    Value<String>? id,
+    Value<String>? name,
+    Value<bool>? active,
+    Value<int>? sortOrder,
+    Value<int>? rowid,
+  }) {
+    return CashCategoriesCompanion(
+      boxId: boxId ?? this.boxId,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      active: active ?? this.active,
+      sortOrder: sortOrder ?? this.sortOrder,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (boxId.present) {
+      map['box_id'] = Variable<String>(boxId.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (active.present) {
+      map['active'] = Variable<bool>(active.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CashCategoriesCompanion(')
+          ..write('boxId: $boxId, ')
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('active: $active, ')
@@ -32435,6 +32792,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $CashEntriesTable cashEntries = $CashEntriesTable(this);
   late final $CashBoxesTable cashBoxes = $CashBoxesTable(this);
+  late final $CashCategoriesTable cashCategories = $CashCategoriesTable(this);
   late final $MembersTable members = $MembersTable(this);
   late final $MemberTombstonesTable memberTombstones = $MemberTombstonesTable(
     this,
@@ -32491,6 +32849,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     stockCountLines,
     cashEntries,
     cashBoxes,
+    cashCategories,
     members,
     memberTombstones,
     memberPoints,
@@ -45356,6 +45715,212 @@ typedef $$CashBoxesTableProcessedTableManager =
       CashBoxRow,
       PrefetchHooks Function()
     >;
+typedef $$CashCategoriesTableCreateCompanionBuilder =
+    CashCategoriesCompanion Function({
+      required String boxId,
+      required String id,
+      required String name,
+      Value<bool> active,
+      Value<int> sortOrder,
+      Value<int> rowid,
+    });
+typedef $$CashCategoriesTableUpdateCompanionBuilder =
+    CashCategoriesCompanion Function({
+      Value<String> boxId,
+      Value<String> id,
+      Value<String> name,
+      Value<bool> active,
+      Value<int> sortOrder,
+      Value<int> rowid,
+    });
+
+class $$CashCategoriesTableFilterComposer
+    extends Composer<_$AppDatabase, $CashCategoriesTable> {
+  $$CashCategoriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get boxId => $composableBuilder(
+    column: $table.boxId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get active => $composableBuilder(
+    column: $table.active,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CashCategoriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $CashCategoriesTable> {
+  $$CashCategoriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get boxId => $composableBuilder(
+    column: $table.boxId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get active => $composableBuilder(
+    column: $table.active,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CashCategoriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CashCategoriesTable> {
+  $$CashCategoriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get boxId =>
+      $composableBuilder(column: $table.boxId, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<bool> get active =>
+      $composableBuilder(column: $table.active, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+}
+
+class $$CashCategoriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CashCategoriesTable,
+          CashCategoryRow,
+          $$CashCategoriesTableFilterComposer,
+          $$CashCategoriesTableOrderingComposer,
+          $$CashCategoriesTableAnnotationComposer,
+          $$CashCategoriesTableCreateCompanionBuilder,
+          $$CashCategoriesTableUpdateCompanionBuilder,
+          (
+            CashCategoryRow,
+            BaseReferences<
+              _$AppDatabase,
+              $CashCategoriesTable,
+              CashCategoryRow
+            >,
+          ),
+          CashCategoryRow,
+          PrefetchHooks Function()
+        > {
+  $$CashCategoriesTableTableManager(
+    _$AppDatabase db,
+    $CashCategoriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CashCategoriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CashCategoriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CashCategoriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> boxId = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<bool> active = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CashCategoriesCompanion(
+                boxId: boxId,
+                id: id,
+                name: name,
+                active: active,
+                sortOrder: sortOrder,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String boxId,
+                required String id,
+                required String name,
+                Value<bool> active = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CashCategoriesCompanion.insert(
+                boxId: boxId,
+                id: id,
+                name: name,
+                active: active,
+                sortOrder: sortOrder,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CashCategoriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CashCategoriesTable,
+      CashCategoryRow,
+      $$CashCategoriesTableFilterComposer,
+      $$CashCategoriesTableOrderingComposer,
+      $$CashCategoriesTableAnnotationComposer,
+      $$CashCategoriesTableCreateCompanionBuilder,
+      $$CashCategoriesTableUpdateCompanionBuilder,
+      (
+        CashCategoryRow,
+        BaseReferences<_$AppDatabase, $CashCategoriesTable, CashCategoryRow>,
+      ),
+      CashCategoryRow,
+      PrefetchHooks Function()
+    >;
 typedef $$MembersTableCreateCompanionBuilder =
     MembersCompanion Function({
       required String id,
@@ -47892,6 +48457,8 @@ class $AppDatabaseManager {
       $$CashEntriesTableTableManager(_db, _db.cashEntries);
   $$CashBoxesTableTableManager get cashBoxes =>
       $$CashBoxesTableTableManager(_db, _db.cashBoxes);
+  $$CashCategoriesTableTableManager get cashCategories =>
+      $$CashCategoriesTableTableManager(_db, _db.cashCategories);
   $$MembersTableTableManager get members =>
       $$MembersTableTableManager(_db, _db.members);
   $$MemberTombstonesTableTableManager get memberTombstones =>

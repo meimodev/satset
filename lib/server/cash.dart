@@ -112,6 +112,145 @@ Future<String> _boxName(AppDatabase db, String boxId) async {
   return row.name;
 }
 
+/// A box's [[Kategori kas (cash category)|categories]] in picker order
+/// (ADR-0135).
+///
+/// Inactive rows are included by default, for the reason [cashBoxList] includes
+/// retired boxes: a movement already filed under a retired word still has to
+/// render it.
+Future<List<CashCategory>> cashCategoryList(
+  AppDatabase db, {
+  String? boxId,
+  bool activeOnly = false,
+}) async {
+  final t = db.cashCategories;
+  final q = db.select(t)
+    ..orderBy([
+      (c) => OrderingTerm.asc(c.sortOrder),
+      (c) => OrderingTerm.asc(c.name),
+    ]);
+  if (boxId != null) q.where((c) => c.boxId.equals(boxId));
+  if (activeOnly) q.where((c) => c.active.equals(true));
+  return [
+    for (final r in await q.get())
+      CashCategory(
+        boxId: r.boxId,
+        id: r.id,
+        name: r.name,
+        active: r.active,
+        sortOrder: r.sortOrder,
+      ),
+  ];
+}
+
+/// `(boxId, categoryId) -> name` for a whole page of ledger rows, so rendering
+/// a category costs one read instead of one per row.
+Future<Map<(String, String?), String>> _categoryNames(AppDatabase db) async {
+  final rows = await db.select(db.cashCategories).get();
+  return {for (final r in rows) (r.boxId, r.id): r.name};
+}
+
+/// The category as it stands, refused unless it is **active and belongs to this
+/// box** (ADR-0135). A word from another tin is `unknown_category`, never
+/// silently accepted: per-box catalogues would mean nothing if any id worked.
+Future<CashCategory> _activeCategory(
+  AppDatabase db, {
+  required String boxId,
+  required String id,
+}) async {
+  final row =
+      await (db.select(db.cashCategories)
+            ..where((c) => c.boxId.equals(boxId) & c.id.equals(id)))
+          .getSingleOrNull();
+  if (row == null || !row.active) {
+    throw const CashException('unknown_category');
+  }
+  return CashCategory(
+    boxId: row.boxId,
+    id: row.id,
+    name: row.name,
+    active: row.active,
+    sortOrder: row.sortOrder,
+  );
+}
+
+/// Author a category on one box. `editSettings` — the authority that names a
+/// tin names what comes out of it.
+///
+/// **No audit row** (ADR-0135): a box audits because it holds a balance, and a
+/// category is vocabulary. Every movement already carries both.
+Future<CashCategory> createCashCategory(
+  AppDatabase db, {
+  required String boxId,
+  required String name,
+}) async {
+  final clean = name.trim();
+  if (clean.isEmpty) throw const CashException('name_required');
+  await _boxName(db, boxId);
+  final id = 'cat-${_uuid.v4()}';
+  final maxOrder = db.cashCategories.sortOrder.max();
+  final row =
+      await (db.selectOnly(db.cashCategories)
+            ..addColumns([maxOrder])
+            ..where(db.cashCategories.boxId.equals(boxId)))
+          .getSingleOrNull();
+  final order = (row?.read(maxOrder) ?? 0) + 1;
+  await db
+      .into(db.cashCategories)
+      .insert(
+        CashCategoriesCompanion.insert(
+          boxId: boxId,
+          id: id,
+          name: clean,
+          sortOrder: Value(order),
+        ),
+      );
+  return CashCategory(boxId: boxId, id: id, name: clean, sortOrder: order);
+}
+
+/// Rename a category, or retire it. `editSettings`.
+///
+/// A rename is **retroactive** — the entry stores the id and the word is
+/// resolved on read — so last month's report re-reads under the new one while
+/// the audit trail keeps what it wrote at the time.
+///
+/// There is **no delete**, and no guard against retiring the last active one: a
+/// box whose catalogue is empty shows an empty state and the write path still
+/// refuses. Guarding it would block retiring the five stock words before
+/// authoring your own.
+Future<CashCategory> updateCashCategory(
+  AppDatabase db, {
+  required String boxId,
+  required String id,
+  String? name,
+  bool? active,
+}) async {
+  final row =
+      await (db.select(db.cashCategories)
+            ..where((c) => c.boxId.equals(boxId) & c.id.equals(id)))
+          .getSingleOrNull();
+  if (row == null) throw const CashException('unknown_category');
+  final clean = name?.trim();
+  if (clean != null && clean.isEmpty) {
+    throw const CashException('name_required');
+  }
+  await (db.update(db.cashCategories)
+        ..where((c) => c.boxId.equals(boxId) & c.id.equals(id)))
+      .write(
+        CashCategoriesCompanion(
+          name: clean == null ? const Value.absent() : Value(clean),
+          active: active == null ? const Value.absent() : Value(active),
+        ),
+      );
+  return CashCategory(
+    boxId: boxId,
+    id: id,
+    name: clean ?? row.name,
+    active: active ?? row.active,
+    sortOrder: row.sortOrder,
+  );
+}
+
 /// Ledger rows, newest first, paged by growing limit (ADR-0079).
 ///
 /// Never selects `photo`: the blob is reached only by its own route, so a ledger
@@ -144,6 +283,10 @@ Future<List<CashEntry>> cashLedger(
   // Null is the "Semua" arm — every box in one list, each row naming its own.
   if (boxId != null) q.where(t.boxId.equals(boxId));
   final rows = await q.get();
+  // One catalogue read for the page rather than a lookup per row. Inactive
+  // categories are included on purpose: a retired word still has to render on
+  // the movements already filed under it.
+  final names = await _categoryNames(db);
   return [
     for (final r in rows)
       CashEntry(
@@ -151,7 +294,8 @@ Future<List<CashEntry>> cashLedger(
         boxId: r.read(t.boxId)!,
         kind: cashEntryKindFromName(r.read(t.kind)) ?? CashEntryKind.expense,
         delta: r.read(t.delta)!,
-        category: cashCategoryFromName(r.read(t.category)),
+        categoryId: r.read(t.category),
+        categoryName: names[(r.read(t.boxId)!, r.read(t.category))],
         note: r.read(t.note),
         reversesId: r.read(t.reversesId),
         reversedById: r.read(t.reversedById),
@@ -203,7 +347,7 @@ Future<CashEntry> spendCash(
   AppDatabase db, {
   required String boxId,
   required int amount,
-  required CashCategory category,
+  required String categoryId,
   String? note,
   Uint8List? photo,
   String? actorUserId,
@@ -216,6 +360,10 @@ Future<CashEntry> spendCash(
   // Check and write are one atomic step (ADR-0100): two supervisors
   // spending at once must not both clear a guard neither still meets.
   return db.transaction(() async {
+    // Both checks read inside the transaction (ADR-0100): a category retired
+    // between the read and the write must not slip through, for the same
+    // reason two supervisors must not both clear a balance guard.
+    final category = await _activeCategory(db, boxId: boxId, id: categoryId);
     final balance = await cashBalance(db, boxId: boxId);
     if (amount > balance) {
       // Physical notes cannot be fewer than zero, so a would-be negative is always
@@ -238,6 +386,9 @@ Future<CashEntry> spendCash(
       auditKind: AuditKind.cashSpent,
       auditParams: {
         'amount': auditRupiah(amount),
+        // The word, not the id: an audit line is frozen prose, so a later
+        // rename leaves the trail saying what was chosen at the time
+        // (ADR-0135). The report, which resolves at read time, will not.
         'category': category.name,
         'box': box,
       },
@@ -465,6 +616,9 @@ Future<CashBox> createCashBox(
       sortOrder: Value((row?.read(maxOrder) ?? 0) + 1),
     ),
   );
+  // A tin nobody can file an expense against is a dead end (ADR-0135), so a
+  // new box starts with the same five stock words every other box has.
+  await db.seedCashCategories(boxId: id);
   await writeAudit(
     db,
     type: AuditType.cashMovement,
@@ -558,6 +712,7 @@ Future<CashEntry> _post(
   required int amountCents,
   String? id,
   CashCategory? category,
+
   String? note,
   String? reversesId,
   String? transferPeerId,
@@ -580,7 +735,7 @@ Future<CashEntry> _post(
           kind: kind.name,
           delta: delta,
           at: when,
-          category: Value(category?.name),
+          category: Value(category?.id),
           note: Value(note),
           reversesId: Value(reversesId),
           transferPeerId: Value(transferPeerId),
@@ -610,7 +765,8 @@ Future<CashEntry> _post(
     kind: kind,
     delta: delta,
     at: when,
-    category: category,
+    categoryId: category?.id,
+    categoryName: category?.name,
     note: note,
     reversesId: reversesId,
     transferPeerId: transferPeerId,
@@ -630,13 +786,23 @@ Map<String, dynamic> cashBoxJson(CashBox b) => {
   'balance': b.balance,
 };
 
+/// Wire shape for one category.
+Map<String, dynamic> cashCategoryJson(CashCategory c) => {
+  'boxId': c.boxId,
+  'id': c.id,
+  'name': c.name,
+  'active': c.active,
+  'sortOrder': c.sortOrder,
+};
+
 /// Wire shape for one ledger row. The photo is a flag, never bytes.
 Map<String, dynamic> cashEntryJson(CashEntry e) => {
   'id': e.id,
   'boxId': e.boxId,
   'kind': e.kind.name,
   'delta': e.delta,
-  'category': e.category?.name,
+  'category': e.categoryId,
+  'categoryName': e.categoryName,
   'note': e.note,
   'reversesId': e.reversesId,
   'reversedById': e.reversedById,
@@ -678,6 +844,8 @@ Future<Map<String, dynamic>> cashReportSection(
   final outflowBy = <String, int>{};
   final varianceBy = <String, int>{};
   final byCategory = <String, int>{};
+  final byCategoryBox = <String, Map<String, int>>{};
+  final names = await _categoryNames(db);
   for (final r in rows) {
     final boxId = r.read(t.boxId) ?? 'box-main';
     final delta = r.read(t.delta) ?? 0;
@@ -693,9 +861,16 @@ Future<Map<String, dynamic>> cashReportSection(
     } else {
       outflowBy[boxId] = (outflowBy[boxId] ?? 0) + -delta;
       final cat = r.read(t.category);
-      // Venue-wide on purpose: a category says what was bought, not which tin
-      // paid for it. A transfer leg has no category and never lands here.
-      if (cat != null) byCategory[cat] = (byCategory[cat] ?? 0) + -delta;
+      // A transfer leg has no category and never lands here.
+      if (cat == null) continue;
+      // Per box, keyed by id — the grain the catalogue is actually authored at.
+      (byCategoryBox[boxId] ??= <String, int>{})[cat] =
+          (byCategoryBox[boxId]?[cat] ?? 0) + -delta;
+      // Venue-wide, keyed by the venue's **own word** (ADR-0135): per-box ids
+      // cannot merge, and an owner asking what the venue spent on vegetables is
+      // asking about the word, not about which tin paid.
+      final word = names[(boxId, cat)] ?? cat;
+      byCategory[word] = (byCategory[word] ?? 0) + -delta;
     }
   }
 
@@ -722,6 +897,10 @@ Future<Map<String, dynamic>> cashReportSection(
       'outflow': boxOut,
       'variance': boxVar,
       'closing': boxOpening + boxIn - boxOut + boxVar,
+      'byCategory': {
+        for (final e in (byCategoryBox[b.id] ?? const <String, int>{}).entries)
+          (names[(b.id, e.key)] ?? e.key): e.value,
+      },
     });
   }
 

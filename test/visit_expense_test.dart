@@ -349,14 +349,19 @@ void main() {
   // One axis now — `at`, the moment the cash left — so the two can never
   // disagree, whether or not the bill has closed.
   test('the headline sums the breakdown, bill open or closed', () async {
+    // Stamped rather than left at `now`, and the window is built around that
+    // stamp: the writer defaults `at` to the clock, so a fixed window silently
+    // stops containing these rows the day the calendar reaches its end — which
+    // is how this test began failing on 5 Sep 2026 without a line changing.
+    final at = DateTime(2026, 9, 3, 19);
     await line(200000);
-    await spend(15000, id: 'ax-1');
-    await spend(25000, id: 'ax-2');
+    await spend(15000, id: 'ax-1', at: at);
+    await spend(25000, id: 'ax-2', at: at);
 
     final section = await visitExpenseReportSection(
       db,
-      from: DateTime(2026, 9, 3),
-      to: DateTime(2026, 9, 5),
+      from: at.subtract(const Duration(days: 1)),
+      to: at.add(const Duration(days: 1)),
     );
 
     final byCategory = (section['byCategory'] as Map).values
