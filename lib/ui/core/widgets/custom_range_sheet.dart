@@ -18,23 +18,35 @@ import 'package:satset/ui/core/widgets/sat_overlay.dart';
 ///
 /// The sheet shell is bespoke (matching the Reports design language) but the
 /// per-field calendar delegates to the framework `showDatePicker`.
+/// [maxDays] is the widest span the sheet will commit. It defaults to the
+/// Reports cap, which exists because that payload is **per bill**; a caller
+/// whose payload is a ledger or an aggregate passes its own (ADR-0136).
 Future<(DateTime, DateTime)?> showCustomRangeSheet(
   BuildContext context, {
   DateTime? initialFrom,
   DateTime? initialTo,
+  int maxDays = kCustomRangeMaxDays,
 }) {
   return showSatSheet<(DateTime, DateTime)>(
     context,
-    builder: (_) =>
-        _CustomRangeSheet(initialFrom: initialFrom, initialTo: initialTo),
+    builder: (_) => _CustomRangeSheet(
+      initialFrom: initialFrom,
+      initialTo: initialTo,
+      maxDays: maxDays,
+    ),
   );
 }
 
 class _CustomRangeSheet extends StatefulWidget {
-  const _CustomRangeSheet({this.initialFrom, this.initialTo});
+  const _CustomRangeSheet({
+    this.initialFrom,
+    this.initialTo,
+    this.maxDays = kCustomRangeMaxDays,
+  });
 
   final DateTime? initialFrom;
   final DateTime? initialTo;
+  final int maxDays;
 
   @override
   State<_CustomRangeSheet> createState() => _CustomRangeSheetState();
@@ -58,13 +70,13 @@ class _CustomRangeSheetState extends State<_CustomRangeSheet> {
       _from == null || _to == null ? 0 : _to!.difference(_from!).inDays + 1;
 
   bool get _orderOk => _from != null && _to != null && !_to!.isBefore(_from!);
-  bool get _spanOk => _spanDays <= kCustomRangeMaxDays;
+  bool get _spanOk => _spanDays <= widget.maxDays;
   bool get _valid => _from != null && _to != null && _orderOk && _spanOk;
 
   String? _error(AppL10n l) {
     if (_from == null || _to == null) return null;
     if (!_orderOk) return l.crsStartBeforeEnd;
-    if (!_spanOk) return l.crsMaxSpan(kCustomRangeMaxDays);
+    if (!_spanOk) return l.crsMaxSpan(widget.maxDays);
     return null;
   }
 

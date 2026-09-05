@@ -7540,6 +7540,157 @@ class AppL10nId extends AppL10n {
   String get kasErrUnknownCategory => 'Kategori tidak ada di kas ini.';
 
   @override
+  String get kasWindowAll => 'Semua';
+
+  @override
+  String kasWindowDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days hari',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kasWindowCustom => 'Pilih tanggal';
+
+  @override
+  String get kasSumInflow => 'Masuk';
+
+  @override
+  String get kasSumOutflow => 'Keluar';
+
+  @override
+  String get kasSumVariance => 'Selisih';
+
+  @override
+  String get kasExport => 'Ekspor';
+
+  @override
+  String get kasExportTitle => 'Ekspor kas';
+
+  @override
+  String get kasExportBody =>
+      'Berkas berisi mutasi pada rentang yang sedang tampil.';
+
+  @override
+  String get kasExportSubject => 'Mutasi kas kecil';
+
+  @override
+  String get kasExportPhotos => 'Sertakan foto nota';
+
+  @override
+  String kasExportPhotosHint(int max) {
+    return 'Hanya untuk PDF. Foto diperkecil dan dibatasi $max lembar.';
+  }
+
+  @override
+  String kasExportProgress(int done, int total) {
+    return 'Menyiapkan foto $done/$total';
+  }
+
+  @override
+  String get kasErrWindowTooLarge =>
+      'Rentang terlalu lebar untuk diekspor. Persempit rentangnya.';
+
+  @override
+  String get kasCsvTitle => 'Mutasi kas kecil';
+
+  @override
+  String kasPdfHeader(String window) {
+    return 'Mutasi kas · $window';
+  }
+
+  @override
+  String get kasPdfLedger => 'Mutasi';
+
+  @override
+  String get kasPdfProofs => 'Foto nota';
+
+  @override
+  String kasPdfProofsOmitted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count foto',
+    );
+    return '$_temp0 tidak disertakan karena melebihi batas.';
+  }
+
+  @override
+  String get kasPdfProofMissing => 'Foto tidak terbaca';
+
+  @override
+  String kasMetaBox(Object name) {
+    return 'Kas: $name';
+  }
+
+  @override
+  String kasMetaWindow(String window) {
+    return 'Rentang: $window';
+  }
+
+  @override
+  String kasMetaRows(int count) {
+    return 'Mutasi: $count';
+  }
+
+  @override
+  String kasMetaInflow(String amount) {
+    return 'Masuk: $amount';
+  }
+
+  @override
+  String kasMetaOutflow(String amount) {
+    return 'Keluar: $amount';
+  }
+
+  @override
+  String kasMetaVariance(String amount) {
+    return 'Selisih: $amount';
+  }
+
+  @override
+  String get kasColId => 'Kode';
+
+  @override
+  String get kasColWhen => 'Waktu';
+
+  @override
+  String get kasColBox => 'Kas';
+
+  @override
+  String get kasColKind => 'Jenis';
+
+  @override
+  String get kasColCategory => 'Kategori';
+
+  @override
+  String get kasColDelta => 'Nilai';
+
+  @override
+  String get kasColNote => 'Catatan';
+
+  @override
+  String get kasColActor => 'Oleh';
+
+  @override
+  String get kasColPhoto => 'Foto';
+
+  @override
+  String get kasColReverses => 'Membatalkan';
+
+  @override
+  String get kasColReversedBy => 'Dibatalkan oleh';
+
+  @override
+  String get kasColTransferPeer => 'Pasangan pindah';
+
+  @override
+  String get kasPhotoYes => 'Ada';
+
+  @override
   String get kasBoxNew => 'Kas baru';
 
   @override

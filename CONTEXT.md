@@ -918,6 +918,19 @@ Spending is `manageCash` and funding, counting, transferring and managing the bo
 
 _Avoid_: a per-box capability; a transfer as a fifth movement kind; a transfer with a category; reversing one leg of a transfer; deleting a box; a box name in the ARB; asking the venue-wide balance whether an expense may be posted.
 
+### Jendela kas (cash window)
+**ID · EN** — Jendela kas · Cash window. Arms: semua · All; 30/90/365 hari · days; rentang pilihan · Custom range. Movement over one: masuk · In; keluar · Out; selisih · Variance. _Avoid_: "periode kas"; calling it a report range; "saldo periode" (there is no such thing).
+
+The span of [[Kas kecil (petty cash)]] the ledger screen is showing, and the span its export files (ADR-0136). One concept, two surfaces on purpose: the export takes its window from the screen rather than asking again, so the file and the screen are always the same ledger.
+
+**A window narrows the list, never the balance.** A [[Kas (cash box)|box]]'s balance is `SUM(delta)` over all time and a windowed one reconciles against nothing anybody can count — the whole point of a tin is that its number can be checked against the notes in it. What a window produces instead is **movement**: masuk, keluar and selisih, and a cash count's delta books to selisih and never to keluar (ADR-0089), because a shortfall found at the count is a finding and not a purchase.
+
+**The venue's own server adds it up.** The ledger list is paged, so a client summing what it holds sums the pages a reader happened to scroll — the same class of error as a windowed balance, and the reason movement arrives beside the rows rather than being derived from them.
+
+**Semua is the default**, and is what the screen has always shown: the latest rows, no window. A tin can go a fortnight without a movement, so a 30-day default would open empty on a quiet box. A movement arriving live is stamped *now*, so it belongs in every open-topped window and in none of the closed ones.
+
+_Avoid_: a windowed balance; a running-balance column in an export; summing a page client-side; a report range's 92-day cap (that cap is for a per-bill payload); truncating a window that will not fit an export rather than refusing it.
+
 ### Kategori kas (cash category)
 **ID · EN** — Kategori kas · Cash category. Stock five, seeded into every box and renameable: belanja bahan · Ingredients; operasional · Operations; transport · Transport; upah harian · Daily wages; lainnya · Other. _Avoid_: "jenis pengeluaran"; translating a venue's own word; calling it a code.
 

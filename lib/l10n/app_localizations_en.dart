@@ -7636,6 +7636,159 @@ class AppL10nEn extends AppL10n {
   String get kasErrUnknownCategory => 'That category is not in this box.';
 
   @override
+  String get kasWindowAll => 'All';
+
+  @override
+  String kasWindowDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kasWindowCustom => 'Pick dates';
+
+  @override
+  String get kasSumInflow => 'In';
+
+  @override
+  String get kasSumOutflow => 'Out';
+
+  @override
+  String get kasSumVariance => 'Variance';
+
+  @override
+  String get kasExport => 'Export';
+
+  @override
+  String get kasExportTitle => 'Export cash';
+
+  @override
+  String get kasExportBody =>
+      'The file covers the movements in the range on screen.';
+
+  @override
+  String get kasExportSubject => 'Petty cash movements';
+
+  @override
+  String get kasExportPhotos => 'Include receipt photos';
+
+  @override
+  String kasExportPhotosHint(int max) {
+    return 'PDF only. Photos are downscaled and capped at $max.';
+  }
+
+  @override
+  String kasExportProgress(int done, int total) {
+    return 'Preparing photo $done/$total';
+  }
+
+  @override
+  String get kasErrWindowTooLarge =>
+      'That range is too wide to export. Narrow it.';
+
+  @override
+  String get kasCsvTitle => 'Petty cash movements';
+
+  @override
+  String kasPdfHeader(String window) {
+    return 'Petty cash · $window';
+  }
+
+  @override
+  String get kasPdfLedger => 'Movements';
+
+  @override
+  String get kasPdfProofs => 'Receipt photos';
+
+  @override
+  String kasPdfProofsOmitted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count photos',
+      one: '1 photo',
+    );
+    return '$_temp0 left out — over the limit.';
+  }
+
+  @override
+  String get kasPdfProofMissing => 'Photo unavailable';
+
+  @override
+  String kasMetaBox(Object name) {
+    return 'Box: $name';
+  }
+
+  @override
+  String kasMetaWindow(String window) {
+    return 'Range: $window';
+  }
+
+  @override
+  String kasMetaRows(int count) {
+    return 'Movements: $count';
+  }
+
+  @override
+  String kasMetaInflow(String amount) {
+    return 'In: $amount';
+  }
+
+  @override
+  String kasMetaOutflow(String amount) {
+    return 'Out: $amount';
+  }
+
+  @override
+  String kasMetaVariance(String amount) {
+    return 'Variance: $amount';
+  }
+
+  @override
+  String get kasColId => 'Ref';
+
+  @override
+  String get kasColWhen => 'When';
+
+  @override
+  String get kasColBox => 'Box';
+
+  @override
+  String get kasColKind => 'Kind';
+
+  @override
+  String get kasColCategory => 'Category';
+
+  @override
+  String get kasColDelta => 'Amount';
+
+  @override
+  String get kasColNote => 'Note';
+
+  @override
+  String get kasColActor => 'By';
+
+  @override
+  String get kasColPhoto => 'Photo';
+
+  @override
+  String get kasColReverses => 'Reverses';
+
+  @override
+  String get kasColReversedBy => 'Reversed by';
+
+  @override
+  String get kasColTransferPeer => 'Transfer peer';
+
+  @override
+  String get kasPhotoYes => 'Yes';
+
+  @override
   String get kasBoxNew => 'New box';
 
   @override

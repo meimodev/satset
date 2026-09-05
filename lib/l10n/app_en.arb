@@ -2570,6 +2570,147 @@
   "@kasErrCatNameRequired": {},
   "kasErrUnknownCategory": "That category is not in this box.",
   "@kasErrUnknownCategory": {},
+  "kasWindowAll": "All",
+  "@kasWindowAll": {},
+  "kasWindowDays": "{days, plural, =1{1 day} other{{days} days}}",
+  "@kasWindowDays": {
+      "placeholders": {
+          "days": {
+              "type": "int"
+          }
+      }
+  },
+  "kasWindowCustom": "Pick dates",
+  "@kasWindowCustom": {},
+  "kasSumInflow": "In",
+  "@kasSumInflow": {},
+  "kasSumOutflow": "Out",
+  "@kasSumOutflow": {},
+  "kasSumVariance": "Variance",
+  "@kasSumVariance": {},
+  "kasExport": "Export",
+  "@kasExport": {},
+  "kasExportTitle": "Export cash",
+  "@kasExportTitle": {},
+  "kasExportBody": "The file covers the movements in the range on screen.",
+  "@kasExportBody": {},
+  "kasExportSubject": "Petty cash movements",
+  "@kasExportSubject": {},
+  "kasExportPhotos": "Include receipt photos",
+  "@kasExportPhotos": {},
+  "kasExportPhotosHint": "PDF only. Photos are downscaled and capped at {max}.",
+  "@kasExportPhotosHint": {
+      "placeholders": {
+          "max": {
+              "type": "int"
+          }
+      }
+  },
+  "kasExportProgress": "Preparing photo {done}/{total}",
+  "@kasExportProgress": {
+      "placeholders": {
+          "done": {
+              "type": "int"
+          },
+          "total": {
+              "type": "int"
+          }
+      }
+  },
+  "kasErrWindowTooLarge": "That range is too wide to export. Narrow it.",
+  "@kasErrWindowTooLarge": {},
+  "kasCsvTitle": "Petty cash movements",
+  "@kasCsvTitle": {},
+  "kasPdfHeader": "Petty cash · {window}",
+  "@kasPdfHeader": {
+      "placeholders": {
+          "window": {
+              "type": "String"
+          }
+      }
+  },
+  "kasPdfLedger": "Movements",
+  "@kasPdfLedger": {},
+  "kasPdfProofs": "Receipt photos",
+  "@kasPdfProofs": {},
+  "kasPdfProofsOmitted": "{count, plural, =1{1 photo} other{{count} photos}} left out — over the limit.",
+  "@kasPdfProofsOmitted": {
+      "placeholders": {
+          "count": {
+              "type": "int"
+          }
+      }
+  },
+  "kasPdfProofMissing": "Photo unavailable",
+  "@kasPdfProofMissing": {},
+  "kasMetaBox": "Box: {name}",
+  "@kasMetaBox": {},
+  "kasMetaWindow": "Range: {window}",
+  "@kasMetaWindow": {
+      "placeholders": {
+          "window": {
+              "type": "String"
+          }
+      }
+  },
+  "kasMetaRows": "Movements: {count}",
+  "@kasMetaRows": {
+      "placeholders": {
+          "count": {
+              "type": "int"
+          }
+      }
+  },
+  "kasMetaInflow": "In: {amount}",
+  "@kasMetaInflow": {
+      "placeholders": {
+          "amount": {
+              "type": "String"
+          }
+      }
+  },
+  "kasMetaOutflow": "Out: {amount}",
+  "@kasMetaOutflow": {
+      "placeholders": {
+          "amount": {
+              "type": "String"
+          }
+      }
+  },
+  "kasMetaVariance": "Variance: {amount}",
+  "@kasMetaVariance": {
+      "placeholders": {
+          "amount": {
+              "type": "String"
+          }
+      }
+  },
+  "kasColId": "Ref",
+  "@kasColId": {},
+  "kasColWhen": "When",
+  "@kasColWhen": {},
+  "kasColBox": "Box",
+  "@kasColBox": {},
+  "kasColKind": "Kind",
+  "@kasColKind": {},
+  "kasColCategory": "Category",
+  "@kasColCategory": {},
+  "kasColDelta": "Amount",
+  "@kasColDelta": {},
+  "kasColNote": "Note",
+  "@kasColNote": {},
+  "kasColActor": "By",
+  "@kasColActor": {},
+  "kasColPhoto": "Photo",
+  "@kasColPhoto": {},
+  "kasColReverses": "Reverses",
+  "@kasColReverses": {},
+  "kasColReversedBy": "Reversed by",
+  "@kasColReversedBy": {},
+  "kasColTransferPeer": "Transfer peer",
+  "@kasColTransferPeer": {},
+  "kasPhotoYes": "Yes",
+  "@kasPhotoYes": {},
   "kasBoxNew": "New box",
   "@kasBoxNew": {},
   "kasFieldBoxName": "Box name",

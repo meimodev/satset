@@ -5780,6 +5780,215 @@
   "@kasErrUnknownCategory": {
     "description": "Refusal: the category does not belong to this box, or has been retired."
   },
+  "kasWindowAll": "Semua",
+  "@kasWindowAll": {
+      "description": "Cash window chip: every row there has ever been. The screen's default."
+  },
+  "kasWindowDays": "{days, plural, other{{days} hari}}",
+  "@kasWindowDays": {
+      "description": "Cash window chip: the last N days.",
+      "placeholders": {
+          "days": {
+              "type": "int"
+          }
+      }
+  },
+  "kasWindowCustom": "Pilih tanggal",
+  "@kasWindowCustom": {
+      "description": "Cash window chip: pick a custom from/to span."
+  },
+  "kasSumInflow": "Masuk",
+  "@kasSumInflow": {
+      "description": "Window summary: money into the box over the window."
+  },
+  "kasSumOutflow": "Keluar",
+  "@kasSumOutflow": {
+      "description": "Window summary: money out over the window."
+  },
+  "kasSumVariance": "Selisih",
+  "@kasSumVariance": {
+      "description": "Window summary: what counting found over the window. Not money moving."
+  },
+  "kasExport": "Ekspor",
+  "@kasExport": {
+      "description": "Hand the cash ledger's current window to the share sheet."
+  },
+  "kasExportTitle": "Ekspor kas",
+  "@kasExportTitle": {
+      "description": "Export sheet title."
+  },
+  "kasExportBody": "Berkas berisi mutasi pada rentang yang sedang tampil.",
+  "@kasExportBody": {
+      "description": "Export sheet: what the file will contain."
+  },
+  "kasExportSubject": "Mutasi kas kecil",
+  "@kasExportSubject": {
+      "description": "Share-sheet subject for a cash ledger export."
+  },
+  "kasExportPhotos": "Sertakan foto nota",
+  "@kasExportPhotos": {
+      "description": "Toggle: embed proof photos as a PDF appendix."
+  },
+  "kasExportPhotosHint": "Hanya untuk PDF. Foto diperkecil dan dibatasi {max} lembar.",
+  "@kasExportPhotosHint": {
+      "description": "Toggle hint: photos are PDF-only, downscaled and capped.",
+      "placeholders": {
+          "max": {
+              "type": "int"
+          }
+      }
+  },
+  "kasExportProgress": "Menyiapkan foto {done}/{total}",
+  "@kasExportProgress": {
+      "description": "Determinate progress while proof photos are fetched.",
+      "placeholders": {
+          "done": {
+              "type": "int"
+          },
+          "total": {
+              "type": "int"
+          }
+      }
+  },
+  "kasErrWindowTooLarge": "Rentang terlalu lebar untuk diekspor. Persempit rentangnya.",
+  "@kasErrWindowTooLarge": {
+      "description": "Refusal: the window holds more rows than one export may carry. It refuses rather than truncating."
+  },
+  "kasCsvTitle": "Mutasi kas kecil",
+  "@kasCsvTitle": {
+      "description": "Document title on the cash ledger export."
+  },
+  "kasPdfHeader": "Mutasi kas · {window}",
+  "@kasPdfHeader": {
+      "description": "Running header on page two onward of the cash ledger PDF.",
+      "placeholders": {
+          "window": {
+              "type": "String"
+          }
+      }
+  },
+  "kasPdfLedger": "Mutasi",
+  "@kasPdfLedger": {
+      "description": "Section title above the ledger table in the PDF."
+  },
+  "kasPdfProofs": "Foto nota",
+  "@kasPdfProofs": {
+      "description": "Section title above the proof-photo appendix."
+  },
+  "kasPdfProofsOmitted": "{count, plural, other{{count} foto}} tidak disertakan karena melebihi batas.",
+  "@kasPdfProofsOmitted": {
+      "description": "Footer line when the photo cap left proofs out. The ledger itself is never truncated.",
+      "placeholders": {
+          "count": {
+              "type": "int"
+          }
+      }
+  },
+  "kasPdfProofMissing": "Foto tidak terbaca",
+  "@kasPdfProofMissing": {
+      "description": "Placeholder plate where a proof could not be fetched."
+  },
+  "kasMetaBox": "Kas: {name}",
+  "@kasMetaBox": {
+      "description": "Export header line naming the box, or Semua."
+  },
+  "kasMetaWindow": "Rentang: {window}",
+  "@kasMetaWindow": {
+      "description": "Export header line naming the window.",
+      "placeholders": {
+          "window": {
+              "type": "String"
+          }
+      }
+  },
+  "kasMetaRows": "Mutasi: {count}",
+  "@kasMetaRows": {
+      "description": "Export header line counting the rows filed.",
+      "placeholders": {
+          "count": {
+              "type": "int"
+          }
+      }
+  },
+  "kasMetaInflow": "Masuk: {amount}",
+  "@kasMetaInflow": {
+      "description": "Export header line: money in over the window.",
+      "placeholders": {
+          "amount": {
+              "type": "String"
+          }
+      }
+  },
+  "kasMetaOutflow": "Keluar: {amount}",
+  "@kasMetaOutflow": {
+      "description": "Export header line: money out over the window.",
+      "placeholders": {
+          "amount": {
+              "type": "String"
+          }
+      }
+  },
+  "kasMetaVariance": "Selisih: {amount}",
+  "@kasMetaVariance": {
+      "description": "Export header line: what counting found. Never folded into in/out (ADR-0089).",
+      "placeholders": {
+          "amount": {
+              "type": "String"
+          }
+      }
+  },
+  "kasColId": "Kode",
+  "@kasColId": {
+      "description": "Export column: the row's own id. Without it the reversal and transfer columns reference rows the file cannot show."
+  },
+  "kasColWhen": "Waktu",
+  "@kasColWhen": {
+      "description": "Export column: when the movement was written."
+  },
+  "kasColBox": "Kas",
+  "@kasColBox": {
+      "description": "Export column: which tin."
+  },
+  "kasColKind": "Jenis",
+  "@kasColKind": {
+      "description": "Export column: which movement."
+  },
+  "kasColCategory": "Kategori",
+  "@kasColCategory": {
+      "description": "Export column: what an expense was for. The venue's current word (ADR-0135)."
+  },
+  "kasColDelta": "Nilai",
+  "@kasColDelta": {
+      "description": "Export column: the signed amount. No running balance column — it is derived and order-dependent."
+  },
+  "kasColNote": "Catatan",
+  "@kasColNote": {
+      "description": "Export column: the note on the row."
+  },
+  "kasColActor": "Oleh",
+  "@kasColActor": {
+      "description": "Export column: who wrote it."
+  },
+  "kasColPhoto": "Foto",
+  "@kasColPhoto": {
+      "description": "Export column: the proof's appendix number, or a bare mark."
+  },
+  "kasColReverses": "Membatalkan",
+  "@kasColReverses": {
+      "description": "Export column: the row this one undoes."
+  },
+  "kasColReversedBy": "Dibatalkan oleh",
+  "@kasColReversedBy": {
+      "description": "Export column: the row that undid this one."
+  },
+  "kasColTransferPeer": "Pasangan pindah",
+  "@kasColTransferPeer": {
+      "description": "Export column: the other leg of a transfer."
+  },
+  "kasPhotoYes": "Ada",
+  "@kasPhotoYes": {
+      "description": "Export cell: a proof exists but is not in the appendix."
+  },
   "@kasBoxesTitle": {
     "description": "Sheet title: create, rename and retire the venue's cash boxes."
   },
