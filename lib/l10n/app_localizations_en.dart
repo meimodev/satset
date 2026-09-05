@@ -1279,6 +1279,9 @@ class AppL10nEn extends AppL10n {
   String get a11yClear => 'Clear';
 
   @override
+  String get a11yStockActions => 'Ingredient actions';
+
+  @override
   String get a11yRefresh => 'Reload';
 
   @override

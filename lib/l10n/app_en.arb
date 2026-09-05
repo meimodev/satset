@@ -473,6 +473,8 @@
   "quantity": "Quantity",
   "a11yRename": "Rename",
   "a11yClear": "Clear",
+  "a11yStockActions": "Ingredient actions",
+  "@a11yStockActions": {"description": "Screen-reader name for the stock row overflow control."},
   "a11yRefresh": "Reload",
   "a11yShowPassword": "Show password",
   "a11yHidePassword": "Hide password",

@@ -18,6 +18,7 @@ import 'package:satset/domain/models/stock_count.dart';
 import 'package:satset/domain/models/stock_unit.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
+import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/features/admin/_common.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
@@ -115,54 +116,72 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       authStateProvider.select((a) => a.has(Capability.manageIngredients)),
     );
     final async = ref.watch(ingredientsProvider);
+    final compact = !context.layout.useTabletShell;
 
     return Column(
       children: [
         AdminEmbeddedStrip(
           title: context.l10n.stkTitle,
           sub: _opname ? context.l10n.stkSubOpname : context.l10n.stkSub,
+          // A phone strip carries glyphs, not labelled buttons: "Batal" beside
+          // "Simpan (12)" beside a title leaves nothing for the title. The
+          // labels survive as tooltips, and the count they carried is already
+          // on the opname banner a line below.
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (!_opname && canEditCatalogue) ...[
-                PressScale(
-                  child: IconButton(
-                    tooltip: context.l10n.stkAddIngredient,
-                    icon: Container(
-                      padding: const EdgeInsets.all(Sp.s1h),
-                      decoration: SatBox.d(
-                        color: sc.accentSoft,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.add, size: 18, color: sc.accentText),
-                    ),
-                    onPressed: () => _editIngredient(null),
-                  ),
+                SatIconButton.primary(
+                  icon: Icons.add,
+                  tooltip: context.l10n.stkAddIngredient,
+                  onTap: () => _editIngredient(null),
                 ),
                 const SizedBox(width: Sp.s2),
               ],
-              PressScale(
-                child: _opname
-                    ? SatButton.danger(
-                        label: context.l10n.cancel,
+              if (_opname)
+                compact
+                    ? SatIconButton.danger(
                         icon: Icons.close,
+                        tooltip: context.l10n.cancel,
                         onTap: _discardOpname,
                       )
-                    : SatButton.outline(
-                        label: context.l10n.stkOpname,
+                    : PressScale(
+                        child: SatButton.danger(
+                          label: context.l10n.cancel,
+                          icon: Icons.close,
+                          onTap: _discardOpname,
+                        ),
+                      )
+              else
+                compact
+                    ? SatIconButton.outline(
                         icon: Icons.inventory_2_outlined,
+                        tooltip: context.l10n.stkOpname,
                         onTap: _startOpname,
+                      )
+                    : PressScale(
+                        child: SatButton.outline(
+                          label: context.l10n.stkOpname,
+                          icon: Icons.inventory_2_outlined,
+                          onTap: _startOpname,
+                        ),
                       ),
-              ),
               if (_opname) ...[
                 const SizedBox(width: Sp.s2),
-                PressScale(
-                  child: SatButton.primary(
-                    label: context.l10n.stkSaveCount(_counts.length),
+                if (compact)
+                  SatIconButton.primary(
                     icon: Icons.check_circle_outline,
+                    tooltip: context.l10n.stkSaveCount(_counts.length),
                     onTap: _counts.isEmpty ? null : _closeOpname,
+                  )
+                else
+                  PressScale(
+                    child: SatButton.primary(
+                      label: context.l10n.stkSaveCount(_counts.length),
+                      icon: Icons.check_circle_outline,
+                      onTap: _counts.isEmpty ? null : _closeOpname,
+                    ),
                   ),
-                ),
               ],
             ],
           ),
@@ -209,19 +228,38 @@ class _StockScreenState extends ConsumerState<StockScreen> {
               return RefreshIndicator(
                 onRefresh: () async => ref.invalidate(ingredientsProvider),
                 child: ListView(
-                  padding: EdgeInsets.fromLTRB(20, 16, 20, Sp.s8 + context.shellInset),
+                  padding: EdgeInsets.fromLTRB(
+                    compact ? Sp.s4 : 20,
+                    16,
+                    compact ? Sp.s4 : 20,
+                    Sp.s8 + context.shellInset,
+                  ),
                   children: [
-                    // Smooth Animated CrossFade between KPI Summary and Opname Banner
-                    AnimatedCrossFade(
-                      firstChild: _summaryGrid(sc, list),
-                      secondChild: _opnameBanner(sc),
-                      crossFadeState: _opname
-                          ? CrossFadeState.showSecond
-                          : CrossFadeState.showFirst,
-                      duration: satMotion(context, 240),
-                      firstCurve: satEaseOut,
-                      secondCurve: satEaseOut,
-                    ),
+                    // The KPI cards say what the filter chips two rows below
+                    // already say, with the same counts and the same taps. On a
+                    // tablet that redundancy buys a glanceable header; on a
+                    // phone it costs a third of the fold, so the phone starts
+                    // at the search field and the chips carry the counts.
+                    if (compact)
+                      AnimatedSize(
+                        duration: satMotion(context, 240),
+                        curve: satEaseOut,
+                        child: _opname
+                            ? _opnameBanner(sc)
+                            : const SizedBox(width: double.infinity),
+                      )
+                    else
+                      // Smooth Animated CrossFade between KPI Summary and Opname Banner
+                      AnimatedCrossFade(
+                        firstChild: _summaryGrid(sc, list),
+                        secondChild: _opnameBanner(sc),
+                        crossFadeState: _opname
+                            ? CrossFadeState.showSecond
+                            : CrossFadeState.showFirst,
+                        duration: satMotion(context, 240),
+                        firstCurve: satEaseOut,
+                        secondCurve: satEaseOut,
+                      ),
                     if (!_opname) _belanjaCard(sc, list),
                     const SizedBox(height: Sp.s4),
                     _searchAndFilterBar(sc, list),
@@ -645,6 +683,14 @@ class _StockScreenState extends ConsumerState<StockScreen> {
   }
 
   // ---------------------------------------------------------------- Ingredient Row Card
+  // ---------------------------------------------------------------- Ingredient Row Card
+  //
+  // Two shapes, one body. A tablet reads this card the way it reads a ledger —
+  // three metrics abreast, the acts sitting on the right where a pointer
+  // already is. A phone is held one-handed in a storeroom, so the same facts
+  // stack: the on-hand figure becomes the hero, the two supporting numbers
+  // drop under it, and the acts collapse into a sheet reached from a 40dp
+  // target instead of an 18dp kebab (ADR-0134 put `/stock` on the phone bar).
   Widget _row(SatColors sc, Ingredient i) {
     // Read here rather than threaded down from `build`: this row is the
     // other half of the catalogue/ledger split (ADR-0132) and the popup it
@@ -652,6 +698,7 @@ class _StockScreenState extends ConsumerState<StockScreen> {
     final canEditCatalogue = ref.watch(
       authStateProvider.select((a) => a.has(Capability.manageIngredients)),
     );
+    final compact = !context.layout.useTabletShell;
     final negative = i.stockOnHand < 0;
     final statusColor = negative
         ? sc.urgent
@@ -661,6 +708,151 @@ class _StockScreenState extends ConsumerState<StockScreen> {
 
     // Physical count entered in opname mode
     final physicalCount = _counts[i.id];
+
+    // Header line: name + badges. A Wrap rather than a Row so a long bahan
+    // name and two badges reflow instead of overflowing — the same construct
+    // serves both form factors.
+    final heading = Wrap(
+          spacing: Sp.s1h,
+          runSpacing: Sp.s1,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(i.name, style: SatType.labelL(color: sc.textHi)),
+            if (i.isProduced)
+              _badge(
+                sc,
+                label: context.l10n.stkBadgeProduced,
+                color: sc.info,
+                icon: Icons.blender_outlined,
+              ),
+            // The low / negative badges are the on-hand figure in another
+            // costume — they stay hidden for the length of a blind walk too.
+            if (i.isLow && !negative && !_blindWalk)
+              _badge(
+                sc,
+                label: context.l10n.stkBadgeLow,
+                color: sc.warn,
+                icon: Icons.warning_amber_rounded,
+              ),
+            if (negative && !_blindWalk)
+              _badge(
+                sc,
+                label: context.l10n.stkBadgeNegative,
+                color: sc.urgent,
+                icon: Icons.remove_circle_outline,
+              ),
+      ],
+    );
+
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (compact)
+          // The acts sit on the *name's* line, not the figure's. Hung off the
+          // on-hand row they floated mid-card against nothing, and the gap
+          // above the supporting numbers became whatever a 40dp button is
+          // tall rather than a step on the spacing scale.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: heading),
+              if (!_opname) ...[
+                const SizedBox(width: Sp.s2),
+                // Primary, not outline: this is the affirmative act on the
+                // card, and an outline glyph on `bg2` inside a `bg2` card
+                // reads as disabled on a bright handset.
+                SatIconButton.primary(
+                  icon: Icons.add_shopping_cart,
+                  tooltip: context.l10n.stkReceive,
+                  onTap: () => _receive(i),
+                ),
+                const SizedBox(width: Sp.s1),
+                SatIconButton.plain(
+                  icon: Icons.more_vert,
+                  tooltip: context.l10n.a11yStockActions,
+                  onTap: () => _actions(i, canEditCatalogue: canEditCatalogue),
+                ),
+              ],
+            ],
+          )
+        else
+          heading,
+        const SizedBox(height: Sp.s2),
+
+        if (compact) ...[
+          // The on-hand figure is what somebody standing at a shelf came for,
+          // so on a phone it is the hero rather than the first of three.
+          _metric(
+            sc,
+            label: context.l10n.stkColOnHand,
+            value: _blindWalk ? '••••' : i.onHandLabel,
+            color: _blindWalk ? sc.textLo : statusColor,
+            big: true,
+          ),
+          const SizedBox(height: Sp.s2),
+          Row(
+            children: [
+              Expanded(child: _pricePerMetric(sc, i)),
+              Expanded(child: _lastReceivedMetric(sc, i)),
+            ],
+          ),
+        ] else
+          // Metrics Grid
+          Row(
+            children: [
+              Expanded(
+                child: _metric(
+                  sc,
+                  label: context.l10n.stkColOnHand,
+                  // Hidden for the length of a blind walk: a count shown the
+                  // answer tends to agree with it, and the variance is then
+                  // worth nothing (ADR-0096). Revealed the moment it closes.
+                  value: _blindWalk ? '••••' : i.onHandLabel,
+                  color: _blindWalk ? sc.textLo : statusColor,
+                ),
+              ),
+              Expanded(child: _pricePerMetric(sc, i)),
+              Expanded(child: _lastReceivedMetric(sc, i)),
+            ],
+          ),
+
+        // Low stock threshold progress line — a picture of the on-hand figure,
+        // so blind hides it with the number.
+        if (i.lowStockAt != null && i.lowStockAt! > 0 && !_blindWalk) ...[
+          const SizedBox(height: Sp.s2),
+          _stockLevelMeter(sc, i),
+        ],
+
+        // Recipe links — counting doesn't need them, and the row already grows
+        // a count field in opname mode.
+        if (!_opname) ...[
+          const SizedBox(height: Sp.s2),
+          _RecipeLinkChips(
+            sc: sc,
+            madeFrom: i.madeFrom,
+            usedBy: i.usedBy,
+            expanded: _expandedLinks.contains(i.id),
+            onExpand: () => setState(() => _expandedLinks.add(i.id)),
+          ),
+        ],
+
+        // On a phone the count field is the width of the card rather than a
+        // 120dp column: the walk is the reason this screen is on the handset
+        // at all, and a thumb aiming between shelves deserves the whole row.
+        if (compact && _opname) ...[
+          const SizedBox(height: Sp.s2h),
+          Row(
+            children: [
+              Expanded(child: _countField(i)),
+              if (physicalCount != null) ...[
+                const SizedBox(width: Sp.s3),
+                _countEcho(sc, i, physicalCount),
+              ],
+            ],
+          ),
+        ],
+      ],
+    );
 
     return Container(
       margin: const EdgeInsets.only(bottom: Sp.s2h),
@@ -692,320 +884,51 @@ class _StockScreenState extends ConsumerState<StockScreen> {
                 const SizedBox(width: Sp.s1),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Header line: Name + Badges
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                i.name,
-                                style: SatType.labelL(color: sc.textHi),
-                              ),
-                            ),
-                            if (i.isProduced) ...[
-                              const SizedBox(width: Sp.s1h),
-                              _badge(
-                                sc,
-                                label: context.l10n.stkBadgeProduced,
-                                color: sc.info,
-                                icon: Icons.blender_outlined,
-                              ),
-                            ],
-                            // The low / negative badges are the on-hand figure
-                            // in another costume — they stay hidden for the
-                            // length of a blind walk too.
-                            if (i.isLow && !negative && !_blindWalk) ...[
-                              const SizedBox(width: Sp.s1h),
-                              _badge(
-                                sc,
-                                label: context.l10n.stkBadgeLow,
-                                color: sc.warn,
-                                icon: Icons.warning_amber_rounded,
-                              ),
-                            ],
-                            if (negative && !_blindWalk) ...[
-                              const SizedBox(width: Sp.s1h),
-                              _badge(
-                                sc,
-                                label: context.l10n.stkBadgeNegative,
-                                color: sc.urgent,
-                                icon: Icons.remove_circle_outline,
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: Sp.s2),
-
-                        // Metrics Grid
-                        Row(
-                          children: [
-                            // Stock On Hand
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    context.l10n.stkColOnHand,
-                                    style: SatType.monoS(color: sc.textLo),
-                                  ),
-                                  const SizedBox(height: Sp.sHair),
-                                  // Hidden for the length of a blind walk: a
-                                  // count shown the answer tends to agree with
-                                  // it, and the variance is then worth nothing
-                                  // (ADR-0096). Revealed the moment it closes.
-                                  Text(
-                                    _blindWalk ? '••••' : i.onHandLabel,
-                                    style: SatType.monoM(
-                                      color: _blindWalk
-                                          ? sc.textLo
-                                          : statusColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Price / Base Unit
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    context.l10n.stkColPricePer(
-                                      i.unit.label.toUpperCase(),
-                                    ),
-                                    style: SatType.monoS(color: sc.textLo),
-                                  ),
-                                  const SizedBox(height: Sp.sHair),
-                                  Text(
-                                    i.costMicro > 0
-                                        ? formatIDR(
-                                            unitPriceFromCostMicro(
-                                              i.costMicro,
-                                              i.unit,
-                                            ),
-                                          )
-                                        : '—',
-                                    style: SatType.monoM(color: sc.textMd),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Last receive — freshness, not valuation
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    context.l10n.stkColLastReceived,
-                                    style: SatType.monoS(color: sc.textLo),
-                                  ),
-                                  const SizedBox(height: Sp.sHair),
-                                  Text(
-                                    i.lastReceivedAt == null
-                                        ? '—'
-                                        : formatElapsed(
-                                            context.l10n,
-                                            SatClock.now().difference(
-                                              i.lastReceivedAt!,
-                                            ),
-                                          ),
-                                    style: SatType.monoM(color: sc.textMd),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // Low stock threshold progress line — a picture of the
-                        // on-hand figure, so blind hides it with the number.
-                        if (i.lowStockAt != null &&
-                            i.lowStockAt! > 0 &&
-                            !_blindWalk) ...[
-                          const SizedBox(height: Sp.s2),
-                          _stockLevelMeter(sc, i),
-                        ],
-
-                        // Recipe links — counting doesn't need them, and the row
-                        // already grows a count field in opname mode.
-                        if (!_opname) ...[
-                          const SizedBox(height: Sp.s2),
-                          _RecipeLinkChips(
-                            sc: sc,
-                            madeFrom: i.madeFrom,
-                            usedBy: i.usedBy,
-                            expanded: _expandedLinks.contains(i.id),
-                            onExpand: () =>
-                                setState(() => _expandedLinks.add(i.id)),
-                          ),
-                        ],
-                      ],
-                    ),
+                    padding: EdgeInsets.fromLTRB(14, 12, compact ? 12 : 14, 12),
+                    child: body,
                   ),
                 ),
 
-                // Right Actions / Opname Input
-                Padding(
-                  padding: const EdgeInsets.only(right: Sp.s3),
-                  child: _opname
-                      ? SizedBox(
-                          width: 120,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Committed on blur as well as on submit: a
-                              // counter walking a shelf taps the next row, they
-                              // do not press enter. The commit is what freezes
-                              // the expectation, so it must not wait for a
-                              // gesture nobody makes.
-                              Focus(
-                                onFocusChange: (has) {
-                                  if (!has) _commitLine(i);
-                                },
-                                child: SatField.decimal(
-                                  hint: i.unit.label,
-                                  textAlign: TextAlign.right,
-                                  controller: _countCtrl(i),
-                                  onSubmitted: (_) => _commitLine(i),
-                                ),
-                              ),
-                              // The variance is the expected figure by
-                              // arithmetic, so a blind walk withholds it until
-                              // close and shows only that the line landed.
-                              if (physicalCount != null) ...[
-                                const SizedBox(height: Sp.s1),
-                                _blindWalk
-                                    ? Text(
-                                        context.l10n.stkCounted,
-                                        style: SatType.caption(
-                                          color: sc.textLo,
-                                        ),
-                                      )
-                                    : _varianceDeltaBadge(sc, i, physicalCount),
-                              ],
-                            ],
-                          ),
-                        )
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            PressScale(
-                              child: SatButton.outline(
-                                label: context.l10n.stkReceive,
-                                icon: Icons.add_shopping_cart,
-                                onTap: () => _receive(i),
-                              ),
-                            ),
-                            PopupMenuButton<String>(
-                              icon: Icon(
-                                Icons.more_vert,
-                                size: 18,
-                                color: sc.textLo,
-                              ),
-                              onSelected: (v) => switch (v) {
-                                'receive' => _receive(i),
-                                'waste' => _waste(i),
-                                'produce' => _produce(i),
-                                'ledger' => _ledger(i),
-                                'edit' => _editIngredient(i),
-                                'archive' => _archive(i),
-                                _ => null,
-                              },
-                              itemBuilder: (_) => [
-                                PopupMenuItem(
-                                  value: 'receive',
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.add_shopping_cart,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: Sp.s2h),
-                                      Text(context.l10n.stkMenuReceive),
-                                    ],
-                                  ),
-                                ),
-                                if (i.isProduced)
-                                  PopupMenuItem(
-                                    value: 'produce',
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.blender_outlined,
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: Sp.s2h),
-                                        Text(context.l10n.stkMenuProduce),
-                                      ],
-                                    ),
-                                  ),
-                                PopupMenuItem(
-                                  value: 'waste',
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.delete_outline,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: Sp.s2h),
-                                      Text(context.l10n.stkMenuWaste),
-                                    ],
-                                  ),
-                                ),
-                                PopupMenuItem(
-                                  value: 'ledger',
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.history, size: 16),
-                                      const SizedBox(width: Sp.s2h),
-                                      Text(context.l10n.stkMenuLedger),
-                                    ],
-                                  ),
-                                ),
-                                // Catalogue, not ledger: renaming a bahan or
-                                // archiving it is `manageIngredients`.
-                                if (canEditCatalogue) ...[
-                                  PopupMenuItem(
-                                    value: 'edit',
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.edit_outlined,
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: Sp.s2h),
-                                        Text(context.l10n.stkMenuEdit),
-                                      ],
-                                    ),
-                                  ),
-                                  PopupMenuItem(
-                                    value: 'archive',
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.archive_outlined,
-                                          size: 16,
-                                          color: sc.urgent,
-                                        ),
-                                        const SizedBox(width: Sp.s2h),
-                                        Text(
-                                          context.l10n.stkMenuArchive,
-                                          style: TextStyle(color: sc.urgent),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                // Right Actions / Opname Input — tablet only. The phone folds
+                // both into the card body above.
+                if (!compact)
+                  Padding(
+                    padding: const EdgeInsets.only(right: Sp.s3),
+                    child: _opname
+                        ? SizedBox(
+                            width: 120,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _countField(i),
+                                if (physicalCount != null) ...[
+                                  const SizedBox(height: Sp.s1),
+                                  _countEcho(sc, i, physicalCount),
                                 ],
                               ],
                             ),
-                          ],
-                        ),
-                ),
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              PressScale(
+                                child: SatButton.outline(
+                                  label: context.l10n.stkReceive,
+                                  icon: Icons.add_shopping_cart,
+                                  onTap: () => _receive(i),
+                                ),
+                              ),
+                              SatIconButton.plain(
+                                icon: Icons.more_vert,
+                                tooltip: context.l10n.a11yStockActions,
+                                onTap: () => _actions(
+                                  i,
+                                  canEditCatalogue: canEditCatalogue,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
               ],
             ),
           ],
@@ -1013,6 +936,122 @@ class _StockScreenState extends ConsumerState<StockScreen> {
       ),
     );
   }
+
+  /// One labelled figure. [big] promotes it to the phone card's hero.
+  Widget _metric(
+    SatColors sc, {
+    required String label,
+    required String value,
+    required Color color,
+    bool big = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: SatType.monoS(color: sc.textLo)),
+        const SizedBox(height: Sp.sHair),
+        Text(
+          value,
+          style: big
+              ? SatType.monoL(color: color)
+              : SatType.monoM(color: color),
+        ),
+      ],
+    );
+  }
+
+  Widget _pricePerMetric(SatColors sc, Ingredient i) => _metric(
+    sc,
+    label: context.l10n.stkColPricePer(i.unit.label.toUpperCase()),
+    value: i.costMicro > 0
+        ? formatIDR(unitPriceFromCostMicro(i.costMicro, i.unit))
+        : '—',
+    color: sc.textMd,
+  );
+
+  /// Freshness, not valuation.
+  Widget _lastReceivedMetric(SatColors sc, Ingredient i) => _metric(
+    sc,
+    label: context.l10n.stkColLastReceived,
+    value: i.lastReceivedAt == null
+        ? '—'
+        : formatElapsed(
+            context.l10n,
+            SatClock.now().difference(i.lastReceivedAt!),
+          ),
+    color: sc.textMd,
+  );
+
+  /// The opname entry field. Committed on blur as well as on submit: a counter
+  /// walking a shelf taps the next row, they do not press enter. The commit is
+  /// what freezes the expectation, so it must not wait for a gesture nobody
+  /// makes.
+  Widget _countField(Ingredient i) => Focus(
+    onFocusChange: (has) {
+      if (!has) _commitLine(i);
+    },
+    child: SatField.decimal(
+      hint: i.unit.label,
+      textAlign: TextAlign.right,
+      controller: _countCtrl(i),
+      onSubmitted: (_) => _commitLine(i),
+    ),
+  );
+
+  /// What the line says back. The variance is the expected figure by
+  /// arithmetic, so a blind walk withholds it until close and shows only that
+  /// the line landed.
+  Widget _countEcho(SatColors sc, Ingredient i, int physicalCount) => _blindWalk
+      ? Text(context.l10n.stkCounted, style: SatType.caption(color: sc.textLo))
+      : _varianceDeltaBadge(sc, i, physicalCount);
+
+  /// Everything the row can do, on one sheet. Replaces the popup menu on both
+  /// form factors: the phone has no room for an 18dp kebab's menu, and the
+  /// tablet gains nothing by keeping a second vocabulary for the same six acts.
+  Future<void> _actions(
+    Ingredient i, {
+    required bool canEditCatalogue,
+  }) => showSatSheet<void>(
+    context,
+    bare: true,
+    builder: (ctx) => _ActionSheet(
+      title: i.name,
+      actions: [
+        (
+          Icons.add_shopping_cart,
+          ctx.l10n.stkMenuReceive,
+          null,
+          () => _receive(i),
+        ),
+        if (i.isProduced)
+          (
+            Icons.blender_outlined,
+            ctx.l10n.stkMenuProduce,
+            null,
+            () => _produce(i),
+          ),
+        (Icons.delete_outline, ctx.l10n.stkMenuWaste, null, () => _waste(i)),
+        (Icons.history, ctx.l10n.stkMenuLedger, null, () => _ledger(i)),
+        // Catalogue, not ledger: renaming a bahan or archiving it is
+        // `manageIngredients`.
+        if (canEditCatalogue) ...[
+          (
+            Icons.edit_outlined,
+            ctx.l10n.stkMenuEdit,
+            null,
+            () => _editIngredient(i),
+          ),
+          (
+            Icons.archive_outlined,
+            ctx.l10n.stkMenuArchive,
+            ctx.sat.urgent,
+            () => _archive(i),
+          ),
+        ],
+      ],
+    ),
+  );
+
 
   Widget _badge(
     SatColors sc, {
@@ -1052,9 +1091,14 @@ class _StockScreenState extends ConsumerState<StockScreen> {
         ? sc.warn
         : sc.success;
 
+    // 3:2, not meter-plus-natural-width-label: the label is generated from a
+    // venue's own unit and a large system type scale, so a Row that lets it
+    // take whatever it wants overflows on a narrow card. The meter keeps at
+    // least 60% and the label ellipsises rather than pushing.
     return Row(
       children: [
         Expanded(
+          flex: 3,
           child: ClipRRect(
             borderRadius: SatR.a(2),
             child: LinearProgressIndicator(
@@ -1066,9 +1110,15 @@ class _StockScreenState extends ConsumerState<StockScreen> {
           ),
         ),
         const SizedBox(width: Sp.s2),
-        Text(
-          context.l10n.stkMinThreshold(formatQty(threshold, i.unit)),
-          style: SatType.monoS(color: sc.textLo),
+        Flexible(
+          flex: 2,
+          child: Text(
+            context.l10n.stkMinThreshold(formatQty(threshold, i.unit)),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: SatType.monoS(color: sc.textLo),
+          ),
         ),
       ],
     );
@@ -1816,6 +1866,92 @@ class _Sheet extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------- Action Sheet
+//
+// The six things a bahan can have done to it. Rows, not a popup menu: a phone
+// has nowhere to hang one, and a full-width 48dp row is the target a
+// storeroom thumb can hit where an 18dp glyph's menu item is not.
+class _ActionSheet extends StatelessWidget {
+  const _ActionSheet({required this.title, required this.actions});
+
+  final String title;
+
+  /// icon, label, optional colour (danger), what it does.
+  final List<(IconData, String, Color?, VoidCallback)> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    return Container(
+      decoration: SatBox.d(
+        color: sc.bg1,
+        borderRadius: BorderRadius.vertical(top: SatR.c(20)),
+        border: SatB.all(color: sc.border1),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: Sp.s3),
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: SatBox.d(
+                  color: sc.border1,
+                  borderRadius: SatR.a(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: Sp.s4),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Sp.s6),
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: SatType.h3(color: sc.textHi),
+              ),
+            ),
+            const SizedBox(height: Sp.s3),
+            for (final (icon, label, color, run) in actions)
+              InkWell(
+                // Pop first: every one of these opens a sheet of its own, and
+                // two stacked sheets leave the second one's dismiss returning
+                // to a menu the user has already answered.
+                onTap: () {
+                  Navigator.of(context).pop();
+                  run();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Sp.s6,
+                    vertical: Sp.s3h,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(icon, size: 20, color: color ?? sc.textMd),
+                      const SizedBox(width: Sp.s4),
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: SatType.bodyM(color: color ?? sc.textHi),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: Sp.s4),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ---------------------------------------------------------------- Ledger Sheet
 class _LedgerSheet extends ConsumerWidget {
   const _LedgerSheet({required this.ingredient});
@@ -2194,7 +2330,18 @@ class _RecipeLinkChips extends StatelessWidget {
                 : Icon(icon, size: _iconSize, color: color),
           ),
           const SizedBox(width: _iconGap),
-          Text(label, style: SatType.bodyS(color: color)),
+          // A chip wider than the card gets its own line rather than
+          // vanishing (see [fitChipCount]) — but "its own line" is still only
+          // as wide as the card, so a long dish name must clamp here or the
+          // chip's own Row overflows on a phone.
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: SatType.bodyS(color: color),
+            ),
+          ),
         ],
       ),
     );
