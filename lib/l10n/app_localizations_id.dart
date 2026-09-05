@@ -1817,6 +1817,33 @@ class AppL10nId extends AppL10n {
   String get expMethodBreakdown => 'Rincian Metode Bayar';
 
   @override
+  String get expColStaff => 'Staf';
+
+  @override
+  String get expColTable => 'Meja';
+
+  @override
+  String get expColPhone => 'Telepon';
+
+  @override
+  String get expColBalance => 'Saldo';
+
+  @override
+  String get expColDays => 'Hari';
+
+  @override
+  String get expColShifts => 'Shift';
+
+  @override
+  String get expColHours => 'Jam';
+
+  @override
+  String get expColUnclosed => 'Belum tutup';
+
+  @override
+  String get expColCount => 'Jumlah';
+
+  @override
   String get expColMethod => 'Metode';
 
   @override
@@ -10333,6 +10360,9 @@ class AppL10nIdSv extends AppL10nId {
     );
     return '$_temp0 masih aktif. Memasang akan mematikan server — semua staff terputus sampai pemasangan selesai.';
   }
+
+  @override
+  String get expColTable => 'Layanan';
 
   @override
   String expTableVisit(String label) {

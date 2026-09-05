@@ -3177,6 +3177,60 @@ abstract class AppL10n {
   /// **'Rincian Metode Bayar'**
   String get expMethodBreakdown;
 
+  /// Export column: which staff member a figure belongs to.
+  ///
+  /// In id, this message translates to:
+  /// **'Staf'**
+  String get expColStaff;
+
+  /// Export column: the visit's table label.
+  ///
+  /// In id, this message translates to:
+  /// **'Meja'**
+  String get expColTable;
+
+  /// Export column: a debtor's phone number.
+  ///
+  /// In id, this message translates to:
+  /// **'Telepon'**
+  String get expColPhone;
+
+  /// Export column: an outstanding balance.
+  ///
+  /// In id, this message translates to:
+  /// **'Saldo'**
+  String get expColBalance;
+
+  /// Export column: distinct business days worked.
+  ///
+  /// In id, this message translates to:
+  /// **'Hari'**
+  String get expColDays;
+
+  /// Export column: shift count.
+  ///
+  /// In id, this message translates to:
+  /// **'Shift'**
+  String get expColShifts;
+
+  /// Export column: hours worked.
+  ///
+  /// In id, this message translates to:
+  /// **'Jam'**
+  String get expColHours;
+
+  /// Export column: shifts nobody signed out of.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum tutup'**
+  String get expColUnclosed;
+
+  /// Export column: a count of rows behind a figure.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah'**
+  String get expColCount;
+
   /// No description provided for @expColMethod.
   ///
   /// In id, this message translates to:
