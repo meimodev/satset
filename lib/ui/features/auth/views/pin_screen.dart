@@ -268,7 +268,11 @@ class _PinScreenState extends ConsumerState<PinScreen>
       // Leaving the stage on `enteringPin` after a throw is what used to make
       // the pad unopenable for the rest of the session: the guard above saw a
       // sheet that was no longer on screen and refused to build another.
-      if (ok != true) vm.setStage(StaffStage.pickingServer);
+      //
+      // Where a closed pad lands is the view-model's call, not ours — this used
+      // to say `setStage(pickingServer)` and dumped a still-paired device into
+      // the picker, which had no way back to the pad.
+      if (ok != true) vm.dismissPinPad();
     }
     if (!mounted) return;
     if (ok == true) context.go('/tables');
@@ -384,8 +388,12 @@ class _PinScreenState extends ConsumerState<PinScreen>
     // The pad opens on the edge into `connected`, not on the level: the
     // view-model owns the stage, so this only has to notice the transition.
     ref.listen<PinState>(pinViewModelProvider, (prev, next) {
+      // The edge is "a server was chosen", not "we are in `connected`". Firing
+      // on any arrival made a dismissal (`enteringPin → connected`) re-open the
+      // pad it had just closed, so the swipe-down could never stick. `prev ==
+      // null` keeps a cold boot that promotes before this subscribes.
       final becameConnected =
-          prev?.stage != StaffStage.connected &&
+          (prev == null || prev.stage == StaffStage.pickingServer) &&
           next.stage == StaffStage.connected;
       if (becameConnected && next.mode == SignInMode.staff) {
         WidgetsBinding.instance.addPostFrameCallback((_) {

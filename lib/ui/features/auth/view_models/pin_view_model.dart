@@ -27,9 +27,20 @@ enum SignInMode { admin, staff }
 /// view-model's `selectedServer.paired`, and a widget-local `_sheetOpen` that
 /// stayed `true` forever if the sheet ever threw, after which the PIN pad could
 /// not be reopened at all.
+///
+/// **A stage a user can enter must be one they can re-enter.** The enum killed
+/// the throw trap and reintroduced the same shape a level down: dismissing the
+/// pad dropped to [pickingServer], where tapping the already-selected paired
+/// server changed nothing, and the pad opens on a stage *edge* — so the only
+/// exits left were resetting the pairing or killing the app. Two things hold
+/// it now: [selectServer] promotes a paired pick to [connected], and
+/// [dismissPinPad] — not the screen — decides where a closed pad lands.
 enum StaffStage {
   /// Choosing a server: the paired one, anything mDNS has found, or a typed
   /// address. Also where "ganti server" and a failed pairing land.
+  ///
+  /// Entered deliberately, and always leavable: tapping a paired row from here
+  /// promotes to [connected], which is what re-opens the pad.
   pickingServer,
 
   /// A paired server is selected and reachable; the card is showing.
@@ -387,12 +398,38 @@ class PinViewModel extends StateNotifier<PinState> {
     }
   }
 
+  /// Pick a server from the list.
+  ///
+  /// A **paired** pick promotes the stage to [StaffStage.connected], which is
+  /// what re-opens the PIN pad — an unpaired row already lands the caller at
+  /// the pad via [selectDiscovered], so a paired row doing less was the
+  /// inconsistency that made "ganti server" a one-way door. Promoting even
+  /// when the key is unchanged is the point: re-picking the server you are
+  /// already on is exactly how you get back after dismissing the pad.
   void selectServer(String key) {
     final match = state.servers.where((s) => s.key == key).toList();
     if (match.isEmpty) return;
     final picked = match.first;
-    state = state.copyWith(selectedServerKey: key);
+    state = state.copyWith(
+      selectedServerKey: key,
+      stage: picked.paired ? StaffStage.connected : null,
+    );
     if (picked.paired) _publishApiConfig(picked);
+  }
+
+  /// The PIN pad closed without admitting anyone.
+  ///
+  /// The screen must not decide this. It used to — a bare
+  /// `setStage(pickingServer)` in the sheet's `finally` — which is the same
+  /// "second copy of where are we" that [setStage]'s comment warns about, and
+  /// it dumped a still-paired device into the picker with no way back.
+  ///
+  /// Dismissing means *not now*, not *re-pair me*: land on the connected card
+  /// (whose tap re-opens the pad) whenever there is a paired selection to land
+  /// on, and fall back to the picker only when there genuinely isn't one.
+  void dismissPinPad() {
+    final paired = state.selectedServer?.paired ?? false;
+    setStage(paired ? StaffStage.connected : StaffStage.pickingServer);
   }
 
   void _publishApiConfig(PairedServerInfo s) {

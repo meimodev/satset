@@ -270,13 +270,14 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   late ProviderContainer container;
+  late PrefsService prefs;
   late FakeSecureStorageService fakeStorage;
   late FakeMdnsBrowserService fakeMdns;
   late FakeHttpClient fakeHttpClient;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    final prefs = PrefsService(await SharedPreferences.getInstance());
+    prefs = PrefsService(await SharedPreferences.getInstance());
     fakeStorage = FakeSecureStorageService();
     fakeMdns = FakeMdnsBrowserService();
     fakeHttpClient = FakeHttpClient();
@@ -289,6 +290,57 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
+  });
+
+  /// A device that is already paired, its pad opened and then dismissed.
+  ///
+  /// These pin the trap described on [StaffStage]: before this, dismissing the
+  /// pad dropped a still-paired device into the picker, where re-tapping its
+  /// own server changed nothing — leaving "reset pairing" or an app kill as the
+  /// only ways back to a PIN prompt.
+  group('re-entering the PIN pad', () {
+    /// Seeds a paired server and settles the view-model on it.
+    Future<PinViewModel> pairedVm() async {
+      await prefs.setPairedHost('192.168.1.8');
+      await prefs.setPairedPort(7443);
+      await fakeStorage.writeServerFingerprint('deadbeef');
+      final vm = container.read(pinViewModelProvider.notifier);
+      await vm.refreshPairedServers();
+      return vm;
+    }
+
+    test('dismissing the pad lands on the connected card, not the picker', () async {
+      final vm = await pairedVm();
+      expect(container.read(pinViewModelProvider).stage, StaffStage.connected);
+
+      vm.setStage(StaffStage.enteringPin);
+      vm.dismissPinPad();
+
+      expect(container.read(pinViewModelProvider).stage, StaffStage.connected);
+    });
+
+    test('dismissing with no paired selection falls back to the picker', () async {
+      final vm = container.read(pinViewModelProvider.notifier);
+      await vm.refreshPairedServers();
+      expect(container.read(pinViewModelProvider).selectedServer, isNull);
+
+      vm.setStage(StaffStage.enteringPin);
+      vm.dismissPinPad();
+
+      expect(container.read(pinViewModelProvider).stage, StaffStage.pickingServer);
+    });
+
+    test('re-picking the server already selected promotes back to connected', () async {
+      final vm = await pairedVm();
+      final key = container.read(pinViewModelProvider).selectedServerKey;
+      expect(key, isNotNull);
+
+      // "ganti server", then changing your mind and tapping the same row.
+      vm.setStage(StaffStage.pickingServer);
+      vm.selectServer(key!);
+
+      expect(container.read(pinViewModelProvider).stage, StaffStage.connected);
+    });
   });
 
   group('Manual connection address parsing', () {
