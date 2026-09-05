@@ -4,7 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
+import 'dart:convert';
+
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/floor_cache.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/zone.dart';
 
@@ -18,6 +21,8 @@ final zonesStatusProvider = StateProvider<AsyncValue<void>>(
 
 class ZonesRepository extends StateNotifier<List<Zone>> {
   ZonesRepository({required this.ref}) : super(const <Zone>[]) {
+    // Before the first frame, for ADR-0128's reason. See TablesRepository.
+    _restore();
     // Defer to a microtask: Riverpod forbids mutating other providers
     // (zonesStatusProvider) during this notifier's own initialization.
     Future.microtask(_bootstrap);
@@ -63,6 +68,47 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
     });
   }
 
+  /// Paint the zone half of the [[Salinan lantai]] (ADR-0133).
+  ///
+  /// Through `super.state`, so restoring does not re-stamp the copy as fresh.
+  void _restore() {
+    final cache = ref.read(floorCacheProvider);
+    final raw = cache.read(FloorSlot.zones);
+    if (raw == null) return;
+    try {
+      final list = jsonDecode(raw) as List;
+      if (list.isEmpty) return;
+      super.state = [
+        for (final e in list) _fromJson((e as Map).cast<String, dynamic>()),
+      ];
+      cache.markRestored();
+      SatLog.repo('zones.restored n=${super.state.length}');
+    } catch (e) {
+      SatLog.repo('zones.restore fail $e');
+    }
+  }
+
+  @override
+  set state(List<Zone> value) {
+    super.state = value;
+    ref
+        .read(floorCacheProvider)
+        .remember(
+          FloorSlot.zones,
+          () => jsonEncode([for (final z in super.state) _toJson(z)]),
+        );
+  }
+
+  /// The inverse of [_fromJson], emitting the `#AARRGGBB` form [_parseColor]
+  /// accepts. One shape in, the same shape out.
+  Map<String, dynamic> _toJson(Zone z) => {
+    'id': z.id,
+    'name': z.name,
+    'short': z.short,
+    'colorHex': '#${z.colorHex.toRadixString(16).padLeft(8, '0')}',
+    'iconKey': z.iconKey,
+  };
+
   Future<void> _bootstrap() async {
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
@@ -71,7 +117,7 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
       );
       return;
     }
-    state = const <Zone>[];
+    // Not cleared — the constructor has already painted the copy (ADR-0133).
     ref.read(zonesStatusProvider.notifier).state = const AsyncValue.loading();
     try {
       await _refetch();
@@ -80,7 +126,10 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
       );
     } catch (e, st) {
       SatLog.repo('zones.bootstrap fail $e');
-      ref.read(zonesStatusProvider.notifier).state = AsyncValue.error(e, st);
+      // See TablesRepository — a restored list is not an error (ADR-0133).
+      ref.read(zonesStatusProvider.notifier).state = state.isEmpty
+          ? AsyncValue.error(e, st)
+          : const AsyncValue.data(null);
     }
     // Wire WS even if the bootstrap GET failed: the `connected` resync is the
     // recovery path for an empty/401 bootstrap. See ADR-0021.
@@ -95,6 +144,7 @@ class ZonesRepository extends StateNotifier<List<Zone>> {
     state = [
       for (final e in raw) _fromJson((e as Map).cast<String, dynamic>()),
     ];
+    ref.read(floorCacheProvider).markLive();
     SatLog.repo('zones.loaded n=${state.length}');
   }
 

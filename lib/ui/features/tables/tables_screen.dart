@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satset/ui/core/widgets/floor_stale_banner.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -97,6 +98,9 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
       return Column(
         children: [
           head,
+          const FloorStaleBanner(
+            margin: EdgeInsets.only(left: Sp.s8, right: Sp.s8, bottom: Sp.s3),
+          ),
           zoneRow,
           Expanded(
             child: zoneTables.isEmpty
@@ -119,6 +123,7 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     return Column(
       children: [
         head,
+        const FloorStaleBanner(),
         zoneRow,
         Expanded(
           child: zoneTables.isEmpty

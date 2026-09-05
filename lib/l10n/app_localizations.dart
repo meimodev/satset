@@ -10021,6 +10021,12 @@ abstract class AppL10n {
   /// **'Dibatalkan · {reason} · disetujui oleh {approver}'**
   String olcVoidedBy(String reason, String approver);
 
+  /// Banner on the tables and orders screens when the floor is painted from this device's Salinan lantai and the host is unreachable (ADR-0133).
+  ///
+  /// In id, this message translates to:
+  /// **'Tanpa server — data terakhir {waktu}'**
+  String floorStaleBanner(String waktu);
+
   /// No description provided for @rdyBannerText.
   ///
   /// In id, this message translates to:

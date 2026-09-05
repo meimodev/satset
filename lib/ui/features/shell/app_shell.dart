@@ -12,6 +12,12 @@ import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
+import 'package:satset/data/repositories/settlement_repository.dart';
+import 'package:satset/data/repositories/zones_repository.dart';
+import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/data/repositories/printers_repository.dart';
+import 'package:satset/data/repositories/reservations_repository.dart';
+import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/discount_presets_repository.dart';
 import 'package:satset/data/repositories/visit_expense_repository.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
@@ -202,6 +208,52 @@ class AppShell extends ConsumerWidget {
     // away, so nothing may wait for a cashier to open the lookup sheet
     // (ADR-0129).
     ref.watch(memberMirrorSyncProvider);
+    // The menu joins the [[Salinan lantai]] here, and for the fourth time the
+    // same recorded bug (ADR-0128, ADR-0130): this repository is lazy, so its
+    // first watch is a waiter opening a menu screen. A device that never got
+    // there before the host went away cold-booted with the floor restored and
+    // the menu empty — a floor whose only affordance dead-ends one screen
+    // later, which is exactly what ADR-0133 put the menu in scope to prevent.
+    ref.watch(menuRepositoryProvider);
+    // The rest of the [[Salinan lantai]] joins it. Tables and tickets were
+    // already warm, but only *incidentally* — `totalReadyCountProvider` and
+    // `kitchenNewOrderCountProvider` below happen to watch them for the tab
+    // badges, so the floor copy filled as a side effect of a number nobody
+    // would think to preserve. Zones were not warm at all: every watcher is a
+    // screen, so a device that lands on /kasir or /kitchen and never opens the
+    // floor cold-booted with tables and no zones to file them under.
+    ref.watch(tablesProvider);
+    ref.watch(zonesProvider);
+    ref.watch(ticketsProvider);
+    // Not part of the copy, and warmed for the weaker reason: a printer list
+    // first fetched when the kasir taps Cetak is a fetch made at the moment
+    // the host is already gone. In RAM from boot it survives the outage,
+    // though not a restart — that would need a cache of its own. The GET is
+    // the bearer-only gate, so every signed-in device may make it.
+    ref.watch(printersRepositoryProvider);
+    // Reservations are the same trade, but the GET costs `takeOrder`, so a
+    // kasir- or KDS-only user would 403 on every boot and push it to the
+    // error bus. Warmed only where it would not.
+    if (ref.watch(
+      authStateProvider.select((s) => s.has(Capability.takeOrder)),
+    )) {
+      ref.watch(reservationsRepositoryProvider);
+    }
+    // Bills and the list that reaches them (ADR-0123 §Q19). The prefetch sweep
+    // and the [[Antrean setelmen]]'s payable snapshot both hang off this
+    // repository's refetch, and its only watcher was `/kasir` itself — so the
+    // cache designed to make "a bill nobody happened to open" settleable only
+    // filled once somebody opened the cashier screen. A client-mode till lands
+    // on /tables, so the host could be gone before the sweep had ever run.
+    // The drain half was never affected: it rides `sendQueueDrainProvider`.
+    //
+    // Gated on the capability the GET costs, and the same gate keeps a
+    // waiter's handset from prefetching every open bill in the venue.
+    if (ref.watch(
+      authStateProvider.select((s) => s.has(Capability.settleBill)),
+    )) {
+      ref.watch(settlementProvider);
+    }
     // A clean drain stays silent — the lines landing on the table say it. Only
     // a refusal, a stock drop or a stalled drain is worth a blocking overlay.
     ref.listen<SendReport?>(sendReportProvider, (_, r) {

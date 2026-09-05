@@ -4866,6 +4866,11 @@
       }
     }
   },
+  "floorStaleBanner": "Tanpa server — data terakhir {waktu}",
+  "@floorStaleBanner": {
+    "description": "Banner on the tables and orders screens when the floor is painted from this device's Salinan lantai and the host is unreachable (ADR-0133).",
+    "placeholders": { "waktu": { "type": "String" } }
+  },
   "rdyBannerText": "Item siap diambil di pass — tandai disajikan di bawah",
   "ppfTitle": "Bukti pembayaran",
   "ppfUnavailable": "Foto bukti tidak bisa dimuat",
