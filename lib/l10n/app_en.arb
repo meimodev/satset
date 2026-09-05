@@ -474,7 +474,9 @@
   "a11yRename": "Rename",
   "a11yClear": "Clear",
   "a11yStockActions": "Ingredient actions",
-  "@a11yStockActions": {"description": "Screen-reader name for the stock row overflow control."},
+  "@a11yStockActions": {
+    "description": "Screen-reader name for the stock row overflow control."
+  },
   "a11yRefresh": "Reload",
   "a11yShowPassword": "Show password",
   "a11yHidePassword": "Hide password",
@@ -2103,7 +2105,11 @@
   "floorStaleBanner": "No server — data as of {waktu}",
   "@floorStaleBanner": {
     "description": "Banner on the tables and orders screens when the floor is painted from this device's Salinan lantai and the host is unreachable (ADR-0133).",
-    "placeholders": { "waktu": { "type": "String" } }
+    "placeholders": {
+      "waktu": {
+        "type": "String"
+      }
+    }
   },
   "rdyBannerText": "Items are ready at the pass — mark them served below",
   "ppfTitle": "Payment proof",
@@ -3660,5 +3666,46 @@
   "expCatEmptyBody": "Add one so a waiter has something to pick when recording an expense.",
   "vstTableExpense": "Table expenses",
   "vstTableExpenseHint": "A waiter may spend cash on the party they are serving, capped at that table’s bill, with a proof photo required. The guest’s bill does not change.",
-  "expColExpense": "Table expenses"
+  "expColExpense": "Table expenses",
+  "memExpAction": "Export",
+  "memExpCsv": "Export CSV",
+  "memExpDirTitle": "Member directory",
+  "memExpHistTitle": "Member history",
+  "memExpKindRanked": "Ranked list",
+  "memExpColCode": "Code",
+  "memExpColLastVisit": "Last visit",
+  "memExpColPax": "Pax",
+  "memExpColOwner": "Role",
+  "memExpColUnits": "Units",
+  "memExpFilters": "Filters",
+  "memExpFilterNone": "All members",
+  "memExpFilterSearch": "Search",
+  "memExpRows": "Rows",
+  "memExpTaken": "Taken",
+  "memExpWindow": "Window",
+  "memExpSortedBy": "Sorted by",
+  "memExpSecSummary": "Summary",
+  "memExpTotalEnrolled": "Enrolled total",
+  "memExpIdle": "Did not come back",
+  "memExpLiability": "Estimated liability",
+  "memExpUntracked": "Amount receipts",
+  "memExpErrTooLarge": "Too many rows for one file (limit {limit}). Narrow the window or the filters.",
+  "@memExpErrTooLarge": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "memExpErrOffline": "No connection to the host. An export reads live data, not the copy on this device.",
+  "memExpErrFailed": "Export failed.",
+  "memExpPickMember": "Pick a member first",
+  "auditMemberDirectoryExported": "Exported member directory ({rows, plural, =1{1 row} other{{rows} rows}})",
+  "@auditMemberDirectoryExported": {
+    "placeholders": {
+      "rows": {
+        "type": "int"
+      }
+    }
+  }
 }

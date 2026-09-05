@@ -5,8 +5,11 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import 'package:satset/core/time/sat_clock.dart';
+import 'package:satset/domain/models/audit_entry.dart';
+import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/member.dart';
+import 'package:satset/server/audit_log.dart';
 import 'package:satset/server/auth.dart';
 // Hidden for the reason `members.dart` gives: Drift's row class shares the
 // domain model's name and this file means the domain one.
@@ -319,6 +322,138 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     }
     final (from, to) = await windowOf(req);
     return json(await memberTradeReport(db, from: from, to: to));
+  });
+
+  // ----------------------------------------------------------------- exports
+  //
+  // An export is a **fresh, uncapped fetch**, never a copy of what the screen
+  // is holding (ADR-0137). Every read above is capped — the directory at 500,
+  // the ranked list at 500, a member's bills at 200 — so a file rendered from
+  // loaded state stops wherever the reader happened to stop and calls itself
+  // complete. These three answer the same questions with the cap lifted to
+  // [kMemberExportMax], and **refuse** rather than truncate above it.
+  //
+  // Registered here, beside the reads they mirror, and — for `/members/export`
+  // — necessarily **before** `/members/<id>`, which would otherwise match it as
+  // a member whose id is the word "export".
+  //
+  // They gate exactly what the screen behind them gates. The §Export rule that
+  // puts every other export behind `viewReports` exists because the order board
+  // is open to `takeOrder`, so exporting it widened what that role could see;
+  // here it widens nothing, and demanding `viewReports` on top would hand a
+  // directory keeper a button that only ever refuses.
+
+  /// Everything past the ceiling, in the shape the export sheet expects.
+  Response tooLarge() =>
+      err(413, 'export_too_large', limit: kMemberExportMax);
+
+  /// The whole directory, honouring the screen's active filters.
+  ///
+  /// The filters ride along on purpose: "export the members who have not come
+  /// back in ninety days" is the reason an owner exports a roster at all, and a
+  /// file that can only ever be everybody cannot answer it.
+  ///
+  /// `manageMembers` alone, unlike `GET /members` — the till and the booking
+  /// form read that route to find one guest mid-service, which is a different
+  /// act from taking the customer list off the device. Which also means no
+  /// masked caller reaches this: the mask is for a `takeOrder`-only device
+  /// (ADR-0129), and one of those is refused here before masking is a question.
+  r.get('/members/export', (Request req) async {
+    final off = await enabledGuard();
+    if (off != null) return off;
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!a.$2.contains(Capability.manageMembers.name)) {
+      return forbidden(Capability.manageMembers);
+    }
+    final q = req.url.queryParameters;
+    final month = int.tryParse(q['birthdayMonth'] ?? '');
+    final lapsed = int.tryParse(q['lapsedDays'] ?? '');
+    final list = await listMembers(
+      db,
+      query: q['q'] ?? '',
+      birthdayMonth: (month != null && month >= 1 && month <= 12)
+          ? month
+          : null,
+      lapsedDays: (lapsed != null && lapsed > 0) ? lapsed : null,
+      // One past the ceiling, so "exactly at the ceiling" and "over it" are
+      // distinguishable without a second count query.
+      limit: kMemberExportMax + 1,
+    );
+    if (list.length > kMemberExportMax) return tooLarge();
+
+    // The one export that audits itself. The two below do not: they are
+    // aggregates over a window their reader already had on screen, while this
+    // is the roster — names, numbers, birthdays, addresses — leaving the device
+    // through the Android share sheet.
+    await writeAudit(
+      db,
+      type: AuditType.memberChanged,
+      kind: AuditKind.memberDirectoryExported,
+      params: {'rows': '${list.length}'},
+      actorUserId: a.$1,
+      hub: hub,
+    );
+    return json([for (final m in list) memberJson(m)]);
+  });
+
+  /// The ranked list, uncapped. Same window rules as `/members/report`,
+  /// including the open-ended `Semua` arm — which on a venue with years of
+  /// trade is precisely what trips the ceiling, and the refusal says so.
+  ///
+  /// `membersTruncated` is stripped: on an uncapped payload it is always zero,
+  /// and a field that can only ever say "nothing was dropped" is one a future
+  /// reader will trust to mean something.
+  r.get('/members/report/export', (Request req) async {
+    final off = await enabledGuard();
+    if (off != null) return off;
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!a.$2.contains(Capability.viewReports.name) &&
+        !a.$2.contains(Capability.manageMembers.name)) {
+      return forbidden(Capability.viewReports);
+    }
+    final (from, to) = await windowOf(req);
+    final body = await memberTradeReport(
+      db,
+      from: from,
+      to: to,
+      rankLimit: kMemberExportMax + 1,
+    );
+    if ((body['members'] as List).length > kMemberExportMax) {
+      return tooLarge();
+    }
+    return json({...body}..remove('membersTruncated'));
+  });
+
+  /// One member's history, uncapped. Answers for a member with no directory row
+  /// for the reason `/members/<id>/report` does — the bills are the venue's
+  /// record of what happened, not the person's data (ADR-0092).
+  r.get('/members/<id>/report/export', (Request req, String id) async {
+    final off = await enabledGuard();
+    if (off != null) return off;
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!a.$2.contains(Capability.viewReports.name) &&
+        !a.$2.contains(Capability.manageMembers.name)) {
+      return forbidden(Capability.viewReports);
+    }
+    final (from, to) = await windowOf(req);
+    final body = await memberHistory(
+      db,
+      id,
+      from: from,
+      to: to,
+      billLimit: kMemberExportMax + 1,
+    );
+    // `billsTotal` is the true count before any cap, so it is the honest test
+    // — the bill list itself has already been trimmed by the time we see it.
+    if ((body['billsTotal'] as int) > kMemberExportMax) return tooLarge();
+    final member = await getMember(db, id);
+    return json({
+      ...body,
+      'member': member == null ? null : memberJson(member),
+    });
   });
 
   /// One member's history: their bills in the window, and every product they

@@ -10077,6 +10077,97 @@ class AppL10nId extends AppL10n {
 
   @override
   String get expColExpense => 'Pengeluaran meja';
+
+  @override
+  String get memExpAction => 'Ekspor';
+
+  @override
+  String get memExpCsv => 'Ekspor CSV';
+
+  @override
+  String get memExpDirTitle => 'Daftar pelanggan';
+
+  @override
+  String get memExpHistTitle => 'Riwayat pelanggan';
+
+  @override
+  String get memExpKindRanked => 'Daftar peringkat';
+
+  @override
+  String get memExpColCode => 'Kode';
+
+  @override
+  String get memExpColLastVisit => 'Kunjungan terakhir';
+
+  @override
+  String get memExpColPax => 'Pax';
+
+  @override
+  String get memExpColOwner => 'Peran';
+
+  @override
+  String get memExpColUnits => 'Unit';
+
+  @override
+  String get memExpFilters => 'Filter';
+
+  @override
+  String get memExpFilterNone => 'Semua pelanggan';
+
+  @override
+  String get memExpFilterSearch => 'Pencarian';
+
+  @override
+  String get memExpRows => 'Baris';
+
+  @override
+  String get memExpTaken => 'Diambil';
+
+  @override
+  String get memExpWindow => 'Periode';
+
+  @override
+  String get memExpSortedBy => 'Urutan';
+
+  @override
+  String get memExpSecSummary => 'Ringkasan';
+
+  @override
+  String get memExpTotalEnrolled => 'Total terdaftar';
+
+  @override
+  String get memExpIdle => 'Belum kembali';
+
+  @override
+  String get memExpLiability => 'Estimasi liabilitas';
+
+  @override
+  String get memExpUntracked => 'Struk nominal';
+
+  @override
+  String memExpErrTooLarge(int limit) {
+    return 'Terlalu banyak baris untuk satu berkas (batas $limit). Persempit periode atau filternya.';
+  }
+
+  @override
+  String get memExpErrOffline =>
+      'Tidak terhubung ke server. Ekspor membaca data langsung, bukan salinan di perangkat ini.';
+
+  @override
+  String get memExpErrFailed => 'Ekspor gagal.';
+
+  @override
+  String get memExpPickMember => 'Pilih pelanggan dulu';
+
+  @override
+  String auditMemberDirectoryExported(int rows) {
+    String _temp0 = intl.Intl.pluralLogic(
+      rows,
+      locale: localeName,
+      other: '$rows baris',
+    );
+    return 'Ekspor daftar pelanggan ($_temp0)';
+  }
 }
 
 /// The translations for Indonesian, as used in El Salvador (`id_SV`).

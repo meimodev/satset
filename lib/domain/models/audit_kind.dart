@@ -212,6 +212,15 @@ enum AuditKind {
   /// correction went is the whole finding. Reason mandatory.
   debtAdjusted,
 
+  /// `{rows}` — how many members left the device in the file.
+  ///
+  /// The **one** export that audits itself. The two member *report* exports do
+  /// not: they are aggregates over a window their reader already had on
+  /// screen. This one is the roster — names, phone numbers, birthdays,
+  /// addresses — leaving through the Android share sheet, and "who took the
+  /// customer list, and when" is a question a venue is eventually asked.
+  memberDirectoryExported,
+
   // ---------- menu ----------
   /// `{name}`.
   menuKilled,

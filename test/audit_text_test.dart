@@ -42,6 +42,23 @@ void main() {
     expect(auditText(_en, e), 'Voided ×2 Nasi Goreng · Rp. 50.000');
   });
 
+  test('the export row counts its rows, and English agrees at one', () {
+    // The one audit param read back as a number: `{rows}` is stored as a
+    // string like every other (ADR-0085), but English needs an ICU plural or
+    // it renders "1 rows".
+    final many = _row(AuditKind.memberDirectoryExported, const {'rows': '40'});
+    expect(auditText(_id, many), 'Ekspor daftar pelanggan (40 baris)');
+    expect(auditText(_en, many), 'Exported member directory (40 rows)');
+
+    final one = _row(AuditKind.memberDirectoryExported, const {'rows': '1'});
+    expect(auditText(_en, one), 'Exported member directory (1 row)');
+
+    // A row written by a newer build with a param this reader cannot parse
+    // still renders a sentence rather than throwing.
+    final junk = _row(AuditKind.memberDirectoryExported, const {'rows': '?'});
+    expect(auditText(_en, junk), contains('0 rows'));
+  });
+
   test('a parameter that is itself a word follows the language too', () {
     // The method and the receipt label are keys, not copy — so they translate
     // with the sentence around them. The money between them never does.

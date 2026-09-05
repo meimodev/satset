@@ -656,3 +656,39 @@ class MembersRepository extends StateNotifier<MembersState> {
 final membersProvider = StateNotifierProvider<MembersRepository, MembersState>(
   (ref) => MembersRepository(ref),
 );
+
+/// One-shot fetcher for the directory export (ADR-0137).
+///
+/// Takes the whole [MembersState] rather than three loose filter arguments, so
+/// the file and the screen cannot drift: whatever the reader is looking at is
+/// literally what is sent. The server lifts the 500-row cap for this route and
+/// **refuses** above [kMemberExportMax] rather than truncating, so a short file
+/// is not one of the things that can come back.
+///
+/// Throws on transport or HTTP error. That is the point: with the host dark the
+/// directory is being served from the [[Salinan pelanggan]], which is a lookup
+/// cache — maskable, and holding none of the derived figures the file carries —
+/// so an export must say it cannot rather than quietly ship the copy.
+final memberDirectoryExportFetcherProvider =
+    Provider<Future<List<MemberDto>> Function(MembersState)>(
+      (ref) => (MembersState s) async {
+        final raw =
+            await ref
+                    .read(apiClientProvider)
+                    .getJson(
+                      '/members/export',
+                      query: {
+                        if (s.query.trim().isNotEmpty) 'q': s.query.trim(),
+                        if (s.birthdayMonth != null)
+                          'birthdayMonth': '${s.birthdayMonth}',
+                        if (s.lapsedDays != null)
+                          'lapsedDays': '${s.lapsedDays}',
+                      },
+                    )
+                as List;
+        return [
+          for (final m in raw)
+            MemberDto.fromJson((m as Map).cast<String, dynamic>()),
+        ];
+      },
+    );

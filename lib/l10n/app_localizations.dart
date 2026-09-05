@@ -16056,6 +16056,168 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Pengeluaran meja'**
   String get expColExpense;
+
+  /// No description provided for @memExpAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Ekspor'**
+  String get memExpAction;
+
+  /// No description provided for @memExpCsv.
+  ///
+  /// In id, this message translates to:
+  /// **'Ekspor CSV'**
+  String get memExpCsv;
+
+  /// No description provided for @memExpDirTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftar pelanggan'**
+  String get memExpDirTitle;
+
+  /// No description provided for @memExpHistTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat pelanggan'**
+  String get memExpHistTitle;
+
+  /// No description provided for @memExpKindRanked.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftar peringkat'**
+  String get memExpKindRanked;
+
+  /// No description provided for @memExpColCode.
+  ///
+  /// In id, this message translates to:
+  /// **'Kode'**
+  String get memExpColCode;
+
+  /// No description provided for @memExpColLastVisit.
+  ///
+  /// In id, this message translates to:
+  /// **'Kunjungan terakhir'**
+  String get memExpColLastVisit;
+
+  /// No description provided for @memExpColPax.
+  ///
+  /// In id, this message translates to:
+  /// **'Pax'**
+  String get memExpColPax;
+
+  /// No description provided for @memExpColOwner.
+  ///
+  /// In id, this message translates to:
+  /// **'Peran'**
+  String get memExpColOwner;
+
+  /// No description provided for @memExpColUnits.
+  ///
+  /// In id, this message translates to:
+  /// **'Unit'**
+  String get memExpColUnits;
+
+  /// No description provided for @memExpFilters.
+  ///
+  /// In id, this message translates to:
+  /// **'Filter'**
+  String get memExpFilters;
+
+  /// No description provided for @memExpFilterNone.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua pelanggan'**
+  String get memExpFilterNone;
+
+  /// No description provided for @memExpFilterSearch.
+  ///
+  /// In id, this message translates to:
+  /// **'Pencarian'**
+  String get memExpFilterSearch;
+
+  /// No description provided for @memExpRows.
+  ///
+  /// In id, this message translates to:
+  /// **'Baris'**
+  String get memExpRows;
+
+  /// No description provided for @memExpTaken.
+  ///
+  /// In id, this message translates to:
+  /// **'Diambil'**
+  String get memExpTaken;
+
+  /// No description provided for @memExpWindow.
+  ///
+  /// In id, this message translates to:
+  /// **'Periode'**
+  String get memExpWindow;
+
+  /// No description provided for @memExpSortedBy.
+  ///
+  /// In id, this message translates to:
+  /// **'Urutan'**
+  String get memExpSortedBy;
+
+  /// No description provided for @memExpSecSummary.
+  ///
+  /// In id, this message translates to:
+  /// **'Ringkasan'**
+  String get memExpSecSummary;
+
+  /// No description provided for @memExpTotalEnrolled.
+  ///
+  /// In id, this message translates to:
+  /// **'Total terdaftar'**
+  String get memExpTotalEnrolled;
+
+  /// No description provided for @memExpIdle.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum kembali'**
+  String get memExpIdle;
+
+  /// No description provided for @memExpLiability.
+  ///
+  /// In id, this message translates to:
+  /// **'Estimasi liabilitas'**
+  String get memExpLiability;
+
+  /// No description provided for @memExpUntracked.
+  ///
+  /// In id, this message translates to:
+  /// **'Struk nominal'**
+  String get memExpUntracked;
+
+  /// No description provided for @memExpErrTooLarge.
+  ///
+  /// In id, this message translates to:
+  /// **'Terlalu banyak baris untuk satu berkas (batas {limit}). Persempit periode atau filternya.'**
+  String memExpErrTooLarge(int limit);
+
+  /// No description provided for @memExpErrOffline.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak terhubung ke server. Ekspor membaca data langsung, bukan salinan di perangkat ini.'**
+  String get memExpErrOffline;
+
+  /// No description provided for @memExpErrFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Ekspor gagal.'**
+  String get memExpErrFailed;
+
+  /// No description provided for @memExpPickMember.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih pelanggan dulu'**
+  String get memExpPickMember;
+
+  /// No description provided for @auditMemberDirectoryExported.
+  ///
+  /// In id, this message translates to:
+  /// **'Ekspor daftar pelanggan ({rows, plural, other{{rows} baris}})'**
+  String auditMemberDirectoryExported(int rows);
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

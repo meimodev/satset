@@ -554,7 +554,9 @@
   "a11yRename": "Ganti nama",
   "a11yClear": "Bersihkan",
   "a11yStockActions": "Tindakan bahan",
-  "@a11yStockActions": {"description": "Screen-reader name for the stock row overflow control."},
+  "@a11yStockActions": {
+    "description": "Screen-reader name for the stock row overflow control."
+  },
   "a11yRefresh": "Muat ulang",
   "a11yShowPassword": "Tampilkan kata sandi",
   "a11yHidePassword": "Sembunyikan kata sandi",
@@ -4871,7 +4873,11 @@
   "floorStaleBanner": "Tanpa server — data terakhir {waktu}",
   "@floorStaleBanner": {
     "description": "Banner on the tables and orders screens when the floor is painted from this device's Salinan lantai and the host is unreachable (ADR-0133).",
-    "placeholders": { "waktu": { "type": "String" } }
+    "placeholders": {
+      "waktu": {
+        "type": "String"
+      }
+    }
   },
   "rdyBannerText": "Item siap diambil di pass — tandai disajikan di bawah",
   "ppfTitle": "Bukti pembayaran",
@@ -8175,5 +8181,46 @@
   "expCatEmptyBody": "Buat kategori supaya pelayan bisa memilih saat mencatat pengeluaran.",
   "vstTableExpense": "Pengeluaran meja",
   "vstTableExpenseHint": "Pelayan boleh membelanjakan uang tunai untuk tamu yang dilayani, dibatasi nilai tagihan meja itu, dan wajib foto bukti. Tagihan tamu tidak berubah.",
-  "expColExpense": "Pengeluaran meja"
+  "expColExpense": "Pengeluaran meja",
+  "memExpAction": "Ekspor",
+  "memExpCsv": "Ekspor CSV",
+  "memExpDirTitle": "Daftar pelanggan",
+  "memExpHistTitle": "Riwayat pelanggan",
+  "memExpKindRanked": "Daftar peringkat",
+  "memExpColCode": "Kode",
+  "memExpColLastVisit": "Kunjungan terakhir",
+  "memExpColPax": "Pax",
+  "memExpColOwner": "Peran",
+  "memExpColUnits": "Unit",
+  "memExpFilters": "Filter",
+  "memExpFilterNone": "Semua pelanggan",
+  "memExpFilterSearch": "Pencarian",
+  "memExpRows": "Baris",
+  "memExpTaken": "Diambil",
+  "memExpWindow": "Periode",
+  "memExpSortedBy": "Urutan",
+  "memExpSecSummary": "Ringkasan",
+  "memExpTotalEnrolled": "Total terdaftar",
+  "memExpIdle": "Belum kembali",
+  "memExpLiability": "Estimasi liabilitas",
+  "memExpUntracked": "Struk nominal",
+  "memExpErrTooLarge": "Terlalu banyak baris untuk satu berkas (batas {limit}). Persempit periode atau filternya.",
+  "@memExpErrTooLarge": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "memExpErrOffline": "Tidak terhubung ke server. Ekspor membaca data langsung, bukan salinan di perangkat ini.",
+  "memExpErrFailed": "Ekspor gagal.",
+  "memExpPickMember": "Pilih pelanggan dulu",
+  "auditMemberDirectoryExported": "Ekspor daftar pelanggan ({rows, plural, other{{rows} baris}})",
+  "@auditMemberDirectoryExported": {
+    "placeholders": {
+      "rows": {
+        "type": "int"
+      }
+    }
+  }
 }

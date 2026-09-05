@@ -1834,6 +1834,17 @@ Future<Map<String, ({String name, String phone})>> memberNamesOf(
 /// between it and a venue-sized list. The remainder still ships as a count.
 const _memberRankLimit = 500;
 
+/// The ceiling an **export** is allowed to reach (ADR-0137).
+///
+/// An export is a fresh, uncapped fetch rather than a copy of what the screen
+/// is holding — but "uncapped" cannot mean unbounded: a LAN tablet laying
+/// fifty thousand rows into a PDF is an out-of-memory crash, not a document.
+/// So there is a ceiling, and crossing it **refuses loudly** rather than
+/// truncating. A file that stops silently at row 500 is the failure this whole
+/// design exists to avoid; a refusal that names the ceiling and says to narrow
+/// the window is a file the venue never had to distrust.
+const kMemberExportMax = 20000;
+
 /// The member report: the overview numbers plus every member who traded in the
 /// window, ranked by spend.
 ///
@@ -1844,6 +1855,11 @@ Future<Map<String, dynamic>> memberTradeReport(
   AppDatabase db, {
   required DateTime from,
   required DateTime to,
+
+  /// How many ranked rows to keep. The screen takes the default; an export
+  /// passes [kMemberExportMax] + 1 so the route can tell "a big venue" from
+  /// "too big to render" and refuse instead of handing back a short file.
+  int rankLimit = _memberRankLimit,
 }) async {
   final trade = await memberWindowTrade(db, from: from, to: to);
   final points = await memberWindowPoints(db, from: from, to: to);
@@ -1857,7 +1873,7 @@ Future<Map<String, dynamic>> memberTradeReport(
 
   final ranked = trade.spendBy.keys.toList()
     ..sort((a, b) => (trade.spendBy[b] ?? 0).compareTo(trade.spendBy[a] ?? 0));
-  final capped = ranked.take(_memberRankLimit).toList();
+  final capped = ranked.take(rankLimit).toList();
   final named = await memberNamesOf(db, capped);
 
   // Everyone on the books, so the screen can say how many members did **not**
@@ -2128,7 +2144,7 @@ Future<Map<String, dynamic>> memberHistory(
       final byQty = b.qty.compareTo(a.qty);
       return byQty != 0 ? byQty : b.spend.compareTo(a.spend);
     });
-  final capped = bills.take(billLimit.clamp(1, 500)).toList();
+  final capped = bills.take(billLimit.clamp(1, kMemberExportMax)).toList();
 
   return {
     'memberId': memberId,

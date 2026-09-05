@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/export/export_share.dart' show customRangeLabel;
+import 'package:satset/ui/features/admin/widgets/member_export_sheet.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/data/models/member_report_dto.dart';
 import 'package:satset/data/repositories/member_report_repository.dart';
@@ -95,28 +96,10 @@ class _MemberReportScreenState extends ConsumerState<MemberReportScreen> {
     };
   }
 
-  /// The rows as the list shows them: filtered by the search box, then ordered.
-  /// Both are struck here rather than server-side — see the class doc.
-  List<MemberTradeDto> _rows(MemberReportDto report) {
-    final q = _query.trim().toLowerCase();
-    final rows = [
-      for (final m in report.members)
-        if (q.isEmpty ||
-            (m.name ?? '').toLowerCase().contains(q) ||
-            (m.phone ?? '').contains(q))
-          m,
-    ];
-    rows.sort(switch (_sort) {
-      MemberSort.spend => (a, b) => b.spend.compareTo(a.spend),
-      MemberSort.visits => (a, b) => b.visits.compareTo(a.visits),
-      MemberSort.points => (a, b) => b.points.compareTo(a.points),
-      MemberSort.recent => (a, b) =>
-          (b.lastVisitAt ?? DateTime(0)).compareTo(a.lastVisitAt ?? DateTime(0)),
-      MemberSort.name => (a, b) =>
-          (a.name ?? '').toLowerCase().compareTo((b.name ?? '').toLowerCase()),
-    });
-    return rows;
-  }
+  /// The rows as the list shows them. The filter-then-sort itself lives in
+  /// `rankedMemberRows` so the export renders from the same one (ADR-0137).
+  List<MemberTradeDto> _rows(MemberReportDto report) =>
+      rankedMemberRows(report, query: _query, sort: _sort);
 
   @override
   Widget build(BuildContext context) {
@@ -149,30 +132,47 @@ class _MemberReportScreenState extends ConsumerState<MemberReportScreen> {
           sub: report == null
               ? l10n.mrpSub
               : l10n.mrpActiveOf(report.activeMembers, report.enrolledTotal),
-          trailing: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final r in MemberRange.values)
-                  Padding(
-                    padding: const EdgeInsets.only(left: Sp.s1h),
-                    child: SatChip.select(
-                      // The selected chip carries the window it resolved to
-                      // — a custom range shows its dates rather than the word
-                      // "Khusus", which is the only way to see what is on
-                      // screen without reopening the picker.
-                      label: _rangeLabelFor(r, state),
-                      selected: state.range == r,
-                      onTap: r == MemberRange.custom
-                          ? _pickCustom
-                          : () => ref
-                                .read(memberReportProvider.notifier)
-                                .setRange(r),
-                    ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final r in MemberRange.values)
+                        Padding(
+                          padding: const EdgeInsets.only(left: Sp.s1h),
+                          child: SatChip.select(
+                            // The selected chip carries the window it resolved
+                            // to — a custom range shows its dates rather than
+                            // the word "Khusus", which is the only way to see
+                            // what is on screen without reopening the picker.
+                            label: _rangeLabelFor(r, state),
+                            selected: state.range == r,
+                            onTap: r == MemberRange.custom
+                                ? _pickCustom
+                                : () => ref
+                                      .read(memberReportProvider.notifier)
+                                      .setRange(r),
+                          ),
+                        ),
+                    ],
                   ),
-              ],
-            ),
+                ),
+              ),
+              const SizedBox(width: Sp.s3),
+              // Outside the scroller on purpose: the chips can run off the edge
+              // of a narrow strip, and an action that scrolls away is one a
+              // reader has to go looking for.
+              SatButton.outline(
+                label: l10n.memExpAction,
+                icon: Icons.download_rounded,
+                size: SatButtonSize.sm,
+                onTap: report == null ? null : () => _export(state, report),
+              ),
+            ],
           ),
         ),
         Expanded(
@@ -192,6 +192,41 @@ class _MemberReportScreenState extends ConsumerState<MemberReportScreen> {
         ),
       ],
     );
+  }
+
+  /// Whoever the right-hand pane is **showing**, which is not the same as
+  /// `_selectedId`: with nothing picked the pane falls back to the first ranked
+  /// row, so reading the field alone tells the export sheet "no member" while a
+  /// member's history is plainly on screen beside it.
+  String? _shownMemberId(MemberReportDto report) {
+    final rows = _rows(report);
+    return (rows.where((m) => m.memberId == _selectedId).firstOrNull ??
+            rows.firstOrNull)
+        ?.memberId;
+  }
+
+  /// Hands the sheet the window, the sort and the search box as the list has
+  /// them, plus whichever member the right pane is showing. The sheet re-fetches
+  /// uncapped and re-applies those, so the file is the screen (ADR-0137).
+  Future<void> _export(MemberReportState state, MemberReportDto report) =>
+      showMemberExportSheet(
+        context,
+        windowLabel: _rangeLabel(state),
+        sortLabel: _sortLabel(_sort),
+        query: _query,
+        sort: _sort,
+        memberId: _shownMemberId(report),
+      );
+
+  String _sortLabel(MemberSort s) {
+    final l = context.l10n;
+    return switch (s) {
+      MemberSort.spend => l.mrpSortSpend,
+      MemberSort.visits => l.mrpSortVisits,
+      MemberSort.points => l.mrpSortPoints,
+      MemberSort.recent => l.mrpSortRecent,
+      MemberSort.name => l.mrpSortName,
+    };
   }
 
   String _rangeLabelFor(MemberRange r, MemberReportState s) =>
@@ -218,9 +253,8 @@ class _MemberReportScreenState extends ConsumerState<MemberReportScreen> {
   ) {
     final l10n = context.l10n;
     final rows = _rows(report);
-    final selected =
-        rows.where((m) => m.memberId == _selectedId).firstOrNull ??
-        rows.firstOrNull;
+    final shown = _shownMemberId(report);
+    final selected = rows.where((m) => m.memberId == shown).firstOrNull;
 
     // Height, not keyboard state: a docked tablet IME halves the viewport, and
     // the ranked pane's own header (search box + sort chips) has no smaller
