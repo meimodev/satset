@@ -17,7 +17,11 @@ class _Api extends ApiClient {
   Map<String, dynamic> row = {};
 
   @override
-  Future<dynamic> getJson(String path, {Map<String, String>? query}) async => {
+  Future<dynamic> getJson(
+    String path, {
+    Map<String, String>? query,
+    Duration? timeout,
+  }) async => {
     'presets': <Object>[],
   };
 

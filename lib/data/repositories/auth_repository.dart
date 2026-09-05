@@ -170,6 +170,7 @@ class AuthRepository extends StateNotifier<AuthState> {
       // certain of a live host, and the boot that needs the cache is the one
       // that cannot reach it (ADR-0090).
       await storage.writeMe(jsonEncode(meRaw));
+      await _noteAdmitted();
       final caps = <Capability>{
         for (final k in me.capabilities)
           if (capabilityFromKey(k) != null) capabilityFromKey(k)!,
@@ -708,10 +709,12 @@ class AuthRepository extends StateNotifier<AuthState> {
     // Mode keys ride the same array and the same column (ADR-0109) — one
     // transport, two readings. Which reading applies is decided where the value
     // is *read*, never here.
-    final nextModules = venueEntitlementKeys.where(v.hasModule).toList()..sort();
+    final nextModules = venueEntitlementKeys.where(v.hasModule).toList()
+      ..sort();
     final held = settings.modules;
     final needModules =
-        held == null || nextModules.join(',') != (held.toList()..sort()).join(',');
+        held == null ||
+        nextModules.join(',') != (held.toList()..sort()).join(',');
     // The switches, same only-patch-when-different guard.
     final nextCounter = counterSwitchKeys.where(v.counterOn).toList()..sort();
     final heldCounter = settings.counterConfig;
@@ -769,6 +772,35 @@ class AuthRepository extends StateNotifier<AuthState> {
     state = const AuthState();
   }
 
+  /// Record that the host itself has just confirmed this device, against the
+  /// certificate it confirmed us on.
+  ///
+  /// Called from the two paths where that is true — a PIN the host accepted and
+  /// a token the host answered `/auth/me` for — and from neither cached path,
+  /// because a cache confirms nothing. Survives sign-out on purpose: it is what
+  /// lets the sign-in screen tell a shift handover on a dark LAN from a device
+  /// that has never been admitted here at all (ADR-0099).
+  Future<void> _noteAdmitted() async {
+    try {
+      final fp = await storage.readServerFingerprint();
+      if (fp != null && fp.isNotEmpty) {
+        await storage.writeAdmittedFingerprint(fp);
+      }
+    } catch (e, st) {
+      // A keystore that will not write is not a reason to fail a sign-in that
+      // already succeeded; the screen just loses one word of precision.
+      SatLog.err('auth.noteAdmitted', e, st);
+    }
+  }
+
+  /// How long a restore waits on `/auth/me` before falling back to the cache.
+  ///
+  /// Deliberately shorter than [ApiClient.requestTimeout]. That ceiling is
+  /// tuned for a request whose failure *is* a failure; here the fallback is a
+  /// local cache read, so the extra seconds buy nothing but a full-screen
+  /// spinner with no escape hatch on a boot whose host is simply off.
+  static const _restoreProbeTimeout = Duration(seconds: 3);
+
   /// Restore an existing token by calling `/auth/me`. No-op if no API config
   /// or no stored token.
   ///
@@ -799,10 +831,16 @@ class AuthRepository extends StateNotifier<AuthState> {
       if (token == null || token.isEmpty) return;
       try {
         final api = ref.read(apiClientProvider);
-        final raw = (await api.getJson('/auth/me') as Map)
-            .cast<String, dynamic>();
+        final raw =
+            (await api.getJson('/auth/me', timeout: _restoreProbeTimeout)
+                    as Map)
+                .cast<String, dynamic>();
         final me = MeDto.fromJson(raw);
         await storage.writeMe(jsonEncode(raw));
+        // The live arm, and only the live arm: this heals a device upgraded
+        // into this build on its next reachable boot, rather than making it
+        // wait for a sign-in it may not need for days.
+        await _noteAdmitted();
         await _applyMe(me);
         // Admin auto-login: re-arm the two-sided kill switch + heartbeat for
         // the cached Firebase session so a console/fleet flip still tears the

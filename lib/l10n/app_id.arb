@@ -4254,8 +4254,8 @@
   "pinErrPasswordEmpty": "Password belum diisi.",
   "pinErrPasswordShort": "Minimal 6 karakter.",
   "pinEnterPin": "Masukkan PIN",
-  "pinConnectedTo": "Tersambung ke {server}",
-  "@pinConnectedTo": {
+  "pinPairedWith": "Dipasangkan ke {server}",
+  "@pinPairedWith": {
     "placeholders": {
       "server": {
         "type": "String"
@@ -4275,6 +4275,17 @@
   "pinHostTakenNote": "Kalau perangkat itu memang yang dipakai, akun ini bukan admin utama venue — hubungi operator.",
   "pinSignOut": "Keluar",
   "pinCheckingSession": "Memeriksa sesi…",
+  "pinReconnectingTo": "Menyambung ke {server}…",
+  "@pinReconnectingTo": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "pinReconnecting": "Menyambung ke server…",
+  "pinBlockedUnreachable": "Server tidak terjangkau. Papan PIN aktif lagi begitu sambungan kembali.",
+  "pinBlockedNeverAdmitted": "Perangkat ini belum pernah masuk di sini. PIN tidak bisa diperiksa tanpa server — sambungkan ke server dulu.",
   "pinReachConnected": "Tersambung",
   "pinReachConnectedMs": "Tersambung · {ms}ms",
   "@pinReachConnectedMs": {

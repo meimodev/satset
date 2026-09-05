@@ -8749,11 +8749,11 @@ abstract class AppL10n {
   /// **'Masukkan PIN'**
   String get pinEnterPin;
 
-  /// No description provided for @pinConnectedTo.
+  /// No description provided for @pinPairedWith.
   ///
   /// In id, this message translates to:
-  /// **'Tersambung ke {server}'**
-  String pinConnectedTo(String server);
+  /// **'Dipasangkan ke {server}'**
+  String pinPairedWith(String server);
 
   /// No description provided for @pinWidgetBook.
   ///
@@ -8832,6 +8832,30 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Memeriksa sesi…'**
   String get pinCheckingSession;
+
+  /// No description provided for @pinReconnectingTo.
+  ///
+  /// In id, this message translates to:
+  /// **'Menyambung ke {server}…'**
+  String pinReconnectingTo(String server);
+
+  /// No description provided for @pinReconnecting.
+  ///
+  /// In id, this message translates to:
+  /// **'Menyambung ke server…'**
+  String get pinReconnecting;
+
+  /// No description provided for @pinBlockedUnreachable.
+  ///
+  /// In id, this message translates to:
+  /// **'Server tidak terjangkau. Papan PIN aktif lagi begitu sambungan kembali.'**
+  String get pinBlockedUnreachable;
+
+  /// No description provided for @pinBlockedNeverAdmitted.
+  ///
+  /// In id, this message translates to:
+  /// **'Perangkat ini belum pernah masuk di sini. PIN tidak bisa diperiksa tanpa server — sambungkan ke server dulu.'**
+  String get pinBlockedNeverAdmitted;
 
   /// No description provided for @pinReachConnected.
   ///

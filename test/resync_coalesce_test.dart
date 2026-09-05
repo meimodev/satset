@@ -34,7 +34,11 @@ class _GatedApi extends ApiClient {
   var payload = <Map<String, dynamic>>[];
 
   @override
-  Future<dynamic> getJson(String path, {Map<String, String>? query}) async {
+  Future<dynamic> getJson(
+    String path, {
+    Map<String, String>? query,
+    Duration? timeout,
+  }) async {
     if (path != '/tickets') return const [];
     calls++;
     final gate = Completer<void>();

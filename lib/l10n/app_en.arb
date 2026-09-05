@@ -1879,7 +1879,7 @@
   "pinErrPasswordEmpty": "Enter a password.",
   "pinErrPasswordShort": "6 characters minimum.",
   "pinEnterPin": "Enter your PIN",
-  "pinConnectedTo": "Connected to {server}",
+  "pinPairedWith": "Paired with {server}",
   "pinWidgetBook": "Widget book",
   "pinEmail": "Email",
   "pinEmailHint": "admin@warung.id",
@@ -1893,6 +1893,17 @@
   "pinHostTakenNote": "If that device is the one in use, this account isn't the venue's primary admin — talk to the operator.",
   "pinSignOut": "Sign out",
   "pinCheckingSession": "Checking the session…",
+  "pinReconnectingTo": "Reconnecting to {server}…",
+  "@pinReconnectingTo": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "pinReconnecting": "Reconnecting to the server…",
+  "pinBlockedUnreachable": "The server is out of reach. The keypad comes back when the connection does.",
+  "pinBlockedNeverAdmitted": "This device has never signed in here. A PIN cannot be checked without the server — connect to it first.",
   "pinReachConnected": "Connected",
   "pinReachConnectedMs": "Connected · {ms}ms",
   "pinReachUnreachable": "Server unreachable",

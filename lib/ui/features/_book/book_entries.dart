@@ -1025,7 +1025,10 @@ List<BookEntry> bookEntries() => [
         (c, r) => const Wrap(
           spacing: Sp.s4,
           crossAxisAlignment: WrapCrossAlignment.center,
-          children: [SatSpinner(), SatSpinner(size: SatSpinnerSize.md)],
+          children: [
+            SatSpinner(),
+            SatSpinner(size: SatSpinnerSize.md),
+          ],
         ),
       ),
     ],
@@ -1632,15 +1635,17 @@ List<BookEntry> bookEntries() => [
     states: [
       BookState(
         'up to date — renders nothing',
-        (c, r) => _scope(_gate(
-          const ReleaseGate(latest: '1.0.0'),
-        ), const UpdateBanner()),
+        (c, r) => _scope(
+          _gate(const ReleaseGate(latest: '1.0.0')),
+          const UpdateBanner(),
+        ),
       ),
       BookState(
         'update available',
-        (c, r) => _scope(_gate(
-          const ReleaseGate(recommended: '9.9.9', latest: '9.9.9'),
-        ), const UpdateBanner()),
+        (c, r) => _scope(
+          _gate(const ReleaseGate(recommended: '9.9.9', latest: '9.9.9')),
+          const UpdateBanner(),
+        ),
       ),
       BookState(
         'downloading',
@@ -1674,58 +1679,65 @@ List<BookEntry> bookEntries() => [
     note:
         'Covers everything and cannot be popped. Sized here by the book frame; '
         'in the app it is a full-screen layer above the router.',
-    states: [
-      BookState(
-        'above the floor — passes the child through',
-        (c, r) => _scope(
-          _gate(const ReleaseGate(min: '1.0.0')),
-          const SizedBox(
-            height: 240,
-            child: UpdateBlock(child: _BookSwatch('app')),
+    states:
+        [
+          BookState(
+            'above the floor — passes the child through',
+            (c, r) => _scope(
+              _gate(const ReleaseGate(min: '1.0.0')),
+              const SizedBox(
+                height: 240,
+                child: UpdateBlock(child: _BookSwatch('app')),
+              ),
+            ),
           ),
-        ),
-      ),
-      BookState(
-        'blocked, on the Main Device — can install',
-        (c, r) => _scope(
-          _gate(const ReleaseGate(min: '9.9.9', latest: '9.9.9')),
-          const SizedBox(
-            height: 320,
-            child: UpdateBlock(child: _BookSwatch('app')),
+          BookState(
+            'blocked, on the Main Device — can install',
+            (c, r) => _scope(
+              _gate(const ReleaseGate(min: '9.9.9', latest: '9.9.9')),
+              const SizedBox(
+                height: 320,
+                child: UpdateBlock(child: _BookSwatch('app')),
+              ),
+            ),
           ),
-        ),
-      ),
-      BookState(
-        'blocked, downloading',
-        (c, r) => _scope([
-          ..._gate(const ReleaseGate(min: '9.9.9', latest: '9.9.9')),
-          _install(const UpdateDownloading(7)),
-        ], const SizedBox(
-          height: 320,
-          child: UpdateBlock(child: _BookSwatch('app')),
-        )),
-      ),
-      BookState(
-        'blocked, install permission refused',
-        (c, r) => _scope([
-          ..._gate(const ReleaseGate(min: '9.9.9', latest: '9.9.9')),
-          _install(const UpdateNeedsPermission()),
-        ], const SizedBox(
-          height: 320,
-          child: UpdateBlock(child: _BookSwatch('app')),
-        )),
-      ),
-      BookState(
-        'blocked, on a client — fetch the admin',
-        (c, r) => _scope(
-          _gate(const ReleaseGate(min: '9.9.9'), host: false),
-          const SizedBox(
-            height: 320,
-            child: UpdateBlock(child: _BookSwatch('app')),
+          BookState(
+            'blocked, downloading',
+            (c, r) => _scope(
+              [
+                ..._gate(const ReleaseGate(min: '9.9.9', latest: '9.9.9')),
+                _install(const UpdateDownloading(7)),
+              ],
+              const SizedBox(
+                height: 320,
+                child: UpdateBlock(child: _BookSwatch('app')),
+              ),
+            ),
           ),
-        ),
-      ),
-    ],
+          BookState(
+            'blocked, install permission refused',
+            (c, r) => _scope(
+              [
+                ..._gate(const ReleaseGate(min: '9.9.9', latest: '9.9.9')),
+                _install(const UpdateNeedsPermission()),
+              ],
+              const SizedBox(
+                height: 320,
+                child: UpdateBlock(child: _BookSwatch('app')),
+              ),
+            ),
+          ),
+          BookState(
+            'blocked, on a client — fetch the admin',
+            (c, r) => _scope(
+              _gate(const ReleaseGate(min: '9.9.9'), host: false),
+              const SizedBox(
+                height: 320,
+                child: UpdateBlock(child: _BookSwatch('app')),
+              ),
+            ),
+          ),
+        ],
   ),
   BookEntry(
     name: 'ExitGuard',
@@ -2367,6 +2379,23 @@ List<BookEntry> bookEntries() => [
             onSubmit: (pin) async => null,
             debugCreds: const PinDebugCreds(BookStubs.debugPins),
             statusSlot: const _BookSwatch('server terjangkau'),
+          ),
+        ),
+      ),
+      BookState(
+        'blocked — host out of reach, pad dead',
+        (c, r) => _BookLaunch(
+          'open',
+          () => showPinSheet(
+            c,
+            title: 'Masuk',
+            subtitle: 'Tersambung ke Kasir-01',
+            onSubmit: (pin) async => null,
+            statusSlot: const _BookSwatch('server tidak terjangkau'),
+            blockedReason: ValueNotifier<String?>(
+              'Server tidak terjangkau. Papan PIN aktif lagi begitu '
+              'sambungan kembali.',
+            ),
           ),
         ),
       ),

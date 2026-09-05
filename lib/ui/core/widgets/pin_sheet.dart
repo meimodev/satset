@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/design/skin.dart';
 
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -34,6 +34,7 @@ Future<bool?> showPinSheet(
   required PinSubmit onSubmit,
   PinDebugCreds? debugCreds,
   Widget? statusSlot,
+  ValueListenable<String?>? blockedReason,
 }) {
   return showSatSheet<bool>(
     context,
@@ -44,6 +45,7 @@ Future<bool?> showPinSheet(
       onSubmit: onSubmit,
       debugCreds: debugCreds,
       statusSlot: statusSlot,
+      blockedReason: blockedReason,
     ),
   );
 }
@@ -58,12 +60,20 @@ class _PinSheet extends StatefulWidget {
   /// show the paired server's reachability heartbeat. Kept as an injected slot so
   /// this core widget stays Riverpod-agnostic.
   final Widget? statusSlot;
+
+  /// Live gate on the pad. While it holds a non-null message the keys are dead
+  /// and the message replaces the helper line — staff sign-in uses it to refuse
+  /// a PIN the host cannot possibly verify, before the first digit rather than
+  /// eight seconds after the sixth. A [ValueListenable] rather than a provider
+  /// so this core widget stays Riverpod-agnostic, like [statusSlot].
+  final ValueListenable<String?>? blockedReason;
   const _PinSheet({
     required this.title,
     required this.subtitle,
     required this.onSubmit,
     this.debugCreds,
     this.statusSlot,
+    this.blockedReason,
   });
 
   @override
@@ -192,13 +202,26 @@ class _PinSheetState extends State<_PinSheet>
                     const SizedBox(height: Sp.s6),
                     _PinDots(pin: _pin, shake: _shake),
                     const SizedBox(height: Sp.s3),
-                    _PinHelper(
-                      pinLength: _pin.length,
-                      busy: _busy,
-                      error: _error,
+                    ValueListenableBuilder<String?>(
+                      valueListenable:
+                          widget.blockedReason ?? const _NeverBlocked(),
+                      builder: (context, blocked, _) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _PinHelper(
+                            pinLength: _pin.length,
+                            busy: _busy,
+                            error: _error,
+                            blocked: blocked,
+                          ),
+                          const SizedBox(height: Sp.s4h),
+                          _Pad(
+                            onPress: _onDigit,
+                            enabled: !_busy && blocked == null,
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: Sp.s4h),
-                    _Pad(onPress: _onDigit, enabled: !_busy),
                     if (kDebugMode && widget.debugCreds != null) ...[
                       const SizedBox(height: Sp.s3h),
                       _DebugCredsHint(creds: widget.debugCreds!),
@@ -271,11 +294,31 @@ class _PinHelper extends StatelessWidget {
   final int pinLength;
   final bool busy;
   final String? error;
-  const _PinHelper({required this.pinLength, required this.busy, this.error});
+
+  /// Why the pad is dead, or null when it is live. Outranks [error]: a stale
+  /// "wrong PIN" under a pad nobody can use names the wrong problem.
+  final String? blocked;
+  const _PinHelper({
+    required this.pinLength,
+    required this.busy,
+    this.error,
+    this.blocked,
+  });
 
   @override
   Widget build(BuildContext context) {
     final sc = context.sat;
+    if (blocked != null) {
+      return Center(
+        child: Text(
+          blocked!,
+          textAlign: TextAlign.center,
+          // warn, not urgent: a host out of earshot is a condition to wait out,
+          // not a mistake the person at the pad made.
+          style: SatType.caption(color: sc.warn),
+        ),
+      );
+    }
     if (error != null) {
       return Center(
         child: Text(error!, style: SatType.caption(color: sc.urgent)),
@@ -456,4 +499,16 @@ class _DebugCredRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A [ValueListenable] permanently holding null, so the sheet needs no branch
+/// for the callers that pass no gate.
+class _NeverBlocked implements ValueListenable<String?> {
+  const _NeverBlocked();
+  @override
+  String? get value => null;
+  @override
+  void addListener(VoidCallback listener) {}
+  @override
+  void removeListener(VoidCallback listener) {}
 }

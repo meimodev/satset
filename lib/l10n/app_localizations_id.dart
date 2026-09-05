@@ -5457,8 +5457,8 @@ class AppL10nId extends AppL10n {
   String get pinEnterPin => 'Masukkan PIN';
 
   @override
-  String pinConnectedTo(String server) {
-    return 'Tersambung ke $server';
+  String pinPairedWith(String server) {
+    return 'Dipasangkan ke $server';
   }
 
   @override
@@ -5502,6 +5502,22 @@ class AppL10nId extends AppL10n {
 
   @override
   String get pinCheckingSession => 'Memeriksa sesi…';
+
+  @override
+  String pinReconnectingTo(String server) {
+    return 'Menyambung ke $server…';
+  }
+
+  @override
+  String get pinReconnecting => 'Menyambung ke server…';
+
+  @override
+  String get pinBlockedUnreachable =>
+      'Server tidak terjangkau. Papan PIN aktif lagi begitu sambungan kembali.';
+
+  @override
+  String get pinBlockedNeverAdmitted =>
+      'Perangkat ini belum pernah masuk di sini. PIN tidak bisa diperiksa tanpa server — sambungkan ke server dulu.';
 
   @override
   String get pinReachConnected => 'Tersambung';

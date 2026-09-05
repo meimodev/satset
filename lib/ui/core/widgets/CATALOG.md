@@ -211,7 +211,7 @@ Entry points, not widgets. Call the function; don't open the sheet yourself.
 
 | Entry | File | Returns |
 |---|---|---|
-| `showPinSheet(...)` | `pin_sheet.dart` | `bool?` — `true` on verify, `null` on dismiss. `onSubmit` returns `null` for OK or an error string to shake. |
+| `showPinSheet(...)` | `pin_sheet.dart` | `bool?` — `true` on verify, `null` on dismiss. `onSubmit` returns `null` for OK or an error string to shake. `statusSlot` injects a live status widget under the subtitle; `blockedReason` is a `ValueListenable<String?>` that deadens the pad and states why while non-null. |
 | `showExportSheet(...)` | `export_sheet.dart` | `void`. One sheet for every export kind (ADR-0030/31/32). |
 | `showCustomRangeSheet(...)` | `custom_range_sheet.dart` | `(DateTime, DateTime)?` — inclusive date-only range, `null` on dismiss. |
 | `showThemeSheet(context, ref)` | `../../features/me/widgets/theme_sheet.dart` | `void`. Theme + skin picker. |

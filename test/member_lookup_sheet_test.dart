@@ -29,7 +29,11 @@ class _FakeApi extends ApiClient {
   _FakeApi() : super(config: _config, storage: SecureStorageService());
 
   @override
-  Future<dynamic> getJson(String path, {Map<String, String>? query}) async => [
+  Future<dynamic> getJson(
+    String path, {
+    Map<String, String>? query,
+    Duration? timeout,
+  }) async => [
     for (var i = 0; i < 20; i++)
       {'id': 'm$i', 'name': 'Pelanggan $i', 'phone': '08120000${i + 1000}'},
   ];

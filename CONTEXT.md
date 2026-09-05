@@ -1042,6 +1042,15 @@ One attempt to get a person past the sign-in screen, taken as a whole. It runs a
 
 An admission is **not** a session restore. A device already admitted comes back from its stored token, and from cache when the [[Local server lifecycle (tied to admin session)|host]] is unreachable; an admission itself requires the WAN and says so rather than guessing (ADR-0099). The [[Waiter]]'s PIN sign-in never runs one — that half of the screen talks only to the local server, which is the whole reason the two halves are separate. _Avoid_: "login" for this concept (it names the form, not the verdict); reporting an unreachable network as bad credentials; a cached admission verdict — see [[Admin is Firebase-only (no PIN admin)]].
 
+### Pemulihan sesi (Session restore)
+**ID · EN** — Pemulihan sesi · Session restore.
+
+The counterpart to [[Gerbang masuk (Admission)|Gerbang masuk]]: a device that has **already been admitted** coming back from its stored token, rather than one asking to be let in. Two arms, and the difference between them is the whole reason this has a name. The **live** arm reaches the [[Main Device]], gets a fresh `/auth/me` and caches it. The **cached** arm runs when the host cannot be reached — it rebuilds the session from the last `/auth/me` this device stored, so the operator is authenticated, holds capabilities, and has had **nothing re-verified against a live host this boot**. Every write they then make is an [[Antrean kirim|intent]] or a [[Antrean setelmen|journal event]] the host authorises at replay, never a row.
+
+Only the host *rejecting* the token (401/403) ends a session; being out of earshot never does — the alternative is a network blip deleting a valid JWT and stranding a [[Waiter]] on a sign-in screen they cannot reach. A restore with **no cached payload stays signed out**: a first-ever sign-in genuinely needs the host, and granting capabilities nobody ever granted is the one thing the cached arm must not do. That device is the [[Terputus (client disconnected)|terputus]] dead end an [[Gerbang masuk (Admission)|admission]] cannot rescue either (ADR-0099) — the fix is operational, not technical.
+
+_Avoid_: calling either arm a sign-in (no credential is presented — a restore proves possession of a token, not knowledge of a PIN); treating the cached arm as a degraded mode the user chooses (it is a condition, like [[Terputus (client disconnected)|terputus]], and nothing announces it beyond the connection indicator the chrome already carries); assuming a restored session implies a reachable host.
+
 ### Pesanan baru (table-less draft order)
 **ID · EN** — Pesanan baru · New order.
 
