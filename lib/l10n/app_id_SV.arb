@@ -138,5 +138,6 @@
   "rptPengeluaranByVisit": "Per layanan",
   "vstTableExpense": "Pengeluaran layanan",
   "vstTableExpenseHint": "Pelayan boleh membelanjakan uang tunai untuk tamu yang dilayani, dibatasi nilai tagihan layanan itu, dan wajib foto bukti. Tagihan tamu tidak berubah.",
+  "expColTable": "Layanan",
   "expColExpense": "Pengeluaran layanan"
 }

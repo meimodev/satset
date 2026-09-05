@@ -136,5 +136,6 @@
   "rptPengeluaranByVisit": "By service",
   "vstTableExpense": "Service expenses",
   "vstTableExpenseHint": "A waiter may spend cash on the party they are serving, capped at that service’s bill, with a proof photo required. The guest’s bill does not change.",
+  "expColTable": "Service",
   "expColExpense": "Service expenses"
 }

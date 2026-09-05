@@ -929,6 +929,42 @@
   "expCollectedBilled": "Terkumpul (tagihan)",
   "expRefund": "Refund",
   "expMethodBreakdown": "Rincian Metode Bayar",
+  "expColStaff": "Staf",
+  "@expColStaff": {
+      "description": "Export column: which staff member a figure belongs to."
+  },
+  "expColTable": "Meja",
+  "@expColTable": {
+      "description": "Export column: the visit's table label."
+  },
+  "expColPhone": "Telepon",
+  "@expColPhone": {
+      "description": "Export column: a debtor's phone number."
+  },
+  "expColBalance": "Saldo",
+  "@expColBalance": {
+      "description": "Export column: an outstanding balance."
+  },
+  "expColDays": "Hari",
+  "@expColDays": {
+      "description": "Export column: distinct business days worked."
+  },
+  "expColShifts": "Shift",
+  "@expColShifts": {
+      "description": "Export column: shift count."
+  },
+  "expColHours": "Jam",
+  "@expColHours": {
+      "description": "Export column: hours worked."
+  },
+  "expColUnclosed": "Belum tutup",
+  "@expColUnclosed": {
+      "description": "Export column: shifts nobody signed out of."
+  },
+  "expColCount": "Jumlah",
+  "@expColCount": {
+      "description": "Export column: a count of rows behind a figure."
+  },
   "expColMethod": "Metode",
   "expColAmount": "Jumlah",
   "expColTransactions": "Transaksi",

@@ -1829,6 +1829,33 @@ class AppL10nEn extends AppL10n {
   String get expMethodBreakdown => 'Payment Method Breakdown';
 
   @override
+  String get expColStaff => 'Staff';
+
+  @override
+  String get expColTable => 'Table';
+
+  @override
+  String get expColPhone => 'Phone';
+
+  @override
+  String get expColBalance => 'Balance';
+
+  @override
+  String get expColDays => 'Days';
+
+  @override
+  String get expColShifts => 'Shifts';
+
+  @override
+  String get expColHours => 'Hours';
+
+  @override
+  String get expColUnclosed => 'Unclosed';
+
+  @override
+  String get expColCount => 'Count';
+
+  @override
   String get expColMethod => 'Method';
 
   @override
@@ -10453,6 +10480,9 @@ class AppL10nEnSv extends AppL10nEn {
     );
     return '$_temp0 still live. Installing shuts the server down — every staff device disconnects until the install finishes.';
   }
+
+  @override
+  String get expColTable => 'Service';
 
   @override
   String expTableVisit(String label) {
