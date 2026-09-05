@@ -141,6 +141,12 @@ String auditText(AppL10n l, AuditEntry e) {
       s('points'),
       s('amount'),
     ),
+    // The one audit param read back as a number rather than a word: English
+    // needs an ICU plural to not say "1 rows", and a plural takes an int. The
+    // row itself still stores a string, like every other param (ADR-0085).
+    AuditKind.memberDirectoryExported => l.auditMemberDirectoryExported(
+      int.tryParse(s('rows')) ?? 0,
+    ),
 
     // A row written before the label was frozen, or a bill with no table, would
     // otherwise render a bare "( )" where the table should be.

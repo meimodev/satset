@@ -31,10 +31,76 @@ String _ymd(DateTime d) {
   return '${d.year}-${two(d.month)}-${two(d.day)}';
 }
 
+/// The window as the server wants it. Hoisted off the notifier so the export
+/// fetchers — which are plain one-shot providers holding no state (ADR-0137) —
+/// encode the window exactly as the on-screen read does. Two encodings would
+/// let a file quietly answer a different window than the screen it came from.
+Map<String, String> memberRangeQuery(
+  MemberRange range, {
+  DateTime? from,
+  DateTime? to,
+}) => {
+  'range': memberRangeKey(range),
+  if (range == MemberRange.custom && from != null) 'from': _ymd(from),
+  if (range == MemberRange.custom && to != null) 'to': _ymd(to),
+};
+
+/// Filename span for a member export. `Semua` gets no span at all — the file is
+/// everything, and a slug saying so would be the only word in the name that is
+/// not a date.
+String memberRangeSlug(MemberRange r, {DateTime? from, DateTime? to}) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  String stamp(DateTime t) => '${t.year}${two(t.month)}${two(t.day)}';
+  return switch (r) {
+    MemberRange.today => 'hari-ini',
+    MemberRange.yesterday => 'kemarin',
+    MemberRange.d7 => '7-hari',
+    MemberRange.d30 => '30-hari',
+    MemberRange.month => 'bulan-ini',
+    MemberRange.all => 'semua',
+    MemberRange.custom =>
+      (from != null && to != null)
+          ? 'khusus-${stamp(from)}-${stamp(to)}'
+          : 'khusus',
+  };
+}
+
 /// How the ranked list is ordered. Applied **client-side** to rows already
 /// held: a sort that cost a round trip on a LAN tablet would be slower for no
 /// gain, and the server already capped the list.
 enum MemberSort { spend, visits, points, recent, name }
+
+/// The ranked rows as the list shows them: filtered by the search box, then
+/// ordered by the active [MemberSort]. Both struck client-side on rows already
+/// held — a sort that cost a LAN round trip would be slower for no gain.
+///
+/// Lives here, not on the screen, because the **export renders from it too**
+/// (ADR-0137). The file is supposed to be what the reader is looking at, and
+/// two copies of this filter-then-sort is how a file quietly stops being that.
+List<MemberTradeDto> rankedMemberRows(
+  MemberReportDto report, {
+  String query = '',
+  MemberSort sort = MemberSort.spend,
+}) {
+  final q = query.trim().toLowerCase();
+  final rows = [
+    for (final m in report.members)
+      if (q.isEmpty ||
+          (m.name ?? '').toLowerCase().contains(q) ||
+          (m.phone ?? '').contains(q))
+        m,
+  ];
+  rows.sort(switch (sort) {
+    MemberSort.spend => (a, b) => b.spend.compareTo(a.spend),
+    MemberSort.visits => (a, b) => b.visits.compareTo(a.visits),
+    MemberSort.points => (a, b) => b.points.compareTo(a.points),
+    MemberSort.recent => (a, b) =>
+        (b.lastVisitAt ?? DateTime(0)).compareTo(a.lastVisitAt ?? DateTime(0)),
+    MemberSort.name => (a, b) =>
+        (a.name ?? '').toLowerCase().compareTo((b.name ?? '').toLowerCase()),
+  });
+  return rows;
+}
 
 class MemberReportState {
   final MemberRange range;
@@ -90,13 +156,11 @@ class MemberReportRepository extends StateNotifier<MemberReportState> {
 
   final Ref _ref;
 
-  Map<String, String> get _query => {
-    'range': memberRangeKey(state.range),
-    if (state.range == MemberRange.custom && state.customFrom != null)
-      'from': _ymd(state.customFrom!),
-    if (state.range == MemberRange.custom && state.customTo != null)
-      'to': _ymd(state.customTo!),
-  };
+  Map<String, String> get _query => memberRangeQuery(
+    state.range,
+    from: state.customFrom,
+    to: state.customTo,
+  );
 
   Future<void> load() async {
     state = state.copyWith(loading: true, clearError: true);
@@ -149,4 +213,53 @@ class MemberReportRepository extends StateNotifier<MemberReportState> {
 final memberReportProvider =
     StateNotifierProvider<MemberReportRepository, MemberReportState>(
       MemberReportRepository.new,
+    );
+
+/// One-shot fetchers for the member exports (ADR-0137).
+///
+/// Plain providers rather than methods on [MemberReportRepository], for the
+/// reason the staff export is one: an export is fetched, rendered and dropped,
+/// and nothing watches it. Hanging it off the notifier invites a future reader
+/// to cache the result into `state` — where `report` already means the capped
+/// on-screen snapshot, and would then sometimes mean the uncapped one.
+///
+/// Both throw on transport or HTTP error so the sheet can name what happened:
+/// a 413 `export_too_large` is the ceiling, and a dark host is the refusal that
+/// must never quietly become an export of the [[Salinan pelanggan]].
+final memberReportExportFetcherProvider =
+    Provider<Future<MemberReportDto> Function(MemberReportState)>(
+      (ref) => (MemberReportState s) async {
+        final raw =
+            await ref
+                    .read(apiClientProvider)
+                    .getJson(
+                      '/members/report/export',
+                      query: memberRangeQuery(
+                        s.range,
+                        from: s.customFrom,
+                        to: s.customTo,
+                      ),
+                    )
+                as Map<String, dynamic>;
+        return MemberReportDto.fromJson(raw);
+      },
+    );
+
+final memberHistoryExportFetcherProvider =
+    Provider<Future<MemberHistoryDto> Function(MemberReportState, String)>(
+      (ref) => (MemberReportState s, String memberId) async {
+        final raw =
+            await ref
+                    .read(apiClientProvider)
+                    .getJson(
+                      '/members/$memberId/report/export',
+                      query: memberRangeQuery(
+                        s.range,
+                        from: s.customFrom,
+                        to: s.customTo,
+                      ),
+                    )
+                as Map<String, dynamic>;
+        return MemberHistoryDto.fromJson(raw);
+      },
     );

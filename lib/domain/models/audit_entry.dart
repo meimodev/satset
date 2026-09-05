@@ -27,10 +27,13 @@ enum AuditType {
   cashMovement,
 
   /// Any act against a [[Pelanggan (member)]] — enrolled, deleted, merged,
-  /// points adjusted by hand, points redeemed. **One** type for all five, for
-  /// the reason [cashMovement] is one: the type axis drives the log's filter
-  /// chips, and five chips reading Pelanggan say one thing five times. Which
-  /// act it was lives on the [AuditKind].
+  /// points adjusted by hand, points redeemed, and the directory **exported**
+  /// off the device. **One** type for all six, for the reason [cashMovement] is
+  /// one: the type axis drives the log's filter chips, and six chips reading
+  /// Pelanggan say one thing six times. Which act it was lives on the
+  /// [AuditKind]. The export is not a change and sits here anyway — a reader
+  /// asking "what has happened to our customer list" wants it on the same
+  /// chip as the merges and the deletions, not on a seventh of its own.
   memberChanged,
 
   /// Any movement of a member's [[Piutang]] — charged to the tab, collected,

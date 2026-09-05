@@ -10377,6 +10377,98 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get expColExpense => 'Table expenses';
+
+  @override
+  String get memExpAction => 'Export';
+
+  @override
+  String get memExpCsv => 'Export CSV';
+
+  @override
+  String get memExpDirTitle => 'Member directory';
+
+  @override
+  String get memExpHistTitle => 'Member history';
+
+  @override
+  String get memExpKindRanked => 'Ranked list';
+
+  @override
+  String get memExpColCode => 'Code';
+
+  @override
+  String get memExpColLastVisit => 'Last visit';
+
+  @override
+  String get memExpColPax => 'Pax';
+
+  @override
+  String get memExpColOwner => 'Role';
+
+  @override
+  String get memExpColUnits => 'Units';
+
+  @override
+  String get memExpFilters => 'Filters';
+
+  @override
+  String get memExpFilterNone => 'All members';
+
+  @override
+  String get memExpFilterSearch => 'Search';
+
+  @override
+  String get memExpRows => 'Rows';
+
+  @override
+  String get memExpTaken => 'Taken';
+
+  @override
+  String get memExpWindow => 'Window';
+
+  @override
+  String get memExpSortedBy => 'Sorted by';
+
+  @override
+  String get memExpSecSummary => 'Summary';
+
+  @override
+  String get memExpTotalEnrolled => 'Enrolled total';
+
+  @override
+  String get memExpIdle => 'Did not come back';
+
+  @override
+  String get memExpLiability => 'Estimated liability';
+
+  @override
+  String get memExpUntracked => 'Amount receipts';
+
+  @override
+  String memExpErrTooLarge(int limit) {
+    return 'Too many rows for one file (limit $limit). Narrow the window or the filters.';
+  }
+
+  @override
+  String get memExpErrOffline =>
+      'No connection to the host. An export reads live data, not the copy on this device.';
+
+  @override
+  String get memExpErrFailed => 'Export failed.';
+
+  @override
+  String get memExpPickMember => 'Pick a member first';
+
+  @override
+  String auditMemberDirectoryExported(int rows) {
+    String _temp0 = intl.Intl.pluralLogic(
+      rows,
+      locale: localeName,
+      other: '$rows rows',
+      one: '1 row',
+    );
+    return 'Exported member directory ($_temp0)';
+  }
 }
 
 /// The translations for English, as used in El Salvador (`en_SV`).

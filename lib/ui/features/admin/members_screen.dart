@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 
+import 'package:satset/core/export/export_share.dart';
+import 'package:satset/core/export/member_exporter.dart';
 import 'package:satset/core/localization/labels.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/data/models/member_dto.dart';
@@ -143,6 +145,19 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                 onTap: _importCsv,
               ),
               const SizedBox(width: Sp.s2),
+              // No format picker: a roster has one useful shape, and a sheet
+              // asking "CSV or PDF?" with one answer is a step that buys
+              // nothing (ADR-0137). Disabled while the host is dark — the rows
+              // on screen are then the [[Salinan pelanggan]], and an export
+              // reads live data or it does not happen.
+              SatButton.outline(
+                label: l10n.memExpCsv,
+                icon: Icons.download_rounded,
+                size: SatButtonSize.sm,
+                busy: _exporting,
+                onTap: state.mirroredAt != null ? null : _exportCsv,
+              ),
+              const SizedBox(width: Sp.s2),
               SatButton.primary(
                 label: l10n.memActionAdd,
                 icon: Icons.person_add_alt_1_rounded,
@@ -267,6 +282,51 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     context,
     builder: (_) => _MemberDetailSheet(member: member),
   );
+
+  bool _exporting = false;
+
+  /// The whole directory the reader is looking at, filters and all.
+  ///
+  /// Deliberately **not** built from `state.members`: that list is the server's
+  /// first 500 (ADR-0137), and a file that stops there while calling itself the
+  /// directory is the failure this action exists to avoid. The fetcher re-asks
+  /// with the cap lifted and the same filters, and the server refuses above its
+  /// ceiling rather than handing back a short answer.
+  Future<void> _exportCsv() async {
+    if (_exporting) return;
+    setState(() => _exporting = true);
+    try {
+      final l = ref.read(l10nProvider);
+      final s = ref.read(membersProvider);
+      final rows = await ref.read(memberDirectoryExportFetcherProvider)(s);
+      final csv = buildMemberDirectoryCsv(
+        l,
+        rows,
+        filterLine: memberFilterLine(
+          l,
+          query: s.query,
+          birthdayMonth: s.birthdayMonth,
+          lapsedDays: s.lapsedDays,
+        ),
+      );
+      await shareExportBytes(
+        filename: memberExportFilename(
+          MemberExportKind.directory,
+          ExportFormat.csv,
+        ),
+        bytes: csvBytes(csv),
+        mime: ExportFormat.csv.mime,
+        subject: l.memExpDirTitle,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ref
+          .read(errorBusServiceProvider)
+          .push(memberExportError(ref.read(l10nProvider), e));
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
 
   Future<void> _importCsv() async {
     Uint8List? bytes;

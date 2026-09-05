@@ -84,12 +84,32 @@ String exportFilename({
   DateTime? at,
   DateTime? from,
   DateTime? to,
+}) => exportFilenameSlug(
+  kind: kind,
+  slug: _rangeSlug(range, from: from, to: to),
+  format: format,
+  at: at,
+);
+
+/// The same name, built from a window slug the caller already has.
+///
+/// [exportFilename] can only speak `ReportRange`, and not every export has one:
+/// the member report runs on `MemberRange` — deliberately a different enum,
+/// because it carries an open-ended `Semua` arm `/reports` must never be
+/// offered — and the member directory is a roster with no window at all. Pass
+/// an empty [slug] for that case and the name simply omits the span.
+String exportFilenameSlug({
+  required String kind,
+  required String slug,
+  required ExportFormat format,
+  DateTime? at,
 }) {
   final t = at ?? SatClock.now();
   String two(int n) => n.toString().padLeft(2, '0');
   final stamp =
       '${t.year}${two(t.month)}${two(t.day)}-${two(t.hour)}${two(t.minute)}';
-  return 'satset-$kind-${_rangeSlug(range, from: from, to: to)}-$stamp.${format.ext}';
+  final span = slug.isEmpty ? '' : '$slug-';
+  return 'satset-$kind-$span$stamp.${format.ext}';
 }
 
 /// Write [bytes] to a temp file and hand it to the Android share sheet. The
