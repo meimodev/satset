@@ -456,7 +456,7 @@ class _MePhone extends StatelessWidget {
   }
 }
 
-/// The phone's only door to the Venue hub (ADR-0133).
+/// The phone's only door to the Venue hub (ADR-0134).
 ///
 /// The tablet has a rail slot for it; the phone bar does not, and until this
 /// existed a phone could reach the hub exactly once — the server-mode sign-in

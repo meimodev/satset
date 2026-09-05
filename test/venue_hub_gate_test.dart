@@ -12,7 +12,7 @@ AuthState _auth(Set<Capability> caps) =>
     AuthState(isAuthenticated: true, capabilities: caps);
 
 void main() {
-  group('the hub is a catalogue, not an authority (ADR-0133)', () {
+  group('the hub is a catalogue, not an authority (ADR-0134)', () {
     test('every tile is gated by something', () {
       // A tile whose route resolves to nothing renders for everyone — which is
       // how a screen ends up offered to a person the server will refuse. The
@@ -59,7 +59,7 @@ void main() {
     });
   });
 
-  group('the hub subtitle names only what is drawn (ADR-0133)', () {
+  group('the hub subtitle names only what is drawn (ADR-0134)', () {
     final l10n = lookupAppL10n(const Locale('id'));
 
     test('a stock-only holder is not promised rooms they cannot enter', () {
@@ -83,7 +83,7 @@ void main() {
     });
   });
 
-  group('where a sign-in lands (ADR-0133)', () {
+  group('where a sign-in lands (ADR-0134)', () {
     test('server mode lands on the hub when it opens', () {
       expect(
         landingFor(mode: AppMode.server, hubOpens: true, counterHome: false),
@@ -112,7 +112,7 @@ void main() {
     });
   });
 
-  group('Stok is a nav destination (ADR-0133)', () {
+  group('Stok is a nav destination (ADR-0134)', () {
     test('either stock authority shows the slot', () {
       expect(
         showStock(canManageIngredients: true, canAdjustStock: false),

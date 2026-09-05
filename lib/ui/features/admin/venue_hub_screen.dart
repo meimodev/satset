@@ -72,7 +72,7 @@ class _HubSection {
 ///
 /// **The one list.** `venueHubRoutes` is derived from it and the router spends
 /// that to decide both who may open `/venue` at all and which tiles render
-/// (ADR-0133) — so adding a tile here widens the hub's own gate in the same
+/// (ADR-0134) — so adding a tile here widens the hub's own gate in the same
 /// edit, and a tile can never be visible on a screen its holder cannot open.
 final _sections = <_HubSection>[
   _HubSection(
@@ -278,7 +278,7 @@ final _sections = <_HubSection>[
 
 /// The hub's subtitle: the first few destinations this viewer actually has.
 ///
-/// Derived rather than written down (ADR-0133). The old fixed line named
+/// Derived rather than written down (ADR-0134). The old fixed line named
 /// Konfigurasi, Zona, Sistem and Staf to everyone — which, once the tiles
 /// filter by capability, is a subtitle listing rooms the reader cannot enter.
 /// Capped at [_subMax] because it is a sample of what is here, not an index:
@@ -295,7 +295,7 @@ const _subMax = 5;
 
 /// The routes the hub offers, in display order — derived from [_sections],
 /// never written down a second time. The router reads it to compute the hub's
-/// own gate (ADR-0133).
+/// own gate (ADR-0134).
 final venueHubRoutes = List<String>.unmodifiable(_sections.map((s) => s.route));
 
 class VenueHubScreen extends ConsumerStatefulWidget {
@@ -332,7 +332,7 @@ class _VenueHubScreenState extends ConsumerState<VenueHubScreen> {
       });
     }
 
-    // A tile the signed-in user could not open is not shown (ADR-0133). The
+    // A tile the signed-in user could not open is not shown (ADR-0134). The
     // predicate is the router's own, so a visible tile can never land on
     // `/forbidden` and a hidden one can never be the only door to a screen the
     // person is entitled to.

@@ -164,7 +164,7 @@ List<Capability>? capabilitiesFor(String loc) {
   if (loc.startsWith('/staff') || loc.startsWith('/system')) {
     return const [Capability.manageStaff];
   }
-  // The hub itself is a **catalogue, not an authority** (ADR-0133). It used to
+  // The hub itself is a **catalogue, not an authority** (ADR-0134). It used to
   // share the `manageStaff` arm above, which made an admin capability the door
   // to `/stock`, `/kas`, `/opname` and `/reports` — screens whose own gates say
   // somebody else entirely. Now it opens to whoever can open at least one thing
@@ -188,7 +188,7 @@ final venueHubCapabilities = <Capability>{
 /// Server mode lands on the Venue hub — **unless this person holds nothing
 /// that opens it**, which used to end a successful sign-in on `/forbidden`
 /// (a waiter signing in on the host tablet). The hub's gate is computable
-/// now, so the landing asks it (ADR-0133). Everyone else lands on the home
+/// now, so the landing asks it (ADR-0134). Everyone else lands on the home
 /// destination, which a [[Kedai]] moves to the menu (ADR-0109).
 ///
 /// Pure, and separated from `redirect` so it can be tested without a router:

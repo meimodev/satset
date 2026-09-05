@@ -111,7 +111,7 @@ bool showGuestQueue({
   required bool canTakeOrder,
 }) => guestOrderingEnabled && canTakeOrder;
 
-/// Whether the [[Stok (nav destination)]] slot belongs on the nav (ADR-0133).
+/// Whether the [[Stok (nav destination)]] slot belongs on the nav (ADR-0134).
 ///
 /// Either stock authority, the two ADR-0132 cut it into: `manageIngredients`
 /// authors a bahan, `adjustStock` moves its numbers, and each opens the screen.
@@ -125,7 +125,7 @@ bool showStock({
 }) => canManageIngredients || canAdjustStock;
 
 /// Whether the Venue hub slot belongs on the rail — true when this person can
-/// open at least one thing inside it (ADR-0133). The slot used to render for
+/// open at least one thing inside it (ADR-0134). The slot used to render for
 /// everyone and bounce a waiter to `/forbidden`.
 bool showVenueHub({required bool canOpenAnyChild}) => canOpenAnyChild;
 

@@ -19,12 +19,12 @@ class TabletShell extends StatelessWidget {
   final bool showKasir;
   final bool showTamu;
 
-  /// Whether the [[Stok (nav destination)]] slot is on the rail (ADR-0133) —
+  /// Whether the [[Stok (nav destination)]] slot is on the rail (ADR-0134) —
   /// either stock authority holds it open. Passed, like [counterHome]:
   /// `showStock` in app_shell.dart owns the decision.
   final bool showStok;
 
-  /// Whether the Venue hub slot is on the rail at all (ADR-0133). False when
+  /// Whether the Venue hub slot is on the rail at all (ADR-0134). False when
   /// this person can open nothing inside the hub — the slot used to render for
   /// everyone and bounce a waiter to `/forbidden`.
   final bool showVenue;
@@ -99,12 +99,12 @@ class TabletSideRail extends StatelessWidget {
   final bool showKasir;
   final bool showTamu;
 
-  /// Whether the [[Stok (nav destination)]] slot is on the rail (ADR-0133) —
+  /// Whether the [[Stok (nav destination)]] slot is on the rail (ADR-0134) —
   /// either stock authority holds it open. Passed, like [counterHome]:
   /// `showStock` in app_shell.dart owns the decision.
   final bool showStok;
 
-  /// Whether the Venue hub slot is on the rail at all (ADR-0133). False when
+  /// Whether the Venue hub slot is on the rail at all (ADR-0134). False when
   /// this person can open nothing inside the hub — the slot used to render for
   /// everyone and bounce a waiter to `/forbidden`.
   final bool showVenue;

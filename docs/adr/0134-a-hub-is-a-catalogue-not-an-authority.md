@@ -1,4 +1,4 @@
-# ADR-0133 — A hub is a catalogue, not an authority
+# ADR-0134 — A hub is a catalogue, not an authority
 
 Status: accepted
 Date: 2026-09-05
