@@ -37,8 +37,46 @@ Map<String, dynamic> projectBill(
   for (final e in events) {
     if (e.isParked) continue;
     _apply(bill, e, cfg);
+    _autoCloseIfSettled(bill, e, cfg);
   }
   return _recompute(bill, cfg);
+}
+
+/// The host closes a bill **the moment a payment settles it** — every route
+/// that can move a bill towards settled goes through `settleOrBroadcast`, and
+/// from then on `lockGuard` answers `409 bill_locked` to anything else.
+/// Nothing here modelled that, so the projection let a dark till keep working
+/// a bill the host had already locked: a full payment, then a refund out of
+/// the drawer, then a second payment — all of it legal on screen and refused
+/// at drain, with the cash already handed back.
+///
+/// Runs per event rather than once at the end, because "was it settled *at
+/// that point*" is the whole question; a chain is a handful of events, so the
+/// repeated recompute costs nothing.
+///
+/// The exclusions mirror the host's own: refund, reopen and receipt deletion
+/// take the plain broadcast there, so they never close a bill here either.
+void _autoCloseIfSettled(
+  Map<String, dynamic> bill,
+  SettlementEvent e,
+  ProjectionConfig cfg,
+) {
+  if (bill['billClosedAt'] != null) return;
+  switch (e.kind) {
+    case SettlementEventKind.refund:
+    case SettlementEventKind.reopenReceipt:
+    case SettlementEventKind.reopenBill:
+    case SettlementEventKind.deleteReceipt:
+      return;
+    default:
+      break;
+  }
+  // On a copy: `_recompute` writes its answers back into the map it is given,
+  // and `splitEven` cuts its shares off `bill['total']`. Recomputing in place
+  // here would quietly change what a later split divides.
+  if (_recompute(_deepCopy(bill), cfg)['fullySettled'] == true) {
+    bill['billClosedAt'] = e.capturedAt.toIso8601String();
+  }
 }
 
 // ── event application ───────────────────────────────────────────────────────

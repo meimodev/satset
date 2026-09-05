@@ -537,6 +537,99 @@ void main() {
     expect(projected['fullySettled'], isFalse);
   });
 
+  test('a bill settled offline locks itself, like the host locks it', () async {
+    // The device run that found this: pay in full, refund out of the drawer,
+    // then take the money again another way. Offline every step was legal;
+    // at drain the second payment answered `409 bill_locked`, because the
+    // *first* one had auto-closed the bill and a refund does not reopen it.
+    // The projection has to close it at the same moment, or the till keeps
+    // offering acts the host will refuse with the cash already handed back.
+    await line('tk1', 100000);
+    final base = await serverBill();
+
+    final projected = projectBill(base, [
+      ev(0, 'rc1', SettlementEventKind.mintReceipt, {
+        'mode': 'itemized',
+        'label': 'A',
+        'assignAll': true,
+      }),
+      ev(1, 'pay1', SettlementEventKind.recordPayment, {
+        'receiptId': 'rc1',
+        'method': 'tunai',
+        'amount': 116550,
+        'tendered': 116550,
+      }),
+    ], cfg);
+
+    expect(projected['fullySettled'], isTrue);
+    expect(
+      projected['billClosedAt'],
+      isNotNull,
+      reason: 'the host closes on the payment that settles the bill',
+    );
+
+    // Through the routes, the same pair leaves the visit closed.
+    expect(
+      (await post('/settlement/visits/v1/receipts', {
+        'id': 'rc1',
+        'mode': 'itemized',
+        'label': 'A',
+        'assignAll': true,
+      })).statusCode,
+      200,
+    );
+    expect(
+      (await post('/settlement/receipts/rc1/payments', {
+        'id': 'pay1',
+        'method': 'tunai',
+        'amount': 116550,
+        'tendered': 116550,
+      })).statusCode,
+      200,
+    );
+    expect((await serverBill())['billClosedAt'], isNotNull);
+
+    // And the host refuses what the till must therefore stop offering.
+    final second = await post('/settlement/receipts/rc1/payments', {
+      'id': 'pay2',
+      'method': 'tunai',
+      'amount': 1000,
+    });
+    expect(second.statusCode, 409);
+    expect(jsonDecode(await second.readAsString())['code'], 'bill_locked');
+  });
+
+  test('a refund does not unlock a bill the payment closed', () async {
+    // The other half: `refund` takes the plain broadcast on the host, so it
+    // moves money back without reopening anything. A projection that cleared
+    // the lock here would put the live Terima button back under a bill the
+    // host still refuses.
+    await line('tk1', 100000);
+    final base = await serverBill();
+
+    final projected = projectBill(base, [
+      ev(0, 'rc1', SettlementEventKind.mintReceipt, {
+        'mode': 'itemized',
+        'label': 'A',
+        'assignAll': true,
+      }),
+      ev(1, 'pay1', SettlementEventKind.recordPayment, {
+        'receiptId': 'rc1',
+        'method': 'tunai',
+        'amount': 116550,
+        'tendered': 116550,
+      }),
+      ev(2, 'ref1', SettlementEventKind.refund, {
+        'receiptId': 'rc1',
+        'paymentId': 'pay1',
+        'amount': 116550,
+      }),
+    ], cfg);
+
+    expect(projected['paidAmount'], 0, reason: 'the money went back');
+    expect(projected['billClosedAt'], isNotNull, reason: 'the lock stands');
+  });
+
   test('ticket ownership projects while its assignment is queued', () async {
     await line('tk1', 40000);
     final projected = projectBill(await serverBill(), [
