@@ -5619,11 +5619,6 @@
   "capSettleBill": "Tutup tagihan",
   "capRefund": "Refund",
   "capManageCash": "Kelola kas kecil",
-  "cashCatIngredients": "Belanja bahan",
-  "cashCatOperations": "Operasional",
-  "cashCatTransport": "Transport",
-  "cashCatDailyWage": "Upah harian",
-  "cashCatOther": "Lainnya",
   "cashKindTopUp": "Isi kas",
   "cashKindExpense": "Pengeluaran",
   "cashKindCount": "Opname",
@@ -5747,6 +5742,42 @@
     "description": "Transfer destination box."
   },
   "kasBoxesTitle": "Kelola kas",
+  "kasCatTitle": "Kategori",
+  "@kasCatTitle": {
+    "description": "Section title: the categories one cash box may be spent on."
+  },
+  "kasCatNew": "Kategori baru",
+  "@kasCatNew": {
+    "description": "Add a category to the box in view."
+  },
+  "kasFieldCatName": "Nama kategori",
+  "@kasFieldCatName": {
+    "description": "Cash category name — venue content, never translated."
+  },
+  "kasCatRetire": "Nonaktifkan",
+  "@kasCatRetire": {
+    "description": "Retire a cash category. It stays on the movements already filed under it."
+  },
+  "kasCatReopen": "Aktifkan",
+  "@kasCatReopen": {
+    "description": "Bring a retired cash category back."
+  },
+  "kasCatNoneTitle": "Belum ada kategori",
+  "@kasCatNoneTitle": {
+    "description": "Empty state in the expense sheet when the chosen box has no active category left."
+  },
+  "kasCatNoneHint": "Tambahkan kategori di Kelola kas sebelum mencatat pengeluaran.",
+  "@kasCatNoneHint": {
+    "description": "What to do about an empty category list."
+  },
+  "kasErrCatNameRequired": "Nama kategori wajib diisi.",
+  "@kasErrCatNameRequired": {
+    "description": "Refusal: a cash category needs a name."
+  },
+  "kasErrUnknownCategory": "Kategori tidak ada di kas ini.",
+  "@kasErrUnknownCategory": {
+    "description": "Refusal: the category does not belong to this box, or has been retired."
+  },
   "@kasBoxesTitle": {
     "description": "Sheet title: create, rename and retire the venue's cash boxes."
   },

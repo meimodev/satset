@@ -199,25 +199,6 @@ String stockReasonLabel(AppL10n l10n, StockReason r) => switch (r) {
   StockReason.produce => l10n.stkReasonProduce,
 };
 
-/// What a petty cash expense was for. Stored by `name` (see [CashCategory]) and
-/// rendered on the Kas ledger, its post sheet, the Kas report section and the
-/// audit sentence — one resolver so all four agree.
-String cashCategoryLabel(AppL10n l10n, CashCategory c) => switch (c) {
-  CashCategory.ingredients => l10n.cashCatIngredients,
-  CashCategory.operations => l10n.cashCatOperations,
-  CashCategory.transport => l10n.cashCatTransport,
-  CashCategory.dailyWage => l10n.cashCatDailyWage,
-  CashCategory.other => l10n.cashCatOther,
-};
-
-/// Same, from the raw persisted key — what an audit row and a report section
-/// carry. Falls through to the key so a category written by a newer build never
-/// renders blank.
-String cashCategoryKeyLabel(AppL10n l10n, String key) {
-  final c = cashCategoryFromName(key);
-  return c == null ? key : cashCategoryLabel(l10n, c);
-}
-
 /// Whether an opname claims to have seen every bahan (ADR-0096). The claim is
 /// the difference between "we counted March" and "we counted some things in
 /// March", so it is rendered wherever a session is.

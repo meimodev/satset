@@ -65,7 +65,7 @@ void main() {
             id: 'c$i',
             boxId: 'box-main',
             kind: CashEntryKind.expense,
-            category: CashCategory.other,
+            categoryId: 'other',
             delta: -1000,
             at: DateTime(2026, 8, 22),
           ),

@@ -25,7 +25,7 @@
 // See ADR-0104 for why the server DB is the source of truth in Server mode.
 import 'dart:convert';
 
-import 'package:drift/drift.dart' show Migrator, Value;
+import 'package:drift/drift.dart' show Migrator, Value, Variable;
 import 'package:drift/native.dart';
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -304,6 +304,63 @@ void main() {
       // The enum-to-rows half of the same branch.
       final tags = await db.select(db.menuTags).get();
       expect(tags, isNotEmpty, reason: 'menu tags are seeded by this branch');
+    });
+  });
+
+  group('v75 — the box owns its vocabulary', () {
+    test('every box gets the five stock words, and no ledger row moves', () async {
+      final db = await freshDb();
+      addTearDown(db.close);
+
+      // A v74 venue has boxes but no catalogue, and its expenses carry what the
+      // `CashCategory` enum persisted.
+      await db.customStatement('DROP TABLE cash_categories');
+      await db.customStatement(
+        "INSERT INTO cash_boxes (id, name) VALUES ('box-dapur', 'Kas Dapur')",
+      );
+      await db.customStatement(
+        "INSERT INTO cash_entries (id, kind, delta, at, category, box_id) "
+        "VALUES ('c-old', 'expense', -50000, 0, 'ingredients', 'box-dapur')",
+      );
+
+      await replayFrom(db, 74, to: 75);
+
+      // The five land in *every* box under their old enum names — which is the
+      // whole reason the ledger needs no backfill.
+      for (final box in ['box-main', 'box-dapur']) {
+        final cats = await db
+            .customSelect(
+              'SELECT id FROM cash_categories WHERE box_id = ? ORDER BY sort_order',
+              variables: [Variable.withString(box)],
+            )
+            .get();
+        expect(cats.map((r) => r.read<String>('id')), [
+          'ingredients',
+          'operations',
+          'transport',
+          'dailyWage',
+          'other',
+        ], reason: 'seeded into $box');
+      }
+
+      // The money column is untouched, and it now resolves against the row's
+      // own box.
+      final row = await db
+          .customSelect(
+            "SELECT category, box_id FROM cash_entries WHERE id = 'c-old'",
+          )
+          .getSingle();
+      expect(row.read<String>('category'), 'ingredients');
+      final name = await db
+          .customSelect(
+            'SELECT name FROM cash_categories WHERE box_id = ? AND id = ?',
+            variables: [
+              Variable.withString(row.read<String>('box_id')),
+              Variable.withString(row.read<String>('category')),
+            ],
+          )
+          .getSingle();
+      expect(name.read<String>('name'), 'Belanja bahan');
     });
   });
 

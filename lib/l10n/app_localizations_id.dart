@@ -7344,21 +7344,6 @@ class AppL10nId extends AppL10n {
   String get capManageCash => 'Kelola kas kecil';
 
   @override
-  String get cashCatIngredients => 'Belanja bahan';
-
-  @override
-  String get cashCatOperations => 'Operasional';
-
-  @override
-  String get cashCatTransport => 'Transport';
-
-  @override
-  String get cashCatDailyWage => 'Upah harian';
-
-  @override
-  String get cashCatOther => 'Lainnya';
-
-  @override
   String get cashKindTopUp => 'Isi kas';
 
   @override
@@ -7522,6 +7507,34 @@ class AppL10nId extends AppL10n {
 
   @override
   String get kasBoxesTitle => 'Kelola kas';
+
+  @override
+  String get kasCatTitle => 'Kategori';
+
+  @override
+  String get kasCatNew => 'Kategori baru';
+
+  @override
+  String get kasFieldCatName => 'Nama kategori';
+
+  @override
+  String get kasCatRetire => 'Nonaktifkan';
+
+  @override
+  String get kasCatReopen => 'Aktifkan';
+
+  @override
+  String get kasCatNoneTitle => 'Belum ada kategori';
+
+  @override
+  String get kasCatNoneHint =>
+      'Tambahkan kategori di Kelola kas sebelum mencatat pengeluaran.';
+
+  @override
+  String get kasErrCatNameRequired => 'Nama kategori wajib diisi.';
+
+  @override
+  String get kasErrUnknownCategory => 'Kategori tidak ada di kas ini.';
 
   @override
   String get kasBoxNew => 'Kas baru';

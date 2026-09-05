@@ -351,6 +351,9 @@ Future<void> _ensureDefaultCashBox(AppDatabase db) async {
         CashBoxesCompanion.insert(id: 'box-main', name: 'Kas Utama'),
         mode: InsertMode.insertOrIgnore,
       );
+  // And somewhere to file what it was spent on (ADR-0135), on the same belt:
+  // a box with no categories cannot take an expense at all.
+  await db.seedCashCategories();
 }
 
 Future<void> _ensureWaiterCanVoid(AppDatabase db) async {

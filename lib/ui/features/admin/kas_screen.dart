@@ -128,9 +128,7 @@ class _KasScreenState extends ConsumerState<KasScreen> {
                   label: l10n.kasActionCount,
                   icon: Icons.savings_outlined,
                   size: SatButtonSize.sm,
-                  onTap: onOneBox
-                      ? () => _post(CashEntryKind.count)
-                      : null,
+                  onTap: onOneBox ? () => _post(CashEntryKind.count) : null,
                 ),
               ],
               if (canFund) ...[
@@ -199,6 +197,7 @@ class _KasScreenState extends ConsumerState<KasScreen> {
                         boxName: state.selectedBoxId == null && state.multiBox
                             ? state.boxNameOf(state.entries[i].boxId)
                             : null,
+                        categoryName: state.categoryNameOf(state.entries[i]),
                         onTap: () => _detail(state.entries[i]),
                       ),
                     ),
@@ -358,8 +357,18 @@ class _KasRow extends StatelessWidget {
   /// Which box this movement moved — set only on the mixed "Semua" list, where
   /// the header cannot say it for the whole column.
   final String? boxName;
+
+  /// The category's word, resolved against the row's own box (ADR-0135). Passed
+  /// in rather than looked up: this row is a plain widget and the same id means
+  /// different things in two tins.
+  final String? categoryName;
   final VoidCallback onTap;
-  const _KasRow({required this.entry, required this.onTap, this.boxName});
+  const _KasRow({
+    required this.entry,
+    required this.onTap,
+    this.boxName,
+    this.categoryName,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -483,7 +492,7 @@ class _KasRow extends StatelessWidget {
     final sc = context.sat;
     final l10n = context.l10n;
     final parts = <String>[
-      if (entry.category != null) cashCategoryLabel(l10n, entry.category!),
+      ?categoryName,
       if (entry.kind == CashEntryKind.count && entry.countedAmount != null)
         l10n.kasCounted(formatIDR(entry.countedAmount!)),
       if (entry.kind == CashEntryKind.reversal) l10n.kasIsReversal,
@@ -516,6 +525,7 @@ class _DetailSheet extends ConsumerWidget {
     final sc = context.sat;
     final l10n = context.l10n;
     final auth = ref.watch(authStateProvider);
+    final categoryName = ref.watch(cashProvider).categoryNameOf(entry);
     // Either authority may take back a movement — the same split the routes
     // enforce, mirrored here only so a button that would 403 is not offered.
     final canReverse =
@@ -553,11 +563,8 @@ class _DetailSheet extends ConsumerWidget {
             const SizedBox(height: Sp.s3),
             _Line(label: l10n.auditColTime, value: formatBarClockId(entry.at)),
             _Line(label: l10n.kasFieldNote, value: entry.note ?? '—'),
-            if (entry.category != null)
-              _Line(
-                label: l10n.kasFieldCategory,
-                value: cashCategoryLabel(l10n, entry.category!),
-              ),
+            if (categoryName != null)
+              _Line(label: l10n.kasFieldCategory, value: categoryName),
             if (entry.countedAmount != null)
               _Line(
                 label: l10n.kasFieldCounted,
@@ -657,7 +664,11 @@ class _PostSheet extends ConsumerStatefulWidget {
 class _PostSheetState extends ConsumerState<_PostSheet> {
   final _amount = TextEditingController();
   final _note = TextEditingController();
-  CashCategory _category = CashCategory.ingredients;
+
+  /// Null until a box is picked, and re-picked whenever the box changes: a
+  /// category belongs to one tin (ADR-0135), so carrying a selection across
+  /// boxes would post another box's word.
+  String? _categoryId;
   Uint8List? _photo;
   bool _busy = false;
   String? _error;
@@ -678,6 +689,15 @@ class _PostSheetState extends ConsumerState<_PostSheet> {
         (state.multiBox
             ? null
             : (state.boxes.isEmpty ? null : state.boxes.first.id));
+    // The first word of whichever box is already in view — what the closed
+    // enum used to do by defaulting to `ingredients`. A box picked later
+    // re-picks, because a category belongs to one tin (ADR-0135).
+    _categoryId = _boxId == null
+        ? null
+        : state
+              .categoriesFor(_boxId!, activeOnly: true)
+              .map((c) => c.id)
+              .firstOrNull;
   }
 
   @override
@@ -700,10 +720,17 @@ class _PostSheetState extends ConsumerState<_PostSheet> {
   /// did — so only the three posting kinds need one picked.
   bool get _needsBox => _kind != CashEntryKind.reversal;
 
+  /// The chosen box's active categories. Empty is a real state — the sheet
+  /// says so and the button stays down.
+  List<CashCategory> get _categories => _boxId == null
+      ? const []
+      : ref.watch(cashProvider).categoriesFor(_boxId!, activeOnly: true);
+
   bool get _ready =>
       (!_needsBox || _boxId != null) &&
       switch (_kind) {
-        CashEntryKind.topUp || CashEntryKind.expense => _value > 0,
+        CashEntryKind.expense => _value > 0 && _categoryId != null,
+        CashEntryKind.topUp => _value > 0,
         // A count of zero is a real finding — an empty box — so only a blank
         // field blocks, not a zero.
         CashEntryKind.count => _amount.text.trim().isNotEmpty,
@@ -743,7 +770,7 @@ class _PostSheetState extends ConsumerState<_PostSheet> {
           await repo.spend(
             boxId: _boxId!,
             amount: _value,
-            category: _category,
+            categoryId: _categoryId!,
             note: note,
             photoBase64: _photo == null ? null : base64Encode(_photo!),
           );
@@ -798,7 +825,15 @@ class _PostSheetState extends ConsumerState<_PostSheet> {
                     for (final b in state.pickableBoxes)
                       SatOption(b.id, b.name),
                   ],
-                  onChanged: (id) => setState(() => _boxId = id),
+                  onChanged: (id) => setState(() {
+                    _boxId = id;
+                    _categoryId = id == null
+                        ? null
+                        : state
+                              .categoriesFor(id, activeOnly: true)
+                              .map((c) => c.id)
+                              .firstOrNull;
+                  }),
                 ),
                 const SizedBox(height: Sp.s3),
               ],
@@ -859,15 +894,21 @@ class _PostSheetState extends ConsumerState<_PostSheet> {
           onChanged: (_) => _touch(),
         ),
         const SizedBox(height: Sp.s3),
-        SatDropdown<CashCategory>(
-          value: _category,
-          label: l10n.kasFieldCategory,
-          options: [
-            for (final c in CashCategory.values)
-              SatOption(c, cashCategoryLabel(l10n, c)),
-          ],
-          onChanged: (c) => setState(() => _category = c ?? _category),
-        ),
+        if (_categories.isEmpty)
+          // A box may be retired down to no categories at all (ADR-0135). The
+          // write would refuse, so the sheet says why here instead.
+          SatEmpty(
+            icon: Icons.label_off_rounded,
+            title: l10n.kasCatNoneTitle,
+            body: l10n.kasCatNoneHint,
+          )
+        else
+          SatDropdown<String>(
+            value: _categoryId,
+            label: l10n.kasFieldCategory,
+            options: [for (final c in _categories) SatOption(c.id, c.name)],
+            onChanged: (id) => setState(() => _categoryId = id),
+          ),
         const SizedBox(height: Sp.s3),
         SatField.text(controller: _note, label: l10n.kasFieldNote, hint: ''),
         const SizedBox(height: Sp.s3),
@@ -958,8 +999,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
   int get _value =>
       int.tryParse(_amount.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
 
-  bool get _ready =>
-      _value > 0 && _from != null && _to != null && _from != _to;
+  bool get _ready => _value > 0 && _from != null && _to != null && _from != _to;
 
   Future<void> _submit() async {
     if (!_ready || _busy) return;
@@ -986,10 +1026,8 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
     }
   }
 
-  int _balanceOf(CashState state, String? id) => state.boxes
-      .where((b) => b.id == id)
-      .map((b) => b.balance)
-      .firstOrNull ??
+  int _balanceOf(CashState state, String? id) =>
+      state.boxes.where((b) => b.id == id).map((b) => b.balance).firstOrNull ??
       0;
 
   @override
@@ -1017,9 +1055,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
               SatDropdown<String>(
                 value: _from,
                 label: l10n.kasFieldFromBox,
-                options: [
-                  for (final b in boxes) SatOption(b.id, b.name),
-                ],
+                options: [for (final b in boxes) SatOption(b.id, b.name)],
                 onChanged: (id) => setState(() => _from = id),
               ),
               const SizedBox(height: Sp.s3),
@@ -1128,90 +1164,276 @@ class _BoxesSheetState extends ConsumerState<_BoxesSheet> {
     return SafeArea(
       child: Padding(
         padding: _sheetPadding(context),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SatSheetHeader(
-                padding: _kSheetHeaderPad,
-                onClose: () => Navigator.of(context).pop(),
-                child: Text(
-                  l10n.kasBoxesTitle,
-                  style: SatType.h3(color: sc.textHi),
-                ),
+        // The list scrolls; the field and its button do not (ADR-0135's device
+        // run). With everything in one scroll view the action lands under the
+        // keyboard, and the reader's instinct — Back — dismisses the sheet
+        // rather than the keyboard, losing the edit.
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SatSheetHeader(
+              padding: _kSheetHeaderPad,
+              onClose: () => Navigator.of(context).pop(),
+              child: Text(
+                l10n.kasBoxesTitle,
+                style: SatType.h3(color: sc.textHi),
               ),
-              for (final b in state.boxes) ...[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: Sp.s2),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final b in state.boxes) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: Sp.s2),
+                        child: Row(
                           children: [
-                            Text(
-                              b.name,
-                              style: SatType.labelM(
-                                color: b.active ? sc.textHi : sc.textDim,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    b.name,
+                                    style: SatType.labelM(
+                                      color: b.active ? sc.textHi : sc.textDim,
+                                    ),
+                                  ),
+                                  Text(
+                                    b.active
+                                        ? formatIDR(b.balance)
+                                        : '${formatIDR(b.balance)} · '
+                                              '${l10n.kasBoxInactive}',
+                                    style: SatType.bodyS(color: sc.textMd),
+                                  ),
+                                ],
                               ),
                             ),
-                            Text(
-                              b.active
-                                  ? formatIDR(b.balance)
-                                  : '${formatIDR(b.balance)} · '
-                                        '${l10n.kasBoxInactive}',
-                              style: SatType.bodyS(color: sc.textMd),
+                            SatButton.outline(
+                              label: b.active
+                                  ? l10n.kasBoxRetire
+                                  : l10n.kasBoxReopen,
+                              size: SatButtonSize.sm,
+                              onTap: () => _run(
+                                () =>
+                                    repo.updateBox(id: b.id, active: !b.active),
+                              ),
+                            ),
+                            const SizedBox(width: Sp.s2),
+                            SatIconButton.plain(
+                              icon: Icons.sell_outlined,
+                              tooltip: l10n.kasCatTitle,
+                              onTap: () => showSatSheet<void>(
+                                context,
+                                builder: (_) => _CategoriesSheet(boxId: b.id),
+                              ),
+                            ),
+                            const SizedBox(width: Sp.s2),
+                            SatIconButton.plain(
+                              icon: Icons.edit_outlined,
+                              tooltip: l10n.kasFieldBoxName,
+                              onTap: () => setState(() {
+                                _editingId = b.id;
+                                _name.text = b.name;
+                              }),
                             ),
                           ],
                         ),
                       ),
-                      SatButton.outline(
-                        label: b.active
-                            ? l10n.kasBoxRetire
-                            : l10n.kasBoxReopen,
-                        size: SatButtonSize.sm,
-                        onTap: () => _run(
-                          () => repo.updateBox(id: b.id, active: !b.active),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: Sp.s3),
+            SatField.text(
+              controller: _name,
+              label: _editingId == null ? l10n.kasBoxNew : l10n.kasFieldBoxName,
+              hint: '',
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: Sp.s3),
+              Text(_error!, style: SatType.bodyS(color: sc.urgent)),
+            ],
+            const SizedBox(height: Sp.s4),
+            SatButton.primary(
+              label: _editingId == null ? l10n.kasBoxNew : l10n.save,
+              busy: _busy,
+              onTap: () => _run(
+                () => _editingId == null
+                    ? repo.createBox(_name.text.trim())
+                    : repo.updateBox(id: _editingId!, name: _name.text.trim()),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One box's vocabulary — author, rename, retire, bring back (ADR-0135).
+///
+/// A sheet per box rather than one list of everything: a category belongs to a
+/// tin, and a venue with four boxes would otherwise scroll through twenty rows
+/// to rename one.
+///
+/// There is no delete, for [_BoxesSheet]'s reason: a retired word still has to
+/// render on the movements already filed under it. And no floor under
+/// retirement — a box may end with none, which the expense sheet says out loud.
+class _CategoriesSheet extends ConsumerStatefulWidget {
+  final String boxId;
+  const _CategoriesSheet({required this.boxId});
+
+  @override
+  ConsumerState<_CategoriesSheet> createState() => _CategoriesSheetState();
+}
+
+class _CategoriesSheetState extends ConsumerState<_CategoriesSheet> {
+  final _name = TextEditingController();
+  String? _editingId;
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await action();
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _editingId = null;
+          _name.clear();
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = cashErrorText(context.l10n, e);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    final state = ref.watch(cashProvider);
+    final repo = ref.read(cashProvider.notifier);
+    final cats = state.categoriesFor(widget.boxId);
+    return SafeArea(
+      child: Padding(
+        padding: _sheetPadding(context),
+        // The list scrolls, the field and its button stay put — [_BoxesSheet]'s
+        // reason, and this sheet holds one more row, so it hit it first.
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SatSheetHeader(
+              padding: _kSheetHeaderPad,
+              onClose: () => Navigator.of(context).pop(),
+              child: Text(
+                '${l10n.kasCatTitle} · ${state.boxNameOf(widget.boxId)}',
+                style: SatType.h3(color: sc.textHi),
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final c in cats)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: Sp.s2),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                c.active
+                                    ? c.name
+                                    : '${c.name} · ${l10n.kasBoxInactive}',
+                                style: SatType.labelM(
+                                  color: c.active ? sc.textHi : sc.textDim,
+                                ),
+                              ),
+                            ),
+                            SatButton.outline(
+                              label: c.active
+                                  ? l10n.kasCatRetire
+                                  : l10n.kasCatReopen,
+                              size: SatButtonSize.sm,
+                              onTap: () => _run(
+                                () => repo.updateCategory(
+                                  boxId: widget.boxId,
+                                  id: c.id,
+                                  active: !c.active,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: Sp.s2),
+                            SatIconButton.plain(
+                              icon: Icons.edit_outlined,
+                              tooltip: l10n.kasFieldCatName,
+                              onTap: () => setState(() {
+                                _editingId = c.id;
+                                _name.text = c.name;
+                              }),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: Sp.s2),
-                      SatIconButton.plain(
-                        icon: Icons.edit_outlined,
-                        tooltip: l10n.kasFieldBoxName,
-                        onTap: () => setState(() {
-                          _editingId = b.id;
-                          _name.text = b.name;
-                        }),
+                    if (cats.isEmpty)
+                      Text(
+                        l10n.kasCatNoneHint,
+                        style: SatType.bodyS(color: sc.textMd),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
-              ],
+              ),
+            ),
+            const SizedBox(height: Sp.s3),
+            SatField.text(
+              controller: _name,
+              label: _editingId == null ? l10n.kasCatNew : l10n.kasFieldCatName,
+              hint: '',
+            ),
+            if (_error != null) ...[
               const SizedBox(height: Sp.s3),
-              SatField.text(
-                controller: _name,
-                label: _editingId == null
-                    ? l10n.kasBoxNew
-                    : l10n.kasFieldBoxName,
-                hint: '',
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: Sp.s3),
-                Text(_error!, style: SatType.bodyS(color: sc.urgent)),
-              ],
-              const SizedBox(height: Sp.s4),
-              SatButton.primary(
-                label: _editingId == null ? l10n.kasBoxNew : l10n.save,
-                busy: _busy,
-                onTap: () => _run(
-                  () => _editingId == null
-                      ? repo.createBox(_name.text.trim())
-                      : repo.updateBox(id: _editingId!, name: _name.text.trim()),
-                ),
-              ),
+              Text(_error!, style: SatType.bodyS(color: sc.urgent)),
             ],
-          ),
+            const SizedBox(height: Sp.s4),
+            SatButton.primary(
+              label: _editingId == null ? l10n.kasCatNew : l10n.save,
+              busy: _busy,
+              onTap: () => _run(
+                () => _editingId == null
+                    ? repo.createCategory(
+                        boxId: widget.boxId,
+                        name: _name.text.trim(),
+                      )
+                    : repo.updateCategory(
+                        boxId: widget.boxId,
+                        id: _editingId!,
+                        name: _name.text.trim(),
+                      ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1234,6 +1456,7 @@ String cashErrorText(AppL10n l10n, Object error) {
     'same_box' => l10n.kasErrSameBox,
     'name_required' => l10n.kasErrNameRequired,
     'box_not_found' => l10n.kasErrBoxNotFound,
+    'unknown_category' => l10n.kasErrUnknownCategory,
     final code? => l10n.kasErrFailed(code),
     null => l10n.kasErrFailed('$error'),
   };

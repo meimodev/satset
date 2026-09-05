@@ -2198,7 +2198,7 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
               style: SatType.monoS(color: sc.textLo),
             ),
             const SizedBox(height: Sp.s2),
-            for (final b in kas.byBox)
+            for (final b in kas.byBox) ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: Sp.s2),
                 child: Row(
@@ -2224,6 +2224,43 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                   ],
                 ),
               ),
+              // What this tin was spent on (ADR-0135). Its own vocabulary, so
+              // the venue-wide block above cannot answer it: two tins may both
+              // have authored the same word, and only here do they stay apart.
+              if (b.byCategory.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: Sp.s3,
+                    bottom: Sp.s3,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final e in (b.byCategory.entries.toList()
+                        ..sort((x, y) => y.value.compareTo(x.value))))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: Sp.s1h),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  // The venue's own word off the wire, like
+                                  // the venue-wide map — nothing to resolve.
+                                  e.key,
+                                  style: SatType.bodyS(color: sc.textLo),
+                                ),
+                              ),
+                              Text(
+                                formatCompactIDR(l10n, e.value),
+                                style: SatType.monoS(color: sc.textMd),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
           ],
         ],
       ),
@@ -2335,8 +2372,9 @@ class _ReportSectionsViewState extends State<ReportSectionsView> {
                 children: [
                   Expanded(
                     child: Text(
-                      // A code off the wire, worded here (ADR-0085).
-                      cashCategoryKeyLabel(context.l10n, e.key),
+                      // Already the venue's own word off the wire (ADR-0135),
+                      // like the Pengeluaran section's — nothing to resolve.
+                      e.key,
                       style: SatType.bodyM(color: sc.textHi),
                     ),
                   ),

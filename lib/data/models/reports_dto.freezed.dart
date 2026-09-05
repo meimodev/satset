@@ -6839,7 +6839,7 @@ as int,
 /// @nodoc
 mixin _$KasBoxSectionDto {
 
- String get id; String get name; bool get active; int get opening; int get inflow; int get outflow; int get variance; int get closing;
+ String get id; String get name; bool get active; int get opening; int get inflow; int get outflow; int get variance; int get closing; Map<String, int> get byCategory;
 /// Create a copy of KasBoxSectionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -6852,16 +6852,16 @@ $KasBoxSectionDtoCopyWith<KasBoxSectionDto> get copyWith => _$KasBoxSectionDtoCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is KasBoxSectionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.active, active) || other.active == active)&&(identical(other.opening, opening) || other.opening == opening)&&(identical(other.inflow, inflow) || other.inflow == inflow)&&(identical(other.outflow, outflow) || other.outflow == outflow)&&(identical(other.variance, variance) || other.variance == variance)&&(identical(other.closing, closing) || other.closing == closing));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is KasBoxSectionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.active, active) || other.active == active)&&(identical(other.opening, opening) || other.opening == opening)&&(identical(other.inflow, inflow) || other.inflow == inflow)&&(identical(other.outflow, outflow) || other.outflow == outflow)&&(identical(other.variance, variance) || other.variance == variance)&&(identical(other.closing, closing) || other.closing == closing)&&const DeepCollectionEquality().equals(other.byCategory, byCategory));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,active,opening,inflow,outflow,variance,closing);
+int get hashCode => Object.hash(runtimeType,id,name,active,opening,inflow,outflow,variance,closing,const DeepCollectionEquality().hash(byCategory));
 
 @override
 String toString() {
-  return 'KasBoxSectionDto(id: $id, name: $name, active: $active, opening: $opening, inflow: $inflow, outflow: $outflow, variance: $variance, closing: $closing)';
+  return 'KasBoxSectionDto(id: $id, name: $name, active: $active, opening: $opening, inflow: $inflow, outflow: $outflow, variance: $variance, closing: $closing, byCategory: $byCategory)';
 }
 
 
@@ -6872,7 +6872,7 @@ abstract mixin class $KasBoxSectionDtoCopyWith<$Res>  {
   factory $KasBoxSectionDtoCopyWith(KasBoxSectionDto value, $Res Function(KasBoxSectionDto) _then) = _$KasBoxSectionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, bool active, int opening, int inflow, int outflow, int variance, int closing
+ String id, String name, bool active, int opening, int inflow, int outflow, int variance, int closing, Map<String, int> byCategory
 });
 
 
@@ -6889,7 +6889,7 @@ class _$KasBoxSectionDtoCopyWithImpl<$Res>
 
 /// Create a copy of KasBoxSectionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? active = null,Object? opening = null,Object? inflow = null,Object? outflow = null,Object? variance = null,Object? closing = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? active = null,Object? opening = null,Object? inflow = null,Object? outflow = null,Object? variance = null,Object? closing = null,Object? byCategory = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -6899,7 +6899,8 @@ as int,inflow: null == inflow ? _self.inflow : inflow // ignore: cast_nullable_t
 as int,outflow: null == outflow ? _self.outflow : outflow // ignore: cast_nullable_to_non_nullable
 as int,variance: null == variance ? _self.variance : variance // ignore: cast_nullable_to_non_nullable
 as int,closing: null == closing ? _self.closing : closing // ignore: cast_nullable_to_non_nullable
-as int,
+as int,byCategory: null == byCategory ? _self.byCategory : byCategory // ignore: cast_nullable_to_non_nullable
+as Map<String, int>,
   ));
 }
 
@@ -6984,10 +6985,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  bool active,  int opening,  int inflow,  int outflow,  int variance,  int closing)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  bool active,  int opening,  int inflow,  int outflow,  int variance,  int closing,  Map<String, int> byCategory)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _KasBoxSectionDto() when $default != null:
-return $default(_that.id,_that.name,_that.active,_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing);case _:
+return $default(_that.id,_that.name,_that.active,_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing,_that.byCategory);case _:
   return orElse();
 
 }
@@ -7005,10 +7006,10 @@ return $default(_that.id,_that.name,_that.active,_that.opening,_that.inflow,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  bool active,  int opening,  int inflow,  int outflow,  int variance,  int closing)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  bool active,  int opening,  int inflow,  int outflow,  int variance,  int closing,  Map<String, int> byCategory)  $default,) {final _that = this;
 switch (_that) {
 case _KasBoxSectionDto():
-return $default(_that.id,_that.name,_that.active,_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing);case _:
+return $default(_that.id,_that.name,_that.active,_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing,_that.byCategory);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -7025,10 +7026,10 @@ return $default(_that.id,_that.name,_that.active,_that.opening,_that.inflow,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  bool active,  int opening,  int inflow,  int outflow,  int variance,  int closing)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  bool active,  int opening,  int inflow,  int outflow,  int variance,  int closing,  Map<String, int> byCategory)?  $default,) {final _that = this;
 switch (_that) {
 case _KasBoxSectionDto() when $default != null:
-return $default(_that.id,_that.name,_that.active,_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing);case _:
+return $default(_that.id,_that.name,_that.active,_that.opening,_that.inflow,_that.outflow,_that.variance,_that.closing,_that.byCategory);case _:
   return null;
 
 }
@@ -7040,7 +7041,7 @@ return $default(_that.id,_that.name,_that.active,_that.opening,_that.inflow,_tha
 @JsonSerializable()
 
 class _KasBoxSectionDto implements KasBoxSectionDto {
-  const _KasBoxSectionDto({this.id = '', this.name = '', this.active = true, this.opening = 0, this.inflow = 0, this.outflow = 0, this.variance = 0, this.closing = 0});
+  const _KasBoxSectionDto({this.id = '', this.name = '', this.active = true, this.opening = 0, this.inflow = 0, this.outflow = 0, this.variance = 0, this.closing = 0, final  Map<String, int> byCategory = const <String, int>{}}): _byCategory = byCategory;
   factory _KasBoxSectionDto.fromJson(Map<String, dynamic> json) => _$KasBoxSectionDtoFromJson(json);
 
 @override@JsonKey() final  String id;
@@ -7051,6 +7052,13 @@ class _KasBoxSectionDto implements KasBoxSectionDto {
 @override@JsonKey() final  int outflow;
 @override@JsonKey() final  int variance;
 @override@JsonKey() final  int closing;
+ final  Map<String, int> _byCategory;
+@override@JsonKey() Map<String, int> get byCategory {
+  if (_byCategory is EqualUnmodifiableMapView) return _byCategory;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_byCategory);
+}
+
 
 /// Create a copy of KasBoxSectionDto
 /// with the given fields replaced by the non-null parameter values.
@@ -7065,16 +7073,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _KasBoxSectionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.active, active) || other.active == active)&&(identical(other.opening, opening) || other.opening == opening)&&(identical(other.inflow, inflow) || other.inflow == inflow)&&(identical(other.outflow, outflow) || other.outflow == outflow)&&(identical(other.variance, variance) || other.variance == variance)&&(identical(other.closing, closing) || other.closing == closing));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _KasBoxSectionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.active, active) || other.active == active)&&(identical(other.opening, opening) || other.opening == opening)&&(identical(other.inflow, inflow) || other.inflow == inflow)&&(identical(other.outflow, outflow) || other.outflow == outflow)&&(identical(other.variance, variance) || other.variance == variance)&&(identical(other.closing, closing) || other.closing == closing)&&const DeepCollectionEquality().equals(other._byCategory, _byCategory));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,active,opening,inflow,outflow,variance,closing);
+int get hashCode => Object.hash(runtimeType,id,name,active,opening,inflow,outflow,variance,closing,const DeepCollectionEquality().hash(_byCategory));
 
 @override
 String toString() {
-  return 'KasBoxSectionDto(id: $id, name: $name, active: $active, opening: $opening, inflow: $inflow, outflow: $outflow, variance: $variance, closing: $closing)';
+  return 'KasBoxSectionDto(id: $id, name: $name, active: $active, opening: $opening, inflow: $inflow, outflow: $outflow, variance: $variance, closing: $closing, byCategory: $byCategory)';
 }
 
 
@@ -7085,7 +7093,7 @@ abstract mixin class _$KasBoxSectionDtoCopyWith<$Res> implements $KasBoxSectionD
   factory _$KasBoxSectionDtoCopyWith(_KasBoxSectionDto value, $Res Function(_KasBoxSectionDto) _then) = __$KasBoxSectionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, bool active, int opening, int inflow, int outflow, int variance, int closing
+ String id, String name, bool active, int opening, int inflow, int outflow, int variance, int closing, Map<String, int> byCategory
 });
 
 
@@ -7102,7 +7110,7 @@ class __$KasBoxSectionDtoCopyWithImpl<$Res>
 
 /// Create a copy of KasBoxSectionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? active = null,Object? opening = null,Object? inflow = null,Object? outflow = null,Object? variance = null,Object? closing = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? active = null,Object? opening = null,Object? inflow = null,Object? outflow = null,Object? variance = null,Object? closing = null,Object? byCategory = null,}) {
   return _then(_KasBoxSectionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -7112,7 +7120,8 @@ as int,inflow: null == inflow ? _self.inflow : inflow // ignore: cast_nullable_t
 as int,outflow: null == outflow ? _self.outflow : outflow // ignore: cast_nullable_to_non_nullable
 as int,variance: null == variance ? _self.variance : variance // ignore: cast_nullable_to_non_nullable
 as int,closing: null == closing ? _self.closing : closing // ignore: cast_nullable_to_non_nullable
-as int,
+as int,byCategory: null == byCategory ? _self._byCategory : byCategory // ignore: cast_nullable_to_non_nullable
+as Map<String, int>,
   ));
 }
 

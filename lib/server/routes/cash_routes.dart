@@ -87,6 +87,11 @@ Router cashRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       // venue total is the sum of the boxes, never a figure of its own.
       'balance': [for (final b in boxes) b.balance].fold(0, (a, b) => a + b),
       'boxes': [for (final b in boxes) cashBoxJson(b)],
+      // Every box's categories, inactive ones included: the picker filters, but
+      // a ledger row filed under a retired word still has to render it.
+      'categories': [
+        for (final c in await cashCategoryList(db)) cashCategoryJson(c),
+      ],
       'entries': [for (final e in entries) cashEntryJson(e)],
     });
   });
@@ -124,14 +129,16 @@ Router cashRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       return forbidden(Capability.manageCash);
     }
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
-    final category = cashCategoryFromName(body['category'] as String?);
-    if (category == null) return err(400, 'category_required');
+    // An id now, scoped to the box (ADR-0135). Whether it exists, is active and
+    // belongs to *this* box is the writer's call, inside the transaction.
+    final categoryId = _text(body['category']);
+    if (categoryId == null) return err(400, 'category_required');
     try {
       final entry = await spendCash(
         db,
         boxId: _boxId(body),
         amount: (body['amount'] as num?)?.toInt() ?? 0,
-        category: category,
+        categoryId: categoryId,
         note: _text(body['note']),
         // Optional here, unlike a non-cash payment's mandatory proof: the pasar
         // has no receipt printer, and a required field staff cannot satisfy gets
@@ -281,6 +288,53 @@ Router cashRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     }
   });
 
+  /// A box's vocabulary (ADR-0135). Authoring what a tin spends on is the same
+  /// authority as authoring the tin, and it writes no audit row — a category is
+  /// vocabulary, and every movement already carries both.
+  r.post('/cash/boxes/<boxId>/categories', (Request req, String boxId) async {
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!a.$2.contains(Capability.editSettings.name)) {
+      return forbidden(Capability.editSettings);
+    }
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    try {
+      await createCashCategory(
+        db,
+        boxId: boxId,
+        name: _text(body['name']) ?? '',
+      );
+      return json(await _broadcastBoxes(db, hub, null));
+    } on CashException catch (e) {
+      return err(e.code == 'box_not_found' ? 404 : 400, e.code);
+    }
+  });
+
+  r.patch('/cash/boxes/<boxId>/categories/<id>', (
+    Request req,
+    String boxId,
+    String id,
+  ) async {
+    final a = await actor(req);
+    if (a == null) return Response(401);
+    if (!a.$2.contains(Capability.editSettings.name)) {
+      return forbidden(Capability.editSettings);
+    }
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    try {
+      await updateCashCategory(
+        db,
+        boxId: boxId,
+        id: id,
+        name: _text(body['name']),
+        active: body['active'] as bool?,
+      );
+      return json(await _broadcastBoxes(db, hub, null));
+    } on CashException catch (e) {
+      return err(e.code == 'unknown_category' ? 404 : 400, e.code);
+    }
+  });
+
   // Receipt-photo bytes for one expense. Blob never rides the ledger path.
   r.get('/cash/<id>/photo', (Request req, String id) async {
     final a = await actor(req);
@@ -323,15 +377,21 @@ Future<Map<String, dynamic>> _broadcast(
 /// A box changed — created, renamed or retired. The whole list goes out rather
 /// than the one box: it is a handful of rows, and a client that only patched
 /// one would still have to re-sort.
+/// [box] is null when a **category** changed rather than a box: the frame is
+/// the same one either way (ADR-0135), because a category hangs off a box and
+/// the client replaces the list wholesale regardless.
 Future<Map<String, dynamic>> _broadcastBoxes(
   AppDatabase db,
   WsHub hub,
-  CashBox box,
+  CashBox? box,
 ) async {
   final boxes = await cashBoxList(db);
   final payload = {
-    'box': cashBoxJson(box),
+    if (box != null) 'box': cashBoxJson(box),
     'boxes': [for (final b in boxes) cashBoxJson(b)],
+    'categories': [
+      for (final c in await cashCategoryList(db)) cashCategoryJson(c),
+    ],
   };
   hub.broadcast(WsEventTypes.cashBoxesUpdated, payload);
   return payload;

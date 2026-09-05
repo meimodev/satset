@@ -11581,36 +11581,6 @@ abstract class AppL10n {
   /// **'Kelola kas kecil'**
   String get capManageCash;
 
-  /// No description provided for @cashCatIngredients.
-  ///
-  /// In id, this message translates to:
-  /// **'Belanja bahan'**
-  String get cashCatIngredients;
-
-  /// No description provided for @cashCatOperations.
-  ///
-  /// In id, this message translates to:
-  /// **'Operasional'**
-  String get cashCatOperations;
-
-  /// No description provided for @cashCatTransport.
-  ///
-  /// In id, this message translates to:
-  /// **'Transport'**
-  String get cashCatTransport;
-
-  /// No description provided for @cashCatDailyWage.
-  ///
-  /// In id, this message translates to:
-  /// **'Upah harian'**
-  String get cashCatDailyWage;
-
-  /// No description provided for @cashCatOther.
-  ///
-  /// In id, this message translates to:
-  /// **'Lainnya'**
-  String get cashCatOther;
-
   /// No description provided for @cashKindTopUp.
   ///
   /// In id, this message translates to:
@@ -11910,6 +11880,60 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Kelola kas'**
   String get kasBoxesTitle;
+
+  /// Section title: the categories one cash box may be spent on.
+  ///
+  /// In id, this message translates to:
+  /// **'Kategori'**
+  String get kasCatTitle;
+
+  /// Add a category to the box in view.
+  ///
+  /// In id, this message translates to:
+  /// **'Kategori baru'**
+  String get kasCatNew;
+
+  /// Cash category name — venue content, never translated.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama kategori'**
+  String get kasFieldCatName;
+
+  /// Retire a cash category. It stays on the movements already filed under it.
+  ///
+  /// In id, this message translates to:
+  /// **'Nonaktifkan'**
+  String get kasCatRetire;
+
+  /// Bring a retired cash category back.
+  ///
+  /// In id, this message translates to:
+  /// **'Aktifkan'**
+  String get kasCatReopen;
+
+  /// Empty state in the expense sheet when the chosen box has no active category left.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada kategori'**
+  String get kasCatNoneTitle;
+
+  /// What to do about an empty category list.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambahkan kategori di Kelola kas sebelum mencatat pengeluaran.'**
+  String get kasCatNoneHint;
+
+  /// Refusal: a cash category needs a name.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama kategori wajib diisi.'**
+  String get kasErrCatNameRequired;
+
+  /// Refusal: the category does not belong to this box, or has been retired.
+  ///
+  /// In id, this message translates to:
+  /// **'Kategori tidak ada di kas ini.'**
+  String get kasErrUnknownCategory;
 
   /// Add a cash box.
   ///
