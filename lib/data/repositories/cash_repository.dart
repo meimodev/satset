@@ -8,6 +8,7 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/cash_entry.dart';
+import 'package:satset/domain/models/cash_window.dart';
 import 'package:satset/core/time/sat_clock.dart';
 
 /// How many ledger rows a page carries. Paged by **growing limit** (ADR-0079)
@@ -50,6 +51,14 @@ class CashState {
   /// is what makes a transfer's two socket frames land correctly in any order.
   final int balance;
 
+  /// The [[Jendela kas]] the list is showing (ADR-0136). Narrows [entries] and
+  /// [totals]; never [balance].
+  final CashWindow window;
+
+  /// Masuk / keluar / selisih over [window], **from the server** — summed over
+  /// every row in the window, not over the page that happens to be loaded.
+  final CashWindowTotals totals;
+
   final bool loading;
   final bool loadingMore;
   final bool hasMore;
@@ -61,6 +70,8 @@ class CashState {
     this.categories = const [],
     this.selectedBoxId,
     this.balance = 0,
+    this.window = CashWindow.all,
+    this.totals = const CashWindowTotals(),
     this.loading = false,
     this.loadingMore = false,
     this.hasMore = false,
@@ -153,6 +164,8 @@ class CashState {
     String? selectedBoxId,
     bool clearSelectedBox = false,
     int? balance,
+    CashWindow? window,
+    CashWindowTotals? totals,
     bool? loading,
     bool? loadingMore,
     bool? hasMore,
@@ -166,6 +179,8 @@ class CashState {
         ? null
         : (selectedBoxId ?? this.selectedBoxId),
     balance: balance ?? this.balance,
+    window: window ?? this.window,
+    totals: totals ?? this.totals,
     loading: loading ?? this.loading,
     loadingMore: loadingMore ?? this.loadingMore,
     hasMore: hasMore ?? this.hasMore,
@@ -225,6 +240,21 @@ class CashRepository extends StateNotifier<CashState> {
     await _fetch();
   }
 
+  /// Narrow the ledger to a [[Jendela kas]] (ADR-0136), or widen it back to
+  /// `CashWindow.all`.
+  ///
+  /// Re-read for the same reason [selectBox] is: the window is applied
+  /// server-side, and the totals it carries are summed over every row in it
+  /// rather than over the page. Paging restarts, because a narrower window
+  /// holding fewer rows than the reader had already scrolled to would otherwise
+  /// keep asking for pages that cannot exist.
+  Future<void> setWindow(CashWindow window) async {
+    if (window == state.window) return;
+    _limit = _kCashPage;
+    state = state.copyWith(window: window, loading: true, clearError: true);
+    await _fetch();
+  }
+
   /// Next page — the limit grows and the whole window is re-read. A ledger this
   /// size does not earn cursor bookkeeping, and re-reading is what keeps a
   /// reversal stamped onto an older row visible without a second request.
@@ -247,6 +277,7 @@ class CashRepository extends StateNotifier<CashState> {
                       'limit': '$_limit',
                       if (state.selectedBoxId != null)
                         'boxId': state.selectedBoxId!,
+                      ...state.window.query,
                     },
                   )
               as Map<String, dynamic>;
@@ -267,6 +298,9 @@ class CashRepository extends StateNotifier<CashState> {
         boxes: boxes,
         categories: categories,
         balance: (raw['balance'] as num?)?.toInt() ?? 0,
+        totals: CashWindowTotals.fromJson(
+          ((raw['totals'] as Map?) ?? const {}).cast<String, dynamic>(),
+        ),
         loading: false,
         loadingMore: false,
         hasMore: entries.length >= _limit && _limit < kCashMaxLoaded,
@@ -482,8 +516,14 @@ class CashRepository extends StateNotifier<CashState> {
     // A row for a box the reader is not looking at moves the balance and
     // nothing else: dropping it into a filtered ledger would show a movement
     // that does not belong to the box named at the top of the screen.
+    //
+    // Same for a row outside the window (ADR-0136). A live movement is stamped
+    // *now*, so it belongs in every open-topped window and in none of the closed
+    // ones — a row from today appearing in a June ledger is the same lie as a
+    // windowed balance.
     final mine =
-        state.selectedBoxId == null || state.selectedBoxId == entry.boxId;
+        (state.selectedBoxId == null || state.selectedBoxId == entry.boxId) &&
+        state.window.admits(entry.at);
     // Head insert. Safe under a growing limit: nothing is indexed by offset, and
     // the next refresh re-derives the window from scratch.
     state = state.copyWith(
@@ -495,7 +535,37 @@ class CashRepository extends StateNotifier<CashState> {
       // row that is already reversed.
       clearError: true,
     );
-    if (entry.kind == CashEntryKind.reversal) _fetch();
+    // Two things this frame cannot carry. A reversal stamps `reversedById` onto
+    // the row it undoes, and a movement inside the window moves its totals —
+    // which are the server's to sum, never this client's to adjust. Both are
+    // rare enough on a petty cash box to pay for with a re-read.
+    if (entry.kind == CashEntryKind.reversal || mine) _fetch();
+  }
+
+  /// The whole window, unpaged, for the export (ADR-0136).
+  ///
+  /// A fresh fetch and not [state.entries]: the list is paged, so filing what
+  /// the reader happened to scroll to produces a short ledger carrying the word
+  /// "lengkap". Throws whatever [ApiClient] throws — `window_too_large` is a
+  /// refusal the sheet renders, not an error to swallow.
+  Future<List<CashEntry>> fetchWindow() async {
+    final raw =
+        await _ref
+                .read(apiClientProvider)
+                .getJson(
+                  '/cash',
+                  query: {
+                    'limit': 'all',
+                    if (state.selectedBoxId != null)
+                      'boxId': state.selectedBoxId!,
+                    ...state.window.query,
+                  },
+                )
+            as Map<String, dynamic>;
+    return [
+      for (final e in (raw['entries'] as List? ?? const []))
+        cashEntryFromJson((e as Map).cast<String, dynamic>()),
+    ];
   }
 }
 

@@ -198,11 +198,17 @@ pw.Widget pdfSectionTitle(String text) => pw.Container(
 );
 
 /// Compact zebra table. Columns from [numericFrom] onward are right-aligned.
+///
+/// [columnFlex] gives the columns relative widths. Without it `pw.Table` sizes
+/// by content, which is fine for four columns and wrong for a dozen: a column
+/// whose cells are all empty collapses until its own *header* wraps one letter
+/// per line, while a column of ids takes the width the readable ones needed.
 pw.Widget pdfTable(
   AppL10n l, {
   required List<String> headers,
   required List<List<String>> rows,
   int numericFrom = 9999,
+  List<int>? columnFlex,
 }) {
   if (rows.isEmpty) {
     return pw.Text(
@@ -239,6 +245,12 @@ pw.Widget pdfTable(
 
   return pw.Table(
     border: pw.TableBorder.all(color: kPdfBorder, width: 0.5),
+    columnWidths: columnFlex == null
+        ? null
+        : {
+            for (var c = 0; c < columnFlex.length; c++)
+              c: pw.FlexColumnWidth(columnFlex[c].toDouble()),
+          },
     children: [
       pw.TableRow(
         children: [

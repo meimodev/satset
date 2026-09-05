@@ -12,7 +12,13 @@ import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/cash_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/domain/models/capability.dart';
+import 'package:satset/core/export/cash_exporter.dart';
+import 'package:satset/core/export/export_share.dart';
+import 'package:satset/core/export/pdf_theme.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/services/api_client.dart';
 import 'package:satset/domain/models/cash_entry.dart';
+import 'package:satset/domain/models/cash_window.dart';
 import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
@@ -22,6 +28,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/payment_proof_thumb.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/ui/core/widgets/custom_range_sheet.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_dropdown.dart';
 import 'package:satset/ui/core/widgets/sat_empty.dart';
@@ -29,6 +36,8 @@ import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
+import 'package:satset/ui/core/widgets/sat_toggle.dart';
 import '_common.dart';
 import 'package:satset/core/time/sat_clock.dart';
 
@@ -139,6 +148,15 @@ class _KasScreenState extends ConsumerState<KasScreen> {
                   onTap: _manageBoxes,
                 ),
               ],
+              // A top-level act on this screen, not box administration — and
+              // the window it files is whatever the chips below are showing
+              // (ADR-0136).
+              const SizedBox(width: Sp.s2),
+              SatIconButton.outline(
+                icon: Icons.ios_share_rounded,
+                tooltip: l10n.kasExport,
+                onTap: _export,
+              ),
             ],
           ),
         ),
@@ -167,6 +185,15 @@ class _KasScreenState extends ConsumerState<KasScreen> {
                           balance: state.shownBalance,
                           caption: state.heroCaption,
                         ),
+                        const SizedBox(height: Sp.s4),
+                        _WindowStrip(state: state),
+                        // Movement over the window, from the server. Absent
+                        // when the window saw nothing: three zeroes say less
+                        // than the missing row does.
+                        if (!state.totals.isEmpty) ...[
+                          const SizedBox(height: Sp.s3),
+                          _TotalsStrip(totals: state.totals),
+                        ],
                       ],
                     ),
                   ),
@@ -247,6 +274,10 @@ class _KasScreenState extends ConsumerState<KasScreen> {
 
   Future<void> _manageBoxes() =>
       showSatSheet<void>(context, builder: (_) => const _BoxesSheet());
+
+  /// Open the export sheet on the window and box the screen is showing.
+  Future<void> _export() =>
+      showSatSheet<void>(context, builder: (_) => const _KasExportSheet());
 
   Future<void> _detail(CashEntry entry) => showSatSheet<void>(
     context,
@@ -345,6 +376,112 @@ class _BoxStrip extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// The [[Jendela kas]] chips (ADR-0136).
+///
+/// **Semua leads and is the default**: it is the behaviour this screen has
+/// always had, so a venue that never touches the chips sees no change. A tin can
+/// go a fortnight without a movement, and a 30-day default would open empty on a
+/// quiet box.
+class _WindowStrip extends ConsumerWidget {
+  final CashState state;
+  const _WindowStrip({required this.state});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final repo = ref.read(cashProvider.notifier);
+    final kind = state.window.kind;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          SatChip.select(
+            label: l10n.kasWindowAll,
+            selected: kind == CashWindowKind.all,
+            onTap: () => repo.setWindow(CashWindow.all),
+          ),
+          for (final k in const [
+            CashWindowKind.d30,
+            CashWindowKind.d90,
+            CashWindowKind.d365,
+          ]) ...[
+            const SizedBox(width: Sp.s2),
+            SatChip.select(
+              label: l10n.kasWindowDays(k.days!),
+              selected: kind == k,
+              onTap: () =>
+                  repo.setWindow(CashWindow.rolling(k, now: SatClock.now())),
+            ),
+          ],
+          const SizedBox(width: Sp.s2),
+          SatChip.select(
+            label: kind == CashWindowKind.custom
+                ? customRangeLabel(
+                    state.window.from!,
+                    state.window.to!.subtract(const Duration(days: 1)),
+                  )
+                : l10n.kasWindowCustom,
+            selected: kind == CashWindowKind.custom,
+            onTap: () => _pickCustom(context, repo),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickCustom(BuildContext context, CashRepository repo) async {
+    // A year, not the Reports cap of 92 days: that cap exists because the
+    // reports payload is per bill. A ledger is a few hundred rows a year and
+    // has its own ceiling at the route (ADR-0136).
+    final picked = await showCustomRangeSheet(
+      context,
+      initialFrom: state.window.from,
+      initialTo: state.window.to?.subtract(const Duration(days: 1)),
+      maxDays: 366,
+    );
+    if (picked == null) return;
+    await repo.setWindow(CashWindow.custom(picked.$1, picked.$2));
+  }
+}
+
+/// Masuk / keluar / selisih over the window — **the server's sum**, never one
+/// taken over the loaded page (ADR-0136).
+///
+/// Selisih sits apart from the other two because it is not money moving: a cash
+/// count's delta is a finding (ADR-0089), and folding it into out would report a
+/// shortfall as a purchase.
+class _TotalsStrip extends StatelessWidget {
+  final CashWindowTotals totals;
+  const _TotalsStrip({required this.totals});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final sc = context.sat;
+    Widget cell(String label, int amount, Color color) => Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: SatType.caption(color: sc.textDim)),
+          const SizedBox(height: Sp.s1),
+          Text(formatIDR(amount), style: SatType.labelL(color: color)),
+        ],
+      ),
+    );
+    return Row(
+      children: [
+        cell(l10n.kasSumInflow, totals.inflow, sc.success),
+        cell(l10n.kasSumOutflow, totals.outflow, sc.textHi),
+        cell(
+          l10n.kasSumVariance,
+          totals.variance,
+          totals.variance == 0 ? sc.textDim : sc.warn,
+        ),
+      ],
     );
   }
 }
@@ -1442,6 +1579,251 @@ class _CategoriesSheetState extends ConsumerState<_CategoriesSheet> {
 
 /// A server refusal, as a sentence. Codes cross the layer, never words
 /// (ADR-0085); an unknown code still prints itself rather than nothing.
+/// Hand the ledger's current window to the Android share sheet (ADR-0136).
+///
+/// The range is **not** picked here: it is whatever the chips on the screen are
+/// showing, which is what keeps the file and the screen the same ledger. What
+/// this sheet asks is the file's shape.
+///
+/// The rows come from a **fresh unpaged fetch**, never from `state.entries`: the
+/// list is paged, so filing what the reader happened to scroll to produces a
+/// short ledger carrying the word "lengkap".
+class _KasExportSheet extends ConsumerStatefulWidget {
+  const _KasExportSheet();
+
+  @override
+  ConsumerState<_KasExportSheet> createState() => _KasExportSheetState();
+}
+
+class _KasExportSheetState extends ConsumerState<_KasExportSheet> {
+  /// CSV leads: it is the fast path, and it is the shape a ledger is actually
+  /// filed in. A PDF with sixty plates is seconds of work nobody should pay for
+  /// by default.
+  ExportFormat _format = ExportFormat.csv;
+  bool _photos = true;
+  bool _busy = false;
+  String? _error;
+
+  /// Determinate, because "menyiapkan" with no number is indistinguishable from
+  /// a hang on a dark LAN.
+  int _done = 0;
+  int _total = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = context.sat;
+    final l10n = context.l10n;
+    final state = ref.watch(cashProvider);
+    return SafeArea(
+      child: Padding(
+        padding: _sheetPadding(context),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SatSheetHeader(
+              padding: _kSheetHeaderPad,
+              onClose: () {
+                // A running export owns the sheet: dismissing mid-fetch leaves
+                // photos arriving into a widget nobody is watching.
+                if (!_busy) Navigator.of(context).pop();
+              },
+              child: Text(
+                l10n.kasExportTitle,
+                style: SatType.h3(color: sc.textHi),
+              ),
+            ),
+            Text(
+              l10n.kasExportBody,
+              style: SatType.caption(color: sc.textDim),
+            ),
+            const SizedBox(height: Sp.s2),
+            Text(
+              cashScopeLine(l10n, _boxLabel(l10n, state), state.window),
+              style: SatType.labelL(color: sc.textHi),
+            ),
+            const SizedBox(height: Sp.s5),
+            Row(
+              children: [
+                for (final f in ExportFormat.values) ...[
+                  if (f != ExportFormat.values.first)
+                    const SizedBox(width: Sp.s2),
+                  SatChip.select(
+                    label: f.label,
+                    selected: _format == f,
+                    onTap: _busy ? null : () => setState(() => _format = f),
+                  ),
+                ],
+              ],
+            ),
+            if (_format == ExportFormat.pdf) ...[
+              const SizedBox(height: Sp.s4),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.kasExportPhotos,
+                          style: SatType.bodyM(color: sc.textHi),
+                        ),
+                        const SizedBox(height: Sp.s1),
+                        Text(
+                          l10n.kasExportPhotosHint(kCashPhotoMax),
+                          style: SatType.caption(color: sc.textDim),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SatToggle(
+                    value: _photos,
+                    semanticLabel: l10n.kasExportPhotos,
+                    onChanged: _busy ? null : (v) => setState(() => _photos = v),
+                  ),
+                ],
+              ),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: Sp.s4),
+              Text(_error!, style: SatType.caption(color: sc.urgent)),
+            ],
+            if (_busy && _total > 0) ...[
+              const SizedBox(height: Sp.s4),
+              Row(
+                children: [
+                  const SatSpinner(size: SatSpinnerSize.sm),
+                  const SizedBox(width: Sp.s2),
+                  Text(
+                    l10n.kasExportProgress(_done, _total),
+                    style: SatType.caption(color: sc.textDim),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: Sp.s5),
+            SatButton.primary(
+              label: l10n.kasExport,
+              icon: Icons.ios_share_rounded,
+              busy: _busy,
+              onTap: _busy ? null : _run,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _boxLabel(AppL10n l10n, CashState state) =>
+      state.selectedBox?.name ?? l10n.kasBoxAll;
+
+  Future<void> _run() async {
+    final l10n = context.l10n;
+    final navigator = Navigator.of(context);
+    final state = ref.read(cashProvider);
+    final repo = ref.read(cashProvider.notifier);
+    setState(() {
+      _busy = true;
+      _error = null;
+      _done = 0;
+      _total = 0;
+    });
+    try {
+      final entries = await repo.fetchWindow();
+      final boxLabel = _boxLabel(l10n, state);
+      String boxName(CashEntry e) => state.boxNameOf(e.boxId);
+      String? categoryName(CashEntry e) => state.categoryNameOf(e);
+
+      final Uint8List bytes;
+      if (_format == ExportFormat.pdf) {
+        final proofs = _photos ? await _collectProofs(entries) : <CashProof>[];
+        bytes = await buildCashPdf(
+          l10n,
+          entries: entries,
+          window: state.window,
+          totals: state.totals,
+          boxLabel: boxLabel,
+          boxName: boxName,
+          categoryName: categoryName,
+          proofs: proofs,
+          omitted: _photos ? proofsOmitted(entries) : 0,
+          branding: await _branding(),
+        );
+      } else {
+        bytes = csvBytes(
+          buildCashCsv(
+            l10n,
+            entries: entries,
+            window: state.window,
+            totals: state.totals,
+            boxLabel: boxLabel,
+            boxName: boxName,
+            categoryName: categoryName,
+          ),
+        );
+      }
+      await shareExportBytes(
+        filename: cashExportFilename(_format),
+        bytes: bytes,
+        mime: _format.mime,
+        subject: l10n.kasExportSubject,
+      );
+      if (mounted) navigator.pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = cashErrorText(l10n, e);
+      });
+    }
+  }
+
+  /// Fetch and shrink each proof in turn, counting as it goes.
+  ///
+  /// Sequential on purpose: sixty parallel requests at a few hundred KB each is
+  /// how a LAN tablet stalls the socket the rest of the venue is on. A failed
+  /// one becomes a placeholder plate and never stops the export — a photo the
+  /// host would not give up must not cost the accountant the ledger.
+  Future<List<CashProof>> _collectProofs(List<CashEntry> entries) async {
+    final candidates = proofCandidates(entries);
+    if (candidates.isEmpty) return const [];
+    if (mounted) setState(() => _total = candidates.length);
+    final api = ref.read(apiClientProvider);
+    final repo = ref.read(cashProvider.notifier);
+    final out = <CashProof>[];
+    for (var i = 0; i < candidates.length; i++) {
+      final e = candidates[i];
+      Uint8List? bytes;
+      try {
+        bytes = await shrinkProof(await api.getBytes(repo.photoPath(e.id)));
+      } catch (_) {
+        bytes = null;
+      }
+      out.add(CashProof(index: i + 1, entry: e, bytes: bytes));
+      if (mounted) setState(() => _done = i + 1);
+    }
+    return out;
+  }
+
+  /// Letterhead is a nicety; a document that refuses to render because a logo
+  /// would not load is not.
+  Future<PdfBranding> _branding() async {
+    final v = ref.read(venueSettingsProvider);
+    Uint8List? logo;
+    try {
+      logo = await ref.read(venueLogoBytesProvider(v.logoRev).future);
+    } catch (_) {
+      logo = null;
+    }
+    return PdfBranding(
+      logoBytes: logo,
+      venueName: v.displayName,
+      address: v.address,
+      phone: v.phone,
+    );
+  }
+}
+
 String cashErrorText(AppL10n l10n, Object error) {
   final err = cashErrorOf(error);
   return switch (err?.code) {
@@ -1457,6 +1839,7 @@ String cashErrorText(AppL10n l10n, Object error) {
     'name_required' => l10n.kasErrNameRequired,
     'box_not_found' => l10n.kasErrBoxNotFound,
     'unknown_category' => l10n.kasErrUnknownCategory,
+    'window_too_large' => l10n.kasErrWindowTooLarge,
     final code? => l10n.kasErrFailed(code),
     null => l10n.kasErrFailed('$error'),
   };

@@ -11941,6 +11941,240 @@ abstract class AppL10n {
   /// **'Kategori tidak ada di kas ini.'**
   String get kasErrUnknownCategory;
 
+  /// Cash window chip: every row there has ever been. The screen's default.
+  ///
+  /// In id, this message translates to:
+  /// **'Semua'**
+  String get kasWindowAll;
+
+  /// Cash window chip: the last N days.
+  ///
+  /// In id, this message translates to:
+  /// **'{days, plural, other{{days} hari}}'**
+  String kasWindowDays(int days);
+
+  /// Cash window chip: pick a custom from/to span.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih tanggal'**
+  String get kasWindowCustom;
+
+  /// Window summary: money into the box over the window.
+  ///
+  /// In id, this message translates to:
+  /// **'Masuk'**
+  String get kasSumInflow;
+
+  /// Window summary: money out over the window.
+  ///
+  /// In id, this message translates to:
+  /// **'Keluar'**
+  String get kasSumOutflow;
+
+  /// Window summary: what counting found over the window. Not money moving.
+  ///
+  /// In id, this message translates to:
+  /// **'Selisih'**
+  String get kasSumVariance;
+
+  /// Hand the cash ledger's current window to the share sheet.
+  ///
+  /// In id, this message translates to:
+  /// **'Ekspor'**
+  String get kasExport;
+
+  /// Export sheet title.
+  ///
+  /// In id, this message translates to:
+  /// **'Ekspor kas'**
+  String get kasExportTitle;
+
+  /// Export sheet: what the file will contain.
+  ///
+  /// In id, this message translates to:
+  /// **'Berkas berisi mutasi pada rentang yang sedang tampil.'**
+  String get kasExportBody;
+
+  /// Share-sheet subject for a cash ledger export.
+  ///
+  /// In id, this message translates to:
+  /// **'Mutasi kas kecil'**
+  String get kasExportSubject;
+
+  /// Toggle: embed proof photos as a PDF appendix.
+  ///
+  /// In id, this message translates to:
+  /// **'Sertakan foto nota'**
+  String get kasExportPhotos;
+
+  /// Toggle hint: photos are PDF-only, downscaled and capped.
+  ///
+  /// In id, this message translates to:
+  /// **'Hanya untuk PDF. Foto diperkecil dan dibatasi {max} lembar.'**
+  String kasExportPhotosHint(int max);
+
+  /// Determinate progress while proof photos are fetched.
+  ///
+  /// In id, this message translates to:
+  /// **'Menyiapkan foto {done}/{total}'**
+  String kasExportProgress(int done, int total);
+
+  /// Refusal: the window holds more rows than one export may carry. It refuses rather than truncating.
+  ///
+  /// In id, this message translates to:
+  /// **'Rentang terlalu lebar untuk diekspor. Persempit rentangnya.'**
+  String get kasErrWindowTooLarge;
+
+  /// Document title on the cash ledger export.
+  ///
+  /// In id, this message translates to:
+  /// **'Mutasi kas kecil'**
+  String get kasCsvTitle;
+
+  /// Running header on page two onward of the cash ledger PDF.
+  ///
+  /// In id, this message translates to:
+  /// **'Mutasi kas · {window}'**
+  String kasPdfHeader(String window);
+
+  /// Section title above the ledger table in the PDF.
+  ///
+  /// In id, this message translates to:
+  /// **'Mutasi'**
+  String get kasPdfLedger;
+
+  /// Section title above the proof-photo appendix.
+  ///
+  /// In id, this message translates to:
+  /// **'Foto nota'**
+  String get kasPdfProofs;
+
+  /// Footer line when the photo cap left proofs out. The ledger itself is never truncated.
+  ///
+  /// In id, this message translates to:
+  /// **'{count, plural, other{{count} foto}} tidak disertakan karena melebihi batas.'**
+  String kasPdfProofsOmitted(int count);
+
+  /// Placeholder plate where a proof could not be fetched.
+  ///
+  /// In id, this message translates to:
+  /// **'Foto tidak terbaca'**
+  String get kasPdfProofMissing;
+
+  /// Export header line naming the box, or Semua.
+  ///
+  /// In id, this message translates to:
+  /// **'Kas: {name}'**
+  String kasMetaBox(Object name);
+
+  /// Export header line naming the window.
+  ///
+  /// In id, this message translates to:
+  /// **'Rentang: {window}'**
+  String kasMetaWindow(String window);
+
+  /// Export header line counting the rows filed.
+  ///
+  /// In id, this message translates to:
+  /// **'Mutasi: {count}'**
+  String kasMetaRows(int count);
+
+  /// Export header line: money in over the window.
+  ///
+  /// In id, this message translates to:
+  /// **'Masuk: {amount}'**
+  String kasMetaInflow(String amount);
+
+  /// Export header line: money out over the window.
+  ///
+  /// In id, this message translates to:
+  /// **'Keluar: {amount}'**
+  String kasMetaOutflow(String amount);
+
+  /// Export header line: what counting found. Never folded into in/out (ADR-0089).
+  ///
+  /// In id, this message translates to:
+  /// **'Selisih: {amount}'**
+  String kasMetaVariance(String amount);
+
+  /// Export column: the row's own id. Without it the reversal and transfer columns reference rows the file cannot show.
+  ///
+  /// In id, this message translates to:
+  /// **'Kode'**
+  String get kasColId;
+
+  /// Export column: when the movement was written.
+  ///
+  /// In id, this message translates to:
+  /// **'Waktu'**
+  String get kasColWhen;
+
+  /// Export column: which tin.
+  ///
+  /// In id, this message translates to:
+  /// **'Kas'**
+  String get kasColBox;
+
+  /// Export column: which movement.
+  ///
+  /// In id, this message translates to:
+  /// **'Jenis'**
+  String get kasColKind;
+
+  /// Export column: what an expense was for. The venue's current word (ADR-0135).
+  ///
+  /// In id, this message translates to:
+  /// **'Kategori'**
+  String get kasColCategory;
+
+  /// Export column: the signed amount. No running balance column — it is derived and order-dependent.
+  ///
+  /// In id, this message translates to:
+  /// **'Nilai'**
+  String get kasColDelta;
+
+  /// Export column: the note on the row.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan'**
+  String get kasColNote;
+
+  /// Export column: who wrote it.
+  ///
+  /// In id, this message translates to:
+  /// **'Oleh'**
+  String get kasColActor;
+
+  /// Export column: the proof's appendix number, or a bare mark.
+  ///
+  /// In id, this message translates to:
+  /// **'Foto'**
+  String get kasColPhoto;
+
+  /// Export column: the row this one undoes.
+  ///
+  /// In id, this message translates to:
+  /// **'Membatalkan'**
+  String get kasColReverses;
+
+  /// Export column: the row that undid this one.
+  ///
+  /// In id, this message translates to:
+  /// **'Dibatalkan oleh'**
+  String get kasColReversedBy;
+
+  /// Export column: the other leg of a transfer.
+  ///
+  /// In id, this message translates to:
+  /// **'Pasangan pindah'**
+  String get kasColTransferPeer;
+
+  /// Export cell: a proof exists but is not in the appendix.
+  ///
+  /// In id, this message translates to:
+  /// **'Ada'**
+  String get kasPhotoYes;
+
   /// Add a cash box.
   ///
   /// In id, this message translates to:

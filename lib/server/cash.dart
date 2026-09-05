@@ -251,14 +251,30 @@ Future<CashCategory> updateCashCategory(
   );
 }
 
-/// Ledger rows, newest first, paged by growing limit (ADR-0079).
+/// Hard ceiling on an unpaged read of the ledger (ADR-0136).
+///
+/// The export path asks for a whole [[Jendela kas]] at once, and a window wide
+/// enough to exceed this is an accounting extract, not a share-sheet file. The
+/// route **refuses** past it rather than trimming: a short ledger carrying the
+/// word "lengkap" is the failure the audit export was written to avoid.
+const kCashWindowMax = 5000;
+
+/// Ledger rows, newest first, paged by growing limit (ADR-0079), optionally
+/// narrowed to a [[Jendela kas]] (ADR-0136).
+///
+/// [from]/[to] are the window, half-open at the top like every other window in
+/// this codebase; both null is the **Semua** arm, which is what the screen opens
+/// on. A null [limit] is the unpaged read the export takes — capped by the
+/// caller, never here.
 ///
 /// Never selects `photo`: the blob is reached only by its own route, so a ledger
 /// page stays a few KB no matter how many receipts were shot.
 Future<List<CashEntry>> cashLedger(
   AppDatabase db, {
   String? boxId,
-  int limit = 50,
+  int? limit = 50,
+  DateTime? from,
+  DateTime? to,
 }) async {
   final t = db.cashEntries;
   final q = db.selectOnly(t)
@@ -278,10 +294,12 @@ Future<List<CashEntry>> cashLedger(
       t.actorName,
       t.at,
     ])
-    ..orderBy([OrderingTerm.desc(t.at), OrderingTerm.desc(t.id)])
-    ..limit(limit);
+    ..orderBy([OrderingTerm.desc(t.at), OrderingTerm.desc(t.id)]);
+  if (limit != null) q.limit(limit);
   // Null is the "Semua" arm — every box in one list, each row naming its own.
   if (boxId != null) q.where(t.boxId.equals(boxId));
+  if (from != null) q.where(t.at.isBiggerOrEqualValue(from));
+  if (to != null) q.where(t.at.isSmallerThanValue(to));
   final rows = await q.get();
   // One catalogue read for the page rather than a lookup per row. Inactive
   // categories are included on purpose: a retired word still has to render on
@@ -821,6 +839,42 @@ Map<String, dynamic> cashEntryJson(CashEntry e) => {
 /// caller applies to its sales buckets, so a 02:00 expense lands with the night
 /// it belongs to.
 ///
+/// Masuk / keluar / selisih over one [[Jendela kas]], for one box or the whole
+/// venue (ADR-0136).
+///
+/// **The server adds this up, never the client.** The ledger list is paged, so a
+/// client summing what it holds sums the pages it happened to scroll — the same
+/// class of error as a windowed balance, and the reason `balance` rides the
+/// response too.
+///
+/// A `count`'s delta is a *finding*, not money moving (ADR-0089), so it books to
+/// `variance` and never to inflow or outflow — the one rule this shares with
+/// [cashReportSection], and the reason both live in this file.
+Future<Map<String, int>> cashWindowTotals(
+  AppDatabase db, {
+  String? boxId,
+  DateTime? from,
+  DateTime? to,
+}) async {
+  final t = db.cashEntries;
+  final q = db.selectOnly(t)..addColumns([t.kind, t.delta]);
+  if (boxId != null) q.where(t.boxId.equals(boxId));
+  if (from != null) q.where(t.at.isBiggerOrEqualValue(from));
+  if (to != null) q.where(t.at.isSmallerThanValue(to));
+  var inflow = 0, outflow = 0, variance = 0;
+  for (final r in await q.get()) {
+    final delta = r.read(t.delta) ?? 0;
+    if (cashEntryKindFromName(r.read(t.kind)) == CashEntryKind.count) {
+      variance += delta;
+    } else if (delta >= 0) {
+      inflow += delta;
+    } else {
+      outflow += -delta;
+    }
+  }
+  return {'inflow': inflow, 'outflow': outflow, 'variance': variance};
+}
+
 /// **Every venue-level figure is the sum of the boxes** (ADR-0131), which is
 /// what makes a transfer disappear from the totals without a rule to exclude
 /// it: the out-leg and the in-leg are equal and opposite, so they cancel. Per

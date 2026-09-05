@@ -73,16 +73,32 @@ Router cashRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         !a.$2.contains(Capability.viewReports.name)) {
       return forbidden(Capability.manageCash);
     }
-    final limit = int.tryParse(req.url.queryParameters['limit'] ?? '') ?? 50;
+    final rawLimit = req.url.queryParameters['limit'] ?? '';
+    // `all` is the export's unpaged read of one window (ADR-0136). It is not a
+    // bigger page: it asks for one row more than the cap so the route can tell
+    // "exactly at the ceiling" from "over it" without a second COUNT query.
+    final unpaged = rawLimit == 'all';
+    final limit = int.tryParse(rawLimit) ?? 50;
     // Absent means the "Semua" arm — every box's rows in one list.
     final boxId = req.url.queryParameters['boxId'];
+    final from = _at(req.url.queryParameters['from']);
+    final to = _at(req.url.queryParameters['to']);
     final entries = await cashLedger(
       db,
       boxId: boxId,
-      limit: limit.clamp(1, 500),
+      limit: unpaged ? kCashWindowMax + 1 : limit.clamp(1, 500),
+      from: from,
+      to: to,
     );
+    // Refuse, never truncate. The window chips are on the screen that asked.
+    if (unpaged && entries.length > kCashWindowMax) {
+      return err(400, 'window_too_large');
+    }
     final boxes = await cashBoxList(db);
     return json({
+      // Movement over the window, summed server-side over every row in it —
+      // the client holds a page and must never add up a ledger (ADR-0136).
+      'totals': await cashWindowTotals(db, boxId: boxId, from: from, to: to),
       // Kept for readers that predate ADR-0131 and for the "Semua" hero: the
       // venue total is the sum of the boxes, never a figure of its own.
       'balance': [for (final b in boxes) b.balance].fold(0, (a, b) => a + b),
@@ -408,6 +424,12 @@ String? _text(Object? raw) {
   final t = raw.trim();
   return t.isEmpty ? null : t;
 }
+
+/// A window bound off the query string. Unparseable reads as absent — the
+/// **Semua** arm — because a typo'd date must not silently return an empty
+/// ledger that looks like an empty box.
+DateTime? _at(String? raw) =>
+    (raw == null || raw.isEmpty) ? null : DateTime.tryParse(raw);
 
 Uint8List? _decodePhoto(Object? raw) {
   if (raw is! String || raw.isEmpty) return null;
