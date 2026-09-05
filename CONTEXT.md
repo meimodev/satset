@@ -1188,6 +1188,24 @@ The one word is the destination's name, and the destination is the queue. It is 
 
 _Avoid_: "Antrian tamu" on a rail label (collides with the KDS); calling the settings screen "Tamu"; reading the slot's absence as a permission error — a venue with self-order off has no such destination.
 
+### Stok (nav destination) (Stock)
+**ID · EN** — Stok · Stock.
+
+The inventory destination — a nav slot of its own on both the tablet rail and the phone tab bar, opened by **either** stock authority: `manageIngredients` authors a [[Bahan (Ingredient)|bahan]], `adjustStock` moves its numbers (ADR-0132), and each half of the screen renders for whoever holds it. It keeps its Venue hub tile as well; two doors to a screen somebody opens daily is not a duplication, and the hub is where an owner walks the back of house.
+
+**Carries no badge.** Every badge on the nav means work arrived and clears when it is handled; a [[Stok par (par level)|low-stock]] count sits for days, and a badge that never clears teaches people to stop reading badges.
+
+_Avoid_: reading the slot's absence as a permission error the way a refusal reads — a person holding neither stock capability simply has no such destination (ADR-0133); hiding the slot from an admin on the grounds that they already have the hub tile; badging it with the low count.
+
+### Venue hub
+**ID · EN** — Venue · Venue.
+
+The **catalogue of the venue's back-of-house destinations** — a grid of tiles, each one a screen with its own authority. It is deliberately *not* an authority itself: it opens to whoever can open at least one thing inside it, and the tiles filter to exactly those (ADR-0133). Gating the room on `manageStaff` is what made the [[Stok (nav destination) (Stock)|stok]], [[Kas kecil (petty cash)|kas]], [[Opname (Stocktake)|opname]] and [[Reports|laporan]] gates unreachable by the people they name.
+
+An unentitled [[Modul]] **greys** a tile where a missing capability **hides** it — the buyer is the person an upsell is addressed to, and a locked door in front of a cook is advertising inside a tool.
+
+_Avoid_: treating the hub as an admin screen; a second tile → capability table (the router's own gate is the one answer); a tile whose route is gated by nothing.
+
 ### Pesanan tamu (intent) (Guest order)
 **ID · EN** — Pesanan tamu · Guest order. Statuses: menunggu · Pending; diterima · Accepted; ditolak · Rejected; dibatalkan · Cancelled.
 

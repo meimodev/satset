@@ -55,7 +55,7 @@ import 'package:satset/domain/models/venue_module.dart';
 /// rather than a single capability because one screen (`/kas`) is genuinely
 /// reachable by two unrelated authorities, and encoding that as "the lower one"
 /// would lock out an owner whose role happens not to carry it.
-List<Capability>? _capabilityFor(String loc) {
+List<Capability>? capabilitiesFor(String loc) {
   if (loc.startsWith('/kitchen')) return const [Capability.viewKds];
   if (loc.startsWith('/kasir')) return const [Capability.settleBill];
   if (loc.startsWith('/table/') ||
@@ -132,11 +132,18 @@ List<Capability>? _capabilityFor(String loc) {
   // server-side, but the till reaches a member through the bill overlay — this
   // route is where records are changed, so it wants the keeper's authority.
   if (loc.startsWith('/members')) return const [Capability.manageMembers];
-  // The stocktake archive (ADR-0096). Two authorities, like `/kas`: the person
-  // who counts holds `manageIngredients`, the person who reads the variance
-  // back holds `viewReports`, and they are rarely the same person.
+  // The stocktake archive (ADR-0096). Three authorities: the person who reads
+  // the variance back holds `viewReports`, and *either* stock capability opens
+  // it, because ADR-0132 §1 puts the count itself wholly on the ledger side —
+  // gating the archive on `manageIngredients` alone left the holder of
+  // `adjustStock`, who walks the count, locked out of their own closed
+  // sessions. Reads take either capability; that is the same rule.
   if (loc.startsWith('/opname')) {
-    return const [Capability.viewReports, Capability.manageIngredients];
+    return const [
+      Capability.viewReports,
+      Capability.manageIngredients,
+      Capability.adjustStock,
+    ];
   }
   // Each of these mirrors the capability the server already demands of the
   // writes the screen makes. They used to share one `manageStaff` arm, which
@@ -154,12 +161,53 @@ List<Capability>? _capabilityFor(String loc) {
   if (loc.startsWith('/zone-admin')) return const [Capability.editSettings];
   // `/system` is the seed and sample-data screen; every route behind it is
   // `manageStaff` server-side, and so is the hub that leads to it.
-  if (loc.startsWith('/staff') ||
-      loc.startsWith('/system') ||
-      loc.startsWith('/venue')) {
+  if (loc.startsWith('/staff') || loc.startsWith('/system')) {
     return const [Capability.manageStaff];
   }
+  // The hub itself is a **catalogue, not an authority** (ADR-0133). It used to
+  // share the `manageStaff` arm above, which made an admin capability the door
+  // to `/stock`, `/kas`, `/opname` and `/reports` — screens whose own gates say
+  // somebody else entirely. Now it opens to whoever can open at least one thing
+  // inside it, and the tiles filter to exactly those. `/venue-settings`,
+  // `/venue-day`, `/venue/diskon` and `/venue/pengeluaran` are matched by their
+  // own arms above; this one is the bare hub.
+  if (loc.startsWith('/venue')) return venueHubCapabilities;
   return null;
+}
+
+/// Every capability that opens *something* on the Venue hub, derived from the
+/// hub's own tile list. Holding one of them is what makes the hub worth
+/// entering — and it is the same predicate the rail spends to decide whether
+/// the Venue slot renders, so a visible slot can never bounce to `/forbidden`.
+final venueHubCapabilities = <Capability>{
+  for (final r in venueHubRoutes) ...?capabilitiesFor(r),
+}.toList(growable: false);
+
+/// Where a fresh sign-in lands.
+///
+/// Server mode lands on the Venue hub — **unless this person holds nothing
+/// that opens it**, which used to end a successful sign-in on `/forbidden`
+/// (a waiter signing in on the host tablet). The hub's gate is computable
+/// now, so the landing asks it (ADR-0133). Everyone else lands on the home
+/// destination, which a [[Kedai]] moves to the menu (ADR-0109).
+///
+/// Pure, and separated from `redirect` so it can be tested without a router:
+/// the three inputs are all the answer depends on.
+String landingFor({
+  required AppMode mode,
+  required bool hubOpens,
+  required bool counterHome,
+}) {
+  if (mode == AppMode.server && hubOpens) return '/venue';
+  return counterHome ? '/counter' : '/tables';
+}
+
+/// Whether [auth] may open [loc] — the redirect's own test, exposed so a
+/// surface that *offers* a route uses the same answer as the guard that
+/// enforces it. An ungated route (null) is open, exactly as `redirect` reads it.
+bool canOpenRoute(AuthState auth, String loc) {
+  final needed = capabilitiesFor(loc);
+  return needed == null || needed.any(auth.has);
 }
 
 /// Holds the one frame between an unmatched location and the bounce to `/pin`.
@@ -272,12 +320,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         // bounced back to `/pin`. That ping-pong tripped go_router's redirect
         // limit and put the venue's own admin in front of a bare English
         // "Page Not Found". See ADR-0078.
-        final mode = prefs?.appMode() ?? AppMode.unset;
-        decision = mode == AppMode.server
-            ? '/venue'
-            : counterHome(ref, auth)
-            ? '/counter'
-            : '/tables';
+        decision = landingFor(
+          mode: prefs?.appMode() ?? AppMode.unset,
+          hubOpens: venueHubCapabilities.any(auth.has),
+          counterHome: counterHome(ref, auth),
+        );
       } else if (loggedIn) {
         // A counter shop has no floor (ADR-0109): its home tab is the menu and
         // nothing offers `/tables`. Anything still pointing there — an order
@@ -287,7 +334,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (loc == '/tables' && counterHome(ref, auth)) {
           decision = '/counter';
         }
-        final needed = _capabilityFor(loc);
+        final needed = capabilitiesFor(loc);
         // Fail-closed: none of the route's capabilities denies the route.
         if (needed != null && !needed.any(auth.has)) {
           decision = '/forbidden';

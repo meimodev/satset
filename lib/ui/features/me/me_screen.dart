@@ -11,7 +11,9 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/repositories/audit_repository.dart';
+import 'package:go_router/go_router.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/router/app_router.dart';
 import 'package:satset/data/repositories/roles_repository.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
@@ -417,6 +419,7 @@ class _MePhone extends StatelessWidget {
                 children: [
                   _EndShiftButton(onPressed: onEndShift),
                   const SizedBox(height: Sp.s2),
+                  const _VenueHubButton(),
                   const _VersionLine(),
                 ],
               ),
@@ -448,6 +451,34 @@ class _MePhone extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The phone's only door to the Venue hub (ADR-0133).
+///
+/// The tablet has a rail slot for it; the phone bar does not, and until this
+/// existed a phone could reach the hub exactly once — the server-mode sign-in
+/// landing — and never again. Rendered only when the person can open something
+/// inside it, the same predicate the rail slot uses.
+class _VenueHubButton extends ConsumerWidget {
+  const _VenueHubButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final canOpen = ref.watch(
+      authStateProvider.select((s) => venueHubCapabilities.any(s.has)),
+    );
+    if (!canOpen) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Sp.s2),
+      child: SatButton.ghost(
+        label: context.l10n.venueHubTitle,
+        icon: Icons.storefront_outlined,
+        // Pushed, not gone-to: the hub is a detour from the account screen and
+        // back should land you where you were.
+        onTap: () => context.push('/venue'),
       ),
     );
   }

@@ -26,9 +26,12 @@ void main() {
     const me = 'Maya Anjani';
 
     final cases = <String, (String, List<String>)>{
+      // Stok is a destination of its own now (ADR-0133), so it lights its own
+      // slot and carries a one-segment trail — it is no longer a hub child,
+      // even when you arrive from the hub tile.
+      '/stock': ('stock', [l10n.tabStok]),
       // The bug: hub children absent from both old switches lit up Meja and
       // claimed the "Konfigurasi" crumb.
-      '/stock': ('venue', [hub, l10n.venueHubSectionStock]),
       '/alerts': ('venue', [hub, l10n.alertsTitle]),
       // "Konfigurasi" was only ever true for this one.
       '/venue-settings': ('venue', [hub, l10n.crumbKonfigurasi]),

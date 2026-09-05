@@ -31,6 +31,7 @@ import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/domain/models/venue_module.dart';
+import 'package:satset/router/app_router.dart';
 
 /// First path segment of [loc], e.g. `/menuadm` for `/menuadm/42`. Shell routes
 /// are matched on this rather than on `startsWith`, so a destination can never
@@ -59,6 +60,7 @@ const _railRoutes = <String, String>{
   '/kitchen': 'kitchen',
   '/kasir': 'kasir',
   '/selforder': 'tamu',
+  '/stock': 'stock',
   '/me': 'me',
 };
 
@@ -71,6 +73,7 @@ String? railLabel(AppL10n l10n, String railId) => switch (railId) {
   'kitchen' => l10n.tabAntrian,
   'kasir' => l10n.tabKasir,
   'tamu' => l10n.tabTamu,
+  'stock' => l10n.tabStok,
   'me' => l10n.tabSaya,
   _ => null,
 };
@@ -84,7 +87,6 @@ String? venueHubCrumb(AppL10n l10n, String path) => switch (path) {
   '/alerts' => l10n.alertsTitle,
   '/zone-admin' => l10n.zoneAdminTitle,
   '/menuadm' => l10n.crumbMenuAdmin,
-  '/stock' => l10n.venueHubSectionStock,
   '/reports' => l10n.crumbLaporanShift,
   '/system' => l10n.venueHubSectionSystem,
   '/staff' => l10n.crumbStafAkun,
@@ -102,6 +104,24 @@ bool showGuestQueue({
   required bool guestOrderingEnabled,
   required bool canTakeOrder,
 }) => guestOrderingEnabled && canTakeOrder;
+
+/// Whether the [[Stok (nav destination)]] slot belongs on the nav (ADR-0133).
+///
+/// Either stock authority, the two ADR-0132 cut it into: `manageIngredients`
+/// authors a bahan, `adjustStock` moves its numbers, and each opens the screen.
+/// Deliberately *not* hidden from a `manageStaff` holder who also has the hub
+/// tile — two doors to a screen somebody opens daily is cheap, and hiding a
+/// destination *because* you hold more authority is the inversion this ADR
+/// exists to remove.
+bool showStock({
+  required bool canManageIngredients,
+  required bool canAdjustStock,
+}) => canManageIngredients || canAdjustStock;
+
+/// Whether the Venue hub slot belongs on the rail — true when this person can
+/// open at least one thing inside it (ADR-0133). The slot used to render for
+/// everyone and bounce a waiter to `/forbidden`.
+bool showVenueHub({required bool canOpenAnyChild}) => canOpenAnyChild;
 
 /// Whether the home destination is the menu rather than the floor — the
 /// [[Kedai]] switch `menuHome` (ADR-0109).
@@ -262,6 +282,19 @@ class AppShell extends ConsumerWidget {
         ),
       ),
     );
+    final showStok = showStock(
+      canManageIngredients: ref.watch(
+        authStateProvider.select((s) => s.has(Capability.manageIngredients)),
+      ),
+      canAdjustStock: ref.watch(
+        authStateProvider.select((s) => s.has(Capability.adjustStock)),
+      ),
+    );
+    final showVenue = showVenueHub(
+      canOpenAnyChild: ref.watch(
+        authStateProvider.select((s) => venueHubCapabilities.any(s.has)),
+      ),
+    );
     final counterHome = showCounterHome(
       menuHomeEnabled: ref.watch(
         venueSettingsProvider.select((v) => v.counterOn(counterMenuHome)),
@@ -283,6 +316,8 @@ class AppShell extends ConsumerWidget {
           showKds: showKds,
           showKasir: showKasir,
           showTamu: showTamu,
+          showStok: showStok,
+          showVenue: showVenue,
           counterHome: counterHome,
           guestPending: guestPending,
           crumbs: crumbsFor(context.l10n, loc, userName),
@@ -331,6 +366,7 @@ class AppShell extends ConsumerWidget {
                       readyCount: ready,
                       showKasir: showKasir,
                       showTamu: showTamu,
+                      showStok: showStok,
                       counterHome: counterHome,
                       guestPending: guestPending,
                     ),
@@ -355,6 +391,7 @@ class _FloatingTabBar extends StatelessWidget {
   final int readyCount;
   final bool showKasir;
   final bool showTamu;
+  final bool showStok;
   final bool counterHome;
   final int guestPending;
   const _FloatingTabBar({
@@ -362,6 +399,7 @@ class _FloatingTabBar extends StatelessWidget {
     required this.readyCount,
     this.showKasir = false,
     this.showTamu = false,
+    this.showStok = false,
     this.counterHome = false,
     this.guestPending = 0,
   });
@@ -439,6 +477,14 @@ class _FloatingTabBar extends StatelessWidget {
               // job to pick up rather than a plate to run.
               badge: guestPending,
               onTap: () => context.go('/selforder'),
+            ),
+          if (showStok)
+            _Tab(
+              id: 'stock',
+              label: context.l10n.tabStok,
+              icon: Icons.inventory_2_outlined,
+              active: active == 'stock',
+              onTap: () => context.go('/stock'),
             ),
           _Tab(
             id: 'me',

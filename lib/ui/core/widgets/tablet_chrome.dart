@@ -19,6 +19,16 @@ class TabletShell extends StatelessWidget {
   final bool showKasir;
   final bool showTamu;
 
+  /// Whether the [[Stok (nav destination)]] slot is on the rail (ADR-0133) —
+  /// either stock authority holds it open. Passed, like [counterHome]:
+  /// `showStock` in app_shell.dart owns the decision.
+  final bool showStok;
+
+  /// Whether the Venue hub slot is on the rail at all (ADR-0133). False when
+  /// this person can open nothing inside the hub — the slot used to render for
+  /// everyone and bounce a waiter to `/forbidden`.
+  final bool showVenue;
+
   /// [[Kedai]] switch `menuHome` (ADR-0109): the home destination is the menu,
   /// not the floor. Passed rather than read here so the rail stays a dumb
   /// renderer — `showCounterHome` in app_shell.dart owns the decision.
@@ -40,6 +50,8 @@ class TabletShell extends StatelessWidget {
     required this.kitchenCount,
     this.showKasir = false,
     this.showTamu = false,
+    this.showStok = false,
+    this.showVenue = true,
     this.counterHome = false,
     this.showKds = true,
     this.guestPending = 0,
@@ -60,6 +72,8 @@ class TabletShell extends StatelessWidget {
             kitchenCount: kitchenCount,
             showKasir: showKasir,
             showTamu: showTamu,
+            showStok: showStok,
+            showVenue: showVenue,
             counterHome: counterHome,
             showKds: showKds,
             guestPending: guestPending,
@@ -85,6 +99,16 @@ class TabletSideRail extends StatelessWidget {
   final bool showKasir;
   final bool showTamu;
 
+  /// Whether the [[Stok (nav destination)]] slot is on the rail (ADR-0133) —
+  /// either stock authority holds it open. Passed, like [counterHome]:
+  /// `showStock` in app_shell.dart owns the decision.
+  final bool showStok;
+
+  /// Whether the Venue hub slot is on the rail at all (ADR-0133). False when
+  /// this person can open nothing inside the hub — the slot used to render for
+  /// everyone and bounce a waiter to `/forbidden`.
+  final bool showVenue;
+
   /// [[Kedai]] switch `menuHome` (ADR-0109): the home destination is the menu,
   /// not the floor. Passed rather than read here so the rail stays a dumb
   /// renderer — `showCounterHome` in app_shell.dart owns the decision.
@@ -103,6 +127,8 @@ class TabletSideRail extends StatelessWidget {
     required this.kitchenCount,
     this.showKasir = false,
     this.showTamu = false,
+    this.showStok = false,
+    this.showVenue = true,
     this.counterHome = false,
     this.showKds = true,
     this.guestPending = 0,
@@ -190,14 +216,24 @@ class TabletSideRail extends StatelessWidget {
                       route: '/kasir',
                       active: active,
                     ),
-                  _RailDiv(),
-                  _RailBtn(
-                    id: 'venue',
-                    label: context.l10n.tabVenue,
-                    icon: Icons.storefront_outlined,
-                    route: '/venue',
-                    active: active,
-                  ),
+                  if (showStok)
+                    _RailBtn(
+                      id: 'stock',
+                      label: context.l10n.tabStok,
+                      icon: Icons.inventory_2_outlined,
+                      route: '/stock',
+                      active: active,
+                    ),
+                  if (showVenue) ...[
+                    _RailDiv(),
+                    _RailBtn(
+                      id: 'venue',
+                      label: context.l10n.tabVenue,
+                      icon: Icons.storefront_outlined,
+                      route: '/venue',
+                      active: active,
+                    ),
+                  ],
                   // Widget book (ADR-0054). `kDebugMode` is a const, so the
                   // divider and the button are both gone from a release build.
                   // Pushed rather than gone-to: the book is a detour, and back

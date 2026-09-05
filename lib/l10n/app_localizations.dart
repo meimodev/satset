@@ -225,12 +225,6 @@ abstract class AppL10n {
   /// **'Venue'**
   String get venueHubTitle;
 
-  /// No description provided for @venueHubSubtitle.
-  ///
-  /// In id, this message translates to:
-  /// **'Konfigurasi · zona · menu · sistem · staf'**
-  String get venueHubSubtitle;
-
   /// No description provided for @venueHubSectionZona.
   ///
   /// In id, this message translates to:
@@ -2132,6 +2126,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Kasir'**
   String get tabKasir;
+
+  /// No description provided for @tabStok.
+  ///
+  /// In id, this message translates to:
+  /// **'Stok'**
+  String get tabStok;
 
   /// No description provided for @tabVenue.
   ///

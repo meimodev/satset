@@ -80,10 +80,6 @@ class AppL10nEn extends AppL10n {
   String get venueHubTitle => 'Venue';
 
   @override
-  String get venueHubSubtitle =>
-      'Configuration · zones · menu · system · staff';
-
-  @override
   String get venueHubSectionZona => 'Zones';
 
   @override
@@ -1181,6 +1177,9 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get tabKasir => 'Cashier';
+
+  @override
+  String get tabStok => 'Stock';
 
   @override
   String get tabVenue => 'Venue';
