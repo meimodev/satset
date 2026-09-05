@@ -7,9 +7,11 @@ import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/models/bill_dto.dart';
+import 'package:satset/data/models/discount_dto.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/repositories/discount_presets_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/error_bus_service.dart';
@@ -264,6 +266,9 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   /// A 4xx is the host refusing an online caller and is rethrown untouched. A
   /// transport failure is captured instead: the cashier is standing in front of
   /// a guest and refusing the act is worse than replaying it.
+  Map<String, dynamic> _presetSnapshot(String presetId) =>
+      discountSnapshot(presetId, ref.read(discountPresetsRepositoryProvider));
+
   Future<Bill> _act({
     required String visitId,
     required SettlementEventKind kind,
@@ -658,7 +663,7 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return _actOnReceipt(
       receiptId,
       SettlementEventKind.applyDiscount,
-      {'presetId': presetId, 'ticketId': ?ticketId},
+      {'presetId': presetId, 'ticketId': ?ticketId, ..._presetSnapshot(presetId)},
       (id) => ref
           .read(apiClientProvider)
           .postJson('/settlement/receipts/$receiptId/discounts', {
@@ -704,7 +709,7 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return _act(
       visitId: visitId,
       kind: SettlementEventKind.applyBillDiscount,
-      payload: {'presetId': presetId},
+      payload: {'presetId': presetId, ..._presetSnapshot(presetId)},
       online: (id) => ref.read(apiClientProvider).postJson(
         '/settlement/visits/$visitId/discounts',
         {'id': id, 'presetId': presetId, 'approverPin': ?approverPin},
@@ -1002,3 +1007,27 @@ final venueHistoryProvider = FutureProvider.autoDispose<PastBillPage>((
       .read(settlementProvider.notifier)
       .fetchHistory(limit: limit, onAccount: onAccount);
 });
+
+/// What the preset said **at apply time**, frozen into the captured event.
+///
+/// A queued discount carries only its `presetId` to the host, which prices it
+/// there — but the offline projection has no catalogue to price from, so
+/// without this the give-back projects as `value: 0`: the cashier collects the
+/// full amount off a bill the drain then discounts. The snapshot is the posture
+/// `AppliedDiscountDto` already documents (ADR-0037) — a later preset edit
+/// never rewrites what this bill said. Client-side only: `settlement_sync`
+/// builds its request body field by field, so nothing here reaches the host.
+///
+/// An unknown preset returns empty rather than guessing: offline that means a
+/// catalogue that never warmed, and a zero is at least visibly a zero.
+Map<String, dynamic> discountSnapshot(
+  String presetId,
+  List<DiscountPresetDto> presets,
+) {
+  for (final p in presets) {
+    if (p.id == presetId) {
+      return {'name': p.name, 'kind': p.kind, 'value': p.value};
+    }
+  }
+  return const {};
+}

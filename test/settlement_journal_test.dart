@@ -117,6 +117,74 @@ void main() {
       expect(journal.state.pendingVisits, {'v1'});
     });
 
+    // The bug the device rig found: `pendingVisits` answers "which visits are
+    // locally authoritative", and ADR-0129 keeps member- and venue-scope acts
+    // out of it on purpose. A drain gated on that set never runs on a device
+    // whose only captured act is an attach or an enrolment, and the guest's
+    // membership sits in the journal forever.
+    test('a member-scope-only journal still drains', () async {
+      await journal.append(
+        visitId: 'v9',
+        kind: SettlementEventKind.attachMember,
+        payload: const {'memberId': 'm1'},
+      );
+      await journal.append(
+        visitId: kVenueScopeVisitId,
+        kind: SettlementEventKind.enrolMember,
+        payload: const {'name': 'Adi', 'phone': '0811'},
+      );
+
+      expect(
+        journal.state.pendingVisits,
+        isEmpty,
+        reason: 'neither act confers local authority (ADR-0129)',
+      );
+      expect(
+        await journal.pendingVisitIds(),
+        isNotEmpty,
+        reason: 'but both are queued, and the drain must ask the journal',
+      );
+
+      final report = await journal.drain();
+      expect(sent.length, 2);
+      expect(report.failures, isEmpty);
+      expect(await journal.eventsFor('v9'), isEmpty);
+    });
+
+    // The refusal sheet is fed by an in-memory report the drain sets once. A
+    // refusal that lands while /kasir is not mounted, or an app restart after
+    // one, leaves the cash parked and nothing on screen — so the surface has
+    // to be able to re-read what parked.
+    test('a parked chain is readable back off the journal', () async {
+      final bad = await journal.append(
+        visitId: 'v1',
+        kind: SettlementEventKind.recordPayment,
+        payload: const {'receiptId': 'r1', 'amount': 135000},
+      );
+      await journal.append(
+        visitId: 'v1',
+        kind: SettlementEventKind.closeBill,
+        payload: const {},
+      );
+      refuse[bad.id] = 'overpayment';
+
+      await journal.drain();
+
+      final chains = await journal.parkedChains();
+      expect(chains, hasLength(1));
+      expect(chains.single.visitId, 'v1');
+      expect(chains.single.code, 'overpayment');
+      expect(chains.single.refused!.id, bad.id);
+      expect(
+        chains.single.strandedAmount,
+        135000,
+        reason: 'the cash is in the drawer and the sheet must name it',
+      );
+
+      await journal.acknowledge('v1');
+      expect(await journal.parkedChains(), isEmpty);
+    });
+
     test('a clean drain leaves nothing behind', () async {
       await journal.append(
         visitId: 'v1',

@@ -78,6 +78,30 @@ class _SettlementRefusalListenerState
   bool _showing = false;
 
   @override
+  void initState() {
+    super.initState();
+    // A refusal can land while this screen is not mounted — the bill sheet is
+    // a root-navigator push (ADR-0103), and the drain fires on reconnect from
+    // wherever the cashier happens to be — and the report does not survive a
+    // restart. Both leave the money parked and the surface unshown, so ask the
+    // journal rather than trusting we saw the drain.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _seedFromJournal());
+  }
+
+  Future<void> _seedFromJournal() async {
+    if (!mounted || _showing) return;
+    if (ref.read(settlementReportProvider) != null) return;
+    final parked = await ref
+        .read(settlementJournalProvider.notifier)
+        .parkedChains();
+    if (!mounted || parked.isEmpty) return;
+    if (ref.read(settlementReportProvider) != null) return;
+    ref.read(settlementReportProvider.notifier).state = SettlementReport(
+      chains: parked,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     ref.listen<SettlementReport?>(settlementReportProvider, (_, next) {
       if (next == null || next.failures.isEmpty || _showing) return;
