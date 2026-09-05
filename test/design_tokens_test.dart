@@ -718,7 +718,7 @@ void main() {
   // caught 101 of those too, but they are *sizing* — a 22px spinner, a 44px
   // brand mark — and folding them into the padding scale would be the wrong
   // fix. `SatSize` is where the ones above the scale belong.
-  const fromLtrbBaseline = 657;
+  const fromLtrbBaseline = 654;
   test('no new: raw EdgeInsets.fromLTRB spacing', () {
     final hits = <String>[];
     for (final file in files) {

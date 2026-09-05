@@ -553,6 +553,8 @@
   "quantity": "Jumlah",
   "a11yRename": "Ganti nama",
   "a11yClear": "Bersihkan",
+  "a11yStockActions": "Tindakan bahan",
+  "@a11yStockActions": {"description": "Screen-reader name for the stock row overflow control."},
   "a11yRefresh": "Muat ulang",
   "a11yShowPassword": "Tampilkan kata sandi",
   "a11yHidePassword": "Sembunyikan kata sandi",

@@ -1276,6 +1276,9 @@ class AppL10nId extends AppL10n {
   String get a11yClear => 'Bersihkan';
 
   @override
+  String get a11yStockActions => 'Tindakan bahan';
+
+  @override
   String get a11yRefresh => 'Muat ulang';
 
   @override

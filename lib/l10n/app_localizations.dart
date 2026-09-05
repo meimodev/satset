@@ -2325,6 +2325,12 @@ abstract class AppL10n {
   /// **'Bersihkan'**
   String get a11yClear;
 
+  /// Screen-reader name for the stock row overflow control.
+  ///
+  /// In id, this message translates to:
+  /// **'Tindakan bahan'**
+  String get a11yStockActions;
+
   /// No description provided for @a11yRefresh.
   ///
   /// In id, this message translates to:
