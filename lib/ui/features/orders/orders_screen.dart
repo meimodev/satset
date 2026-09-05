@@ -28,6 +28,8 @@ import 'package:satset/ui/core/widgets/status_chip.dart';
 import 'package:satset/ui/features/orders/view_models/orders_scope.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/state/tickers.dart';
+import 'package:satset/core/localization/report_copy.dart';
+import 'package:satset/data/services/api_client.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
@@ -110,10 +112,28 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         await ref
             .read(advanceTicketStatusUseCaseProvider)
             .call(tableId, ticketId, TicketStatus.served);
-      } catch (e) {
+      } on ApiException catch (e) {
+        // Terputus never lands here — it queues (ADR-0138). This is the host
+        // having answered, so the code it answered with is the whole message;
+        // a Dart exception string is not something a waiter can act on.
         if (!context.mounted) return;
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(content: Text(context.l10n.ordServeFailed('$e'))),
+          SnackBar(
+            content: Text(
+              context.l10n.tktServeFailed(
+                serveFailureText(context.l10n, e.code),
+              ),
+            ),
+          ),
+        );
+      } catch (_) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(
+            content: Text(
+              context.l10n.tktServeFailed(serveFailureText(context.l10n, null)),
+            ),
+          ),
         );
       }
     }
@@ -248,7 +268,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       section('Bawa pulang', taRows);
       section('Makan di tempat', dineRows);
       slivers.add(
-        SliverToBoxAdapter(child: SizedBox(height: grid ? 32 : context.shellInset)),
+        SliverToBoxAdapter(
+          child: SizedBox(height: grid ? 32 : context.shellInset),
+        ),
       );
       return CustomScrollView(slivers: slivers);
     }

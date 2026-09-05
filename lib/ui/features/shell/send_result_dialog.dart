@@ -42,10 +42,8 @@ class _SendResultDialog extends ConsumerWidget {
         .where((o) => o.kind == SendOutcomeKind.delivered)
         .length;
 
-    String tableName(String id) => tables
-        .where((t) => t.id == id)
-        .map((t) => t.displayName)
-        .firstOrNull ??
+    String tableName(String id) =>
+        tables.where((t) => t.id == id).map((t) => t.displayName).firstOrNull ??
         id;
 
     return PopScope(
@@ -81,10 +79,7 @@ class _SendResultDialog extends ConsumerWidget {
                           style: SatType.bodyM(color: sc.textHi),
                         ),
                         for (final line in _reasons(context, o))
-                          Text(
-                            line,
-                            style: SatType.bodyS(color: sc.textLo),
-                          ),
+                          Text(line, style: SatType.bodyS(color: sc.textLo)),
                       ],
                     ),
                   ),
@@ -120,6 +115,10 @@ class _SendResultDialog extends ConsumerWidget {
     // on the guest's bill. The row has to say that, and has to name the line —
     // which is why the intent carries its name and qty.
     final isVoid = o.intent.kind == SendIntentKind.voidTicket;
+    // A stranded **serve** is the same shape from the other side: the plate is
+    // on the table and the board still says it is waiting at the pass. Name the
+    // line, for the reason the void names it (ADR-0138).
+    final isServe = o.intent.kind == SendIntentKind.serveTicket;
     final qty = (o.intent.payload['qty'] as num?)?.toInt() ?? 0;
     final name = (o.intent.payload['name'] as String?) ?? '';
     return switch (o.kind) {
@@ -127,9 +126,17 @@ class _SendResultDialog extends ConsumerWidget {
         isVoid ? l.sendFailVoidExpired(qty, name) : l.sendFailExpired,
       ],
       SendOutcomeKind.refused => [
-        isVoid
-            ? l.sendFailVoidRefused(qty, name, sendFailureText(l, o.code))
-            : sendFailureText(l, o.code),
+        if (isVoid)
+          l.sendFailVoidRefused(qty, name, sendFailureText(l, o.code))
+        else if (isServe)
+          // Its own resolver, not the shared one: the refusal a queued serve
+          // actually meets is `illegal_transition` (the line was voided or
+          // served from another handset while this one held it), which
+          // `sendFailureText` has no arm for and renders as a bare "the server
+          // refused it".
+          l.sendFailServeRefused(qty, name, serveFailureText(l, o.code))
+        else
+          sendFailureText(l, o.code),
       ],
       SendOutcomeKind.delivered => [
         for (final r in o.rejectedLines)
@@ -141,9 +148,7 @@ class _SendResultDialog extends ConsumerWidget {
             ].join(' '),
             ((r['ingredients'] as List?) ?? const []).isEmpty
                 ? l.tktOutOfStock
-                : l.tktOutOfStockNamed(
-                    (r['ingredients'] as List).join(', '),
-                  ),
+                : l.tktOutOfStockNamed((r['ingredients'] as List).join(', ')),
           ),
       ],
     };

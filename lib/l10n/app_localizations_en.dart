@@ -6002,11 +6002,6 @@ class AppL10nEn extends AppL10n {
   String get tkwEmpty => 'No items yet.';
 
   @override
-  String tkwServeFailed(String error) {
-    return 'Couldn\'t mark it served: $error';
-  }
-
-  @override
   String tkwBillLoadFailed(String error) {
     return 'Couldn\'t load the bill: $error';
   }
@@ -6312,11 +6307,6 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get dscAppliesReceipt => 'Applies to this whole receipt';
-
-  @override
-  String ordServeFailed(String error) {
-    return 'Couldn\'t mark it served: $error';
-  }
 
   @override
   String ordSummary(int active, int ready) {
@@ -10468,6 +10458,26 @@ class AppL10nEn extends AppL10n {
       one: '1 row',
     );
     return 'Exported member directory ($_temp0)';
+  }
+
+  @override
+  String get serveFailForbidden => 'Your role cannot mark items served.';
+
+  @override
+  String get serveFailAlreadyMoved =>
+      'This item already changed on another device. Check again.';
+
+  @override
+  String get serveFailOther => 'The server refused the serve.';
+
+  @override
+  String tktServeFailed(String reason) {
+    return 'Couldn\'t mark it served: $reason';
+  }
+
+  @override
+  String sendFailServeRefused(int qty, String name, String reason) {
+    return 'Serve of ×$qty $name refused. $reason';
   }
 }
 

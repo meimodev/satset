@@ -4549,14 +4549,6 @@
   },
   "tkwHandedOverTag": "SUDAH DISERAHKAN",
   "tkwEmpty": "Belum ada item.",
-  "tkwServeFailed": "Gagal sajikan: {error}",
-  "@tkwServeFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "tkwBillLoadFailed": "Gagal memuat tagihan: {error}",
   "@tkwBillLoadFailed": {
     "placeholders": {
@@ -4829,14 +4821,6 @@
   "dscAppliesLine": "Berlaku untuk item ini",
   "dscAppliesBill": "Berlaku seluruh tagihan · semua struk",
   "dscAppliesReceipt": "Berlaku seluruh struk",
-  "ordServeFailed": "Gagal sajikan: {error}",
-  "@ordServeFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "ordSummary": "{active} berjalan · {ready} siap diambil",
   "@ordSummary": {
     "placeholders": {
@@ -8465,6 +8449,31 @@
     "placeholders": {
       "rows": {
         "type": "int"
+      }
+    }
+  },
+  "serveFailForbidden": "Peranmu tidak punya izin menandai disajikan.",
+  "serveFailAlreadyMoved": "Status item sudah berubah di perangkat lain. Cek ulang.",
+  "serveFailOther": "Server menolak tanda disajikan.",
+  "tktServeFailed": "Gagal sajikan: {reason}",
+  "@tktServeFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "sendFailServeRefused": "Tanda disajikan ×{qty} {name} ditolak. {reason}",
+  "@sendFailServeRefused": {
+    "placeholders": {
+      "qty": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
       }
     }
   }

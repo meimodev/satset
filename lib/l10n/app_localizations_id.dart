@@ -5937,11 +5937,6 @@ class AppL10nId extends AppL10n {
   String get tkwEmpty => 'Belum ada item.';
 
   @override
-  String tkwServeFailed(String error) {
-    return 'Gagal sajikan: $error';
-  }
-
-  @override
   String tkwBillLoadFailed(String error) {
     return 'Gagal memuat tagihan: $error';
   }
@@ -6243,11 +6238,6 @@ class AppL10nId extends AppL10n {
 
   @override
   String get dscAppliesReceipt => 'Berlaku seluruh struk';
-
-  @override
-  String ordServeFailed(String error) {
-    return 'Gagal sajikan: $error';
-  }
 
   @override
   String ordSummary(int active, int ready) {
@@ -10345,6 +10335,27 @@ class AppL10nId extends AppL10n {
       other: '$rows baris',
     );
     return 'Ekspor daftar pelanggan ($_temp0)';
+  }
+
+  @override
+  String get serveFailForbidden =>
+      'Peranmu tidak punya izin menandai disajikan.';
+
+  @override
+  String get serveFailAlreadyMoved =>
+      'Status item sudah berubah di perangkat lain. Cek ulang.';
+
+  @override
+  String get serveFailOther => 'Server menolak tanda disajikan.';
+
+  @override
+  String tktServeFailed(String reason) {
+    return 'Gagal sajikan: $reason';
+  }
+
+  @override
+  String sendFailServeRefused(int qty, String name, String reason) {
+    return 'Tanda disajikan ×$qty $name ditolak. $reason';
   }
 }
 

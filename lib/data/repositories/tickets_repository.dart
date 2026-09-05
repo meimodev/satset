@@ -602,10 +602,13 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       'tickets.transition id=${ticketId.substring(0, ticketId.length.clamp(0, 6))} → ${to.name}',
     );
     final cfg = ref.read(apiConfigProvider);
-    // Only a void is offline-capable. Every other move on this graph is a
-    // kitchen fact — a queued `prep` would replay minutes after the dish left
-    // the pass, telling the room something that stopped being true.
-    final canQueue = to == TicketStatus.voided;
+    // A void and a serve are offline-capable; nothing else on this graph is.
+    // The rest are kitchen facts — a queued `prep` would replay minutes after
+    // the dish left the pass, telling the room something that stopped being
+    // true. A serve is not one of those: it is the waiter's own hand, on the
+    // very handset that went dark, and under `bypassKds` (ADR-0115) it is the
+    // only ticket act they perform all shift. ADR-0138.
+    final canQueue = to == TicketStatus.voided || to == TicketStatus.served;
     var queued = false;
     if (cfg != null) {
       final body = <String, dynamic>{
@@ -618,9 +621,10 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       // path makes and for the same reason — the failure costs 8s of
       // `requestTimeout` and a waiter mid-rush pays it on every tap.
       if (canQueue && ref.read(wsConnStateProvider) != WsConnState.open) {
-        await _enqueueVoid(
+        await _enqueueTransition(
           tableId: tableId,
           ticketId: ticketId,
+          to: to,
           voidReason: voidReason,
           voidReasonCode: voidReasonCode,
           actorId: actorId,
@@ -640,9 +644,10 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
           // The socket said open and the request still did not land. This is
           // the gap between the two signals.
           if (!canQueue) rethrow;
-          await _enqueueVoid(
+          await _enqueueTransition(
             tableId: tableId,
             ticketId: ticketId,
+            to: to,
             voidReason: voidReason,
             voidReasonCode: voidReasonCode,
             actorId: actorId,
@@ -672,36 +677,43 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     return queued;
   }
 
-  /// Park a void on the device's [SendQueue] (ADR-0090).
+  /// Park a void or a serve on the device's [SendQueue] (ADR-0090, ADR-0138).
   ///
-  /// Keyed `void-<ticketId>`, which makes the dedupe free: [SendQueue.enqueue]
-  /// treats a repeated id as a no-op, so tapping Batalkan four times on a dead
-  /// socket leaves one intent and the drain reports one answer.
+  /// Keyed `void-<ticketId>` / `serve-<ticketId>`, which makes the dedupe free:
+  /// [SendQueue.enqueue] treats a repeated id as a no-op, so tapping Batalkan
+  /// four times on a dead socket leaves one intent and the drain reports one
+  /// answer.
   ///
-  /// Carries the line's name and qty because the host is about to be told the
-  /// ticket is gone — by the time a refusal comes back there is nothing left
-  /// to look the words up from, and a report that cannot name the line is a
-  /// report nobody can act on.
-  Future<void> _enqueueVoid({
+  /// Carries the line's name and qty because the host may be about to be told
+  /// the ticket is gone — by the time a refusal comes back there is nothing
+  /// left to look the words up from, and a report that cannot name the line is
+  /// a report nobody can act on.
+  Future<void> _enqueueTransition({
     required String tableId,
     required String ticketId,
+    required TicketStatus to,
     required String? voidReason,
     required String? voidReasonCode,
     String? actorId,
   }) async {
     final t = findTicket(tableId, ticketId);
+    final serve = to == TicketStatus.served;
     try {
       await ref
           .read(sendQueueProvider.notifier)
           .enqueue(
-            id: 'void-$ticketId',
-            kind: SendIntentKind.voidTicket,
+            id: '${serve ? 'serve' : 'void'}-$ticketId',
+            kind: serve
+                ? SendIntentKind.serveTicket
+                : SendIntentKind.voidTicket,
             tableId: tableId,
             actorId: actorId ?? '',
             payload: {
               'ticketId': ticketId,
-              'voidReasonCode': ?voidReasonCode,
-              'voidReason': ?voidReason,
+              if (!serve) ...{
+                'voidReasonCode': ?voidReasonCode,
+                'voidReason': ?voidReason,
+              },
               'name': t?.name ?? '',
               'qty': t?.qty ?? 0,
             },
