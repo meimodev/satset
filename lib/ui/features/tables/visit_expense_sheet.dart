@@ -258,7 +258,7 @@ class _VisitExpenseSheetState extends ConsumerState<_VisitExpenseSheet> {
             Text(
               l10n.tableExpRemaining(formatIDR(remaining)),
               style: SatType.monoL(
-                color: remaining > 0 ? sc.accent : sc.urgent,
+                color: remaining > 0 ? sc.accentText : sc.urgent,
               ),
             ),
           ],
