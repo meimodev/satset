@@ -410,8 +410,12 @@ void main() {
     expect(settlement.paymentMethod, 'tunai');
   });
 
-  final paidOpen = Bill.fromJson({
+  final paidOpenJson = <String, dynamic>{
     ...billJson,
+    'lines': [
+      for (final line in billJson['lines'] as List)
+        {...line as Map<String, dynamic>, 'assignedUnits': line['qty']},
+    ],
     'paidAmount': 116550,
     'outstanding': 0,
     'fullyAssigned': true,
@@ -433,7 +437,8 @@ void main() {
         ],
       },
     ],
-  });
+  };
+  final paidOpen = Bill.fromJson(paidOpenJson);
 
   Future<void> payItems(WidgetTester tester, {bool all = true}) async {
     await pickMode(tester, 'Per item');
@@ -554,6 +559,55 @@ void main() {
     expect(settlement.closedWithWriteOff, false);
   });
 
+  for (final tablet in [false, true]) {
+    testWidgets(
+      '${tablet ? 'tablet' : 'phone'} · reopen restores controls and keeps payments',
+      (tester) async {
+        late _StubSettlement settlement;
+        await pumpBill(
+          tester,
+          tablet: tablet,
+          fixture: Bill.fromJson({
+            ...paidOpenJson,
+            'billClosedAt': '2026-07-29T12:35:00.000',
+          }),
+          onSettlement: (value) {
+            settlement = value;
+            value.reopenResult = paidOpen;
+          },
+        );
+        expect(
+          find.byWidgetPredicate((w) => w is DropdownButtonFormField),
+          findsNothing,
+        );
+        final reopen = find.text('Buka ulang');
+        await tester.ensureVisible(reopen);
+        await tester.tap(reopen);
+        await drain(tester);
+
+        expect(settlement.reopenedVisitId, 'v1');
+        expect(settlement.bill.billClosedAt, isNull);
+        expect(settlement.bill.fullySettled, isTrue);
+        expect(
+          settlement.bill.receipts.single.payments.single.id,
+          'paid-final',
+        );
+        expect(settlement.bill.receipts.single.payments.single.amount, 116550);
+        expect(find.text('Buka ulang'), findsNothing);
+        expect(find.text('Tutup tagihan'), findsOneWidget);
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.text('Tidak ada sisa untuk ditagih'), findsOneWidget);
+        await pickMode(tester, 'Per item');
+        expect(lines(), findsOneWidget);
+        expect(
+          settlement.paidAmount,
+          isNull,
+          reason: 'reopening must not collect payment again',
+        );
+      },
+    );
+  }
+
   testWidgets('unpaid bill offers every payment method', (tester) async {
     await pumpBill(tester, tablet: true);
 
@@ -590,6 +644,8 @@ class _StubSettlement extends SettlementRepository {
 
   Bill bill;
   Bill? paymentResult;
+  Bill? reopenResult;
+  String? reopenedVisitId;
   int closeCount = 0;
   String? closedVisitId;
   bool? closedWithWriteOff;
@@ -643,6 +699,16 @@ class _StubSettlement extends SettlementRepository {
     bill = paymentResult ?? bill;
     return bill;
   }
+
+  @override
+  Future<Bill> reopenBill(String visitId) async {
+    reopenedVisitId = visitId;
+    bill = reopenResult!;
+    return bill;
+  }
+
+  @override
+  Future<void> refresh() async {}
 
   @override
   Future<void> closeBill(

@@ -288,6 +288,80 @@ void main() {
     );
   });
 
+  test(
+    'reopening a paid bill unlocks edits and preserves its payments',
+    () async {
+      await settings();
+      await visit();
+      await db
+          .into(db.venueTables)
+          .insert(
+            VenueTablesCompanion.insert(
+              id: 't1',
+              zoneId: 'z1',
+              currentVisitId: const Value('v1'),
+            ),
+          );
+      await line('tk1', 100000);
+      final first = await receipt('r1', 'A', ['tk1']);
+      expect(
+        (await post('/settlement/receipts/$first/payments', {
+          'method': 'tunai',
+          'amount': 100000,
+          'tendered': 150000,
+          'note': 'Original payment',
+        })).statusCode,
+        200,
+      );
+      final paymentsBefore = await db.select(db.payments).get();
+
+      expect((await post('/settlement/visits/v1/bill-close')).statusCode, 200);
+      expect((await db.select(db.visits).getSingle()).billClosedAt, isNotNull);
+      expect(
+        (await db.select(db.venueTables).getSingle()).billClosedAt,
+        isNotNull,
+      );
+      final blocked = await post('/settlement/visits/v1/receipts', {
+        'mode': 'itemized',
+        'label': 'B',
+      });
+      expect(blocked.statusCode, 409);
+      expect(jsonDecode(await blocked.readAsString())['code'], 'bill_locked');
+
+      expect((await post('/settlement/visits/v1/reopen')).statusCode, 200);
+      final reopened = await db.select(db.visits).getSingle();
+      expect(reopened.billClosedAt, isNull);
+      expect(reopened.billClosedBy, isNull);
+      expect(
+        (await db.select(db.venueTables).getSingle()).billClosedAt,
+        isNull,
+      );
+      expect(await db.select(db.payments).get(), paymentsBefore);
+      expect((await bill())['fullySettled'], isTrue);
+
+      // Add another order to the live visit, then settle only its new receipt.
+      await line('tk2', 25000);
+      final second = await receipt('r2', 'B', ['tk2']);
+      expect((await bill())['outstanding'], 25000);
+      expect(
+        (await post('/settlement/receipts/$second/payments', {
+          'method': 'tunai',
+          'amount': 25000,
+        })).statusCode,
+        200,
+      );
+      expect((await post('/settlement/visits/v1/bill-close')).statusCode, 200);
+      expect((await db.select(db.visits).getSingle()).billClosedAt, isNotNull);
+      expect(
+        (await db.select(db.venueTables).getSingle()).billClosedAt,
+        isNotNull,
+      );
+      final paymentsAfter = await db.select(db.payments).get();
+      expect(paymentsAfter, hasLength(2));
+      expect(paymentsAfter, contains(paymentsBefore.single));
+    },
+  );
+
   test('a reopen reverses every member, not just the first', () async {
     await settings();
     final host = await createMember(db, name: 'Host', phone: '081000000010');

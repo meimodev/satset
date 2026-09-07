@@ -224,7 +224,13 @@ The cashier's money act that **ends a [[Bill (tab)]]**: it **locks** the bill ag
 
 Naming: the cashier's word for the write-off is **"Tak tertagih"**, never "Batalkan". A bill is never *cancelled* — a mistaken one is unwound line by line through [[Void (item)]]. _Avoid_: copy that promises the bill never happened while the books record a loss.
 
-Corrections (un-pay / **reopen**, post-payment void/comp/refund per ADR-0006) are allowed **only while the bill is still open** — after bill close the [[Past bills|snapshot]] is **immutable**. _Avoid_: the copy "Tutup meja" for this act; snapshotting at [[Table close (detach)]]; folding bill close into the waiter's table close; recording a walkout as a comp.
+Corrections (receipt un-pay and post-payment void/comp/refund) require an open bill. A closed bill may be reopened while the visit is still live; an archived [[Past bills|snapshot]] remains immutable. _Avoid_: the copy "Tutup meja" for this act; snapshotting at [[Table close (detach)]]; folding bill close into the waiter's table close; recording a walkout as a comp.
+
+### Bill reopen
+**ID · EN** — Buka ulang · Reopen (the bill action).
+
+Unlocking a closed, live [[Bill (tab)]] for further ordering and permitted corrections while retaining all recorded payments. A reopened bill can remain fully paid; payment status does not make it closed.
+_Avoid_: confusing bill reopening with receipt un-pay, which removes that receipt's recorded payments.
 
 ### Walkout (tak tertagih)
 **ID · EN** — Tak tertagih · Uncollected. "meja sudah ditutup, tagihan belum lunas" · "table freed, bill unpaid".

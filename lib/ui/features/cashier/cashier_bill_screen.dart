@@ -479,7 +479,7 @@ class _BillBodyState extends State<_BillBody> {
 
   @override
   Widget build(BuildContext context) {
-    final done = bill.billClosedAt != null || bill.fullySettled;
+    final done = bill.billClosedAt != null;
     if (context.layout.useTabletShell) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -506,21 +506,34 @@ class _BillBodyState extends State<_BillBody> {
     );
   }
 
-  /// `done` fires on a settled bill as well as a closed one, so the unlock is
-  /// offered only when there is a lock to take off. A settled-but-open bill has
-  /// nothing for `visits/reopen` to clear, so the button used to sit there
-  /// re-firing a 200 that changed nothing on screen — the way a cashier decides
-  /// the app is stuck. Undoing a settlement is the per-struk `Buka ulang` in the
-  /// lines pane, which is on screen either way.
+  // Payment and closure are independent: reopening restores the working pane
+  // even while the existing receipts remain fully paid.
   Widget _donePane() => _DonePane(
     bill: bill,
     onPrint: () => widget.printDoc(null),
-    onClose: bill.billClosedAt == null ? widget.onCloseBill : null,
-    onReopen: bill.billClosedAt != null ? widget.onReopenBill : null,
+    onReopen: widget.onReopenBill,
   );
 
   Widget _settle(BuildContext context, bool done) {
     if (done) return _donePane();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (bill.fullySettled)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+            child: SatButton.outline(
+              label: context.l10n.cshCloseBill,
+              icon: Icons.lock_outline_rounded,
+              onTap: widget.onCloseBill,
+            ),
+          ),
+        Expanded(child: _settlePane()),
+      ],
+    );
+  }
+
+  Widget _settlePane() {
     return SettlePane(
       bill: bill,
       repo: widget.repo,
@@ -2356,14 +2369,11 @@ class _DonePane extends StatelessWidget {
   final Bill bill;
   final VoidCallback onPrint;
 
-  /// Null when the bill carries no close stamp — there is no lock to remove.
   final VoidCallback? onReopen;
-  final VoidCallback? onClose;
   const _DonePane({
     required this.bill,
     required this.onPrint,
     required this.onReopen,
-    required this.onClose,
   });
 
   @override
@@ -2430,14 +2440,6 @@ class _DonePane extends StatelessWidget {
             icon: Icons.print_rounded,
             onTap: onPrint,
           ),
-          if (onClose != null) ...[
-            const SizedBox(height: Sp.s2),
-            SatButton.outline(
-              label: context.l10n.cshCloseBill,
-              icon: Icons.lock_outline_rounded,
-              onTap: onClose,
-            ),
-          ],
           if (onReopen != null) ...[
             const SizedBox(height: Sp.s2),
             SatButton.outline(
