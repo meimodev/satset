@@ -44,8 +44,7 @@ import 'package:satset/core/time/sat_clock.dart';
 /// Spending points happens at the till, not here — a directory that could
 /// change what a guest owes would be a second till (ADR-0093).
 ///
-/// Tablet only, like the venue log and the cash box: the value of a directory
-/// is reading rows against each other, and a phone shows one row.
+/// Compact screens stack identity and balances; wide screens compare rows.
 ///
 // ponytail: three thresholds, no venue setting. A setting means a column, a DTO
 // field and a form for a number the owner picks by tapping a chip; add one when
@@ -93,8 +92,6 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!context.layout.useTabletShell) return const _MembersPhoneNotice();
-
     final l10n = context.l10n;
     final state = ref.watch(membersProvider);
     final month = state.birthdayMonth;
@@ -127,149 +124,141 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     final filtered =
         state.query.trim().isNotEmpty || month != null || lapsed != null;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AdminEmbeddedStrip(
-          title: l10n.memTitle,
-          sub: filtered
-              ? l10n.memMatchCount(state.members.length)
-              : l10n.memCount(state.members.length),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SatButton.outline(
-                label: l10n.memImportCsv,
-                icon: Icons.upload_file_rounded,
-                size: SatButtonSize.sm,
-                onTap: _importCsv,
-              ),
-              const SizedBox(width: Sp.s2),
-              // No format picker: a roster has one useful shape, and a sheet
-              // asking "CSV or PDF?" with one answer is a step that buys
-              // nothing (ADR-0137). Disabled while the host is dark — the rows
-              // on screen are then the [[Salinan pelanggan]], and an export
-              // reads live data or it does not happen.
-              SatButton.outline(
-                label: l10n.memExpCsv,
-                icon: Icons.download_rounded,
-                size: SatButtonSize.sm,
-                busy: _exporting,
-                onTap: state.mirroredAt != null ? null : _exportCsv,
-              ),
-              const SizedBox(width: Sp.s2),
-              SatButton.primary(
-                label: l10n.memActionAdd,
-                icon: Icons.person_add_alt_1_rounded,
-                size: SatButtonSize.sm,
-                onTap: () => _form(),
-              ),
-            ],
+    final compact = !context.layout.useTabletShell;
+    final gutter = compact ? Sp.s4 : Sp.s7;
+    return RefreshIndicator(
+      onRefresh: ref.read(membersProvider.notifier).refresh,
+      child: CustomScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: AdminEmbeddedStrip(
+              title: l10n.memTitle,
+              sub: filtered || _debtOnly
+                  ? l10n.memMatchCount(rows.length)
+                  : l10n.memCount(rows.length),
+            ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(Sp.s7, Sp.s4, Sp.s7, Sp.s3),
-          child: Row(
-            children: [
-              Expanded(
-                child: SatField.search(
-                  controller: _search,
-                  hint: l10n.memSearchHint,
-                  onChanged: _onQuery,
-                ),
-              ),
-              const SizedBox(width: Sp.s3),
-              SatChip.select(
-                label: l10n.memBirthdayFilter,
-                selected: month != null,
-                onTap: () => ref
-                    .read(membersProvider.notifier)
-                    .filterByBirthdayMonth(
-                      month == null ? SatClock.now().month : null,
-                    ),
-              ),
-              if (debtOn) ...[
-                const SizedBox(width: Sp.s2),
-                SatChip.select(
-                  label: l10n.memDebtFilter,
-                  selected: _debtOnly,
-                  onTap: () => setState(() => _debtOnly = !_debtOnly),
-                ),
-              ],
-            ],
-          ),
-        ),
-        // The "belum kembali" cut. Chips rather than a setting: the owner
-        // changes their mind about the threshold by tapping a different one,
-        // and nothing about lapse is stored to go stale.
-        Padding(
-          padding: const EdgeInsets.only(
-            left: Sp.s7,
-            right: Sp.s7,
-            bottom: Sp.s3,
-          ),
-          child: Row(
-            children: [
-              Text(
-                l10n.memLapsedLabel.toUpperCase(),
-                style: SatType.monoS(color: context.sat.textLo),
-              ),
-              const SizedBox(width: Sp.s3),
-              for (final days in _lapsedCuts) ...[
-                SatChip.select(
-                  label: l10n.memLapsedDays(days),
-                  selected: lapsed == days,
-                  onTap: () => ref
-                      .read(membersProvider.notifier)
-                      .filterByLapsedDays(lapsed == days ? null : days),
-                ),
-                const SizedBox(width: Sp.s2),
-              ],
-            ],
-          ),
-        ),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: ref.read(membersProvider.notifier).refresh,
-            // A directory read is a round trip, and the filter chips fire one
-            // on every tap. Without this the list simply held the previous
-            // answer while the new one flew, which reads as a chip that did
-            // nothing (ADR-0128).
-            child: rows.isEmpty && state.loading
-                ? const Center(child: SatSpinner(size: SatSpinnerSize.md))
-                : rows.isEmpty && !state.loading
-                ? ListView(
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(gutter, Sp.s3, gutter, Sp.s4),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Wrap(
+                    spacing: Sp.s2,
+                    runSpacing: Sp.s2,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(Sp.s7),
-                        child: SatEmpty(
-                          icon: Icons.badge_outlined,
-                          title: filtered
-                              ? l10n.memFilterEmptyTitle
-                              : l10n.memEmptyTitle,
-                          body: filtered
-                              ? l10n.memFilterEmptyBody
-                              : l10n.memEmptyBody,
-                        ),
+                      SatButton.primary(
+                        label: l10n.memActionAdd,
+                        icon: Icons.person_add_alt_1_rounded,
+                        onTap: () => _form(),
+                      ),
+                      SatButton.outline(
+                        label: l10n.memImportCsv,
+                        icon: Icons.upload_file_rounded,
+                        onTap: _importCsv,
+                      ),
+                      SatButton.outline(
+                        label: l10n.memExpCsv,
+                        icon: Icons.download_rounded,
+                        busy: _exporting,
+                        onTap: state.mirroredAt != null ? null : _exportCsv,
                       ),
                     ],
-                  )
-                : ListView.separated(
-                    padding: EdgeInsets.only(
-                      left: Sp.s7,
-                      right: Sp.s7,
-                      bottom: Sp.s7 + context.shellInset,
-                    ),
-                    itemCount: rows.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: Sp.s1h),
-                    itemBuilder: (_, i) => _MemberRow(
-                      member: rows[i],
-                      onTap: () => _detail(rows[i]),
-                    ),
                   ),
+                  const SizedBox(height: Sp.s4),
+                  SatField.search(
+                    controller: _search,
+                    hint: l10n.memSearchHint,
+                    onChanged: _onQuery,
+                  ),
+                  const SizedBox(height: Sp.s3),
+                  Wrap(
+                    spacing: Sp.s2,
+                    runSpacing: Sp.s2,
+                    children: [
+                      SatChip.select(
+                        label: l10n.memBirthdayFilter,
+                        selected: month != null,
+                        onTap: () => ref
+                            .read(membersProvider.notifier)
+                            .filterByBirthdayMonth(
+                              month == null ? SatClock.now().month : null,
+                            ),
+                      ),
+                      if (debtOn)
+                        SatChip.select(
+                          label: l10n.memDebtFilter,
+                          selected: _debtOnly,
+                          onTap: () => setState(() => _debtOnly = !_debtOnly),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: Sp.s3),
+                  Text(
+                    l10n.memLapsedLabel.toUpperCase(),
+                    style: SatType.monoS(color: context.sat.textLo),
+                  ),
+                  const SizedBox(height: Sp.s2),
+                  Wrap(
+                    spacing: Sp.s2,
+                    runSpacing: Sp.s2,
+                    children: [
+                      for (final days in _lapsedCuts)
+                        SatChip.select(
+                          label: l10n.memLapsedDays(days),
+                          selected: lapsed == days,
+                          onTap: () => ref
+                              .read(membersProvider.notifier)
+                              .filterByLapsedDays(lapsed == days ? null : days),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ],
+          if (rows.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  gutter,
+                  Sp.s4,
+                  gutter,
+                  Sp.s7 + context.shellInset,
+                ),
+                child: state.loading
+                    ? const Center(child: SatSpinner(size: SatSpinnerSize.md))
+                    : SatEmpty(
+                        icon: Icons.badge_outlined,
+                        title: filtered || _debtOnly
+                            ? l10n.memFilterEmptyTitle
+                            : l10n.memEmptyTitle,
+                        body: filtered || _debtOnly
+                            ? l10n.memFilterEmptyBody
+                            : l10n.memEmptyBody,
+                      ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: EdgeInsets.only(
+                left: gutter,
+                right: gutter,
+                bottom: Sp.s7 + context.shellInset,
+              ),
+              sliver: SliverList.separated(
+                itemCount: rows.length,
+                separatorBuilder: (_, _) => const SizedBox(height: Sp.s2),
+                itemBuilder: (_, i) =>
+                    _MemberRow(member: rows[i], onTap: () => _detail(rows[i])),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -280,7 +269,12 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
 
   Future<void> _detail(MemberDto member) => showSatSheet<void>(
     context,
-    builder: (_) => _MemberDetailSheet(member: member),
+    builder: (context) => ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+      ),
+      child: _MemberDetailSheet(member: member),
+    ),
   );
 
   bool _exporting = false;
@@ -522,7 +516,6 @@ class _MemberImportDialogState extends ConsumerState<_MemberImportDialog> {
   }
 }
 
-
 /// One member, read the way they are asked after: who, which number, what they
 /// have banked, how often they come.
 class _MemberRow extends ConsumerWidget {
@@ -552,91 +545,162 @@ class _MemberRow extends ConsumerWidget {
             borderRadius: SatR.a(10),
             border: SatB.all(color: sc.border0),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: Text(
-                  member.name,
-                  style: SatType.labelM(color: sc.textHi),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: Sp.s3),
-              SizedBox(
-                width: 148,
-                child: Text(
-                  member.phone,
-                  style: SatType.mono(color: sc.textMd),
-                ),
-              ),
-              const SizedBox(width: Sp.s3),
-              if (cfg.memberPointsEnabled)
-                SizedBox(
-                  width: 110,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: SatChip.tag(
-                      label: l10n.memPoints(member.points),
-                      hue: SatChipHue.accent,
-                      size: SatChipSize.sm,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 1100 ||
+                  MediaQuery.textScalerOf(context).scale(14) > 18) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            member.name,
+                            style: SatType.labelM(color: sc.textHi),
+                          ),
+                        ),
+                        const SizedBox(width: Sp.s2),
+                        Icon(Icons.chevron_right, color: sc.textLo),
+                      ],
                     ),
-                  ),
-                ),
-              if (member.punchTarget > 0) ...[
-                const SizedBox(width: Sp.s2),
-                SizedBox(
-                  width: 132,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: SatChip.tag(
-                      label: member.punchRewardDue
-                          ? l10n.memRewardDue
-                          : l10n.memPunch(
-                              member.member.punchProgress,
-                              member.punchTarget,
-                            ),
-                      hue: member.punchRewardDue
-                          ? SatChipHue.success
-                          : SatChipHue.neutral,
-                      size: SatChipSize.sm,
-                    ),
-                  ),
-                ),
-              ],
-              if (cfg.memberDebtEnabled) ...[
-                const SizedBox(width: Sp.s2),
-                SizedBox(
-                  width: 128,
-                  child: member.debt > 0
-                      ? Align(
-                          alignment: Alignment.centerLeft,
-                          child: SatChip.tag(
+                    const SizedBox(height: Sp.s1),
+                    Text(member.phone, style: SatType.mono(color: sc.textMd)),
+                    const SizedBox(height: Sp.s3),
+                    Wrap(
+                      spacing: Sp.s2,
+                      runSpacing: Sp.s2,
+                      children: [
+                        if (cfg.memberPointsEnabled)
+                          SatChip.tag(
+                            label: l10n.memPoints(member.points),
+                            hue: SatChipHue.accent,
+                          ),
+                        if (member.punchTarget > 0)
+                          SatChip.tag(
+                            label: member.punchRewardDue
+                                ? l10n.memRewardDue
+                                : l10n.memPunch(
+                                    member.member.punchProgress,
+                                    member.punchTarget,
+                                  ),
+                            hue: member.punchRewardDue
+                                ? SatChipHue.success
+                                : SatChipHue.neutral,
+                          ),
+                        if (cfg.memberDebtEnabled && member.debt > 0)
+                          SatChip.tag(
                             label: formatIDR(member.debt),
                             hue: SatChipHue.warn,
-                            size: SatChipSize.sm,
                           ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-              ],
-              const SizedBox(width: Sp.s3),
-              SizedBox(
-                width: 116,
-                child: Text(
-                  l10n.memVisits(member.member.visitCount),
-                  style: SatType.bodyS(color: sc.textMd),
-                ),
-              ),
-              SizedBox(
-                width: 132,
-                child: Text(
-                  last == null ? '—' : formatShortDateId(last),
-                  style: SatType.bodyS(color: sc.textLo),
-                ),
-              ),
-            ],
+                      ],
+                    ),
+                    const SizedBox(height: Sp.s2),
+                    Wrap(
+                      spacing: Sp.s3,
+                      runSpacing: Sp.s1,
+                      children: [
+                        Text(
+                          l10n.memVisits(member.member.visitCount),
+                          style: SatType.bodyS(color: sc.textMd),
+                        ),
+                        if (last != null)
+                          Text(
+                            formatShortDateId(last),
+                            style: SatType.bodyS(color: sc.textLo),
+                          ),
+                      ],
+                    ),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      member.name,
+                      style: SatType.labelM(color: sc.textHi),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: Sp.s3),
+                  SizedBox(
+                    width: 148,
+                    child: Text(
+                      member.phone,
+                      style: SatType.mono(color: sc.textMd),
+                    ),
+                  ),
+                  const SizedBox(width: Sp.s3),
+                  if (cfg.memberPointsEnabled)
+                    SizedBox(
+                      width: 110,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: SatChip.tag(
+                          label: l10n.memPoints(member.points),
+                          hue: SatChipHue.accent,
+                          size: SatChipSize.sm,
+                        ),
+                      ),
+                    ),
+                  if (member.punchTarget > 0) ...[
+                    const SizedBox(width: Sp.s2),
+                    SizedBox(
+                      width: 132,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: SatChip.tag(
+                          label: member.punchRewardDue
+                              ? l10n.memRewardDue
+                              : l10n.memPunch(
+                                  member.member.punchProgress,
+                                  member.punchTarget,
+                                ),
+                          hue: member.punchRewardDue
+                              ? SatChipHue.success
+                              : SatChipHue.neutral,
+                          size: SatChipSize.sm,
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (cfg.memberDebtEnabled) ...[
+                    const SizedBox(width: Sp.s2),
+                    SizedBox(
+                      width: 128,
+                      child: member.debt > 0
+                          ? Align(
+                              alignment: Alignment.centerLeft,
+                              child: SatChip.tag(
+                                label: formatIDR(member.debt),
+                                hue: SatChipHue.warn,
+                                size: SatChipSize.sm,
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                  const SizedBox(width: Sp.s3),
+                  SizedBox(
+                    width: 116,
+                    child: Text(
+                      l10n.memVisits(member.member.visitCount),
+                      style: SatType.bodyS(color: sc.textMd),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 132,
+                    child: Text(
+                      last == null ? '—' : formatShortDateId(last),
+                      style: SatType.bodyS(color: sc.textLo),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -700,167 +764,186 @@ class _MemberDetailSheetState extends ConsumerState<_MemberDetailSheet> {
           builder: (context, snap) {
             final detail = snap.data;
             final m = detail?.member ?? widget.member;
-            return SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SatSheetHeader(
-                    padding: const EdgeInsets.fromLTRB(0, Sp.s3, 0, Sp.s2),
-                    onClose: () => Navigator.of(context).pop(),
-                    child: Text(m.name, style: SatType.h3(color: sc.textHi)),
-                  ),
-                  Row(
-                    children: [
-                      Text(m.phone, style: SatType.mono(color: sc.textMd)),
-                      if (m.member.code.isNotEmpty) ...[
-                        const SizedBox(width: Sp.s3),
-                        SatChip.tag(
-                          label: m.member.code,
-                          hue: SatChipHue.neutral,
-                          size: SatChipSize.sm,
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: Sp.s4),
-                  if (cfg.memberPointsEnabled)
-                    _FactLine(
-                      label: l10n.memColPoints,
-                      value: l10n.memPoints(m.points),
-                    ),
-                  if (m.punchTarget > 0)
-                    _FactLine(
-                      label: l10n.memColPunch,
-                      value: m.punchRewardDue
-                          ? l10n.memRewardDue
-                          : l10n.memPunch(
-                              m.member.punchProgress,
-                              m.punchTarget,
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SatSheetHeader(
+                  padding: const EdgeInsets.fromLTRB(0, Sp.s3, 0, Sp.s2),
+                  onClose: () => Navigator.of(context).pop(),
+                  child: Text(m.name, style: SatType.h3(color: sc.textHi)),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: Sp.s3,
+                          runSpacing: Sp.s2,
+                          children: [
+                            Text(
+                              m.phone,
+                              style: SatType.mono(color: sc.textMd),
                             ),
-                    ),
-                  _FactLine(
-                    label: l10n.memColVisits,
-                    value: '${m.member.visitCount}',
-                  ),
-                  _FactLine(
-                    label: l10n.memColLifetime,
-                    value: formatIDR(m.member.lifetimeSpend),
-                  ),
-                  _FactLine(
-                    label: l10n.memColJoined,
-                    value: formatShortDateId(m.member.joinedAt),
-                  ),
-                  if (m.member.birthday != null)
-                    _FactLine(
-                      label: l10n.memFieldBirthday,
-                      value: formatShortDateId(m.member.birthday!),
-                    ),
-                  if ((m.member.note ?? '').isNotEmpty)
-                    _FactLine(label: l10n.memFieldNote, value: m.member.note!),
-                  // The directory is the only surface that draws an address.
-                  // The till gets it on the wire and ignores it — a bill
-                  // overlay is for settling.
-                  if (m.member.address.isNotEmpty)
-                    _FactLine(
-                      label: l10n.memFieldAddress,
-                      value: m.member.address.oneLine,
-                    ),
-                  const SizedBox(height: Sp.s4),
-                  Wrap(
-                    spacing: Sp.s2,
-                    runSpacing: Sp.s2,
-                    children: [
-                      SatButton.outline(
-                        label: l10n.memActionEdit,
-                        icon: Icons.edit_outlined,
-                        size: SatButtonSize.sm,
-                        onTap: () async {
-                          await showSatSheet<void>(
-                            context,
-                            builder: (_) => MemberFormSheet(existing: m),
-                          );
-                          if (mounted) _reload();
-                        },
-                      ),
-                      if (cfg.memberPointsEnabled)
-                        SatButton.outline(
-                          label: l10n.memActionAdjust,
-                          icon: Icons.tune_rounded,
-                          size: SatButtonSize.sm,
-                          onTap: () async {
-                            await showSatSheet<void>(
-                              context,
-                              builder: (_) => _AdjustSheet(member: m),
-                            );
-                            if (mounted) _reload();
-                          },
+                            if (m.member.code.isNotEmpty) ...[
+                              SatChip.tag(
+                                label: m.member.code,
+                                hue: SatChipHue.neutral,
+                                size: SatChipSize.sm,
+                              ),
+                            ],
+                          ],
                         ),
-                      SatButton.outline(
-                        label: l10n.memActionMerge,
-                        icon: Icons.merge_rounded,
-                        size: SatButtonSize.sm,
-                        onTap: () async {
-                          final done = await showSatSheet<bool>(
-                            context,
-                            builder: (_) => _MergeSheet(member: m),
-                          );
-                          if (done == true && context.mounted) {
-                            Navigator.of(context).pop();
-                          }
-                        },
-                      ),
-                      if (cfg.memberDebtEnabled && canRefund) ...[
-                        SatButton.outline(
-                          label: l10n.memActionDebtAdjust,
-                          icon: Icons.rule_rounded,
-                          size: SatButtonSize.sm,
-                          onTap: () => _debtSheet(m, writeOff: false),
+                        const SizedBox(height: Sp.s4),
+                        if (cfg.memberPointsEnabled)
+                          _FactLine(
+                            label: l10n.memColPoints,
+                            value: l10n.memPoints(m.points),
+                          ),
+                        if (m.punchTarget > 0)
+                          _FactLine(
+                            label: l10n.memColPunch,
+                            value: m.punchRewardDue
+                                ? l10n.memRewardDue
+                                : l10n.memPunch(
+                                    m.member.punchProgress,
+                                    m.punchTarget,
+                                  ),
+                          ),
+                        _FactLine(
+                          label: l10n.memColVisits,
+                          value: '${m.member.visitCount}',
                         ),
-                        SatButton.outline(
-                          label: l10n.memActionWriteOff,
-                          icon: Icons.money_off_rounded,
-                          size: SatButtonSize.sm,
-                          onTap: () => _debtSheet(m, writeOff: true),
+                        _FactLine(
+                          label: l10n.memColLifetime,
+                          value: formatIDR(m.member.lifetimeSpend),
                         ),
+                        _FactLine(
+                          label: l10n.memColJoined,
+                          value: formatShortDateId(m.member.joinedAt),
+                        ),
+                        if (m.member.birthday != null)
+                          _FactLine(
+                            label: l10n.memFieldBirthday,
+                            value: formatShortDateId(m.member.birthday!),
+                          ),
+                        if ((m.member.note ?? '').isNotEmpty)
+                          _FactLine(
+                            label: l10n.memFieldNote,
+                            value: m.member.note!,
+                          ),
+                        // The directory is the only surface that draws an address.
+                        // The till gets it on the wire and ignores it — a bill
+                        // overlay is for settling.
+                        if (m.member.address.isNotEmpty)
+                          _FactLine(
+                            label: l10n.memFieldAddress,
+                            value: m.member.address.oneLine,
+                          ),
+                        const SizedBox(height: Sp.s4),
+                        Wrap(
+                          spacing: Sp.s2,
+                          runSpacing: Sp.s2,
+                          children: [
+                            SatButton.outline(
+                              label: l10n.memActionEdit,
+                              icon: Icons.edit_outlined,
+                              size: SatButtonSize.md,
+                              onTap: () async {
+                                await showSatSheet<void>(
+                                  context,
+                                  builder: (_) => MemberFormSheet(existing: m),
+                                );
+                                if (mounted) _reload();
+                              },
+                            ),
+                            if (cfg.memberPointsEnabled)
+                              SatButton.outline(
+                                label: l10n.memActionAdjust,
+                                icon: Icons.tune_rounded,
+                                size: SatButtonSize.md,
+                                onTap: () async {
+                                  await showSatSheet<void>(
+                                    context,
+                                    builder: (_) => _AdjustSheet(member: m),
+                                  );
+                                  if (mounted) _reload();
+                                },
+                              ),
+                            SatButton.outline(
+                              label: l10n.memActionMerge,
+                              icon: Icons.merge_rounded,
+                              size: SatButtonSize.md,
+                              onTap: () async {
+                                final done = await showSatSheet<bool>(
+                                  context,
+                                  builder: (_) => _MergeSheet(member: m),
+                                );
+                                if (done == true && context.mounted) {
+                                  Navigator.of(context).pop();
+                                }
+                              },
+                            ),
+                            if (cfg.memberDebtEnabled && canRefund) ...[
+                              SatButton.outline(
+                                label: l10n.memActionDebtAdjust,
+                                icon: Icons.rule_rounded,
+                                size: SatButtonSize.md,
+                                onTap: () => _debtSheet(m, writeOff: false),
+                              ),
+                              SatButton.outline(
+                                label: l10n.memActionWriteOff,
+                                icon: Icons.money_off_rounded,
+                                size: SatButtonSize.md,
+                                onTap: () => _debtSheet(m, writeOff: true),
+                              ),
+                            ],
+                            SatButton.danger(
+                              label: l10n.memActionDelete,
+                              icon: Icons.person_remove_outlined,
+                              size: SatButtonSize.md,
+                              onTap: _confirmDelete,
+                            ),
+                          ],
+                        ),
+                        if (_deleteError != null) ...[
+                          const SizedBox(height: Sp.s2),
+                          Text(
+                            _deleteError!,
+                            style: SatType.bodyS(color: sc.urgent),
+                          ),
+                        ],
+                        if (cfg.memberDebtEnabled) _debtBlock(sc, l10n),
+                        if (cfg.memberPointsEnabled) ...[
+                          const SizedBox(height: Sp.s5),
+                          Text(
+                            l10n.memLedgerTitle.toUpperCase(),
+                            style: SatType.monoS(color: sc.textLo),
+                          ),
+                          const SizedBox(height: Sp.s2),
+                          if (detail == null)
+                            Text(
+                              l10n.memLedgerLoading,
+                              style: SatType.bodyS(color: sc.textLo),
+                            )
+                          else if (detail.ledger.isEmpty)
+                            Text(
+                              l10n.memLedgerEmpty,
+                              style: SatType.bodyS(color: sc.textLo),
+                            )
+                          else
+                            for (final e in detail.ledger)
+                              _LedgerRow(entry: e.entry),
+                        ],
+                        const SizedBox(height: Sp.s5),
+                        _VisitsSection(memberId: m.id),
                       ],
-                      SatButton.danger(
-                        label: l10n.memActionDelete,
-                        icon: Icons.person_remove_outlined,
-                        size: SatButtonSize.sm,
-                        onTap: _confirmDelete,
-                      ),
-                    ],
-                  ),
-                  if (_deleteError != null) ...[
-                    const SizedBox(height: Sp.s2),
-                    Text(_deleteError!, style: SatType.bodyS(color: sc.urgent)),
-                  ],
-                  if (cfg.memberDebtEnabled) _debtBlock(sc, l10n),
-                  if (cfg.memberPointsEnabled) ...[
-                    const SizedBox(height: Sp.s5),
-                    Text(
-                      l10n.memLedgerTitle.toUpperCase(),
-                      style: SatType.monoS(color: sc.textLo),
                     ),
-                    const SizedBox(height: Sp.s2),
-                    if (detail == null)
-                      Text(
-                        l10n.memLedgerLoading,
-                        style: SatType.bodyS(color: sc.textLo),
-                      )
-                    else if (detail.ledger.isEmpty)
-                      Text(
-                        l10n.memLedgerEmpty,
-                        style: SatType.bodyS(color: sc.textLo),
-                      )
-                    else
-                      for (final e in detail.ledger) _LedgerRow(entry: e.entry),
-                  ],
-                  const SizedBox(height: Sp.s5),
-                  _VisitsSection(memberId: m.id),
-                ],
-              ),
+                  ),
+                ),
+              ],
             );
           },
         ),
@@ -1034,51 +1117,27 @@ class _VisitRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final l10n = context.l10n;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Sp.s1h),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 96,
-            child: Text(
-              formatShortDateId(visit.closedAt),
-              style: SatType.monoS(color: sc.textMd),
-            ),
+    return _MemberHistoryLine(
+      date: formatShortDateId(visit.closedAt),
+      description: visit.isTakeaway
+          ? l10n.memVisitTakeaway
+          : (visit.tableLabel ?? l10n.memVisitNoTable),
+      value: formatIDR(visit.settledTotal),
+      valueColor: sc.textHi,
+      badges: [
+        if (visit.discountAmount > 0)
+          SatChip.tag(
+            label: '-${formatIDR(visit.discountAmount)}',
+            hue: SatChipHue.accent,
+            size: SatChipSize.sm,
           ),
-          Expanded(
-            child: Text(
-              visit.isTakeaway
-                  ? l10n.memVisitTakeaway
-                  : (visit.tableLabel ?? l10n.memVisitNoTable),
-              style: SatType.bodyS(color: sc.textHi),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+        if (visit.isWalkout)
+          SatChip.tag(
+            label: l10n.memVisitWalkout,
+            hue: SatChipHue.urgent,
+            size: SatChipSize.sm,
           ),
-          if (visit.discountAmount > 0) ...[
-            SatChip.tag(
-              label: '-${formatIDR(visit.discountAmount)}',
-              hue: SatChipHue.accent,
-              size: SatChipSize.sm,
-            ),
-            const SizedBox(width: Sp.s2),
-          ],
-          // A walkout is not a small spend. Marked, or the row quietly claims
-          // this guest paid what they in fact walked out on.
-          if (visit.isWalkout) ...[
-            SatChip.tag(
-              label: l10n.memVisitWalkout,
-              hue: SatChipHue.urgent,
-              size: SatChipSize.sm,
-            ),
-            const SizedBox(width: Sp.s2),
-          ],
-          Text(
-            formatIDR(visit.settledTotal),
-            style: SatType.monoS(color: sc.textHi),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
@@ -1091,46 +1150,18 @@ class _LedgerRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final l10n = context.l10n;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Sp.s1h),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 116,
-            child: Text(
-              formatShortDateId(entry.at),
-              style: SatType.mono(color: sc.textLo),
-            ),
-          ),
-          SizedBox(
-            width: 108,
-            child: SatChip.tag(
-              label: memberPointKindLabel(l10n, entry.kind),
-              hue: _kindHue(entry.kind),
-              size: SatChipSize.sm,
-            ),
-          ),
-          const SizedBox(width: Sp.s2),
-          SizedBox(
-            width: 84,
-            child: Text(
-              // Signed, because a ledger that hides direction is a list.
-              '${entry.delta > 0 ? '+' : ''}${entry.delta}',
-              style: SatType.mono(
-                color: entry.delta > 0 ? sc.success : sc.textHi,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              entry.note ?? entry.actorName ?? '—',
-              style: SatType.bodyS(color: sc.textMd),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
+    return _MemberHistoryLine(
+      date: formatShortDateId(entry.at),
+      description: entry.note ?? entry.actorName ?? '—',
+      value: '${entry.delta > 0 ? '+' : ''}${entry.delta}',
+      valueColor: entry.delta > 0 ? sc.success : sc.textHi,
+      badges: [
+        SatChip.tag(
+          label: memberPointKindLabel(l10n, entry.kind),
+          hue: _kindHue(entry.kind),
+          size: SatChipSize.sm,
+        ),
+      ],
     );
   }
 }
@@ -1148,47 +1179,62 @@ class _DebtLedgerRow extends StatelessWidget {
     final detail = entry.method != null
         ? paymentMethodLabel(l10n, entry.method!)
         : (entry.note ?? entry.billLabel);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Sp.s1h),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 116,
-            child: Text(
-              formatShortDateId(entry.at),
-              style: SatType.mono(color: sc.textLo),
-            ),
-          ),
-          SizedBox(
-            width: 116,
-            child: SatChip.tag(
-              label: memberDebtKindLabel(l10n, entry.kind),
-              hue: _debtKindHue(entry.kind),
-              size: SatChipSize.sm,
-            ),
-          ),
-          const SizedBox(width: Sp.s2),
-          SizedBox(
-            width: 132,
-            child: Text(
-              '${entry.delta > 0 ? '+' : '−'}${formatIDR(entry.delta.abs())}',
-              style: SatType.mono(
-                color: entry.delta > 0 ? sc.warn : sc.success,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              detail.isEmpty ? (entry.actorName ?? '—') : detail,
-              style: SatType.bodyS(color: sc.textMd),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
+    return _MemberHistoryLine(
+      date: formatShortDateId(entry.at),
+      description: detail.isEmpty ? (entry.actorName ?? '—') : detail,
+      value: '${entry.delta > 0 ? '+' : '−'}${formatIDR(entry.delta.abs())}',
+      valueColor: entry.delta > 0 ? sc.warn : sc.success,
+      badges: [
+        SatChip.tag(
+          label: memberDebtKindLabel(l10n, entry.kind),
+          hue: _debtKindHue(entry.kind),
+          size: SatChipSize.sm,
+        ),
+      ],
     );
   }
+}
+
+/// History stays readable within a sheet, including on a tablet where the
+/// sheet is much narrower than the screen itself.
+class _MemberHistoryLine extends StatelessWidget {
+  final String date;
+  final String description;
+  final String value;
+  final Color valueColor;
+  final List<Widget> badges;
+  const _MemberHistoryLine({
+    required this.date,
+    required this.description,
+    required this.value,
+    required this.valueColor,
+    required this.badges,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(vertical: Sp.s3),
+    decoration: SatBox.d(
+      border: Border(bottom: SatB.side(color: context.sat.border0)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          spacing: Sp.s3,
+          runSpacing: Sp.s2,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(date, style: SatType.monoS(color: context.sat.textLo)),
+            ...badges,
+            Text(value, style: SatType.mono(color: valueColor)),
+          ],
+        ),
+        const SizedBox(height: Sp.s2),
+        Text(description, style: SatType.bodyS(color: context.sat.textMd)),
+      ],
+    ),
+  );
 }
 
 SatChipHue _debtKindHue(MemberDebtKind kind) => switch (kind) {
@@ -1959,17 +2005,34 @@ class _FactLine extends StatelessWidget {
     final sc = context.sat;
     return Padding(
       padding: const EdgeInsets.only(bottom: Sp.s1h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 148,
-            child: Text(label, style: SatType.bodyS(color: sc.textLo)),
-          ),
-          Expanded(
-            child: Text(value, style: SatType.bodyS(color: sc.textHi)),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 420) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: Sp.s2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: SatType.bodyS(color: sc.textLo)),
+                  const SizedBox(height: Sp.s1),
+                  Text(value, style: SatType.bodyM(color: sc.textHi)),
+                ],
+              ),
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 148,
+                child: Text(label, style: SatType.bodyS(color: sc.textLo)),
+              ),
+              Expanded(
+                child: Text(value, style: SatType.bodyS(color: sc.textHi)),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -2000,20 +2063,4 @@ String memberErrorText(AppL10n l10n, Object error) {
     final code? => l10n.memErrFailed(code),
     null => l10n.memErrFailed('$error'),
   };
-}
-
-class _MembersPhoneNotice extends StatelessWidget {
-  const _MembersPhoneNotice();
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(Sp.s5),
-    child: Center(
-      child: SatEmpty(
-        icon: Icons.tablet_mac_outlined,
-        title: context.l10n.memTitle,
-        body: context.l10n.memPhoneOnly,
-      ),
-    ),
-  );
 }

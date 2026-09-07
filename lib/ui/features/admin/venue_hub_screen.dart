@@ -235,7 +235,6 @@ final _sections = <_HubSection>[
     badgeBuilder: (ref) => ref.watch(venueSettingsProvider).membersEnabled
         ? ref.read(l10nProvider).memHubBadgeOn
         : ref.read(l10nProvider).memHubBadgeOff,
-    phoneBadge: (l) => l.memPhoneOnly,
   ),
   _HubSection(
     label: (l) => l.hubMemberReport,
