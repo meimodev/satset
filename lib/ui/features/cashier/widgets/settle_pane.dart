@@ -409,8 +409,11 @@ class _SettlePaneState extends State<SettlePane> {
                 const SizedBox(height: Sp.s3h),
                 _debtorRow(sc),
               ],
-              const SizedBox(height: Sp.s3h),
-              _methodRow(sc),
+              if (widget.mode != SettleMode.perItem ||
+                  widget.selection.isNotEmpty) ...[
+                const SizedBox(height: Sp.s3h),
+                _methodRow(sc),
+              ],
               const SizedBox(height: Sp.s3),
               if (_pay == PayMethod.tunai)
                 CashPad(
