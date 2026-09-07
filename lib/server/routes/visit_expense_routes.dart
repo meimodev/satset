@@ -22,9 +22,8 @@ import 'package:satset/server/ws_hub.dart';
 /// so a client cannot tell an unentitled venue from an old server.
 ///
 /// Capability split: **recording** needs `recordTableExpense`, the floor's own
-/// authority; **reading** is open to whoever settles or records, because the
-/// cashier has to see what this visit cost before closing it; the **photo** is
-/// a `viewReports` read, where the other proofs already live (ADR-0086).
+/// authority; **reading** is open to any signed-in staff, like table detail.
+/// The **photo** remains a `viewReports` read (ADR-0086).
 Router visitExpenseRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   final r = Router();
 
@@ -116,11 +115,6 @@ Router visitExpenseRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     if (off != null) return off;
     final a = await actor(req);
     if (a == null) return Response(401);
-    if (!a.$2.contains(Capability.recordTableExpense.name) &&
-        !a.$2.contains(Capability.settleBill.name) &&
-        !a.$2.contains(Capability.viewReports.name)) {
-      return forbidden(Capability.recordTableExpense);
-    }
     return json({
       'expenses': [
         for (final e in await visitExpenses(db, id)) visitExpenseJson(e),

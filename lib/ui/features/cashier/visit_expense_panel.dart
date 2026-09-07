@@ -13,6 +13,7 @@ import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_card.dart';
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 import 'package:satset/ui/features/tables/visit_expense_sheet.dart';
 
 /// What this visit has cost the venue (ADR-0130), on the [[Cashier]]'s bill.
@@ -28,31 +29,36 @@ import 'package:satset/ui/features/tables/visit_expense_sheet.dart';
 class VisitExpensePanel extends ConsumerWidget {
   final String visitId;
   final bool billOpen;
+  final bool showEmpty;
+  final String? tableId;
   const VisitExpensePanel({
     super.key,
     required this.visitId,
     required this.billOpen,
+    this.showEmpty = false,
+    this.tableId,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final on = ref.watch(
-      venueSettingsProvider.select((c) => c.tableExpenseOn),
-    );
+    final on = ref.watch(venueSettingsProvider.select((c) => c.tableExpenseOn));
     if (!on) return const SizedBox.shrink();
 
     final sc = context.sat;
     final l10n = context.l10n;
     final summary = ref.watch(visitExpensesProvider(visitId));
     final canSpend = ref.watch(
-      authStateProvider.select(
-        (s) => s.has(Capability.recordTableExpense),
-      ),
+      authStateProvider.select((s) => s.has(Capability.recordTableExpense)),
     );
     // After bill close there is nothing to record against and nothing to say —
     // a closed bill with no expenses is not a fact worth a card.
     final total = summary.valueOrNull?.total ?? 0;
-    if (total == 0 && !(canSpend && billOpen)) return const SizedBox.shrink();
+    if (!showEmpty &&
+        summary.hasValue &&
+        total == 0 &&
+        !(canSpend && billOpen)) {
+      return const SizedBox.shrink();
+    }
 
     return SatCard.plain(
       child: Column(
@@ -66,12 +72,29 @@ class VisitExpensePanel extends ConsumerWidget {
                   style: SatType.labelS(color: sc.textLo),
                 ),
               ),
-              Text(
-                formatIDR(total),
-                style: SatType.monoL(color: sc.textHi),
-              ),
+              if (summary.isLoading)
+                const SatSpinner(size: SatSpinnerSize.xs)
+              else if (summary.hasValue)
+                Text(formatIDR(total), style: SatType.monoL(color: sc.textHi)),
             ],
           ),
+          if (summary.hasError) ...[
+            const SizedBox(height: Sp.s2),
+            Text(l10n.tableExpOffline, style: SatType.bodyS(color: sc.textLo)),
+            SatButton.outline(
+              label: l10n.retry,
+              onTap: () => ref.invalidate(visitExpensesProvider(visitId)),
+            ),
+          ] else if (summary.valueOrNull?.offline == true) ...[
+            const SizedBox(height: Sp.s2),
+            Text(
+              l10n.tableExpProvisional,
+              style: SatType.bodyS(color: sc.textLo),
+            ),
+          ] else if (showEmpty && summary.hasValue && total == 0) ...[
+            const SizedBox(height: Sp.s2),
+            Text(l10n.tableExpNone, style: SatType.bodyS(color: sc.textLo)),
+          ],
           for (final e in summary.valueOrNull?.expenses ?? const []) ...[
             const SizedBox(height: Sp.s2),
             Row(
@@ -79,7 +102,9 @@ class VisitExpensePanel extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     // Venue-authored, so ARB-exempt.
-                    e.note.isEmpty ? e.categoryName : '${e.categoryName} · ${e.note}',
+                    e.note.isEmpty
+                        ? e.categoryName
+                        : '${e.categoryName} · ${e.note}',
                     style: SatType.bodyS(color: sc.textLo),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -98,7 +123,11 @@ class VisitExpensePanel extends ConsumerWidget {
             SatButton.outline(
               label: l10n.tableExpNew,
               icon: Icons.shopping_bag_rounded,
-              onTap: () => showVisitExpenseSheet(context, visitId: visitId),
+              onTap: () => showVisitExpenseSheet(
+                context,
+                visitId: visitId,
+                tableId: tableId,
+              ),
             ),
           ],
         ],

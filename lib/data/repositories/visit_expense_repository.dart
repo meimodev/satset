@@ -145,11 +145,7 @@ class ExpenseCategoriesRepository
     int? sortOrder,
   }) async {
     final api = ref.read(apiClientProvider);
-    final body = {
-      'name': name,
-      'active': ?active,
-      'sortOrder': ?sortOrder,
-    };
+    final body = {'name': name, 'active': ?active, 'sortOrder': ?sortOrder};
     // POST mints, PATCH edits — the shape the preset catalogue uses, so the
     // server can tell "a new category called Tisu" from "rename this one".
     final raw = id == null
@@ -166,9 +162,10 @@ class ExpenseCategoriesRepository
   }
 
   /// What a picker may offer: active only, in the owner's order.
-  List<VisitExpenseCategoryDto> get pickable =>
-      [for (final c in state) if (c.active) c]
-        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+  List<VisitExpenseCategoryDto> get pickable => [
+    for (final c in state)
+      if (c.active) c,
+  ]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
   @override
   void dispose() {
@@ -198,6 +195,14 @@ final expenseCategoriesRepositoryProvider =
 /// (ADR-0130).
 final visitExpensesProvider =
     FutureProvider.family<VisitExpenseSummaryDto, String>((ref, visitId) async {
+      final subscription = ref.read(wsClientProvider).events.listen((event) {
+        if (event.type == WsEventTypes.connected ||
+            (event.type == WsEventTypes.visitExpenseRecorded &&
+                event.payload['visitId'] == visitId)) {
+          ref.invalidateSelf();
+        }
+      });
+      ref.onDispose(subscription.cancel);
       try {
         final raw =
             await ref

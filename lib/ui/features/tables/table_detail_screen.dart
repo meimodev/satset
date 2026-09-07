@@ -39,10 +39,8 @@ import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
-import 'package:satset/data/models/venue_settings_dto.dart';
-import 'package:satset/data/repositories/venue_settings_repository.dart';
 import '../void_flow/line_item_action_sheet.dart';
-import 'visit_expense_sheet.dart';
+import '../cashier/visit_expense_panel.dart';
 import 'package:satset/ui/features/tables/widgets/move_table_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/pending_orders_block.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
@@ -737,6 +735,16 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                                     context.l10n.tblEmptyPhone,
                                     textAlign: TextAlign.center,
                                     style: SatType.bodyM(color: sc.textLo),
+                                  ),
+                                ),
+                              if (table.currentVisitId != null)
+                                Padding(
+                                  padding: const EdgeInsets.all(Sp.s4),
+                                  child: VisitExpensePanel(
+                                    visitId: table.currentVisitId!,
+                                    tableId: table.id,
+                                    billOpen: !table.billClosed,
+                                    showEmpty: true,
                                   ),
                                 ),
                             ],
@@ -1713,17 +1721,6 @@ class _TabletSplit extends StatelessWidget {
                                 enabled: canSeat,
                                 onTap: onSeat,
                               )
-                            : tickets.isEmpty && !hasPending
-                            ? Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(Sp.s7),
-                                  child: Text(
-                                    context.l10n.tblDetailEmptyLines,
-                                    textAlign: TextAlign.center,
-                                    style: SatType.bodyM(color: sc.textLo),
-                                  ),
-                                ),
-                              )
                             : ListView(
                                 padding: const EdgeInsets.fromLTRB(
                                   24,
@@ -1733,6 +1730,15 @@ class _TabletSplit extends StatelessWidget {
                                 ),
                                 children: [
                                   PendingOrdersBlock(tableId: table.id),
+                                  if (tickets.isEmpty && !hasPending)
+                                    Padding(
+                                      padding: const EdgeInsets.all(Sp.s7),
+                                      child: Text(
+                                        context.l10n.tblDetailEmptyLines,
+                                        textAlign: TextAlign.center,
+                                        style: SatType.bodyM(color: sc.textLo),
+                                      ),
+                                    ),
                                   for (final (i, cid)
                                       in Courses.all.map((c) => c.id).indexed)
                                     if (grouped[cid] != null &&
@@ -1749,6 +1755,13 @@ class _TabletSplit extends StatelessWidget {
                                           onTicketTap: onTicketTap,
                                         ),
                                       ),
+                                  if (table.currentVisitId != null)
+                                    VisitExpensePanel(
+                                      visitId: table.currentVisitId!,
+                                      tableId: table.id,
+                                      billOpen: !table.billClosed,
+                                      showEmpty: true,
+                                    ),
                                 ],
                               ),
                       ),
@@ -1896,25 +1909,9 @@ class _ContextPane extends ConsumerWidget {
     final sc = context.sat;
     final auth = ref.watch(
       authStateProvider.select(
-        (s) => (
-          id: s.user?.id,
-          canTakeOrder: s.has(Capability.takeOrder),
-          canSpend: s.has(Capability.recordTableExpense),
-        ),
+        (s) => (id: s.user?.id, canTakeOrder: s.has(Capability.takeOrder)),
       ),
     );
-    // Both halves before the affordance is drawn (ADR-0130): the venue does
-    // this at all, and this person may. `tableExpenseOn` is the one place the
-    // owner switch and the fail-closed mode key are ANDed — reading the bare
-    // preference here would leave an unentitled venue a button that can only
-    // 404.
-    final visitId = table.currentVisitId;
-    final canSpend =
-        auth.canSpend &&
-        visitId != null &&
-        ref.watch(
-          venueSettingsProvider.select((c) => c.tableExpenseOn),
-        );
     final actorId = auth.id;
     // Move is offered only on a live table the caller may operate and that
     // isn't actively held by someone else. Server re-checks the lock anyway.
@@ -2080,21 +2077,6 @@ class _ContextPane extends ConsumerWidget {
                   Icons.swap_horiz_rounded,
                   context.l10n.tblMoveTable,
                   onTap: onMove,
-                ),
-              ],
-              if (canSpend) ...[
-                const SizedBox(height: Sp.s1h),
-                _quickAction(
-                  context,
-                  sc,
-                  Icons.shopping_bag_rounded,
-                  context.l10n.tableExpNew,
-                  onTap: () =>
-                      showVisitExpenseSheet(
-                        context,
-                        visitId: visitId,
-                        tableId: table.id,
-                      ),
                 ),
               ],
             ],

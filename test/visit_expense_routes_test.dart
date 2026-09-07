@@ -215,8 +215,10 @@ void main() {
       expect(body['expense'], isNot(contains('photo')));
     });
 
-    test('reading opens to any of the three', () async {
+    test('reading opens to all authenticated table viewers', () async {
       for (final (i, caps) in [
+        <Capability>{},
+        {Capability.takeOrder},
         {Capability.recordTableExpense},
         {Capability.settleBill},
         {Capability.viewReports},
@@ -269,12 +271,17 @@ void main() {
     test('a missing photo field reads the same as an empty one', () async {
       final caller = await signInForTest(db);
       for (final p in [null, '']) {
-        final res = await call(caller, 'POST', '/visits/v1/expenses', body: {
-          'id': 'e1',
-          'amount': 1000,
-          'categoryId': 'vexc-other',
-          'photoBase64': ?p,
-        });
+        final res = await call(
+          caller,
+          'POST',
+          '/visits/v1/expenses',
+          body: {
+            'id': 'e1',
+            'amount': 1000,
+            'categoryId': 'vexc-other',
+            'photoBase64': ?p,
+          },
+        );
         expect(res.statusCode, 400);
         expect(jsonDecode(await res.readAsString())['code'], 'photo_required');
       }
@@ -361,11 +368,7 @@ void main() {
       );
 
       final expenses = jsonDecode(
-        await (await call(
-          owner,
-          'GET',
-          '/visits/v1/expenses',
-        )).readAsString(),
+        await (await call(owner, 'GET', '/visits/v1/expenses')).readAsString(),
       );
       expect(
         (expenses['expenses'] as List).single['categoryName'],
@@ -379,9 +382,8 @@ void main() {
     final caller = await signInForTest(db, caps: {Capability.takeOrder});
     final res = await call(caller, 'GET', '/expense-categories');
     expect(res.statusCode, 200);
-    final cats =
-        (jsonDecode(await res.readAsString())['categories'] as List)
-            .cast<Map<String, dynamic>>();
+    final cats = (jsonDecode(await res.readAsString())['categories'] as List)
+        .cast<Map<String, dynamic>>();
     expect(cats.map((c) => c['id']), contains('vexc-other'));
   });
 }

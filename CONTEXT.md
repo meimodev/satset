@@ -954,13 +954,15 @@ The guest pays **in full**. The [[Bill (tab)]] total, its receipts and its outst
 
 Capped at the visit's **subtotal of sent, non-voided lines, pre-tax and pre-discount** — you cannot take more out of a table than the table produced. The cap applies to the **running sum** of the visit's expenses and is checked **at capture only, never re-validated**: a later void leaves the expense standing, because the cash already left and unwinding it would be a lie. Append-only — never edited, never deleted, the posture the box takes toward its own rows.
 
+Table viewers can read the current visit’s expense total and entries even without permission to record them. An empty expense list means no spending has been recorded for that visit.
+
 A **mandatory photo** and its own [[Capability]], `recordTableExpense`, are the whole control surface, alongside the cap and an [[Audit]] row. Deliberately **no manager step-up**: approval is unobtainable offline (ADR-0099), so requiring it means the waiter records nothing at all.
 
 Recordable while the visit exists and its bill is open — a [[Table close (detach)|detached]] visit still qualifies. After [[Bill close (Tutup tagihan)|bill close]] the way back is **reopen**, not a grace window; `expenseAmount` snapshots onto the `TableSession` and is rewritten on re-close, exactly as `discountAmount` already does.
 
 Capturable offline as an [[Antrean kirim (send queue)|intent]], never a journal event — one append-only row is not a chain and is never read back. Its photo lives in the client database (ADR-0124), not the prefs blob. A capture with **no cached subtotal is refused**, because a cap you can escape by turning off Wi-Fi is not a cap. At drain the cap is the only refusal that can fire, and like a void's it must not stall the queue.
 
-Gated by the **mode key** `tableExpense` — fail-closed (ADR-0109), ANDed with the owner's own switch in one place, 404 when off. Reached from the [[Visit]]'s surfaces rather than the table tile — table detail's context sheet on a floor venue, the [[Cashier]] bill overlay everywhere — so a [[Kedai (counter mode)|Kedai]] venue with no floor still has it.
+Gated by the **mode key** `tableExpense` — fail-closed (ADR-0109), ANDed with the owner's own switch in one place, 404 when off. Reached from the [[Visit]]'s surfaces rather than the table tile — table detail’s main order area on a floor venue, the [[Cashier]] bill overlay everywhere — so a [[Kedai (counter mode)|Kedai]] venue with no floor still has it.
 
 _Avoid_: routing it through the petty cash box; letting it move a bill total or an outstanding (that is a [[Diskon (discount)]]); redefining `netTotal` or `settledTotal`; an optional photo; a time-based grace period after bill close.
 
