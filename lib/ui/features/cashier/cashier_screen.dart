@@ -83,6 +83,9 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
       venueSettingsProvider.select((v) => v.membersOn && v.memberDebtEnabled),
     );
     final piutangOnly = ref.watch(historyOnAccountProvider);
+    final settledOpen = open
+        .where((b) => b.fullySettled && (!piutangOnly || b.piutangAmount > 0))
+        .length;
 
     return SettlementRefusalListener(
       child: Scaffold(
@@ -106,13 +109,12 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Every settled count below reads `page.total`, never
-                          // `closed.length` — the rows on screen are one page of
-                          // the window, the count is the whole of it (ADR-0079).
+                          // Count the whole history window plus paid bills
+                          // awaiting explicit closure, not just the loaded page.
                           _Header(
                             running: unpaid.length,
                             takeaway: open.where((b) => b.isTakeaway).length,
-                            settled: page.total,
+                            settled: page.total + settledOpen,
                             outstanding: unpaid.fold<int>(
                               0,
                               (a, b) => a + b.outstanding,
@@ -143,7 +145,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                           _SegmentRow(
                             selected: _seg,
                             perluDitagih: unpaid.length,
-                            lunas: page.total,
+                            lunas: page.total + settledOpen,
                             semua: open.length + page.total,
                             piutangTotal: debtOn ? page.piutangTotal : null,
                             piutangOnly: piutangOnly,
@@ -281,7 +283,12 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
         for (final b in unpaid)
           if (!_detachedOnly || b.detached) b,
       ],
-      _Segment.lunas => const <BillSummary>[],
+      _Segment.lunas => [
+        for (final b in open)
+          if (b.fullySettled &&
+              (!ref.watch(historyOnAccountProvider) || b.piutangAmount > 0))
+            b,
+      ],
       _Segment.semua => open,
     };
     final past = _seg == _Segment.perluDitagih

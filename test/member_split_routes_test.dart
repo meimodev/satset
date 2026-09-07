@@ -267,8 +267,15 @@ void main() {
         200,
       );
     }
-    // No explicit close: the last payment settles the bill and it closes
-    // itself (ADR-0069), which is the path the points ride in production.
+    // Payment settles the money; only confirming close earns the points.
+    final settled = await bill();
+    expect(settled['fullySettled'], isTrue);
+    expect(settled['billClosedAt'], isNull);
+    expect(settled['paidAmount'], 300000);
+    for (final m in [a1, b1, host]) {
+      expect(await memberPoints(db, m.id), 0);
+    }
+    expect((await post('/settlement/visits/v1/bill-close')).statusCode, 200);
     expect((await bill())['billClosedAt'], isNotNull);
 
     // 1 poin per Rp 1.000: one share each for the guests, one for the host.
@@ -301,6 +308,7 @@ void main() {
         'amount': 100000,
       });
     }
+    expect((await post('/settlement/visits/v1/bill-close')).statusCode, 200);
     expect((await bill())['billClosedAt'], isNotNull);
     expect(await memberPoints(db, a1.id), 100);
 

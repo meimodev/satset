@@ -2811,6 +2811,9 @@ class AppL10nId extends AppL10n {
   String get cshReceiptLoadFailed => 'Gagal memuat struk.';
 
   @override
+  String get cshKeepBillOpen => 'Biarkan terbuka';
+
+  @override
   String get cshCloseBill => 'Tutup tagihan';
 
   @override

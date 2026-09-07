@@ -1116,6 +1116,7 @@
   "cshReceiptTableCrumb": "Receipt · Table {table}",
   "cshLoadFailed": "Couldn't load the bill.",
   "cshReceiptLoadFailed": "Couldn't load the receipt.",
+  "cshKeepBillOpen": "Keep open",
   "cshCloseBill": "Close bill",
   "cshCloseBillBody": "Lock table {table}'s bill as settled? This ends the bill.",
   "cshWriteOffTitle": "Close bill — written off",

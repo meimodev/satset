@@ -4669,6 +4669,12 @@ abstract class AppL10n {
   /// **'Gagal memuat struk.'**
   String get cshReceiptLoadFailed;
 
+  /// No description provided for @cshKeepBillOpen.
+  ///
+  /// In id, this message translates to:
+  /// **'Biarkan terbuka'**
+  String get cshKeepBillOpen;
+
   /// No description provided for @cshCloseBill.
   ///
   /// In id, this message translates to:

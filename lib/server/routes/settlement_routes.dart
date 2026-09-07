@@ -84,7 +84,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   /// (the table is already freed, so this completes ADR-0024's pair) or mirror
   /// a Lunas pill onto the still-occupied table and let the snapshot defer.
   ///
-  /// Shared by the automatic Lunas close (ADR-0069) and the manual tak-tertagih
+  /// Shared by the confirmed Lunas close and the manual tak-tertagih
   /// write-off, because they differ only in `loss` and the audit line.
   Future<bool> performBillClose(
     Visit visit, {
@@ -245,37 +245,6 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       return didSnapshot;
     });
     return snapshotted;
-  }
-
-  /// ADR-0069 — a bill closes itself the moment it settles. Only ever the Lunas
-  /// path: a write-off has `outstanding > 0` by definition, so it can never
-  /// reach here. Returns true when it closed (and therefore already broadcast).
-  Future<bool> autoCloseIfSettled(
-    String visitId,
-    String? actorId, {
-    DateTime? at,
-  }) async {
-    final v = await _visit(db, visitId);
-    if (v == null || v.billClosedAt != null) return false;
-    final bill = await _buildBill(db, visitId);
-    if (bill == null || bill['fullySettled'] != true) return false;
-    // A bill settled by a replayed payment closed when that payment was taken,
-    // not when the socket came back.
-    await performBillClose(v, actorId: actorId, loss: 0, at: at);
-    return true;
-  }
-
-  /// Every mutation that can move a bill *towards* settled goes through this
-  /// rather than [broadcastBill] — payment, assignment, split, discount. The
-  /// ones that can only move it away (refund, reopen, deleting a receipt) keep
-  /// the plain broadcast, so a reopen is not undone a millisecond later.
-  Future<void> settleOrBroadcast(
-    String visitId,
-    String? actorId, {
-    DateTime? at,
-  }) async {
-    if (await autoCloseIfSettled(visitId, actorId, at: at)) return;
-    await broadcastBill(visitId);
   }
 
   /// Reject mutations on a bill the cashier already locked (bill-closed but the
@@ -541,7 +510,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       }
       await _recompute(db, visitId);
     });
-    await settleOrBroadcast(visitId, (await resolve(req))?.id);
+    await broadcastBill(visitId);
     return _ok({'receiptId': id, 'bill': await _buildBill(db, visitId)});
   });
 
@@ -637,7 +606,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       }
       await _recompute(db, visitId);
     });
-    await settleOrBroadcast(visitId, (await resolve(req))?.id);
+    await broadcastBill(visitId);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
@@ -695,7 +664,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             );
       }
     });
-    await settleOrBroadcast(visitId, (await resolve(req))?.id);
+    await broadcastBill(visitId);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
@@ -876,7 +845,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       actor: actor?.id,
       amountCents: applied?.amount,
     );
-    await settleOrBroadcast(visitId, actor?.id);
+    await broadcastBill(visitId);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
@@ -1028,7 +997,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       tableId: visit.tableId,
       actor: actor?.id,
     );
-    await settleOrBroadcast(visitId, actor?.id);
+    await broadcastBill(visitId);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
@@ -1306,7 +1275,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       }
     }
     await _recompute(db, visitId);
-    await settleOrBroadcast(visitId, actor?.id);
+    await broadcastBill(visitId);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
@@ -1432,7 +1401,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       });
     }
     await _recompute(db, visitId);
-    await settleOrBroadcast(visitId, actor?.id);
+    await broadcastBill(visitId);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
@@ -1540,7 +1509,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       await writeReceiptMember(receiptId, member.id, cfg, actor?.id);
     });
     await _recompute(db, visitId);
-    await settleOrBroadcast(visitId, actor?.id);
+    await broadcastBill(visitId);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
@@ -1662,7 +1631,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       });
     }
     await _recompute(db, visitId);
-    await settleOrBroadcast(visitId, actor?.id);
+    await broadcastBill(visitId);
     return _ok({'bill': await _buildBill(db, visitId)});
   });
 
@@ -1836,7 +1805,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       });
     }
     final captured = _capturedAt(body);
-    await settleOrBroadcast(visitId, user?.id, at: captured);
+    await broadcastBill(visitId);
     // A payment collected on a dark till and drained after its own business
     // day closed its books is accepted — the cash is in the drawer, and
     // refusing it would lose the record, not the money. It gets a row of its
@@ -2189,9 +2158,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final outstanding = bill['outstanding'] as int;
     final fullyAssigned = bill['fullyAssigned'] == true;
     if (!writeOff) {
-      // Since ADR-0069 a settled bill has already closed itself, so reaching
-      // here on the Lunas path means it is not settled. Kept as a route for
-      // the client that races the auto-close, not as a step in the flow.
+      // Recording the final payment leaves the bill open. Only the cashier
+      // confirming this explicit action locks it and earns member points.
       if (outstanding > 0 || !fullyAssigned) {
         return _err(
           409,
@@ -2913,7 +2881,7 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
   final allUnitsAssigned = linesJson.every(
     (l) => (l['assignedUnits'] as int) >= (l['qty'] as int),
   );
-  // Gates whether the bill closes itself (ADR-0069), so it lives in
+  // Gates whether the bill is eligible for confirmed close, so it lives in
   // `bill_math` as a named pure function with its own test rather than as an
   // expression here. See [isFullyAssigned].
   final fullyAssigned = isFullyAssigned(

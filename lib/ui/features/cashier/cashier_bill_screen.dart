@@ -125,12 +125,20 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
   /// Last failed operation, shown inline above the bill. On the money path the
   /// operation outcome stays attached to the document it may have changed.
   String? _error;
+  bool _closingBill = false;
 
   SettlementRepository get _repo => ref.read(settlementProvider.notifier);
 
   Future<void> _run(Future<Bill> Function() op) async {
+    final wasSettled =
+        ref
+            .read(billDetailProvider(widget.visitId))
+            .valueOrNull
+            ?.fullySettled ??
+        false;
+    Bill? updated;
     try {
-      await op();
+      updated = await op();
       if (mounted) setState(() => _error = null);
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = _msg(ref.read(l10nProvider), e));
@@ -151,7 +159,14 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
       }
       return;
     }
+    if (!mounted) return;
     ref.invalidate(billDetailProvider(widget.visitId));
+    if (!wasSettled &&
+        updated != null &&
+        updated.fullySettled &&
+        updated.billClosedAt == null) {
+      await _closeBill(context, ref, updated);
+    }
   }
 
   @override
@@ -214,42 +229,52 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
     WidgetRef ref,
     Bill bill,
   ) async {
-    final writeOff = !bill.fullySettled;
-    String? reason;
-    if (writeOff) {
-      reason = await _askWriteOffReason(context, bill.outstanding);
-      if (reason == null) return; // cancelled
-    } else {
-      final ok = await showSatDialog<bool>(
-        context,
-        builder: (c) => AlertDialog(
-          title: Text(context.l10n.cshCloseBill),
-          content: Text(context.l10n.cshCloseBillBody(bill.tableLabel ?? '')),
-          actions: [
-            SatButton.ghost(
-              label: context.l10n.cancel,
-              onTap: () => Navigator.pop(c, false),
-            ),
-            SatButton.primary(
-              label: context.l10n.cshCloseBill,
-              onTap: () => Navigator.pop(c, true),
-            ),
-          ],
-        ),
-      );
-      if (ok != true) return;
-    }
+    if (_closingBill) return;
+    _closingBill = true;
     try {
-      await ref
-          .read(settlementProvider.notifier)
-          .closeBill(bill.visitId, writeOff: writeOff, reason: reason);
-      if (context.mounted) Navigator.of(context).pop();
-    } on ApiException catch (e) {
-      if (mounted) setState(() => _error = _msg(ref.read(l10nProvider), e));
+      final writeOff = !bill.fullySettled;
+      String? reason;
+      if (writeOff) {
+        reason = await _askWriteOffReason(context, bill.outstanding);
+        if (reason == null) return; // cancelled
+      } else {
+        final ok = await showSatDialog<bool>(
+          context,
+          builder: (c) => AlertDialog(
+            title: Text(context.l10n.cshCloseBill),
+            content: Text(context.l10n.cshCloseBillBody(bill.tableLabel ?? '')),
+            actions: [
+              SatButton.ghost(
+                label: context.l10n.cshKeepBillOpen,
+                onTap: () => Navigator.pop(c, false),
+              ),
+              SatButton.primary(
+                label: context.l10n.cshCloseBill,
+                onTap: () => Navigator.pop(c, true),
+              ),
+            ],
+          ),
+        );
+        if (ok != true) return;
+      }
+      try {
+        await ref
+            .read(settlementProvider.notifier)
+            .closeBill(bill.visitId, writeOff: writeOff, reason: reason);
+        if (context.mounted) Navigator.of(context).pop();
+      } on ApiException catch (e) {
+        if (mounted) setState(() => _error = _msg(ref.read(l10nProvider), e));
+      } catch (_) {
+        if (mounted) {
+          setState(() => _error = ref.read(l10nProvider).cshErrOffline);
+        }
+      }
+    } finally {
+      _closingBill = false;
     }
   }
 
-  /// Unlock a bill that closed itself (ADR-0069). No confirm dialog: reopening
+  /// Unlock a closed bill. No confirm dialog: reopening
   /// is the *recovery* from a mis-tap, and putting a second decision in front of
   /// it is how a cashier ends up stuck. It is audited, and the money is
   /// untouched — only the lock comes off.
@@ -490,6 +515,7 @@ class _BillBodyState extends State<_BillBody> {
   Widget _donePane() => _DonePane(
     bill: bill,
     onPrint: () => widget.printDoc(null),
+    onClose: bill.billClosedAt == null ? widget.onCloseBill : null,
     onReopen: bill.billClosedAt != null ? widget.onReopenBill : null,
   );
 
@@ -2332,10 +2358,12 @@ class _DonePane extends StatelessWidget {
 
   /// Null when the bill carries no close stamp — there is no lock to remove.
   final VoidCallback? onReopen;
+  final VoidCallback? onClose;
   const _DonePane({
     required this.bill,
     required this.onPrint,
     required this.onReopen,
+    required this.onClose,
   });
 
   @override
@@ -2402,6 +2430,14 @@ class _DonePane extends StatelessWidget {
             icon: Icons.print_rounded,
             onTap: onPrint,
           ),
+          if (onClose != null) ...[
+            const SizedBox(height: Sp.s2),
+            SatButton.outline(
+              label: context.l10n.cshCloseBill,
+              icon: Icons.lock_outline_rounded,
+              onTap: onClose,
+            ),
+          ],
           if (onReopen != null) ...[
             const SizedBox(height: Sp.s2),
             SatButton.outline(
@@ -2716,7 +2752,9 @@ class PastBillDetailScreen extends ConsumerWidget {
             onBack: () => Navigator.of(context).pop(),
             crumbs: [
               context.l10n.cshCrumbCashier,
-              (tableLabel ?? '').isEmpty ? context.l10n.cshCrumbBill : tableLabel!,
+              (tableLabel ?? '').isEmpty
+                  ? context.l10n.cshCrumbBill
+                  : tableLabel!,
             ],
             showAvatar: false,
             trailingPills: context.layout.useTabletShell

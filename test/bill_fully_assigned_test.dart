@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 
 /// `isFullyAssigned` decides whether a bill can be settled AND — since
-/// ADR-0069 — whether it **closes itself**. Two decisions on one predicate, on
+/// ADR-0138 — whether it **can be closed**. Two decisions on one predicate, on
 /// the money path, so it is pinned rather than trusted.
 ///
 /// The cases that matter are the ones where the two readings disagree: a bill
@@ -12,7 +12,7 @@ void main() {
   group('isFullyAssigned', () {
     test('a bill with no receipts is never fully assigned', () {
       // Nobody has claimed anything, whatever the arithmetic says. Without this
-      // guard a zero-total bill would report itself covered and auto-close.
+      // guard a zero-total bill would report itself covered and allow closure.
       expect(
         isFullyAssigned(
           hasReceipts: false,
@@ -49,7 +49,7 @@ void main() {
     });
 
     test('itemized with units still loose is not covered', () {
-      // Half the table assigned. This is the state that must NOT auto-close:
+      // Half the table assigned. This is the state that must NOT allow settled closure:
       // one guest has paid, the rest of the food is unclaimed.
       expect(
         isFullyAssigned(

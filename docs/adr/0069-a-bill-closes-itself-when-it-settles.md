@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted. Supersedes ADR-0024's two-phase settlement for the **Lunas** path only;
+Superseded by [ADR-0138](0138-paid-bills-close-only-with-confirmation.md). The following records the former decision.
+
+Previously accepted. Supersedes ADR-0024's two-phase settlement for the **Lunas** path only;
 ADR-0024's decoupling of the visit from the table, and its tak-tertagih write-off,
 both stand.
 

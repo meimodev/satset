@@ -203,7 +203,10 @@ void main() {
             onSettlement?.call(settlement);
             return settlement;
           }),
-          billDetailProvider('v1').overrideWith((ref) async => fixture ?? bill),
+          billDetailProvider('v1').overrideWith(
+            (ref) async =>
+                (ref.read(settlementProvider.notifier) as _StubSettlement).bill,
+          ),
         ],
         child: MaterialApp(
           // Pinned, exactly as the app pins it (ADR-0083). Without this the
@@ -407,6 +410,150 @@ void main() {
     expect(settlement.paymentMethod, 'tunai');
   });
 
+  final paidOpen = Bill.fromJson({
+    ...billJson,
+    'paidAmount': 116550,
+    'outstanding': 0,
+    'fullyAssigned': true,
+    'fullySettled': true,
+    'receipts': [
+      {
+        'id': 'r2',
+        'label': 'A',
+        'total': 116550,
+        'paidNet': 116550,
+        'status': 'paid',
+        'payments': [
+          {
+            'id': 'paid-final',
+            'method': 'tunai',
+            'amount': 116550,
+            'at': '2026-07-29T12:30:00.000',
+          },
+        ],
+      },
+    ],
+  });
+
+  Future<void> payItems(WidgetTester tester, {bool all = true}) async {
+    await pickMode(tester, 'Per item');
+    await tester.tap(find.text('Nasi Goreng').first);
+    await drain(tester);
+    if (all) {
+      await tester.tap(find.text('Es Teh').first);
+      await drain(tester);
+    }
+    final exact = find.text('Pas');
+    await tester.ensureVisible(exact);
+    await tester.tap(exact);
+    await drain(tester);
+    final confirm = find.textContaining('Terima ${all ? 2 : 1} item');
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await drain(tester);
+  }
+
+  Finder closeDialogAction() => find
+      .descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Tutup tagihan'),
+      )
+      .last;
+
+  testWidgets('final payment asks before closing and Keep open preserves it', (
+    tester,
+  ) async {
+    late _StubSettlement settlement;
+    await pumpBill(
+      tester,
+      tablet: true,
+      onSettlement: (value) {
+        settlement = value;
+        value.paymentResult = paidOpen;
+      },
+    );
+    await payItems(tester);
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(settlement.closeCount, 0);
+    await tester.tap(find.text('Biarkan terbuka'));
+    await drain(tester);
+
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(settlement.closeCount, 0);
+    expect(settlement.bill.billClosedAt, isNull);
+    expect(settlement.bill.receipts.single.payments.single.amount, 116550);
+    expect(find.text('Tutup tagihan'), findsWidgets);
+  });
+
+  testWidgets('confirming final payment dialog explicitly closes the bill', (
+    tester,
+  ) async {
+    late _StubSettlement settlement;
+    await pumpBill(
+      tester,
+      tablet: true,
+      viaEntryPoint: true,
+      onSettlement: (value) {
+        settlement = value;
+        value.paymentResult = paidOpen;
+      },
+    );
+    await payItems(tester);
+    expect(settlement.closeCount, 0);
+    await tester.tap(closeDialogAction());
+    await drain(tester);
+
+    expect(settlement.closeCount, 1);
+    expect(settlement.closedVisitId, 'v1');
+    expect(settlement.closedWithWriteOff, false);
+    expect(find.byType(CashierBillView), findsNothing);
+  });
+
+  testWidgets('partial payment leaves bill open without a close dialog', (
+    tester,
+  ) async {
+    late _StubSettlement settlement;
+    await pumpBill(
+      tester,
+      tablet: true,
+      onSettlement: (value) {
+        settlement = value;
+        value.paymentResult = partPaid;
+      },
+    );
+    await payItems(tester, all: false);
+
+    expect(settlement.paidAmount, isPositive);
+    expect(settlement.bill.fullySettled, false);
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(settlement.closeCount, 0);
+  });
+
+  testWidgets('paid open bill can be closed later with confirmation', (
+    tester,
+  ) async {
+    late _StubSettlement settlement;
+    await pumpBill(
+      tester,
+      tablet: true,
+      fixture: paidOpen,
+      viaEntryPoint: true,
+      onSettlement: (value) => settlement = value,
+    );
+    expect(find.byType(AlertDialog), findsNothing);
+    final close = find.text('Tutup tagihan').last;
+    await tester.ensureVisible(close);
+    await tester.tap(close);
+    await drain(tester);
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(settlement.closeCount, 0);
+    await tester.tap(closeDialogAction());
+    await drain(tester);
+    expect(settlement.closeCount, 1);
+    expect(settlement.closedWithWriteOff, false);
+  });
+
   testWidgets('unpaid bill offers every payment method', (tester) async {
     await pumpBill(tester, tablet: true);
 
@@ -441,7 +588,11 @@ class _StubAuth extends AuthRepository {
 class _StubSettlement extends SettlementRepository {
   _StubSettlement({required super.ref, required this.bill});
 
-  final Bill bill;
+  Bill bill;
+  Bill? paymentResult;
+  int closeCount = 0;
+  String? closedVisitId;
+  bool? closedWithWriteOff;
   String? paymentMethod;
   String? paymentPhoto;
   int? paidAmount;
@@ -472,11 +623,7 @@ class _StubSettlement extends SettlementRepository {
     String? ticketId,
     String? approverPin,
   }) async {
-    applied.add((
-      receiptId: receiptId,
-      ticketId: ticketId,
-      presetId: presetId,
-    ));
+    applied.add((receiptId: receiptId, ticketId: ticketId, presetId: presetId));
     return bill;
   }
 
@@ -493,7 +640,19 @@ class _StubSettlement extends SettlementRepository {
     paymentMethod = method;
     paymentPhoto = photoBase64;
     paidAmount = amount;
+    bill = paymentResult ?? bill;
     return bill;
+  }
+
+  @override
+  Future<void> closeBill(
+    String visitId, {
+    bool writeOff = false,
+    String? reason,
+  }) async {
+    closeCount++;
+    closedVisitId = visitId;
+    closedWithWriteOff = writeOff;
   }
 }
 

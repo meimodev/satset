@@ -2829,6 +2829,9 @@ class AppL10nEn extends AppL10n {
   String get cshReceiptLoadFailed => 'Couldn\'t load the receipt.';
 
   @override
+  String get cshKeepBillOpen => 'Keep open';
+
+  @override
   String get cshCloseBill => 'Close bill';
 
   @override

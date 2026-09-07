@@ -271,7 +271,7 @@ void main() {
     expect(projected['discountAmount'], 16000);
   });
 
-  test('a replayed settlement closes when the money was taken', () async {
+  test('replayed payment stays open until the captured close is replayed', () async {
     // The whole point of ADR-0123 §capturedAt: a bill collected at 23:50 on a
     // dark till and drained at 00:10 belongs to the shift that collected it.
     // The payment row and the session it is filed under must agree — a
@@ -295,6 +295,17 @@ void main() {
       'capturedAt': captured.toIso8601String(),
     });
     expect(pay.statusCode, 200, reason: await pay.readAsString());
+
+    final settled = await serverBill();
+    expect(settled['fullySettled'], isTrue);
+    expect(settled['billClosedAt'], isNull);
+    expect(settled['paidAmount'], 46620);
+    expect(
+      (await post('/settlement/visits/v1/bill-close', {
+        'capturedAt': captured.toIso8601String(),
+      })).statusCode,
+      200,
+    );
 
     final v = await (db.select(
       db.visits,
@@ -363,6 +374,12 @@ void main() {
     });
     expect(pay.statusCode, 200, reason: await pay.readAsString());
     expect((await serverBill())['fullySettled'], isTrue);
+    expect(
+      (await post('/settlement/visits/v1/bill-close', {
+        'capturedAt': captured.toIso8601String(),
+      })).statusCode,
+      200,
+    );
 
     final pts = await (db.select(
       db.memberPoints,
