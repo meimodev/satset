@@ -897,151 +897,190 @@ class _LinesSection extends ConsumerWidget {
     final free = l.unassignedUnits;
     final picked = selection[l.ticketId] ?? 0;
     final pickable = selectable && free > 0;
-    return ListTile(
-      dense: true,
-      onTap: pickable ? () => onToggle?.call(l) : null,
-      tileColor: picked > 0
-          ? sc.accentSoft
-          : pending
-          ? sc.warn.withValues(alpha: 0.08)
-          : null,
-      shape: (pending || picked > 0)
-          ? RoundedRectangleBorder(borderRadius: SatR.a(8))
-          : null,
-      leading: selectable
-          ? Icon(
-              picked > 0
-                  ? Icons.check_circle_rounded
-                  : free == 0
-                  ? Icons.lock_rounded
-                  : Icons.circle_outlined,
-              size: 20,
-              color: picked > 0
-                  ? sc.accentText
-                  : free == 0
-                  ? sc.textDim
-                  : sc.textLo,
-            )
-          : null,
-      title: Text(
-        '${l.name}${l.variantName.isNotEmpty ? ' · ${l.variantName}' : ''}',
-        style: SatType.bodyM(color: sc.textHi),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '${l.qty} × ${formatIDR(l.unitPrice)}',
-            style: (pending
-                ? SatType.labelS(color: pending ? sc.warn : sc.textLo)
-                : SatType.bodyS(color: pending ? sc.warn : sc.textLo)),
-          ),
-          if (bill.ticketAttribution)
-            Padding(
-              padding: const EdgeInsets.only(top: Sp.s1),
-              child: Wrap(
-                spacing: Sp.s2,
-                crossAxisAlignment: WrapCrossAlignment.center,
+    // Keep the name and metadata out of a ListTile's narrow subtitle slot.
+    // Prices and actions can wrap independently, including at larger text sizes.
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: Sp.s1),
+      child: Semantics(
+        key: ValueKey('bill-line-${l.ticketId}'),
+        selected: selectable ? picked > 0 : null,
+        button: pickable,
+        child: Material(
+          color: picked > 0
+              ? sc.accentSoft
+              : pending
+              ? sc.warn.withValues(alpha: 0.08)
+              : Colors.transparent,
+          borderRadius: SatR.sm,
+          child: InkWell(
+            onTap: pickable ? () => onToggle?.call(l) : null,
+            borderRadius: SatR.sm,
+            child: Padding(
+              padding: const EdgeInsets.all(Sp.s2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SatChip.tag(
-                    icon: l.memberId == null
-                        ? Icons.person_outline
-                        : Icons.badge_outlined,
-                    label: l.memberName ?? 'Tanpa pelanggan',
-                    size: SatChipSize.sm,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (selectable) ...[
+                        Icon(
+                          picked > 0
+                              ? Icons.check_circle_rounded
+                              : free == 0
+                              ? Icons.lock_rounded
+                              : Icons.circle_outlined,
+                          size: 24,
+                          color: picked > 0
+                              ? sc.accentText
+                              : free == 0
+                              ? sc.textDim
+                              : sc.textLo,
+                        ),
+                        const SizedBox(width: Sp.s2),
+                      ],
+                      Expanded(
+                        child: Text(
+                          l.name,
+                          style: SatType.bodyL(color: sc.textHi),
+                        ),
+                      ),
+                    ],
                   ),
-                  SatButton.ghost(
-                    label: l.memberId == null
-                        ? context.l10n.cshMemberFind
-                        : context.l10n.edit,
-                    size: SatButtonSize.sm,
-                    onTap: l.memberLocked
-                        ? null
-                        : () => _assignMember(context, l),
+                  if (l.variantName.isNotEmpty)
+                    Text(l.variantName, style: SatType.bodyS(color: sc.textLo)),
+                  const SizedBox(height: Sp.s1),
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: Sp.s3,
+                    runSpacing: Sp.s1,
+                    children: [
+                      Text(
+                        '${l.qty} × ${formatIDR(l.unitPrice)}',
+                        style: SatType.bodyS(color: sc.textLo),
+                      ),
+                      Text(
+                        formatIDR(l.lineTotal),
+                        style: SatType.monoM(color: sc.textHi),
+                      ),
+                    ],
                   ),
-                  if (l.memberId != null)
-                    SatButton.ghost(
-                      label: context.l10n.cshMemberDetach,
-                      size: SatButtonSize.sm,
-                      onTap: l.memberLocked
-                          ? null
-                          : () => run(
-                              () => repo.assignTicketMembers(bill.visitId, [
-                                l.ticketId,
-                              ], null),
+                  if (bill.ticketAttribution)
+                    Padding(
+                      padding: const EdgeInsets.only(top: Sp.s1),
+                      child: Wrap(
+                        spacing: Sp.s2,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          SatChip.tag(
+                            icon: l.memberId == null
+                                ? Icons.person_outline
+                                : Icons.badge_outlined,
+                            label: l.memberName ?? 'Tanpa pelanggan',
+                            size: SatChipSize.sm,
+                          ),
+                          SatButton.ghost(
+                            label: l.memberId == null
+                                ? context.l10n.cshMemberFind
+                                : context.l10n.edit,
+                            size: SatButtonSize.md,
+                            onTap: l.memberLocked
+                                ? null
+                                : () => _assignMember(context, l),
+                          ),
+                          if (l.memberId != null)
+                            SatButton.ghost(
+                              label: context.l10n.cshMemberDetach,
+                              size: SatButtonSize.md,
+                              onTap: l.memberLocked
+                                  ? null
+                                  : () => run(
+                                      () => repo.assignTicketMembers(
+                                        bill.visitId,
+                                        [l.ticketId],
+                                        null,
+                                      ),
+                                    ),
                             ),
+                        ],
+                      ),
+                    ),
+                  // The give-backs on this line, and the way to add one. Same row
+                  // shape as the [[Pemilik tiket]] chip above it on purpose (ADR-0126):
+                  // "whose is this" and "what came off this" are asked of the same
+                  // thing — the line — so they are answered in the same place.
+                  _discountChips(context, ref, l),
+                  // Where this dish's units went, not just how many are placed: a
+                  // "2/3 diatur" count never answered *whose*. One chip per owning
+                  // receipt, plus an amber `?` chip for units still free. ADR-0063.
+                  if (assignable) _ownerChips(context, l),
+                  for (final m in l.modifiers)
+                    Text(
+                      '${m.display}'
+                      '${m.priceDelta != 0 ? ' (${m.priceDelta > 0 ? '+' : '−'}${groupRupiah(m.priceDelta.abs())})' : ''}',
+                      style: SatType.bodyS(color: sc.textLo),
+                    ),
+                  if (hasNote)
+                    Text(
+                      context.l10n.cshNote(l.note!.trim()),
+                      style: SatType.bodyS(color: sc.textLo),
+                    ),
+
+                  if (pickable && picked > 0 && free > 1)
+                    Padding(
+                      padding: const EdgeInsets.only(top: Sp.s2),
+                      child: Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: Sp.s2,
+                        runSpacing: Sp.s1,
+                        children: [
+                          Text(
+                            context.l10n.cshPickedOf(picked, free),
+                            style: SatType.labelS(color: sc.accentText),
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SatIconButton.outline(
+                                icon: Icons.remove_rounded,
+                                size: 48,
+                                tooltip: context.l10n.cshUnitDec,
+                                onTap: picked <= 1
+                                    ? null
+                                    : () => onUnits?.call(l, picked - 1),
+                              ),
+                              const SizedBox(width: Sp.s2),
+                              SatIconButton.outline(
+                                icon: Icons.add_rounded,
+                                size: 48,
+                                tooltip: context.l10n.cshUnitInc,
+                                onTap: picked >= free
+                                    ? null
+                                    : () => onUnits?.call(l, picked + 1),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (assignable)
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: SatButton.ghost(
+                        label: assigned >= l.qty
+                            ? context.l10n.edit
+                            : context.l10n.cshAssign,
+                        onTap: () => _assignSheet(context, l),
+                      ),
                     ),
                 ],
               ),
             ),
-          // The give-backs on this line, and the way to add one. Same row
-          // shape as the [[Pemilik tiket]] chip above it on purpose (ADR-0126):
-          // "whose is this" and "what came off this" are asked of the same
-          // thing — the line — so they are answered in the same place.
-          _discountChips(context, ref, l),
-          // Where this dish's units went, not just how many are placed: a
-          // "2/3 diatur" count never answered *whose*. One chip per owning
-          // receipt, plus an amber `?` chip for units still free. ADR-0063.
-          if (assignable) _ownerChips(context, l),
-          for (final m in l.modifiers)
-            Text(
-              '${m.display}'
-              '${m.priceDelta != 0 ? ' (${m.priceDelta > 0 ? '+' : '−'}${groupRupiah(m.priceDelta.abs())})' : ''}',
-              style: SatType.bodyS(color: sc.textLo),
-            ),
-          if (hasNote)
-            Text(
-              context.l10n.cshNote(l.note!.trim()),
-              style: SatType.bodyS(color: sc.textLo),
-            ),
-          // The partial case only. A line split between two guests is rare, so
-          // it reveals a stepper rather than taxing the common whole-line tap
-          // with one (ADR-0037 survives, the frequent gesture stays one tap).
-          if (pickable && picked > 0 && free > 1)
-            Padding(
-              padding: const EdgeInsets.only(top: Sp.s1),
-              child: Row(
-                children: [
-                  Text(
-                    context.l10n.cshPickedOf(picked, free),
-                    style: SatType.labelS(color: sc.accentText),
-                  ),
-                  const SizedBox(width: Sp.s2),
-                  SatIconButton.plain(
-                    icon: Icons.remove_rounded,
-                    tooltip: context.l10n.cshUnitDec,
-                    onTap: picked <= 1
-                        ? null
-                        : () => onUnits?.call(l, picked - 1),
-                  ),
-                  SatIconButton.plain(
-                    icon: Icons.add_rounded,
-                    tooltip: context.l10n.cshUnitInc,
-                    onTap: picked >= free
-                        ? null
-                        : () => onUnits?.call(l, picked + 1),
-                  ),
-                ],
-              ),
-            ),
-        ],
+          ),
+        ),
       ),
-      // ponytail: SatButton centers its content, so it eats every pixel of a
-      // loose constraint — ListTile hands trailing the full tile width.
-      trailing: assignable
-          ? SizedBox(
-              width: 84,
-              child: SatButton.ghost(
-                label: assigned >= l.qty
-                    ? context.l10n.edit
-                    : context.l10n.cshAssign,
-                onTap: () => _assignSheet(context, l),
-              ),
-            )
-          : Text(
-              formatIDR(l.lineTotal),
-              style: SatType.monoM(color: sc.textHi),
-            ),
     );
   }
 
@@ -1100,7 +1139,7 @@ class _LinesSection extends ConsumerWidget {
               label: (mine != null || held != null)
                   ? context.l10n.cshRemoveDiscount
                   : context.l10n.cshDiscount,
-              size: SatButtonSize.sm,
+              size: SatButtonSize.md,
               onTap: () => _lineDiscount(context, ref, l, owner, mine, held),
             ),
           if (frozen)
@@ -2281,46 +2320,49 @@ class _ReceiptItemRow extends ConsumerWidget {
 
     return InkWell(
       onTap: canEditDiscount ? onTap : null,
-      child: Padding(
-        padding: const EdgeInsets.only(top: Sp.sHair),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '$qtyUnits× $name$variant',
-                    style: SatType.bodyS(color: sc.textHi),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: Sp.s2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '$qtyUnits× $name$variant',
+                      style: SatType.bodyL(color: sc.textHi),
+                    ),
+                  ),
+                  if (canEditDiscount && manualDiscount == null)
+                    Icon(Icons.sell_outlined, size: 20, color: sc.textLo),
+                ],
+              ),
+              // Every source that gave something away on this line, each on its
+              // own row. Tapping edits the cashier's; the tier and redemption
+              // rows are shown so the guest's slip and this pane agree, and are
+              // removed from the member panel.
+              for (final d in existing)
+                Padding(
+                  padding: const EdgeInsets.only(left: Sp.s3, top: Sp.sHair),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          d.label,
+                          style: SatType.bodyS(color: sc.warn),
+                        ),
+                      ),
+                      Text(
+                        '-${formatIDR(d.amount)}',
+                        style: SatType.monoS(color: sc.warn),
+                      ),
+                    ],
                   ),
                 ),
-                if (canEditDiscount && manualDiscount == null)
-                  Icon(Icons.sell_outlined, size: 14, color: sc.textLo),
-              ],
-            ),
-            // Every source that gave something away on this line, each on its
-            // own row. Tapping edits the cashier's; the tier and redemption
-            // rows are shown so the guest's slip and this pane agree, and are
-            // removed from the member panel.
-            for (final d in existing)
-              Padding(
-                padding: const EdgeInsets.only(left: Sp.s3, top: Sp.sHair),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        d.label,
-                        style: SatType.bodyS(color: sc.warn),
-                      ),
-                    ),
-                    Text(
-                      '-${formatIDR(d.amount)}',
-                      style: SatType.monoS(color: sc.warn),
-                    ),
-                  ],
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

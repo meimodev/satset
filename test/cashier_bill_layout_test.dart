@@ -21,6 +21,7 @@ import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/design/theme.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
+import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
 import 'package:satset/l10n/app_localizations.dart';
 
@@ -166,12 +167,14 @@ void main() {
     required bool tablet,
     Bill? fixture,
     bool viaEntryPoint = false,
+    double phoneWidth = 360,
+    double textScale = 1,
     void Function(_StubSettlement)? onSettlement,
   }) async {
     // 800dp shortest side is the tablet branch; 360dp is the phone floor.
     tester.view.physicalSize = tablet
         ? const Size(1280, 800)
-        : const Size(360, 800);
+        : Size(phoneWidth, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
@@ -215,6 +218,12 @@ void main() {
           localizationsDelegates: AppL10n.localizationsDelegates,
           supportedLocales: AppL10n.supportedLocales,
           theme: satTheme(SatTheme.neonTerang),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(textScale)),
+            child: child!,
+          ),
           home: viaEntryPoint
               ? Builder(
                   builder: (context) => Scaffold(
@@ -318,6 +327,70 @@ void main() {
     expect(settlement.mintedLines.single.ticketId, 'tk1');
     expect(settlement.mintedLines.single.qtyUnits, 2);
   });
+
+  for (final width in [320.0, 360.0]) {
+    testWidgets('phone $width · item details and quantity controls fit', (
+      tester,
+    ) async {
+      const name = 'Nasi Goreng Spesial dengan Ayam Panggang';
+      final fixture = Bill.fromJson({
+        ...billJson,
+        'lines': [
+          {
+            ...(billJson['lines'] as List).first as Map<String, dynamic>,
+            'name': name,
+            'variantName': 'Porsi besar',
+            'note': 'Sambal dipisah, tanpa bawang goreng',
+          },
+        ],
+      });
+      await pumpBill(
+        tester,
+        tablet: false,
+        fixture: fixture,
+        phoneWidth: width,
+        textScale: 1.3,
+      );
+      await pickMode(tester, 'Per item');
+      await tester.ensureVisible(find.text(name));
+      await tester.tap(find.text(name));
+      await drain(tester);
+      expect(tester.takeException(), isNull);
+
+      final row = find.byKey(const ValueKey('bill-line-tk1'));
+      final bounds = tester.getRect(row);
+      final nameBounds = tester.getRect(find.text(name));
+      expect(nameBounds.width, greaterThan(bounds.width * 0.7));
+      for (final text
+          in find.descendant(of: row, matching: find.byType(Text)).evaluate()) {
+        final rect = tester.getRect(find.byWidget(text.widget));
+        expect(rect.left, greaterThanOrEqualTo(bounds.left));
+        expect(rect.right, lessThanOrEqualTo(bounds.right + 0.01));
+      }
+      final decrement = find.descendant(
+        of: row,
+        matching: find.byWidgetPredicate(
+          (w) => w is SatIconButton && w.icon == Icons.remove_rounded,
+        ),
+      );
+      expect(tester.getSize(decrement), const Size(48, 48));
+      await tester.ensureVisible(decrement);
+      await tester.pumpAndSettle();
+      await tester.tap(decrement);
+      await drain(tester);
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.widget<SatIconButton>(decrement).onTap,
+        isNull,
+        reason: 'one selected unit is the minimum',
+      );
+      expect(
+        tester.widget<Semantics>(row).properties.selected,
+        isTrue,
+        reason: 'quantity controls must not toggle the whole line',
+      );
+    });
+  }
 
   testWidgets('phone · leaving per item brings everything back', (
     tester,
