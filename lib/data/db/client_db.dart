@@ -7,12 +7,17 @@ import 'package:path_provider/path_provider.dart';
 
 part 'client_db.g.dart';
 
-/// The **[[Antrean setelmen]]** — one row per settlement act a
-/// [[Terputus (client disconnected)|terputus]] till captured (ADR-0123).
+/// The **[[Antrean setelmen]]** — one row per act a
+/// [[Terputus (client disconnected)|terputus]] device captured (ADR-0123).
 ///
-/// Ordered per [visitId] by [seq], because a settlement is a chain: each act
-/// reads what the last one wrote. That is the whole reason this is not a second
-/// [[Antrean kirim]].
+/// Ordered per [visitId] by [seq], because a captured visit is a chain: each
+/// act reads what the last one wrote.
+///
+/// Since ADR-0139 it carries the **floor** too — seat, order, void, expense —
+/// and the [[Antrean kirim]] it used to sit beside is gone. Same reason the
+/// ordering exists: the seat must land before the order and the order before
+/// the payment, and two stores with independent sequences cannot carry one
+/// causal chain.
 @DataClassName('SettlementEventRow')
 class SettlementEvents extends Table {
   /// Also the idempotency key the replay carries, and the id of whatever row
@@ -29,6 +34,14 @@ class SettlementEvents extends Table {
   TextColumn get kind => text()();
 
   TextColumn get payloadJson => text().withDefault(const Constant('{}'))();
+
+  /// The [[Table|meja]] this act happened at, when there is one (ADR-0139).
+  ///
+  /// A column and not a payload key because the floor screens query it: *what
+  /// has this table got captured on it*. Resolving that through
+  /// table → `currentVisitId` → events would lean on a link a cold boot has
+  /// not necessarily restored, on the one device that cannot go ask.
+  TextColumn get tableId => text().nullable()();
 
   /// When the cashier did it, not when it drained. The host honours this for
   /// the payment's `at`, the audit row and the business day it lands in.
@@ -180,7 +193,7 @@ class ClientDb extends _$ClientDb {
   ClientDb.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   /// Drift's default `onUpgrade` throws, so a bump without this bricks every
   /// till that already carries a journal — which is exactly the device this
@@ -210,6 +223,19 @@ class ClientDb extends _$ClientDb {
       // ADR-0130 — a queued expense's photo, which the prefs-backed queue
       // cannot carry.
       if (from < 4 && to >= 4) await m.createTable(queuedPhotos);
+      if (from < 5 && to >= 5) {
+        // ADR-0139 folds the [[Antrean kirim]] in here. Existing rows are all
+        // till acts and correctly get a null table — the column only ever
+        // means "the floor captured this at meja X".
+        await m.addColumn(settlementEvents, settlementEvents.tableId);
+        await m.createIndex(
+          Index(
+            'idx_settlement_events_table',
+            'CREATE INDEX IF NOT EXISTS idx_settlement_events_table '
+                'ON settlement_events (table_id)',
+          ),
+        );
+      }
     },
   );
 

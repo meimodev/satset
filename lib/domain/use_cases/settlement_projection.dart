@@ -11,6 +11,8 @@
 /// comes out is byte-for-byte the shape `Bill.fromJson` already eats.
 library;
 
+import 'dart:convert';
+
 import 'package:satset/domain/models/settlement_event.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/domain/use_cases/bill_recompute.dart';
@@ -40,6 +42,65 @@ Map<String, dynamic> projectBill(
   }
   return _recompute(bill, cfg);
 }
+
+
+/// The base a [[Kunjungan tertangkap]] projects onto (ADR-0139).
+///
+/// Every other bill this device shows starts life as the host's own JSON,
+/// prefetched while online. A visit minted dark has no such snapshot and never
+/// will until it drains — so the seat event mints one here instead, empty, and
+/// the chain behind it fills it in exactly as it fills in a cached one.
+///
+/// It states only what the device actually knows: who it is, where it is, how
+/// many people. **Every money figure is left at zero on purpose** — they are
+/// [recomputeBill]'s to write, and pre-filling one would be this file computing
+/// money, which is the single thing it may never do. `splitEnabled` and
+/// `ticketAttribution` come from the cached venue settings the caller holds
+/// (ADR-0128), not from a guess.
+Map<String, dynamic> capturedBillSeed({
+  required String visitId,
+  required String tableId,
+  String? tableLabel,
+  required DateTime openedAt,
+  int pax = 1,
+  String? guestName,
+  String kind = 'dinein',
+  String channel = '',
+  bool splitEnabled = false,
+  bool ticketAttribution = false,
+  bool taxAfterDiscount = false,
+}) => <String, dynamic>{
+  'visitId': visitId,
+  'tableId': tableId,
+  'tableLabel': tableLabel,
+  'kind': kind,
+  'status': 'open',
+  'detached': false,
+  'tableFreedAt': null,
+  'billClosedAt': null,
+  'pax': pax,
+  'guestName': guestName,
+  'channel': channel,
+  'prepaid': false,
+  'openedAt': openedAt.toIso8601String(),
+  'mode': 'itemized',
+  'subtotal': 0,
+  'discountAmount': 0,
+  'billDiscounts': <Map<String, dynamic>>[],
+  'member': null,
+  'splitEnabled': splitEnabled,
+  'ticketAttribution': ticketAttribution,
+  'serviceAmount': 0,
+  'taxAmount': 0,
+  'total': 0,
+  'taxAfterDiscount': taxAfterDiscount,
+  'paidAmount': 0,
+  'outstanding': 0,
+  'fullyAssigned': false,
+  'fullySettled': false,
+  'lines': <Map<String, dynamic>>[],
+  'receipts': <Map<String, dynamic>>[],
+};
 
 // ── event application ───────────────────────────────────────────────────────
 
@@ -239,6 +300,79 @@ void _apply(
       // the journal only so one queue has one drain order (ADR-0129). The act
       // that *attaches* the new member is a separate event, and that one this
       // projection does apply.
+      break;
+
+    // ── the floor (ADR-0139) ────────────────────────────────────────────────
+
+    case SettlementEventKind.seatTable:
+      // Nothing here. A seat does not change a bill; it *is* the bill's
+      // existence, and by the time this runs the base has already been minted
+      // by [capturedBillSeed]. Applying it again would be a second opinion
+      // about a fact the base already states.
+      break;
+
+    case SettlementEventKind.submitOrder:
+      // The [[Baris tertangkap]] entering the bill — the whole of ADR-0139 in
+      // one arm. These are ordinary lines the moment they land: the guest is
+      // charged for them, they can be assigned to a receipt, discounted and
+      // paid. `lineTotal` is `unitPrice * qty` because the cart already folded
+      // every modifier delta into `unitPrice`, which is exactly what the host
+      // does with the same wire (`price: l['unitPrice']`, `lineTotal:
+      // price * qty`). Computing it differently here would be this file
+      // inventing money, which it may never do.
+      final lines = (bill['lines'] as List).cast<Map<String, dynamic>>();
+      for (final raw in (e.payload['lines'] as List? ?? const [])) {
+        final l = (raw as Map).cast<String, dynamic>();
+        final ticketId = l['ticketId'] as String?;
+        // A line with no client-minted ticket id cannot be assigned, voided or
+        // referenced by a receipt, so it is dropped rather than shown: a line
+        // the cashier can see and cannot act on is worse than one that is
+        // honestly missing (ADR-0139 §2 mints these at capture).
+        if (ticketId == null || ticketId.isEmpty) continue;
+        if (lines.any((x) => x['ticketId'] == ticketId)) continue;
+        final qty = (l['qty'] as num?)?.toInt() ?? 1;
+        final unitPrice = (l['unitPrice'] as num?)?.toInt() ?? 0;
+        lines.add({
+          'ticketId': ticketId,
+          'itemId': l['itemId'] ?? '',
+          'name': l['name'] ?? l['itemId'] ?? '',
+          'variantName': l['variantName'] ?? '',
+          'qty': qty,
+          'unitPrice': unitPrice,
+          'lineTotal': unitPrice * qty,
+          'assignedUnits': 0,
+          'note': l['note'],
+          // Not `sent`. Nothing was sent — the host has never heard of this
+          // line. `captured` is what the badge reads off, and every money rule
+          // that asks "is this line live" treats it as live, because the guest
+          // is eating it.
+          'status': 'captured',
+          'memberId': l['memberId'],
+          'memberName': l['memberName'],
+          'memberLocked': false,
+          'modifiersJson': jsonEncode(l['modifiers'] ?? const []),
+          // The moment the waiter keyed it. The host will re-stamp this at
+          // drain from the same `capturedAt`, so the two agree.
+          'sentAt': e.capturedAt.toIso8601String(),
+        });
+      }
+
+    case SettlementEventKind.voidTicket:
+      // Voids the line wherever it came from — a captured one or a delivered
+      // one the host already knows. Never *removes* it: a void is a fact about
+      // a line, and a line that vanishes is a line nobody can audit
+      // (ADR-0139 §6). `recomputeBill` is what drops a voided line's money.
+      final vid = e.arg<String>('ticketId');
+      for (final l in (bill['lines'] as List).cast<Map<String, dynamic>>()) {
+        if (l['ticketId'] == vid) l['status'] = 'voided';
+      }
+
+    case SettlementEventKind.tableExpense:
+      // Nothing, and deliberately so. The guest pays in full: a
+      // [[Pengeluaran kunjungan]] is a cost the venue absorbed, never a
+      // give-back, so the bill total, its receipts and its outstanding must
+      // not learn it happened (ADR-0130). It rides the chain for ordering
+      // only.
       break;
   }
 }

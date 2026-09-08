@@ -59,6 +59,17 @@ class $SettlementEventsTable extends SettlementEvents
     requiredDuringInsert: false,
     defaultValue: const Constant('{}'),
   );
+  static const VerificationMeta _tableIdMeta = const VerificationMeta(
+    'tableId',
+  );
+  @override
+  late final GeneratedColumn<String> tableId = GeneratedColumn<String>(
+    'table_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _capturedAtMeta = const VerificationMeta(
     'capturedAt',
   );
@@ -110,6 +121,7 @@ class $SettlementEventsTable extends SettlementEvents
     seq,
     kind,
     payloadJson,
+    tableId,
     capturedAt,
     actorId,
     status,
@@ -163,6 +175,12 @@ class $SettlementEventsTable extends SettlementEvents
           data['payload_json']!,
           _payloadJsonMeta,
         ),
+      );
+    }
+    if (data.containsKey('table_id')) {
+      context.handle(
+        _tableIdMeta,
+        tableId.isAcceptableOrUnknown(data['table_id']!, _tableIdMeta),
       );
     }
     if (data.containsKey('captured_at')) {
@@ -220,6 +238,10 @@ class $SettlementEventsTable extends SettlementEvents
         DriftSqlType.string,
         data['${effectivePrefix}payload_json'],
       )!,
+      tableId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}table_id'],
+      ),
       capturedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}captured_at'],
@@ -260,6 +282,14 @@ class SettlementEventRow extends DataClass
   final String kind;
   final String payloadJson;
 
+  /// The [[Table|meja]] this act happened at, when there is one (ADR-0139).
+  ///
+  /// A column and not a payload key because the floor screens query it: *what
+  /// has this table got captured on it*. Resolving that through
+  /// table → `currentVisitId` → events would lean on a link a cold boot has
+  /// not necessarily restored, on the one device that cannot go ask.
+  final String? tableId;
+
   /// When the cashier did it, not when it drained. The host honours this for
   /// the payment's `at`, the audit row and the business day it lands in.
   final DateTime capturedAt;
@@ -279,6 +309,7 @@ class SettlementEventRow extends DataClass
     required this.seq,
     required this.kind,
     required this.payloadJson,
+    this.tableId,
     required this.capturedAt,
     required this.actorId,
     required this.status,
@@ -292,6 +323,9 @@ class SettlementEventRow extends DataClass
     map['seq'] = Variable<int>(seq);
     map['kind'] = Variable<String>(kind);
     map['payload_json'] = Variable<String>(payloadJson);
+    if (!nullToAbsent || tableId != null) {
+      map['table_id'] = Variable<String>(tableId);
+    }
     map['captured_at'] = Variable<DateTime>(capturedAt);
     map['actor_id'] = Variable<String>(actorId);
     map['status'] = Variable<String>(status);
@@ -308,6 +342,9 @@ class SettlementEventRow extends DataClass
       seq: Value(seq),
       kind: Value(kind),
       payloadJson: Value(payloadJson),
+      tableId: tableId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tableId),
       capturedAt: Value(capturedAt),
       actorId: Value(actorId),
       status: Value(status),
@@ -328,6 +365,7 @@ class SettlementEventRow extends DataClass
       seq: serializer.fromJson<int>(json['seq']),
       kind: serializer.fromJson<String>(json['kind']),
       payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      tableId: serializer.fromJson<String?>(json['tableId']),
       capturedAt: serializer.fromJson<DateTime>(json['capturedAt']),
       actorId: serializer.fromJson<String>(json['actorId']),
       status: serializer.fromJson<String>(json['status']),
@@ -343,6 +381,7 @@ class SettlementEventRow extends DataClass
       'seq': serializer.toJson<int>(seq),
       'kind': serializer.toJson<String>(kind),
       'payloadJson': serializer.toJson<String>(payloadJson),
+      'tableId': serializer.toJson<String?>(tableId),
       'capturedAt': serializer.toJson<DateTime>(capturedAt),
       'actorId': serializer.toJson<String>(actorId),
       'status': serializer.toJson<String>(status),
@@ -356,6 +395,7 @@ class SettlementEventRow extends DataClass
     int? seq,
     String? kind,
     String? payloadJson,
+    Value<String?> tableId = const Value.absent(),
     DateTime? capturedAt,
     String? actorId,
     String? status,
@@ -366,6 +406,7 @@ class SettlementEventRow extends DataClass
     seq: seq ?? this.seq,
     kind: kind ?? this.kind,
     payloadJson: payloadJson ?? this.payloadJson,
+    tableId: tableId.present ? tableId.value : this.tableId,
     capturedAt: capturedAt ?? this.capturedAt,
     actorId: actorId ?? this.actorId,
     status: status ?? this.status,
@@ -380,6 +421,7 @@ class SettlementEventRow extends DataClass
       payloadJson: data.payloadJson.present
           ? data.payloadJson.value
           : this.payloadJson,
+      tableId: data.tableId.present ? data.tableId.value : this.tableId,
       capturedAt: data.capturedAt.present
           ? data.capturedAt.value
           : this.capturedAt,
@@ -397,6 +439,7 @@ class SettlementEventRow extends DataClass
           ..write('seq: $seq, ')
           ..write('kind: $kind, ')
           ..write('payloadJson: $payloadJson, ')
+          ..write('tableId: $tableId, ')
           ..write('capturedAt: $capturedAt, ')
           ..write('actorId: $actorId, ')
           ..write('status: $status, ')
@@ -412,6 +455,7 @@ class SettlementEventRow extends DataClass
     seq,
     kind,
     payloadJson,
+    tableId,
     capturedAt,
     actorId,
     status,
@@ -426,6 +470,7 @@ class SettlementEventRow extends DataClass
           other.seq == this.seq &&
           other.kind == this.kind &&
           other.payloadJson == this.payloadJson &&
+          other.tableId == this.tableId &&
           other.capturedAt == this.capturedAt &&
           other.actorId == this.actorId &&
           other.status == this.status &&
@@ -438,6 +483,7 @@ class SettlementEventsCompanion extends UpdateCompanion<SettlementEventRow> {
   final Value<int> seq;
   final Value<String> kind;
   final Value<String> payloadJson;
+  final Value<String?> tableId;
   final Value<DateTime> capturedAt;
   final Value<String> actorId;
   final Value<String> status;
@@ -449,6 +495,7 @@ class SettlementEventsCompanion extends UpdateCompanion<SettlementEventRow> {
     this.seq = const Value.absent(),
     this.kind = const Value.absent(),
     this.payloadJson = const Value.absent(),
+    this.tableId = const Value.absent(),
     this.capturedAt = const Value.absent(),
     this.actorId = const Value.absent(),
     this.status = const Value.absent(),
@@ -461,6 +508,7 @@ class SettlementEventsCompanion extends UpdateCompanion<SettlementEventRow> {
     required int seq,
     required String kind,
     this.payloadJson = const Value.absent(),
+    this.tableId = const Value.absent(),
     required DateTime capturedAt,
     this.actorId = const Value.absent(),
     this.status = const Value.absent(),
@@ -477,6 +525,7 @@ class SettlementEventsCompanion extends UpdateCompanion<SettlementEventRow> {
     Expression<int>? seq,
     Expression<String>? kind,
     Expression<String>? payloadJson,
+    Expression<String>? tableId,
     Expression<DateTime>? capturedAt,
     Expression<String>? actorId,
     Expression<String>? status,
@@ -489,6 +538,7 @@ class SettlementEventsCompanion extends UpdateCompanion<SettlementEventRow> {
       if (seq != null) 'seq': seq,
       if (kind != null) 'kind': kind,
       if (payloadJson != null) 'payload_json': payloadJson,
+      if (tableId != null) 'table_id': tableId,
       if (capturedAt != null) 'captured_at': capturedAt,
       if (actorId != null) 'actor_id': actorId,
       if (status != null) 'status': status,
@@ -503,6 +553,7 @@ class SettlementEventsCompanion extends UpdateCompanion<SettlementEventRow> {
     Value<int>? seq,
     Value<String>? kind,
     Value<String>? payloadJson,
+    Value<String?>? tableId,
     Value<DateTime>? capturedAt,
     Value<String>? actorId,
     Value<String>? status,
@@ -515,6 +566,7 @@ class SettlementEventsCompanion extends UpdateCompanion<SettlementEventRow> {
       seq: seq ?? this.seq,
       kind: kind ?? this.kind,
       payloadJson: payloadJson ?? this.payloadJson,
+      tableId: tableId ?? this.tableId,
       capturedAt: capturedAt ?? this.capturedAt,
       actorId: actorId ?? this.actorId,
       status: status ?? this.status,
@@ -540,6 +592,9 @@ class SettlementEventsCompanion extends UpdateCompanion<SettlementEventRow> {
     }
     if (payloadJson.present) {
       map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (tableId.present) {
+      map['table_id'] = Variable<String>(tableId.value);
     }
     if (capturedAt.present) {
       map['captured_at'] = Variable<DateTime>(capturedAt.value);
@@ -567,6 +622,7 @@ class SettlementEventsCompanion extends UpdateCompanion<SettlementEventRow> {
           ..write('seq: $seq, ')
           ..write('kind: $kind, ')
           ..write('payloadJson: $payloadJson, ')
+          ..write('tableId: $tableId, ')
           ..write('capturedAt: $capturedAt, ')
           ..write('actorId: $actorId, ')
           ..write('status: $status, ')
@@ -1886,6 +1942,7 @@ typedef $$SettlementEventsTableCreateCompanionBuilder =
       required int seq,
       required String kind,
       Value<String> payloadJson,
+      Value<String?> tableId,
       required DateTime capturedAt,
       Value<String> actorId,
       Value<String> status,
@@ -1899,6 +1956,7 @@ typedef $$SettlementEventsTableUpdateCompanionBuilder =
       Value<int> seq,
       Value<String> kind,
       Value<String> payloadJson,
+      Value<String?> tableId,
       Value<DateTime> capturedAt,
       Value<String> actorId,
       Value<String> status,
@@ -1937,6 +1995,11 @@ class $$SettlementEventsTableFilterComposer
 
   ColumnFilters<String> get payloadJson => $composableBuilder(
     column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tableId => $composableBuilder(
+    column: $table.tableId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1995,6 +2058,11 @@ class $$SettlementEventsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get tableId => $composableBuilder(
+    column: $table.tableId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get capturedAt => $composableBuilder(
     column: $table.capturedAt,
     builder: (column) => ColumnOrderings(column),
@@ -2041,6 +2109,9 @@ class $$SettlementEventsTableAnnotationComposer
     column: $table.payloadJson,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get tableId =>
+      $composableBuilder(column: $table.tableId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get capturedAt => $composableBuilder(
     column: $table.capturedAt,
@@ -2099,6 +2170,7 @@ class $$SettlementEventsTableTableManager
                 Value<int> seq = const Value.absent(),
                 Value<String> kind = const Value.absent(),
                 Value<String> payloadJson = const Value.absent(),
+                Value<String?> tableId = const Value.absent(),
                 Value<DateTime> capturedAt = const Value.absent(),
                 Value<String> actorId = const Value.absent(),
                 Value<String> status = const Value.absent(),
@@ -2110,6 +2182,7 @@ class $$SettlementEventsTableTableManager
                 seq: seq,
                 kind: kind,
                 payloadJson: payloadJson,
+                tableId: tableId,
                 capturedAt: capturedAt,
                 actorId: actorId,
                 status: status,
@@ -2123,6 +2196,7 @@ class $$SettlementEventsTableTableManager
                 required int seq,
                 required String kind,
                 Value<String> payloadJson = const Value.absent(),
+                Value<String?> tableId = const Value.absent(),
                 required DateTime capturedAt,
                 Value<String> actorId = const Value.absent(),
                 Value<String> status = const Value.absent(),
@@ -2134,6 +2208,7 @@ class $$SettlementEventsTableTableManager
                 seq: seq,
                 kind: kind,
                 payloadJson: payloadJson,
+                tableId: tableId,
                 capturedAt: capturedAt,
                 actorId: actorId,
                 status: status,

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/data/db/client_db.dart';
@@ -177,6 +179,62 @@ Future<void> _sendEvent(Ref ref, SettlementEvent e) async {
         });
       case SettlementEventKind.reopenBill:
         await post('/settlement/visits/$v/reopen', const {});
+
+      // ── the floor (ADR-0139) ──────────────────────────────────────────────
+      //
+      // These four post to the *ordinary* routes, exactly as the
+      // [[Antrean kirim]] used to. What changed is only which store they came
+      // out of and what they are sequenced against — never that a replay gets
+      // a private endpoint. A bulk route here would give stock, the visit and
+      // the audit trail a second place to drift.
+
+      case SettlementEventKind.seatTable:
+        // The client-minted visit id crosses the wire, which the old sender
+        // refused on principle. `capturedAt` rides with it and is what tells
+        // the host this is a replay rather than a live seat naming a stranger's
+        // visit — ADR-0129's switch, applied to a table (ADR-0139 §2).
+        await post('/tables/${e.tableId}/seat', {
+          'visitId': v,
+          'pax': e.intArg('pax'),
+          'guestName': ?e.arg<String>('guestName'),
+          'guestNotes': ?e.arg<String>('guestNotes'),
+          'actorId': e.actorId,
+        });
+
+      case SettlementEventKind.submitOrder:
+        await post('/orders', {
+          'tableId': e.tableId,
+          'visitId': v,
+          'idempotencyKey': e.id,
+          'lines': e.payload['lines'] ?? const [],
+          'actorId': e.actorId,
+        });
+
+      case SettlementEventKind.voidTicket:
+        // Names the waiter who voided, not whoever carried the backlog in
+        // (ADR-0006 accountability, ADR-0056 never backfills authorship).
+        await post('/tickets/${e.arg<String>('ticketId')}/transition', {
+          'status': 'voided',
+          'voidReason': ?e.arg<String>('voidReason'),
+          'voidReasonCode': ?e.arg<String>('voidReasonCode'),
+          'actorId': e.actorId,
+        });
+
+      case SettlementEventKind.tableExpense:
+        // The photo never lived in the journal row; it is read back from
+        // `QueuedPhotos` for the length of one request, so the wire shape is
+        // the one the online path posts and there is one route (ADR-0130).
+        final photo = await ref
+            .read(settlementJournalProvider.notifier)
+            .expensePhoto(e.id);
+        await post('/visits/$v/expenses', {
+          'id': e.id,
+          'amount': e.intArg('amount'),
+          'categoryId': e.arg<String>('categoryId'),
+          'note': ?e.arg<String>('note'),
+          'photoBase64': photo == null ? '' : base64Encode(photo),
+          'actorId': e.actorId,
+        });
     }
   } on ApiException catch (err) {
     if (err.statusCode >= 400 && err.statusCode < 500) {

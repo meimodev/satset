@@ -1,4 +1,5 @@
-// The client database's own upgrade path (ADR-0124, widened by ADR-0129).
+// The client database's own upgrade path (ADR-0124, widened by ADR-0129 and
+// ADR-0139).
 //
 // There is no `drift_schemas/` harness on this side — that one covers the
 // server — so the bump is guarded here instead, and the thing it guards is
@@ -8,6 +9,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -154,6 +156,87 @@ void main() {
           ),
         );
     expect((await db.select(db.queuedPhotos).get()).single.bytes, [7, 7, 7]);
+    await db.close();
+    await dir.delete(recursive: true);
+  });
+  test('a journal written at v4 survives the bump to v5', () async {
+    final dir = await Directory.systemTemp.createTemp('satset_client_db_v4');
+    final file = File(p.join(dir.path, 'client.sqlite'));
+
+    // The v4 shape by hand: five tables, `user_version = 4`, and a
+    // `settlement_events` with no `table_id` — the column ADR-0139 adds.
+    final legacy = sqlite3.open(file.path);
+    legacy.execute('''
+      CREATE TABLE settlement_events (
+        id TEXT NOT NULL,
+        visit_id TEXT NOT NULL,
+        seq INTEGER NOT NULL,
+        kind TEXT NOT NULL,
+        payload_json TEXT NOT NULL DEFAULT '{}',
+        captured_at INTEGER NOT NULL,
+        actor_id TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'pending',
+        fail_code TEXT,
+        PRIMARY KEY (id)
+      );
+    ''');
+    legacy.execute(
+      'CREATE TABLE cached_bills (visit_id TEXT NOT NULL, '
+      'bill_json TEXT NOT NULL, fetched_at INTEGER NOT NULL, '
+      'PRIMARY KEY (visit_id));',
+    );
+    legacy.execute(
+      'CREATE TABLE cached_payable (id TEXT NOT NULL, '
+      'payload_json TEXT NOT NULL, fetched_at INTEGER NOT NULL, '
+      'PRIMARY KEY (id));',
+    );
+    legacy.execute(
+      'CREATE TABLE cached_members (id TEXT NOT NULL, name TEXT NOT NULL, '
+      "phone TEXT NOT NULL DEFAULT '', phone_hash TEXT NOT NULL DEFAULT '', "
+      "phone_tail TEXT NOT NULL DEFAULT '', code TEXT NOT NULL DEFAULT '', "
+      'payload_json TEXT NOT NULL, synced_at INTEGER NOT NULL, '
+      'PRIMARY KEY (id));',
+    );
+    legacy.execute(
+      'CREATE TABLE queued_photos (intent_id TEXT NOT NULL, '
+      'bytes BLOB NOT NULL, PRIMARY KEY (intent_id));',
+    );
+    legacy.execute(
+      'INSERT INTO settlement_events '
+      '(id, visit_id, seq, kind, payload_json, captured_at) '
+      "VALUES ('ev-11', 'v-11', 0, 'recordPayment', '{}', 1)",
+    );
+    legacy.execute('PRAGMA user_version = 4');
+    legacy.close();
+
+    final db = ClientDb(NativeDatabase(file));
+
+    // A till act captured before the upgrade has no table and must not acquire
+    // one — the column means "the floor captured this at meja X", and a money
+    // row backfilled with a table would read as a captured seat.
+    final row = (await db.select(db.settlementEvents).get()).single;
+    expect(row.id, 'ev-11');
+    expect(row.tableId, isNull);
+
+    // The floor kinds ADR-0139 adds are writable against the *upgraded* shape,
+    // which is the half a fresh install would not have caught.
+    await db
+        .into(db.settlementEvents)
+        .insert(
+          SettlementEventsCompanion.insert(
+            id: 'ev-12',
+            visitId: 'v-12',
+            seq: 0,
+            kind: 'submitOrder',
+            capturedAt: DateTime.fromMillisecondsSinceEpoch(2),
+            tableId: const Value('meja-7'),
+          ),
+        );
+    final captured = await (db.select(
+      db.settlementEvents,
+    )..where((e) => e.tableId.equals('meja-7'))).get();
+    expect(captured.single.id, 'ev-12');
+
     await db.close();
     await dir.delete(recursive: true);
   });
