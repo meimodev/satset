@@ -1,5 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:uuid/uuid.dart';
+
+import 'package:satset/data/services/settlement_journal.dart';
+import 'package:satset/data/services/settlement_sync.dart';
+import 'package:satset/domain/models/settlement_event.dart';
+import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/time/sat_clock.dart';
@@ -382,7 +388,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     // fails, because the failure costs 8s of `requestTimeout` and a waiter
     // mid-rush pays that on every tap.
     if (ref.read(wsConnStateProvider) != WsConnState.open) {
-      await _enqueueOrder(
+      await _captureOrder(
         tableId: tableId,
         lines: lines,
         actorId: actorId,
@@ -411,7 +417,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       // The socket said open and the request still did not land. This is the
       // gap between the two signals, and it is the reason there is no global
       // offline flag to disagree with.
-      await _enqueueOrder(
+      await _captureOrder(
         tableId: tableId,
         lines: lines,
         actorId: actorId,
@@ -438,42 +444,66 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     return res.ticketIds;
   }
 
-  /// Park an order on the device's [SendQueue] as a **pesanan tertunda**.
+  /// Capture an order as a **[[Baris tertangkap]]** on the visit's chain
+  /// (ADR-0139).
   ///
-  /// Carries the table's current visit when this device knows one, so the host
-  /// can refuse rather than attach if the table has changed guests by the time
-  /// the queue drains (ADR-0090). A full queue is surfaced, never swallowed —
-  /// the waiter must know the handset stopped accepting orders.
-  Future<void> _enqueueOrder({
+  /// Was a `SendIntentKind.submitOrder` on the prefs queue, where a bill could
+  /// not reach it. Three things changed and all three are load-bearing:
+  ///
+  /// - **Every line gets a client-minted ticket id.** The bill assigns,
+  ///   discounts and voids by ticket id, so a line without one can be rendered
+  ///   and nothing else — the projection drops those rather than show the
+  ///   cashier a line they cannot act on.
+  /// - **It hangs off a visit, always.** A table this device has not seated
+  ///   gets a [[Kunjungan tertangkap]] opened for it here, because an order
+  ///   with nowhere to land is the [[Bill (tab)]] that does not exist.
+  /// - **It is one chain with the money.** The seat lands before the order and
+  ///   the order before the payment because they share a sequence, not because
+  ///   two drains happen to run in a lucky order.
+  Future<void> _captureOrder({
     required String tableId,
     required List<CartLineDto> lines,
     required String idempotencyKey,
     String? actorId,
   }) async {
-    final visitId = ref
+    final journal = ref.read(settlementJournalProvider.notifier);
+    final table = ref
         .read(tablesProvider)
         .where((t) => t.id == tableId)
-        .firstOrNull
-        ?.currentVisitId;
+        .cast<VenueTable?>()
+        .firstOrNull;
+    var visitId = table?.currentVisitId;
     try {
-      await ref
-          .read(sendQueueProvider.notifier)
-          .enqueue(
-            // The key the timed-out POST already carried. If that request did
-            // land, the replay reads the host's stored answer instead of
-            // ordering the food twice.
-            id: idempotencyKey,
-            kind: SendIntentKind.submitOrder,
-            tableId: tableId,
-            actorId: actorId ?? '',
-            expectedVisitId: (visitId != null && visitId.isNotEmpty)
-                ? visitId
-                : null,
-            payload: {
-              'lines': [for (final l in lines) l.toJson()],
-            },
-          );
-    } on SendQueueFull {
+      if (visitId == null || visitId.isEmpty) {
+        final v = ref.read(venueSettingsProvider);
+        visitId = await journal.openCapturedVisit(
+          tableId: tableId,
+          pax: table?.pax ?? 1,
+          tableLabel: table?.label,
+          actorId: actorId ?? '',
+          splitEnabled: v.memberSplitOn,
+          ticketAttribution: v.memberSplitOn,
+          taxAfterDiscount: v.taxAfterDiscount,
+        );
+        ref.read(tablesProvider.notifier).seedCurrentVisit(tableId, visitId);
+      }
+      await journal.append(
+        // The key the timed-out POST already carried. If that request did land,
+        // the replay reads the host's stored answer instead of ordering the
+        // food twice.
+        id: idempotencyKey,
+        visitId: visitId,
+        kind: SettlementEventKind.submitOrder,
+        tableId: tableId,
+        actorId: actorId ?? '',
+        payload: {
+          'lines': [
+            for (final l in lines)
+              {...l.toJson(), 'ticketId': const Uuid().v4()},
+          ],
+        },
+      );
+    } on SettlementJournalFull {
       final l = ref.read(l10nProvider);
       ref
           .read(errorBusServiceProvider)

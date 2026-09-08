@@ -11,7 +11,10 @@ import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/error_bus_service.dart';
 import 'package:satset/data/services/floor_cache.dart';
-import 'package:satset/data/services/send_queue_service.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/data/services/settlement_journal.dart';
+import 'package:satset/data/services/settlement_sync.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/venue_table.dart';
 
@@ -371,7 +374,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     // network, and seating is the one act every later order hangs off — queue
     // it first and FIFO does the rest (ADR-0090).
     if (ref.read(wsConnStateProvider) != WsConnState.open) {
-      await _enqueueSeat(
+      await _captureSeat(
         id,
         pax: pax,
         userId: userId,
@@ -412,7 +415,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       // The socket said open but the request never landed. Same answer as a
       // terputus seat: hold the row, queue the intent. Rolling back here would
       // un-seat a table with guests at it over a dropped packet.
-      await _enqueueSeat(
+      await _captureSeat(
         id,
         pax: pax,
         userId: userId,
@@ -422,26 +425,47 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     }
   }
 
-  /// Park a seat on the send queue. A full queue is surfaced and rethrown —
-  /// never swallowed — for the same reason an order's is: the waiter has to
-  /// know the handset stopped accepting work.
-  Future<void> _enqueueSeat(
+  /// Open a **[[Kunjungan tertangkap]]** for this table (ADR-0139).
+  ///
+  /// Was a `SendIntentKind.seatTable` on the prefs queue. It is now the first
+  /// event of the visit's chain, and it mints the visit id — which is what
+  /// lets every order, void and payment behind it name a visit before the host
+  /// has heard of one. The local row is seeded with that id in the same breath,
+  /// because the order flow reads `currentVisitId` to know where to hang lines.
+  ///
+  /// A full journal is surfaced and rethrown — never swallowed: the waiter has
+  /// to know the handset stopped accepting work.
+  Future<void> _captureSeat(
     String id, {
     required int pax,
     String? userId,
     String? guestName,
     String? guestNotes,
   }) async {
+    final v = ref.read(venueSettingsProvider);
     try {
-      await ref
-          .read(sendQueueProvider.notifier)
-          .enqueue(
-            kind: SendIntentKind.seatTable,
+      final visitId = await ref
+          .read(settlementJournalProvider.notifier)
+          .openCapturedVisit(
             tableId: id,
+            pax: pax,
+            tableLabel: state
+                .where((t) => t.id == id)
+                .cast<VenueTable?>()
+                .firstOrNull
+                ?.label,
+            guestName: guestName,
+            guestNotes: guestNotes,
             actorId: userId ?? '',
-            payload: {'pax': pax, 'guestName': ?guestName, 'guestNotes': ?guestNotes},
+            splitEnabled: v.memberSplitOn,
+            // A visit minted today is attribution version 2 by construction —
+            // the host stamps that on every new visit, and version 1 only
+            // exists on rows that predate ADR-0118.
+            ticketAttribution: v.memberSplitOn,
+            taxAfterDiscount: v.taxAfterDiscount,
           );
-    } on SendQueueFull {
+      seedCurrentVisit(id, visitId);
+    } on SettlementJournalFull {
       final l = ref.read(l10nProvider);
       ref
           .read(errorBusServiceProvider)

@@ -9,6 +9,7 @@ import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/db/client_db.dart';
 import 'package:satset/domain/models/settlement_event.dart';
+import 'package:satset/domain/use_cases/settlement_projection.dart';
 
 const _uuid = Uuid();
 
@@ -135,9 +136,24 @@ class SettlementJournal extends StateNotifier<JournalState> {
     required SettlementEventKind kind,
     Map<String, dynamic> payload = const {},
     String? id,
+    String? tableId,
     String actorId = '',
     DateTime? capturedAt,
   }) async {
+    // The id *is* the idempotency key, so capturing the same one twice is the
+    // same claim made twice — a retried tap, or a POST that timed out and was
+    // captured under the key it already carried. Return what is already on the
+    // chain rather than inserting a second row: one order captured is one
+    // order sent, and a primary-key collision here would surface to the waiter
+    // as a failed order they in fact placed.
+    if (id != null) {
+      final existing =
+          await (db.select(db.settlementEvents)
+                ..where((e) => e.id.equals(id))
+                ..limit(1))
+              .getSingleOrNull();
+      if (existing != null) return _fromRow(existing);
+    }
     final mine = await eventsFor(visitId);
     if (mine.length >= maxPerVisit) {
       throw const SettlementJournalFull();
@@ -153,6 +169,7 @@ class SettlementJournal extends StateNotifier<JournalState> {
       kind: kind,
       payload: payload,
       capturedAt: capturedAt ?? SatClock.now().toUtc(),
+      tableId: tableId,
       actorId: actorId,
     );
     await db
@@ -165,11 +182,72 @@ class SettlementJournal extends StateNotifier<JournalState> {
             kind: ev.kind.name,
             payloadJson: Value(jsonEncode(ev.payload)),
             capturedAt: ev.capturedAt,
+            tableId: Value(ev.tableId),
             actorId: Value(ev.actorId),
           ),
         );
     await _refreshState();
     return ev;
+  }
+
+
+  /// Open a **[[Kunjungan tertangkap]]** for [tableId] and return its id
+  /// (ADR-0139).
+  ///
+  /// Mints the visit id on the device — the thing the old sender refused on
+  /// principle — and does the two writes that make it a real visit here rather
+  /// than at any call site:
+  ///
+  /// 1. the `seatTable` event, which is what the host is eventually told, and
+  /// 2. a **seed bill** in [CachedBills], because every other bill on this
+  ///    device starts life as the host's own JSON and this one has no host to
+  ///    get it from. Without the seed the projection has nothing to project
+  ///    onto and `/kasir` shows a visit it cannot open.
+  ///
+  /// Both, or neither: a seat event with no seed is a bill the cashier can see
+  /// in the list and cannot settle, which is the failure ADR-0139 exists to
+  /// remove, reintroduced one layer down.
+  Future<String> openCapturedVisit({
+    required String tableId,
+    required int pax,
+    String? tableLabel,
+    String? guestName,
+    String? guestNotes,
+    String actorId = '',
+    bool splitEnabled = false,
+    bool ticketAttribution = false,
+    bool taxAfterDiscount = false,
+  }) async {
+    final visitId = _uuid.v4();
+    final at = SatClock.now().toUtc();
+    await append(
+      visitId: visitId,
+      kind: SettlementEventKind.seatTable,
+      tableId: tableId,
+      actorId: actorId,
+      capturedAt: at,
+      payload: {
+        'pax': pax,
+        'guestName': ?guestName,
+        'guestNotes': ?guestNotes,
+      },
+    );
+    await cacheBill(
+      visitId,
+      capturedBillSeed(
+        visitId: visitId,
+        tableId: tableId,
+        tableLabel: tableLabel,
+        openedAt: at,
+        pax: pax,
+        guestName: guestName,
+        splitEnabled: splitEnabled,
+        ticketAttribution: ticketAttribution,
+        taxAfterDiscount: taxAfterDiscount,
+      ),
+    );
+    SatLog.repo('journal.capturedVisit table=$tableId');
+    return visitId;
   }
 
   /// Every event on one visit, in capture order. Parked ones included — the
@@ -506,6 +584,7 @@ class SettlementJournal extends StateNotifier<JournalState> {
       }
     }(),
     capturedAt: r.capturedAt,
+    tableId: r.tableId,
     actorId: r.actorId,
     status: r.status,
     failCode: r.failCode,
