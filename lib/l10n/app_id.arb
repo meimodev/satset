@@ -1749,6 +1749,21 @@
       }
     }
   },
+  "auditStockSoldDark": "Terjual saat luring — {item} ×{qty}, bahan kurang: {ingredients}",
+  "@auditStockSoldDark": {
+    "description": "CONTEXT.md: Baris tertangkap · Captured line. Stok jadi minus; ditutup lewat opname.",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "qty": {
+        "type": "String"
+      },
+      "ingredients": {
+        "type": "String"
+      }
+    }
+  },
   "auditStockWasted": "Buang {what} — {value}",
   "@auditStockWasted": {
     "description": "CONTEXT.md: Buang · Waste.",

@@ -64,19 +64,37 @@ Future<String> ensureVisit(
   AppDatabase db,
   String tableId, {
   String? actorId,
+  String? visitId,
+  DateTime? at,
 }) async {
   final t = await (db.select(
     db.venueTables,
   )..where((x) => x.id.equals(tableId))).getSingleOrNull();
+  final captured = visitId != null && visitId.isNotEmpty;
   final cur = t?.currentVisitId;
-  if (cur != null && cur.isNotEmpty) {
-    final v = await (db.select(
+  final live = (cur != null && cur.isNotEmpty)
+      ? await (db.select(
+          db.visits,
+        )..where((x) => x.id.equals(cur))).getSingleOrNull()
+      : null;
+
+  // A **[[Kunjungan tertangkap]]** brings its own id (ADR-0139). The device
+  // minted it while it could not reach here, printed a struk naming it, and
+  // holds a chain of money events addressed to it — so minting a second id and
+  // handing that back would strand every one of them on a visit that does not
+  // exist. A live seat passes null and gets a fresh id, exactly as before.
+  if (!captured) {
+    if (live != null) return live.id;
+  } else {
+    // The drain replaying a seat whose first attempt landed. Nothing to write.
+    final already = await (db.select(
       db.visits,
-    )..where((x) => x.id.equals(cur))).getSingleOrNull();
-    if (v != null) return v.id;
+    )..where((x) => x.id.equals(visitId))).getSingleOrNull();
+    if (already != null) return already.id;
   }
-  final id = _uuid.v4();
-  final now = SatClock.now().toUtc();
+
+  final id = captured ? visitId : _uuid.v4();
+  final now = at?.toUtc() ?? SatClock.now().toUtc();
   // A booking made against a [[Pelanggan (member)]] hands the member to the
   // visit, so the till opens with them already attached — standing discount
   // live, points earned at close, nobody looking anyone up mid-service. Read
@@ -112,7 +130,14 @@ Future<String> ensureVisit(
           createdAt: now,
         ),
       );
-  if (t != null) {
+  // The table's slot holds one visit, so a captured one only claims it when
+  // nothing live is sitting there (ADR-0139 §7). Two dark devices can each mint
+  // a visit for meja 7 and both land — that is deliberate, made loud rather
+  // than prevented (ADR-0116) — but a *live* visit must never lose its table to
+  // a replay: there are guests at it. The loser keeps its `tableId` and simply
+  // holds no slot, which is what surfaces it on `/kasir` as table-less instead
+  // of vanishing.
+  if (t != null && (!captured || live == null)) {
     await (db.update(db.venueTables)..where((x) => x.id.equals(tableId))).write(
       VenueTablesCompanion(currentVisitId: Value(id)),
     );
@@ -738,6 +763,16 @@ Router tablesRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     // refusal and refuses every order queued behind it, so a waiter's whole
     // backlog dies because the network dropped one reply.
     final idem = (body['idempotencyKey'] as String?) ?? '';
+    // A **[[Kunjungan tertangkap]]**'s own id, and the timestamp that says this
+    // is a replay rather than a live seat naming a stranger's visit (ADR-0139
+    // §2 — ADR-0129's switch, applied to a table). Both, or neither: an id with
+    // no `capturedAt` is a live caller inventing a primary key, and that is
+    // refused by being ignored.
+    final capturedAt = DateTime.tryParse((body['capturedAt'] as String?) ?? '');
+    final capturedVisitId = capturedAt == null
+        ? null
+        : (body['visitId'] as String?)?.trim();
+    final captured = capturedVisitId != null && capturedVisitId.isNotEmpty;
     final now = SatClock.now();
 
     String? replayed;
@@ -762,7 +797,13 @@ Router tablesRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         refused = Response.notFound('table not found');
         return;
       }
-      if (row.status != 'available') {
+      // A captured seat is **not** refused for this. The guests it names were
+      // real, the money for them may already be in a drawer, and the table
+      // having since been re-seated is a collision to record rather than an
+      // argument to win (ADR-0139 §7). `ensureVisit` gives the live visit the
+      // table slot and lets the captured one land table-less; refusing here
+      // would park the whole chain and strand every rupiah on it.
+      if (row.status != 'available' && !captured) {
         refused = Response(
           409,
           body: jsonEncode({
@@ -777,32 +818,47 @@ Router tablesRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       final pax = paxIn == null
           ? row.pax
           : paxIn.clamp(0, row.capacity < 1 ? 1 : row.capacity);
-      await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
-        VenueTablesCompanion(
-          status: const Value('occupied'),
-          pax: Value(pax),
-          openedAt: Value(row.openedAt ?? now.toUtc()),
-          lastActorId: actorId == null ? const Value.absent() : Value(actorId),
-          guestName: Value(guestName),
-          guestNotes: Value(guestNotes),
-          reservationId: Value(reservationId),
-          lockedBy: acquireLock && actorId != null
-              ? Value(actorId)
-              : const Value.absent(),
-          lockedByName: acquireLock && actorId != null
-              ? Value(actorName)
-              : const Value.absent(),
-          lockedAt: acquireLock && actorId != null
-              ? Value(now)
-              : const Value.absent(),
-          lockExpiresAt: acquireLock && actorId != null
-              ? Value(now.add(const Duration(seconds: 7)))
-              : const Value.absent(),
-        ),
-      );
+      // A captured seat that lost the slot leaves the floor exactly as it is —
+      // the guests now at the table are not this replay's guests, and writing
+      // its pax and guest name over theirs would put one party's details on
+      // another party's bill.
+      final loser = captured && row.status != 'available';
+      if (!loser) {
+        await (db.update(db.venueTables)..where((t) => t.id.equals(id))).write(
+          VenueTablesCompanion(
+            status: const Value('occupied'),
+            pax: Value(pax),
+            openedAt: Value(row.openedAt ?? now.toUtc()),
+            lastActorId: actorId == null
+                ? const Value.absent()
+                : Value(actorId),
+            guestName: Value(guestName),
+            guestNotes: Value(guestNotes),
+            reservationId: Value(reservationId),
+            lockedBy: acquireLock && actorId != null
+                ? Value(actorId)
+                : const Value.absent(),
+            lockedByName: acquireLock && actorId != null
+                ? Value(actorName)
+                : const Value.absent(),
+            lockedAt: acquireLock && actorId != null
+                ? Value(now)
+                : const Value.absent(),
+            lockExpiresAt: acquireLock && actorId != null
+                ? Value(now.add(const Duration(seconds: 7)))
+                : const Value.absent(),
+          ),
+        );
+      }
       // A seated table always has a live visit (the bill keys off it).
       // ADR-0024.
-      await ensureVisit(db, id, actorId: actorId);
+      await ensureVisit(
+        db,
+        id,
+        actorId: actorId,
+        visitId: capturedVisitId,
+        at: capturedAt,
+      );
       if (idem.isNotEmpty) {
         final seated = await (db.select(
           db.venueTables,

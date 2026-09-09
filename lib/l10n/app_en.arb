@@ -966,6 +966,7 @@
       }
     }
   },
+  "auditStockSoldDark": "Sold while offline — {item} ×{qty}, short on: {ingredients}",
   "auditStockWasted": "Wasted {what} — {value}",
   "auditStockCountClosed": "Stocktake closed — {lines, plural, =1{1 ingredient} other{{lines} ingredients}}, variance {variance}",
   "@auditStockCountClosed": {

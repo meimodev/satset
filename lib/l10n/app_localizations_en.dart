@@ -2540,6 +2540,11 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String auditStockSoldDark(String item, String qty, String ingredients) {
+    return 'Sold while offline — $item ×$qty, short on: $ingredients';
+  }
+
+  @override
   String auditStockWasted(String what, String value) {
     return 'Wasted $what — $value';
   }

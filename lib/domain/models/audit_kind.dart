@@ -143,6 +143,22 @@ enum AuditKind {
   /// words and there is no closed set of them.
   stockWasted,
 
+  /// A **[[Baris tertangkap]]** was filed for stock the venue did not have
+  /// (ADR-0139 §3). Params: `{item}`, `{qty}`, `{ingredients}` (the bahan that
+  /// came up short, as named at write time).
+  ///
+  /// Written at drain, never live: a stock refusal exists to stop a waiter
+  /// *promising* food that is not there, and once the guest has eaten it and
+  /// paid, refusing is arguing with the past. The line lands and the ledger
+  /// goes negative — which is the truthful reading of "we sold what we did not
+  /// have on the books", and which only [[Stok opname|opname]] can close.
+  ///
+  /// This row is what makes that survivable. Negative stock with no
+  /// explanation is a bug report; negative stock naming the item and the
+  /// moment is a reconciliation. It is stamped with `capturedAt`, so it files
+  /// on the day the food was actually sold.
+  stockSoldDark,
+
   /// **[[Item bebas]]** — one line sold off-menu. Params: `{name}` (what the
   /// seller typed), `{price}` (pre-formatted rupiah, unit price × qty). The
   /// *why* rides `reason`, which the route requires: an unexplained arbitrary

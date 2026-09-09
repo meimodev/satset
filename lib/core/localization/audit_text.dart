@@ -106,6 +106,11 @@ String auditText(AppL10n l, AuditEntry e) {
     ),
 
     AuditKind.stockWasted => l.auditStockWasted(s('what'), s('value')),
+    AuditKind.stockSoldDark => l.auditStockSoldDark(
+      s('item'),
+      s('qty'),
+      s('ingredients'),
+    ),
     AuditKind.openItemSold => l.auditOpenItemSold(s('name'), s('price')),
 
     AuditKind.venueOpened => l.auditVenueOpened,

@@ -24,6 +24,19 @@ import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/domain/models/menu_item.dart' show openItemId;
 import 'package:satset/server/modules.dart' show modeBypassKds, venueHasMode;
 
+/// How far in the past a `capturedAt` must be before the host reads a request
+/// as a **replay of history** rather than as a live write (ADR-0139 §3).
+///
+/// The switch it gates is not small: a replay may name its own visit and
+/// ticket ids, and its lines are filed without a stock check. Hanging that on
+/// the mere *presence* of a client field would mean a wrong clock — a real
+/// failure mode on cheap Android hardware, not a hypothetical — silently
+/// disabling a venue-wide control with nobody seeing an error.
+///
+/// A genuine backlog is minutes to hours old, so a minute is generous to the
+/// honest case and closed to the accidental one.
+const kCapturedReplayFloor = Duration(minutes: 1);
+
 Future<Response?> _requireCap(
   Request req,
   AppDatabase db,
@@ -212,7 +225,16 @@ Future<SubmitOrderResult> submitOrder(
   /// The moment the waiter keyed these lines, when that is not now. Stored per
   /// ticket; `sentAt` still stamps delivery, so the kitchen's clocks are never
   /// handed a head start they did not have. See ADR-0090.
+  ///
+  /// Since ADR-0139 it is also the **replay switch**: paired with a past-dated
+  /// value it is what lets [capturedVisitId] and a wire ticket id be honoured,
+  /// and what lifts the stock refusal off food a guest has already eaten.
   DateTime? capturedAt,
+
+  /// The [[Kunjungan tertangkap]]'s own id — minted on a device that could not
+  /// reach here (ADR-0139 §2). Honoured only alongside a past-dated
+  /// [capturedAt]; a live caller naming a visit id is ignored, not obeyed.
+  String? capturedVisitId,
 
   /// Who delivered a backlog that someone else captured. See ADR-0090.
   String? replayedByUserId,
@@ -229,6 +251,21 @@ Future<SubmitOrderResult> submitOrder(
   String? idPrefix,
 }) async {
   final stamp = at ?? SatClock.now();
+  // **Is this a replay of food already eaten?** (ADR-0139 §3)
+  //
+  // Deliberately not `capturedAt != null` alone. What this opens is not small —
+  // a replay names its own visit and ticket ids and is filed without a stock
+  // check — and hanging that on a bare client field means a wrong clock, a real
+  // failure mode on cheap Android hardware rather than a hypothetical, silently
+  // disabling a venue-wide control with nobody seeing an error. A genuine
+  // backlog is minutes to hours old; a live caller stamping "now" gets ordinary
+  // enforcement and its ids ignored.
+  //
+  // Resolved here rather than inside the transaction because the **visit id**
+  // is the first thing it gates, and that is decided before any line is read.
+  final replayingHistory =
+      capturedAt != null &&
+      stamp.difference(capturedAt) >= kCapturedReplayFloor;
   final createdIds = <String>[];
   final createdRows = <Ticket>[];
   final rejected = <Map<String, dynamic>>[];
@@ -279,7 +316,17 @@ Future<SubmitOrderResult> submitOrder(
           return;
         }
       }
-      visitId = await ensureVisit(db, tableId, actorId: actorId);
+      // A **[[Kunjungan tertangkap]]** names its own visit (ADR-0139 §2), and
+      // only a replay may — `capturedAt` is the switch, exactly as it is for an
+      // offline enrolment (ADR-0129). Without it a live caller could name a
+      // primary key, so the id is simply ignored.
+      visitId = await ensureVisit(
+        db,
+        tableId,
+        actorId: actorId,
+        visitId: replayingHistory ? capturedVisitId : null,
+        at: capturedAt,
+      );
     }
     orderVisitId = visitId;
     // Ingredient coverage (ADR-0041). Stock moves at **send** — the last
@@ -305,7 +352,25 @@ Future<SubmitOrderResult> submitOrder(
                 .memberAttributionVersion ==
             2;
     final validMemberIds = <String>{};
-    final bornStatus = bypassKds ? 'ready' : 'sent';
+    // A **[[Baris tertangkap]]** whose bill this device already closed is
+    // history, and pushing history onto a hot line is how a duplicate dish
+    // leaves the kitchen — so it is born `ready` rather than `sent`
+    // (ADR-0139 §5). The bill's own state is the discriminator: a captured
+    // visit still *open* genuinely needs cooking and goes to the KDS like any
+    // order, which is why this asks the visit and not the wire.
+    //
+    // `ready`, never `served`: ADR-0115 already reasoned that one out —
+    // `served → voided` costs `compItem` where `ready → voided` costs
+    // `voidItem`, so a line born `served` needs a manager to correct a mis-key
+    // in the one-person shop that has none.
+    final settledAlready =
+        replayingHistory &&
+        (await (db.select(
+                  db.visits,
+                )..where((x) => x.id.equals(visitId))).getSingleOrNull())
+                ?.billClosedAt !=
+            null;
+    final bornStatus = (bypassKds || settledAlready) ? 'ready' : 'sent';
 
     final recipes = await loadRecipes(db);
     final ingredientRows = await db.select(db.ingredients).get();
@@ -316,7 +381,24 @@ Future<SubmitOrderResult> submitOrder(
     final variantNameMaps = <String, Map<String, String>>{};
 
     for (final l in lines) {
-      final id = '${idPrefix ?? ''}${_orderUuid.v4()}';
+      // The client mints ticket ids so a captured line can be assigned,
+      // discounted and voided on a bill before this server has heard of it
+      // (ADR-0139 §2). Honoured only on a replay, and only when it does not
+      // collide — the same rule the visit id gets one level up.
+      final wireTicketId = replayingHistory
+          ? (l['ticketId'] as String?)?.trim()
+          : null;
+      final id = (wireTicketId != null && wireTicketId.isNotEmpty)
+          ? wireTicketId
+          : '${idPrefix ?? ''}${_orderUuid.v4()}';
+      if (wireTicketId != null && wireTicketId.isNotEmpty) {
+        final clash = await (db.select(
+          db.tickets,
+        )..where((t) => t.id.equals(id))).getSingleOrNull();
+        // Already filed by an earlier attempt of this same drain. Skipping is
+        // the idempotency — re-inserting would cook the dish twice.
+        if (clash != null) continue;
+      }
       final course = l['course'] as String;
       // "Kirim ke dapur" is an explicit fire action: every line enters
       // the KDS queue as `sent` — unless the venue has no queue to enter,
@@ -367,7 +449,7 @@ Future<SubmitOrderResult> submitOrder(
         ingredientNames: ingredientNames,
         variantIdsByName: variantNameMaps[itemId]!,
       );
-      if (!need.covered && !canOverrideStock) {
+      if (!need.covered && !canOverrideStock && !replayingHistory) {
         // Reject ONLY this line — one out-of-stock side dish must not kill a
         // twelve-item order the waiter would have to re-key (ADR-0041).
         rejected.add({
@@ -377,6 +459,27 @@ Future<SubmitOrderResult> submitOrder(
           'ingredients': need.shortNames,
         });
         continue;
+      }
+      if (!need.covered && replayingHistory) {
+        // The guest ate it and paid for it. Refusing now is arguing with the
+        // past, and it would leave money collected against a line that exists
+        // in no ledger — strictly worse than a negative figure (ADR-0139 §3).
+        //
+        // The row is what makes that survivable: negative stock with no
+        // explanation is a bug report, negative stock naming the item and the
+        // moment is a reconciliation [[Stok opname|opname]] can close.
+        await writeAudit(
+          db,
+          kind: AuditKind.stockSoldDark,
+          type: AuditType.stockWasted,
+          actorUserId: actorId,
+          at: capturedAt,
+          params: {
+            'item': (l['name'] as String?) ?? itemId,
+            'qty': '$lineQty',
+            'ingredients': need.shortNames.join(', '),
+          },
+        );
       }
 
       final row = TicketsCompanion.insert(
@@ -400,7 +503,7 @@ Future<SubmitOrderResult> submitOrder(
         // in anyone's queue, so its prep clock is genuinely zero rather than
         // unknown. Leaving it null is what makes an elapsed pill tick forever
         // and a speed-of-service report read a line as still cooking.
-        readyAt: Value(bypassKds ? stamp : null),
+        readyAt: Value(bypassKds || settledAlready ? stamp : null),
         capturedAt: Value(capturedAt),
         replayedByUserId: Value(replayedByUserId),
         createdByUserId: Value(actorId),
@@ -583,6 +686,13 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       takeawayChannel: (body['channel'] as String?) ?? 'bungkus',
       takeawayPrepaid: body['prepaid'] == true,
       appendVisitId: appendVisitId,
+      // The same `visitId` field, read two ways depending on `takeaway` — an
+      // append target for a Bawa pulang, and a [[Kunjungan tertangkap]]'s own
+      // id for a dine-in replay (ADR-0139 §2). One field because it is one
+      // question: *which visit are these lines for*. The dine-in reading is
+      // additionally gated on a past-dated `capturedAt`, so a live caller
+      // naming a visit id is ignored rather than obeyed.
+      capturedVisitId: takeaway ? null : appendVisitId,
       actorId: actorId,
       canOverrideStock: canOverrideStock,
       expectedVisitId: expectedVisitId,

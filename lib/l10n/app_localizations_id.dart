@@ -2528,6 +2528,11 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String auditStockSoldDark(String item, String qty, String ingredients) {
+    return 'Terjual saat luring — $item ×$qty, bahan kurang: $ingredients';
+  }
+
+  @override
   String auditStockWasted(String what, String value) {
     return 'Buang $what — $value';
   }

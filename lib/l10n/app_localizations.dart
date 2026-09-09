@@ -4357,6 +4357,12 @@ abstract class AppL10n {
   /// **'Item bebas — {name} {price}'**
   String auditOpenItemSold(String name, String price);
 
+  /// CONTEXT.md: Baris tertangkap · Captured line. Stok jadi minus; ditutup lewat opname.
+  ///
+  /// In id, this message translates to:
+  /// **'Terjual saat luring — {item} ×{qty}, bahan kurang: {ingredients}'**
+  String auditStockSoldDark(String item, String qty, String ingredients);
+
   /// CONTEXT.md: Buang · Waste.
   ///
   /// In id, this message translates to:
