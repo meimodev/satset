@@ -2048,6 +2048,53 @@ class AppL10nId extends AppL10n {
   String get expColVariant => 'Varian';
 
   @override
+  String get expOrderer => 'Pemesan';
+
+  @override
+  String get expItemNote => 'Catatan item';
+
+  @override
+  String get expItemMember => 'Pelanggan';
+
+  @override
+  String get expZone => 'Zona';
+
+  @override
+  String get expUnavailable => 'Tidak tersedia';
+
+  @override
+  String get expUnassignedMember => 'Belum ditetapkan';
+
+  @override
+  String get expBeforeDiscount => 'Sebelum diskon';
+
+  @override
+  String get expDirectDiscount => 'Diskon langsung';
+
+  @override
+  String get expSharedDiscount => 'Diskon bersama (alokasi)';
+
+  @override
+  String get expAfterDiscount => 'Setelah diskon (sebelum pajak/layanan)';
+
+  @override
+  String get expSettledTotal => 'Total terselesaikan';
+
+  @override
+  String get expDiscountOffers => 'Penawaran diskon';
+
+  @override
+  String get expDiscountAllocationNote =>
+      'Diskon bersama dialokasikan secara proporsional. Penawaran menjelaskan diskon yang dipilih; potongan efektif dibatasi nilai item. Item void bernilai nol setelah diskon.';
+
+  @override
+  String get expUnallocatedDiscount => 'Diskon belum teralokasi';
+
+  @override
+  String get expUnallocatedDiscountNote =>
+      'Riwayat tidak mendukung pembagian item yang andal. Potongan item tidak tersedia; angka struk dan kunjungan tetap sesuai catatan.';
+
+  @override
   String get expColModifier => 'Modifier';
 
   @override
@@ -2127,7 +2174,7 @@ class AppL10nId extends AppL10n {
 
   @override
   String expMetaVisitLines(int visits, int lines, String net) {
-    return 'Kunjungan: $visits  ·  Baris: $lines  ·  Net: $net';
+    return 'Kunjungan: $visits  ·  Baris: $lines  ·  Total terselesaikan: $net';
   }
 
   @override

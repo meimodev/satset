@@ -3627,6 +3627,96 @@ abstract class AppL10n {
   /// **'Varian'**
   String get expColVariant;
 
+  /// No description provided for @expOrderer.
+  ///
+  /// In id, this message translates to:
+  /// **'Pemesan'**
+  String get expOrderer;
+
+  /// No description provided for @expItemNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan item'**
+  String get expItemNote;
+
+  /// No description provided for @expItemMember.
+  ///
+  /// In id, this message translates to:
+  /// **'Pelanggan'**
+  String get expItemMember;
+
+  /// No description provided for @expZone.
+  ///
+  /// In id, this message translates to:
+  /// **'Zona'**
+  String get expZone;
+
+  /// No description provided for @expUnavailable.
+  ///
+  /// In id, this message translates to:
+  /// **'Tidak tersedia'**
+  String get expUnavailable;
+
+  /// No description provided for @expUnassignedMember.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ditetapkan'**
+  String get expUnassignedMember;
+
+  /// No description provided for @expBeforeDiscount.
+  ///
+  /// In id, this message translates to:
+  /// **'Sebelum diskon'**
+  String get expBeforeDiscount;
+
+  /// No description provided for @expDirectDiscount.
+  ///
+  /// In id, this message translates to:
+  /// **'Diskon langsung'**
+  String get expDirectDiscount;
+
+  /// No description provided for @expSharedDiscount.
+  ///
+  /// In id, this message translates to:
+  /// **'Diskon bersama (alokasi)'**
+  String get expSharedDiscount;
+
+  /// No description provided for @expAfterDiscount.
+  ///
+  /// In id, this message translates to:
+  /// **'Setelah diskon (sebelum pajak/layanan)'**
+  String get expAfterDiscount;
+
+  /// No description provided for @expSettledTotal.
+  ///
+  /// In id, this message translates to:
+  /// **'Total terselesaikan'**
+  String get expSettledTotal;
+
+  /// No description provided for @expDiscountOffers.
+  ///
+  /// In id, this message translates to:
+  /// **'Penawaran diskon'**
+  String get expDiscountOffers;
+
+  /// No description provided for @expDiscountAllocationNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Diskon bersama dialokasikan secara proporsional. Penawaran menjelaskan diskon yang dipilih; potongan efektif dibatasi nilai item. Item void bernilai nol setelah diskon.'**
+  String get expDiscountAllocationNote;
+
+  /// No description provided for @expUnallocatedDiscount.
+  ///
+  /// In id, this message translates to:
+  /// **'Diskon belum teralokasi'**
+  String get expUnallocatedDiscount;
+
+  /// No description provided for @expUnallocatedDiscountNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat tidak mendukung pembagian item yang andal. Potongan item tidak tersedia; angka struk dan kunjungan tetap sesuai catatan.'**
+  String get expUnallocatedDiscountNote;
+
   /// No description provided for @expColModifier.
   ///
   /// In id, this message translates to:
@@ -3774,7 +3864,7 @@ abstract class AppL10n {
   /// No description provided for @expMetaVisitLines.
   ///
   /// In id, this message translates to:
-  /// **'Kunjungan: {visits}  ·  Baris: {lines}  ·  Net: {net}'**
+  /// **'Kunjungan: {visits}  ·  Baris: {lines}  ·  Total terselesaikan: {net}'**
   String expMetaVisitLines(int visits, int lines, String net);
 
   /// No description provided for @expVisitMeta.

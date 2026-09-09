@@ -2060,6 +2060,53 @@ class AppL10nEn extends AppL10n {
   String get expColVariant => 'Variant';
 
   @override
+  String get expOrderer => 'Orderer';
+
+  @override
+  String get expItemNote => 'Item note';
+
+  @override
+  String get expItemMember => 'Member';
+
+  @override
+  String get expZone => 'Zone';
+
+  @override
+  String get expUnavailable => 'Unavailable';
+
+  @override
+  String get expUnassignedMember => 'Unassigned';
+
+  @override
+  String get expBeforeDiscount => 'Before discounts';
+
+  @override
+  String get expDirectDiscount => 'Direct discount';
+
+  @override
+  String get expSharedDiscount => 'Shared discount (allocated)';
+
+  @override
+  String get expAfterDiscount => 'After discounts (before tax/service)';
+
+  @override
+  String get expSettledTotal => 'Settled total';
+
+  @override
+  String get expDiscountOffers => 'Discount offers';
+
+  @override
+  String get expDiscountAllocationNote =>
+      'Shared discounts are allocated proportionally. Offers describe the discounts selected; effective deductions are capped at the item value. Voided items contribute zero after discounts.';
+
+  @override
+  String get expUnallocatedDiscount => 'Unallocated discount';
+
+  @override
+  String get expUnallocatedDiscountNote =>
+      'Historical records do not support a reliable item split. Item deductions are unavailable; receipt and visit figures remain as recorded.';
+
+  @override
   String get expColModifier => 'Modifier';
 
   @override
@@ -2139,7 +2186,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String expMetaVisitLines(int visits, int lines, String net) {
-    return 'Visits: $visits  ·  Lines: $lines  ·  Net: $net';
+    return 'Visits: $visits  ·  Lines: $lines  ·  Settled total: $net';
   }
 
   @override

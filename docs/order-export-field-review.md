@@ -1,6 +1,6 @@
 # Orders export field review
 
-Status: rounds 1–2 accepted; final allocation rule and scope confirmation pending.
+Status: accepted on 2026-09-06; implemented and merged into `main` on 2026-09-09.
 
 Scope: Reports → Export → Orders, CSV and PDF. This is the closed-visit order history export, not the summary Report export.
 
@@ -30,7 +30,7 @@ Source: [order_history_exporter.dart](../lib/core/export/order_history_exporter.
 | Item discounts | Applied discount names and reductions; direct discounts and allocated shared discounts must remain distinguishable. |
 | Ticket owner | The member who consumed the item, independently of the payer or debtor. Unassigned lines remain unassigned. |
 
-These distinctions already exist in [CONTEXT.md](../CONTEXT.md): Orderer, Waiter, Guest note / Item note, Diskon and Pemilik tiket. No new glossary term or architectural decision has been accepted in this interview.
+These distinctions already exist in [CONTEXT.md](../CONTEXT.md): Orderer, Waiter, Guest note / Item note, Diskon and Pemilik tiket. The export glossary now records the agreed fields and allocated-discount meaning.
 
 ## Accepted decisions — round 1
 
@@ -64,7 +64,7 @@ Ready/served times, visit subtotal/void amount, receipt mode and internal IDs ex
 5. **Historical names.** Use current available names with honest missing/deleted fallbacks, distinguishing an unassigned consumer from unavailable historical identity. Never infer consumer from payer. No new name snapshots.
 6. **Member identity.** Show member name only; omit member code and phone.
 
-## Final proposed output
+## Implemented output
 
 Visit headers retain table/takeaway label, party size, visit waiter and closing time, add zone, and label the financial total Settled total.
 
@@ -72,11 +72,11 @@ Item data: sent time; item description including variant; modifiers; item note; 
 
 Remove Course and the separate Variant column. Retain receipt and payment details, including proof handling. Keep existing date-window and closed-visit scope.
 
-## Final proposed allocation rule — needs confirmation
+## Accepted allocation rule
 
 Use frozen historical receipt totals and discount records. Do not recompute past settlement from current prices, presets, tax or service settings.
 
-Show discount names/source descriptions separately from the effective direct/shared totals. A 10% member offer plus a 100% promo can promise 110%, but only the item's price is actually deducted. Do not label each stored offer amount as an independently deducted amount.
+Show discount names and configured percentages/fixed values separately from the effective direct/shared totals. A 10% member offer plus a 100% promo can promise 110%, but only the item's price is actually deducted. Do not label each stored offer amount as an independently deducted amount.
 
 Allocate shared discounts proportionally using recorded eligible item values and receipt quantities, with the existing integer `distributeFixed` helper so rounding preserves totals. Label these amounts as allocated shares. For histories that cannot support trustworthy item allocation, show the discount at receipt/visit level as unallocated and mark the affected item amounts unavailable; do not fabricate a precise split or quietly use zero.
 
@@ -88,4 +88,19 @@ Implementation references: `lib/domain/use_cases/bill_math.dart:145` (`distribut
 
 Check both CSV and PDF output and history payloads with distinct per-item authors/members, item notes, zones, direct and shared discounts, capped stacks, split quantities, voids and unavailable legacy allocation. Money shares must reconcile to stored totals. Run the relevant export/history tests and `flutter analyze`.
 
-Application code has not been changed. The requested grilling workflow resolves these choices before implementation.
+Implementation includes the history payload, export DTOs, CSV and landscape PDF, localized in Indonesian and English.
+
+## Implementation limits
+
+- Stored historical totals are authoritative. If receipt totals disagree with the visit discount, or any receipt has missing/overassigned quantities, unsupported amount-mode attribution, or inconsistent line bases, the entire visit's item allocation is unavailable; receipt/visit figures and discount descriptions still export.
+- Applied offer descriptions carry snapshot names and configured values, not per-source effective deductions. Shared amounts are reporting allocations after direct reductions.
+- Members and staff use current available directory names. Legacy consumer attribution is unavailable when it was never recorded per Ticket; the payer is never substituted.
+- Course and the separate Variant column are removed from output; internal DTO compatibility fields remain for existing callers.
+- No database migration, repricing of historical settlement, or change to report filter behavior.
+
+## Verification results
+
+- 22 checks passed across `order_history_export_test.dart`, `export_localization_test.dart`, `arb_parity_test.dart`, `report_tax_kpi_test.dart` and `report_isin_limit_test.dart`; one existing documentation-only test remains skipped.
+- `flutter analyze --no-pub`: zero issues.
+- English and Indonesian landscape PDFs rendered and visually reviewed. Item notes, attribution, discount amounts, merged variants, receipt/payment details and headings are readable.
+- `git diff --check`: clean.

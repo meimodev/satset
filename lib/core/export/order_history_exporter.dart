@@ -30,6 +30,36 @@ String _visitTitle(AppL10n l, OrderHistoryVisit v) => v.isTakeaway
 
 String _mods(OrderHistoryLine l) => l.modifiers.join(' · ');
 
+String _item(OrderHistoryLine line) =>
+    line.variantName.isEmpty ? line.name : '${line.name} (${line.variantName})';
+
+String _member(AppL10n l, OrderHistoryLine line) =>
+    line.memberName ??
+    (line.memberAttributionKnown && line.memberId == null
+        ? l.expUnassignedMember
+        : l.expUnavailable);
+
+String _amount(AppL10n l, int? value) =>
+    value == null ? l.expUnavailable : formatIDR(value);
+
+String _discounts(AppL10n l, List<OrderHistoryDiscount> discounts) => discounts
+    .map((d) {
+      final value = d.kind == 'percent'
+          ? '${d.value / 100}%'
+          : formatIDR(d.value);
+      return '${d.shared ? l.expSharedDiscount : l.expDirectDiscount}: ${d.name} ($value)';
+    })
+    .join(' · ');
+
+String _itemDetails(AppL10n l, OrderHistoryLine line) => [
+  _item(line),
+  if (line.modifiers.isNotEmpty) _mods(line),
+  if (line.note?.isNotEmpty ?? false) '${l.expItemNote}: ${line.note}',
+  '${l.expOrderer}: ${line.ordererName ?? l.expUnavailable}',
+  '${l.expItemMember}: ${_member(l, line)}',
+  if (line.discounts.isNotEmpty) _discounts(l, line.discounts),
+].join('\n');
+
 String _status(AppL10n l, OrderHistoryLine line) {
   if (line.isVoided) return l.expStatusVoided;
   return switch (line.status) {
@@ -46,7 +76,7 @@ String _payAmount(OrderHistoryPayment p) =>
     p.isRefund ? '-${formatIDR(p.amount.abs())}' : formatIDR(p.amount);
 
 String _windowLine(OrderHistory h) =>
-    '${_dateShort.format(h.rangeFrom.toLocal())} – ${_dateShort.format(h.rangeTo.toLocal())}';
+    '${_dateShort.format(h.rangeFrom.toLocal())} - ${_dateShort.format(h.rangeTo.toLocal())}';
 
 // ─── CSV ────────────────────────────────────────────────────────────────────
 
@@ -64,7 +94,8 @@ String buildOrderHistoryCsv(
   rows.add(csvRow([l.expGenerated, _dateFull.format(h.generatedAt.toLocal())]));
   rows.add(csvRow([l.expVisitCount, h.visitCount]));
   rows.add(csvRow([l.expLineCount, h.lineCount]));
-  rows.add(csvRow([l.expNet, formatIDR(h.net)]));
+  rows.add(csvRow([l.expSettledTotal, formatIDR(h.net)]));
+  rows.add(csvRow([l.expNote, l.expDiscountAllocationNote]));
 
   for (final v in h.visits) {
     rows.add('');
@@ -76,9 +107,11 @@ String buildOrderHistoryCsv(
         v.pax,
         l.expColWaiter,
         v.waiterName ?? '—',
+        l.expZone,
+        v.isTakeaway ? '—' : v.zoneName ?? l.expUnavailable,
         l.expColClosed,
         _dateFull.format(v.closedAt.toLocal()),
-        l.expNet,
+        l.expSettledTotal,
         formatIDR(v.net),
       ]),
     );
@@ -86,12 +119,17 @@ String buildOrderHistoryCsv(
       csvRow([
         l.expColTime,
         l.expColItem,
-        l.expColVariant,
         l.expColModifier,
-        l.expColCourse,
+        l.expItemNote,
+        l.expOrderer,
+        l.expItemMember,
         l.expColQty,
         l.expColPrice,
-        l.expColTotal,
+        l.expBeforeDiscount,
+        l.expDiscountOffers,
+        l.expDirectDiscount,
+        l.expSharedDiscount,
+        l.expAfterDiscount,
         l.expColStatus,
         l.expColVoidReason,
       ]),
@@ -100,13 +138,18 @@ String buildOrderHistoryCsv(
       rows.add(
         csvRow([
           _clock.format(line.sentAt.toLocal()),
-          line.name,
-          line.variantName,
+          _item(line),
           _mods(line),
-          line.course,
+          line.note ?? '',
+          line.ordererName ?? l.expUnavailable,
+          _member(l, line),
           line.qty,
           formatIDR(line.price),
           formatIDR(line.lineTotal),
+          _discounts(l, line.discounts),
+          _amount(l, line.directDiscount),
+          _amount(l, line.sharedDiscount),
+          _amount(l, line.afterDiscount),
           _status(l, line),
           line.voidReasonCode == null
               ? ''
@@ -115,6 +158,16 @@ String buildOrderHistoryCsv(
       );
     }
 
+    if (v.unallocatedDiscount != null) {
+      rows.add(
+        csvRow([
+          l.expUnallocatedDiscount,
+          formatIDR(v.unallocatedDiscount!),
+          l.expUnallocatedDiscountNote,
+        ]),
+      );
+      rows.add(csvRow([l.expDiscountOffers, _discounts(l, v.discounts)]));
+    }
     // Bill settlement: per-receipt totals + payments (ADR-0031).
     for (final r in v.receipts) {
       rows.add(
@@ -182,7 +235,7 @@ Future<Uint8List> buildOrderHistoryPdf(
 
   doc.addPage(
     pw.MultiPage(
-      pageTheme: pdfPageTheme(theme),
+      pageTheme: pdfPageTheme(theme, landscape: true),
       header: (ctx) => ctx.pageNumber == 1
           ? pw.SizedBox()
           : pdfRunningHeader(l.expOrdersHeader(label)),
@@ -202,6 +255,10 @@ Future<Uint8List> buildOrderHistoryPdf(
           ],
         ),
         pw.SizedBox(height: 16),
+        pw.Text(
+          l.expDiscountAllocationNote,
+          style: const pw.TextStyle(fontSize: 8, color: kPdfInkMd),
+        ),
         if (h.isEmpty)
           pw.Text(
             l.expNoVisits,
@@ -232,25 +289,23 @@ List<pw.Widget> _visitBlock(
     headers: [
       l.expColTime,
       l.expColItem,
-      l.expColModifier,
-      l.expColCourse,
-      l.expColQty,
-      l.expColPrice,
-      l.expColTotal,
+      '${l.expColQty} / ${l.expColPrice}',
+      l.expBeforeDiscount,
+      l.expDirectDiscount,
+      l.expSharedDiscount,
+      l.expAfterDiscount,
       l.expColStatus,
     ],
     rows: [
       for (final line in v.lines)
         [
           _clock.format(line.sentAt.toLocal()),
-          line.variantName.isEmpty
-              ? line.name
-              : '${line.name} (${line.variantName})',
-          _mods(line),
-          line.course,
-          '${line.qty}',
-          formatIDR(line.price),
+          _itemDetails(l, line),
+          '${line.qty}\n× ${formatIDR(line.price)}',
           formatIDR(line.lineTotal),
+          _amount(l, line.directDiscount),
+          _amount(l, line.sharedDiscount),
+          _amount(l, line.afterDiscount),
           line.isVoided
               ? l
                     .expVoidedWithReason(
@@ -262,8 +317,20 @@ List<pw.Widget> _visitBlock(
               : _status(l, line),
         ],
     ],
-    numericFrom: 4,
+    numericFrom: 2,
+    columnFlex: [2, 9, 3, 3, 3, 3, 4, 3],
   ),
+  if (v.unallocatedDiscount != null) ...[
+    pw.Text(
+      '${l.expUnallocatedDiscount}: ${formatIDR(v.unallocatedDiscount!)}\n${l.expUnallocatedDiscountNote}',
+      style: const pw.TextStyle(fontSize: 8),
+    ),
+    if (v.discounts.isNotEmpty)
+      pw.Text(
+        _discounts(l, v.discounts),
+        style: const pw.TextStyle(fontSize: 8),
+      ),
+  ],
   for (final r in v.receipts) ..._receiptBlock(l, r, photos),
 ];
 
@@ -275,7 +342,7 @@ pw.Widget _visitHeader(AppL10n l, OrderHistoryVisit v) => pw.Container(
     children: [
       pw.Expanded(
         child: pw.Text(
-          _visitTitle(l, v),
+          '${_visitTitle(l, v)}\n${l.expZone}: ${v.isTakeaway ? '—' : v.zoneName ?? l.expUnavailable}',
           style: pw.TextStyle(
             font: pw.Font.timesBold(),
             fontSize: 11,
@@ -293,7 +360,7 @@ pw.Widget _visitHeader(AppL10n l, OrderHistoryVisit v) => pw.Container(
       ),
       pw.SizedBox(width: 10),
       pw.Text(
-        formatIDR(v.net),
+        '${l.expSettledTotal}\n${formatIDR(v.net)}',
         style: pw.TextStyle(
           fontSize: 10,
           fontWeight: pw.FontWeight.bold,

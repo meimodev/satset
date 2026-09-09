@@ -10,6 +10,28 @@ import 'package:satset/data/services/api_client.dart';
 /// live order board never touches this — only the export sheet does. Plain
 /// hand-rolled models (no codegen): the shapes are export-local.
 
+class OrderHistoryDiscount {
+  final String name;
+  final String kind;
+  final int value;
+  final bool shared;
+
+  const OrderHistoryDiscount({
+    required this.name,
+    required this.kind,
+    required this.value,
+    required this.shared,
+  });
+
+  factory OrderHistoryDiscount.fromJson(Map<String, dynamic> j) =>
+      OrderHistoryDiscount(
+        name: j['name'] as String? ?? '',
+        kind: j['kind'] as String? ?? 'fixed',
+        value: (j['value'] as num?)?.toInt() ?? 0,
+        shared: j['shared'] as bool? ?? false,
+      );
+}
+
 class OrderHistoryLine {
   final DateTime sentAt;
   final String name;
@@ -23,6 +45,20 @@ class OrderHistoryLine {
   final DateTime? readyAt;
   final DateTime? servedAt;
   final String? voidReasonCode;
+  final String? note;
+  final String? ordererName;
+  final String? memberName;
+  final String? memberId;
+  final bool memberAttributionKnown;
+  final List<OrderHistoryDiscount> discounts;
+  final int? directDiscount;
+  final int? sharedDiscount;
+
+  int? get afterDiscount => isVoided
+      ? 0
+      : directDiscount == null || sharedDiscount == null
+      ? null
+      : lineTotal - directDiscount! - sharedDiscount!;
 
   const OrderHistoryLine({
     required this.sentAt,
@@ -37,6 +73,14 @@ class OrderHistoryLine {
     this.readyAt,
     this.servedAt,
     this.voidReasonCode,
+    this.note,
+    this.ordererName,
+    this.memberName,
+    this.memberId,
+    this.memberAttributionKnown = false,
+    this.discounts = const [],
+    this.directDiscount,
+    this.sharedDiscount,
   });
 
   bool get isVoided => status == 'voided';
@@ -60,6 +104,17 @@ class OrderHistoryLine {
         ? null
         : DateTime.parse(j['servedAt'] as String),
     voidReasonCode: j['voidReasonCode'] as String?,
+    note: j['note'] as String?,
+    ordererName: j['ordererName'] as String?,
+    memberName: j['memberName'] as String?,
+    memberId: j['memberId'] as String?,
+    memberAttributionKnown: j['memberAttributionKnown'] as bool? ?? false,
+    discounts: [
+      for (final d in j['discounts'] as List? ?? const [])
+        OrderHistoryDiscount.fromJson((d as Map).cast<String, dynamic>()),
+    ],
+    directDiscount: (j['directDiscount'] as num?)?.toInt(),
+    sharedDiscount: (j['sharedDiscount'] as num?)?.toInt(),
   );
 }
 
@@ -156,6 +211,9 @@ class OrderHistoryVisit {
   final int net;
   final List<OrderHistoryLine> lines;
   final List<OrderHistoryReceipt> receipts;
+  final String? zoneName;
+  final int? unallocatedDiscount;
+  final List<OrderHistoryDiscount> discounts;
 
   const OrderHistoryVisit({
     required this.sessionId,
@@ -169,6 +227,9 @@ class OrderHistoryVisit {
     required this.net,
     required this.lines,
     required this.receipts,
+    this.zoneName,
+    this.unallocatedDiscount,
+    this.discounts = const [],
   });
 
   bool get isTakeaway => kind == 'takeaway';
@@ -185,6 +246,12 @@ class OrderHistoryVisit {
         pax: (j['pax'] as num?)?.toInt() ?? 0,
         closedAt: DateTime.parse(j['closedAt'] as String),
         waiterName: j['waiterName'] as String?,
+        zoneName: j['zoneName'] as String?,
+        unallocatedDiscount: (j['unallocatedDiscount'] as num?)?.toInt(),
+        discounts: [
+          for (final d in j['discounts'] as List? ?? const [])
+            OrderHistoryDiscount.fromJson((d as Map).cast<String, dynamic>()),
+        ],
         subtotal: (j['subtotal'] as num?)?.toInt() ?? 0,
         voidAmount: (j['voidAmount'] as num?)?.toInt() ?? 0,
         net: (j['net'] as num?)?.toInt() ?? 0,
