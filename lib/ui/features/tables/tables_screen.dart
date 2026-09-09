@@ -191,35 +191,42 @@ class _FloorHead extends ConsumerWidget {
         )
         .length;
     final takeaway = ref.watch(takeawayVisitsProvider).length;
-    final actions = Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      // Tablet hangs these off the right of the section head; on a phone they
-      // are their own row, so they start at the margin like everything else
-      // rather than floating against the right edge.
-      alignment: tablet ? WrapAlignment.end : WrapAlignment.start,
-      children: [
-        _FloorAction(
-          icon: Icons.event_outlined,
-          label: context.l10n.floorReservations,
-          count: waiting,
-          alert: late > 0
-              ? '$late ${context.l10n.floorReservationsLateCount}'
-              : null,
-          compact: !tablet,
-          prominent: true,
-          onTap: () => openReservationsSurface(context, tablet: tablet),
-        ),
-        _FloorAction(
-          icon: Icons.shopping_bag_outlined,
-          label: context.l10n.floorTakeaway,
-          count: takeaway,
-          compact: !tablet,
-          onTap: () => openTakeawaySurface(context),
-        ),
-        _NewOrderButton(tablet: tablet),
-      ],
-    );
+    final countedActions = <Widget>[
+      _FloorAction(
+        icon: Icons.event_outlined,
+        label: context.l10n.floorReservations,
+        count: waiting,
+        alert: late > 0
+            ? '$late ${context.l10n.floorReservationsLateCount}'
+            : null,
+        compact: !tablet,
+        prominent: true,
+        onTap: () => openReservationsSurface(context, tablet: tablet),
+      ),
+      _FloorAction(
+        icon: Icons.shopping_bag_outlined,
+        label: context.l10n.floorTakeaway,
+        count: takeaway,
+        compact: !tablet,
+        onTap: () => openTakeawaySurface(context),
+      ),
+    ];
+    final actions = tablet
+        ? Wrap(
+            spacing: Sp.s2,
+            runSpacing: Sp.s2,
+            alignment: WrapAlignment.end,
+            children: [...countedActions, const _NewOrderButton(tablet: true)],
+          )
+        : Row(
+            children: [
+              countedActions[0],
+              const SizedBox(width: Sp.s2),
+              countedActions[1],
+              const SizedBox(width: Sp.s2),
+              const Expanded(child: _NewOrderButton(tablet: false)),
+            ],
+          );
 
     if (tablet) {
       return Padding(
