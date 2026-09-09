@@ -10,6 +10,10 @@ import 'package:satset/data/services/settlement_journal.dart';
 import 'package:satset/data/services/settlement_sync.dart';
 import 'package:satset/data/services/ws_client.dart';
 
+/// Active reconnect replays, including the refresh after queued writes land.
+/// A count keeps overlapping connection events from hiding an earlier replay.
+final offlineSyncActivityProvider = StateProvider<int>((_) => 0);
+
 /// Drains the **Antrean kirim** whenever the socket comes back.
 ///
 /// Hangs off the same `connected` event the repositories resync on: by the time
@@ -29,13 +33,23 @@ final sendQueueDrainProvider = Provider<void>((ref) {
   if (ref.watch(apiConfigProvider) == null) return;
   final sub = ref.watch(wsClientProvider).events.listen((ev) async {
     if (ev.type != WsEventTypes.connected) return;
-    await _drainOrders(ref);
-    // Money **after** food, always (ADR-0123). A payment replayed ahead of the
-    // order it pays for lands against a bill that does not yet hold the lines,
-    // and the bill then reads short for no reason anybody can see. Only this
-    // device's ordering is ours to fix — another handset's backlog lands when
-    // it lands, which is what the staleness rule covers.
-    await _drainSettlement(ref);
+    if (ref.read(sendQueueProvider).isEmpty &&
+        ref.read(settlementJournalProvider).pendingVisits.isEmpty) {
+      return;
+    }
+    final activity = ref.read(offlineSyncActivityProvider.notifier);
+    activity.state++;
+    try {
+      await _drainOrders(ref);
+      // Money **after** food, always (ADR-0123). A payment replayed ahead of the
+      // order it pays for lands against a bill that does not yet hold the lines,
+      // and the bill then reads short for no reason anybody can see. Only this
+      // device's ordering is ours to fix — another handset's backlog lands when
+      // it lands, which is what the staleness rule covers.
+      await _drainSettlement(ref);
+    } finally {
+      if (activity.mounted) activity.state--;
+    }
   });
   ref.onDispose(sub.cancel);
 });

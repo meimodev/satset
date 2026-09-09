@@ -4585,6 +4585,12 @@ abstract class AppL10n {
   /// **'Memuat contoh data restoran'**
   String get auditSampleDataLoaded;
 
+  /// No description provided for @appBarSyncing.
+  ///
+  /// In id, this message translates to:
+  /// **'SINKRONISASI…'**
+  String get appBarSyncing;
+
   /// No description provided for @cshSyncDraining.
   ///
   /// In id, this message translates to:

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
 import 'package:satset/data/services/ws_client.dart';
+import 'package:satset/data/services/send_queue_drain.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/ui/core/design/sat_theme.dart';
 import 'package:satset/ui/core/design/theme.dart';
@@ -50,6 +51,7 @@ void main() {
     WidgetTester tester, {
     required WsConnState conn,
     VoidCallback? onBack,
+    int syncActivity = 0,
   }) async {
     // A 360dp phone — the floor this layout is budgeted against, not the
     // 411dp handset it gets eyeballed on.
@@ -61,6 +63,7 @@ void main() {
       ProviderScope(
         overrides: [
           ...tickerOverrides,
+          offlineSyncActivityProvider.overrideWith((ref) => syncActivity),
           wsConnStateProvider.overrideWithValue(conn),
           authStateProvider.overrideWith(
             (ref) => _StubAuth(
@@ -101,6 +104,7 @@ void main() {
     testWidgets('shows when there is no back button', (tester) async {
       await pumpBar(tester, conn: WsConnState.open);
       expect(shiftCluster(), findsOneWidget);
+      expect(find.textContaining(RegExp(r'\d{2}:\d{2}')), findsNothing);
       expect(find.byIcon(Icons.arrow_back), findsNothing);
     });
 
@@ -127,6 +131,29 @@ void main() {
     testWidgets('connecting says so', (tester) async {
       await pumpBar(tester, conn: WsConnState.connecting);
       expect(find.textContaining('MENGHUBUNGKAN'), findsOneWidget);
+    });
+
+    testWidgets('replaying offline work shows progress until it finishes', (
+      tester,
+    ) async {
+      await pumpBar(tester, conn: WsConnState.open, syncActivity: 1);
+      expect(find.text('SINKRONISASI…'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(SatAppBar)),
+      );
+      container.read(offlineSyncActivityProvider.notifier).state = 0;
+      await tester.pump();
+      expect(find.text('SINKRONISASI…'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('a lost connection takes precedence over replay progress', (
+      tester,
+    ) async {
+      await pumpBar(tester, conn: WsConnState.closed, syncActivity: 1);
+      expect(find.text('OFFLINE'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
     testWidgets('offline says so', (tester) async {

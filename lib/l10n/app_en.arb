@@ -1102,6 +1102,7 @@
   "receiptPart": "Part {index}/{count}",
   "auditStaffDeleted": "Deleted {name}",
   "auditSampleDataLoaded": "Loaded sample restaurant data",
+  "appBarSyncing": "SYNCING…",
   "cshSyncDraining": "Syncing bills…",
   "cshSyncPending": "{count, plural, =1{1 bill not yet sent} other{{count} bills not yet sent}}",
   "cshBillPending": "Pending",

@@ -2750,6 +2750,9 @@ class AppL10nId extends AppL10n {
   String get auditSampleDataLoaded => 'Memuat contoh data restoran';
 
   @override
+  String get appBarSyncing => 'SINKRONISASI…';
+
+  @override
   String get cshSyncDraining => 'Menyinkronkan tagihan…';
 
   @override

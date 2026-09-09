@@ -2766,6 +2766,9 @@ class AppL10nEn extends AppL10n {
   String get auditSampleDataLoaded => 'Loaded sample restaurant data';
 
   @override
+  String get appBarSyncing => 'SYNCING…';
+
+  @override
   String get cshSyncDraining => 'Syncing bills…';
 
   @override

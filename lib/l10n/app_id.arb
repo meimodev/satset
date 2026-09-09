@@ -2114,6 +2114,7 @@
   "@auditSampleDataLoaded": {
     "description": "Audit row for the ADR-0073 seed. No parameters — the act names itself."
   },
+  "appBarSyncing": "SINKRONISASI…",
   "cshSyncDraining": "Menyinkronkan tagihan…",
   "cshSyncPending": "{count, plural, other{{count} tagihan belum terkirim}}",
   "@cshSyncPending": {

@@ -5,6 +5,7 @@ import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/ws_client.dart';
+import 'package:satset/data/services/send_queue_drain.dart';
 import 'package:satset/domain/models/user.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
@@ -15,6 +16,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/state/tickers.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart' show SatBackButton;
+import 'package:satset/ui/core/widgets/sat_spinner.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 
 /// Single responsive app bar used everywhere chrome is needed.
@@ -121,7 +123,7 @@ class SatAppBar extends ConsumerWidget {
             if (onBack != null)
               SatBackButton(onTap: onBack!)
             else
-              const _ShiftCluster(),
+              const _ShiftCluster(showClock: false),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -244,6 +246,10 @@ class _SyncStatus extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final state = ref.watch(wsConnStateProvider);
+    final syncing =
+        bare &&
+        ref.watch(offlineSyncActivityProvider) > 0 &&
+        state == WsConnState.open;
     final isAdmin = ref.watch(authStateProvider).user?.role == UserRole.admin;
     final (dotColor, softColor, label) = switch (state) {
       WsConnState.open => (
@@ -261,20 +267,26 @@ class _SyncStatus extends ConsumerWidget {
     final row = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 7,
-          height: 7,
-          decoration: SatBox.d(
-            color: dotColor,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(color: softColor, blurRadius: 0, spreadRadius: 3),
-            ],
+        if (syncing)
+          SatSpinner(size: SatSpinnerSize.xs, color: sc.warn)
+        else
+          Container(
+            width: 7,
+            height: 7,
+            decoration: SatBox.d(
+              color: dotColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: softColor, blurRadius: 0, spreadRadius: 3),
+              ],
+            ),
           ),
-        ),
-        if (!bare || state != WsConnState.open) ...[
+        if (syncing || !bare || state != WsConnState.open) ...[
           const SizedBox(width: Sp.s2),
-          Text(label, style: SatType.caption(color: fg)),
+          Text(
+            syncing ? context.l10n.appBarSyncing : label,
+            style: SatType.caption(color: fg),
+          ),
         ],
       ],
     );
@@ -296,7 +308,7 @@ class _SyncStatus extends ConsumerWidget {
   }
 }
 
-/// `SHIFT 6j 42m 7d · 18:14 · Sab` — the time block, both layouts.
+/// Shift elapsed on both layouts; wall clock and weekday on tablet only.
 ///
 /// Bare label/value pairs rather than bordered badges: the row already carries
 /// a sync indicator (and a crumb trail, on tablet), and enclosing every value
@@ -306,7 +318,8 @@ class _SyncStatus extends ConsumerWidget {
 /// the clock is live, and a digit ticking in permanent chrome that nobody acts
 /// on is motion for its own sake — the weekday earns that width instead.
 class _ShiftCluster extends ConsumerWidget {
-  const _ShiftCluster();
+  final bool showClock;
+  const _ShiftCluster({this.showClock = true});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -347,9 +360,10 @@ class _ShiftCluster extends ConsumerWidget {
           ),
           const SizedBox(width: Sp.s1h),
           Text(elapsed, style: SatType.monoM(color: hi)),
-          const SizedBox(width: Sp.s3h),
+          if (showClock) const SizedBox(width: Sp.s3h),
         ],
-        Text(formatBarClockId(now), style: SatType.monoM(color: sc.textMd)),
+        if (showClock)
+          Text(formatBarClockId(now), style: SatType.monoM(color: sc.textMd)),
       ],
     );
   }
