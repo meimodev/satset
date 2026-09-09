@@ -77,12 +77,25 @@ bill that closed under ADR-0118 reports and prints its owners unchanged — but
 nothing writes one, and `attachReceiptMember` stays in the journal enum because
 those names are persisted.
 
-**A `piutang` debtor is suggested, never derived.** When every line about to be
-charged shares one [[Pemilik tiket]], the debtor row offers them as one tap into
-a pre-filtered lookup. The cashier still picks the person, because that tap is
-the agreement to owe and eating a dish is not one — ADR-0125's rule stands, with
-the typing removed. The row now appears in every mode and only for `piutang`,
-rather than in Per item and only under `memberSplit`.
+**Per item automatically selects a shared `piutang` debtor** (amended
+2026-09-08). When every selected item shares one [[Pemilik tiket]], resolve that
+member by ID and assign them to the payment. The displayed debtor, remaining
+credit, Pay validation, and submitted debtor must all use that same member.
+Confirming Pay accepts the displayed debtor; selecting the same person again
+through the picker is unnecessary.
+
+An automatic assignment follows the selection and clears when selected owners
+are mixed or any selected item is unowned. A deliberate picker choice overrides
+the automatic default and survives selection changes within the current payment.
+Changing settlement mode or visit, completing the payment attempt, or detaching
+clears that choice. A failed member lookup leaves Pay blocked with the picker
+available; a late response cannot overwrite a newer selection or manual choice.
+Credit limits still apply, and every payment still submits an explicit debtor
+ID for server validation. Other modes retain the picker suggestion.
+
+This replaces the original suggestion-only rule: the extra picker confirmation
+made the shared member look selected while Pay remained disabled. The visible,
+editable debtor and final Pay confirmation now establish the choice.
 
 ## Considered options
 
@@ -96,7 +109,7 @@ rather than in Per item and only under `memberSplit`.
   It makes a pending pick durable, which is the property ADR-0067 spent a
   receipt to avoid, and it needs a migration and a new recompute branch to store
   something the cashier may abandon in ten seconds.
-- **Derive the `piutang` debtor from the lines' owners, one leg per owner:**
+- **Create a separate `piutang` leg for each selected owner:**
   rejected for now. It needs a proration rule, a story for units nobody owns,
   and an answer for the half-posted receipt when guest B is over their limit
   while A went through. It sits cleanly on top of the suggestion later.

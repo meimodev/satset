@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/ui/core/widgets/proof_photo.dart';
 
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/member_dto.dart';
+import 'package:satset/data/repositories/members_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
@@ -70,7 +72,7 @@ enum SettleMode {
 ///
 /// It mints the receipt at confirm time rather than up front, so a mode the
 /// cashier tries and abandons leaves nothing behind on the bill.
-class SettlePane extends StatefulWidget {
+class SettlePane extends ConsumerStatefulWidget {
   final Bill bill;
   final SettlementRepository repo;
 
@@ -115,10 +117,10 @@ class SettlePane extends StatefulWidget {
   });
 
   @override
-  State<SettlePane> createState() => _SettlePaneState();
+  ConsumerState<SettlePane> createState() => _SettlePaneState();
 }
 
-class _SettlePaneState extends State<SettlePane> {
+class _SettlePaneState extends ConsumerState<SettlePane> {
   PayMethod _method = PayMethod.tunai;
   int _tender = 0;
   Uint8List? _proof;
@@ -127,22 +129,59 @@ class _SettlePaneState extends State<SettlePane> {
 
   /// The [[Pelanggan (member)]] who has accepted this `piutang` leg (ADR-0125).
   ///
-  /// Not derived from the lines' [[Pemilik tiket]]: eating a dish is not
-  /// agreeing to owe for it. The owner is only *suggested* — see
-  /// [_suggestedDebtor] — and the cashier still confirms them through the
-  /// lookup, which is also where the credit headroom comes from.
+  /// Per item resolves the shared Ticket owner automatically; a deliberate
+  /// picker choice overrides that default for the current payment.
   MemberDto? _debtor;
+  bool _manualDebtor = false;
+  String? _automaticDebtorId;
+  int _debtorLookup = 0;
 
   @override
   void didUpdateWidget(SettlePane old) {
     super.didUpdateWidget(old);
     // A new amount means the counted cash no longer refers to anything, and a
     // guest picked for a per-item share does not carry over to Bagi rata.
-    if (old.mode != widget.mode) {
-      setState(() {
-        _tender = 0;
-        _debtor = null;
-      });
+    if (old.mode != widget.mode || old.bill.visitId != _bill.visitId) {
+      _tender = 0;
+      _resetDebtor();
+    }
+    _syncAutomaticDebtor();
+  }
+
+  void _resetDebtor() {
+    _debtor = null;
+    _manualDebtor = false;
+    _automaticDebtorId = null;
+    _debtorLookup++;
+  }
+
+  /// Resolve by identity, never by the displayed name. Clearing synchronously
+  /// keeps Pay blocked while another owner's credit is still being fetched.
+  void _syncAutomaticDebtor() {
+    if (_manualDebtor) return;
+    final id =
+        widget.debtEnabled &&
+            widget.mode == SettleMode.perItem &&
+            _pay == PayMethod.piutang
+        ? _suggestedDebtor?.memberId
+        : null;
+    if (id == _automaticDebtorId) return;
+    _automaticDebtorId = id;
+    _debtor = null;
+    final lookup = ++_debtorLookup;
+    if (id != null) _resolveAutomaticDebtor(id, lookup);
+  }
+
+  Future<void> _resolveAutomaticDebtor(String id, int lookup) async {
+    try {
+      final detail = await ref.read(membersProvider.notifier).detail(id);
+      if (!mounted || lookup != _debtorLookup) return;
+      if (detail.member.id == id) {
+        setState(() => _debtor = detail.member);
+      }
+    } catch (_) {
+      // Deleted/unreachable members stay unassigned. The ordinary picker
+      // remains available; a line's cached name cannot establish credit.
     }
   }
 
@@ -153,14 +192,14 @@ class _SettlePaneState extends State<SettlePane> {
   PayMethod get _pay => _method;
 
   /// The one [[Pemilik tiket]] every line about to be charged shares, or null
-  /// when they differ or any is unowned. A suggestion for the debtor picker,
-  /// never the debtor itself (ADR-0126).
+  /// when they differ or any is unowned. Per item uses this as its automatic
+  /// debtor; other modes keep the picker suggestion (amended ADR-0126).
   BillLine? get _suggestedDebtor {
     final ids = <String>{};
     BillLine? first;
     for (final l in _bill.lines) {
       if (widget.mode == SettleMode.perItem &&
-          (widget.selection[l.ticketId] ?? 0) == 0) {
+          (widget.selection[l.ticketId] ?? 0) <= 0) {
         continue;
       }
       if (l.memberId == null) return null;
@@ -314,6 +353,11 @@ class _SettlePaneState extends State<SettlePane> {
   Future<void> _confirm() async {
     if (_blocker != null || _busy) return;
     setState(() => _busy = true);
+    // The mint/discount chain may rebuild the pane before payment is posted.
+    // Keep the debtor the cashier saw when confirming this payment.
+    final method = _pay;
+    final memberId = method == PayMethod.piutang ? _debtor?.id : null;
+    final photoBase64 = _proof == null ? null : base64Encode(_proof!);
     final tender = _pay == PayMethod.tunai ? _tender : null;
     final fallback = _amount;
     try {
@@ -358,11 +402,11 @@ class _SettlePaneState extends State<SettlePane> {
         final amount = rec?.outstanding ?? fallback;
         return widget.repo.recordPayment(
           receiptId,
-          method: _pay.id,
+          method: method.id,
           amount: amount,
           tendered: tender,
-          photoBase64: _proof == null ? null : base64Encode(_proof!),
-          memberId: _pay == PayMethod.piutang ? _debtor?.id : null,
+          photoBase64: photoBase64,
+          memberId: memberId,
         );
       });
     } finally {
@@ -371,7 +415,7 @@ class _SettlePaneState extends State<SettlePane> {
           _busy = false;
           _tender = 0;
           _proof = null;
-          _debtor = null;
+          _resetDebtor();
         });
         widget.onClearSelection();
         widget.onClearPending();
@@ -622,10 +666,8 @@ class _SettlePaneState extends State<SettlePane> {
 
   /// Who has taken this `piutang` leg on their tab (ADR-0125).
   ///
-  /// When every line about to be charged belongs to one [[Pemilik tiket]] the
-  /// row offers them as a suggestion — one tap into a pre-filtered lookup, not
-  /// a silent fill. Debt follows the person who agrees to owe, so it is always
-  /// confirmed; the lookup is also where the credit headroom comes from.
+  /// Per item fills the shared owner after resolving their credit. The picker
+  /// can override them; other modes continue to offer a lookup suggestion.
   Widget _debtorRow(SatColors sc) {
     final l10n = context.l10n;
     final suggestion = _debtor == null ? _suggestedDebtor : null;
@@ -656,7 +698,7 @@ class _SettlePaneState extends State<SettlePane> {
                 size: SatButtonSize.sm,
                 label: l10n.cshMemberDetach,
                 onTap: () => setState(() {
-                  _debtor = null;
+                  _resetDebtor();
                   // The tab may have been reachable only through them.
                   _method = PayMethod.tunai;
                 }),
@@ -678,18 +720,24 @@ class _SettlePaneState extends State<SettlePane> {
   }
 
   Future<void> _pickDebtor({String? query}) async {
+    final lookup = _debtorLookup;
     final picked = await showSatSheet<MemberDto>(
       context,
       builder: (_) => MemberLookupSheet(initialQuery: query),
     );
-    if (picked == null || !mounted) return;
-    setState(() => _debtor = picked);
+    if (picked == null || !mounted || lookup != _debtorLookup) return;
+    setState(() {
+      _debtorLookup++;
+      _manualDebtor = true;
+      _debtor = picked;
+    });
   }
 
   void _pick(PayMethod m) => setState(() {
     _method = m;
     _tender = 0;
     _proof = null;
+    _syncAutomaticDebtor();
   });
 
   /// No pad, no camera — a tab takes neither. The credit left is the one number

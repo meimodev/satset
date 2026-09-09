@@ -521,7 +521,11 @@ class _BillBodyState extends State<_BillBody> {
       children: [
         if (bill.fullySettled)
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+            padding: const EdgeInsets.only(
+              left: Sp.s3h,
+              top: Sp.s3h,
+              right: Sp.s3h,
+            ),
             child: SatButton.outline(
               label: context.l10n.cshCloseBill,
               icon: Icons.lock_outline_rounded,
