@@ -27,7 +27,13 @@ const _uuid = Uuid();
 /// (ADR-0124), keyed by the intent id, because the queue is a prefs blob loaded
 /// synchronously at boot and a base64 JPEG per queued expense would put
 /// megabytes in a string parsed on every launch.
-enum SendIntentKind { seatTable, submitOrder, voidTicket, tableExpense }
+enum SendIntentKind {
+  seatTable,
+  submitOrder,
+  voidTicket,
+  serveTicket,
+  tableExpense,
+}
 
 /// Whether an intent still counts once the business day has rolled over.
 ///
@@ -37,7 +43,13 @@ enum SendIntentKind { seatTable, submitOrder, voidTicket, tableExpense }
 /// discarding it destroys the only record that it did. Same reasoning ADR-0123
 /// gives for settlement events never expiring, arriving at the same answer from
 /// the queue's side.
-bool intentExpires(SendIntentKind kind) => kind != SendIntentKind.tableExpense;
+///
+/// A **serve** does too, and for a third reason (ADR-0138): dropping it leaves
+/// the line `ready` on the board for good. Nothing else clears that status —
+/// no rollover, no close — so the safe direction here is the opposite one, and
+/// a late serve costs nothing once it backdates its own `servedAt`.
+bool intentExpires(SendIntentKind kind) =>
+    kind != SendIntentKind.tableExpense && kind != SendIntentKind.serveTicket;
 
 /// One act a waiter performed while their handset could not reach the host.
 ///
@@ -68,6 +80,9 @@ class SendIntent {
   /// `voidTicket`: `{'ticketId', 'voidReasonCode', 'voidReason', 'name', 'qty'}`
   /// — the line's name and qty ride along because the host is about to be told
   /// the ticket is gone, and the drain report still has to name what failed.
+  /// `serveTicket`: `{'ticketId', 'name', 'qty'}` — same reason, from the other
+  /// side: a refused serve leaves a plate on the table and a line still
+  /// reading "siap diambil", and the report has to say which one.
   final Map<String, dynamic> payload;
 
   const SendIntent({
@@ -496,6 +511,7 @@ class SendQueue extends StateNotifier<List<SendIntent>> {
 /// (ADR-0090).
 IntentSender apiIntentSender(
   ApiClient api, {
+
   /// Reads a queued expense's photo back out of the client database. Passed in
   /// rather than reached for, so this function stays a pure function of the
   /// api client and a test can hand it bytes.
@@ -531,6 +547,21 @@ IntentSender apiIntentSender(
           // (ADR-0006 accountability, ADR-0056 never backfills authorship).
           'actorId': intent.actorId,
         },
+      );
+      return (raw as Map).cast<String, dynamic>();
+    case SendIntentKind.serveTicket:
+      // No idempotency key, for the void's reason: `served → served` is not on
+      // the graph, so a replay of one the host already took comes back as
+      // `409 illegal_transition` and the drain records and drops it. The 409
+      // *is* the idempotency.
+      //
+      // `capturedAt` is what keeps the outage out of the venue's speed report:
+      // the route stamps `servedAt` from it rather than from the clock at
+      // drain, so a plate put down at 19:40 and replayed at 20:05 does not
+      // book a 25-minute pickup lag against the waiter (ADR-0138).
+      final raw = await api.postJson(
+        '/tickets/${intent.payload['ticketId']}/transition',
+        {'status': 'served', 'capturedAt': intent.capturedAt.toIso8601String()},
       );
       return (raw as Map).cast<String, dynamic>();
     case SendIntentKind.tableExpense:

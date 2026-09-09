@@ -21,6 +21,7 @@ import 'package:satset/ui/features/printing/printer_picker.dart';
 import 'package:satset/ui/features/void_flow/line_item_action_sheet.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
+import 'package:satset/core/localization/report_copy.dart';
 
 /// Takeaway (Bawa pulang) detail — the visit-keyed home for one takeaway order.
 /// Mirrors the table detail minus lock/seat: shows lines, lets the waiter add
@@ -140,12 +141,23 @@ class _TakeawayDetailScreenState extends ConsumerState<TakeawayDetailScreen> {
       await ref
           .read(advanceTicketStatusUseCaseProvider)
           .call(widget.visitId, ticketId, TicketStatus.served);
-    } catch (e) {
+    } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.tkwServeFailed('$e'))),
-      );
+      _serveFailed(e.code);
+    } catch (_) {
+      if (!mounted) return;
+      _serveFailed(null);
     }
+  }
+
+  void _serveFailed(String? code) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          context.l10n.tktServeFailed(serveFailureText(context.l10n, code)),
+        ),
+      ),
+    );
   }
 
   void _openAction(Ticket t, String label) {

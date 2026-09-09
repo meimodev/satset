@@ -974,6 +974,29 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final stampNow = SatClock.now();
     final stampReady = to == TicketStatus.ready && current.readyAt == null;
     final stampServed = to == TicketStatus.served;
+    // A serve captured while the handset was terputus stamps `servedAt` from
+    // when the plate actually went down, not from when the queue drained
+    // (ADR-0138). Without it the outage books itself as pickup lag: the
+    // Operasional metric is `servedAt − readyAt`, so a 25-minute reconnect
+    // reads as 25 minutes of food dying under the lamp.
+    //
+    // Clamped at both ends, and the lower bound is the load-bearing one — a
+    // handset whose clock runs slow would mint a negative lag, which
+    // `reports_routes` does not reject but silently *discards*, so the sample
+    // disappears instead of being wrong. Only a serve is backdatable; every
+    // other stamp on this route is a fact the host observed itself.
+    final capturedRaw = (body['capturedAt'] as String?)?.trim();
+    final captured =
+        stampServed && capturedRaw != null && capturedRaw.isNotEmpty
+        ? DateTime.tryParse(capturedRaw)
+        : null;
+    final servedStamp = captured == null
+        ? stampNow
+        : captured.isAfter(stampNow)
+        ? stampNow
+        : (current.readyAt != null && captured.isBefore(current.readyAt!))
+        ? current.readyAt!
+        : captured;
     // ADR-0043: firing a held line hands it to the kitchen now — the prep
     // clock starts here, not at `sentAt` (when the guest ordered it).
     final stampFired = from == TicketStatus.held && to == TicketStatus.sent;
@@ -985,7 +1008,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           status: Value(statusRaw),
           firedAt: stampFired ? Value(stampNow) : const Value.absent(),
           readyAt: stampReady ? Value(stampNow) : const Value.absent(),
-          servedAt: stampServed ? Value(stampNow) : const Value.absent(),
+          servedAt: stampServed ? Value(servedStamp) : const Value.absent(),
           voidReason: Value(voidReason),
           voidReasonCode: Value(voidReasonCode),
           voidApprovedBy: Value(body['voidApprovedBy'] as String?),

@@ -541,6 +541,37 @@ class SettlementJournal extends StateNotifier<JournalState> {
     }
   }
 
+  /// The chains a past drain parked, rebuilt from the journal.
+  ///
+  /// The drain's report is in memory and one-shot, so a refusal that lands
+  /// while `/kasir` is not mounted — the bill sheet is a root-navigator push,
+  /// the ADR-0103 shape — or that is followed by a restart leaves real cash
+  /// parked with nothing to show for it. The refusal surface re-reads this
+  /// instead of trusting it saw the drain.
+  Future<List<ChainOutcome>> parkedChains() async {
+    final rows =
+        await (db.select(db.settlementEvents)
+              ..where((e) => e.status.equals('parked'))
+              ..orderBy([(e) => OrderingTerm.asc(e.seq)]))
+            .get();
+    final byVisit = <String, List<SettlementEvent>>{};
+    final codes = <String, String?>{};
+    for (final r in rows) {
+      byVisit.putIfAbsent(r.visitId, () => []).add(_fromRow(r));
+      codes[r.visitId] ??= r.failCode;
+    }
+    return [
+      for (final e in byVisit.entries)
+        ChainOutcome(
+          visitId: e.key,
+          refused: e.value.first,
+          code: codes[e.key],
+          parked: e.value,
+          strandedAmount: _moneyIn(e.value),
+        ),
+    ];
+  }
+
   /// The cashier acknowledged a parked chain (ADR-0123 §refusal surface). The
   /// events go; the money difference is now a human's problem, and the audit
   /// row the host wrote is where it lives.

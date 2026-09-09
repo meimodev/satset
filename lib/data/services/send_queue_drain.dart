@@ -9,6 +9,7 @@ import 'package:satset/data/services/send_queue_service.dart';
 import 'package:satset/data/services/settlement_journal.dart';
 import 'package:satset/data/services/settlement_sync.dart';
 import 'package:satset/data/services/ws_client.dart';
+import 'package:satset/domain/models/settlement_event.dart';
 
 /// Active reconnect replays, including the refresh after queued writes land.
 /// A count keeps overlapping connection events from hiding an earlier replay.
@@ -34,7 +35,7 @@ final sendQueueDrainProvider = Provider<void>((ref) {
   final sub = ref.watch(wsClientProvider).events.listen((ev) async {
     if (ev.type != WsEventTypes.connected) return;
     if (ref.read(sendQueueProvider).isEmpty &&
-        ref.read(settlementJournalProvider).pendingVisits.isEmpty) {
+        (await ref.read(settlementJournalProvider.notifier).pendingVisitIds()).isEmpty) {
       return;
     }
     final activity = ref.read(offlineSyncActivityProvider.notifier);
@@ -73,12 +74,28 @@ Future<void> _drainOrders(Ref ref) async {
 /// Replay the [[Antrean setelmen]] (ADR-0123). Per visit, in capture order,
 /// halting a visit on its first refusal; other visits keep draining.
 Future<void> _drainSettlement(Ref ref) async {
-  if (ref.read(settlementJournalProvider).pendingVisits.isEmpty) return;
+  // Ask the journal, never `pendingVisits`. That set answers a *different*
+  // question — which visits are [[Kunjungan otoritatif-lokal]] — and it
+  // deliberately drops member- and venue-scope rows (ADR-0129), so gating the
+  // drain on it strands an offline attach, detach or enrolment forever on a
+  // device that captured nothing else. `drain()` is its own no-op when there
+  // is nothing queued.
   final report = await ref.read(settlementJournalProvider.notifier).drain();
   if (report.isEmpty) return;
   // Same reason the order drain re-pulls: the cashier list's own `connected`
   // resync ran before these payments existed.
   await ref.read(settlementProvider.notifier).refresh();
+  // And the *open* bill with it. While the chain was queued the sheet read the
+  // projection; the moment the journal empties it falls back to the cached
+  // bill, which is the pre-drain snapshot — a settled bill rendered as unpaid
+  // with a live Terima button under it. `billUpdated` is not enough to lean on
+  // here: it arrives (if at all) around a reconnect this screen is already
+  // rebuilding through, and the one thing that must not depend on a race is
+  // whether the cashier is invited to collect the same money twice.
+  for (final chain in report.chains) {
+    if (chain.visitId == kVenueScopeVisitId) continue;
+    ref.invalidate(billDetailProvider(chain.visitId));
+  }
   if (report.failures.isNotEmpty) {
     ref.read(settlementReportProvider.notifier).state = report;
   }

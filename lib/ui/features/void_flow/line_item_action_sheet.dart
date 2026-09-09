@@ -429,7 +429,10 @@ class _ActionList extends ConsumerWidget {
         );
       }
     }
-    if (!offline && ticket.status == TicketStatus.ready) {
+    // A serve is capturable while terputus (ADR-0138) — unlike its undo just
+    // below, which stays online-only: queueing both makes the pair reorderable
+    // for no gain a waiter asked for.
+    if (ticket.status == TicketStatus.ready) {
       rows.add(
         _ActionItem(
           id: 'serve',

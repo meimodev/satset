@@ -9637,12 +9637,6 @@ abstract class AppL10n {
   /// **'Belum ada item.'**
   String get tkwEmpty;
 
-  /// No description provided for @tkwServeFailed.
-  ///
-  /// In id, this message translates to:
-  /// **'Gagal sajikan: {error}'**
-  String tkwServeFailed(String error);
-
   /// No description provided for @tkwBillLoadFailed.
   ///
   /// In id, this message translates to:
@@ -10092,12 +10086,6 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Berlaku seluruh struk'**
   String get dscAppliesReceipt;
-
-  /// No description provided for @ordServeFailed.
-  ///
-  /// In id, this message translates to:
-  /// **'Gagal sajikan: {error}'**
-  String ordServeFailed(String error);
 
   /// No description provided for @ordSummary.
   ///
@@ -16638,6 +16626,36 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Ekspor daftar pelanggan ({rows, plural, other{{rows} baris}})'**
   String auditMemberDirectoryExported(int rows);
+
+  /// No description provided for @serveFailForbidden.
+  ///
+  /// In id, this message translates to:
+  /// **'Peranmu tidak punya izin menandai disajikan.'**
+  String get serveFailForbidden;
+
+  /// No description provided for @serveFailAlreadyMoved.
+  ///
+  /// In id, this message translates to:
+  /// **'Status item sudah berubah di perangkat lain. Cek ulang.'**
+  String get serveFailAlreadyMoved;
+
+  /// No description provided for @serveFailOther.
+  ///
+  /// In id, this message translates to:
+  /// **'Server menolak tanda disajikan.'**
+  String get serveFailOther;
+
+  /// No description provided for @tktServeFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal sajikan: {reason}'**
+  String tktServeFailed(String reason);
+
+  /// No description provided for @sendFailServeRefused.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanda disajikan ×{qty} {name} ditolak. {reason}'**
+  String sendFailServeRefused(int qty, String name, String reason);
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

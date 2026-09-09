@@ -53,6 +53,7 @@ import 'package:satset/ui/core/design/motion.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/widgets/sat_spinner.dart';
+import 'package:satset/core/localization/report_copy.dart';
 
 /// Height the floating action stack covers, plus the gap above it. Stacks on
 /// `shellInset`, which clears the tab bar when there is one.
@@ -78,6 +79,19 @@ bool _animationsDisabled(BuildContext c) =>
 /// so folding that into `readOnly` padlocked the screen in the one condition
 /// the queue exists for — an order behind a table seated offline (ADR-0090) and
 /// a void captured when the guest changes their mind (ADR-0114).
+/// Say why a serve did not land. Lives here rather than on the state class
+/// because this screen is pushed above [AppShell] and therefore owns its own
+/// snackbars — the error bus never reaches it (ADR-0103, ADR-0138).
+void _serveFailed(BuildContext context, String? code) {
+  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+    SnackBar(
+      content: Text(
+        context.l10n.tktServeFailed(serveFailureText(context.l10n, code)),
+      ),
+    ),
+  );
+}
+
 ({bool readOnly, bool canQueueWrite}) tableAccess({
   required bool lockedByOther,
   required bool hasLease,
@@ -494,9 +508,23 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       // Server maintains table.readyCount + status transactionally on the
       // ticket transition and broadcasts table.updated; the client must not
       // perform a second, non-atomic decrement here.
-      await ref
-          .read(advanceTicketStatusUseCaseProvider)
-          .call(_tableId, id, TicketStatus.served);
+      //
+      // This screen is a root-navigator push, so it sits *above* AppShell —
+      // the app's only error-bus subscriber (ADR-0103). A throw from here
+      // reaches no snackbar at all, which is how the tap stayed a silent dead
+      // button for a whole release. Terputus queues now (ADR-0138); what is
+      // left to say is what the host said.
+      try {
+        await ref
+            .read(advanceTicketStatusUseCaseProvider)
+            .call(_tableId, id, TicketStatus.served);
+      } on ApiException catch (e) {
+        if (!context.mounted) return;
+        _serveFailed(context, e.code);
+      } catch (_) {
+        if (!context.mounted) return;
+        _serveFailed(context, null);
+      }
     }
 
     Future<void> fireCourse(CourseId cid) async {

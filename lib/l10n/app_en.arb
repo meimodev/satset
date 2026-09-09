@@ -2046,7 +2046,6 @@
   "tkwItemCount": "{count, plural, =1{1 ITEM} other{{count} ITEMS}}",
   "tkwHandedOverTag": "HANDED OVER",
   "tkwEmpty": "No items yet.",
-  "tkwServeFailed": "Couldn't mark it served: {error}",
   "tkwBillLoadFailed": "Couldn't load the bill: {error}",
   "tkwErrNotTerminal": "Some items are still cooking — wait until they're ready.",
   "tkwErrNoTickets": "No items to hand over yet.",
@@ -2122,7 +2121,6 @@
   "dscAppliesLine": "Applies to this item",
   "dscAppliesBill": "Applies to the whole bill · every receipt",
   "dscAppliesReceipt": "Applies to this whole receipt",
-  "ordServeFailed": "Couldn't mark it served: {error}",
   "ordSummary": "{active} running · {ready} ready to run",
   "ordUnderMin": "<1m",
   "ordSince": "since {time}",
@@ -3895,5 +3893,10 @@
         "type": "int"
       }
     }
-  }
+  },
+  "serveFailForbidden": "Your role cannot mark items served.",
+  "serveFailAlreadyMoved": "This item already changed on another device. Check again.",
+  "serveFailOther": "The server refused the serve.",
+  "tktServeFailed": "Couldn't mark it served: {reason}",
+  "sendFailServeRefused": "Serve of ×{qty} {name} refused. {reason}"
 }

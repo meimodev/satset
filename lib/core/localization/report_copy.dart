@@ -136,6 +136,18 @@ String sendFailureText(AppL10n l, String? code) => switch (code) {
 /// cannot void" is a permissions problem, "this one needs a manager" is the
 /// deliberate comp gate, and a waiter told the wrong one either stops trying
 /// or goes looking for the wrong person.
+/// Why a serve did not happen (ADR-0138). A serve is captured while terputus,
+/// so this never speaks for a dead socket — by the time it renders, the host
+/// has answered. `illegal_transition` is the one a waiter actually meets: the
+/// line was voided or already served from another handset while this one held
+/// it.
+String serveFailureText(AppL10n l, String? code) => switch (code) {
+  'forbidden' => l.serveFailForbidden,
+  'illegal_transition' => l.serveFailAlreadyMoved,
+  'send_queue_full' => l.sendQueueFull,
+  _ => l.serveFailOther,
+};
+
 String voidFailureText(AppL10n l, String? code) => switch (code) {
   'forbidden' => l.voidFailForbidden,
   'forbidden_comp' => l.voidFailNeedsManager,

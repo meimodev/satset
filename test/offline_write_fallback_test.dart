@@ -25,10 +25,12 @@ import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/prefs_service.dart';
+import 'package:satset/data/services/send_queue_service.dart';
 import 'package:satset/data/services/settlement_journal.dart';
 import 'package:satset/data/services/settlement_sync.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/settlement_event.dart';
+import 'package:satset/domain/models/ticket.dart';
 
 void main() {
   late ProviderContainer container;
@@ -236,6 +238,57 @@ void main() {
           .where((e) => e.kind == SettlementEventKind.submitOrder),
       hasLength(1),
     );
+  });
+
+  test('a terputus serve is queued under its own key (ADR-0138)', () async {
+    // The third door. `served` is the waiter's own hand and, under `bypassKds`,
+    // the only ticket act they perform all shift — so it queues rather than
+    // throwing into a screen that has no error-bus subscriber above it.
+    final queued = await container
+        .read(ticketsProvider.notifier)
+        .transition('meja-7', 'tkt-1', TicketStatus.served);
+
+    expect(queued, isTrue, reason: 'the caller has to know it has not landed');
+    final intents = container.read(sendQueueProvider);
+    expect(intents, hasLength(1));
+    expect(intents.single.kind, SendIntentKind.serveTicket);
+    expect(intents.single.payload['ticketId'], 'tkt-1');
+    expect(
+      intents.single.id,
+      'serve-tkt-1',
+      reason: 'keyed on the ticket, so four taps on a dead socket are one act',
+    );
+    expect(
+      intentExpires(SendIntentKind.serveTicket),
+      isFalse,
+      reason: 'dropping it would strand the line `ready` on the board for good',
+    );
+
+    // A second tap adds nothing, and a void of the same line is a different
+    // act under a different key — the two must not collapse into each other.
+    await container
+        .read(ticketsProvider.notifier)
+        .transition('meja-7', 'tkt-1', TicketStatus.served);
+    await container
+        .read(ticketsProvider.notifier)
+        .transition('meja-7', 'tkt-1', TicketStatus.voided,
+            voidReasonCode: 'customerChange');
+    expect(
+      container.read(sendQueueProvider).map((i) => i.id),
+      ['serve-tkt-1', 'void-tkt-1'],
+    );
+  });
+
+  test('a prep is not queueable — it is a kitchen fact', () async {
+    // The other side of the widening: only a void and a serve capture. A
+    // queued `prep` would replay a fact that stopped being true.
+    await expectLater(
+      container
+          .read(ticketsProvider.notifier)
+          .transition('meja-7', 'tkt-1', TicketStatus.prep),
+      throwsA(anything),
+    );
+    expect(container.read(sendQueueProvider), isEmpty);
   });
 
   test('each table gets its own chain', () async {
