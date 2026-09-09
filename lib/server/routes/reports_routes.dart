@@ -10,6 +10,7 @@ import 'package:satset/server/auth.dart';
 import 'package:satset/server/cash.dart';
 import 'package:satset/server/debts.dart';
 import 'package:satset/server/members.dart';
+import 'package:satset/server/order_history_discounts.dart';
 import 'package:satset/server/shift.dart';
 import 'package:satset/server/visit_expenses.dart';
 import 'package:satset/server/db/database.dart';
@@ -982,6 +983,50 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
       linesBySession.putIfAbsent(t.sessionId, () => []).add(t);
     }
 
+    final zones = await db.select(db.zones).get();
+    final zoneNames = {for (final z in zones) z.id: z.name};
+    final memberIds = lines.map((t) => t.memberId).whereType<String>().toSet();
+    final memberNames = <String, String>{};
+    if (memberIds.isNotEmpty) {
+      final m = db.members;
+      final members =
+          await (db.selectOnly(m)
+                ..addColumns([m.id, m.name])
+                ..where(m.id.isIn(memberIds)))
+              .get();
+      for (final member in members) {
+        memberNames[member.read(m.id)!] = member.read(m.name)!;
+      }
+    }
+    final assignments = sessionIds.isEmpty
+        ? <TableSessionReceiptLine>[]
+        : await (db.select(
+            db.tableSessionReceiptLines,
+          )..where((a) => a.sessionId.isIn(sessionIds))).get();
+    final assignmentsBySession = <String, List<TableSessionReceiptLine>>{};
+    for (final a in assignments) {
+      (assignmentsBySession[a.sessionId] ??= []).add(a);
+    }
+    final discounts = sessionIds.isEmpty
+        ? <TableSessionDiscount>[]
+        : await (db.select(db.tableSessionDiscounts)
+                ..where((d) => d.sessionId.isIn(sessionIds))
+                ..orderBy([
+                  (d) => OrderingTerm.asc(d.at),
+                  (d) => OrderingTerm.asc(d.id),
+                ]))
+              .get();
+    final discountsBySession = <String, List<TableSessionDiscount>>{};
+    for (final d in discounts) {
+      (discountsBySession[d.sessionId] ??= []).add(d);
+    }
+    Map<String, dynamic> discountJson(TableSessionDiscount d) => {
+      'name': d.name,
+      'kind': d.kind,
+      'value': d.value,
+      'shared': d.ticketId == null,
+    };
+
     // Bill settlement snapshots (ADR-0031): per-receipt totals + the payments
     // tendered against them. Grouped by session, then by receipt. Proof photo
     // bytes never ride this path — only a hasPhoto flag (ADR-0025); the client
@@ -1085,12 +1130,25 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
     final visits = <Map<String, dynamic>>[];
     for (final s in sessions) {
       final ls = linesBySession[s.id] ?? const <TableSessionTicket>[];
+      final ds = discountsBySession[s.id] ?? const <TableSessionDiscount>[];
+      final assigned =
+          assignmentsBySession[s.id] ?? const <TableSessionReceiptLine>[];
+      final shares = orderHistoryDiscountShares(
+        tickets: ls,
+        receipts: receiptsBySession[s.id] ?? const [],
+        assignments: assigned,
+        discounts: ds,
+        discountTotal: s.discountAmount,
+      );
       lineCount += ls.length;
       netTotal += s.settledTotal;
       visits.add({
         'sessionId': s.id,
         'tableLabel': s.tableLabel ?? '—',
         'kind': s.kind,
+        'zoneName': s.kind == 'takeaway' ? null : zoneNames[s.zoneId],
+        'unallocatedDiscount': shares == null ? s.discountAmount : null,
+        'discounts': [for (final d in ds) discountJson(d)],
         'pax': s.pax,
         'closedAt': s.closedAt.toIso8601String(),
         'waiterName': s.actorUserId == null
@@ -1109,6 +1167,31 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
               'qty': t.qty,
               'price': t.price,
               'lineTotal': t.price * t.qty,
+              'note': t.note,
+              'ordererName': userById[t.createdByUserId]?.name,
+              'memberId': t.memberId,
+              'memberName': memberNames[t.memberId],
+              'memberAttributionKnown':
+                  t.memberId != null || s.memberAttributionVersion == 2,
+              'directDiscount': t.status == 'voided'
+                  ? 0
+                  : shares?[t.ticketId]?.direct,
+              'sharedDiscount': t.status == 'voided'
+                  ? 0
+                  : shares?[t.ticketId]?.shared,
+              'discounts': [
+                for (final d in ds)
+                  if (d.ticketId == t.ticketId ||
+                      (t.status != 'voided' &&
+                          d.ticketId == null &&
+                          (d.receiptId == null ||
+                              assigned.any(
+                                (a) =>
+                                    a.ticketId == t.ticketId &&
+                                    a.receiptId == d.receiptId,
+                              ))))
+                    discountJson(d),
+              ],
               'status': t.status,
               'modifiers': modLabels(t.modifiersJson),
               'readyAt': t.readyAt?.toIso8601String(),
@@ -1550,6 +1633,7 @@ class _StaffVoidAgg {
 /// Per-calendar-day accounting rollup (ADR-0032).
 class _AcctDayAgg {
   int gross = 0;
+
   /// [[Pengeluaran kunjungan]] (ADR-0130). Beside `collected` and folded into
   /// neither it nor `net`: the guest paid in full and the payment row says so —
   /// what this changes is the cash actually in the drawer at the end of the
