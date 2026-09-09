@@ -41,6 +41,9 @@ import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/core/widgets/note_line.dart';
 import '../void_flow/line_item_action_sheet.dart';
 import '../cashier/visit_expense_panel.dart';
+import 'visit_expense_sheet.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/features/tables/widgets/move_table_sheet.dart';
 import 'package:satset/ui/features/tables/widgets/pending_orders_block.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
@@ -612,12 +615,32 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       });
     }
 
+    final expenseEnabled = ref.watch(
+      venueSettingsProvider.select((s) => s.tableExpenseOn),
+    );
+    final canRecordExpense = ref.watch(
+      authStateProvider.select((s) => s.has(Capability.recordTableExpense)),
+    );
     final appBar = SatAppBar(
       onBack: () => safePop(context),
       // No bare `Meja` segment ahead of the table's own name: `Meja › Meja 12`
       // is an echo, and a table name identifies itself.
       crumbs: [table.displayName, if (zone.name.isNotEmpty) zone.name],
       trailingPills: [
+        if (expenseEnabled &&
+            canRecordExpense &&
+            table.currentVisitId != null &&
+            !table.billClosed &&
+            !isKosong)
+          SatIconButton.outline(
+            icon: Icons.add_shopping_cart_rounded,
+            tooltip: context.l10n.tableExpNew,
+            onTap: () => showVisitExpenseSheet(
+              context,
+              visitId: table.currentVisitId!,
+              tableId: table.id,
+            ),
+          ),
         if (auth.canSettleBill && table.currentVisitId != null)
           SatIconButton.plain(
             icon: Icons.receipt_long_rounded,
@@ -744,7 +767,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                                     visitId: table.currentVisitId!,
                                     tableId: table.id,
                                     billOpen: !table.billClosed,
-                                    showEmpty: true,
+                                    summaryOnly: true,
                                   ),
                                 ),
                             ],
@@ -759,17 +782,18 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
               left: 16 + l.padding.left,
               right: 16 + l.padding.right,
               bottom: Sp.s4 + context.shellInset + l.padding.bottom,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (canClose)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: Sp.s2h),
+                  if (canClose) ...[
+                    Expanded(
                       child: _CloseTableButton(
                         label: closeLabel,
                         onTap: onClose,
                       ),
                     ),
+                    const SizedBox(width: Sp.s2h),
+                  ],
                   _PrimaryIconButton(
                     // The padlock means "someone else has this table", never
                     // "the network is down" — offline still adds (ADR-0116).
@@ -1760,7 +1784,7 @@ class _TabletSplit extends StatelessWidget {
                                       visitId: table.currentVisitId!,
                                       tableId: table.id,
                                       billOpen: !table.billClosed,
-                                      showEmpty: true,
+                                      summaryOnly: true,
                                     ),
                                 ],
                               ),

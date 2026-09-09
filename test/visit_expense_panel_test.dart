@@ -46,6 +46,7 @@ void main() {
     bool canRecord = false,
     bool enabled = true,
     bool billOpen = true,
+    bool summaryOnly = false,
     double width = 390,
   }) async {
     tester.view.physicalSize = Size(width, 800);
@@ -79,6 +80,7 @@ void main() {
               tableId: 'table',
               billOpen: billOpen,
               showEmpty: true,
+              summaryOnly: summaryOnly,
             ),
           ),
         ),
@@ -105,7 +107,8 @@ void main() {
         ),
       );
       expect(find.text('Table expense'), findsOneWidget);
-      expect(find.text('Tissues · For guests'), findsOneWidget);
+      expect(find.text('Tissues'), findsOneWidget);
+      expect(find.text('For guests'), findsOneWidget);
       expect(find.text('Record expense'), findsNothing);
       expect(tester.takeException(), isNull);
     });
@@ -127,6 +130,40 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await pumpPanel(tester, canRecord: true, billOpen: false);
     expect(find.text('Record expense'), findsNothing);
+  });
+
+  testWidgets('table summary hides zero even with recording permission', (
+    tester,
+  ) async {
+    await pumpPanel(tester, canRecord: true, summaryOnly: true);
+    expect(find.text('Table expense'), findsNothing);
+    expect(find.text('No expenses yet'), findsNothing);
+    expect(find.text('Record expense'), findsNothing);
+  });
+
+  testWidgets('table summary appears when a nonzero total arrives', (
+    tester,
+  ) async {
+    final result = Completer<VisitExpenseSummaryDto>();
+    await pumpPanel(
+      tester,
+      canRecord: true,
+      summaryOnly: true,
+      load: () => result.future,
+    );
+    result.complete(
+      const VisitExpenseSummaryDto(
+        total: 12000,
+        expenses: [
+          VisitExpenseDto(id: 'e1', amount: 12000, categoryName: 'Tissues'),
+        ],
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Table expense'), findsOneWidget);
+    expect(find.text('Tissues'), findsOneWidget);
+    expect(find.text('Record expense'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('disabled feature is hidden', (tester) async {

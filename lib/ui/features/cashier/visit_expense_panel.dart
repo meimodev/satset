@@ -30,12 +30,16 @@ class VisitExpensePanel extends ConsumerWidget {
   final String visitId;
   final bool billOpen;
   final bool showEmpty;
+
+  /// Table detail records from its header and only needs a nonzero summary.
+  final bool summaryOnly;
   final String? tableId;
   const VisitExpensePanel({
     super.key,
     required this.visitId,
     required this.billOpen,
     this.showEmpty = false,
+    this.summaryOnly = false,
     this.tableId,
   });
 
@@ -53,6 +57,9 @@ class VisitExpensePanel extends ConsumerWidget {
     // After bill close there is nothing to record against and nothing to say —
     // a closed bill with no expenses is not a fact worth a card.
     final total = summary.valueOrNull?.total ?? 0;
+    if (summaryOnly && summary.hasValue && total == 0 && !summary.hasError) {
+      return const SizedBox.shrink();
+    }
     if (!showEmpty &&
         summary.hasValue &&
         total == 0 &&
@@ -69,13 +76,13 @@ class VisitExpensePanel extends ConsumerWidget {
               Expanded(
                 child: Text(
                   l10n.tableExpTitle,
-                  style: SatType.labelS(color: sc.textLo),
+                  style: SatType.labelM(color: sc.textMd),
                 ),
               ),
               if (summary.isLoading)
                 const SatSpinner(size: SatSpinnerSize.xs)
               else if (summary.hasValue)
-                Text(formatIDR(total), style: SatType.monoL(color: sc.textHi)),
+                Text(formatIDR(total), style: SatType.monoM(color: sc.textHi)),
             ],
           ),
           if (summary.hasError) ...[
@@ -95,30 +102,40 @@ class VisitExpensePanel extends ConsumerWidget {
             const SizedBox(height: Sp.s2),
             Text(l10n.tableExpNone, style: SatType.bodyS(color: sc.textLo)),
           ],
+          if (summary.valueOrNull?.expenses.isNotEmpty == true) ...[
+            const SizedBox(height: Sp.s3),
+            Divider(height: 1, color: sc.border0),
+            const SizedBox(height: Sp.s1),
+          ],
           for (final e in summary.valueOrNull?.expenses ?? const []) ...[
-            const SizedBox(height: Sp.s2),
+            const SizedBox(height: Sp.s3),
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    // Venue-authored, so ARB-exempt.
-                    e.note.isEmpty
-                        ? e.categoryName
-                        : '${e.categoryName} · ${e.note}',
-                    style: SatType.bodyS(color: sc.textLo),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Venue-authored, so ARB-exempt.
+                      Text(
+                        e.categoryName,
+                        style: SatType.bodyS(color: sc.textHi),
+                      ),
+                      if (e.note.isNotEmpty) ...[
+                        const SizedBox(height: Sp.s1),
+                        Text(e.note, style: SatType.bodyS(color: sc.textLo)),
+                      ],
+                    ],
                   ),
                 ),
                 const SizedBox(width: Sp.s2),
                 Text(
                   formatIDR(e.amount),
-                  style: SatType.monoS(color: sc.textLo),
+                  style: SatType.monoS(color: sc.textMd),
                 ),
               ],
             ),
           ],
-          if (canSpend && billOpen) ...[
+          if (!summaryOnly && canSpend && billOpen) ...[
             const SizedBox(height: Sp.s3),
             SatButton.outline(
               label: l10n.tableExpNew,
