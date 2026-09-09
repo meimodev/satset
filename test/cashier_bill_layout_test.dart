@@ -11,6 +11,9 @@ import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/discount_dto.dart';
 import 'package:satset/data/repositories/discount_presets_repository.dart';
 import 'package:satset/domain/models/capability.dart';
+import 'package:satset/domain/models/settlement_event.dart';
+import 'package:satset/domain/use_cases/bill_math.dart';
+import 'package:satset/domain/use_cases/settlement_projection.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/data/services/secure_storage_service.dart';
@@ -23,6 +26,7 @@ import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
+import 'package:satset/ui/features/cashier/widgets/settle_pane.dart';
 import 'package:satset/l10n/app_localizations.dart';
 
 /// What the bill's lines pane shows while the cashier is picking items.
@@ -522,7 +526,16 @@ void main() {
       await drain(tester);
     }
     final exact = find.text('Pas');
+    await tester.scrollUntilVisible(
+      exact,
+      180,
+      scrollable: find.descendant(
+        of: find.byType(SettlePane),
+        matching: find.byType(Scrollable),
+      ),
+    );
     await tester.ensureVisible(exact);
+    await tester.pumpAndSettle();
     await tester.tap(exact);
     await drain(tester);
     final confirm = find.textContaining('Terima ${all ? 2 : 1} item');
@@ -537,6 +550,71 @@ void main() {
         matching: find.text('Tutup tagihan'),
       )
       .last;
+
+  for (final tablet in [false, true]) {
+    testWidgets(
+      '${tablet ? 'tablet' : 'phone'} · final payment prompts with an unused receipt',
+      (tester) async {
+        late _StubSettlement settlement;
+        await pumpBill(
+          tester,
+          tablet: tablet,
+          onSettlement: (value) {
+            settlement = value;
+            // Keep the empty r1 in the real projection. The old hand-built
+            // paid fixture dropped it and hard-coded fullySettled to true.
+            value.paymentResult = Bill.fromJson(
+              projectBill(
+                billJson,
+                [
+                  SettlementEvent(
+                    id: 'r2',
+                    visitId: 'v1',
+                    seq: 0,
+                    kind: SettlementEventKind.mintReceipt,
+                    payload: const {'mode': 'itemized', 'assignAll': true},
+                    capturedAt: DateTime.utc(2026, 9, 9),
+                  ),
+                  SettlementEvent(
+                    id: 'paid-final',
+                    visitId: 'v1',
+                    seq: 1,
+                    kind: SettlementEventKind.recordPayment,
+                    payload: const {
+                      'receiptId': 'r2',
+                      'method': 'tunai',
+                      'amount': 116550,
+                    },
+                    capturedAt: DateTime.utc(2026, 9, 9),
+                  ),
+                ],
+                const ProjectionConfig(
+                  tax: TaxServiceConfig(
+                    taxEnabled: true,
+                    taxRateBps: 1100,
+                    serviceEnabled: true,
+                    serviceMode: 'percent',
+                    serviceRateBps: 500,
+                    serviceFixedAmount: 0,
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+        await payItems(tester);
+
+        expect(settlement.bill.outstanding, 0);
+        expect(settlement.bill.receipts, hasLength(2));
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(settlement.closeCount, 0);
+        await tester.tap(find.text('Biarkan terbuka'));
+        await drain(tester);
+        expect(settlement.bill.billClosedAt, isNull);
+        expect(settlement.bill.paidAmount, 116550);
+      },
+    );
+  }
 
   testWidgets('final payment asks before closing and Keep open preserves it', (
     tester,

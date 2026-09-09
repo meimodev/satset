@@ -589,7 +589,8 @@ Map<String, dynamic> _recompute(
   bill['fullySettled'] =
       res.fullyAssigned &&
       receipts.isNotEmpty &&
-      receipts.every((r) => r['status'] == 'paid');
+      // Match the host: zero-total receipts owe nothing even while editable.
+      receipts.every((r) => (r['paidNet'] as int) >= (r['total'] as int));
   return bill;
 }
 

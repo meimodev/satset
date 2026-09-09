@@ -2890,8 +2890,11 @@ Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
     receiptsClaim: recs.fold<int>(0, (a, r) => a + r.total),
     billTotal: billBreak.total,
   );
+  // Empty or fully discounted receipts stay editable (`unpaid`), but owe
+  // nothing. Their status must not suppress the close-bill confirmation.
   final allReceiptsPaid =
-      recs.isNotEmpty && recs.every((r) => r.status == 'paid');
+      receiptsJson.isNotEmpty &&
+      receiptsJson.every((r) => (r['paidNet'] as int) >= (r['total'] as int));
   final outstanding = (billBreak.total - paidNet).clamp(0, 1 << 31);
   final detached = visit.tableFreedAt != null;
   final member = visit.memberId == null

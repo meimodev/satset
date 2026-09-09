@@ -555,64 +555,87 @@ void main() {
     expect(projected['fullySettled'], isFalse);
   });
 
-  test('a paid bill stays open online and offline until confirmed', () async {
-    await line('tk1', 100000);
-    final base = await serverBill();
+  for (final emptyReceipt in [false, true]) {
+    test(
+      'a paid bill stays open online and offline until confirmed (empty receipt: $emptyReceipt)',
+      () async {
+        await line('tk1', 100000);
+        if (emptyReceipt) {
+          expect(
+            (await post('/settlement/visits/v1/receipts', {
+              'id': 'empty',
+              'mode': 'itemized',
+              'label': 'Unused',
+            })).statusCode,
+            200,
+          );
+        }
+        final base = await serverBill();
+        expect(base['fullySettled'], isFalse);
+        expect(projectBill(base, [], cfg)['fullySettled'], isFalse);
 
-    final projected = projectBill(base, [
-      ev(0, 'rc1', SettlementEventKind.mintReceipt, {
-        'mode': 'itemized',
-        'label': 'A',
-        'assignAll': true,
-      }),
-      ev(1, 'pay1', SettlementEventKind.recordPayment, {
-        'receiptId': 'rc1',
-        'method': 'tunai',
-        'amount': 116550,
-        'tendered': 116550,
-      }),
-    ], cfg);
+        final projected = projectBill(base, [
+          ev(0, 'rc1', SettlementEventKind.mintReceipt, {
+            'mode': 'itemized',
+            'label': 'A',
+            'assignAll': true,
+          }),
+          ev(1, 'pay1', SettlementEventKind.recordPayment, {
+            'receiptId': 'rc1',
+            'method': 'tunai',
+            'amount': 116550,
+            'tendered': 116550,
+          }),
+        ], cfg);
 
-    expect(projected['fullySettled'], isTrue);
-    expect(
-      projected['billClosedAt'],
-      isNull,
-      reason: 'payment does not substitute for confirmed closure',
+        expect(projected['fullySettled'], isTrue);
+        expect(
+          projected['billClosedAt'],
+          isNull,
+          reason: 'payment does not substitute for confirmed closure',
+        );
+
+        // Through the routes, payment also leaves the visit open.
+        expect(
+          (await post('/settlement/visits/v1/receipts', {
+            'id': 'rc1',
+            'mode': 'itemized',
+            'label': 'A',
+            'assignAll': true,
+          })).statusCode,
+          200,
+        );
+        expect(
+          (await post('/settlement/receipts/rc1/payments', {
+            'id': 'pay1',
+            'method': 'tunai',
+            'amount': 116550,
+            'tendered': 116550,
+          })).statusCode,
+          200,
+        );
+        final settled = await serverBill();
+        expect(settled['billClosedAt'], isNull);
+        expect(settled['fullySettled'], isTrue);
+        expect(ladder(settled), ladder(projected));
+
+        expect(
+          (await post('/settlement/visits/v1/bill-close')).statusCode,
+          200,
+        );
+        expect((await serverBill())['billClosedAt'], isNotNull);
+
+        // And the host refuses what the till must therefore stop offering.
+        final second = await post('/settlement/receipts/rc1/payments', {
+          'id': 'pay2',
+          'method': 'tunai',
+          'amount': 1000,
+        });
+        expect(second.statusCode, 409);
+        expect(jsonDecode(await second.readAsString())['code'], 'bill_locked');
+      },
     );
-
-    // Through the routes, payment also leaves the visit open.
-    expect(
-      (await post('/settlement/visits/v1/receipts', {
-        'id': 'rc1',
-        'mode': 'itemized',
-        'label': 'A',
-        'assignAll': true,
-      })).statusCode,
-      200,
-    );
-    expect(
-      (await post('/settlement/receipts/rc1/payments', {
-        'id': 'pay1',
-        'method': 'tunai',
-        'amount': 116550,
-        'tendered': 116550,
-      })).statusCode,
-      200,
-    );
-    expect((await serverBill())['billClosedAt'], isNull);
-
-    expect((await post('/settlement/visits/v1/bill-close')).statusCode, 200);
-    expect((await serverBill())['billClosedAt'], isNotNull);
-
-    // And the host refuses what the till must therefore stop offering.
-    final second = await post('/settlement/receipts/rc1/payments', {
-      'id': 'pay2',
-      'method': 'tunai',
-      'amount': 1000,
-    });
-    expect(second.statusCode, 409);
-    expect(jsonDecode(await second.readAsString())['code'], 'bill_locked');
-  });
+  }
 
   test('a refund does not unlock an explicitly closed bill', () async {
     // The other half: `refund` takes the plain broadcast on the host, so it
