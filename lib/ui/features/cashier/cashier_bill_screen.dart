@@ -893,7 +893,6 @@ class _LinesSection extends ConsumerWidget {
     bool assignable,
   ) {
     final sc = context.sat;
-    final assigned = l.assignedUnits;
     final hasNote = l.note?.trim().isNotEmpty == true;
     final pending = assignable && l.unassignedUnits > 0;
     // Free units are what a picker can take; anything already owned by a
@@ -928,18 +927,21 @@ class _LinesSection extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (selectable) ...[
-                        Icon(
-                          picked > 0
-                              ? Icons.check_circle_rounded
-                              : free == 0
-                              ? Icons.lock_rounded
-                              : Icons.circle_outlined,
-                          size: 24,
-                          color: picked > 0
-                              ? sc.accentText
-                              : free == 0
-                              ? sc.textDim
-                              : sc.textLo,
+                        Padding(
+                          padding: const EdgeInsets.only(top: Sp.sHair),
+                          child: Icon(
+                            picked > 0
+                                ? Icons.check_circle_rounded
+                                : free == 0
+                                ? Icons.lock_rounded
+                                : Icons.circle_outlined,
+                            size: 22,
+                            color: picked > 0
+                                ? sc.accentText
+                                : free == 0
+                                ? sc.textDim
+                                : sc.textLo,
+                          ),
                         ),
                         const SizedBox(width: Sp.s2),
                       ],
@@ -952,13 +954,19 @@ class _LinesSection extends ConsumerWidget {
                     ],
                   ),
                   if (l.variantName.isNotEmpty)
-                    Text(l.variantName, style: SatType.bodyS(color: sc.textLo)),
+                    Padding(
+                      padding: const EdgeInsets.only(top: Sp.sHair),
+                      child: Text(
+                        l.variantName,
+                        style: SatType.bodyS(color: sc.textLo),
+                      ),
+                    ),
                   const SizedBox(height: Sp.s1),
                   Wrap(
                     alignment: WrapAlignment.spaceBetween,
                     crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: Sp.s3,
-                    runSpacing: Sp.s1,
+                    spacing: Sp.s2,
+                    runSpacing: Sp.sHair,
                     children: [
                       Text(
                         '${l.qty} × ${formatIDR(l.unitPrice)}',
@@ -970,11 +978,33 @@ class _LinesSection extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  if (l.modifiers.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: Sp.sHair),
+                      child: Text(
+                        l.modifiers
+                            .map(
+                              (m) =>
+                                  '${m.display}${m.priceDelta != 0 ? ' (${m.priceDelta > 0 ? '+' : '−'}${groupRupiah(m.priceDelta.abs())})' : ''}',
+                            )
+                            .join(' · '),
+                        style: SatType.bodyS(color: sc.textLo),
+                      ),
+                    ),
+                  if (hasNote)
+                    Padding(
+                      padding: const EdgeInsets.only(top: Sp.sHair),
+                      child: Text(
+                        context.l10n.cshNote(l.note!.trim()),
+                        style: SatType.bodyS(color: sc.textLo),
+                      ),
+                    ),
                   if (bill.ticketAttribution)
                     Padding(
                       padding: const EdgeInsets.only(top: Sp.s1),
                       child: Wrap(
-                        spacing: Sp.s2,
+                        spacing: Sp.s1h,
+                        runSpacing: Sp.s1,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           SatChip.tag(
@@ -984,19 +1014,23 @@ class _LinesSection extends ConsumerWidget {
                             label: l.memberName ?? 'Tanpa pelanggan',
                             size: SatChipSize.sm,
                           ),
-                          SatButton.ghost(
-                            label: l.memberId == null
+                          SatIconButton.outline(
+                            size: 32,
+                            icon: l.memberId == null
+                                ? Icons.person_search_outlined
+                                : Icons.edit_outlined,
+                            tooltip: l.memberId == null
                                 ? context.l10n.cshMemberFind
                                 : context.l10n.edit,
-                            size: SatButtonSize.md,
                             onTap: l.memberLocked
                                 ? null
                                 : () => _assignMember(context, l),
                           ),
                           if (l.memberId != null)
-                            SatButton.ghost(
-                              label: context.l10n.cshMemberDetach,
-                              size: SatButtonSize.md,
+                            SatIconButton.outline(
+                              size: 32,
+                              icon: Icons.person_remove_outlined,
+                              tooltip: context.l10n.cshMemberDetach,
                               onTap: l.memberLocked
                                   ? null
                                   : () => run(
@@ -1010,35 +1044,13 @@ class _LinesSection extends ConsumerWidget {
                         ],
                       ),
                     ),
-                  // The give-backs on this line, and the way to add one. Same row
-                  // shape as the [[Pemilik tiket]] chip above it on purpose (ADR-0126):
-                  // "whose is this" and "what came off this" are asked of the same
-                  // thing — the line — so they are answered in the same place.
                   _discountChips(context, ref, l),
-                  // Where this dish's units went, not just how many are placed: a
-                  // "2/3 diatur" count never answered *whose*. One chip per owning
-                  // receipt, plus an amber `?` chip for units still free. ADR-0063.
                   if (assignable) _ownerChips(context, l),
-                  for (final m in l.modifiers)
-                    Text(
-                      '${m.display}'
-                      '${m.priceDelta != 0 ? ' (${m.priceDelta > 0 ? '+' : '−'}${groupRupiah(m.priceDelta.abs())})' : ''}',
-                      style: SatType.bodyS(color: sc.textLo),
-                    ),
-                  if (hasNote)
-                    Text(
-                      context.l10n.cshNote(l.note!.trim()),
-                      style: SatType.bodyS(color: sc.textLo),
-                    ),
-
                   if (pickable && picked > 0 && free > 1)
                     Padding(
-                      padding: const EdgeInsets.only(top: Sp.s2),
-                      child: Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: Sp.s2,
-                        runSpacing: Sp.s1,
+                      padding: const EdgeInsets.only(top: Sp.s1h),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             context.l10n.cshPickedOf(picked, free),
@@ -1067,16 +1079,6 @@ class _LinesSection extends ConsumerWidget {
                             ],
                           ),
                         ],
-                      ),
-                    ),
-                  if (assignable)
-                    Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: SatButton.ghost(
-                        label: assigned >= l.qty
-                            ? context.l10n.edit
-                            : context.l10n.cshAssign,
-                        onTap: () => _assignSheet(context, l),
                       ),
                     ),
                 ],
@@ -1121,7 +1123,7 @@ class _LinesSection extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(top: Sp.s1),
       child: Wrap(
-        spacing: Sp.s2,
+        spacing: Sp.s1h,
         runSpacing: Sp.s1,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
@@ -1138,12 +1140,15 @@ class _LinesSection extends ConsumerWidget {
               size: SatChipSize.sm,
             ),
           if (offer)
-            SatButton.ghost(
+            SatIconButton.outline(
               key: ValueKey('line-discount-${l.ticketId}'),
-              label: (mine != null || held != null)
+              icon: (mine != null || held != null)
+                  ? Icons.sell
+                  : Icons.sell_outlined,
+              size: 32,
+              tooltip: (mine != null || held != null)
                   ? context.l10n.cshRemoveDiscount
                   : context.l10n.cshDiscount,
-              size: SatButtonSize.md,
               onTap: () => _lineDiscount(context, ref, l, owner, mine, held),
             ),
           if (frozen)
@@ -1243,6 +1248,7 @@ class _LinesSection extends ConsumerWidget {
   /// unassigned remainder. Even-mode receipts own no lines, so this row is
   /// empty for them and the caller's `assignable` gate already excludes it.
   Widget _ownerChips(BuildContext context, BillLine l) {
+    final assigned = l.assignedUnits;
     final chips = <Widget>[];
     for (final r in bill.receipts) {
       final units = r.lines
@@ -1261,10 +1267,24 @@ class _LinesSection extends ConsumerWidget {
     if (l.unassignedUnits > 0) {
       chips.add(ReceiptBadge.unassigned(count: l.unassignedUnits));
     }
-    if (chips.isEmpty) return const SizedBox.shrink();
+    chips.add(
+      SatIconButton.outline(
+        size: 32,
+        icon: assigned >= l.qty
+            ? Icons.edit_outlined
+            : Icons.assignment_ind_outlined,
+        tooltip: assigned >= l.qty ? context.l10n.edit : context.l10n.cshAssign,
+        onTap: () => _assignSheet(context, l),
+      ),
+    );
     return Padding(
       padding: const EdgeInsets.only(top: Sp.s1),
-      child: Wrap(spacing: Sp.s1, runSpacing: Sp.s1, children: chips),
+      child: Wrap(
+        spacing: Sp.s1h,
+        runSpacing: Sp.s1,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: chips,
+      ),
     );
   }
 
@@ -2322,51 +2342,59 @@ class _ReceiptItemRow extends ConsumerWidget {
       );
     }
 
-    return InkWell(
-      onTap: canEditDiscount ? onTap : null,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 48),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: Sp.s2),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '$qtyUnits× $name$variant',
-                      style: SatType.bodyL(color: sc.textHi),
-                    ),
-                  ),
-                  if (canEditDiscount && manualDiscount == null)
-                    Icon(Icons.sell_outlined, size: 20, color: sc.textLo),
-                ],
-              ),
-              // Every source that gave something away on this line, each on its
-              // own row. Tapping edits the cashier's; the tier and redemption
-              // rows are shown so the guest's slip and this pane agree, and are
-              // removed from the member panel.
-              for (final d in existing)
-                Padding(
-                  padding: const EdgeInsets.only(left: Sp.s3, top: Sp.sHair),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          d.label,
-                          style: SatType.bodyS(color: sc.warn),
-                        ),
-                      ),
-                      Text(
-                        '-${formatIDR(d.amount)}',
-                        style: SatType.monoS(color: sc.warn),
-                      ),
-                    ],
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 36),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: Sp.s1),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '$qtyUnits× $name$variant',
+                    style: SatType.bodyM(color: sc.textHi),
                   ),
                 ),
-            ],
-          ),
+                if (canEditDiscount) ...[
+                  const SizedBox(width: Sp.s1),
+                  SatIconButton.plain(
+                    size: 32,
+                    icon: manualDiscount != null
+                        ? Icons.sell
+                        : Icons.sell_outlined,
+                    tooltip: manualDiscount != null
+                        ? context.l10n.cshRemoveDiscount
+                        : context.l10n.cshDiscount,
+                    onTap: onTap,
+                  ),
+                ],
+              ],
+            ),
+            // Every source that gave something away on this line, each on its
+            // own row. Tapping edits the cashier's; the tier and redemption
+            // rows are shown so the guest's slip and this pane agree, and are
+            // removed from the member panel.
+            for (final d in existing)
+              Padding(
+                padding: const EdgeInsets.only(left: Sp.s2, top: Sp.sHair),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        d.label,
+                        style: SatType.bodyS(color: sc.warn),
+                      ),
+                    ),
+                    Text(
+                      '-${formatIDR(d.amount)}',
+                      style: SatType.monoS(color: sc.warn),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
       ),
     );
