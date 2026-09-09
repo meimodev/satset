@@ -8740,7 +8740,7 @@ class AppL10nId extends AppL10n {
 
   @override
   String get fltModesHint =>
-      'Bentuk kerja venue. Bukan yang dibeli — dua kunci ini berdiri sendiri dan tidak saling mengandaikan.';
+      'Bentuk kerja venue. Bukan yang dibeli — tiap pilihan berdiri sendiri dan tidak saling mengandaikan.';
 
   @override
   String get fltModeBypassKds => 'Tanpa antrian persiapan';
@@ -8778,6 +8778,22 @@ class AppL10nId extends AppL10n {
   @override
   String get fltModeMemberSplitNeedsMembers =>
       'Perlu modul Keanggotaan aktif dulu.';
+
+  @override
+  String get fltModeTableExpense => 'Pengeluaran meja';
+
+  @override
+  String get fltModeTableExpenseHint =>
+      'Mengizinkan venue ini memilih pengeluaran berfoto terhadap meja aktif. Saklar venue dan izin staf tetap diperlukan.';
+
+  @override
+  String fltModeTableExpenseOffTitle(String venue) {
+    return 'Matikan pengeluaran meja untuk $venue?';
+  }
+
+  @override
+  String get fltModeTableExpenseOffBody =>
+      'Staf tidak dapat mencatatnya lagi. Pengeluaran yang sudah direkam di perangkat offline mungkin ditolak saat tersambung kembali; catatan yang sudah ada tetap tersimpan.';
 
   @override
   String fltCounterMootByBypass(String label) {
@@ -10955,6 +10971,18 @@ class AppL10nIdSv extends AppL10nId {
   @override
   String get fltCounterRestartNote =>
       'Saklar baru berlaku saat admin venue masuk lagi. QR konter muncul begitu admin membuka tab QR & layanan. Kalau Pesan mandiri sendiri baru dinyalakan, server perlu di-restart dulu.';
+
+  @override
+  String get fltModeTableExpense => 'Pengeluaran layanan';
+
+  @override
+  String get fltModeTableExpenseHint =>
+      'Mengizinkan venue ini memilih pengeluaran berfoto terhadap layanan aktif. Saklar venue dan izin staf tetap diperlukan.';
+
+  @override
+  String fltModeTableExpenseOffTitle(String venue) {
+    return 'Matikan pengeluaran layanan untuk $venue?';
+  }
 
   @override
   String get memVisitNoTable => 'Tanpa layanan';

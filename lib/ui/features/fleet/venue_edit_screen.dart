@@ -635,11 +635,9 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
 
   /// **Mode** — how the venue is shaped, as against what it holds (ADR-0115).
   ///
-  /// Two independent keys, both fail-closed: [[Kedai]] mode and
-  /// [[Tanpa antrian persiapan]]. Neither implies the other — a counter shop
-  /// may still run a cook line, and a small restaurant may have no queue at
-  /// all — so they are two toggles rather than a seventh switch under the
-  /// first.
+  /// Independent, fail-closed keys that shape how the venue operates. They
+  /// share the `addOns` transport with modules, but none is implied by a plan
+  /// or by another mode (ADR-0109, ADR-0115, ADR-0118, ADR-0127, ADR-0130).
   Widget _modeCard(SatColors sc) {
     final can = !_busy && !_offline;
     return SatCard.titled(
@@ -660,8 +658,61 @@ class _VenueEditScreenState extends ConsumerState<VenueEditScreen> {
           _memberSplitSection(sc, can),
           const SizedBox(height: Sp.s3),
           _serviceTermSection(sc, can),
+          const SizedBox(height: Sp.s3),
+          _tableExpenseSection(sc, can),
         ],
       ),
+    );
+  }
+
+  /// **[[Pengeluaran kunjungan]]** (ADR-0130). This is the Fleet operator's
+  /// fail-closed mode gate; the venue owner still has an independent switch in
+  /// Pengaturan, and the person recording one still needs
+  /// `recordTableExpense`.
+  ///
+  /// Turning it off confirms because a handset may hold a photographed expense
+  /// in its offline queue. Once Save removes the route, that queued write can
+  /// only be refused when the handset reconnects.
+  Widget _tableExpenseSection(SatColors sc, bool can) {
+    final on = _modules.contains(modeTableExpense);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            SatToggle(
+              value: on,
+              semanticLabel: context.l10n.fltModeTableExpense,
+              onChanged: can ? _setTableExpenseMode : null,
+            ),
+            const SizedBox(width: Sp.s2),
+            Expanded(
+              child: Text(
+                context.l10n.fltModeTableExpense,
+                style: SatType.bodyM(color: sc.textHi),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: Sp.s2),
+        Text(
+          context.l10n.fltModeTableExpenseHint,
+          style: SatType.bodyS(color: sc.textLo),
+        ),
+      ],
+    );
+  }
+
+  void _setTableExpenseMode(bool on) {
+    if (on) {
+      setState(() => _modules = {..._modules, modeTableExpense});
+      return;
+    }
+    _confirm(
+      context.l10n.fltModeTableExpenseOffTitle(_nameText),
+      context.l10n.fltModeTableExpenseOffBody,
+      context.l10n.fltModuleOffYes,
+      () => setState(() => _modules = {..._modules}..remove(modeTableExpense)),
     );
   }
 

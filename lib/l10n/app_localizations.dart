@@ -13912,7 +13912,7 @@ abstract class AppL10n {
   /// Hint under the fleet Mode card: modes shape the app, modules are bought.
   ///
   /// In id, this message translates to:
-  /// **'Bentuk kerja venue. Bukan yang dibeli — dua kunci ini berdiri sendiri dan tidak saling mengandaikan.'**
+  /// **'Bentuk kerja venue. Bukan yang dibeli — tiap pilihan berdiri sendiri dan tidak saling mengandaikan.'**
   String get fltModesHint;
 
   /// Fleet mode toggle: the venue has no prep queue.
@@ -13974,6 +13974,30 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Perlu modul Keanggotaan aktif dulu.'**
   String get fltModeMemberSplitNeedsMembers;
+
+  /// Konsol armada: mode Pengeluaran kunjungan (ADR-0130).
+  ///
+  /// In id, this message translates to:
+  /// **'Pengeluaran meja'**
+  String get fltModeTableExpense;
+
+  /// Penjelasan mode Pengeluaran kunjungan di Konsol armada.
+  ///
+  /// In id, this message translates to:
+  /// **'Mengizinkan venue ini memilih pengeluaran berfoto terhadap meja aktif. Saklar venue dan izin staf tetap diperlukan.'**
+  String get fltModeTableExpenseHint;
+
+  /// Konfirmasi saat mode Pengeluaran kunjungan dicabut dari venue.
+  ///
+  /// In id, this message translates to:
+  /// **'Matikan pengeluaran meja untuk {venue}?'**
+  String fltModeTableExpenseOffTitle(String venue);
+
+  /// Peringatan bahwa pencabutan mode dapat menolak kiriman pengeluaran offline yang masih mengantre.
+  ///
+  /// In id, this message translates to:
+  /// **'Staf tidak dapat mencatatnya lagi. Pengeluaran yang sudah direkam di perangkat offline mungkin ditolak saat tersambung kembali; catatan yang sudah ada tetap tersimpan.'**
+  String get fltModeTableExpenseOffBody;
 
   /// Kedai switch label when the no-prep-queue mode has already removed what it governs.
   ///

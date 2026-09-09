@@ -3045,7 +3045,7 @@
   "fltModuleSelfOrder": "Self-order",
   "fltModes": "Mode",
   "fltTagModes": "SHAPE",
-  "fltModesHint": "How the venue works. Not what it bought — these two keys stand alone and neither implies the other.",
+  "fltModesHint": "How the venue works. Not what it bought — each choice stands alone and none implies another.",
   "fltModeBypassKds": "No prep queue",
   "fltModeBypassKdsHint": "Orders land ready for pickup; there is no kitchen queue. For a venue where whoever takes the order also makes it.",
   "fltModeBypassKdsOnTitle": "Remove the prep queue at {venue}?",
@@ -3056,6 +3056,17 @@
   "fltModeMemberSplit": "Receipt owner",
   "fltModeMemberSplitHint": "A split bill can name a member per receipt, so each one earns their own points and discount.",
   "fltModeMemberSplitNeedsMembers": "Needs the Membership module switched on first.",
+  "fltModeTableExpense": "Table expenses",
+  "fltModeTableExpenseHint": "Allows this venue to opt in to photographed expenses against an active table. The venue switch and staff permission are still required.",
+  "fltModeTableExpenseOffTitle": "Turn off table expenses for {venue}?",
+  "@fltModeTableExpenseOffTitle": {
+    "placeholders": {
+      "venue": {
+        "type": "String"
+      }
+    }
+  },
+  "fltModeTableExpenseOffBody": "Staff can no longer record them. Expenses already captured on an offline device may be rejected when it reconnects; existing records are kept.",
   "fltCounterMootByBypass": "{label} — does not apply without a prep queue",
   "fltModuleOffTitle": "Turn off {module} for {venue}?",
   "fltModuleOffBody": "Data is kept; the screens disappear.",

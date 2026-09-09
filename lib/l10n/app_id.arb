@@ -6988,7 +6988,7 @@
   "@fltTagModes": {
     "description": "Tag on the fleet Mode card."
   },
-  "fltModesHint": "Bentuk kerja venue. Bukan yang dibeli — dua kunci ini berdiri sendiri dan tidak saling mengandaikan.",
+  "fltModesHint": "Bentuk kerja venue. Bukan yang dibeli — tiap pilihan berdiri sendiri dan tidak saling mengandaikan.",
   "@fltModesHint": {
     "description": "Hint under the fleet Mode card: modes shape the app, modules are bought."
   },
@@ -7036,6 +7036,27 @@
   "fltModeMemberSplitNeedsMembers": "Perlu modul Keanggotaan aktif dulu.",
   "@fltModeMemberSplitNeedsMembers": {
     "description": "Shown in place of the hint when the venue does not hold the members module."
+  },
+  "fltModeTableExpense": "Pengeluaran meja",
+  "@fltModeTableExpense": {
+    "description": "Konsol armada: mode Pengeluaran kunjungan (ADR-0130)."
+  },
+  "fltModeTableExpenseHint": "Mengizinkan venue ini memilih pengeluaran berfoto terhadap meja aktif. Saklar venue dan izin staf tetap diperlukan.",
+  "@fltModeTableExpenseHint": {
+    "description": "Penjelasan mode Pengeluaran kunjungan di Konsol armada."
+  },
+  "fltModeTableExpenseOffTitle": "Matikan pengeluaran meja untuk {venue}?",
+  "@fltModeTableExpenseOffTitle": {
+    "description": "Konfirmasi saat mode Pengeluaran kunjungan dicabut dari venue.",
+    "placeholders": {
+      "venue": {
+        "type": "String"
+      }
+    }
+  },
+  "fltModeTableExpenseOffBody": "Staf tidak dapat mencatatnya lagi. Pengeluaran yang sudah direkam di perangkat offline mungkin ditolak saat tersambung kembali; catatan yang sudah ada tetap tersimpan.",
+  "@fltModeTableExpenseOffBody": {
+    "description": "Peringatan bahwa pencabutan mode dapat menolak kiriman pengeluaran offline yang masih mengantre."
   },
   "fltCounterMootByBypass": "{label} — tidak berlaku tanpa antrian persiapan",
   "@fltCounterMootByBypass": {

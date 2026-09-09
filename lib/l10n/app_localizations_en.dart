@@ -8850,7 +8850,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get fltModesHint =>
-      'How the venue works. Not what it bought — these two keys stand alone and neither implies the other.';
+      'How the venue works. Not what it bought — each choice stands alone and none implies another.';
 
   @override
   String get fltModeBypassKds => 'No prep queue';
@@ -8888,6 +8888,22 @@ class AppL10nEn extends AppL10n {
   @override
   String get fltModeMemberSplitNeedsMembers =>
       'Needs the Membership module switched on first.';
+
+  @override
+  String get fltModeTableExpense => 'Table expenses';
+
+  @override
+  String get fltModeTableExpenseHint =>
+      'Allows this venue to opt in to photographed expenses against an active table. The venue switch and staff permission are still required.';
+
+  @override
+  String fltModeTableExpenseOffTitle(String venue) {
+    return 'Turn off table expenses for $venue?';
+  }
+
+  @override
+  String get fltModeTableExpenseOffBody =>
+      'Staff can no longer record them. Expenses already captured on an offline device may be rejected when it reconnects; existing records are kept.';
 
   @override
   String fltCounterMootByBypass(String label) {
@@ -11094,6 +11110,18 @@ class AppL10nEnSv extends AppL10nEn {
   @override
   String get fltCounterRestartNote =>
       'Switches reach the floor at the venue\'s next admin sign-in. The counter QR appears as soon as an admin opens the QR & services tab. If Pesan mandiri itself was only just switched on, the server needs a restart first.';
+
+  @override
+  String get fltModeTableExpense => 'Service expenses';
+
+  @override
+  String get fltModeTableExpenseHint =>
+      'Allows this venue to opt in to photographed expenses against an active service. The venue switch and staff permission are still required.';
+
+  @override
+  String fltModeTableExpenseOffTitle(String venue) {
+    return 'Turn off service expenses for $venue?';
+  }
 
   @override
   String get memVisitNoTable => 'Unassigned';
