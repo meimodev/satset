@@ -4,6 +4,8 @@ Status: implemented — 2026-09-10; verification continued 2026-09-11. The final
 full-suite result is recorded below. The complete physical host/client matrix
 remains to be completed; no Android device was connected on September 11.
 
+Runbook: [On-device test checklist](offline-order-bill-device-test-checklist.md).
+
 ## Problem
 
 An offline order captured onto an existing host visit can lack the cached bill
