@@ -600,6 +600,8 @@ class BillReceipt {
 }
 
 class Bill {
+  /// False only for a transient view of known captured lines, never a payable bill.
+  final bool historyAvailable;
   final String visitId;
   final String tableId;
   final String? tableLabel;
@@ -658,6 +660,7 @@ class Bill {
   final List<BillReceipt> receipts;
 
   const Bill({
+    this.historyAvailable = true,
     required this.visitId,
     required this.tableId,
     required this.tableLabel,
@@ -720,6 +723,7 @@ class Bill {
   }
 
   factory Bill.fromJson(Map<String, dynamic> j) => Bill(
+    historyAvailable: j['historyAvailable'] != false,
     visitId: j['visitId'] as String? ?? '',
     tableId: j['tableId'] as String,
     tableLabel: j['tableLabel'] as String?,

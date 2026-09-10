@@ -10,6 +10,7 @@ import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/send_queue_service.dart';
 import 'package:satset/data/services/settlement_sync.dart';
+import 'package:satset/domain/models/settlement_event.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 
@@ -235,7 +236,9 @@ Future<VisitExpenseSummaryDto> offlineVisitExpenseSummary(
             i.kind == SendIntentKind.tableExpense &&
             i.payload['visitId'] == visitId,
       );
-  var total = 0;
+  var total = (await journal.eventsFor(visitId))
+      .where((e) => e.kind == SettlementEventKind.tableExpense)
+      .fold<int>(0, (sum, e) => sum + e.intArg('amount'));
   for (final i in queued) {
     total += (i.payload['amount'] as num?)?.toInt() ?? 0;
   }

@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/data/repositories/tables_repository.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +8,9 @@ import 'package:satset/data/db/client_db.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/settlement_journal.dart';
 import 'package:satset/domain/models/settlement_event.dart';
+import 'package:satset/domain/use_cases/settlement_projection.dart';
+import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
 
 /// The client database (ADR-0124). One per app, lazily opened.
 final clientDbProvider = Provider<ClientDb>((ref) {
@@ -17,12 +22,50 @@ final clientDbProvider = Provider<ClientDb>((ref) {
 /// The [[Antrean setelmen]]. Replays through the **ordinary** routes — there is
 /// no bulk settlement endpoint, for the reason ADR-0090 gives: a second write
 /// path is a second place for the visit, stock and audit rules to drift.
-final settlementJournalProvider =
+final StateNotifierProvider<SettlementJournal, JournalState>
+settlementJournalProvider =
     StateNotifierProvider<SettlementJournal, JournalState>((ref) {
-      return SettlementJournal(
+      late final SettlementJournal journal;
+      journal = SettlementJournal(
         db: ref.watch(clientDbProvider),
-        send: (event) => _sendEvent(ref, event),
+        send: (event) => _sendEvent(ref, journal, event),
+        loadBill: (visitId, events) async {
+          try {
+            final raw = await ref
+                .read(apiClientProvider)
+                .getJson('/settlement/visits/$visitId/bill');
+            if (events.any((e) => e.kind.isFloorAct)) {
+              await ref.read(ticketsProvider.notifier).checkpointNow();
+              await ref.read(tablesProvider.notifier).checkpointNow();
+            }
+            return (raw as Map).cast<String, dynamic>();
+          } on ApiException catch (e) {
+            // Only an acknowledged close permits this terminal fallback. A
+            // generic 404 must never discard food or collected money.
+            if (e.statusCode != 404 ||
+                events.isEmpty ||
+                events.last.kind != SettlementEventKind.closeBill) {
+              rethrow;
+            }
+            final cached = await journal.cachedBill(visitId);
+            if (cached == null) rethrow;
+            if (events.any((e) => e.kind.isFloorAct)) {
+              await ref.read(ticketsProvider.notifier).checkpointNow();
+              await ref.read(tablesProvider.notifier).checkpointNow();
+            }
+            final settings = ref.read(venueSettingsProvider);
+            return projectBill(
+              cached,
+              events,
+              ProjectionConfig(
+                tax: settings.toTaxServiceConfig(),
+                pointValue: settings.memberPointValue,
+              ),
+            );
+          }
+        },
       );
+      return journal;
     });
 
 /// Replay one captured act.
@@ -35,21 +78,22 @@ final settlementJournalProvider =
 /// and a human has to act on it. Anything else (5xx, timeout, no route to host)
 /// is transport: the chain is left exactly as it is and tried again next
 /// reconnect.
-Future<void> _sendEvent(Ref ref, SettlementEvent e) async {
+Future<void> _sendEvent(
+  Ref ref,
+  SettlementJournal journal,
+  SettlementEvent e,
+) async {
   final api = ref.read(apiClientProvider);
   final v = e.visitId;
   final r = e.arg<String>('receiptId') ?? '';
 
-  Future<Object?> postFor(String path, Map<String, dynamic> body) => api.postJson(
-    path,
-    {
-      ...body,
-      // Honoured by the host so the money lands in the shift that collected
-      // it, not the one the socket came back in.
-      'capturedAt': e.capturedAt.toIso8601String(),
-    },
-    idempotencyKey: e.id,
-  );
+  Future<Object?> postFor(String path, Map<String, dynamic> body) =>
+      api.postJson(path, {
+        ...body,
+        // Honoured by the host so the money lands in the shift that collected
+        // it, not the one the socket came back in.
+        'capturedAt': e.capturedAt.toIso8601String(),
+      }, idempotencyKey: e.id);
 
   Future<void> post(String path, Map<String, dynamic> body) async {
     await postFor(path, body);
@@ -119,9 +163,7 @@ Future<void> _sendEvent(Ref ref, SettlementEvent e) async {
           // A [[Pendaftaran terlipat]]: the number was already in the
           // directory and the standing record won. Everything queued behind
           // this enrolment names the id this device minted (ADR-0129).
-          await ref
-              .read(settlementJournalProvider.notifier)
-              .rewriteMemberId(e.id, winner);
+          await journal.rewriteMemberId(e.id, winner);
         }
 
       case SettlementEventKind.attachMember:
@@ -173,10 +215,13 @@ Future<void> _sendEvent(Ref ref, SettlementEvent e) async {
       case SettlementEventKind.reopenReceipt:
         await post('/settlement/receipts/$r/reopen', const {});
       case SettlementEventKind.closeBill:
-        await post('/settlement/visits/$v/bill-close', {
+        final closed = await postFor('/settlement/visits/$v/bill-close', {
           'writeOff': e.payload['writeOff'] == true,
           'reason': ?e.arg<String>('reason'),
         });
+        if (closed is! Map || closed['closed'] != true) {
+          throw StateError('Host did not confirm bill closure');
+        }
       case SettlementEventKind.reopenBill:
         await post('/settlement/visits/$v/reopen', const {});
 
@@ -202,13 +247,19 @@ Future<void> _sendEvent(Ref ref, SettlementEvent e) async {
         });
 
       case SettlementEventKind.submitOrder:
-        await post('/orders', {
+        final result = await postFor('/orders', {
           'tableId': e.tableId,
           'visitId': v,
           'idempotencyKey': e.id,
           'lines': e.payload['lines'] ?? const [],
           'actorId': e.actorId,
         });
+        if (result is! Map || result['ticketIds'] is! List) {
+          throw StateError('Host did not confirm captured order');
+        }
+        if ((result['rejected'] as List? ?? const []).isNotEmpty) {
+          throw const SettlementRefused('out_of_stock');
+        }
 
       case SettlementEventKind.voidTicket:
         // Names the waiter who voided, not whoever carried the backlog in
@@ -224,9 +275,7 @@ Future<void> _sendEvent(Ref ref, SettlementEvent e) async {
         // The photo never lived in the journal row; it is read back from
         // `QueuedPhotos` for the length of one request, so the wire shape is
         // the one the online path posts and there is one route (ADR-0130).
-        final photo = await ref
-            .read(settlementJournalProvider.notifier)
-            .expensePhoto(e.id);
+        final photo = await journal.expensePhoto(e.id);
         await post('/visits/$v/expenses', {
           'id': e.id,
           'amount': e.intArg('amount'),
@@ -243,3 +292,10 @@ Future<void> _sendEvent(Ref ref, SettlementEvent e) async {
     rethrow;
   }
 }
+
+/// No journal UI before a venue is configured. Pairing reactivates the durable view.
+final journalViewProvider = Provider<JournalState>(
+  (ref) => ref.watch(apiConfigProvider) == null
+      ? const JournalState()
+      : ref.watch(settlementJournalProvider),
+);

@@ -10,6 +10,9 @@
 // and the symptom is a guest charged one figure at the counter and a different
 // one in the books.
 import 'dart:convert';
+import 'package:satset/data/db/client_db.dart' as client;
+import 'package:satset/data/services/settlement_journal.dart';
+import 'package:satset/server/idempotency.dart';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -169,6 +172,81 @@ void main() {
   });
   tearDown(() => db.close());
 
+  test(
+    'lost payment response survives client restart and retries exactly once',
+    () async {
+      await line('tk1', 100000);
+      final base = await serverBill();
+      final localDb = client.ClientDb.memory();
+      addTearDown(localDb.close);
+      final handler = idempotent(db, router);
+      var losePaymentResponse = true;
+      var paymentAttempts = 0;
+      SettlementJournal build() => SettlementJournal(
+        db: localDb,
+        send: (event) async {
+          final payment = event.kind == SettlementEventKind.recordPayment;
+          if (payment) paymentAttempts++;
+          final response = await handler(
+            Request(
+              'POST',
+              Uri.parse(
+                'http://x${payment ? '/settlement/receipts/receipt/payments' : '/settlement/visits/v1/receipts'}',
+              ),
+              headers: {...caller.headers, idempotencyHeader: event.id},
+              body: jsonEncode({'id': event.id, ...event.payload}),
+            ),
+          );
+          expect(
+            response.statusCode,
+            200,
+            reason: await response.readAsString(),
+          );
+          if (payment && losePaymentResponse) {
+            losePaymentResponse = false;
+            throw StateError('response lost after host commit');
+          }
+        },
+        loadBill: (_, _) => serverBill(),
+      );
+      var journal = build();
+      await journal.cacheBill('v1', base);
+      await journal.append(
+        visitId: 'v1',
+        id: 'receipt',
+        kind: SettlementEventKind.mintReceipt,
+        payload: const {'assignAll': true, 'mode': 'itemized'},
+      );
+      await journal.append(
+        visitId: 'v1',
+        id: 'payment',
+        kind: SettlementEventKind.recordPayment,
+        payload: const {
+          'receiptId': 'receipt',
+          'method': 'tunai',
+          'amount': 116550,
+        },
+      );
+      expect((await journal.drain()).interrupted, isTrue);
+      journal.dispose();
+      journal = build();
+      final beforeRetry = await journal.projectionFor('v1');
+      expect(
+        projectBill(beforeRetry.bill!, beforeRetry.events, cfg)['paidAmount'],
+        116550,
+      );
+      await journal.drain();
+      expect(paymentAttempts, 2);
+      expect(await journal.eventsFor('v1'), isEmpty);
+      final finalBill = await serverBill();
+      expect((finalBill['receipts'] as List).single['payments'], hasLength(1));
+      expect(finalBill['paidAmount'], 116550);
+      expect(finalBill['outstanding'], 0);
+      expect(ladder((await journal.cachedBill('v1'))!), ladder(finalBill));
+      journal.dispose();
+    },
+  );
+
   test('a whole-bill settle projects to what the host computes', () async {
     await line('tk1', 50000, qty: 2);
     await line('tk2', 30000);
@@ -271,63 +349,66 @@ void main() {
     expect(projected['discountAmount'], 16000);
   });
 
-  test('replayed payment stays open until the captured close is replayed', () async {
-    // The whole point of ADR-0123 §capturedAt: a bill collected at 23:50 on a
-    // dark till and drained at 00:10 belongs to the shift that collected it.
-    // The payment row and the session it is filed under must agree — a
-    // backdated payment inside a session stamped at drain time is reported on
-    // the wrong day by everything that buckets on `TableSession.closedAt`.
-    await line('tk1', 40000);
-    final captured = DateTime.utc(2026, 8, 29, 16, 50);
-    expect(
-      (await post('/settlement/visits/v1/receipts', {
-        'id': 'rc1',
-        'mode': 'itemized',
-        'assignAll': true,
+  test(
+    'replayed payment stays open until the captured close is replayed',
+    () async {
+      // The whole point of ADR-0123 §capturedAt: a bill collected at 23:50 on a
+      // dark till and drained at 00:10 belongs to the shift that collected it.
+      // The payment row and the session it is filed under must agree — a
+      // backdated payment inside a session stamped at drain time is reported on
+      // the wrong day by everything that buckets on `TableSession.closedAt`.
+      await line('tk1', 40000);
+      final captured = DateTime.utc(2026, 8, 29, 16, 50);
+      expect(
+        (await post('/settlement/visits/v1/receipts', {
+          'id': 'rc1',
+          'mode': 'itemized',
+          'assignAll': true,
+          'capturedAt': captured.toIso8601String(),
+        })).statusCode,
+        200,
+      );
+      final pay = await post('/settlement/receipts/rc1/payments', {
+        'id': 'pay1',
+        'method': 'tunai',
+        'amount': 46620,
         'capturedAt': captured.toIso8601String(),
-      })).statusCode,
-      200,
-    );
-    final pay = await post('/settlement/receipts/rc1/payments', {
-      'id': 'pay1',
-      'method': 'tunai',
-      'amount': 46620,
-      'capturedAt': captured.toIso8601String(),
-    });
-    expect(pay.statusCode, 200, reason: await pay.readAsString());
+      });
+      expect(pay.statusCode, 200, reason: await pay.readAsString());
 
-    final settled = await serverBill();
-    expect(settled['fullySettled'], isTrue);
-    expect(settled['billClosedAt'], isNull);
-    expect(settled['paidAmount'], 46620);
-    expect(
-      (await post('/settlement/visits/v1/bill-close', {
-        'capturedAt': captured.toIso8601String(),
-      })).statusCode,
-      200,
-    );
+      final settled = await serverBill();
+      expect(settled['fullySettled'], isTrue);
+      expect(settled['billClosedAt'], isNull);
+      expect(settled['paidAmount'], 46620);
+      expect(
+        (await post('/settlement/visits/v1/bill-close', {
+          'capturedAt': captured.toIso8601String(),
+        })).statusCode,
+        200,
+      );
 
-    final v = await (db.select(
-      db.visits,
-    )..where((x) => x.id.equals('v1'))).getSingle();
-    expect(v.billClosedAt?.toUtc(), captured, reason: 'bill close backdates');
-    final p = await (db.select(
-      db.payments,
-    )..where((x) => x.id.equals('pay1'))).getSingle();
-    expect(p.at.toUtc(), captured, reason: 'payment backdates');
+      final v = await (db.select(
+        db.visits,
+      )..where((x) => x.id.equals('v1'))).getSingle();
+      expect(v.billClosedAt?.toUtc(), captured, reason: 'bill close backdates');
+      final p = await (db.select(
+        db.payments,
+      )..where((x) => x.id.equals('pay1'))).getSingle();
+      expect(p.at.toUtc(), captured, reason: 'payment backdates');
 
-    // And the venue log agrees with itself. `billClosed` backdates because the
-    // close does; a `paymentRecorded` left at drain time files the close
-    // *before* the payment that caused it, which is an order of events that
-    // never happened.
-    final rows = await (db.select(
-      db.auditEntries,
-    )..where((x) => x.kind.isIn(['paymentRecorded', 'billClosed']))).get();
-    expect(rows, hasLength(2));
-    for (final row in rows) {
-      expect(row.at.toUtc(), captured, reason: '${row.kind} backdates');
-    }
-  });
+      // And the venue log agrees with itself. `billClosed` backdates because the
+      // close does; a `paymentRecorded` left at drain time files the close
+      // *before* the payment that caused it, which is an order of events that
+      // never happened.
+      final rows = await (db.select(
+        db.auditEntries,
+      )..where((x) => x.kind.isIn(['paymentRecorded', 'billClosed']))).get();
+      expect(rows, hasLength(2));
+      for (final row in rows) {
+        expect(row.at.toUtc(), captured, reason: '${row.kind} backdates');
+      }
+    },
+  );
 
   test('the points a backdated close earns are filed with it', () async {
     // The member report and the sales report bucket the same meal. A points

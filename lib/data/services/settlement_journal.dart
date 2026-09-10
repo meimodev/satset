@@ -80,10 +80,13 @@ class JournalState {
   /// True while a drain is in flight — what the `/kasir` header pulses on.
   final bool draining;
 
+  final List<SettlementEvent> events;
+
   const JournalState({
     this.pendingVisits = const {},
     this.parkedVisits = const {},
     this.draining = false,
+    this.events = const [],
   });
 
   bool isLocal(String visitId) => pendingVisits.contains(visitId);
@@ -92,10 +95,12 @@ class JournalState {
     Set<String>? pendingVisits,
     Set<String>? parkedVisits,
     bool? draining,
+    List<SettlementEvent>? events,
   }) => JournalState(
     pendingVisits: pendingVisits ?? this.pendingVisits,
     parkedVisits: parkedVisits ?? this.parkedVisits,
     draining: draining ?? this.draining,
+    events: events ?? this.events,
   );
 }
 
@@ -104,6 +109,18 @@ class JournalState {
 ///
 /// Throws to refuse; returns normally to accept.
 typedef EventSender = Future<void> Function(SettlementEvent event);
+typedef BillCheckpoint =
+    Future<Map<String, dynamic>> Function(
+      String visitId,
+      List<SettlementEvent> acknowledged,
+    );
+
+class SettlementVisitReadOnly implements Exception {
+  final String visitId;
+  const SettlementVisitReadOnly(this.visitId);
+  @override
+  String toString() => 'SettlementVisitReadOnly($visitId)';
+}
 
 /// The device-local **[[Antrean setelmen]]** (ADR-0123).
 ///
@@ -112,13 +129,62 @@ typedef EventSender = Future<void> Function(SettlementEvent event);
 /// needs a total for the guest at the counter — which is why it lives in the
 /// client database (ADR-0124) rather than a prefs blob.
 class SettlementJournal extends StateNotifier<JournalState> {
-  SettlementJournal({required this.db, required this.send})
+  SettlementJournal({required this.db, required this.send, this.loadBill})
     : super(const JournalState()) {
     unawaited(_refreshState());
   }
 
   final ClientDb db;
   final EventSender send;
+  final BillCheckpoint? loadBill;
+  Future<void> _writes = Future.value();
+  Future<SettlementReport>? _drainFuture;
+
+  Future<T> _write<T>(Future<T> Function() action) {
+    final next = _writes.then((_) => db.transaction(action));
+    _writes = next.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return next;
+  }
+
+  Future<void> assertWritable(String visitId) async {
+    if ((await eventsFor(visitId)).any((e) => e.isParked)) {
+      throw SettlementVisitReadOnly(visitId);
+    }
+  }
+
+  Future<SettlementEvent?> eventById(String id) async {
+    final row = await (db.select(
+      db.settlementEvents,
+    )..where((e) => e.id.equals(id))).getSingleOrNull();
+    return row == null ? null : _fromRow(row);
+  }
+
+  /// Recover a captured seat even if the debounced floor cache was not saved.
+  Future<String?> capturedVisitForTable(String tableId) async {
+    final seats =
+        await (db.select(db.settlementEvents)
+              ..where(
+                (e) => e.tableId.equals(tableId) & e.kind.equals('seatTable'),
+              )
+              ..orderBy([(e) => OrderingTerm.desc(e.capturedAt)]))
+            .get();
+    for (final seat in seats) {
+      final events = await eventsFor(seat.visitId);
+      if (!events.any(
+        (e) => e.kind == SettlementEventKind.closeBill && !e.isParked,
+      )) {
+        return seat.visitId;
+      }
+    }
+    return null;
+  }
+
+  /// A consistent baseline and event list, including during checkpoint commit.
+  Future<({Map<String, dynamic>? bill, List<SettlementEvent> events})>
+  projectionFor(String visitId) => db.transaction(
+    () async =>
+        (bill: await cachedBill(visitId), events: await eventsFor(visitId)),
+  );
 
   /// A bill that took this many acts is a bug, not a busy night.
   static const maxPerVisit = 100;
@@ -132,6 +198,30 @@ class SettlementJournal extends StateNotifier<JournalState> {
   /// Append one act. Returns the event, whose [SettlementEvent.id] is also the
   /// id of whatever row it mints and the idempotency key of its replay.
   Future<SettlementEvent> append({
+    required String visitId,
+    required SettlementEventKind kind,
+    Map<String, dynamic> payload = const {},
+    String? id,
+    String? tableId,
+    String actorId = '',
+    DateTime? capturedAt,
+  }) async {
+    final event = await _write(
+      () => _append(
+        visitId: visitId,
+        kind: kind,
+        payload: payload,
+        id: id,
+        tableId: tableId,
+        actorId: actorId,
+        capturedAt: capturedAt,
+      ),
+    );
+    await _refreshState();
+    return event;
+  }
+
+  Future<SettlementEvent> _append({
     required String visitId,
     required SettlementEventKind kind,
     Map<String, dynamic> payload = const {},
@@ -154,6 +244,7 @@ class SettlementJournal extends StateNotifier<JournalState> {
               .getSingleOrNull();
       if (existing != null) return _fromRow(existing);
     }
+    await assertWritable(visitId);
     final mine = await eventsFor(visitId);
     if (mine.length >= maxPerVisit) {
       throw const SettlementJournalFull();
@@ -186,10 +277,8 @@ class SettlementJournal extends StateNotifier<JournalState> {
             actorId: Value(ev.actorId),
           ),
         );
-    await _refreshState();
     return ev;
   }
-
 
   /// Open a **[[Kunjungan tertangkap]]** for [tableId] and return its id
   /// (ADR-0139).
@@ -208,6 +297,7 @@ class SettlementJournal extends StateNotifier<JournalState> {
   /// in the list and cannot settle, which is the failure ADR-0139 exists to
   /// remove, reintroduced one layer down.
   Future<String> openCapturedVisit({
+    String? visitId,
     required String tableId,
     required int pax,
     String? tableLabel,
@@ -218,36 +308,39 @@ class SettlementJournal extends StateNotifier<JournalState> {
     bool ticketAttribution = false,
     bool taxAfterDiscount = false,
   }) async {
-    final visitId = _uuid.v4();
+    final capturedVisitId = visitId ?? _uuid.v4();
     final at = SatClock.now().toUtc();
-    await append(
-      visitId: visitId,
-      kind: SettlementEventKind.seatTable,
-      tableId: tableId,
-      actorId: actorId,
-      capturedAt: at,
-      payload: {
-        'pax': pax,
-        'guestName': ?guestName,
-        'guestNotes': ?guestNotes,
-      },
-    );
-    await cacheBill(
-      visitId,
-      capturedBillSeed(
-        visitId: visitId,
+    await _write(() async {
+      await _append(
+        visitId: capturedVisitId,
+        kind: SettlementEventKind.seatTable,
         tableId: tableId,
-        tableLabel: tableLabel,
-        openedAt: at,
-        pax: pax,
-        guestName: guestName,
-        splitEnabled: splitEnabled,
-        ticketAttribution: ticketAttribution,
-        taxAfterDiscount: taxAfterDiscount,
-      ),
-    );
+        actorId: actorId,
+        capturedAt: at,
+        payload: {
+          'pax': pax,
+          'guestName': ?guestName,
+          'guestNotes': ?guestNotes,
+        },
+      );
+      await cacheBill(
+        capturedVisitId,
+        capturedBillSeed(
+          visitId: capturedVisitId,
+          tableId: tableId,
+          tableLabel: tableLabel,
+          openedAt: at,
+          pax: pax,
+          guestName: guestName,
+          splitEnabled: splitEnabled,
+          ticketAttribution: ticketAttribution,
+          taxAfterDiscount: taxAfterDiscount,
+        ),
+      );
+    });
+    await _refreshState();
     SatLog.repo('journal.capturedVisit table=$tableId');
-    return visitId;
+    return capturedVisitId;
   }
 
   /// Every event on one visit, in capture order. Parked ones included — the
@@ -268,10 +361,9 @@ class SettlementJournal extends StateNotifier<JournalState> {
   /// does, so the order is not cosmetic: an attach replayed before its
   /// enrolment names somebody the host has never heard of.
   Future<List<String>> pendingVisitIds() async {
-    final rows =
-        await (db.select(db.settlementEvents)
-              ..orderBy([(e) => OrderingTerm.asc(e.seq)]))
-            .get();
+    final rows = await (db.select(
+      db.settlementEvents,
+    )..orderBy([(e) => OrderingTerm.asc(e.seq)])).get();
     final seen = <String>{};
     for (final r in rows) {
       seen.add(r.visitId);
@@ -293,12 +385,13 @@ class SettlementJournal extends StateNotifier<JournalState> {
     final rows = await db.select(db.settlementEvents).get();
     for (final r in rows) {
       if (!r.payloadJson.contains(from)) continue;
-      await (db.update(db.settlementEvents)..where((e) => e.id.equals(r.id)))
-          .write(
-            SettlementEventsCompanion(
-              payloadJson: Value(r.payloadJson.replaceAll(from, to)),
-            ),
-          );
+      await (db.update(
+        db.settlementEvents,
+      )..where((e) => e.id.equals(r.id))).write(
+        SettlementEventsCompanion(
+          payloadJson: Value(r.payloadJson.replaceAll(from, to)),
+        ),
+      );
     }
     SatLog.repo('settlement.rewriteMember $from -> $to');
   }
@@ -320,6 +413,16 @@ class SettlementJournal extends StateNotifier<JournalState> {
           ),
         );
   }
+
+  /// A fetch begun before capture must not overwrite that capture's baseline.
+  Future<bool> cacheServerBill(String visitId, Map<String, dynamic> json) =>
+      _write(() async {
+        if ((await eventsFor(visitId)).any((e) => !e.kind.isMemberScope)) {
+          return false;
+        }
+        await cacheBill(visitId, json);
+        return true;
+      });
 
   /// When each visit's cached bill was last pulled, for the prefetch sweep's
   /// per-visit throttle. A **global** throttle cannot express the case that
@@ -444,12 +547,14 @@ class SettlementJournal extends StateNotifier<JournalState> {
   /// Drop a visit's cache and its (drained) journal. Called when a bill closes
   /// clean — nothing here is authoritative once the host has taken it.
   Future<void> forget(String visitId) async {
-    await (db.delete(
-      db.settlementEvents,
-    )..where((e) => e.visitId.equals(visitId))).go();
-    await (db.delete(
-      db.cachedBills,
-    )..where((b) => b.visitId.equals(visitId))).go();
+    await _write(() async {
+      await (db.delete(
+        db.settlementEvents,
+      )..where((e) => e.visitId.equals(visitId))).go();
+      await (db.delete(
+        db.cachedBills,
+      )..where((b) => b.visitId.equals(visitId))).go();
+    });
     await _refreshState();
   }
 
@@ -458,7 +563,12 @@ class SettlementJournal extends StateNotifier<JournalState> {
   /// Replay every chain. Per visit, in capture order, **halting that visit on
   /// its first refusal** — a refund whose payment was refused must never land.
   /// Other visits keep draining.
-  Future<SettlementReport> drain() async {
+  Future<SettlementReport> drain() {
+    if (_drainFuture != null) return _drainFuture!;
+    return _drainFuture = _drain().whenComplete(() => _drainFuture = null);
+  }
+
+  Future<SettlementReport> _drain() async {
     final visits = await pendingVisitIds();
     if (visits.isEmpty) return const SettlementReport(chains: []);
     state = state.copyWith(draining: true);
@@ -466,51 +576,75 @@ class SettlementJournal extends StateNotifier<JournalState> {
     var interrupted = false;
     try {
       for (final visitId in visits) {
-        final events = [
-          for (final e in await eventsFor(visitId))
-            if (!e.isParked) e,
-        ];
-        if (events.isEmpty) continue;
+        final events = await eventsFor(visitId);
+        // A later append must never drain around a refusal, including legacy rows.
+        if (events.isEmpty || events.any((e) => e.isParked)) continue;
         final delivered = <SettlementEvent>[];
         SettlementEvent? refused;
         String? code;
         for (final ev in events) {
           try {
-            await send(ev);
+            if (!ev.isAcknowledged) {
+              await send(ev);
+              await _write(() async {
+                await (db.update(
+                  db.settlementEvents,
+                )..where((e) => e.id.equals(ev.id))).write(
+                  const SettlementEventsCompanion(
+                    status: Value('acknowledged'),
+                  ),
+                );
+              });
+            }
             delivered.add(ev);
-            await (db.delete(
-              db.settlementEvents,
-            )..where((e) => e.id.equals(ev.id))).go();
           } on SettlementRefused catch (e) {
             refused = ev;
             code = e.code;
+            await _write(() => _park(visitId, code!));
             break;
           } catch (e, st) {
-            // Not a refusal — the host stopped answering mid-chain. Leave
-            // everything from here on exactly as it is and try again next
-            // reconnect; nothing has been decided.
             SatLog.err('settlement drain', e, st);
             interrupted = true;
             break;
           }
         }
-        final left = [
-          for (final e in await eventsFor(visitId))
-            if (!e.isParked) e,
-        ];
-        if (refused != null) {
-          await _park(visitId, code!);
+        if (!interrupted && refused == null) {
+          try {
+            // Sends stop at this prefix while the snapshot is read. New captures
+            // may append, but cannot be sent or deleted by this checkpoint.
+            final authority = events.any((e) => !e.kind.isMemberScope);
+            final snapshot = authority
+                ? await (loadBill ?? _missingCheckpoint)(visitId, delivered)
+                : null;
+            await _write(() async {
+              if (snapshot != null) await cacheBill(visitId, snapshot);
+              final ids = delivered.map((e) => e.id).toList();
+              await (db.delete(db.settlementEvents)..where(
+                    (e) => e.id.isIn(ids) & e.status.equals('acknowledged'),
+                  ))
+                  .go();
+            });
+          } catch (e, st) {
+            SatLog.err('settlement checkpoint', e, st);
+            interrupted = true;
+          }
         }
+        final left = await eventsFor(visitId);
         chains.add(
           ChainOutcome(
             visitId: visitId,
             delivered: delivered,
             refused: refused,
             code: code,
-            parked: refused == null ? const [] : left,
-            strandedAmount: refused == null ? 0 : _moneyIn(left),
+            parked: refused == null
+                ? const []
+                : left.where((e) => e.isParked).toList(),
+            strandedAmount: refused == null
+                ? 0
+                : _moneyIn(left.where((e) => e.isParked)),
           ),
         );
+        await _refreshState();
         if (interrupted) break;
       }
     } finally {
@@ -520,23 +654,29 @@ class SettlementJournal extends StateNotifier<JournalState> {
     return SettlementReport(chains: chains, interrupted: interrupted);
   }
 
+  Future<Map<String, dynamic>> _missingCheckpoint(
+    String visitId,
+    List<SettlementEvent> events,
+  ) async => throw StateError('No bill checkpoint configured for $visitId');
+
   /// Mark a visit's whole remaining chain parked, carrying the host's code on
   /// the event that was actually refused (the first one left).
   Future<void> _park(String visitId, String code) async {
-    await (db.update(db.settlementEvents)..where(
-          (e) => e.visitId.equals(visitId) & e.status.equals('pending'),
-        ))
+    await (db.update(
+          db.settlementEvents,
+        )..where((e) => e.visitId.equals(visitId) & e.status.equals('pending')))
         .write(const SettlementEventsCompanion(status: Value('parked')));
     final first =
         await (db.select(db.settlementEvents)
-              ..where((e) => e.visitId.equals(visitId))
+              ..where(
+                (e) => e.visitId.equals(visitId) & e.status.equals('parked'),
+              )
               ..orderBy([(e) => OrderingTerm.asc(e.seq)])
               ..limit(1))
             .getSingleOrNull();
     if (first != null) {
-      await (db.update(db.settlementEvents)..where(
-            (e) => e.id.equals(first.id),
-          ))
+      await (db.update(db.settlementEvents)
+            ..where((e) => e.id.equals(first.id)))
           .write(SettlementEventsCompanion(failCode: Value(code)));
     }
   }
@@ -564,6 +704,9 @@ class SettlementJournal extends StateNotifier<JournalState> {
       for (final e in byVisit.entries)
         ChainOutcome(
           visitId: e.key,
+          delivered: (await eventsFor(
+            e.key,
+          )).where((event) => event.isAcknowledged).toList(),
           refused: e.value.first,
           code: codes[e.key],
           parked: e.value,
@@ -584,6 +727,7 @@ class SettlementJournal extends StateNotifier<JournalState> {
   Future<void> _refreshState() async {
     final rows = await db.select(db.settlementEvents).get();
     state = state.copyWith(
+      events: [for (final r in rows) _fromRow(r)],
       // **Money only.** A visit holding nothing but member-scope acts is not
       // [[Kunjungan otoritatif-lokal]] — see `isMemberScope` (ADR-0129). The
       // venue-scope chain hangs off no visit and never appears here at all.

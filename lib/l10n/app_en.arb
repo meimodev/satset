@@ -3898,5 +3898,10 @@
   "serveFailAlreadyMoved": "This item already changed on another device. Check again.",
   "serveFailOther": "The server refused the serve.",
   "tktServeFailed": "Couldn't mark it served: {reason}",
-  "sendFailServeRefused": "Serve of ×{qty} {name} refused. {reason}"
+  "sendFailServeRefused": "Serve of ×{qty} {name} refused. {reason}",
+  "cshHistoryUnavailable": "Earlier bill history is unavailable. Known items are shown below. Reconnect to recover the full bill before taking payment.",
+  "cshKnownSubtotal": "Known items subtotal",
+  "cshVisitRefused": "This visit needs resolution. Review the settlement refusal before making further changes.",
+  "capturedLine": "Captured",
+  "cshEmptyBill": "No billable items yet."
 }

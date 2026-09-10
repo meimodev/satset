@@ -10553,6 +10553,23 @@ class AppL10nEn extends AppL10n {
   String sendFailServeRefused(int qty, String name, String reason) {
     return 'Serve of ×$qty $name refused. $reason';
   }
+
+  @override
+  String get cshHistoryUnavailable =>
+      'Earlier bill history is unavailable. Known items are shown below. Reconnect to recover the full bill before taking payment.';
+
+  @override
+  String get cshKnownSubtotal => 'Known items subtotal';
+
+  @override
+  String get cshVisitRefused =>
+      'This visit needs resolution. Review the settlement refusal before making further changes.';
+
+  @override
+  String get capturedLine => 'Captured';
+
+  @override
+  String get cshEmptyBill => 'No billable items yet.';
 }
 
 /// The translations for English, as used in El Salvador (`en_SV`).

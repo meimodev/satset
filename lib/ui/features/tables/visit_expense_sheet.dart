@@ -11,7 +11,8 @@ import 'package:satset/data/models/visit_expense_dto.dart';
 import 'package:satset/data/repositories/visit_expense_repository.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/data/services/api_client.dart';
-import 'package:satset/data/services/send_queue_service.dart';
+import 'package:satset/domain/models/settlement_event.dart';
+import 'package:satset/data/services/settlement_journal.dart';
 import 'package:satset/data/services/settlement_sync.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -76,7 +77,8 @@ class _VisitExpenseSheetState extends ConsumerState<_VisitExpenseSheet> {
     super.dispose();
   }
 
-  int get _value => int.tryParse(_amount.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
+  int get _value =>
+      int.tryParse(_amount.text.replaceAll(RegExp(r'\D'), '')) ?? 0;
 
   /// Why the button is off, in the order a person fills the form in.
   String? _blocker(AppL10n l10n, int remaining) {
@@ -113,10 +115,15 @@ class _VisitExpenseSheetState extends ConsumerState<_VisitExpenseSheet> {
     // capture that goes straight to the host and the one that is queued are the
     // same act, so a retry after a lost reply must not become a second expense.
     try {
+      final journal = ref.read(settlementJournalProvider.notifier);
+      await journal.assertWritable(widget.visitId);
+      final pending = (await journal.eventsFor(
+        widget.visitId,
+      )).any((e) => !e.kind.isMemberScope);
       // The socket is the test, not the last request: a handset that has lost
       // the host queues rather than waiting out a timeout the waiter is stood
       // there for (ADR-0090).
-      if (ref.read(wsConnStateProvider) != WsConnState.open) {
+      if (pending || ref.read(wsConnStateProvider) != WsConnState.open) {
         await _queue(id);
       } else {
         await ref
@@ -131,6 +138,12 @@ class _VisitExpenseSheetState extends ConsumerState<_VisitExpenseSheet> {
       }
       ref.invalidate(visitExpensesProvider(widget.visitId));
       if (mounted) Navigator.of(context).pop(true);
+    } on SettlementVisitReadOnly {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = context.l10n.cshVisitRefused;
+      });
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -162,18 +175,21 @@ class _VisitExpenseSheetState extends ConsumerState<_VisitExpenseSheet> {
   Future<void> _queue(String id) async {
     await ref
         .read(settlementJournalProvider.notifier)
+        .assertWritable(widget.visitId);
+    await ref
+        .read(settlementJournalProvider.notifier)
         .parkExpensePhoto(id, _photo!);
     await ref
-        .read(sendQueueProvider.notifier)
-        .enqueue(
+        .read(settlementJournalProvider.notifier)
+        .append(
           id: id,
-          kind: SendIntentKind.tableExpense,
+          kind: SettlementEventKind.tableExpense,
           // The queue keys intents by table; the route is addressed by visit,
           // so the visit rides the payload and the table stays the queue's own
           // handle on where this happened.
           tableId: widget.tableId ?? '',
           actorId: ref.read(authStateProvider).user?.id ?? '',
-          expectedVisitId: widget.visitId,
+          visitId: widget.visitId,
           payload: {
             'visitId': widget.visitId,
             'amount': _value,
@@ -191,9 +207,7 @@ class _VisitExpenseSheetState extends ConsumerState<_VisitExpenseSheet> {
     final summary = ref.watch(visitExpensesProvider(widget.visitId));
 
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.viewInsetsOf(context).bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SingleChildScrollView(
         padding: const EdgeInsets.only(
           left: Sp.s4,
@@ -265,10 +279,7 @@ class _VisitExpenseSheetState extends ConsumerState<_VisitExpenseSheet> {
         ),
         if (summary.offline) ...[
           const SizedBox(height: Sp.s1),
-          Text(
-            l10n.tableExpProvisional,
-            style: SatType.bodyS(color: sc.warn),
-          ),
+          Text(l10n.tableExpProvisional, style: SatType.bodyS(color: sc.warn)),
         ],
         if (summary.total > 0) ...[
           const SizedBox(height: Sp.s1),
@@ -317,11 +328,7 @@ class _VisitExpenseSheetState extends ConsumerState<_VisitExpenseSheet> {
           onTap: _shoot,
         ),
         const SizedBox(height: Sp.s3),
-        SatField.text(
-          controller: _note,
-          label: l10n.tableExpNote,
-          hint: '',
-        ),
+        SatField.text(controller: _note, label: l10n.tableExpNote, hint: ''),
         if (_error != null) ...[
           const SizedBox(height: Sp.s3),
           Text(_error!, style: SatType.bodyS(color: sc.urgent)),

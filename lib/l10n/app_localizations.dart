@@ -16656,6 +16656,36 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Tanda disajikan ×{qty} {name} ditolak. {reason}'**
   String sendFailServeRefused(int qty, String name, String reason);
+
+  /// No description provided for @cshHistoryUnavailable.
+  ///
+  /// In id, this message translates to:
+  /// **'Riwayat tagihan sebelumnya belum tersedia. Item yang diketahui ditampilkan di bawah. Sambungkan kembali untuk memulihkan tagihan lengkap sebelum menerima pembayaran.'**
+  String get cshHistoryUnavailable;
+
+  /// No description provided for @cshKnownSubtotal.
+  ///
+  /// In id, this message translates to:
+  /// **'Subtotal item yang diketahui'**
+  String get cshKnownSubtotal;
+
+  /// No description provided for @cshVisitRefused.
+  ///
+  /// In id, this message translates to:
+  /// **'Kunjungan ini perlu diselesaikan. Tinjau penolakan setelmen sebelum membuat perubahan berikutnya.'**
+  String get cshVisitRefused;
+
+  /// No description provided for @capturedLine.
+  ///
+  /// In id, this message translates to:
+  /// **'Tertangkap'**
+  String get capturedLine;
+
+  /// No description provided for @cshEmptyBill.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada item yang dapat ditagih.'**
+  String get cshEmptyBill;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

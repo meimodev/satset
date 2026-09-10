@@ -31,7 +31,7 @@ import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/member_names_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
-import 'package:satset/data/services/send_queue_service.dart';
+import 'package:satset/data/services/settlement_sync.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 import 'package:satset/ui/core/widgets/ready_banner.dart';
 import 'package:satset/ui/core/widgets/order_line_card.dart';
@@ -45,7 +45,6 @@ import 'visit_expense_sheet.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/ui/features/tables/widgets/move_table_sheet.dart';
-import 'package:satset/ui/features/tables/widgets/pending_orders_block.dart';
 import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
 import 'package:satset/ui/core/design/spacing.dart';
@@ -317,8 +316,12 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       hasLease: _ownsLock || _acquiring,
       offline: ref.watch(wsConnStateProvider) != WsConnState.open,
     );
-    final readOnly = access.readOnly;
-    final canQueueWrite = access.canQueueWrite;
+    final refused = ref
+        .watch(journalViewProvider)
+        .parkedVisits
+        .contains(table.currentVisitId);
+    final readOnly = access.readOnly || refused;
+    final canQueueWrite = access.canQueueWrite && !refused;
     final offlineNoLease = readOnly && canQueueWrite;
 
     // Watch for two related transitions: (a) the current lock holder
@@ -363,9 +366,9 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       }
     });
     final isKosong = table.status == TableStatus.available;
-    final hasPending = ref
-        .watch(pendingOrdersForTableProvider(table.id))
-        .isNotEmpty;
+    final hasPending = tickets.any(
+      (t) => ref.watch(capturedTicketIdsProvider).contains(t.id),
+    );
     final canSeat = isKosong && auth.canTakeOrder && !lockedByOther;
     // Gate by capability, not role enum: admins also have takeOrder and need
     // to be able to correct guest counts during testing/coverage.
@@ -757,7 +760,6 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                               context.shellInset + _actionStackClearance,
                             ),
                             children: [
-                              PendingOrdersBlock(tableId: table.id),
                               for (final (i, cid)
                                   in Courses.all.map((c) => c.id).indexed)
                                 if (grouped[cid] != null &&
@@ -1781,7 +1783,6 @@ class _TabletSplit extends StatelessWidget {
                                   16,
                                 ),
                                 children: [
-                                  PendingOrdersBlock(tableId: table.id),
                                   if (tickets.isEmpty && !hasPending)
                                     Padding(
                                       padding: const EdgeInsets.all(Sp.s7),

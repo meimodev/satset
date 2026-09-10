@@ -8529,5 +8529,10 @@
         "type": "String"
       }
     }
-  }
+  },
+  "cshHistoryUnavailable": "Riwayat tagihan sebelumnya belum tersedia. Item yang diketahui ditampilkan di bawah. Sambungkan kembali untuk memulihkan tagihan lengkap sebelum menerima pembayaran.",
+  "cshKnownSubtotal": "Subtotal item yang diketahui",
+  "cshVisitRefused": "Kunjungan ini perlu diselesaikan. Tinjau penolakan setelmen sebelum membuat perubahan berikutnya.",
+  "capturedLine": "Tertangkap",
+  "cshEmptyBill": "Belum ada item yang dapat ditagih."
 }

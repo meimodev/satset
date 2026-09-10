@@ -22,6 +22,7 @@ void main() {
 
   SettlementJournal build() => SettlementJournal(
     db: db,
+    loadBill: (visitId, _) async => {'visitId': visitId, 'receipts': []},
     send: (e) async {
       final code = refuse[e.id];
       if (code != null) throw SettlementRefused(code);
@@ -36,6 +37,38 @@ void main() {
     journal = build();
   });
   tearDown(() => db.close());
+
+  test(
+    'an interrupted drain retains delivered food for local projection',
+    () async {
+      var calls = 0;
+      final interrupted = SettlementJournal(
+        db: db,
+        send: (event) async {
+          if (++calls == 2) throw StateError('connection lost');
+        },
+      );
+      final order = await interrupted.append(
+        visitId: 'v1',
+        kind: SettlementEventKind.submitOrder,
+        payload: const {
+          'lines': [
+            {'ticketId': 't1', 'qty': 1, 'unitPrice': 55000},
+          ],
+        },
+      );
+      await interrupted.append(
+        visitId: 'v1',
+        kind: SettlementEventKind.mintReceipt,
+      );
+      await interrupted.drain();
+      expect(
+        (await interrupted.eventsFor('v1')).map((e) => e.id),
+        contains(order.id),
+      );
+      interrupted.dispose();
+    },
+  );
 
   group('a receipt minted into the journal', () {
     test('is found by the payment queued behind it', () async {

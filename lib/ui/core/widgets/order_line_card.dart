@@ -1,3 +1,5 @@
+import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/data/services/settlement_sync.dart';
 import 'package:flutter/material.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/core/localization/report_copy.dart';
@@ -96,8 +98,13 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
   @override
   Widget build(BuildContext context) {
     final ticket = widget.ticket;
-    final readOnly = widget.readOnly;
-    final tappable = widget.tappableWhenReadOnly ?? !readOnly;
+    final refused = ref
+        .watch(journalViewProvider)
+        .parkedVisits
+        .contains(ticket.visitId);
+    final captured = ref.watch(capturedTicketIdsProvider).contains(ticket.id);
+    final readOnly = widget.readOnly || refused;
+    final tappable = !refused && (widget.tappableWhenReadOnly ?? !readOnly);
     final onTap = widget.onTap;
     final onMarkServed = widget.onMarkServed;
     final sc = context.sat;
@@ -192,6 +199,11 @@ class _OrderLineCardState extends ConsumerState<OrderLineCard>
                                       : null,
                                 ),
                           ),
+                          if (captured)
+                            Text(
+                              context.l10n.capturedLine,
+                              style: SatType.bodyS(color: sc.textLo),
+                            ),
                           if (!isVoided) MenuTagBadges(itemId: ticket.itemId),
                           if (ticket.memberId != null)
                             _MemberChip(memberId: ticket.memberId!),

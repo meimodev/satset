@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:satset/domain/models/settlement_event.dart';
+import 'package:satset/data/services/settlement_sync.dart';
 import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_chip.dart';
 import 'package:satset/ui/core/widgets/sat_icon_button.dart';
@@ -192,32 +194,48 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
                 style: SatType.bodyM(color: sc.textLo),
               ),
             ),
-            data: (bill) => _BillBody(
-              bill: bill,
-              run: _run,
-              repo: _repo,
-              canRefund: ref.watch(authStateProvider).has(Capability.refund),
-              debtEnabled: ref.watch(
-                venueSettingsProvider.select(
-                  (v) => v.membersOn && v.memberDebtEnabled,
-                ),
-              ),
-              onCloseBill: () => _closeBill(context, ref, bill),
-              onReopenBill: () => _reopenBill(bill),
-              printDoc: (r) => printBillStruk(
-                context: context,
-                ref: ref,
-                bill: bill,
-                receipt: r,
-              ),
-              printSelection: (sel, pending) => printBillSelection(
-                context: context,
-                ref: ref,
-                bill: bill,
-                selection: sel,
-                pending: pending,
-              ),
-            ),
+            data: (bill) =>
+                (!bill.historyAvailable ||
+                    bill.lines.isEmpty ||
+                    ref
+                        .watch(journalViewProvider)
+                        .parkedVisits
+                        .contains(bill.visitId))
+                ? _BillReadOnly(
+                    bill: bill,
+                    refused: ref
+                        .watch(journalViewProvider)
+                        .parkedVisits
+                        .contains(bill.visitId),
+                  )
+                : _BillBody(
+                    bill: bill,
+                    run: _run,
+                    repo: _repo,
+                    canRefund: ref
+                        .watch(authStateProvider)
+                        .has(Capability.refund),
+                    debtEnabled: ref.watch(
+                      venueSettingsProvider.select(
+                        (v) => v.membersOn && v.memberDebtEnabled,
+                      ),
+                    ),
+                    onCloseBill: () => _closeBill(context, ref, bill),
+                    onReopenBill: () => _reopenBill(bill),
+                    printDoc: (r) => printBillStruk(
+                      context: context,
+                      ref: ref,
+                      bill: bill,
+                      receipt: r,
+                    ),
+                    printSelection: (sel, pending) => printBillSelection(
+                      context: context,
+                      ref: ref,
+                      bill: bill,
+                      selection: sel,
+                      pending: pending,
+                    ),
+                  ),
           ),
         ),
       ],
@@ -953,6 +971,11 @@ class _LinesSection extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  if (l.status == 'captured')
+                    Text(
+                      context.l10n.capturedLine,
+                      style: SatType.bodyS(color: sc.textLo),
+                    ),
                   if (l.variantName.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: Sp.sHair),
@@ -2914,4 +2937,69 @@ class PastBillDetailScreen extends ConsumerWidget {
       );
     },
   );
+}
+
+/// A known subtotal is never presented with full-bill payment controls.
+class _BillReadOnly extends ConsumerWidget {
+  const _BillReadOnly({required this.bill, required this.refused});
+  final Bill bill;
+  final bool refused;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    return ListView(
+      padding: const EdgeInsets.all(Sp.s6),
+      children: [
+        Text(
+          refused
+              ? l.cshVisitRefused
+              : !bill.historyAvailable
+              ? l.cshHistoryUnavailable
+              : l.cshEmptyBill,
+        ),
+        const SizedBox(height: Sp.s4),
+        for (final line in bill.lines)
+          ListTile(
+            title: Text('${line.qty} × ${line.name}'),
+            subtitle: line.status == 'captured' ? Text(l.capturedLine) : null,
+            trailing: Text(formatIDR(line.lineTotal)),
+          ),
+        if (bill.lines.isNotEmpty)
+          ListTile(
+            title: Text(l.cshKnownSubtotal),
+            trailing: Text(formatIDR(bill.subtotal)),
+          ),
+        if (refused)
+          for (final event
+              in ref
+                  .watch(journalViewProvider)
+                  .events
+                  .where((e) => e.visitId == bill.visitId && e.isParked)) ...[
+            if (event.kind == SettlementEventKind.submitOrder)
+              for (final line in event.payload['lines'] as List? ?? const [])
+                ListTile(
+                  title: Text('${line['qty']} × ${line['name']}'),
+                  subtitle: Text(l.capturedLine),
+                  trailing: Text(
+                    formatIDR(
+                      (line['qty'] as int) * (line['unitPrice'] as int),
+                    ),
+                  ),
+                ),
+            if (event.kind == SettlementEventKind.recordPayment)
+              ListTile(
+                title: Text(event.arg<String>('method') ?? 'tunai'),
+                trailing: Text(formatIDR(event.intArg('amount'))),
+              ),
+          ],
+        if (refused)
+          for (final receipt in bill.receipts)
+            for (final payment in receipt.payments)
+              ListTile(
+                title: Text(payment.method),
+                trailing: Text(formatIDR(payment.amount)),
+              ),
+      ],
+    );
+  }
 }

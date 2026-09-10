@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:satset/domain/use_cases/captured_tickets.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:satset/data/services/settlement_journal.dart';
@@ -199,7 +200,28 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
 
   /// Pull the authoritative live-ticket list and replace state. Shared by the
   /// initial [_bootstrap] and the WS-reconnect [_resync].
-  Future<void> _refetch() async {
+  Future<void> _fetches = Future.value();
+
+  Future<void> _refetch() {
+    final next = _fetches.then((_) => _fetchSnapshot());
+    _fetches = next.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return next;
+  }
+
+  Future<void> checkpointNow() async {
+    await _refetch();
+    await ref
+        .read(floorCacheProvider)
+        .checkpoint(
+          FloorSlot.tickets,
+          () => jsonEncode({
+            for (final e in state.entries)
+              e.key: [for (final t in e.value) _toDto(t).toJson()],
+          }),
+        );
+  }
+
+  Future<void> _fetchSnapshot() async {
     final api = ref.read(apiClientProvider);
     final raw = await api.getJson('/tickets') as List;
     final grouped = <String, List<Ticket>>{};
@@ -333,12 +355,30 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   }
 
   Ticket? findTicket(String tableId, String ticketId) {
-    for (final list in state.values) {
-      for (final t in list) {
-        if (t.id == ticketId) return t;
+    for (final list in projectCapturedTickets(
+      state,
+      ref.read(journalViewProvider).events,
+    ).values) {
+      for (final ticket in list) {
+        if (ticket.id == ticketId) return ticket;
       }
     }
     return null;
+  }
+
+  Future<void> _assertWritable(String tableId, {String? ticketId}) async {
+    if (ref.read(apiConfigProvider) == null) return;
+    final visitId = ticketId == null
+        ? null
+        : findTicket(tableId, ticketId)?.visitId;
+    final tableVisit = ref
+        .read(tablesProvider)
+        .where((t) => t.id == tableId)
+        .firstOrNull
+        ?.currentVisitId;
+    await ref
+        .read(settlementJournalProvider.notifier)
+        .assertWritable(visitId ?? tableVisit ?? tableId);
   }
 
   /// LAN-aware order submit. Uses [ApiClient] when configured; otherwise
@@ -383,47 +423,72 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         actorId: actorId,
       ).map((t) => t.id).toList();
     }
-    // Terputus: capture the order instead of attempting it (ADR-0090). The
-    // socket being closed is checked *before* the POST rather than after it
-    // fails, because the failure costs 8s of `requestTimeout` and a waiter
-    // mid-rush pays that on every tap.
-    if (ref.read(wsConnStateProvider) != WsConnState.open) {
+    final journal = ref.read(settlementJournalProvider.notifier);
+    final existing = await journal.eventById(idempotencyKey);
+    if (existing != null && existing.kind == SettlementEventKind.submitOrder) {
+      return [
+        for (final line in existing.payload['lines'] as List)
+          (line as Map)['ticketId'] as String,
+      ];
+    }
+    await _assertWritable(tableId);
+    final capturedAt = SatClock.now().toUtc();
+    final ticketIds = [for (final _ in lines) const Uuid().v4()];
+    final currentVisitId = ref
+        .read(tablesProvider)
+        .where((t) => t.id == tableId)
+        .firstOrNull
+        ?.currentVisitId;
+    final visitId =
+        currentVisitId ??
+        await journal.capturedVisitForTable(tableId) ??
+        const Uuid().v4();
+    await journal.assertWritable(visitId);
+    final local =
+        (await ref.read(settlementJournalProvider.notifier).eventsFor(visitId))
+            .any((e) => !e.kind.isMemberScope);
+    if (local || ref.read(wsConnStateProvider) != WsConnState.open) {
       await _captureOrder(
         tableId: tableId,
         lines: lines,
         actorId: actorId,
         idempotencyKey: idempotencyKey,
+        ticketIds: ticketIds,
+        capturedAt: capturedAt,
+        proposedVisitId: visitId,
       );
-      return const [];
+      return ticketIds;
     }
     final api = ref.read(apiClientProvider);
     final Object raw;
     try {
-      raw = await api.postJson(
-        '/orders',
-        SubmitOrderRequestDto(
-          tableId: tableId,
-          idempotencyKey: idempotencyKey,
-          lines: lines,
-          actorId: actorId,
-        ).toJson(),
-      );
+      raw = await api.postJson('/orders', {
+        'tableId': tableId,
+        'visitId': visitId,
+        'idempotencyKey': idempotencyKey,
+        'capturedAt': capturedAt.toIso8601String(),
+        'actorId': ?actorId,
+        'lines': [
+          for (var i = 0; i < lines.length; i++)
+            {...lines[i].toJson(), 'ticketId': ticketIds[i]},
+        ],
+      });
     } on ApiException {
       // The host answered. Whatever it said — out of stock, no capability, a
       // closed bill — is a real answer the caller must surface, not a gap to
       // queue over.
       rethrow;
     } catch (_) {
-      // The socket said open and the request still did not land. This is the
-      // gap between the two signals, and it is the reason there is no global
-      // offline flag to disagree with.
       await _captureOrder(
         tableId: tableId,
         lines: lines,
         actorId: actorId,
         idempotencyKey: idempotencyKey,
+        ticketIds: ticketIds,
+        capturedAt: capturedAt,
+        proposedVisitId: visitId,
       );
-      return const [];
+      return ticketIds;
     }
     final res = SubmitOrderResponseDto.fromJson(
       (raw as Map).cast<String, dynamic>(),
@@ -465,6 +530,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     required List<CartLineDto> lines,
     required String idempotencyKey,
     String? actorId,
+    required List<String> ticketIds,
+    required DateTime capturedAt,
+    required String proposedVisitId,
   }) async {
     final journal = ref.read(settlementJournalProvider.notifier);
     final table = ref
@@ -472,11 +540,13 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         .where((t) => t.id == tableId)
         .cast<VenueTable?>()
         .firstOrNull;
-    var visitId = table?.currentVisitId;
+    var visitId =
+        table?.currentVisitId ?? await journal.capturedVisitForTable(tableId);
     try {
       if (visitId == null || visitId.isEmpty) {
         final v = ref.read(venueSettingsProvider);
         visitId = await journal.openCapturedVisit(
+          visitId: proposedVisitId,
           tableId: tableId,
           pax: table?.pax ?? 1,
           tableLabel: table?.label,
@@ -494,12 +564,13 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         id: idempotencyKey,
         visitId: visitId,
         kind: SettlementEventKind.submitOrder,
+        capturedAt: capturedAt,
         tableId: tableId,
         actorId: actorId ?? '',
         payload: {
           'lines': [
-            for (final l in lines)
-              {...l.toJson(), 'ticketId': const Uuid().v4()},
+            for (var i = 0; i < lines.length; i++)
+              {...lines[i].toJson(), 'ticketId': ticketIds[i]},
           ],
         },
       );
@@ -587,6 +658,11 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       final created = sendOrder(vid, cart, actorId: actorId);
       return (ticketIds: [for (final t in created) t.id], visitId: vid);
     }
+    if (existingVisitId != null) {
+      await ref
+          .read(settlementJournalProvider.notifier)
+          .assertWritable(existingVisitId);
+    }
     final api = ref.read(apiClientProvider);
     final raw = await api.postJson('/orders', {
       'takeaway': true,
@@ -628,6 +704,27 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     String? voidApprovedBy,
     String? actorId,
   }) async {
+    await _assertWritable(tableId, ticketId: ticketId);
+    final ticket = findTicket(tableId, ticketId);
+    final visitId =
+        ticket?.visitId ??
+        ref
+            .read(tablesProvider)
+            .where((t) => t.id == tableId)
+            .firstOrNull
+            ?.currentVisitId;
+    final journal = ref.read(settlementJournalProvider.notifier);
+    final local =
+        ref.read(apiConfigProvider) != null &&
+        visitId != null &&
+        (await journal.eventsFor(visitId)).any((e) => !e.kind.isMemberScope);
+    if (local && to != TicketStatus.voided) {
+      throw const ApiException(
+        409,
+        'Visit has undrained events',
+        'visit_pending',
+      );
+    }
     SatLog.repo(
       'tickets.transition id=${ticketId.substring(0, ticketId.length.clamp(0, 6))} → ${to.name}',
     );
@@ -650,7 +747,8 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       // Terputus: capture instead of attempting, the same pre-check the order
       // path makes and for the same reason — the failure costs 8s of
       // `requestTimeout` and a waiter mid-rush pays it on every tap.
-      if (canQueue && ref.read(wsConnStateProvider) != WsConnState.open) {
+      if (canQueue &&
+          (local || ref.read(wsConnStateProvider) != WsConnState.open)) {
         await _enqueueTransition(
           tableId: tableId,
           ticketId: ticketId,
@@ -727,6 +825,31 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     String? actorId,
   }) async {
     final t = findTicket(tableId, ticketId);
+    if (to == TicketStatus.voided) {
+      final visitId =
+          t?.visitId ??
+          ref
+              .read(tablesProvider)
+              .where((table) => table.id == tableId)
+              .firstOrNull
+              ?.currentVisitId;
+      if (visitId == null) throw StateError('No visit for captured void');
+      await ref
+          .read(settlementJournalProvider.notifier)
+          .append(
+            id: 'void-$ticketId',
+            visitId: visitId,
+            tableId: tableId,
+            actorId: actorId ?? '',
+            kind: SettlementEventKind.voidTicket,
+            payload: {
+              'ticketId': ticketId,
+              'voidReason': voidReason,
+              'voidReasonCode': voidReasonCode,
+            },
+          );
+      return;
+    }
     final serve = to == TicketStatus.served;
     try {
       await ref
@@ -773,6 +896,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     required List<TicketModifier> modifiers,
     required int unitPrice,
   }) async {
+    await _assertWritable(tableId);
     SatLog.repo(
       'tickets.modify id=${ticketId.substring(0, ticketId.length.clamp(0, 6))} '
       'qty=$qty',
@@ -863,6 +987,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   }
 
   Future<void> fireCourse(String tableId, CourseId courseId) async {
+    await _assertWritable(tableId);
     SatLog.repo(
       'tickets.fireCourse table=${tableId.substring(0, tableId.length.clamp(0, 6))} course=${courseId.name}',
     );
@@ -998,6 +1123,22 @@ final ticketsProvider =
       return TicketsRepository(ref: ref);
     });
 
+final visibleTicketsProvider = Provider<Map<String, List<Ticket>>>(
+  (ref) => projectCapturedTickets(
+    ref.watch(ticketsProvider),
+    ref.watch(journalViewProvider).events,
+  ),
+);
+
+final capturedTicketIdsProvider = Provider<Set<String>>(
+  (ref) => {
+    for (final e in ref.watch(journalViewProvider).events)
+      if (e.kind == SettlementEventKind.submitOrder)
+        for (final line in e.payload['lines'] as List? ?? const [])
+          if ((line as Map)['ticketId'] is String) line['ticketId'] as String,
+  },
+);
+
 /// Live lines for one visit — the stable bill key (ADR-0024), and the way any
 /// widget showing a single visit's lines should read them.
 ///
@@ -1012,7 +1153,8 @@ final ticketsProvider =
 /// return the identical instance, so an empty group cannot cause a rebuild
 /// either.
 final ticketsForVisitProvider = Provider.family<List<Ticket>, String>(
-  (ref, visitId) => ref.watch(ticketsProvider)[visitId] ?? const <Ticket>[],
+  (ref, visitId) =>
+      ref.watch(visibleTicketsProvider)[visitId] ?? const <Ticket>[],
 );
 
 /// Live dine-in lines for a table, resolved through the table's current visit.

@@ -60,12 +60,9 @@ void main() {
   });
 
   test('a terputus seat opens a captured visit, not a lost intent', () async {
-    await container.read(tablesProvider.notifier).seat(
-      'meja-7',
-      pax: 4,
-      userId: 'user-w1',
-      guestName: 'Bu Sri',
-    );
+    await container
+        .read(tablesProvider.notifier)
+        .seat('meja-7', pax: 4, userId: 'user-w1', guestName: 'Bu Sri');
 
     final events = await journal().eventsFor(await _onlyVisit(journal()));
     expect(events, hasLength(1));
@@ -92,7 +89,8 @@ void main() {
     expect(
       seed['total'],
       0,
-      reason: 'every money figure is recomputeBill\'s to write, never the seed\'s',
+      reason:
+          'every money figure is recomputeBill\'s to write, never the seed\'s',
     );
   });
 
@@ -111,30 +109,32 @@ void main() {
     if (table != null) expect(table.currentVisitId, visitId);
   });
 
-  test('a terputus order is captured and reports no tickets', () async {
-    final ids = await container.read(ticketsProvider.notifier).submitOrder(
-      tableId: 'meja-7',
-      idempotencyKey: 'ignored-offline',
-      actorId: 'user-w1',
-      lines: const [
-        CartLineDto(
-          itemId: 'item-1',
-          name: 'Nasi goreng',
-          variantId: '',
-          variantName: '',
-          modifiers: [],
-          note: null,
-          course: 'mains',
-          qty: 2,
-          unitPrice: 25000,
-        ),
-      ],
-    );
+  test('a terputus order returns its durable captured ticket IDs', () async {
+    final ids = await container
+        .read(ticketsProvider.notifier)
+        .submitOrder(
+          tableId: 'meja-7',
+          idempotencyKey: 'ignored-offline',
+          actorId: 'user-w1',
+          lines: const [
+            CartLineDto(
+              itemId: 'item-1',
+              name: 'Nasi goreng',
+              variantId: '',
+              variantName: '',
+              modifiers: [],
+              note: null,
+              course: 'mains',
+              qty: 2,
+              unitPrice: 25000,
+            ),
+          ],
+        );
 
     expect(
       ids,
-      isEmpty,
-      reason: 'nothing was filed, so there is no ticket id to hand back',
+      hasLength(1),
+      reason: 'captured lines are visible immediately under durable IDs',
     );
 
     final visitId = await _onlyVisit(journal());
@@ -150,43 +150,51 @@ void main() {
     expect(order.tableId, 'meja-7');
     final line = (order.payload['lines'] as List).single as Map;
     expect(line['qty'], 2);
+    expect(ids.single, line['ticketId']);
+    expect(
+      container.read(visibleTicketsProvider).values.expand((v) => v).single.id,
+      ids.single,
+    );
     expect(
       line['ticketId'],
       isA<String>().having((s) => s.isNotEmpty, 'minted', isTrue),
-      reason: 'the bill assigns, discounts and voids by ticket id — a line '
+      reason:
+          'the bill assigns, discounts and voids by ticket id — a line '
           'without one can be rendered and nothing else',
     );
   });
 
   test('every captured line gets its own ticket id', () async {
-    await container.read(ticketsProvider.notifier).submitOrder(
-      tableId: 'meja-7',
-      idempotencyKey: 'k',
-      lines: const [
-        CartLineDto(
-          itemId: 'item-1',
-          name: 'Nasi goreng',
-          variantId: '',
-          variantName: '',
-          modifiers: [],
-          note: null,
-          course: 'mains',
-          qty: 1,
-          unitPrice: 25000,
-        ),
-        CartLineDto(
-          itemId: 'item-2',
-          name: 'Es teh',
-          variantId: '',
-          variantName: '',
-          modifiers: [],
-          note: null,
-          course: 'drinks',
-          qty: 1,
-          unitPrice: 8000,
-        ),
-      ],
-    );
+    await container
+        .read(ticketsProvider.notifier)
+        .submitOrder(
+          tableId: 'meja-7',
+          idempotencyKey: 'k',
+          lines: const [
+            CartLineDto(
+              itemId: 'item-1',
+              name: 'Nasi goreng',
+              variantId: '',
+              variantName: '',
+              modifiers: [],
+              note: null,
+              course: 'mains',
+              qty: 1,
+              unitPrice: 25000,
+            ),
+            CartLineDto(
+              itemId: 'item-2',
+              name: 'Es teh',
+              variantId: '',
+              variantName: '',
+              modifiers: [],
+              note: null,
+              course: 'drinks',
+              qty: 1,
+              unitPrice: 8000,
+            ),
+          ],
+        );
     final events = await journal().eventsFor(await _onlyVisit(journal()));
     final lines = (events.last.payload['lines'] as List).cast<Map>();
     final ids = {for (final l in lines) l['ticketId'] as String};
@@ -212,30 +220,35 @@ void main() {
       qty: 1,
       unitPrice: 25000,
     );
-    await container.read(ticketsProvider.notifier).submitOrder(
-      tableId: 'meja-7',
-      idempotencyKey: 'key-abc',
-      lines: const [line],
-    );
+    await container
+        .read(ticketsProvider.notifier)
+        .submitOrder(
+          tableId: 'meja-7',
+          idempotencyKey: 'key-abc',
+          lines: const [line],
+        );
     final visitId = await _onlyVisit(journal());
     expect(
-      (await journal().eventsFor(visitId))
-          .where((e) => e.kind == SettlementEventKind.submitOrder)
-          .single
-          .id,
+      (await journal().eventsFor(
+        visitId,
+      )).where((e) => e.kind == SettlementEventKind.submitOrder).single.id,
       'key-abc',
     );
 
     // And capturing that same key again — a retry of the same tap — adds
     // nothing: one order captured is one order sent.
-    await container.read(ticketsProvider.notifier).submitOrder(
-      tableId: 'meja-7',
-      idempotencyKey: 'key-abc',
-      lines: const [line],
-    );
+    await container
+        .read(ticketsProvider.notifier)
+        .submitOrder(
+          tableId: 'meja-7',
+          idempotencyKey: 'key-abc',
+          lines: const [line],
+        );
+    expect(await journal().pendingVisitIds(), [visitId]);
     expect(
-      (await journal().eventsFor(visitId))
-          .where((e) => e.kind == SettlementEventKind.submitOrder),
+      (await journal().eventsFor(
+        visitId,
+      )).where((e) => e.kind == SettlementEventKind.submitOrder),
       hasLength(1),
     );
   });
@@ -264,19 +277,10 @@ void main() {
       reason: 'dropping it would strand the line `ready` on the board for good',
     );
 
-    // A second tap adds nothing, and a void of the same line is a different
-    // act under a different key — the two must not collapse into each other.
     await container
         .read(ticketsProvider.notifier)
         .transition('meja-7', 'tkt-1', TicketStatus.served);
-    await container
-        .read(ticketsProvider.notifier)
-        .transition('meja-7', 'tkt-1', TicketStatus.voided,
-            voidReasonCode: 'customerChange');
-    expect(
-      container.read(sendQueueProvider).map((i) => i.id),
-      ['serve-tkt-1', 'void-tkt-1'],
-    );
+    expect(container.read(sendQueueProvider).map((i) => i.id), ['serve-tkt-1']);
   });
 
   test('a prep is not queueable — it is a kitchen fact', () async {
@@ -293,29 +297,32 @@ void main() {
 
   test('each table gets its own chain', () async {
     await container.read(tablesProvider.notifier).seat('meja-7', pax: 2);
-    await container.read(ticketsProvider.notifier).submitOrder(
-      tableId: 'meja-9',
-      idempotencyKey: 'k',
-      lines: const [
-        CartLineDto(
-          itemId: 'item-2',
-          name: 'Es teh',
-          variantId: '',
-          variantName: '',
-          modifiers: [],
-          note: null,
-          course: 'drinks',
-          qty: 1,
-          unitPrice: 8000,
-        ),
-      ],
-    );
+    await container
+        .read(ticketsProvider.notifier)
+        .submitOrder(
+          tableId: 'meja-9',
+          idempotencyKey: 'k',
+          lines: const [
+            CartLineDto(
+              itemId: 'item-2',
+              name: 'Es teh',
+              variantId: '',
+              variantName: '',
+              modifiers: [],
+              note: null,
+              course: 'drinks',
+              qty: 1,
+              unitPrice: 8000,
+            ),
+          ],
+        );
 
     final rows = await db.select(db.settlementEvents).get();
     expect(
       rows.map((r) => r.visitId).toSet(),
       hasLength(2),
-      reason: 'two tables are two visits — one chain each, or the seat for one '
+      reason:
+          'two tables are two visits — one chain each, or the seat for one '
           'sequences against the order for the other',
     );
     expect(

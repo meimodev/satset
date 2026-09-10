@@ -274,6 +274,24 @@ void main() {
   Finder actions() => find.textContaining('Cetak tagihan', skipOffstage: false);
   Finder lines() => find.text('ITEM PESANAN', skipOffstage: false);
 
+  testWidgets(
+    'missing history shows known lines without payment or close controls',
+    (tester) async {
+      await pumpBill(
+        tester,
+        tablet: false,
+        fixture: Bill.fromJson({...billJson, 'historyAvailable': false}),
+      );
+      final context = tester.element(find.byType(CashierBillView));
+      final l = AppL10n.of(context);
+      expect(find.text(l.cshHistoryUnavailable), findsOneWidget);
+      expect(find.text('2 × Nasi Goreng'), findsOneWidget);
+      expect(find.text(l.cshKnownSubtotal), findsOneWidget);
+      expect(find.byType(DropdownButtonFormField), findsNothing);
+      expect(find.byType(SettlePane), findsNothing);
+    },
+  );
+
   testWidgets('tablet · per item pays with the selected method', (
     tester,
   ) async {

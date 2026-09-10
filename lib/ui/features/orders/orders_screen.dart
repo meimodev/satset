@@ -45,7 +45,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   Widget build(BuildContext context) {
     final sc = context.sat;
     final l = context.layout;
-    final tickets = ref.watch(ticketsProvider);
+    final tickets = ref.watch(visibleTicketsProvider);
     final tables = ref.watch(tablesProvider);
     final takeaways = {
       for (final v in ref.watch(takeawayVisitsProvider)) v.id: v,

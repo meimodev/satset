@@ -10431,6 +10431,23 @@ class AppL10nId extends AppL10n {
   String sendFailServeRefused(int qty, String name, String reason) {
     return 'Tanda disajikan ×$qty $name ditolak. $reason';
   }
+
+  @override
+  String get cshHistoryUnavailable =>
+      'Riwayat tagihan sebelumnya belum tersedia. Item yang diketahui ditampilkan di bawah. Sambungkan kembali untuk memulihkan tagihan lengkap sebelum menerima pembayaran.';
+
+  @override
+  String get cshKnownSubtotal => 'Subtotal item yang diketahui';
+
+  @override
+  String get cshVisitRefused =>
+      'Kunjungan ini perlu diselesaikan. Tinjau penolakan setelmen sebelum membuat perubahan berikutnya.';
+
+  @override
+  String get capturedLine => 'Tertangkap';
+
+  @override
+  String get cshEmptyBill => 'Belum ada item yang dapat ditagih.';
 }
 
 /// The translations for Indonesian, as used in El Salvador (`id_SV`).

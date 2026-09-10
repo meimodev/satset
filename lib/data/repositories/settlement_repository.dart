@@ -11,6 +11,7 @@ import 'package:satset/data/models/discount_dto.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/discount_presets_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/api_client.dart';
@@ -158,23 +159,36 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     // a cache that predates the settlement it just sent. The next time the
     // till goes dark that bill reads unpaid, and the cashier collects twice.
     final ages = await journal.cacheAges();
-    for (final b in state) {
+    final visits = {
+      for (final b in state) b.visitId,
+      for (final t in ref.read(tablesProvider))
+        if (t.currentVisitId != null) t.currentVisitId!,
+    };
+    try {
+      final active =
+          await ref.read(apiClientProvider).getJson('/settlement/active-visits')
+              as List;
+      visits.addAll(active.map((v) => (v as Map)['visitId'] as String));
+    } catch (_) {
+      // Older hosts still support payable/table discovery.
+    }
+    for (final visitId in visits) {
       if (!shouldRefetchBill(
-        fetchedAt: ages[b.visitId],
+        fetchedAt: ages[visitId],
         now: now,
         // A visit the till is already carrying answers off its own journal; its
         // cache is the base those events apply to and must not be overwritten
         // with a host view that predates them.
-        local: ref.read(settlementJournalProvider).isLocal(b.visitId),
+        local: ref.read(settlementJournalProvider).isLocal(visitId),
       )) {
         continue;
       }
       try {
         final raw = await ref
             .read(apiClientProvider)
-            .getJson('/settlement/visits/${b.visitId}/bill');
-        await journal.cacheBill(
-          b.visitId,
+            .getJson('/settlement/visits/$visitId/bill');
+        await journal.cacheServerBill(
+          visitId,
           (raw as Map).cast<String, dynamic>(),
         );
       } catch (_) {
@@ -197,7 +211,9 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
           .read(apiClientProvider)
           .getJson('/settlement/visits/$visitId/bill');
       final map = (raw as Map).cast<String, dynamic>();
-      await _journal.cacheBill(visitId, map);
+      if (!await _journal.cacheServerBill(visitId, map)) {
+        return _project(visitId);
+      }
       return Bill.fromJson(map);
     } catch (_) {
       // The host went away mid-read. The cached bill is what the cashier was
@@ -211,7 +227,10 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   Future<Bill> _billFrom(Object? raw) async {
     final map = (raw as Map).cast<String, dynamic>();
     final bill = (map['bill'] as Map).cast<String, dynamic>();
-    await _journal.cacheBill(bill['visitId'] as String? ?? '', bill);
+    final visitId = bill['visitId'] as String;
+    if (!await _journal.cacheServerBill(visitId, bill)) {
+      return _project(visitId);
+    }
     return Bill.fromJson(bill);
   }
 
@@ -227,7 +246,9 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   /// after the socket returns, or a live write lands ahead of the queued
   /// events and the projection the cashier is reading becomes a lie.
   Future<bool> _isLocal(String visitId) async {
-    if (ref.read(settlementJournalProvider).isLocal(visitId)) return true;
+    if ((await _journal.eventsFor(visitId)).any((e) => !e.kind.isMemberScope)) {
+      return true;
+    }
     return ref.read(wsConnStateProvider) != WsConnState.open;
   }
 
@@ -248,12 +269,42 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   /// was never cached — a bill this device has never seen cannot be settled
   /// from nothing.
   Future<Bill> _project(String visitId) async {
-    final cached = await _journal.cachedBill(visitId);
+    final source = await _journal.projectionFor(visitId);
+    var cached = source.bill;
     if (cached == null) {
-      throw StateError('no cached bill for $visitId');
+      final table = ref
+          .read(tablesProvider)
+          .where((t) => t.currentVisitId == visitId)
+          .firstOrNull;
+      if (table == null && source.events.isEmpty) {
+        throw StateError('no cached bill for $visitId');
+      }
+      // Display-only: never persisted or treated as proof of an empty history.
+      cached = {
+        ...capturedBillSeed(
+          visitId: visitId,
+          tableId: table?.id ?? source.events.first.tableId ?? '',
+          tableLabel: table?.label,
+          pax: table?.pax ?? 1,
+          openedAt:
+              source.events.firstOrNull?.capturedAt ?? SatClock.now().toUtc(),
+        ),
+        'historyAvailable': false,
+      };
     }
-    final events = await _journal.eventsFor(visitId);
-    return Bill.fromJson(projectBill(cached, events, _projectionConfig()));
+    return Bill.fromJson(
+      projectBill(cached, source.events, _projectionConfig()),
+    );
+  }
+
+  Future<void> _requireCaptureBaseline(String visitId) async {
+    if (await _journal.cachedBill(visitId) == null) {
+      throw const ApiException(
+        409,
+        'Bill history unavailable',
+        'bill_history_unavailable',
+      );
+    }
   }
 
   /// Perform one settlement act, online or captured.
@@ -276,19 +327,47 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     required Future<Object?> Function(String id) online,
     String? id,
   }) async {
+    await _journal.assertWritable(visitId);
     final eventId = id ?? _uuid.v4();
     if (await _isLocal(visitId)) {
       await _capture(visitId, kind, payload, eventId);
       return _project(visitId);
     }
+    final Object? raw;
     try {
-      return await _billFrom(await online(eventId));
+      raw = await online(eventId);
     } on ApiException {
       rethrow;
     } catch (_) {
       await _capture(visitId, kind, payload, eventId);
       return _project(visitId);
     }
+    // Closing returns a confirmation, not a bill. Parsing that response as a
+    // bill used to capture a second close after the host had already closed.
+    if (kind == SettlementEventKind.closeBill &&
+        raw is Map &&
+        raw['closed'] == true) {
+      final source = await _journal.cachedBill(visitId);
+      if (source != null) {
+        final bill = {
+          ...source,
+          'closed': true,
+          'billClosedAt': SatClock.now().toUtc().toIso8601String(),
+        };
+        await _journal.cacheServerBill(visitId, bill);
+        return Bill.fromJson(bill);
+      }
+      return Bill.fromJson({
+        ...capturedBillSeed(
+          visitId: visitId,
+          tableId: '',
+          openedAt: SatClock.now().toUtc(),
+        ),
+        'historyAvailable': false,
+        'billClosedAt': SatClock.now().toUtc().toIso8601String(),
+      });
+    }
+    return _billFrom(raw);
   }
 
   /// The visit a receipt belongs to, off the cached bills.
@@ -328,6 +407,8 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     Map<String, dynamic> payload,
     String id,
   ) async {
+    await _journal.assertWritable(visitId);
+    await _requireCaptureBaseline(visitId);
     try {
       await _journal.append(
         visitId: visitId,
@@ -489,6 +570,7 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   /// visit, replacing table-close. Server stamps `tableFreedAt`; if the bill is
   /// already closed it snapshots + deletes. See ADR-0026.
   Future<void> handover(String visitId) async {
+    await _journal.assertWritable(visitId);
     await ref
         .read(apiClientProvider)
         .postJson('/visits/$visitId/handover', const {});
@@ -663,7 +745,11 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return _actOnReceipt(
       receiptId,
       SettlementEventKind.applyDiscount,
-      {'presetId': presetId, 'ticketId': ?ticketId, ..._presetSnapshot(presetId)},
+      {
+        'presetId': presetId,
+        'ticketId': ?ticketId,
+        ..._presetSnapshot(presetId),
+      },
       (id) => ref
           .read(apiClientProvider)
           .postJson('/settlement/receipts/$receiptId/discounts', {
@@ -944,6 +1030,7 @@ final billDetailProvider = FutureProvider.family.autoDispose<Bill, String>((
   visitId,
 ) async {
   ref.watch(apiConfigProvider);
+  ref.watch(settlementJournalProvider);
   final sub = ref.read(wsClientProvider).events.listen((ev) {
     if ((ev.type == WsEventTypes.billUpdated &&
             ev.payload['visitId'] == visitId) ||

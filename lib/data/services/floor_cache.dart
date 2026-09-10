@@ -97,6 +97,18 @@ class FloorCache {
     });
   }
 
+  /// Reconciliation must persist its floor view before retiring captured acts.
+  Future<void> checkpoint(FloorSlot slot, String Function() encode) async {
+    final prefs = await ref.read(prefsServiceProvider.future);
+    if (prefs.appMode() != AppMode.client) return;
+    _timers.remove(slot)?.cancel();
+    await prefs.setFloorJson(
+      slot.slot,
+      encode(),
+      fingerprint: ref.read(apiConfigProvider)?.trustedFingerprint,
+    );
+  }
+
   /// The floor is live again: whatever was painted from the copy has since
   /// been replaced by the host's own answer.
   void markLive() => restoredAt.value = null;

@@ -17,6 +17,7 @@ import 'package:satset/data/services/settlement_journal.dart';
 import 'package:satset/data/services/settlement_sync.dart';
 import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/venue_table.dart';
+import 'package:satset/domain/models/settlement_event.dart';
 
 /// Outcome of a [TablesRepository.acquireLock] call. Mutually exclusive:
 /// either [acquired] holds the post-write table snapshot, or [conflict] holds
@@ -135,6 +136,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
       );
       return;
     }
+    await _restoreCapturedVisits();
     // Deliberately NOT cleared here. This used to drop stale dummy rows, but
     // it now runs *after* the constructor painted the [[Salinan lantai]], and
     // wiping would re-acquire the empty floor ADR-0133 removed. `_refetch`
@@ -165,6 +167,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
         SatLog.repo(
           'tables.ws update id=${d.id.substring(0, d.id.length.clamp(0, 6))} status=${d.status}',
         );
+        unawaited(_cacheVisitSnapshot(d.currentVisitId));
         final exists = state.any((t) => t.id == d.id);
         state = exists
             ? [
@@ -193,6 +196,15 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     });
   }
 
+  Future<void> _restoreCapturedVisits() async {
+    final journal = ref.read(settlementJournalProvider.notifier);
+    for (final table in [...state]) {
+      if (table.currentVisitId != null) continue;
+      final visitId = await journal.capturedVisitForTable(table.id);
+      if (visitId != null && mounted) seedCurrentVisit(table.id, visitId);
+    }
+  }
+
   @override
   void dispose() {
     _wsSub?.cancel();
@@ -201,13 +213,35 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
 
   /// Pull the authoritative table list and replace state. Shared by the
   /// initial [_bootstrap] and the WS-reconnect [_resync].
-  Future<void> _refetch() async {
+  Future<void> _fetches = Future.value();
+
+  Future<void> _refetch() {
+    final next = _fetches.then((_) => _fetchSnapshot());
+    _fetches = next.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return next;
+  }
+
+  Future<void> checkpointNow() async {
+    await _refetch();
+    await ref
+        .read(floorCacheProvider)
+        .checkpoint(
+          FloorSlot.tables,
+          () => jsonEncode([for (final t in state) _toDto(t).toJson()]),
+        );
+  }
+
+  Future<void> _fetchSnapshot() async {
     final api = ref.read(apiClientProvider);
     final raw = await api.getJson('/tables') as List;
     final dtos = raw
         .map((e) => TableDto.fromJson((e as Map).cast<String, dynamic>()))
         .toList();
     state = [for (final d in dtos) _toDomain(d)];
+    await _restoreCapturedVisits();
+    for (final d in dtos) {
+      unawaited(_cacheVisitSnapshot(d.currentVisitId));
+    }
     // The host answered: whatever the copy painted has been replaced.
     ref.read(floorCacheProvider).markLive();
     SatLog.repo('tables.loaded n=${state.length}');
@@ -291,6 +325,50 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
 
   /// Apply a server-returned [TableDto] to local state. Used both by
   /// REST callers (after a 2xx mutation) and the optimistic-rollback path.
+  final Set<String> _cachingVisits = {};
+
+  Future<void> _cacheVisitSnapshot(String? visitId) async {
+    if (visitId == null ||
+        ref.read(apiConfigProvider) == null ||
+        !_cachingVisits.add(visitId)) {
+      return;
+    }
+    try {
+      final journal = ref.read(settlementJournalProvider.notifier);
+      if ((await journal.eventsFor(
+        visitId,
+      )).any((e) => !e.kind.isMemberScope)) {
+        return;
+      }
+      final ages = await journal.cacheAges();
+      final age = ages[visitId];
+      if (age != null &&
+          SatClock.now().difference(age) < const Duration(minutes: 2)) {
+        return;
+      }
+      final raw = await ref
+          .read(apiClientProvider)
+          .getJson('/settlement/visits/$visitId/bill');
+      await journal.cacheServerBill(
+        visitId,
+        (raw as Map).cast<String, dynamic>(),
+      );
+    } catch (_) {
+      // Capturing orders stays available; missing history blocks settlement.
+    } finally {
+      _cachingVisits.remove(visitId);
+    }
+  }
+
+  Future<void> _assertVisitWritable(String tableId) async {
+    if (ref.read(apiConfigProvider) == null) return;
+    final journal = ref.read(settlementJournalProvider.notifier);
+    final visitId =
+        state.where((t) => t.id == tableId).firstOrNull?.currentVisitId ??
+        await journal.capturedVisitForTable(tableId);
+    if (visitId != null) await journal.assertWritable(visitId);
+  }
+
   void _mergeDto(TableDto d) {
     final merged = _toDomain(d);
     state = [
@@ -339,6 +417,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     String? userName,
     bool acquireLock = false,
   }) async {
+    await _assertVisitWritable(id);
     SatLog.repo(
       'tables.seat id=${id.substring(0, id.length.clamp(0, 6))} pax=$pax acquireLock=$acquireLock',
     );
@@ -395,7 +474,9 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
             'reservationId': ?reservationId,
             if (acquireLock) 'acquireLock': true,
           });
-      _mergeDto(TableDto.fromJson((raw as Map).cast<String, dynamic>()));
+      final dto = TableDto.fromJson((raw as Map).cast<String, dynamic>());
+      _mergeDto(dto);
+      await _cacheVisitSnapshot(dto.currentVisitId);
     } on ApiException catch (e) {
       // Rollback optimistic mutation. On a 409 the server payload carries the
       // current table row — merge it so the UI shows accurate state behind
@@ -479,6 +560,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   }
 
   Future<void> markPending(String id, {String? userId}) async {
+    await _assertVisitWritable(id);
     SatLog.repo(
       'tables.markPending id=${id.substring(0, id.length.clamp(0, 6))}',
     );
@@ -513,6 +595,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   /// the handler a favour, and `lastActorId` now scopes the Pesanan board.
   /// See ADR-0056.
   Future<void> decrementReady(String id) async {
+    await _assertVisitWritable(id);
     SatLog.repo('tables.decReady id=${id.substring(0, id.length.clamp(0, 6))}');
     final prev = state.where((t) => t.id == id).cast<VenueTable?>().firstOrNull;
     if (prev != null) {
@@ -538,6 +621,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
 
   /// Correcting a headcount does **not** claim the table. See ADR-0056.
   Future<void> setPax(String id, int pax) async {
+    await _assertVisitWritable(id);
     SatLog.repo(
       'tables.setPax id=${id.substring(0, id.length.clamp(0, 6))} pax=$pax',
     );
@@ -560,6 +644,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   }
 
   Future<void> setHandler(String id, String userId) async {
+    await _assertVisitWritable(id);
     SatLog.repo(
       'tables.setHandler id=${id.substring(0, id.length.clamp(0, 6))} user=${userId.substring(0, userId.length.clamp(0, 6))}',
     );
@@ -767,6 +852,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   /// UI gates this behind "no live tickets"; server also rejects 409
   /// (no_tickets | tickets_not_terminal) if the bill isn't fully terminal.
   Future<void> closeTable(String id, {String? actorId}) async {
+    await _assertVisitWritable(id);
     SatLog.repo('tables.close id=${id.substring(0, id.length.clamp(0, 6))}');
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
@@ -797,6 +883,7 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   /// Return a seated table to `available` without settling a session. Used
   /// when a guest leaves before placing any order (no tickets to record).
   Future<void> releaseTable(String id, {String? actorId}) async {
+    await _assertVisitWritable(id);
     SatLog.repo('tables.release id=${id.substring(0, id.length.clamp(0, 6))}');
     final cfg = ref.read(apiConfigProvider);
     if (cfg == null) {
@@ -836,6 +923,8 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
     String? actorId,
     String? actorName,
   }) async {
+    await _assertVisitWritable(id);
+    await _assertVisitWritable(targetId);
     SatLog.repo(
       'tables.move src=${id.substring(0, id.length.clamp(0, 6))} dst=${targetId.substring(0, targetId.length.clamp(0, 6))}',
     );

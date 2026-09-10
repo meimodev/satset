@@ -180,8 +180,8 @@ class SettlementEvent {
 
   final String actorId;
 
-  /// `pending` | `parked`. Parked means this visit's chain hit a refusal at or
-  /// before this event and it has not been offered.
+  /// `pending` | `acknowledged` | `parked`. Acknowledged effects remain until
+  /// the host snapshot is durable. Parked means a refusal halted this chain.
   final String status;
 
   /// The host's refusal `code`, on the one event that was actually refused.
@@ -199,6 +199,8 @@ class SettlementEvent {
     this.status = 'pending',
     this.failCode,
   });
+
+  bool get isAcknowledged => status == 'acknowledged';
 
   bool get isParked => status == 'parked';
 
