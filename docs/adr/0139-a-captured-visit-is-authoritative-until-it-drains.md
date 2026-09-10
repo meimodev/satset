@@ -2,6 +2,10 @@
 
 **Status:** Accepted — 2026-09-08 — **amends** [0090](0090-an-offline-order-is-an-intent-not-a-row.md) and [0123](0123-an-offline-settlement-is-a-journal-not-an-intent.md).
 
+**Clarified by [ADR-0140](0140-missing-bill-history-is-not-an-empty-bill.md):** an adopted visit with missing earlier bill history continues to capture orders, but cannot take payment or close until that history is recovered. A stale cached bill remains usable.
+
+**Clarified by [ADR-0141](0141-a-refused-visit-stays-read-only-until-resolved.md):** an explicit host refusal makes the affected visit read-only until resolution; transport interruption alone does not.
+
 ADR-0090 drew a line through the middle of a [[Visit]]: an offline order is an
 **intent**, never a row, and — in as many words — *"a bill must not be able to
 reach it."* ADR-0123 then moved money to the other side of that line: a

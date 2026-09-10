@@ -669,6 +669,8 @@ A [[Visit]] whose [[Antrean setelmen]] is non-empty. Every act on it **appends t
 
 A [[Visit]] a device minted, or adopted, while it could not reach the host, and which it **owns end to end until its chain drains** (ADR-0139) — seated, ordered onto, voided from, discounted, paid, closed and printed, all dark. Broader than a [[Tagihan tertunda]], which is the money half of one; a kunjungan tertangkap may hold no money at all and still be authoritative, because it holds food. Its id is **client-minted**, which is what lets a struk name it and a payment reference it before the host has heard of it. Two dark devices can each mint one for the same table: both land, as two visits, resolved by a human — never swallowed (ADR-0116's posture, one layer down). A settled one never claims `currentVisitId`; an unsettled one yields to a live visit and lands **table-less**, visible on `/kasir`. _Avoid_: "visit lokal" (it is not a private copy — it is the venue's visit, held); reading it as a draft; letting a replay displace a live visit from its table.
 
+For an adopted visit whose earlier bill history is unavailable, the device still captures and shows orders, but cannot take payment or close the bill until that history is recovered. Missing history is distinct from an empty bill and from a stale bill whose history is known; see [ADR-0140](docs/adr/0140-missing-bill-history-is-not-an-empty-bill.md).
+
 ### Baris tertangkap (captured line)
 **ID · EN** — Baris tertangkap · Captured line.
 
@@ -678,6 +680,8 @@ A line keyed onto a [[Kunjungan tertangkap]] and not yet delivered. It is an **o
 **ID · EN** — Hasil setelmen · Settlement result.
 
 What the host answered when an [[Antrean setelmen]] chain drained. Refusal is **on contradiction, never on staleness**: a bill that grew while the kasir was dark settles short and is still a correct bill with an outstanding; only a fact that contradicts a captured event (the [[Visit]] already [[Bill close (Tutup tagihan)|closed]] by someone else, the receipt gone, the line voided, the redeem over balance) refuses. A refusal **halts that visit's chain** and parks the rest untried — a refund whose payment was refused must never land — while other visits keep draining. Surfaced heavier than a [[Hasil pengiriman]], because the cash is already collected: a blocking sheet on the [[Cashier|kasir]] screen naming the visit, what landed, what is parked, and the rupiah delta; acknowledging it writes an [[Audit]] row. _Avoid_: auto-retrying a refusal; refusing a payment merely because the bill has since grown.
+
+An unresolved host refusal makes the affected visit read-only: its lines, captured money and refusal details remain available, but no new acts may be captured until resolution. A network interruption alone does not impose that restriction, and other visits remain usable; see [ADR-0141](docs/adr/0141-a-refused-visit-stays-read-only-until-resolved.md).
 
 ### Salinan lantai (floor copy)
 **ID · EN** — Salinan lantai · Floor copy.
