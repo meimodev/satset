@@ -73,6 +73,16 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     return null;
   }
 
+  Future<Response?> requireBillRead(Request req) async {
+    if (await resolve(req) == null) return Response(401);
+    final caps = await capsOf(req);
+    if (caps.contains(Capability.settleBill.name) ||
+        caps.contains(Capability.takeOrder.name)) {
+      return null;
+    }
+    return _err(403, 'forbidden', 'missing bill read capability');
+  }
+
   Future<void> broadcastBill(String visitId) async {
     final bill = await _buildBill(db, visitId);
     if (bill != null) hub.broadcast(WsEventTypes.billUpdated, bill);
@@ -402,14 +412,26 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   });
 
   // Full bill detail for one visit.
+  // Snapshot discovery includes empty visits; payable membership does not.
+  r.get('/settlement/active-visits', (Request req) async {
+    final denied = await requireBillRead(req);
+    if (denied != null) return denied;
+    final visits = await (db.select(
+      db.visits,
+    )..where((v) => v.billClosedAt.isNull())).get();
+    return _ok([
+      for (final v in visits) {'visitId': v.id},
+    ]);
+  });
+
   r.get('/settlement/visits/<visitId>/bill', (
     Request req,
     String visitId,
   ) async {
-    final denied = await requireCap(req, Capability.settleBill);
+    final denied = await requireBillRead(req);
     if (denied != null) return denied;
-    final bill = await _buildBill(db, visitId);
-    if (bill == null) return _err(404, 'no_bill', 'visit has no sent lines');
+    final bill = await _buildBill(db, visitId, allowEmpty: true);
+    if (bill == null) return _err(404, 'no_visit', 'visit not found');
     return _ok(bill);
   });
 
@@ -2707,11 +2729,15 @@ Future<void> _audit(
 );
 
 /// Build the full bill JSON for one visit, or null if it has no sent lines.
-Future<Map<String, dynamic>?> _buildBill(AppDatabase db, String visitId) async {
+Future<Map<String, dynamic>?> _buildBill(
+  AppDatabase db,
+  String visitId, {
+  bool allowEmpty = false,
+}) async {
   final visit = await _visit(db, visitId);
   if (visit == null) return null;
   final tickets = await _sentTickets(db, visitId);
-  if (tickets.isEmpty) return null;
+  if (tickets.isEmpty && !allowEmpty) return null;
   final cfg = await _config(db);
   final billSub = tickets.fold<int>(0, (a, t) => a + t.price * t.qty);
 

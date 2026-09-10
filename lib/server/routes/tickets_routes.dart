@@ -251,18 +251,9 @@ Future<SubmitOrderResult> submitOrder(
   String? idPrefix,
 }) async {
   final stamp = at ?? SatClock.now();
-  // **Is this a replay of food already eaten?** (ADR-0139 §3)
-  //
-  // Deliberately not `capturedAt != null` alone. What this opens is not small —
-  // a replay names its own visit and ticket ids and is filed without a stock
-  // check — and hanging that on a bare client field means a wrong clock, a real
-  // failure mode on cheap Android hardware rather than a hypothetical, silently
-  // disabling a venue-wide control with nobody seeing an error. A genuine
-  // backlog is minutes to hours old; a live caller stamping "now" gets ordinary
-  // enforcement and its ids ignored.
-  //
-  // Resolved here rather than inside the transaction because the **visit id**
-  // is the first thing it gates, and that is decided before any line is read.
+  // Historical captures may record food already eaten despite depleted stock.
+  // Fresh captures keep ordinary stock enforcement. Stable client identities
+  // are independent of this age threshold, including a reconnect in seconds.
   final replayingHistory =
       capturedAt != null &&
       stamp.difference(capturedAt) >= kCapturedReplayFloor;
@@ -324,7 +315,7 @@ Future<SubmitOrderResult> submitOrder(
         db,
         tableId,
         actorId: actorId,
-        visitId: replayingHistory ? capturedVisitId : null,
+        visitId: capturedAt != null ? capturedVisitId : null,
         at: capturedAt,
       );
     }
@@ -385,7 +376,7 @@ Future<SubmitOrderResult> submitOrder(
       // discounted and voided on a bill before this server has heard of it
       // (ADR-0139 §2). Honoured only on a replay, and only when it does not
       // collide — the same rule the visit id gets one level up.
-      final wireTicketId = replayingHistory
+      final wireTicketId = capturedAt != null
           ? (l['ticketId'] as String?)?.trim()
           : null;
       final id = (wireTicketId != null && wireTicketId.isNotEmpty)
@@ -690,8 +681,8 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       // append target for a Bawa pulang, and a [[Kunjungan tertangkap]]'s own
       // id for a dine-in replay (ADR-0139 §2). One field because it is one
       // question: *which visit are these lines for*. The dine-in reading is
-      // additionally gated on a past-dated `capturedAt`, so a live caller
-      // naming a visit id is ignored rather than obeyed.
+      // gated on `capturedAt`; identity survives even a brief disconnect.
+      // A caller without a capture timestamp keeps ordinary server-minted IDs.
       capturedVisitId: takeaway ? null : appendVisitId,
       actorId: actorId,
       canOverrideStock: canOverrideStock,

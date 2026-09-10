@@ -7,9 +7,8 @@
 // visit that does not exist, every one of them 404s, and the chain parks with
 // the cash already in a drawer. That is the failure these pin.
 //
-// The switch throughout is a **past-dated `capturedAt`**, never the mere
-// presence of a client field: a live caller naming a primary key, or skipping a
-// stock check, is ignored rather than obeyed.
+// Captures preserve identity immediately; only historical captures bypass
+// current stock availability. A brief reconnect must preserve both contracts.
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,7 +25,10 @@ void main() {
     await db
         .into(db.venueSettings)
         .insertOnConflictUpdate(
-          VenueSettingsCompanion.insert(id: 'default', modules: const Value('')),
+          VenueSettingsCompanion.insert(
+            id: 'default',
+            modules: const Value(''),
+          ),
         );
     for (final id in ['t1', 't2']) {
       await db
@@ -62,7 +64,8 @@ void main() {
     },
   ];
 
-  DateTime longAgo() => DateTime.now().toUtc().subtract(const Duration(hours: 2));
+  DateTime longAgo() =>
+      DateTime.now().toUtc().subtract(const Duration(hours: 2));
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
@@ -219,7 +222,8 @@ void main() {
       expect(
         res.rejected,
         isEmpty,
-        reason: 'the guest ate it and paid for it — refusing now leaves money '
+        reason:
+            'the guest ate it and paid for it — refusing now leaves money '
             'collected against a line in no ledger',
       );
       expect(await db.select(db.tickets).get(), hasLength(1));
@@ -242,7 +246,8 @@ void main() {
       expect(
         dark,
         hasLength(1),
-        reason: 'negative stock with no explanation is a bug report; naming '
+        reason:
+            'negative stock with no explanation is a bug report; naming '
             'the item and the moment makes it a reconciliation',
       );
     });
@@ -287,7 +292,7 @@ void main() {
       expect(t, isEmpty);
     });
 
-    test('and cannot name its own visit either', () async {
+    test('a quick reconnect preserves visit and ticket identities', () async {
       await submitOrder(
         db,
         tableId: 't1',
@@ -297,7 +302,8 @@ void main() {
         capturedAt: DateTime.now().toUtc(),
       );
       final v = await db.select(db.visits).getSingle();
-      expect(v.id, isNot('captured-v1'));
+      expect(v.id, 'captured-v1');
+      expect((await db.select(db.tickets).getSingle()).id, 'client-ticket-1');
     });
   });
 

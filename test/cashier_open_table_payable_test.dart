@@ -9,6 +9,7 @@
 // filter on `tableFreedAt` would look like a tidy-up and silently hide every
 // live bill from the till.
 import 'dart:convert';
+import 'package:satset/domain/models/capability.dart';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -18,6 +19,7 @@ import 'package:shelf/shelf.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/routes/settlement_routes.dart';
 import 'package:satset/server/routes/tickets_routes.dart';
+import 'package:satset/server/routes/tables_routes.dart';
 import 'package:satset/server/ws_hub.dart';
 
 import 'support/route_auth.dart';
@@ -32,6 +34,109 @@ void main() {
     caller = await signInForTest(db);
   });
   tearDown(() => db.close());
+
+  test('an empty seated visit has a snapshot but is not payable', () async {
+    await db
+        .into(db.venueTables)
+        .insert(
+          VenueTablesCompanion.insert(
+            id: 't1',
+            zoneId: 'z1',
+            label: const Value('T1'),
+          ),
+        );
+    final visitId = await ensureVisit(db, 't1');
+    await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
+      const VisitsCompanion(memberId: Value('reserved-member')),
+    );
+    final router = settlementRoutes(db, hub, caller.auth);
+    final response = await router(
+      Request(
+        'GET',
+        Uri.parse('http://x/settlement/visits/$visitId/bill'),
+        headers: caller.headers,
+      ),
+    );
+    expect(response.statusCode, 200);
+    final bill = jsonDecode(await response.readAsString()) as Map;
+    expect(bill['visitId'], visitId);
+    expect(bill['lines'], isEmpty);
+    expect(bill['total'], 0);
+    expect(bill['memberId'], 'reserved-member');
+    final active = await router(
+      Request(
+        'GET',
+        Uri.parse('http://x/settlement/active-visits'),
+        headers: caller.headers,
+      ),
+    );
+    expect(jsonDecode(await active.readAsString()), [
+      {'visitId': visitId},
+    ]);
+    final close = await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/visits/$visitId/bill-close'),
+        headers: caller.headers,
+        body: '{}',
+      ),
+    );
+    expect(close.statusCode, 409);
+    expect((jsonDecode(await close.readAsString()) as Map)['code'], 'no_lines');
+    final payable = await router(
+      Request(
+        'GET',
+        Uri.parse('http://x/settlement/payable'),
+        headers: caller.headers,
+      ),
+    );
+    expect(jsonDecode(await payable.readAsString()), isEmpty);
+    final missing = await router(
+      Request(
+        'GET',
+        Uri.parse('http://x/settlement/visits/missing/bill'),
+        headers: caller.headers,
+      ),
+    );
+    expect(missing.statusCode, 404);
+  });
+
+  test(
+    'order-taking staff can checkpoint bills but cannot collect payments',
+    () async {
+      final waiter = await signInForTest(
+        db,
+        caps: {Capability.takeOrder},
+        userId: 'waiter',
+      );
+      final router = settlementRoutes(db, hub, waiter.auth);
+      await db
+          .into(db.venueTables)
+          .insert(VenueTablesCompanion.insert(id: 't', zoneId: 'z'));
+      final visit = await ensureVisit(db, 't');
+      final bill = await router(
+        Request(
+          'GET',
+          Uri.parse('http://x/settlement/visits/$visit/bill'),
+          headers: waiter.headers,
+        ),
+      );
+      expect(bill.statusCode, 200);
+      final pay = await router(
+        Request(
+          'POST',
+          Uri.parse('http://x/settlement/receipts/r/payments'),
+          headers: waiter.headers,
+          body: '{}',
+        ),
+      );
+      expect(pay.statusCode, 403);
+      final anonymous = await router(
+        Request('GET', Uri.parse('http://x/settlement/visits/$visit/bill')),
+      );
+      expect(anonymous.statusCode, 401);
+    },
+  );
 
   test('an occupied table with a sent line is payable', () async {
     final router = settlementRoutes(db, hub, caller.auth);
