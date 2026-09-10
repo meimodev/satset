@@ -1,0 +1,61 @@
+# Android background LAN host: platform research
+
+Researched 2026-09-09 against current Android primary documentation. Scope: SatSet's Android restaurant host, documented minimum API 29 and current target API 36; planning evidence, no implementation changes. Repository observations and the chosen design are in the [implementation plan](/Users/edotanod/IdeaProjects/satset/docs/plans/android-background-server.md). Verify the effective minimum in the merged manifest during implementation.
+
+## Recommendation and confidence
+
+Use a real, user-started `connectedDevice` foreground service (FGS), an engine/runtime lifecycle independent of the Activity, truthful service notification, explicit server-session power ownership, and recoverable persisted state. A separate Flutter engine is an implementation option, not an Android platform requirement. The platform requirement is meaningful work owned by an active component, with the backend restored after process recreation.
+
+No documented mechanism makes a normal Android app immortal. Evaluate survival, recovery, and order correctness separately. A cached engine is an in-process retention mechanism, not durable persistence.
+
+## Service classification and launch
+
+`connectedDevice` covers interactions with external devices over network connections. This is a strong fit for SatSet's waiter/kitchen devices communicating with the host; that fit is our inference, since the documentation does not give a restaurant-server example. Declare `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE`, and `android:foregroundServiceType="connectedDevice"`. On API 34+, applicable prerequisites are enforced: an existing legitimate `CHANGE_WIFI_MULTICAST_STATE` declaration satisfies one listed prerequisite. Do not add unrelated Bluetooth permissions just to qualify. `specialUse` is for valid cases not covered by other types, requires a descriptive manifest property, and attracts Play review if published. It is not the preferred type here. [FGS types](https://developer.android.com/develop/background-work/services/fgs/service-types)
+
+For target 35+ on Android 15+, `dataSync` has a shared six-hour allowance per 24 hours while backgrounded. Exhaustion triggers `onTimeout`; failure to stop promptly produces a fatal failure. The documented six-hour limit applies to `dataSync` and `mediaProcessing`, not `connectedDevice`. This means no such documented quota for the proposed type, not guaranteed indefinite execution. [Timeout behavior](https://developer.android.com/develop/background-work/services/fgs/timeout)
+
+Start the service from the visible server-enable flow. Android 12+ restricts fresh background starts, with defined exemptions including user interaction, boot broadcasts, battery-optimization exemption, and certain device-management roles. Catch start failures and expose them; never leave the UI claiming successful hosting. Boot exemptions still have type-specific restrictions. [Background-start restrictions](https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start)
+
+Promote promptly inside the service using `ServiceCompat.startForeground`, a positive notification ID, the actual declared type, and low-or-higher notification priority. Show “Starting server” before expensive initialization and “Ready” only after runtime readiness. Service creation by itself is not foreground promotion. [Launch guidance](https://developer.android.com/develop/background-work/services/fgs/launch)
+
+## What a persistent notification does
+
+Request `POST_NOTIFICATIONS` on Android 13+ when server mode is enabled so the operator can see server state. Permission denial does not prohibit FGS startup: a notification must still be supplied, but the system exposes the running service through Task Manager instead of the notification drawer. Therefore notification permission is an operator-visibility concern, not an Android execution prerequisite. [Notification permission](https://developer.android.com/develop/ui/compose/notifications/notification-permission)
+
+`setOngoing(true)` no longer means universally non-dismissible: Android 14 permits individual dismissal when unlocked, with exceptions such as the locked screen and Clear all. Do not promise a permanently pinned notification or equate visibility with health. Android 14 also enforces suspension of cached-process work; an Activity-only background server is not an appropriate lifecycle design. [Android 14 changes](https://developer.android.com/about/versions/14/behavior-changes-all)
+
+Recommended SatSet content: “Starting”, “Ready to receive orders”, or “Network unavailable”; show connected-device count only if sourced from actual live sessions. Offer Open SatSet; keep deliberate stop inside the existing authenticated app flow, as selected by the implementation plan. Remove the ongoing service notification after shutdown. Keep local readiness distinct from evidence that a remote client can reach the host.
+
+## Screen-off power and networking
+
+Doze can suspend networking and ignore ordinary wake locks. Battery-optimization exemption permits network access and partial wake locks during Doze, but is not exemption from every Android rule. Check `isIgnoringBatteryOptimizations()`, explain the host's screen-off role, and offer battery settings. Direct exemption requests are reserved for qualifying core-function failures; offline LAN hosting cannot use internet-dependent FCM to receive its orders, which supports the rationale but is not an explicit restaurant approval. Normal charging exits Doze. [Doze guidance](https://developer.android.com/training/monitoring-device-state/doze-standby)
+
+For this always-listening host, a partial CPU wake lock is defensible during an explicitly enabled hosting session, because it must answer unsolicited LAN traffic even when the screen is off. Treat this as a deliberate power tradeoff, not a free reliability switch. Hold it in the service, use a stable diagnostic tag, and release on every normal stop and failed-start path. Avoid complicated renewal timers that accidentally expire in the middle of a shift. Validate the smallest necessary holding period on actual hardware. [Wake-lock practices](https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/best-practices)
+
+Do not use generic “acquire a Wi-Fi lock” advice as a modern screen-off fix. `WIFI_MODE_FULL` is nonfunctional from API 29. `WIFI_MODE_FULL_HIGH_PERF` was deprecated in API 34 and maps to `WIFI_MODE_FULL_LOW_LATENCY`; low latency requires an AP connection, screen on, and the acquiring app in the foreground. The reference retains historical high-performance text, but its deprecation paragraph explicitly states the replacement restrictions. A legacy-device-specific experiment can be considered only if measured failures justify it. [WifiManager constants](https://developer.android.com/reference/android/net/wifi/WifiManager#WIFI_MODE_FULL_HIGH_PERF)
+
+A `MulticastLock` is different: it allows receiving Wi-Fi multicast packets otherwise filtered by the Wi-Fi stack. It may be needed for raw mDNS discovery, depending on the actual discovery implementation. It does not preserve the CPU, the Dart engine, or the service. Acquire only where required and release when discovery/hosting ends. [MulticastLock reference](https://developer.android.com/reference/android/net/wifi/WifiManager.MulticastLock)
+
+A plugged-in host is operationally preferable, with battery behavior still tested for charger loss. WorkManager is unsuitable for owning an always-listening server: it uses JobScheduler and inherits scheduling limits. Android 16 also applies job quotas while an FGS runs; an FGS is not a quota bypass for scheduled workers. [Power resource limits](https://developer.android.com/topic/performance/power/power-details)
+
+## Recovery, stopping, and reboot
+
+`START_STICKY` asks Android to recreate a killed started service; recreation can deliver a null intent. Android 12's background-start restriction does not block the system's sticky FGS restart. Rebuild real runtime state from durable configuration in that path, tolerate repeated starts, and guarantee one listener/database owner. Removal from Recents is distinct from stopping the service; `stopWithTask` controls whether it is stopped with the task. Recovery timing is not guaranteed. [Service lifecycle](https://developer.android.com/reference/android/app/Service#START_STICKY)
+
+Android 13's Active apps Stop action terminates the entire app without a cleanup callback. Scheduled jobs and alarms remain scheduled. Inspect `ApplicationExitInfo.REASON_USER_REQUESTED` on later startup where available, and do not install watchdog loops intended to undo explicit stop. [User-initiated FGS stopping](https://developer.android.com/develop/background-work/services/fgs/handle-user-stopping)
+
+Settings Force stop puts the package into a stopped state until user interaction; Android 15 additionally cancels pending intents. It is not equivalent to memory-pressure death or Recents dismissal. Include it as an expected-offline case, not an auto-recovery acceptance test. [Android 15 stopped-state behavior](https://developer.android.com/about/versions/15/behavior-changes-all#stopped-state)
+
+Reboot recovery is a separate opt-in feature. Prefer normal boot/unlock recovery after durable configuration is available. Credential-encrypted storage is unavailable before first unlock; `LOCKED_BOOT_COMPLETED` requires Direct Boot-aware components and appropriately stored data. Do not move passwords or authorization tokens into device-protected storage merely to start earlier. Locking the screen after the first unlock does not remove access to credential-encrypted storage. [Direct Boot](https://developer.android.com/privacy-and-security/direct-boot)
+
+## Latest target considerations
+
+Android 17 is released, not merely a future preview. When SatSet targets 37+, `ACCESS_LOCAL_NETWORK` runtime permission becomes relevant to incoming TCP, UDP/multicast, and direct discovery. Permission denial/revocation must become an explicit server-start failure. Current target 36 retains LAN access through `INTERNET`; official guidance specifically says not to declare/request the new permission until targeting 37. Android 16 has an opt-in compatibility test using `RESTRICT_LOCAL_NETWORK` and temporary `NEARBY_WIFI_DEVICES` permission. Broad direct listening makes the new permission more suitable than a device picker for this host. [Local network permission](https://developer.android.com/privacy-and-security/local-network-permission), [Android 17 release](https://android-developers.googleblog.com/2026/06/Android-17.html)
+
+Android 17 introduces per-app memory limits based on device RAM, applicable regardless of target. Establish a release-build memory baseline and look for growth across a full shift, especially if deciding between one retained engine and two engines. Exit diagnostics can expose `MemoryLimiter:AnonSwap`. [Android 17 memory limits](https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits)
+
+## Proposed acceptance evidence
+
+Run release APKs on the actual restaurant device plus API 29, 31, 33, 34, 35, 36, and 37 where practical. Test screen locked, another app visible, Activity recreation, Recents dismissal, real process termination and sticky recreation, notification denial/dismissal, Wi-Fi/router loss and reconnection, DHCP address change, battery optimization enabled/exempted, forced Doze, and charger disconnect. Test force stop and Active apps Stop as intentional offline states. If reboot restart is offered, test reboot before/after unlock separately.
+
+Use a second device to continuously exercise health, WebSocket reconnection, and uniquely identified order submission for a 12–24-hour soak. Verify no acknowledged order loss, no duplicate retry effects, restored state after restart, bounded reconnection delay, exactly one host listener, truthful notification state, and stable memory/power use. A surviving notification is insufficient evidence. Record manufacturer/OS build and repeat on the chosen production model; platform documentation alone cannot certify a device's practical availability.
