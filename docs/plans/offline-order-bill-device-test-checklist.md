@@ -1,7 +1,315 @@
 # Offline orders and bill settlement — on-device test checklist
 
 Created: 2026-09-11  
-Status: **Paused at user request — current replay blocked by unreachable Xiaomi, 2026-09-12**
+Status: **2026-09-16: DEV-05/25 R2 passed; DEV-09 display failure confirmed, replay verified; overall acceptance incomplete**
+
+### Continuation — 2026-09-16
+
+- **Latest DEV-09 R2 result — Fail (delivery-state display); replay checks
+  succeeded:** Used new D2 visit `6b3f7b3f-d02f-41ba-b191-43b4db0f4b2c`.
+  Online baseline Air Mineral ticket `d937895d-6dbe-41d7-9436-77d5252c0bba`,
+  qty 1, price 15000, `drinks-now`, captured `1789556196`, was confirmed in
+  the full bill cache before offline capture. Disabled both client networks.
+  Captured order `0a362d6d-4103-4bf4-be60-7f4334a56df7` at `1789556382`:
+  Lumpia `76151dfb-f6a2-48ca-a68b-47cefeb85e01`, qty 2 × 55000,
+  `starters`, note `TESTDEV09_no_sauce`; chicken
+  `a6125b6f-88a7-48d1-98b8-ae40b63e060f`, qty 1 × 95000, `mains`,
+  half / `Setengah`, modifier `spice/no` / `Tidak pedas`, delta 0.
+  Table detail and bill preserved quantities, note, variant and modifier, and
+  table detail preserved separate courses. Offline bill total/due 220000,
+  paid 0. Host read-only inspection found only the original drink before replay.
+- **DEV-09 first unexpected state:** Pending lines in table detail showed both
+  `Tertangkap` and `TERKIRIM`. Orders showed one row per ticket with correct
+  quantity/variant/modifier, but pending rows had only `TERKIRIM`, no captured
+  badge, and raw ISO capture-time strings. The Lumpia note was not displayed
+  in the Orders summary row (it remained visible in table detail and bill).
+  This repeats the earlier delivery-copy defect with the complete different-
+  course/quantity/modifier/note fixture. No full DEV-09 pass claimed.
+- **DEV-09 replay:** Kept Orders open during reconnect. Journal drained;
+  Orders retained three D2 rows, without duplication or missing lines. Table
+  and bill removed the captured badges. Xiaomi retained all three original
+  ticket IDs, baseline unchanged, quantities 1/2/1, courses
+  `drinks-now`/`starters`/`mains`, exact note/modifier/variant/prices,
+  P1 (`seed-waiter`) author, and original capture epochs. Durable bill remains
+  total 220000, paid 0, due 220000. A second disconnect/reconnect retained
+  exactly three host tickets, four units and total 220000; journal stayed empty.
+  Evidence: [offline table](evidence/offline-device-20260916/dev09-d2-table-offline.png),
+  [offline bill](evidence/offline-device-20260916/dev09-d2-bill-offline.png),
+  [offline Orders](evidence/offline-device-20260916/dev09-d2-orders-offline.png),
+  [reconciled Orders](evidence/offline-device-20260916/dev09-d2-orders-reconciled.png),
+  [reconciled table](evidence/offline-device-20260916/dev09-d2-table-reconciled.png),
+  [reconciled bill](evidence/offline-device-20260916/dev09-d2-bill-reconciled.png).
+  No payment/refund/expense was captured for D2; R2 simulated cash stays
+  Rp400,000. D2 remains open and unpaid. Both client networks restored.
+
+- **Latest checkpoint / DEV-05 R2 passed (paid-history case):** Prepared D1 visit
+  `b79096af-1328-42f5-a914-349144f85c01` online with original ticket
+  `8dcc3b1a-fddc-4451-8906-4efc3a90583e`, 10 × Krupuk at 15000 = 150000,
+  course `mains`. Original receipt `d724d6e7-4c88-45f0-8571-adde55941b85` and
+  payment `18bf558e-ad73-403c-983b-be7793cc57c3`, amount 150000, capture epoch
+  `1789539245`, were cached as fully paid; bill explicitly left open.
+  Automatic approval review interrupted the next device command with a usage
+  limit; it did not execute. On user continuation, the baseline was re-read.
+  Disabled both client networks and captured one additional Krupuk with order
+  event `734aa3ea-93b4-44e3-bc96-7dc7b6c32931` at `1789554640`, ticket
+  `869f6666-ffe1-4b9f-abd1-e78187567cab`, qty 1, unit price 15000, `mains`.
+  Table showed original ×10 plus captured ×1. Bill correctly showed total
+  165000, paid 150000, due 15000. Captured only the extra 15000 as payment
+  `90a11f2c-8376-4bee-9572-82b006071660`, receipt
+  `c49234e3-ddf2-4d8e-b989-8cd12e6dece6`, both at `1789554705`.
+  All three pending event IDs survived offline force-stop/relaunch unchanged;
+  recovered bill showed paid 165000/due 0 with recollection disabled. Orders
+  displayed both the ×10 and ×1 rows before replay. Xiaomi still had only the
+  original ×10 ticket and original 150000 payment before reconnection.
+- **Address-change recovery during DEV-05:** Xiaomi moved from `192.168.1.28`
+  to `192.168.1.4` while testing was interrupted. Reconnected via normal
+  staff sign-out, `Ubah server`, manual pairing and P1 PIN login. Source
+  inspection confirmed sign-out clears session credentials, not the journal;
+  read-only inspection after pairing confirmed all three events still pending.
+  No storage clearing or TLS/auth bypass. Replay drained the journal. After a
+  second disconnect/reconnect, host contained exactly the original ×10 ticket
+  and new ×1 ticket, original 150000 payment at `1789539245`, plus new 15000
+  payment at `1789554705`, all IDs unchanged. Durable bill total/paid 165000,
+  outstanding 0, `billClosedAt=null`; Orders retained exactly two D1 rows.
+  Evidence: [before extra payment](evidence/offline-device-20260916/dev05-d1-before-extra-payment.png),
+  [offline Orders](evidence/offline-device-20260916/dev05-d1-orders-offline.png),
+  [paid after restart](evidence/offline-device-20260916/dev05-d1-paid-after-restart.png),
+  [reconciled bill](evidence/offline-device-20260916/dev05-d1-reconciled.png),
+  [reconciled Orders](evidence/offline-device-20260916/dev05-d1-orders-reconciled.png).
+- **Current handoff:** Both client networks enabled; P1 connected to Xiaomi
+  `192.168.1.4:7443`; journal empty. D1 paid/open 165000, D6 paid/open 70000,
+  earlier D3/D4/D5 total 165000 unchanged. R2 gross/net simulated cash now
+  **Rp400,000**, no R2 refund/expense/payment removal. R1 unresolved evidence
+  remains separate. DEV-05 and DEV-25 case-specific results below supersede
+  their historical R1 incomplete rows; other cases and overall acceptance
+  remain incomplete. The known misleading offline `TERKIRIM` label persists;
+  these case passes do not resolve that separate UI failure or the earlier
+  DEV-10/26/33 failures. No application source changes made.
+
+| R2 case | Result on 2026-09-16 | Direct host / durable client evidence |
+|---|---|---|
+| DEV-05 | Pass — paid-history case steps | Original ×10 / 150000 retained; new ×1 / 15000 once; total/paid 165000, due 0; restart and second reconnect stable; Orders inspected |
+| DEV-25 | Pass — transport case steps | Two separate offline orders and 70000 payment captured without refusal; original IDs replayed once; restart and second reconnect stable; journal empty |
+| DEV-09 | Fail — captured-versus-delivered display | Offline Orders labels pending work `TERKIRIM` without a captured badge; host-echo deduplication, full ticket payload preservation and Rp220000 bill agreement succeeded |
+
+- **Host restored / DEV-25 passed (transport case):** After user signed in,
+  changed client server through normal `Ubah server` / manual pairing from
+  `192.168.1.10` to `192.168.1.28:7443`, then signed in as P1 using the test
+  PIN. No TLS/auth bypass or storage clearing. Online-seated D6 visit
+  `f103f3a2-817d-40d5-90c1-74966d8b1474` acquired a complete zero-total cache
+  before its bill was opened. Disabled both client networks. Captured two
+  separate orders without a refusal lock: `91e5c7e1-71f1-457c-8359-a573136fb394`
+  at `1789538691` for Lumpia ticket `f956ca5d-8c95-4d95-b0eb-43f83de3ec15`
+  (qty 1, 55000, `starters`), then `c6844ecb-3d8c-4010-8f8e-4fb9d376a61d`
+  at `1789538730` for Air Mineral ticket `91a24dd7-bbe4-4c4f-b051-6dc5e7f78de4`
+  (qty 1, 15000, `drinks-now`). Host had zero D6 tickets before reconnect.
+  Captured receipt `7ef56b9e-dfa2-4277-b904-3af99bd36071` and simulated cash
+  payment `7153d487-bb65-4a2a-a34a-3bf41fdc9fda` for 70000 at `1789538810`.
+  Chose `Biarkan terbuka`. All four original IDs/timestamps survived offline
+  force-stop/relaunch; bill paid 70000/due 0, recollection disabled. Reconnect
+  drained journal and retained these exact two host ticket IDs/courses plus
+  original payment ID/amount/time. Second reconnect host counts remained two
+  tickets (qty total 2), one payment totaling 70000; journal remained empty.
+  Orders showed exactly one D6 row for each item. Case-specific transport,
+  durable capture and replay expectations passed. Existing misleading offline
+  `TERKIRIM` copy remains reproduced, and global acceptance remains incomplete.
+  Evidence: [paid offline](evidence/offline-device-20260916/dev25-d6-paid-offline.png) and
+  [reconciled Orders](evidence/offline-device-20260916/dev25-d6-orders-reconciled.png).
+  D6 remains paid/open. At this checkpoint, R2 recorded simulated
+  cash now totals Rp235,000; no refunds or expenses added.
+
+- Started existing `Medium_Phone` / `emulator-5554` with `-no-snapshot-load`,
+  without clearing data. Xiaomi `23073RPBFG` is reachable through ADB at
+  `192.168.1.28:42557`. Both retain `id.activid.satset`; client displays
+  version `1.0.9 (10)` and recovered the P1 session and D3/D4/D5 paid tables.
+- **Installed build pair verified:** Both APKs have SHA-256
+  `c9d108810123420dbad720b9829c98855f6a507340160c4e83c287b69eb2f267`.
+  This establishes identical installed host/client builds, not correspondence
+  to a particular source commit.
+- **D4 direct-host verification completed:** Read-only Xiaomi database query
+  returned exactly the three original split payments below, with P1 author
+  (`seed-waiter`) and unchanged capture timestamps. This resolves the prior
+  missing direct-host check; it is not a full DEV-29 pass.
+
+  | Payment ID | Receipt ID | Amount | Capture epoch |
+  |---|---|---:|---:|
+  | `f7c36f1d-507a-41f1-a089-6e269bddc55c` | `69209d84-8742-4b62-90ea-79a298ef7c52` | 18400 | 1789367667 |
+  | `4f6832d6-757b-45c6-8c28-653637832aa8` | `9c6d5c53-8f36-4688-a222-6cf161ceb722` | 18300 | 1789380328 |
+  | `514bf7e1-9a41-44e0-a7ba-00b989785da3` | `ec386d90-b70f-46ac-b890-8072a1e9afdd` | 18300 | 1789380370 |
+
+- **D5 payment reverified:** Xiaomi retains the single original payment
+  `ecf0c313-8343-493d-8bdf-9b84230a0577`, receipt
+  `d661f03d-3a49-4624-979b-77874fc20567`, amount 55000, actor
+  `seed-waiter`, capture epoch `1789355177`. Client cache still shows bill
+  closed, paid 55000, outstanding 0, ticket
+  `97ad7ad3-8743-4ab3-b6d0-eeb149261e35`.
+- **Cold-start / text-size substeps:** Client journal is empty. D4 cached
+  split receipts retain all three matching payment IDs and total/paid 55000,
+  outstanding 0. Offline bill at normal and 1.3 text scale shows these amounts
+  and disables `Terima Rp. 0` with `Tidak ada sisa untuk ditagih`. At 1.3 scale
+  the print button label truncates, but primary money totals remain readable.
+  [Large-text screenshot](evidence/offline-device-20260916/d4-paid-large-text.png). Restored
+  original font setting (key was absent, so deleted the temporary override).
+  This does not complete section 8's full case/device repetitions.
+- **Earlier blocker — resolved above:** Xiaomi opened on the admin sign-in screen; client showed
+  `Tanpa server — data terakhir 14 Sep 21:25`. Asked user to sign in and open
+  the test venue host. ADB database access works but does not establish a live
+  authenticated app connection. No new capture, payment removal, refund,
+  expense, stock change, or app-data clearing performed. Client Wi-Fi and
+  mobile data remain enabled. R2 simulated cash total remains Rp165,000.
+  Resume replay-dependent cases once the host is running; preserve earlier
+  incomplete cases and known failures.
+
+### Fresh run R2 — 2026-09-14
+
+- **Latest split completion / reopen checkpoint:** Offline on D4, paid the
+  second share Rp18,300 via its receipt action as
+  `4f6832d6-757b-45c6-8c28-653637832aa8` at `1789380328`, then third share
+  Rp18,300 as `514bf7e1-9a41-44e0-a7ba-00b989785da3` at `1789380370`.
+  Offline totals progressed from paid 18400/due 36600 to paid 36700/due 18300
+  and finally paid 55000/due 0. Chose `Biarkan terbuka` and reconnected.
+  Client journal emptied. Server-refreshed cached receipt data contains exactly
+  the three original payment IDs, amounts 18400/18300/18300, P1 author and
+  preserved capture times. Direct host DB check unavailable: Xiaomi dropped
+  off ADB; no matching Xiaomi mDNS endpoint found. User asked to reconnect it.
+  App LAN connection continues working; no unrelated discovered device used.
+- **DEV-30 R2 attempt:** Offline paid split receipt 2 exposes `Buka ulang`,
+  whose confirmation explicitly removes all its recorded payments. Automatic
+  approval review rejected confirmation, requiring specific authorization for
+  deleting the recorded Rp18,300 payment. Canceled the dialog, restored both
+  client networks, and verified journal count 0. Receipt 2 remains paid; no
+  reopen or refund occurred. Permission for this exact test action is pending.
+- **Current balances supersede earlier checkpoints:** R2 gross/net recorded
+  simulated cash is Rp165,000: D3 55000, D4 55000, D5 55000. No R2 refund,
+  payment removal or expense. D4 remains open and fully paid; D3/D5 closed.
+  Emulator connected to app host, journal empty; Xiaomi ADB unavailable.
+
+- **Latest continuation:** D3 normal online bill closure succeeded at
+  `1789354473`; host `bill_closed_at` matches and client journal remained empty.
+  Table was not freed (`table_freed_at=NULL`), so this covers DEV-21's ordinary
+  online close substep, not its detached-history or unrelated-404 variants.
+- **DEV-10 reproduced on R2:** Online-seated D4 visit
+  `3facaab4-13d2-41c9-8294-e79a76ccd349` had a complete cached empty baseline.
+  Offline order `75594dac-00b9-40c0-9aac-037174ff66a8` at `1789354734`
+  contained Lumpia ticket `12064075-582f-4984-9c1b-b922c04337c0` Rp55,000
+  (`starters`) and Air Mineral `bb833f52-ad0e-4150-8267-5fda568d0aa6`
+  Rp15,000 (`drinks-now`). Captured void
+  `void-bb833f52-ad0e-4150-8267-5fda568d0aa6` at `1789354810` with
+  `wrongOrder`. Table showed cancellation, but bill remained Rp70,000 rather
+  than Rp55,000, including after offline force-stop/relaunch. No cash collected.
+  Reconnect retained both original tickets, Air Mineral `voided` with
+  `wrongOrder` / `seed-waiter`, corrected bill/due to Rp55,000 and cleared
+  journal. [Failure evidence](evidence/offline-device-20260914/d4-void-wrong-total.png).
+- **DEV-04 R2 full offline chain:** Seated D5 offline as visit
+  `6d123557-29cb-44d6-81b4-cc2b983e872b`; seat
+  `7e6b6f0a-b969-45f6-ac6b-5212eb016908` at `1789355068`, order
+  `5e940591-39fe-4b37-baf5-182f0b4e73c3` at `1789355133` (one Lumpia,
+  Rp55,000), receipt `d661f03d-3a49-4624-979b-77874fc20567` and payment
+  `ecf0c313-8343-493d-8bdf-9b84230a0577` at `1789355177`, close
+  `1e68417e-a5e8-46a0-be46-f59e77d26990` at `1789355179`.
+  All five original IDs survived full emulator reboot while offline; bill
+  remained paid Rp55,000/due Rp0, closed, with no recollection control.
+  Xiaomi had zero matching visits before reconnect. Private pending DB backup:
+  `/private/tmp/satset-d5-before-reboot-20260914.tar`.
+  [After-reboot bill](evidence/offline-device-20260914/d5-paid-after-reboot.png).
+  Reconnect initiated before automatic approval review hit a usage limit.
+  On user-authorized continuation, host closure confirmed at original
+  `1789355179`; client journal empty, cached D5 total Rp55,000/due Rp0.
+  Host payment is original `ecf0c313-8343-493d-8bdf-9b84230a0577`, receipt
+  `d661f03d-3a49-4624-979b-77874fc20567`, amount 55000, P1, exact capture
+  timestamp `1789355177`. Second reconnect retained one ticket and one payment
+  totaling 55000. Paid/closed UI and empty journal remained stable. Core chain
+  recovery succeeded; pre-reboot ticket-ID comparison from the private archive,
+  dedicated Orders inspection and installed-build identity remain outstanding.
+- **DEV-29 even-split / partial-payment substeps:** On reconciled D4's unpaid
+  Rp55,000 bill, online quote for three shares showed Rp18,400 now (rounding
+  to Rp100) and Rp36,600 remaining. Disconnected both client networks; quote
+  matched. Captured split event `f78a5b8a-cb84-432c-8a5f-4ddfaff5058b`
+  and payment `f7c36f1d-507a-41f1-a089-6e269bddc55c` at `1789367667`.
+  Receipt IDs are `69209d84-8742-4b62-90ea-79a298ef7c52`,
+  `9c6d5c53-8f36-4688-a222-6cf161ceb722`, and
+  `ec386d90-b70f-46ac-b890-8072a1e9afdd`. First receipt paid Rp18,400;
+  second displayed unpaid Rp18,300 with enabled `Bayar`. Main full-settlement
+  panel says nothing collectible because shares are paid through receipt actions;
+  this was not a loss of payment authority. Offline force-stop/relaunch retained
+  paid Rp18,400 / due Rp36,600 and both events. Reconnect drained the journal;
+  host retained original payment/first receipt, amount 18400, `seed-waiter`,
+  exact timestamp `1789367667`; cached bill and UI agree on remaining 36600.
+  [Partial-payment evidence](evidence/offline-device-20260914/d4-partial-reconciled.png).
+  Full DEV-29 remains incomplete: this is a same-visit quote comparison with
+  tax/service disabled, not the required independent non-round-price reference,
+  tax/service/discount matrix or itemized-split test.
+- **Current R2 checkpoint:** Both client networks enabled; host running; journal
+  empty. D3 and D5 bills closed and paid Rp55,000 each, tables still occupied.
+  D4 remains open, paid Rp18,400/due Rp36,600, with the voided Air Mineral
+  retained on host. R2 recorded simulated cash totals Rp128,400, no refunds or
+  expenses. No R1 cash outcome was inferred or reconciled. Device-test acceptance
+  remains incomplete, and DEV-10 remains failed. Earlier R2 checkpoints below
+  describe the state before this continuation.
+
+- User launched the Xiaomi admin app and authorized staff connection/testing.
+  SatSet was now installed on both devices. Connected the existing
+  `Medium_Phone` / `emulator-5554` to Xiaomi `23073RPBFG` at
+  `192.168.1.10:7443` through normal manual pairing, then signed in as P1
+  (`seed-waiter`) using the configured test PIN. No TLS/auth bypass.
+  Initial client journal and bill cache were empty. This is a new fixture;
+  it does not resolve R1's Rp205,000 or refused cash. Installed APK hashes
+  have not yet been compared; checkout HEAD is `96d3663`.
+- **DEV-02 observed substep:** Started empty D3 online as visit
+  `e401f634-a69d-4c92-86d1-a950ad13e2fe`. Before opening its bill, read-only
+  client inspection found a complete zero-line/zero-total snapshot, fetched
+  `1789353631`. Other DEV-02 variants remain incomplete.
+- **Order recovery/replay and DEV-09 course substep:** Disabled both client
+  Wi-Fi and mobile data. Captured one Lumpia Renyah at Rp55,000, course
+  `starters` (Pembuka), event `f1781666-eb47-4227-adc6-447e5cba89a5` at
+  `1789353787`, ticket `73481030-cc85-4207-9133-b6cefae51450`.
+  Force-stop/relaunch retained the original pending event and course; Orders
+  retained one row. Xiaomi had zero tickets for this visit before reconnect.
+  Reconnect produced exactly the original ticket with course `starters`,
+  status `sent`; client journal emptied and cached total/due became Rp55,000.
+  Review showed the course as held until fired; explicit firing/KDS behavior,
+  multi-line quantities/modifiers and full DEV-09 remain unverified in R2.
+- **Delivery-copy failure:** While the event was pending and Xiaomi had no
+  ticket, confirmation said `Terkirim` and claimed the order was live on the
+  kitchen/bar display. After offline restart, Orders also labeled it
+  `TERKIRIM`. This fails the captured-versus-delivered display expectation.
+  Review additionally claimed payments were external, although the actual bill
+  subsequently offered and successfully captured cash settlement.
+- **Offline cash recovery/replay:** After verifying the reconciled Rp55,000
+  bill, disconnected both networks again. Used `Pas` and `Terima Rp. 55.000`
+  to capture simulated cash, then chose `Biarkan terbuka`. Receipt
+  `14dec34d-4e86-470a-99f1-90673236c0f6` and payment
+  `ab25830a-77aa-4c83-9831-3816fb93be44`, both at `1789354060`, survived
+  force-stop/relaunch. Offline UI retained paid Rp55,000 / due Rp0 and
+  disabled recollection. Reconnected with bill open; host retained original
+  payment/receipt IDs, method `tunai`, amount 55000, author `seed-waiter`,
+  exact capture timestamp. Client cached outstanding 0 and retired events.
+- **Second reconnect:** Final host read-only counts: one ticket for D3 visit,
+  one payment for its receipt, sum 55000. Client settlement event count is 0;
+  bill remains paid Rp55,000 / due Rp0.
+  [Reconciled paid bill](evidence/offline-device-20260914/d3-paid-reconciled.png).
+  These are successful recovery/replay substeps, not a full DEV-03/05 pass:
+  payment followed an already-reconciled order, and closure was not exercised.
+- **Checkpoint:** Both client networks enabled; staff remains on paid D3 bill,
+  Xiaomi host running. D3 remains open, with one test ticket and Rp55,000
+  recorded simulated cash. No refund, expense or cleanup in R2. Remaining
+  settlement variants, known R1 failures and controlled fault cases still need
+  work. Historical result table below continues to describe R1 only.
+
+### Resume check — 2026-09-14
+
+- User authorized starting the phone emulator and continuing on Xiaomi and
+  emulator. Started existing `Medium_Phone` with `-no-snapshot-load`, without
+  wiping data. Xiaomi `23073RPBFG` and `emulator-5554` both connect to ADB.
+- `id.activid.satset` is absent from both devices' third-party package lists.
+  Emulator `run-as` returns `unknown package`; Xiaomi launch returns
+  `No activities found`. Both instead have `id.activid.loit`, but the emulator's
+  loit files contain no recorded SatSet database. No app installed or data restored.
+- Existing temporary backups include pre-upgrade host/client archives and
+  DEV-10/DEV-22 client archives. Those predate the DEV-09/20 pending chain and
+  cannot establish its outcome. Rp205,000 remains unverified, not reconciled.
+- Continuing the original chain requires locating its app data/backup. A fresh
+  installation would be a new test run, not a continuation of that evidence.
 
 ### Current execution log — 2026-09-11
 
@@ -541,7 +849,7 @@ that identify the individual acts.
 
 ### DEV-05 — Scenario C: preserve earlier lines and payments
 
-- [ ] **Steps:** Cache fixture C's full bill. Disconnect, add one Krupuk, inspect
+- [x] **Steps:** Cache fixture C's full bill. Disconnect, add one Krupuk, inspect
   all views, then pay the additional Rp15,000. Restart and reconnect.
 - **Expected:** Before the additional payment: total Rp165,000, paid Rp150,000,
   outstanding Rp15,000. Afterwards: paid Rp165,000, outstanding Rp0. The earlier
@@ -574,7 +882,7 @@ that identify the individual acts.
 
 ### DEV-09 — Shared line display and host-echo deduplication
 
-- [ ] **Steps:** Capture multiple lines using different courses, quantities,
+- [x] **Steps:** Capture multiple lines using different courses, quantities,
   modifiers, and notes. Navigate between table detail, Orders, and the bill.
   Reconnect while one of these screens stays open.
 - **Expected:** All views represent the same captured tickets. Delivery removes
@@ -718,7 +1026,7 @@ that identify the individual acts.
 
 ### DEV-25 — Transport interruption is not a refusal
 
-- [ ] **Steps:** Cause a timeout or unreachable host without a business refusal.
+- [x] **Steps:** Cause a timeout or unreachable host without a business refusal.
   Add another order to the same visit. Where a complete baseline exists, perform
   another supported offline settlement act.
 - **Expected:** The visit is not parked just because transport failed. Capture
