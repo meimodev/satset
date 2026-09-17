@@ -3,6 +3,26 @@
 Created: 2026-09-11  
 Status: **2026-09-16: DEV-05/25 R2 passed; DEV-09 display failure confirmed, replay verified; overall acceptance incomplete**
 
+### Resume check — 2026-09-17
+
+- Xiaomi `23073RPBFG` and `emulator-5554` are both reachable through ADB.
+  Both installed packages report `1.0.9 (10)`; APK hashes were not rechecked.
+  Xiaomi is running the venue host. Emulator shows `Masukkan PIN`, paired to
+  `192.168.1.4`, with `Tersambung`. Requested P1 sign-in or the test PIN.
+- Read-only copies confirm client journal count **0**. D2 cached bill remains
+  total/due **220000**, paid **0**, with all three original DEV-09 ticket IDs,
+  quantities 1/2/1, note and chicken variant/modifier preserved. Host retains
+  those same IDs, quantities, courses, P1 author and capture epochs, and no
+  D2 payments. D1 retains its two original tickets and 150000 + 15000 payments;
+  D6 retains its two original tickets and single 70000 payment, with original
+  payment IDs/timestamps matching the preceding checkpoint.
+- Private baseline archives: `/private/tmp/satset-client-20260917-baseline.tar`
+  and `/private/tmp/satset-host-20260917-baseline.tar`. Current screen captures:
+  `/private/tmp/satset-emulator-now.png` and `/private/tmp/satset-xiaomi-now.png`.
+  No app storage clearing, network changes, orders, payments, refunds, expenses
+  or source changes performed. UI case execution awaits staff sign-in; no new
+  case pass claimed. Prior failures and overall incomplete acceptance stand.
+
 ### Continuation — 2026-09-16
 
 - **Latest DEV-09 R2 result — Fail (delivery-state display); replay checks
