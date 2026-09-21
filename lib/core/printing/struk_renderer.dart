@@ -1,4 +1,5 @@
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
+import 'package:intl/intl.dart';
 
 import 'package:satset/core/printing/printer_branding.dart';
 import 'package:satset/core/printing/struk_data.dart';
@@ -84,6 +85,12 @@ class StrukRenderer {
         ),
       );
     }
+    out.addAll(
+      g.text(
+        DateFormat('dd/MM/yyyy HH:mm').format(SatClock.now().toLocal()),
+        styles: const PosStyles(align: PosAlign.center),
+      ),
+    );
     out.addAll(g.hr());
 
     // Table + party + time.

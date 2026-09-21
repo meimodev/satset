@@ -1,7 +1,9 @@
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
+import 'package:intl/intl.dart';
 
 import 'package:satset/core/printing/bill_struk_data.dart';
 import 'package:satset/core/printing/printer_branding.dart';
+import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/l10n/app_localizations.dart';
 
 /// The single, shared ESC/POS renderer for the MONEY document
@@ -138,6 +140,12 @@ class BillStrukRenderer {
         ),
       );
     }
+    out.addAll(
+      g.text(
+        DateFormat('dd/MM/yyyy HH:mm').format(SatClock.now().toLocal()),
+        styles: const PosStyles(align: PosAlign.center),
+      ),
+    );
 
     // ── piutang collection slip (ADR-0098) ──
     // No lines, no totals, no table: nothing was ordered here. Three facts

@@ -740,6 +740,9 @@ Deletes strictly **by tag**, never by truncating a table, so an order the venue 
 
 A venue that holds **only** fabricated rows passes the guard again after a clear and can be re-seeded. A venue that has **traded for real** does not, and never will: the guard trips on rows carrying no tag, which is precisely what the clear cannot reach. That is a one-way door by design, not a gap — the [[Seed prompt (mandatory first run)|prompt]] says so rather than offering a reload that can only refuse. _Avoid_: using "clear" to mean wiping the DB; expecting it to remove the zones and menu too; describing it as an undo that restores the venue's eligibility to seed.
 
+### Print date and time
+The local date and time a bill, payment receipt, or order slip is printed, displayed below its header. Each reprint carries its new print time, distinct from the order or payment time.
+
 ### Struk (cetak struk meja)
 **ID · EN** — Cetak struk meja · Print order slip. The document is an **order slip**, never a "receipt" — it carries no money. "verifikasi pesanan" · "check your order".
 
