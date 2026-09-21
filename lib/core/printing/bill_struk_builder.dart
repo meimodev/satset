@@ -79,6 +79,7 @@ class BillStrukBuilder {
     required VenueSettingsDto venue,
     List<int>? logoBytes,
     bool pendingSync = false,
+    DateTime? at,
   }) {
     if (receipt == null) {
       // Whole-bill: every sent line, the grand total, aggregate payments.
@@ -106,7 +107,7 @@ class BillStrukBuilder {
                 bill.member!.member.punchProgress,
                 bill.member!.punchTarget,
               ),
-        at: SatClock.now(),
+        at: at ?? SatClock.now(),
         kind: BillDocKind.wholeBill,
         lines: [
           for (final l in bill.lines)
@@ -181,7 +182,7 @@ class BillStrukBuilder {
           : (pendingSync
                 ? ''
                 : punchText(who.member.punchProgress, who.punchTarget)),
-      at: SatClock.now(),
+      at: at ?? SatClock.now(),
       kind: even ? BillDocKind.evenReceipt : BillDocKind.itemizedReceipt,
       // "Tamu A", not a bare "A" — the guest reads this line to know the slip
       // in their hand is theirs. A part spec reads as "Bagian 1/3"; anything
@@ -234,6 +235,7 @@ class BillStrukBuilder {
     required VenueSettingsDto venue,
     Map<String, ({String label, int amount})> pending = const {},
     List<int>? logoBytes,
+    DateTime? at,
   }) {
     final lines = <BillStrukLine>[];
     var subtotal = 0;
@@ -298,7 +300,7 @@ class BillStrukBuilder {
               bill.member!.member.punchProgress,
               bill.member!.punchTarget,
             ),
-      at: SatClock.now(),
+      at: at ?? SatClock.now(),
       kind: BillDocKind.itemizedReceipt,
       docLabel: l.printSelectionDocLabel,
       lines: lines,

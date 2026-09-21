@@ -9,6 +9,26 @@ class AppL10nId extends AppL10n {
   AppL10nId([String locale = 'id']) : super(locale);
 
   @override
+  String prnPreviewPrinter(String printer) {
+    return '$printer · 58 mm';
+  }
+
+  @override
+  String get prnPreviewPrint => 'Cetak';
+
+  @override
+  String get prnPreviewChanged =>
+      'Dokumen ini berubah. Periksa pratinjau terbaru, lalu konfirmasi cetak lagi.';
+
+  @override
+  String get prnPreviewRetryHint =>
+      'Periksa apakah struk sudah tercetak sebelum mencoba lagi agar tidak tercetak ganda.';
+
+  @override
+  String get prnPreviewOffline =>
+      'Terputus — pratinjau menggunakan data yang tersedia di perangkat ini.';
+
+  @override
   String get cancel => 'Batal';
 
   @override

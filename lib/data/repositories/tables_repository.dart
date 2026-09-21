@@ -284,6 +284,9 @@ class TablesRepository extends StateNotifier<List<VenueTable>> {
   /// table fact, and a replayed order moves the tab.
   Future<void> resyncNow() => _resync();
 
+  /// Await an actual read; unlike reconnect resync this does not coalesce or swallow errors.
+  Future<void> refreshForPrinting() => _refetch();
+
   VenueTable _toDomain(TableDto d) {
     return VenueTable(
       id: d.id,

@@ -31,9 +31,14 @@ class StrukRenderer {
   }
 
   /// Renders a full guest order-confirmation struk (no prices).
-  static Future<List<int>> render(AppL10n l, StrukData d) async {
+  static Future<List<int>> render(
+    AppL10n l,
+    StrukData d, {
+    Generator? generator,
+    DateTime? printedAt,
+  }) async {
     final profile = await CapabilityProfile.load();
-    final g = Generator(_paper, profile);
+    final g = generator ?? Generator(_paper, profile);
     final out = <int>[];
 
     // Header: optional logo, venue name large, tagline, header, address/phone.
@@ -87,7 +92,9 @@ class StrukRenderer {
     }
     out.addAll(
       g.text(
-        DateFormat('dd/MM/yyyy HH:mm').format(SatClock.now().toLocal()),
+        DateFormat(
+          'dd/MM/yyyy HH:mm',
+        ).format((printedAt ?? SatClock.now()).toLocal()),
         styles: const PosStyles(align: PosAlign.center),
       ),
     );

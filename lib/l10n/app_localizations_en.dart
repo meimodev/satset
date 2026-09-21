@@ -9,6 +9,26 @@ class AppL10nEn extends AppL10n {
   AppL10nEn([String locale = 'en']) : super(locale);
 
   @override
+  String prnPreviewPrinter(String printer) {
+    return '$printer · 58 mm';
+  }
+
+  @override
+  String get prnPreviewPrint => 'Print';
+
+  @override
+  String get prnPreviewChanged =>
+      'This document has changed. Check the updated preview, then confirm printing again.';
+
+  @override
+  String get prnPreviewRetryHint =>
+      'Check whether the receipt printed before trying again to avoid a duplicate.';
+
+  @override
+  String get prnPreviewOffline =>
+      'Offline — preview uses data available on this device.';
+
+  @override
   String get cancel => 'Cancel';
 
   @override

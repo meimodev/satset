@@ -240,6 +240,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   /// tickets — today, a drained send queue (ADR-0090).
   Future<void> resyncNow() => _resync();
 
+  /// Await an actual read; unlike reconnect resync this does not coalesce or swallow errors.
+  Future<void> refreshForPrinting() => _refetch();
+
   /// Guarded so overlapping connects don't stampede; never throws — a
   /// transient failure simply waits for the next connect.
   ///

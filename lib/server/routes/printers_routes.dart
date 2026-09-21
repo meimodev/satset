@@ -213,5 +213,48 @@ Router printersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     );
   });
 
+  // Send the reviewed bytes from the host that owns this shared printer.
+  // No client-supplied socket address and no live document re-render here.
+  r.post('/printers/<id>/print', (Request req, String id) async {
+    final denied = await _requireAuth(req, auth);
+    if (denied != null) return denied;
+    final row = await (db.select(
+      db.printers,
+    )..where((p) => p.id.equals(id))).getSingleOrNull();
+    if (row == null || !row.enabled || row.kind != 'escpos') {
+      return Response.notFound('printer not found');
+    }
+    final body = <int>[];
+    await for (final chunk in req.read()) {
+      if (body.length + chunk.length > 3 * 1024 * 1024) {
+        return Response(413);
+      }
+      body.addAll(chunk);
+    }
+    late List<int> bytes;
+    try {
+      final json = jsonDecode(utf8.decode(body));
+      if (json is! Map || json['bytes'] is! String) return Response(400);
+      bytes = base64Decode(json['bytes'] as String);
+      if (bytes.isEmpty || bytes.length > 2 * 1024 * 1024) return Response(400);
+    } on FormatException {
+      return Response(400);
+    }
+    try {
+      await StrukSocket.send(row.host, row.port, bytes);
+    } catch (e) {
+      SatLog.srv('reviewed print failed: $e');
+      return Response(
+        502,
+        body: jsonEncode({'error': 'printer_unreachable'}),
+        headers: {'content-type': 'application/json'},
+      );
+    }
+    return Response.ok(
+      jsonEncode({'ok': true}),
+      headers: {'content-type': 'application/json'},
+    );
+  });
+
   return r;
 }

@@ -1,5 +1,11 @@
 {
   "@@locale": "id",
+  "prnPreviewPrinter": "{printer} · 58 mm",
+  "@prnPreviewPrinter": {"placeholders": {"printer": {"type": "String"}}},
+  "prnPreviewPrint": "Cetak",
+  "prnPreviewChanged": "Dokumen ini berubah. Periksa pratinjau terbaru, lalu konfirmasi cetak lagi.",
+  "prnPreviewRetryHint": "Periksa apakah struk sudah tercetak sebelum mencoba lagi agar tidak tercetak ganda.",
+  "prnPreviewOffline": "Terputus — pratinjau menggunakan data yang tersedia di perangkat ini.",
   "cancel": "Batal",
   "save": "Simpan",
   "saved": "Tersimpan",

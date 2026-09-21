@@ -99,6 +99,36 @@ abstract class AppL10n {
     Locale('id', 'SV'),
   ];
 
+  /// No description provided for @prnPreviewPrinter.
+  ///
+  /// In id, this message translates to:
+  /// **'{printer} · 58 mm'**
+  String prnPreviewPrinter(String printer);
+
+  /// No description provided for @prnPreviewPrint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cetak'**
+  String get prnPreviewPrint;
+
+  /// No description provided for @prnPreviewChanged.
+  ///
+  /// In id, this message translates to:
+  /// **'Dokumen ini berubah. Periksa pratinjau terbaru, lalu konfirmasi cetak lagi.'**
+  String get prnPreviewChanged;
+
+  /// No description provided for @prnPreviewRetryHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Periksa apakah struk sudah tercetak sebelum mencoba lagi agar tidak tercetak ganda.'**
+  String get prnPreviewRetryHint;
+
+  /// No description provided for @prnPreviewOffline.
+  ///
+  /// In id, this message translates to:
+  /// **'Terputus — pratinjau menggunakan data yang tersedia di perangkat ini.'**
+  String get prnPreviewOffline;
+
   /// No description provided for @cancel.
   ///
   /// In id, this message translates to:

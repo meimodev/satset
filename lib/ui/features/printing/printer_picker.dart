@@ -12,10 +12,11 @@ import 'package:satset/l10n/app_localizations.dart';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 
 import 'package:satset/core/printing/bill_struk_builder.dart';
-import 'package:satset/core/printing/bill_struk_data.dart';
 import 'package:satset/core/printing/bill_struk_renderer.dart';
-import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
-import 'package:satset/ui/features/cashier/widgets/paper_preview.dart';
+import 'package:satset/ui/features/printing/receipt_preview.dart';
+import 'package:satset/data/repositories/tables_repository.dart';
+import 'package:satset/data/repositories/tickets_repository.dart';
+import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/core/printing/struk_builder.dart';
 import 'package:satset/core/printing/struk_renderer.dart';
 import 'package:satset/core/printing/struk_socket.dart';
@@ -45,26 +46,19 @@ const _uuid = Uuid();
 /// Coupled to the 15s server tick (≤2 missed ticks). See ADR-0022.
 const _venueOnlineWindow = Duration(seconds: 30);
 
-/// A transport-agnostic print job handed to [_PrinterPickerSheet]. Decouples
-/// the picker (discover + pick a printer) from WHAT is printed: [renderBytes]
-/// builds the ESC/POS bytes client-side for a device printer, while
-/// [printVenue] asks the server to render+send to a venue printer (so output is
-/// identical either way). See ADR-0020 / ADR-0023.
+/// Guest documents load a preview after printer selection. Utility jobs such
+/// as QR cards retain direct rendering and sending.
 class PrintJob {
   final String subtitle; // shown under "Pilih printer"
-  final Future<List<int>> Function() renderBytes;
-
-  ///
-  /// Null when no such route exists — the [[Piutang]] collection slip is not a
-  /// bill, so nothing server-side can re-render it. The picker then sends the
-  /// venue printer the bytes this device rendered, over the same socket it uses
-  /// for a discovered one.
-  final Future<String?> Function(String venuePrinterId)? printVenue;
+  final Future<List<int>> Function()? renderBytes;
+  final Future<PreparedReceipt> Function()? preview;
+  final bool Function()? offline;
 
   const PrintJob({
     required this.subtitle,
-    required this.renderBytes,
-    this.printVenue,
+    this.renderBytes,
+    this.preview,
+    this.offline,
   });
 }
 
@@ -93,32 +87,57 @@ Future<void> printTableStruk({
     _toast(context, l.prnNothingToPrint);
     return;
   }
+  final at = SatClock.now();
+  var offline = false;
+  Future<PreparedReceipt> load() async {
+    offline = ref.read(wsConnStateProvider) != WsConnState.open;
+    if (!offline) {
+      try {
+        await ref.read(tablesProvider.notifier).refreshForPrinting();
+        await ref.read(ticketsProvider.notifier).refreshForPrinting();
+      } catch (_) {
+        offline = true;
+      }
+    }
+    final current = ref
+        .read(tablesProvider)
+        .where((t) => t.id == table.id)
+        .firstOrNull;
+    if (current == null || current.currentVisitId != table.currentVisitId) {
+      throw StateError('The table visit is no longer available');
+    }
+    final lines = ref
+        .read(ticketsForTableProvider(table.id))
+        .where((t) => t.status != TicketStatus.voided)
+        .toList();
+    if (lines.isEmpty) throw StateError('No printable lines');
+    final venue = ref.read(venueSettingsProvider);
+    final logo = await ref.read(venueLogoBytesProvider(venue.logoRev).future);
+    final g = ReceiptPreviewGenerator(
+      PaperSize.mm58,
+      await CapabilityProfile.load(),
+    );
+    final bytes = await StrukRenderer.render(
+      l,
+      StrukBuilder.fromTable(
+        venue: venue,
+        tableLabel: current.displayName,
+        pax: current.pax,
+        guestName: current.guestName ?? '',
+        guestNote: current.guestNotes ?? '',
+        tickets: lines,
+        logoBytes: logo,
+        at: at,
+      ),
+      generator: g,
+      printedAt: at,
+    );
+    return PreparedReceipt(bytes, g.children);
+  }
+
   await _openPicker(
     context,
-    PrintJob(
-      subtitle: l.printJobOrderSlip(table.displayName),
-      renderBytes: () async {
-        final venue = ref.read(venueSettingsProvider);
-        final logo = await ref.read(
-          venueLogoBytesProvider(venue.logoRev).future,
-        );
-        return StrukRenderer.render(
-          l,
-          StrukBuilder.fromTable(
-            venue: venue,
-            tableLabel: table.displayName,
-            pax: table.pax,
-            guestName: table.guestName ?? '',
-            guestNote: table.guestNotes ?? '',
-            tickets: printable,
-            logoBytes: logo,
-          ),
-        );
-      },
-      printVenue: (pid) => ref
-          .read(printersRepositoryProvider.notifier)
-          .printTable(table.id, pid),
-    ),
+    PrintJob(subtitle: l.printJobOrderSlip(table.displayName), preview: load),
   );
 }
 
@@ -144,43 +163,53 @@ Future<void> printBillStruk({
       ? l.expTableVisit(bill.tableLabel ?? '').trim()
       : (receipt.label.isEmpty ? l.printWhoReceipt : receipt.label);
   final subtitle = paid ? l.printJobReceiptDoc(who) : l.printJobBillDoc(who);
-
-  final venue = ref.read(venueSettingsProvider);
-  final logo = await ref.read(venueLogoBytesProvider(venue.logoRev).future);
-  // Printing off a projection the host has not taken yet: the money is the
-  // till's own arithmetic and is right, the points and stempel are not
-  // (ADR-0123).
-  final pendingSync = ref
-      .read(settlementJournalProvider)
-      .isLocal(bill.visitId);
-  final data = BillStrukBuilder.fromBill(
-    l: l,
-    bill: bill,
-    receipt: receipt,
-    venue: venue,
-    logoBytes: logo,
-    pendingSync: pendingSync,
-  );
-
-  // Look before you print (ADR-0066). The preview is built from the same
-  // `BillStrukData` the renderer gets, so what is on screen is what lands on
-  // the roll — and a wrong table label is caught here rather than in a guest's
-  // hand. Dismissing the preview prints nothing.
-  if (!context.mounted) return;
-  final go = await showSatSheet<bool>(
-    context,
-    builder: (c) => _PreviewSheet(data: data, subtitle: subtitle),
-  );
-  if (go != true || !context.mounted) return;
-
+  final at = SatClock.now();
+  var offline = false;
   await _openPicker(
     context,
     PrintJob(
       subtitle: subtitle,
-      renderBytes: () async => BillStrukRenderer.render(l, data),
-      printVenue: (pid) => receipt == null
-          ? ref.read(settlementProvider.notifier).printBill(bill.visitId, pid)
-          : ref.read(settlementProvider.notifier).printReceipt(receipt.id, pid),
+      offline: () => offline,
+      preview: () async {
+        final fresh = await ref
+            .read(settlementProvider.notifier)
+            .fetchBillForPrinting(bill.visitId);
+        final current = fresh.bill;
+        offline = fresh.offline;
+        final share = receipt == null
+            ? null
+            : current.receipts.where((r) => r.id == receipt.id).firstOrNull;
+        if ((receipt != null && share == null) ||
+            !current.lines.any((x) => x.status != 'voided')) {
+          throw StateError('The receipt is no longer available');
+        }
+        final venue = ref.read(venueSettingsProvider);
+        final logo = await ref.read(
+          venueLogoBytesProvider(venue.logoRev).future,
+        );
+        final data = BillStrukBuilder.fromBill(
+          l: l,
+          bill: current,
+          receipt: share,
+          venue: venue,
+          logoBytes: logo,
+          pendingSync: ref
+              .read(settlementJournalProvider)
+              .isLocal(bill.visitId),
+          at: at,
+        );
+        final g = ReceiptPreviewGenerator(
+          PaperSize.mm58,
+          await CapabilityProfile.load(),
+        );
+        final bytes = await BillStrukRenderer.render(
+          l,
+          data,
+          generator: g,
+          printedAt: at,
+        );
+        return PreparedReceipt(bytes, g.children);
+      },
     ),
   );
 }
@@ -191,9 +220,7 @@ Future<void> printBillStruk({
 ///
 /// Deliberately NOT a `receipt` argument on [printBillStruk]: that function's
 /// contract is "null ⇒ whole bill, else one receipt", and a third meaning
-/// inside it is what makes the next reader guess. No `printVenue` — there is no
-/// receipt for the server to re-render, so a venue printer gets the bytes this
-/// device rendered, exactly as the debt slip does.
+/// inside it is what makes the next reader guess. Printing persists nothing.
 Future<void> printBillSelection({
   required BuildContext context,
   required WidgetRef ref,
@@ -206,37 +233,58 @@ Future<void> printBillSelection({
   Map<String, ({String label, int amount})> pending = const {},
 }) async {
   final l = context.l10n;
-  final venue = ref.read(venueSettingsProvider);
-  final logo = await ref.read(venueLogoBytesProvider(venue.logoRev).future);
-  final data = BillStrukBuilder.fromSelection(
-    l: l,
-    bill: bill,
-    selection: selection,
-    venue: venue,
-    pending: pending,
-    logoBytes: logo,
-  );
-  if (data.lines.isEmpty) {
-    if (context.mounted) _toast(context, l.prnNothingToPrint);
-    return;
-  }
-  if (!context.mounted) return;
+  final at = SatClock.now();
+  var offline = false;
   final subtitle = l.printJobSelectionDoc(bill.tableLabel ?? '');
-  final go = await showSatSheet<bool>(
-    context,
-    builder: (c) => _PreviewSheet(data: data, subtitle: subtitle),
-  );
-  if (go != true || !context.mounted) return;
   await _openPicker(
     context,
     PrintJob(
       subtitle: subtitle,
-      renderBytes: () async => BillStrukRenderer.render(l, data),
+      offline: () => offline,
+      preview: () async {
+        final fresh = await ref
+            .read(settlementProvider.notifier)
+            .fetchBillForPrinting(bill.visitId);
+        final current = fresh.bill;
+        offline = fresh.offline;
+        final venue = ref.read(venueSettingsProvider);
+        final logo = await ref.read(
+          venueLogoBytesProvider(venue.logoRev).future,
+        );
+        final data = BillStrukBuilder.fromSelection(
+          l: l,
+          bill: current,
+          selection: {
+            for (final line in current.lines)
+              if ((selection[line.ticketId] ?? 0) > 0)
+                line.ticketId: selection[line.ticketId]!.clamp(
+                  0,
+                  line.unassignedUnits,
+                ),
+          },
+          venue: venue,
+          pending: pending,
+          logoBytes: logo,
+          at: at,
+        );
+        if (data.lines.isEmpty) throw StateError('No printable lines');
+        final g = ReceiptPreviewGenerator(
+          PaperSize.mm58,
+          await CapabilityProfile.load(),
+        );
+        final bytes = await BillStrukRenderer.render(
+          l,
+          data,
+          generator: g,
+          printedAt: at,
+        );
+        return PreparedReceipt(bytes, g.children);
+      },
     ),
   );
 }
 
-/// The [[Piutang]] collection slip (ADR-0098). Same preview-then-pick flow as
+/// The [[Piutang]] collection slip (ADR-0098). Same pick-then-preview flow as
 /// the bill doc, and the same renderer — this is a money document, and the one
 /// where the guest holds no other evidence that they paid.
 Future<void> printDebtSlip({
@@ -262,16 +310,24 @@ Future<void> printDebtSlip({
   );
   if (!context.mounted) return;
   final subtitle = l.strukDebtTitle;
-  final go = await showSatSheet<bool>(
-    context,
-    builder: (c) => _PreviewSheet(data: data, subtitle: subtitle),
-  );
-  if (go != true || !context.mounted) return;
+  final at = SatClock.now();
   await _openPicker(
     context,
     PrintJob(
       subtitle: subtitle,
-      renderBytes: () async => BillStrukRenderer.render(l, data),
+      preview: () async {
+        final g = ReceiptPreviewGenerator(
+          PaperSize.mm58,
+          await CapabilityProfile.load(),
+        );
+        final bytes = await BillStrukRenderer.render(
+          l,
+          data,
+          generator: g,
+          printedAt: at,
+        );
+        return PreparedReceipt(bytes, g.children);
+      },
     ),
   );
 }
@@ -361,43 +417,6 @@ Future<void> printAllTableQr({
       },
     ),
   );
-}
-
-/// Paper preview + one way forward. Deliberately thin: the printer choice is
-/// the picker's job, and asking it twice is how a cashier ends up printing to
-/// the kitchen roll.
-class _PreviewSheet extends StatelessWidget {
-  final BillStrukData data;
-  final String subtitle;
-  const _PreviewSheet({required this.data, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    return FractionallySizedBox(
-      heightFactor: 0.9,
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SatSheetHeader(
-              onClose: () => Navigator.of(context).pop(false),
-              child: Text(subtitle, style: SatType.labelL(color: sc.textHi)),
-            ),
-            Expanded(child: PaperPreviewBody(data)),
-            Padding(
-              padding: const EdgeInsets.all(Sp.s4),
-              child: SatButton.primary(
-                label: context.l10n.prnPick,
-                icon: Icons.print_rounded,
-                onTap: () => Navigator.of(context).pop(true),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 void _toast(BuildContext context, String msg) {
@@ -556,6 +575,13 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
     for (final p in venue) {
       if (!p.enabled) continue;
       final addr = '${p.host}:${p.port}';
+      // When the host is offline, a saved local connection to the same
+      // printer must remain selectable instead of being hidden by deduping.
+      if (widget.job.preview != null &&
+          ref.watch(wsConnStateProvider) != WsConnState.open &&
+          device.any((d) => d.address == addr)) {
+        continue;
+      }
       seen.add(addr);
       out.add(
         _Entry(
@@ -848,6 +874,31 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
   // --- print dispatch ---
 
   Future<void> _print(_Entry e) async {
+    if (_busy) return;
+    final load = widget.job.preview;
+    if (load != null) {
+      setState(() => _busy = true);
+      final ok = await showSatSheet<bool>(
+        context,
+        dismissible: false,
+        builder: (_) => ReceiptPreviewSheet(
+          title:
+              '${widget.job.subtitle}\n${context.l10n.prnPreviewPrinter(e.label)}',
+          load: load,
+          offline: () =>
+              (widget.job.offline?.call() ?? false) ||
+              ref.read(wsConnStateProvider) != WsConnState.open,
+          send: (bytes) => _sendReviewed(e, bytes),
+        ),
+      );
+      if (!mounted) return;
+      setState(() => _busy = false);
+      if (ok == true) {
+        _toast(context, context.l10n.prnReceiptPrinted);
+        Navigator.of(context).pop();
+      }
+      return;
+    }
     switch (e.kind) {
       case _Kind.venue:
         await _printVenue(e.venue!);
@@ -874,25 +925,52 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
     }
   }
 
-  Future<void> _printVenue(PrinterDto p) async {
-    final send = widget.job.printVenue;
-    if (send == null) {
-      await _printDevice(
+  Future<String?> _sendReviewed(_Entry e, List<int> bytes) async {
+    if (e.kind == _Kind.venue) {
+      return ref
+          .read(printersRepositoryProvider.notifier)
+          .printBytes(e.venue!.id, bytes);
+    }
+    final device =
+        e.device ??
         DevicePrinter(
           id: _uuid.v4(),
-          label: p.label,
-          transport: PrinterTransport.wifi,
-          host: p.host,
-          port: p.port,
-        ),
-      );
-      return;
+          label: e.label,
+          transport: e.transport,
+          host: e.wifi?.host,
+          port: e.wifi?.port ?? 9100,
+          mac: e.bt?.mac,
+        );
+    try {
+      if (device.isBluetooth) {
+        await ref.read(btPrinterServiceProvider).send(device.mac!, bytes);
+      } else {
+        await StrukSocket.send(device.host!, device.port, bytes);
+      }
+    } catch (_) {
+      return ref.read(l10nProvider).prnErrNotConnected;
     }
-    setState(() => _busy = true);
-    final err = await send(p.id);
-    if (!mounted) return;
-    Navigator.of(context).pop();
-    _toast(context, err ?? context.l10n.prnReceiptPrinted);
+    // A preference failure must not offer a retry of a successful print.
+    if (e.device == null) {
+      try {
+        await ref.read(devicePrintersProvider.notifier).add(device);
+      } catch (_) {
+        /* Printing already succeeded. */
+      }
+    }
+    return null;
+  }
+
+  Future<void> _printVenue(PrinterDto p) async {
+    await _printDevice(
+      DevicePrinter(
+        id: _uuid.v4(),
+        label: p.label,
+        transport: PrinterTransport.wifi,
+        host: p.host,
+        port: p.port,
+      ),
+    );
   }
 
   Future<void> _printDevice(DevicePrinter d, {bool persist = false}) async {
@@ -900,7 +978,7 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
     final l = context.l10n;
     String? err;
     try {
-      final bytes = await widget.job.renderBytes();
+      final bytes = await widget.job.renderBytes!();
       if (d.isBluetooth) {
         await ref.read(btPrinterServiceProvider).send(d.mac!, bytes);
       } else {

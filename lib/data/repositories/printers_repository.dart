@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -148,6 +149,20 @@ class PrintersRepository extends StateNotifier<List<PrinterDto>> {
   /// The server's own `message` is a developer string in the host tablet's
   /// language — never shown. The `code` beside it is the contract, and this
   /// device renders it (ADR-0085).
+  /// Relay the exact document confirmed by the user, without re-rendering.
+  Future<String?> printBytes(String printerId, List<int> bytes) async {
+    try {
+      await ref.read(apiClientProvider).postJson('/printers/$printerId/print', {
+        'bytes': base64Encode(bytes),
+      });
+      return null;
+    } on ApiException catch (e) {
+      return _friendly(e);
+    } catch (_) {
+      return ref.read(l10nProvider).prnErrFailed;
+    }
+  }
+
   String _friendly(ApiException e) {
     final l = ref.read(l10nProvider);
     return switch (e.code) {

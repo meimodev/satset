@@ -1,5 +1,11 @@
 {
   "@@locale": "en",
+  "prnPreviewPrinter": "{printer} · 58 mm",
+  "@prnPreviewPrinter": {"placeholders": {"printer": {"type": "String"}}},
+  "prnPreviewPrint": "Print",
+  "prnPreviewChanged": "This document has changed. Check the updated preview, then confirm printing again.",
+  "prnPreviewRetryHint": "Check whether the receipt printed before trying again to avoid a duplicate.",
+  "prnPreviewOffline": "Offline — preview uses data available on this device.",
   "cancel": "Cancel",
   "save": "Save",
   "saved": "Saved",

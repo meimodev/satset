@@ -86,9 +86,14 @@ class BillStrukRenderer {
     return out;
   }
 
-  static Future<List<int>> render(AppL10n l, BillStrukData d) async {
+  static Future<List<int>> render(
+    AppL10n l,
+    BillStrukData d, {
+    Generator? generator,
+    DateTime? printedAt,
+  }) async {
     final profile = await CapabilityProfile.load();
-    final g = Generator(_paper, profile);
+    final g = generator ?? Generator(_paper, profile);
     final out = <int>[];
 
     // ── header: optional logo + venue identity + branding lines ──
@@ -142,7 +147,9 @@ class BillStrukRenderer {
     }
     out.addAll(
       g.text(
-        DateFormat('dd/MM/yyyy HH:mm').format(SatClock.now().toLocal()),
+        DateFormat(
+          'dd/MM/yyyy HH:mm',
+        ).format((printedAt ?? SatClock.now()).toLocal()),
         styles: const PosStyles(align: PosAlign.center),
       ),
     );

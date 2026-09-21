@@ -201,7 +201,18 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   // ── mutations (each returns the fresh Bill; the family provider is the
   //    canonical detail source and is invalidated by the screen / WS) ──
 
-  Future<Bill> fetchBill(String visitId) async {
+  Future<Bill> fetchBill(String visitId) => _fetchBill(visitId);
+
+  /// Printing must disclose a cached fallback even before WS detects loss.
+  Future<({Bill bill, bool offline})> fetchBillForPrinting(
+    String visitId,
+  ) async {
+    var offline = ref.read(wsConnStateProvider) != WsConnState.open;
+    final bill = await _fetchBill(visitId, onOffline: () => offline = true);
+    return (bill: bill, offline: offline);
+  }
+
+  Future<Bill> _fetchBill(String visitId, {void Function()? onOffline}) async {
     // A visit the till is still carrying answers off its own journal — asking
     // the host would render the world as it was before the backlog landed
     // (ADR-0123 §local-authoritative).
@@ -215,7 +226,16 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
         return _project(visitId);
       }
       return Bill.fromJson(map);
-    } catch (_) {
+    } catch (e) {
+      // A host that explicitly rejects the visit is not an offline host.
+      // Never print a cached, removed or forbidden bill after that response.
+      if (onOffline != null &&
+          e is ApiException &&
+          e.statusCode >= 400 &&
+          e.statusCode < 500) {
+        rethrow;
+      }
+      onOffline?.call();
       // The host went away mid-read. The cached bill is what the cashier was
       // last shown, and it is settleable — that is the whole point of caching
       // every open visit rather than only the one somebody opened.
