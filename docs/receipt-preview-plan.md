@@ -4,6 +4,8 @@ Status: implemented in the `codex/receipt-preview` worktree following confirmati
 
 ## Agreed behavior
 
+- Table order slips and whole-table bill/payment receipts include a separate table-expense section in preview and print with category, note, amount, and total expenses. This does not change the guest's payable total. Individual split receipts do not repeat table-wide expenses. Empty expense sections are hidden; offline summaries are disclosed as based on device data.
+
 - Every guest order slip, bill, payment receipt, and reprint requires a preview and explicit Print confirmation.
 - Include the table-detail order slip and all other entry points for these documents.
 - Use the flow: choose printer, preview, confirm Print.

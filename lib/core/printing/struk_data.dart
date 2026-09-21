@@ -4,8 +4,8 @@
 /// printed bytes are the same whoever transmits them. See
 /// docs/adr/0020-two-scope-printers-shared-renderer.md.
 ///
-/// Carries NO money — the struk is a confirmation, not a bill (see the "Struk"
-/// glossary term in CONTEXT.md).
+/// Order lines carry no prices. A separate expense section reports venue
+/// costs without changing what the guest owes.
 class StrukLine {
   final int qty;
   final String name;
@@ -39,6 +39,9 @@ class StrukData {
   final String guestNote; // table-level "Catatan", '' when none
   final DateTime at;
   final List<StrukLine> lines;
+  final List<({String category, String note, int amount})> expenses;
+  final int expenseTotal;
+  final bool expensesOffline;
 
   const StrukData({
     required this.venueName,
@@ -56,6 +59,9 @@ class StrukData {
     this.guestNote = '',
     required this.at,
     required this.lines,
+    this.expenses = const [],
+    this.expenseTotal = 0,
+    this.expensesOffline = false,
   });
 
   bool get isEmpty => lines.isEmpty;

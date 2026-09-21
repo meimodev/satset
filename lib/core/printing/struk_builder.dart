@@ -1,5 +1,6 @@
 import 'package:satset/core/printing/struk_data.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/data/models/visit_expense_dto.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/core/time/sat_clock.dart';
 
@@ -31,6 +32,7 @@ class StrukBuilder {
     String guestNote = '',
     DateTime? at,
     List<int>? logoBytes,
+    VisitExpenseSummaryDto? expenses,
   }) {
     return StrukData(
       venueName: venue.displayName,
@@ -48,6 +50,12 @@ class StrukBuilder {
       guestNote: guestNote,
       at: at ?? SatClock.now(),
       lines: linesFromTickets(tickets),
+      expenses: [
+        for (final e in expenses?.expenses ?? <VisitExpenseDto>[])
+          (category: e.categoryName, note: e.note, amount: e.amount),
+      ],
+      expenseTotal: expenses?.total ?? 0,
+      expensesOffline: expenses?.offline ?? false,
     );
   }
 }

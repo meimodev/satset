@@ -31,6 +31,8 @@ import 'package:satset/data/services/bt_printer_service.dart';
 import 'package:satset/data/services/printer_discovery_service.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
+import 'package:satset/data/repositories/visit_expense_repository.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/core/design/colors.dart';
@@ -69,7 +71,7 @@ Future<void> _openPicker(BuildContext context, PrintJob job) =>
       builder: (_) => _PrinterPickerSheet(job: job),
     );
 
-/// One reusable entry point for "Cetak struk meja" (the no-money order slip).
+/// One reusable entry point for "Cetak struk meja" (the table order slip).
 /// Validates the table has printable lines, then opens the picker, which
 /// auto-discovers reachable printers (venue + device, wifi + Bluetooth) and
 /// lists only the online ones. See ADR-0020 / ADR-0022.
@@ -112,6 +114,12 @@ Future<void> printTableStruk({
         .toList();
     if (lines.isEmpty) throw StateError('No printable lines');
     final venue = ref.read(venueSettingsProvider);
+    final expenses = venue.tableExpenseOn && current.currentVisitId != null
+        ? await ref.refresh(
+            visitExpensesProvider(current.currentVisitId!).future,
+          )
+        : null;
+    offline = offline || (expenses?.offline ?? false);
     final logo = await ref.read(venueLogoBytesProvider(venue.logoRev).future);
     final g = ReceiptPreviewGenerator(
       PaperSize.mm58,
@@ -126,6 +134,7 @@ Future<void> printTableStruk({
         guestName: current.guestName ?? '',
         guestNote: current.guestNotes ?? '',
         tickets: lines,
+        expenses: expenses,
         logoBytes: logo,
         at: at,
       ),
@@ -137,7 +146,11 @@ Future<void> printTableStruk({
 
   await _openPicker(
     context,
-    PrintJob(subtitle: l.printJobOrderSlip(table.displayName), preview: load),
+    PrintJob(
+      subtitle: l.printJobOrderSlip(table.displayName),
+      preview: load,
+      offline: () => offline,
+    ),
   );
 }
 
@@ -184,6 +197,10 @@ Future<void> printBillStruk({
           throw StateError('The receipt is no longer available');
         }
         final venue = ref.read(venueSettingsProvider);
+        final expenses = share == null && venue.tableExpenseOn
+            ? await ref.refresh(visitExpensesProvider(current.visitId).future)
+            : null;
+        offline = offline || (expenses?.offline ?? false);
         final logo = await ref.read(
           venueLogoBytesProvider(venue.logoRev).future,
         );
@@ -191,6 +208,7 @@ Future<void> printBillStruk({
           l: l,
           bill: current,
           receipt: share,
+          expenses: expenses,
           venue: venue,
           logoBytes: logo,
           pendingSync: ref

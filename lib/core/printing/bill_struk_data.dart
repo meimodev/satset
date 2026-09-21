@@ -127,6 +127,9 @@ class BillStrukData {
 
   // ── body ──
   final List<BillStrukLine> lines;
+  final List<({String category, String note, int amount})> expenses;
+  final int expenseTotal;
+  final bool expensesOffline;
 
   // ── money ──
   final int subtotal;
@@ -185,6 +188,9 @@ class BillStrukData {
     required this.kind,
     this.docLabel = '',
     required this.lines,
+    this.expenses = const [],
+    this.expenseTotal = 0,
+    this.expensesOffline = false,
     required this.subtotal,
     this.discountLabel = '',
     this.discountAmount = 0,

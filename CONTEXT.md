@@ -749,6 +749,8 @@ The read-only on-screen view of an order slip, bill, or payment receipt that mus
 The local date and time a bill, payment receipt, or order slip is printed, displayed below its header. Each reprint carries its new print time, distinct from the order or payment time.
 
 ### Struk (cetak struk meja)
+The separate [[Pengeluaran kunjungan (visit expense)|table expense]] breakdown is a display-only exception to the no-money description below: it names venue costs and their total, never order prices or an amount payable by the guest.
+
 **ID · EN** — Cetak struk meja · Print order slip. The document is an **order slip**, never a "receipt" — it carries no money. "verifikasi pesanan" · "check your order".
 
 A printed **guest order-confirmation slip** for a live [[Table]] — lists that table's sent, non-[[Void (item)|voided]] lines (item, qty, [[Modifier group (add-on)|modifiers]], [[Guest note / Item note|item notes]]) under the venue header/footer, headed by the table label, [[Pax]], time, and — when set — the **guest name** and the table-level [[Guest note / Item note|guest note]] ("Catatan"), with **no prices, tax, service, or total**. Money is settled elsewhere; the struk only lets the guest verify what was ordered ("verifikasi pesanan"). It is a confirmation, not a fulfillment tracker — it carries no per-line sent/ready/served state, no course grouping, and no internal table fields (waiter, lock, status). Printed on demand from the table-detail **"Cetak struk meja"** action, the [[Close (table) / Table session|Tutup meja]] flow, and the order-sent screen — all through one shared print path. _Avoid_: treating the struk as the guest's **bill** (it carries no money — that is a separate, not-yet-built document); printing a table with no sent lines (nothing to confirm).
@@ -972,13 +974,15 @@ A category is **retired, never deleted** — a removed one orphans every expense
 _Avoid_: one catalogue shared by every box; a category that outlives a delete; snapshotting the word onto the entry; an audit row for authoring one; guarding against retiring the last one.
 
 ### Pengeluaran kunjungan (visit expense)
+The table order slip and whole-table bill/payment receipt show a separate expense breakdown in preview and print: category, note, amount, and total expenses. These are venue costs, not charges or discounts to the guest. The guest's payable total is unchanged. Individual split receipts do not repeat the table-wide expenses. An offline expense summary is provisional and may not include expenses recorded by other devices.
+
 **ID · EN** — Pengeluaran kunjungan · Visit expense. Floor label: **Pengeluaran meja** · Table expense — a table-naming string, so it takes a [[Kata layanan (service term)|serviceTerm]] override like the rest. Categories are **venue-authored**, not a closed set. _Avoid_: "Talangan" (promises a reimbursement nobody makes); "Biaya meja" (collides with **Biaya layanan**, the [[Tax & service charge|service charge]]); calling it petty cash.
 
 Cash a [[Waiter]] spends **on a party while serving it** — tissues, a complimentary something, a small errand — taken from the money that [[Visit]] is producing and recorded against the visit.
 
 **It is not [[Kas kecil (petty cash)]].** The box is a standing venue float that only ever leaves the venue and is deliberately **not revenue** (ADR-0089); this is money out of one visit's own takings and **is** revenue-affecting. The two ledgers never touch: an expense here moves no box balance, no top-up can fund it, and neither appears in the other's report section.
 
-The guest pays **in full**. The [[Bill (tab)]] total, its receipts and its outstanding never learn the expense exists — `recomputeBill` stays pure and untouched, which is what keeps a [[Diskon (discount)]] and an expense distinguishable: a discount is a give-back to the guest, an expense is a cost the venue absorbed. What it reduces is what the venue *collected*: `settledTotal` keeps its frozen formula (ADR-0039) and cash in hand is `settledTotal − expenseAmount`, carried as its own figure beside Netto and never folded into it.
+The guest pays **in full**. Expenses do not alter the [[Bill (tab)]] total, receipt amounts, or outstanding balance. A [[Diskon (discount)]] is a give-back to the guest; an expense is a cost the venue absorbed. What it reduces is what the venue *collected*: cash in hand is `settledTotal − expenseAmount`, carried as its own figure beside Netto and never folded into it.
 
 Capped at the visit's **subtotal of sent, non-voided lines, pre-tax and pre-discount** — you cannot take more out of a table than the table produced. The cap applies to the **running sum** of the visit's expenses and is checked **at capture only, never re-validated**: a later void leaves the expense standing, because the cash already left and unwinding it would be a lie. Append-only — never edited, never deleted, the posture the box takes toward its own rows.
 

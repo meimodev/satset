@@ -4,6 +4,7 @@ import 'package:satset/core/localization/labels.dart';
 import 'package:satset/core/printing/bill_struk_data.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/data/models/visit_expense_dto.dart';
 import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/core/time/sat_clock.dart';
 
@@ -79,6 +80,7 @@ class BillStrukBuilder {
     required VenueSettingsDto venue,
     List<int>? logoBytes,
     bool pendingSync = false,
+    VisitExpenseSummaryDto? expenses,
     DateTime? at,
   }) {
     if (receipt == null) {
@@ -109,6 +111,12 @@ class BillStrukBuilder {
               ),
         at: at ?? SatClock.now(),
         kind: BillDocKind.wholeBill,
+        expenses: [
+          for (final e in expenses?.expenses ?? <VisitExpenseDto>[])
+            (category: e.categoryName, note: e.note, amount: e.amount),
+        ],
+        expenseTotal: expenses?.total ?? 0,
+        expensesOffline: expenses?.offline ?? false,
         lines: [
           for (final l in bill.lines)
             if (l.status != 'voided')
@@ -438,6 +446,7 @@ class BillStrukBuilder {
     List<int>? logoBytes,
     String qrUrl = '',
     String qrCaption = '',
+    VisitExpenseSummaryDto? expenses,
   }) {
     int n(Object? v) => (v as num?)?.toInt() ?? 0;
     final billLines = (bill['lines'] as List).cast<Map>();
@@ -540,6 +549,12 @@ class BillStrukBuilder {
               ],
         at: SatClock.now(),
         kind: BillDocKind.wholeBill,
+        expenses: [
+          for (final e in expenses?.expenses ?? <VisitExpenseDto>[])
+            (category: e.categoryName, note: e.note, amount: e.amount),
+        ],
+        expenseTotal: expenses?.total ?? 0,
+        expensesOffline: expenses?.offline ?? false,
         lines: [
           for (final l in billLines)
             if ((l['status'] as String?) != 'voided')

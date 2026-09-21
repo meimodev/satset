@@ -15,6 +15,7 @@ import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/self_order.dart' show mintMissingGuestCodes;
 import 'package:satset/server/visit_expenses.dart';
+import 'package:satset/domain/models/visit_expense.dart' as expense;
 import 'package:satset/server/ws_hub.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/capability.dart';
@@ -1461,6 +1462,9 @@ Router tablesRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       );
     }
 
+    final expenses = curVisit != null && await visitExpenseEnabled(db)
+        ? await visitExpenses(db, curVisit)
+        : const <expense.VisitExpense>[];
     final data = StrukData(
       venueName: v?.displayName ?? 'SatSet',
       header: v?.receiptHeader ?? '',
@@ -1477,6 +1481,11 @@ Router tablesRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       guestNote: table.guestNotes ?? '',
       at: SatClock.now(),
       lines: lines,
+      expenses: [
+        for (final e in expenses)
+          (category: e.categoryName, note: e.note, amount: e.amount),
+      ],
+      expenseTotal: expenses.fold<int>(0, (sum, e) => sum + e.amount),
     );
 
     try {

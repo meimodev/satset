@@ -30,7 +30,7 @@ class StrukRenderer {
     return '${_two(l.hour)}:${_two(l.minute)}';
   }
 
-  /// Renders a full guest order-confirmation struk (no prices).
+  /// Renders order lines without prices, plus any separate venue expenses.
   static Future<List<int>> render(
     AppL10n l,
     StrukData d, {
@@ -133,6 +133,10 @@ class StrukRenderer {
     }
     out.addAll(g.hr());
 
+    out.addAll(
+      renderExpenses(l, g, d.expenses, d.expenseTotal, d.expensesOffline),
+    );
+
     // Footer: "verifikasi pesanan" + optional receipt footer + sign-off.
     out.addAll(
       g.text(l.strukVerify, styles: const PosStyles(align: PosAlign.center)),
@@ -150,6 +154,51 @@ class StrukRenderer {
     out.addAll(g.text(thanks, styles: const PosStyles(align: PosAlign.center)));
     out.addAll(g.feed(2));
     out.addAll(g.cut());
+    return out;
+  }
+
+  /// Display-only venue costs, shared by order slips and whole-table bills.
+  static List<int> renderExpenses(
+    AppL10n l,
+    Generator g,
+    List<({String category, String note, int amount})> expenses,
+    int total,
+    bool offline,
+  ) {
+    final out = <int>[];
+    if (expenses.isNotEmpty || total > 0 || offline) {
+      final money = NumberFormat.currency(
+        locale: 'id_ID',
+        symbol: 'Rp ',
+        decimalDigits: 0,
+      );
+      out.addAll(
+        g.text(l.rptSecPengeluaran, styles: const PosStyles(bold: true)),
+      );
+      for (final expense in expenses) {
+        out.addAll(g.text(expense.category));
+        if (expense.note.trim().isNotEmpty) {
+          out.addAll(g.text('  ${expense.note.trim()}'));
+        }
+        out.addAll(
+          g.text(
+            money.format(expense.amount),
+            styles: const PosStyles(align: PosAlign.right),
+          ),
+        );
+      }
+      out.addAll(
+        g.text(
+          '${l.strukTotal}: ${money.format(total)}',
+          styles: const PosStyles(bold: true),
+        ),
+      );
+      if (offline) {
+        out.addAll(g.text(l.prnPreviewOffline.replaceAll('—', '-')));
+      }
+      out.addAll(g.hr());
+    }
+
     return out;
   }
 

@@ -2,6 +2,7 @@ import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:intl/intl.dart';
 
 import 'package:satset/core/printing/bill_struk_data.dart';
+import 'package:satset/core/printing/struk_renderer.dart';
 import 'package:satset/core/printing/printer_branding.dart';
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/l10n/app_localizations.dart';
@@ -351,6 +352,17 @@ class BillStrukRenderer {
 
     // ── footer ──
     out.addAll(g.hr());
+    if (d.kind == BillDocKind.wholeBill) {
+      out.addAll(
+        StrukRenderer.renderExpenses(
+          l,
+          g,
+          d.expenses,
+          d.expenseTotal,
+          d.expensesOffline,
+        ),
+      );
+    }
     final thanks = d.thankYou.trim().isEmpty
         ? l.strukThanks
         : d.thankYou.trim();

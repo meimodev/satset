@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'package:satset/server/visit_expenses.dart';
+import 'package:satset/data/models/visit_expense_dto.dart';
+import 'package:satset/domain/models/visit_expense.dart' as expense;
 import 'package:satset/core/time/business_day.dart';
 import 'package:satset/core/time/sat_clock.dart';
 
@@ -2032,7 +2035,17 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final v = await (db.select(
       db.venueSettings,
     )..where((x) => x.id.equals('default'))).getSingleOrNull();
+    final expenses = receiptId == null && await visitExpenseEnabled(db)
+        ? await visitExpenses(db, bill['visitId'] as String)
+        : const <expense.VisitExpense>[];
     final data = BillStrukBuilder.fromServerMap(
+      expenses: VisitExpenseSummaryDto(
+        expenses: [
+          for (final e in expenses)
+            VisitExpenseDto.fromJson(visitExpenseJson(e)),
+        ],
+        total: expenses.fold<int>(0, (sum, e) => sum + e.amount),
+      ),
       l: satL10n,
       bill: bill,
       receiptId: receiptId,
