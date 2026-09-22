@@ -29,12 +29,16 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
   final Ref ref;
   StreamSubscription? _wsSub;
   ProviderSubscription<ApiConfig?>? _cfgSub;
+  int _settingsRevision = 0;
 
   /// The one way a fetched payload becomes state: adopt it and write it down.
   /// A site that assigns `state` directly leaves the cache a version behind.
   void _adopt(VenueSettingsDto dto) {
+    _settingsRevision++;
     state = dto;
     _remember(dto);
+    ref.read(venueSettingsStatusProvider.notifier).state =
+        const AsyncValue.data(null);
   }
 
   /// Keep the venue's settings across a cold boot, **whole** (ADR-0128,
@@ -84,6 +88,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
 
   Future<void> _fetch() async {
     if (ref.read(apiConfigProvider) == null) return;
+    final revision = ++_settingsRevision;
     ref.read(venueSettingsStatusProvider.notifier).state =
         const AsyncValue.loading();
     try {
@@ -91,13 +96,12 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       // A request is an await gap wide enough for the container to go away —
       // a shell unmounting mid-flight, or a test ending. Reading a disposed
       // ref throws where nobody is listening.
-      if (!mounted) return;
+      // A newer read, save, or live update supersedes this in-flight read.
+      if (!mounted || revision != _settingsRevision) return;
       _adopt(VenueSettingsDto.fromJson((raw as Map).cast<String, dynamic>()));
-      ref.read(venueSettingsStatusProvider.notifier).state =
-          const AsyncValue.data(null);
     } catch (e, st) {
       SatLog.repo('venueSettings.fetch fail $e');
-      if (!mounted) return;
+      if (!mounted || revision != _settingsRevision) return;
       ref.read(venueSettingsStatusProvider.notifier).state = AsyncValue.error(
         e,
         st,
@@ -169,9 +173,6 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       });
       return;
     }
-    await _fetch();
-    // Same await-gap rule as above: the request may outlive the container.
-    if (!mounted) return;
     _wsSub ??= ref.read(wsClientProvider).events.listen((ev) {
       // Socket came back: refetch, the way every other collection does
       // (ADR-0021). Without it a client that cold-booted away from its host
@@ -190,6 +191,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         SatLog.repo('venueSettings.ws decode fail $e');
       }
     });
+    await _fetch();
   }
 
   @override
@@ -305,10 +307,8 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       soundUngreeted: soundUngreeted ?? state.soundUngreeted,
       soundPickup: soundPickup ?? state.soundPickup,
       membersEnabled: membersEnabled ?? state.membersEnabled,
-      tableExpenseEnabled:
-          tableExpenseEnabled ?? state.tableExpenseEnabled,
-      memberMirrorEnabled:
-          memberMirrorEnabled ?? state.memberMirrorEnabled,
+      tableExpenseEnabled: tableExpenseEnabled ?? state.tableExpenseEnabled,
+      memberMirrorEnabled: memberMirrorEnabled ?? state.memberMirrorEnabled,
       memberPointsEnabled: memberPointsEnabled ?? state.memberPointsEnabled,
       memberPunchEnabled: memberPunchEnabled ?? state.memberPunchEnabled,
       memberEarnPerThousand:
