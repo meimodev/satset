@@ -36,6 +36,15 @@ class PendingLineDiscount {
   final String presetId;
   final String label;
   final int amount;
+  final String kind;
+  final int? value;
+
+  int amountFor(int unitPrice, int units) => resolveDiscountAmount(
+    kind: kind,
+    value: value ?? amount,
+    base: unitPrice * units,
+    units: value == null ? 1 : units,
+  );
 
   /// Collected when the picker ran, spent at confirm. The step-up belongs to
   /// the discount the manager actually looked at, not to the batch.
@@ -45,6 +54,8 @@ class PendingLineDiscount {
     required this.presetId,
     required this.label,
     required this.amount,
+    this.kind = 'fixed',
+    this.value,
     required this.approverPin,
   });
 }
@@ -261,9 +272,25 @@ class _SettlePaneState extends ConsumerState<SettlePane> {
       final units = widget.selection[l.ticketId] ?? 0;
       if (units == 0) continue;
       final d = widget.pendingDiscounts[l.ticketId];
-      if (d == null) continue;
-      final base = l.unitPrice * units;
-      sum += d.amount > base ? base : d.amount;
+      if (d != null) {
+        sum += d.amountFor(l.unitPrice, units);
+      } else {
+        final base = l.unitPrice * units;
+        final applied = _bill.lineDiscounts
+            .where((d) => d.ticketId == l.ticketId)
+            .fold<int>(
+              0,
+              (sum, d) =>
+                  sum +
+                  resolveDiscountAmount(
+                    kind: d.kind,
+                    value: d.value,
+                    base: base,
+                    units: units,
+                  ),
+            );
+        sum += applied.clamp(0, base);
+      }
     }
     return sum;
   }
@@ -271,13 +298,26 @@ class _SettlePaneState extends ConsumerState<SettlePane> {
   /// What the tapped units are worth once the pending give-backs come off.
   int get _selectionSubtotal => _selectionGross - _pendingDiscount;
 
+  int get _pendingFullDiscount => _bill.lines.fold<int>(
+    0,
+    (sum, line) =>
+        sum +
+        (widget.pendingDiscounts[line.ticketId]?.amountFor(
+              line.unitPrice,
+              line.unassignedUnits,
+            ) ??
+            0),
+  );
+
   /// The number the confirm button is about to take.
   int get _amount => switch (widget.mode) {
     // The whole remainder, capped by what is actually still owed — or the one
     // open receipt's own outstanding when nothing is left to mint from.
     SettleMode.penuh =>
       _penuhTarget?.outstanding ??
-          (_bill.outstanding < _remainder ? _bill.outstanding : _remainder),
+          ((_bill.outstanding < _remainder ? _bill.outstanding : _remainder) -
+                  _grossUp(_pendingFullDiscount))
+              .clamp(0, _bill.outstanding),
     // Priced at confirm by the server; this is the honest preview — the tapped
     // units plus their proportional share of service and tax.
     SettleMode.perItem => _grossUp(_selectionSubtotal),
@@ -360,6 +400,9 @@ class _SettlePaneState extends ConsumerState<SettlePane> {
     final photoBase64 = _proof == null ? null : base64Encode(_proof!);
     final tender = _pay == PayMethod.tunai ? _tender : null;
     final fallback = _amount;
+    final pending = Map<String, PendingLineDiscount>.of(
+      widget.pendingDiscounts,
+    );
     try {
       await widget.run(() async {
         final receiptId = switch (widget.mode) {
@@ -382,7 +425,7 @@ class _SettlePaneState extends ConsumerState<SettlePane> {
         // on — the server refuses one, and the picker never offers it there.
         var bill = _bill;
         if (widget.mode != SettleMode.bagiRata) {
-          for (final e in widget.pendingDiscounts.entries) {
+          for (final e in pending.entries) {
             if (widget.mode == SettleMode.perItem &&
                 (widget.selection[e.key] ?? 0) == 0) {
               continue;

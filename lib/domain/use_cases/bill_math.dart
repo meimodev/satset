@@ -125,15 +125,20 @@ MoneyBreakdown computeBreakdown(
 
 /// Resolve a [[Preset diskon]]'s `{kind, value}` against a [base] into rupiah.
 /// `percent` reads [value] as basis points (clamped to 100%); `fixed` reads it
-/// as rupiah (clamped to [base]). Shared by the server and the cashier UI so
+/// as rupiah per [units] (default one for legacy/bill/receipt discounts),
+/// clamped to [base]. Shared by the server and the cashier UI so
 /// the quoted and the stored amount can never disagree.
 int resolveDiscountAmount({
   required String kind,
   required int value,
   required int base,
+  int units = 1,
 }) {
-  if (value <= 0 || base <= 0) return 0;
-  if (kind == 'fixed') return value > base ? base : value;
+  if (value <= 0 || base <= 0 || units <= 0) return 0;
+  if (kind == 'fixed') {
+    final amount = value * units;
+    return amount > base ? base : amount;
+  }
   final bps = value > 10000 ? 10000 : value;
   return (base * bps) ~/ 10000;
 }

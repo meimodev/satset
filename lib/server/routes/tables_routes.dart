@@ -430,7 +430,41 @@ Future<void> snapshotVisitAndDelete(
     // Freeze the individual discount rows, not just the per-receipt total —
     // the accounting export's per-preset rollup and a reprinted money doc's
     // named "Diskon <preset>" rows both need them after the live rows go.
+    final archivedDiscounts = <Discount>[];
     for (final d in discountRows) {
+      if (d.receiptId != null || d.ticketId == null) {
+        archivedDiscounts.add(d);
+        continue;
+      }
+      // Ticket-owned presets outlive receipts; archive each payer's actual share.
+      final ticket = tickets.where((t) => t.id == d.ticketId).firstOrNull;
+      var allocated = 0;
+      for (final rec in recs.where((r) => r.mode != 'even')) {
+        final owns =
+            await (db.select(db.receiptLines)..where(
+                  (l) =>
+                      l.receiptId.equals(rec.id) &
+                      l.ticketId.equals(d.ticketId!),
+                ))
+                .get();
+        final units = owns.fold<int>(0, (sum, l) => sum + l.qtyUnits);
+        if (units == 0) continue;
+        final amount = resolveDiscountAmount(
+          kind: d.kind,
+          value: d.value,
+          base: (ticket?.price ?? 0) * units,
+          units: units,
+        );
+        allocated += amount;
+        archivedDiscounts.add(
+          d.copyWith(receiptId: Value(rec.id), amount: amount),
+        );
+      }
+      if (d.amount > allocated) {
+        archivedDiscounts.add(d.copyWith(amount: d.amount - allocated));
+      }
+    }
+    for (final d in archivedDiscounts) {
       await db
           .into(db.tableSessionDiscounts)
           .insert(
@@ -444,6 +478,7 @@ Future<void> snapshotVisitAndDelete(
               kind: d.kind,
               value: Value(d.value),
               amount: Value(d.amount),
+              source: Value(d.source),
               byUserId: Value(d.byUserId),
               approvedByUserId: Value(d.approvedByUserId),
               at: d.at,

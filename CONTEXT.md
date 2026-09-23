@@ -897,6 +897,11 @@ A deliberate, authorized reduction of what a guest owes, applied by the [[Cashie
 ### Preset diskon
 **ID · EN** — Preset diskon · Discount preset. kind: persen · Percent; tetap · Fixed.
 
+**Per item** means per unit within the line selected by the cashier. Selecting a line preset automatically discounts every unit in that line; it does not select other lines. A fixed Rp5,000 preset on 3 coffees at Rp20,000 each gives Rp15,000 off in total, with each unit's discount capped at that unit's price.
+
+The discount follows those units when the line is split across receipts: one coffee receives Rp5,000 off and the other two receive Rp10,000 off. Discounts applied before the per-unit rule retain their original calculation; the new rule applies to newly applied presets. See [ADR-0142](docs/adr/0142-per-item-presets-follow-units-and-preserve-existing-applications.md).
+
+
 An owner-defined discount the [[Cashier]] may choose from — `{name, scope, kind, value, active}`, where **scope** is `bill`, `order` or `line` and **kind** is `percent` or `fixed`. Scope is what stops "Potongan 50rb" being applied to a 25k line; the cashier's picker only offers presets valid for what they tapped. Edited in a **Diskon** section of Venue Settings under `editSettings`, and **hard-deleted** rather than archived — safe because every applied [[Diskon (discount)]] snapshots its values, so history stands alone. The `active` flag hides a seasonal promo without deleting it. Deliberately carries **no** validity dates, usage caps, or per-item targeting — those are promo-engine features, and the cashier already knows which line to tap. _Avoid_: reading a preset live through `presetId` when rendering or reporting a settled bill (`presetId` is a weak reference kept only for the per-preset rollup); adding targeting rules without an ADR.
 
 ### Payment (manual confirmation)

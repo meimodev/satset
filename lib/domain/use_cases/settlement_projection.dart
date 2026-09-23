@@ -43,7 +43,6 @@ Map<String, dynamic> projectBill(
   return _recompute(bill, cfg);
 }
 
-
 /// The base a [[Kunjungan tertangkap]] projects onto (ADR-0139).
 ///
 /// Every other bill this device shows starts life as the host's own JSON,
@@ -161,9 +160,14 @@ void _apply(
     case SettlementEventKind.applyDiscount:
       final rec = _receiptOf(bill, e.arg<String>('receiptId'));
       if (rec == null) return;
-      final ds = (rec['discounts'] as List).cast<Map<String, dynamic>>();
-      final source = e.arg<String>('source') ?? 'manual';
       final ticketId = e.arg<String>('ticketId');
+      final perUnit = ticketId != null && e.payload['perUnit'] == true;
+      final ds =
+          (perUnit
+                  ? (bill['lineDiscounts'] ??= <Map<String, dynamic>>[])
+                  : rec['discounts'])
+              as List;
+      final source = e.arg<String>('source') ?? 'manual';
       // One slot per source (ADR-0094), enforced by a partial index on the
       // host — so the projection replaces rather than stacks a second row.
       ds.removeWhere((d) => d['source'] == source && d['ticketId'] == ticketId);
@@ -171,8 +175,10 @@ void _apply(
 
     case SettlementEventKind.removeDiscount:
       final rec = _receiptOf(bill, e.arg<String>('receiptId'));
-      if (rec == null) return;
-      (rec['discounts'] as List).removeWhere(
+      (rec?['discounts'] as List?)?.removeWhere(
+        (d) => (d as Map)['id'] == e.arg<String>('discountId'),
+      );
+      (bill['lineDiscounts'] as List?)?.removeWhere(
         (d) => (d as Map)['id'] == e.arg<String>('discountId'),
       );
 
@@ -440,6 +446,7 @@ Map<String, dynamic> _discountRow(
   'name': e.arg<String>('name'),
   'kind': e.arg<String>('kind') ?? 'percent',
   'value': e.intArg('value'),
+  'perUnit': ticketId != null && e.payload['perUnit'] == true,
   // Derived by the recompute below, never carried on the event.
   'amount': 0,
   'source': source,
@@ -509,7 +516,22 @@ Map<String, dynamic> _recompute(
           qtyUnits: l['qtyUnits'] as int? ?? 0,
         ),
   ];
+  // Receipt views of ticket-owned presets are derived, never independent rows.
+  for (final r in receipts) {
+    ((r['discounts'] ??= <Map<String, dynamic>>[]) as List).removeWhere(
+      (d) => (d as Map)['perUnit'] == true,
+    );
+  }
+  final linePresets = _list(bill, 'lineDiscounts');
   final rcDiscounts = <RcDiscount>[
+    for (final d in linePresets)
+      RcDiscount(
+        id: d['id'] as String,
+        receiptId: null,
+        ticketId: d['ticketId'] as String,
+        kind: d['kind'] as String,
+        value: d['value'] as int,
+      ),
     for (final r in receipts)
       for (final d in _list(r, 'discounts'))
         RcDiscount(
@@ -563,8 +585,16 @@ Map<String, dynamic> _recompute(
     for (final d in _list(r, 'discounts')) {
       d['amount'] = res.discountAmounts[d['id']] ?? 0;
     }
+    for (final d in linePresets) {
+      if (_list(r, 'lines').any((l) => l['ticketId'] == d['ticketId'])) {
+        (r['discounts'] as List).add({
+          ...d,
+          'amount': res.receiptDiscountAmounts[id]?[d['id']] ?? 0,
+        });
+      }
+    }
   }
-  for (final d in _list(bill, 'billDiscounts')) {
+  for (final d in [..._list(bill, 'billDiscounts'), ...linePresets]) {
     d['amount'] = res.discountAmounts[d['id']] ?? 0;
   }
 

@@ -765,6 +765,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     }
 
     final ticketId = body['ticketId'] as String?;
+    // Missing marker is an older client/journal application: preserve its math.
+    final perUnit = ticketId != null && body['perUnit'] == true;
     if (ticketId == null) {
       if (preset.scope != 'order') {
         return _err(409, 'scope_mismatch', 'preset ini hanya untuk satu item');
@@ -807,6 +809,23 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       }
     }
 
+    if (perUnit && await _ticketMemberLocked(db, ticketId)) {
+      return _err(409, 'receipt_paid', 'buka ulang struk sebelum ubah diskon');
+    }
+    if (perUnit) {
+      final conflicts =
+          await (db.select(db.discounts)..where(
+                (d) => d.ticketId.equals(ticketId) & d.source.equals('manual'),
+              ))
+              .get();
+      if (conflicts.isNotEmpty) {
+        return _err(
+          409,
+          'discount_exists',
+          'sudah ada diskon di sana — hapus dulu untuk mengganti',
+        );
+      }
+    }
     // This route only ever writes the `manual` slot, so it may only refuse on
     // one (ADR-0126). Scoping the check to the source is what lets a
     // [[Pemilik tiket]]'s tier row and the cashier's promo share a line — and
@@ -815,7 +834,10 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final existing =
         await (db.select(db.discounts)..where(
               (x) =>
-                  x.receiptId.equals(receiptId) &
+                  (x.receiptId.equals(receiptId) |
+                      (ticketId == null
+                          ? const Constant(false)
+                          : x.visitId.equals(visitId) & x.receiptId.isNull())) &
                   x.source.equals('manual') &
                   (ticketId == null
                       ? x.ticketId.isNull()
@@ -840,7 +862,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             // resolved rupiah back off this discount (ADR-0072).
             id: discountId,
             // Nullable since ADR-0070 — a bill-level discount has no receipt.
-            receiptId: Value(receiptId),
+            receiptId: Value(perUnit ? null : receiptId),
+            visitId: Value(perUnit ? visitId : null),
             ticketId: Value(ticketId),
             presetId: Value(preset.id),
             // Snapshot: a later preset edit or delete must not rewrite this.
@@ -877,22 +900,27 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   // Remove a discount from a receipt. POST, not DELETE, because removal may
   // need to carry a manager step-up PIN in the body — and a PIN must never
   // ride a query string, where it would land in logs.
-  r.post('/settlement/receipts/<receiptId>/discounts/<discountId>/remove', (
+  Future<Response> removeDiscount(
     Request req,
-    String receiptId,
-    String discountId,
-  ) async {
+    String? receiptId,
+    String discountId, {
+    String? ticketVisitId,
+  }) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
-    final rec = await (db.select(
-      db.receipts,
-    )..where((x) => x.id.equals(receiptId))).getSingleOrNull();
-    if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
-    final visitId = rec.visitId;
+    final rec = receiptId == null
+        ? null
+        : await (db.select(
+            db.receipts,
+          )..where((x) => x.id.equals(receiptId))).getSingleOrNull();
+    if (rec == null && ticketVisitId == null) {
+      return _err(404, 'no_receipt', 'receipt not found');
+    }
+    final visitId = rec?.visitId ?? ticketVisitId;
     if (visitId == null) return _err(409, 'no_visit', 'receipt has no visit');
     final locked = await lockGuard(visitId);
     if (locked != null) return locked;
-    if (rec.status == 'paid') {
+    if (rec?.status == 'paid') {
       return _err(409, 'receipt_paid', 'buka ulang struk sebelum ubah diskon');
     }
     final actor = await resolve(req);
@@ -912,10 +940,22 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     }
     final row =
         await (db.select(db.discounts)..where(
-              (x) => x.id.equals(discountId) & x.receiptId.equals(receiptId),
+              (x) =>
+                  x.id.equals(discountId) &
+                  ((receiptId == null
+                          ? const Constant(false)
+                          : x.receiptId.equals(receiptId)) |
+                      (x.visitId.equals(visitId) &
+                          x.ticketId.isNotNull() &
+                          x.receiptId.isNull())),
             ))
             .getSingleOrNull();
     if (row == null) return _err(404, 'no_discount', 'diskon tidak ditemukan');
+    if (row.receiptId == null &&
+        row.ticketId != null &&
+        await _ticketMemberLocked(db, row.ticketId!)) {
+      return _err(409, 'receipt_paid', 'buka ulang struk sebelum ubah diskon');
+    }
     await (db.delete(db.discounts)..where((x) => x.id.equals(discountId))).go();
     await _recompute(db, visitId);
     await _audit(
@@ -923,14 +963,24 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       AuditType.discountRemoved,
       AuditKind.discountRemoved,
       params: {'name': row.name},
-      tableId: rec.tableId,
+      tableId: rec?.tableId ?? (await _visit(db, visitId))!.tableId,
       actor: actor?.id,
       amountCents: row.amount,
     );
     await broadcastBill(visitId);
     return _ok({'bill': await _buildBill(db, visitId)});
-  });
+  }
 
+  r.post(
+    '/settlement/receipts/<receiptId>/discounts/<discountId>/remove',
+    (Request req, String receiptId, String discountId) =>
+        removeDiscount(req, receiptId, discountId),
+  );
+  r.post(
+    '/settlement/visits/<visitId>/line-discounts/<discountId>/remove',
+    (Request req, String visitId, String discountId) =>
+        removeDiscount(req, null, discountId, ticketVisitId: visitId),
+  );
   // BILL-SCOPE discount (ADR-0070) — a table-wide promo. Attaches to the visit
   // rather than to any receipt, which is what lets it be applied before the
   // first receipt is minted (ADR-0067). {presetId, approverPin?}.
@@ -2595,6 +2645,7 @@ _rcInputs(AppDatabase db, String visitId) async {
             db.discounts,
           )..where((x) => x.receiptId.isIn(ids))).get()),
     ...await _billDiscounts(db, visitId),
+    ...await _lineDiscounts(db, visitId),
   ];
   final paid = <String, int>{};
   for (final r in recs) {
@@ -2688,8 +2739,6 @@ Uint8List? _decodePhoto(Object? raw) {
   }
 }
 
-int _sum(Iterable<int> xs) => xs.fold<int>(0, (a, b) => a + b);
-
 Map<String, dynamic> _discountJson(Discount d) => {
   'id': d.id,
   'ticketId': d.ticketId, // null ⇒ whole-order discount
@@ -2698,6 +2747,7 @@ Map<String, dynamic> _discountJson(Discount d) => {
   'kind': d.kind,
   'value': d.value,
   'amount': d.amount,
+  'perUnit': d.receiptId == null && d.ticketId != null,
   // Which slot this fills (ADR-0094). Without it every row reads as `manual`
   // on the client: the member panel loses its undo and the printed Diskon
   // label can name a redemption the cashier never applied.
@@ -2752,7 +2802,6 @@ Future<Map<String, dynamic>?> _buildBill(
   final tickets = await _sentTickets(db, visitId);
   if (tickets.isEmpty && !allowEmpty) return null;
   final cfg = await _config(db);
-  final billSub = tickets.fold<int>(0, (a, t) => a + t.price * t.qty);
 
   final recs = await (db.select(
     db.receipts,
@@ -2771,25 +2820,22 @@ Future<Map<String, dynamic>?> _buildBill(
   // total stays undiscounted while the receipts shrink, so `outstanding` never
   // reaches zero and a fully-paid discounted bill never shows Lunas.
   final byReceipt = await _discountsByReceipt(db, recs.map((r) => r.id));
-  final allDiscounts = byReceipt.values.expand((x) => x);
-  final billLineDiscount = _sum(
-    allDiscounts.where((d) => d.ticketId != null).map((d) => d.amount),
+  final linePresets = await _lineDiscounts(db, visitId);
+  final input = await _rcInputs(db, visitId);
+  final money = recomputeBill(
+    lines: input.lines,
+    receipts: input.receipts,
+    assigns: input.assigns,
+    discounts: input.discounts,
+    paidByReceipt: input.paid,
+    cfg: input.cfg,
   );
-  final billOrderDiscount = _sum(
-    allDiscounts.where((d) => d.ticketId == null).map((d) => d.amount),
-  );
+  final billLineDiscount = money.billLineDiscount;
   // The bill-scope discount (ADR-0070) belongs to the visit, not to any
   // receipt, so it is fetched separately and lands in the same slot an order
   // discount does — same position in the ADR-0038 stack, different owner.
   final billDiscs = await _billDiscounts(db, visitId);
-  final billDiscTotal = _sum(
-    billDiscs.map((d) => d.amount),
-  ).clamp(0, billSub - billLineDiscount);
-  final billBreak = computeBreakdown(
-    billSub - billLineDiscount,
-    cfg,
-    discount: billOrderDiscount + billDiscTotal,
-  );
+  final billBreak = money.billBreak;
 
   var paidNet = 0;
   // [[Kartu stempel (punch card)]] per named [[Pemilik struk]], memoised.
@@ -2869,6 +2915,12 @@ Future<Map<String, dynamic>?> _buildBill(
       'discounts': [
         for (final d in (byReceipt[rec.id] ?? const <Discount>[]))
           _discountJson(d),
+        for (final d in linePresets)
+          if (lines.any((l) => l.ticketId == d.ticketId))
+            {
+              ..._discountJson(d),
+              'amount': money.receiptDiscountAmounts[rec.id]?[d.id] ?? 0,
+            },
       ],
       'lines': [
         for (final l in lines) {'ticketId': l.ticketId, 'qtyUnits': l.qtyUnits},
@@ -2980,6 +3032,7 @@ Future<Map<String, dynamic>?> _buildBill(
     // can name each one. Receipt-scoped rows still ride on their receipt.
     // ADR-0070; a list rather than a row since ADR-0094.
     'billDiscounts': [for (final d in billDiscs) _discountJson(d)],
+    'lineDiscounts': [for (final d in linePresets) _discountJson(d)],
     // The [[Pelanggan (member)]] on this bill, if one is attached — carried
     // whole so the cashier panel can show the balance and the punch card
     // without a second round trip mid-settlement.
@@ -3009,9 +3062,22 @@ Future<Map<String, dynamic>?> _buildBill(
 /// ADR-0094: a cashier's promo, a member's standing discount and a points
 /// redemption each hold their own slot and stack by design.
 Future<List<Discount>> _billDiscounts(AppDatabase db, String visitId) =>
-    (db.select(
-      db.discounts,
-    )..where((x) => x.visitId.equals(visitId) & x.receiptId.isNull())).get();
+    (db.select(db.discounts)..where(
+          (x) =>
+              x.visitId.equals(visitId) &
+              x.receiptId.isNull() &
+              x.ticketId.isNull(),
+        ))
+        .get();
+
+Future<List<Discount>> _lineDiscounts(AppDatabase db, String visitId) =>
+    (db.select(db.discounts)..where(
+          (x) =>
+              x.visitId.equals(visitId) &
+              x.receiptId.isNull() &
+              x.ticketId.isNotNull(),
+        ))
+        .get();
 
 /// The bill discount occupying one slot, or null if that slot is free.
 Future<Discount?> _billDiscountOf(
@@ -3023,6 +3089,7 @@ Future<Discount?> _billDiscountOf(
           (x) =>
               x.visitId.equals(visitId) &
               x.receiptId.isNull() &
+              x.ticketId.isNull() &
               x.source.equals(source),
         ))
         .getSingleOrNull();

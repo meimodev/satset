@@ -53,14 +53,17 @@ class RcAssign {
 /// `kind`/`value` (ADR-0037) rather than a resolved rupiah amount — the amount
 /// is derived here, because a receipt's base moves as lines are reassigned.
 ///
-/// [receiptId] null ⇒ **bill-scope** (ADR-0070/0094). [ticketId] null ⇒
-/// whole-order rather than per-line.
+/// With [receiptId] null, [ticketId] distinguishes a ticket-owned per-unit
+/// preset (ADR-0142) from a bill discount. Receipt-owned rows retain legacy math.
 class RcDiscount {
   final String id;
   final String? receiptId;
   final String? ticketId;
   final String kind; // 'percent' | 'fixed'
   final int value;
+  // A ticket-owned snapshot survives receipt allocation/deletion. Older
+  // receipt-owned snapshots keep their original per-line calculation.
+  bool get perUnit => receiptId == null && ticketId != null;
   const RcDiscount({
     required this.id,
     required this.receiptId,
@@ -93,6 +96,8 @@ class RcReceiptMoney {
 
 /// Everything one recompute produced.
 class RcResult {
+  final Map<String, Map<String, int>> receiptDiscountAmounts;
+
   /// Recomputed money per **itemized** receipt id. An amount receipt keeps its
   /// frozen total and appears only in [statuses].
   final Map<String, RcReceiptMoney> receipts;
@@ -120,6 +125,7 @@ class RcResult {
   final bool fullyAssigned;
 
   const RcResult({
+    required this.receiptDiscountAmounts,
     required this.receipts,
     required this.discountAmounts,
     required this.statuses,
@@ -163,6 +169,8 @@ RcResult recomputeBill({
   );
 
   final resolved = <String, int>{};
+  final receiptDiscountAmounts = <String, Map<String, int>>{};
+  final linePresets = discounts.where((d) => d.perUnit).toList();
   final itemized = [
     for (final r in receipts)
       if (!r.isAmount) r,
@@ -184,7 +192,7 @@ RcResult recomputeBill({
     }
     final ds = [
       for (final d in discounts)
-        if (d.receiptId == rec.id) d,
+        if (d.receiptId == rec.id || d.perUnit) d,
     ];
     // A line discount's base is the value of the units THIS receipt owns.
     //
@@ -194,6 +202,8 @@ RcResult recomputeBill({
     // own base. Clamping each row on its own would let 10% + 100% take 110% of
     // a dish and drive the receipt negative.
     var lineDisc = 0;
+    final receiptResolved = <String, int>{};
+    receiptDiscountAmounts[rec.id] = receiptResolved;
     final byTicket = <String, List<RcDiscount>>{};
     for (final d in ds.where((d) => d.ticketId != null)) {
       (byTicket[d.ticketId!] ??= <RcDiscount>[]).add(d);
@@ -206,8 +216,10 @@ RcResult recomputeBill({
           kind: d.kind,
           value: d.value,
           base: base,
+          units: d.perUnit ? (units[entry.key] ?? 0) : 1,
         );
-        resolved[d.id] = amt;
+        receiptResolved[d.id] = amt;
+        resolved[d.id] = (d.perUnit ? (resolved[d.id] ?? 0) : 0) + amt;
         stack += amt;
       }
       // ponytail: clamped as a stack, not reconciled row by row — the printed
@@ -224,6 +236,7 @@ RcResult recomputeBill({
         base: net,
       );
       resolved[d.id] = amt;
+      receiptResolved[d.id] = amt;
       orderDisc += amt;
     }
     subtotals.add(net);
@@ -233,6 +246,27 @@ RcResult recomputeBill({
 
   final billSub = lines.fold<int>(0, (a, l) => a + l.unitPrice * l.qty);
   final assignedSub = _sum(subtotals) + _sum(lineDiscounts);
+  var unassignedDiscount = 0;
+  for (final line in lines) {
+    final units = (line.qty - (assignedUnits[line.ticketId] ?? 0)).clamp(
+      0,
+      line.qty,
+    );
+    final base = line.unitPrice * units;
+    var stack = 0;
+    for (final d in linePresets.where((d) => d.ticketId == line.ticketId)) {
+      final amount = resolveDiscountAmount(
+        kind: d.kind,
+        value: d.value,
+        base: base,
+        units: units,
+      );
+      resolved[d.id] = (resolved[d.id] ?? 0) + amount;
+      stack += amount;
+    }
+    unassignedDiscount += stack.clamp(0, base);
+  }
+  final totalLineDiscount = _sum(lineDiscounts) + unassignedDiscount;
 
   // ── bill-scope: belongs to the visit, so it is fanned out across the
   //    itemized receipts before they can be totalled — the job
@@ -241,9 +275,11 @@ RcResult recomputeBill({
   //
   //    Sources stack (ADR-0094) and every one resolves against the SAME base —
   //    a percentage never compounds on another source's give-away. ──
-  final billDiscBase = billSub - _sum(lineDiscounts);
+  final billDiscBase = billSub - totalLineDiscount;
   var billScopeDiscount = 0;
-  for (final d in discounts.where((d) => d.receiptId == null)) {
+  for (final d in discounts.where(
+    (d) => d.receiptId == null && d.ticketId == null,
+  )) {
     final amt = resolveDiscountAmount(
       kind: d.kind,
       value: d.value,
@@ -312,7 +348,7 @@ RcResult recomputeBill({
   //    without this the bill total stays undiscounted while the receipts
   //    shrink, so `outstanding` never reaches zero and a fully-paid discounted
   //    bill never shows Lunas. ──
-  final billLineDiscount = _sum(lineDiscounts);
+  final billLineDiscount = totalLineDiscount;
   final billOrderDiscount = _sum([
     for (final d in discounts)
       if (d.receiptId != null && d.ticketId == null) (resolved[d.id] ?? 0),
@@ -328,6 +364,7 @@ RcResult recomputeBill({
   );
 
   return RcResult(
+    receiptDiscountAmounts: receiptDiscountAmounts,
     receipts: money,
     discountAmounts: resolved,
     statuses: statuses,

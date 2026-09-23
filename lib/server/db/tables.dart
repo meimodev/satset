@@ -556,8 +556,7 @@ class VenueSettings extends Table {
   /// file would hand back every number. The salt travels to the device but is
   /// kept **out of the sqlite file** — `flutter_secure_storage`, so the file
   /// alone is not enough.
-  TextColumn get memberMirrorSalt =>
-      text().withDefault(const Constant(''))();
+  TextColumn get memberMirrorSalt => text().withDefault(const Constant(''))();
 
   /// The two mechanisms that nest under it, both off by default. Turning
   /// [memberPointsEnabled] off **freezes** the [[Poin]] ledger — balances stay,
@@ -1039,11 +1038,12 @@ class DiscountPresets extends Table {
 class Discounts extends Table {
   TextColumn get id => text()();
 
-  /// Null ⇒ a bill discount (see [visitId]). Set ⇒ receipt- or line-scoped.
+  /// Null ⇒ visit-owned: a bill discount, or a per-unit preset when ticketId
+  /// is set (ADR-0142). Set ⇒ legacy receipt- or line-scoped discount.
   TextColumn get receiptId => text().nullable()();
 
-  /// Set only on a bill discount. Receipt-scoped rows reach their visit through
-  /// the receipt.
+  /// Set on visit-owned bill and ticket presets. Legacy receipt-scoped rows
+  /// reach their visit through the receipt.
   TextColumn get visitId => text().nullable()();
 
   /// Null ⇒ whole-order discount. Set ⇒ line discount on this ticket's units.

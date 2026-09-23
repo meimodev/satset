@@ -35,10 +35,17 @@ void main() {
   );
 
   // 10% service + 11% tax on a 100_000 subtotal, as the server would send it.
-  Bill billOf(List<BillLine> lines, {int service = 10000, int tax = 12100}) {
-    final subtotal = lines
+  Bill billOf(
+    List<BillLine> lines, {
+    int service = 10000,
+    int tax = 12100,
+    List<BillDiscount> lineDiscounts = const [],
+  }) {
+    final gross = lines
         .where((x) => x.status != 'voided')
         .fold<int>(0, (a, x) => a + x.lineTotal);
+    final subtotal =
+        gross - lineDiscounts.fold<int>(0, (sum, d) => sum + d.amount);
     return Bill(
       visitId: 'v1',
       tableId: 't1',
@@ -56,6 +63,7 @@ void main() {
       subtotal: subtotal,
       discountAmount: 0,
       billDiscounts: const [],
+      lineDiscounts: lineDiscounts,
       member: null,
       splitEnabled: false,
       serviceAmount: service,
@@ -79,6 +87,30 @@ void main() {
         venue: venue,
         logoBytes: null,
       );
+
+  test('a split selection prints only its units of a ticket preset', () {
+    final bill = billOf(
+      [line('coffee', 'Kopi', 20000, 3)],
+      service: 0,
+      tax: 0,
+      lineDiscounts: [
+        BillDiscount.fromJson({
+          'id': 'promo',
+          'ticketId': 'coffee',
+          'name': 'Coffee promo',
+          'kind': 'fixed',
+          'value': 5000,
+          'amount': 15000,
+          'perUnit': true,
+        }),
+      ],
+    );
+    final data = build(bill, {'coffee': 2});
+    expect(data.lines.single.discountAmount, 10000);
+    expect(data.lines.single.discountLabel, 'Coffee promo');
+    expect(data.subtotal, 30000);
+    expect(data.total, 30000);
+  });
 
   test('only the tapped units reach the slip', () {
     final bill = billOf([

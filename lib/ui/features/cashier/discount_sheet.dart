@@ -46,6 +46,7 @@ class DiscountTarget {
   /// or the value of the units this receipt owns of that line. Used only to
   /// preview the amount; the server re-resolves it authoritatively.
   final int base;
+  final int units;
   final String title;
 
   const DiscountTarget({
@@ -53,11 +54,13 @@ class DiscountTarget {
     required this.ticketId,
     required this.base,
     required this.title,
+    this.units = 1,
   });
 
   /// The whole bill — a table-wide promo. ADR-0070.
   const DiscountTarget.bill({required this.base, required this.title})
     : receipt = null,
+      units = 1,
       ticketId = null;
 
   /// One line, before any receipt claims it (ADR-0126). Scope is `line`
@@ -67,6 +70,7 @@ class DiscountTarget {
     required this.base,
     required this.title,
     required String this.ticketId,
+    this.units = 1,
   }) : receipt = null;
 
   bool get isLine => ticketId != null;
@@ -105,7 +109,8 @@ showDiscountSheet(
       showSatDialog<void>(
         context,
         dismissible: false,
-        builder: (_) => const Center(child: SatSpinner(size: SatSpinnerSize.md)),
+        builder: (_) =>
+            const Center(child: SatSpinner(size: SatSpinnerSize.md)),
       ),
     );
     try {
@@ -173,6 +178,7 @@ showDiscountSheet(
                     kind: p.kind,
                     value: p.value,
                     base: target.base,
+                    units: target.isLine ? target.units : 1,
                   );
                   return ListTile(
                     contentPadding: EdgeInsets.zero,

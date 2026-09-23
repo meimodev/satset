@@ -38,6 +38,18 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     Future.microtask(_bootstrap);
   }
 
+  Future<Bill> removeLineDiscount(String visitId, String discountId) => _act(
+    visitId: visitId,
+    kind: SettlementEventKind.removeDiscount,
+    payload: {'discountId': discountId, 'ticketDiscount': true},
+    online: (id) => ref
+        .read(apiClientProvider)
+        .postJson(
+          '/settlement/visits/$visitId/line-discounts/$discountId/remove',
+          const {},
+          idempotencyKey: id,
+        ),
+  );
   final Ref ref;
   StreamSubscription? _wsSub;
   bool _refetching = false;
@@ -768,6 +780,7 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
       {
         'presetId': presetId,
         'ticketId': ?ticketId,
+        'perUnit': ticketId != null,
         ..._presetSnapshot(presetId),
       },
       (id) => ref
@@ -776,6 +789,7 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
             'id': id,
             'presetId': presetId,
             'ticketId': ?ticketId,
+            'perUnit': ticketId != null,
             'approverPin': ?approverPin,
           }, idempotencyKey: id),
     );

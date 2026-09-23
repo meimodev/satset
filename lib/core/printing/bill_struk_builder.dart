@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:satset/domain/use_cases/bill_math.dart';
 
 import 'package:satset/core/localization/labels.dart';
 import 'package:satset/core/printing/bill_struk_data.dart';
@@ -254,9 +255,23 @@ class BillStrukBuilder {
       final gross = line.unitPrice * units;
       final held = pending[line.ticketId];
       // Clamped to the line, the way `recomputeBill` clamps the stack.
-      final off = held == null
-          ? 0
-          : (held.amount > gross ? gross : held.amount);
+      final applied = bill.lineDiscounts.where(
+        (d) => d.ticketId == line.ticketId,
+      );
+      final requested =
+          held?.amount ??
+          applied.fold<int>(
+            0,
+            (sum, d) =>
+                sum +
+                resolveDiscountAmount(
+                  kind: d.kind,
+                  value: d.value,
+                  base: gross,
+                  units: units,
+                ),
+          );
+      final off = requested.clamp(0, gross);
       subtotal += gross - off;
       lines.add(
         BillStrukLine(
@@ -266,7 +281,7 @@ class BillStrukBuilder {
           lineTotal: gross,
           modifiers: [for (final m in line.modifiers) m.display],
           note: line.note ?? '',
-          discountLabel: held?.label ?? '',
+          discountLabel: held?.label ?? applied.map((d) => d.label).join(' + '),
           discountAmount: off,
         ),
       );
