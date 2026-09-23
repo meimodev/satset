@@ -1,6 +1,11 @@
 # Keep the SatSet host available in the background
 
-Research date: 2026-09-09. Status: proposed implementation plan; no application changes or device tests performed during this research.
+Research date: 2026-09-09. Updated: 2026-09-23.
+
+Status: live-process background hosting is implemented: foreground service,
+retained engine, CPU lock, battery setup and bounded startup cleanup.
+Process-death recovery and device soak testing remain pending; see
+[implementation scope and device checks](../testing/android-background-server.md).
 
 ## Recommendation
 

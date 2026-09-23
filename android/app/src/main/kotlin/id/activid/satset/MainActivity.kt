@@ -2,8 +2,8 @@ package id.activid.satset
 
 import android.app.Activity
 import android.content.Intent
+import android.content.Context
 import android.content.pm.ActivityInfo
-import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
@@ -15,6 +15,12 @@ class MainActivity : FlutterActivity() {
     private val channel = "satset/server"
     private val csvRequest = 1042
     private var csvResult: MethodChannel.Result? = null
+    private var csvChannel: MethodChannel? = null
+
+    override fun provideFlutterEngine(context: Context): FlutterEngine? =
+        ServerHost.engine
+
+    override fun shouldDestroyEngineWithHost(): Boolean = !ServerHost.hosting
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,22 +52,10 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel)
-            .setMethodCallHandler { call, result ->
+        ServerHost.attach(applicationContext, flutterEngine)
+        csvChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel)
+        csvChannel?.setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "startServerService" -> {
-                        val intent = Intent(this, SatSetServerService::class.java)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            startForegroundService(intent)
-                        } else {
-                            startService(intent)
-                        }
-                        result.success(null)
-                    }
-                    "stopServerService" -> {
-                        stopService(Intent(this, SatSetServerService::class.java))
-                        result.success(null)
-                    }
                     "pickCsv" -> {
                         if (csvResult != null) {
                             result.error("picker_busy", "CSV picker already open", null)
@@ -83,6 +77,15 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        csvChannel?.setMethodCallHandler(null)
+        csvChannel = null
+        csvResult?.error("activity_detached", "CSV picker closed", null)
+        csvResult = null
+        if (!ServerHost.hosting) ServerHost.engine = null
+        super.cleanUpFlutterEngine(flutterEngine)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

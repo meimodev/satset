@@ -1,5 +1,9 @@
 {
   "@@locale": "en",
+  "serverPowerBody": "This device receives orders while the screen is off. Allow unrestricted battery use to keep LAN orders arriving, and keep the host plugged in during service.",
+  "serverNotificationsBody": "Allow notifications to see when the SatSet server is running. Hosting continues if notifications are denied.",
+  "serverPowerFailed": "Could not check background hosting settings. Try again on this device.",
+  "serverPowerAction": "Set up background hosting",
   "prnPreviewPrinter": "{printer} · 58 mm",
   "@prnPreviewPrinter": {"placeholders": {"printer": {"type": "String"}}},
   "prnPreviewPrint": "Print",

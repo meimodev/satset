@@ -99,6 +99,30 @@ abstract class AppL10n {
     Locale('id', 'SV'),
   ];
 
+  /// No description provided for @serverPowerBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Perangkat ini menerima pesanan saat layar mati. Izinkan penggunaan baterai tanpa batas agar pesanan LAN tetap masuk, dan sambungkan perangkat utama ke pengisi daya selama operasional.'**
+  String get serverPowerBody;
+
+  /// No description provided for @serverNotificationsBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Izinkan notifikasi untuk melihat saat server SatSet berjalan. Server tetap berjalan jika notifikasi ditolak.'**
+  String get serverNotificationsBody;
+
+  /// No description provided for @serverPowerFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengaturan server di latar belakang belum bisa diperiksa. Coba lagi di perangkat ini.'**
+  String get serverPowerFailed;
+
+  /// No description provided for @serverPowerAction.
+  ///
+  /// In id, this message translates to:
+  /// **'Atur server di latar belakang'**
+  String get serverPowerAction;
+
   /// No description provided for @prnPreviewPrinter.
   ///
   /// In id, this message translates to:

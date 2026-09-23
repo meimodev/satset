@@ -1,5 +1,9 @@
 {
   "@@locale": "id",
+  "serverPowerBody": "Perangkat ini menerima pesanan saat layar mati. Izinkan penggunaan baterai tanpa batas agar pesanan LAN tetap masuk, dan sambungkan perangkat utama ke pengisi daya selama operasional.",
+  "serverNotificationsBody": "Izinkan notifikasi untuk melihat saat server SatSet berjalan. Server tetap berjalan jika notifikasi ditolak.",
+  "serverPowerFailed": "Pengaturan server di latar belakang belum bisa diperiksa. Coba lagi di perangkat ini.",
+  "serverPowerAction": "Atur server di latar belakang",
   "prnPreviewPrinter": "{printer} · 58 mm",
   "@prnPreviewPrinter": {"placeholders": {"printer": {"type": "String"}}},
   "prnPreviewPrint": "Cetak",

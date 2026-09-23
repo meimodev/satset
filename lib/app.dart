@@ -7,6 +7,7 @@ import 'router/app_router.dart';
 import 'package:satset/ui/core/state/theme_view_model.dart';
 import 'package:satset/ui/core/widgets/alert_host.dart';
 import 'package:satset/ui/core/widgets/update_block.dart';
+import 'package:satset/ui/core/widgets/server_power_setup.dart';
 
 class SatSetApp extends ConsumerWidget {
   const SatSetApp({super.key});
@@ -48,7 +49,9 @@ class SatSetApp extends ConsumerWidget {
               // Outermost of the two hosts: a device below the release floor
               // must not be reachable by a ready toast either. See ADR-0130.
               child: UpdateBlock(
-                child: AlertHost(child: child ?? const SizedBox.shrink()),
+                child: ServerPowerSetup(
+                  child: AlertHost(child: child ?? const SizedBox.shrink()),
+                ),
               ),
             ),
           ),

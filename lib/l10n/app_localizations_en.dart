@@ -9,6 +9,21 @@ class AppL10nEn extends AppL10n {
   AppL10nEn([String locale = 'en']) : super(locale);
 
   @override
+  String get serverPowerBody =>
+      'This device receives orders while the screen is off. Allow unrestricted battery use to keep LAN orders arriving, and keep the host plugged in during service.';
+
+  @override
+  String get serverNotificationsBody =>
+      'Allow notifications to see when the SatSet server is running. Hosting continues if notifications are denied.';
+
+  @override
+  String get serverPowerFailed =>
+      'Could not check background hosting settings. Try again on this device.';
+
+  @override
+  String get serverPowerAction => 'Set up background hosting';
+
+  @override
   String prnPreviewPrinter(String printer) {
     return '$printer · 58 mm';
   }

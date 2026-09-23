@@ -14,6 +14,7 @@ import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/core/printing/struk_socket.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
+import 'package:satset/data/services/server_background.dart';
 import 'package:satset/domain/models/release_gate.dart';
 import 'auth.dart';
 import 'db/database.dart';
@@ -113,6 +114,7 @@ class ServerRuntime {
     // a host with a problem to report.
     unawaited(updateMirror.ensure(next.latest, version));
   }
+
   HttpServer? _http;
 
   /// The cleartext [[Pesan mandiri]] listener (ADR-0105). Bound only while the
@@ -162,61 +164,139 @@ class ServerRuntime {
   static const defaultPort = 7443;
   static const defaultVersion = '1.0.0';
 
+  static Future<ServerRuntime>? _booting;
+
+  /// Both cold boot and admin admission use the same foreground-service lease.
+  /// Keep a timed-out boot reserved until its resources have actually closed.
   static Future<ServerRuntime> boot({
     int port = defaultPort,
     String? label,
     String version = defaultVersion,
     String venueId = '',
+  }) {
+    if (_booting != null) return _booting!;
+    var expired = false;
+    void checkActive() {
+      if (expired) throw TimeoutException('Server startup timed out');
+    }
+
+    Future<ServerRuntime> start() async {
+      try {
+        await ServerBackground.start();
+        checkActive();
+        final rt = await _boot(
+          port: port,
+          label: label,
+          version: version,
+          venueId: venueId,
+          checkActive: checkActive,
+        );
+        try {
+          checkActive();
+          await ServerBackground.ready();
+          checkActive();
+          return rt;
+        } catch (_) {
+          await rt._closeResources();
+          rethrow;
+        }
+      } catch (_) {
+        await ServerBackground.stop();
+        rethrow;
+      } finally {
+        _booting = null;
+      }
+    }
+
+    final work = start();
+    _booting = work.timeout(
+      const Duration(seconds: 15),
+      onTimeout: () async {
+        expired = true;
+        await ServerBackground.stop();
+        throw TimeoutException('Server startup timed out');
+      },
+    );
+    return _booting!;
+  }
+
+  static Future<ServerRuntime> _boot({
+    required int port,
+    required String? label,
+    required String version,
+    required String venueId,
+    required void Function() checkActive,
   }) async {
     final db = await AppDatabase.open();
-    await seedInfra(db);
-    final tls = await ServerTls.loadOrCreate();
-    final hub = WsHub();
-    final auth = ServerAuth(db, secret: await ServerAuth.loadOrCreateSecret());
-    final advertiser = SatSetAdvertiser();
+    ServerRuntime? rt;
+    try {
+      checkActive();
+      await seedInfra(db);
+      checkActive();
+      final tls = await ServerTls.loadOrCreate();
+      checkActive();
+      final hub = WsHub();
+      final auth = ServerAuth(
+        db,
+        secret: await ServerAuth.loadOrCreateSecret(),
+      );
+      checkActive();
+      final advertiser = SatSetAdvertiser();
 
-    final rt = ServerRuntime._(
-      db: db,
-      auth: auth,
-      tls: tls,
-      hub: hub,
-      advertiser: advertiser,
-      port: port,
-      label: label,
-      version: version,
-      venueId: venueId,
-    );
+      rt = ServerRuntime._(
+        db: db,
+        auth: auth,
+        tls: tls,
+        hub: hub,
+        advertiser: advertiser,
+        port: port,
+        label: label,
+        version: version,
+        venueId: venueId,
+      );
 
-    final handler = const Pipeline()
-        .addMiddleware(rt._latencyAndLoggingMiddleware())
-        .addMiddleware(_corsMiddleware())
-        .addMiddleware(_authMiddleware(auth))
-        .addHandler(rt._buildRouter().call);
+      final handler = const Pipeline()
+          .addMiddleware(rt._latencyAndLoggingMiddleware())
+          .addMiddleware(_corsMiddleware())
+          .addMiddleware(_authMiddleware(auth))
+          .addHandler(rt._buildRouter().call);
 
-    rt._http = await shelf_io.serve(
-      handler,
-      InternetAddress.anyIPv4,
-      port,
-      securityContext: tls.context,
-    );
-    SatLog.srv(
-      'boot port=$port fp=${tls.fingerprint.substring(0, tls.fingerprint.length.clamp(0, 12))}',
-    );
+      rt._http = await shelf_io.serve(
+        handler,
+        InternetAddress.anyIPv4,
+        port,
+        securityContext: tls.context,
+      );
+      checkActive();
+      SatLog.srv(
+        'boot port=$port fp=${tls.fingerprint.substring(0, tls.fingerprint.length.clamp(0, 12))}',
+      );
 
-    await advertiser.start(
-      port: port,
-      fingerprint: tls.fingerprint,
-      label: label,
-      version: version,
-      venueId: venueId,
-    );
-    await rt._syncGuestPlane();
-    rt._startStatusTicker();
-    rt._startPrinterHeartbeat();
-    // Re-derive what survived the last process before any client can ask. The
-    // version is the filename, so there is no state file to reconcile.
-    await rt.updateMirror.load();
-    return rt;
+      await advertiser.start(
+        port: port,
+        fingerprint: tls.fingerprint,
+        label: label,
+        version: version,
+        venueId: venueId,
+      );
+      checkActive();
+      await rt._syncGuestPlane();
+      checkActive();
+      rt._startStatusTicker();
+      rt._startPrinterHeartbeat();
+      // Re-derive what survived the last process before any client can ask. The
+      // version is the filename, so there is no state file to reconcile.
+      await rt.updateMirror.load();
+      checkActive();
+      return rt;
+    } catch (_) {
+      if (rt != null) {
+        await rt._closeResources();
+      } else {
+        await db.close();
+      }
+      rethrow;
+    }
   }
 
   /// Probes every enabled venue printer (connect-only, in parallel) on a 15s
@@ -469,14 +549,44 @@ class ServerRuntime {
   /// Whether a guest phone can reach this server right now.
   bool get guestPlaneRunning => _guest?.running ?? false;
 
-  Future<void> shutdown() async {
+  Future<void>? _shutdown;
+  Future<void> shutdown() => _shutdown ??= _shutdownHost();
+
+  Future<void> _shutdownHost() async {
+    try {
+      await ServerBackground.stop();
+    } finally {
+      await _closeResources();
+    }
+  }
+
+  Future<void>? _closing;
+  Future<void> _closeResources() => _closing ??= _closeAll();
+
+  Future<void> _closeAll() async {
     _statusTicker?.cancel();
     _printerHeartbeat?.cancel();
-    await _http?.close(force: true);
-    await _guest?.stop();
-    await advertiser.stop();
-    await hub.dispose();
-    await db.close();
+    // A failed discovery/socket teardown must not skip the database close.
+    (Object, StackTrace)? failure;
+    for (final close in <Future<void> Function()>[
+      () async {
+        await _http?.close(force: true);
+      },
+      () async {
+        await _guest?.stop();
+      },
+      advertiser.stop,
+      hub.dispose,
+      db.close,
+    ]) {
+      try {
+        await close();
+      } catch (e, st) {
+        SatLog.err('server.close', e, st);
+        failure ??= (e, st);
+      }
+    }
+    if (failure != null) Error.throwWithStackTrace(failure.$1, failure.$2);
   }
 }
 

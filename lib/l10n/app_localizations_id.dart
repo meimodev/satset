@@ -9,6 +9,21 @@ class AppL10nId extends AppL10n {
   AppL10nId([String locale = 'id']) : super(locale);
 
   @override
+  String get serverPowerBody =>
+      'Perangkat ini menerima pesanan saat layar mati. Izinkan penggunaan baterai tanpa batas agar pesanan LAN tetap masuk, dan sambungkan perangkat utama ke pengisi daya selama operasional.';
+
+  @override
+  String get serverNotificationsBody =>
+      'Izinkan notifikasi untuk melihat saat server SatSet berjalan. Server tetap berjalan jika notifikasi ditolak.';
+
+  @override
+  String get serverPowerFailed =>
+      'Pengaturan server di latar belakang belum bisa diperiksa. Coba lagi di perangkat ini.';
+
+  @override
+  String get serverPowerAction => 'Atur server di latar belakang';
+
+  @override
   String prnPreviewPrinter(String printer) {
     return '$printer · 58 mm';
   }
