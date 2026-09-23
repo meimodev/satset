@@ -572,7 +572,17 @@ class _BillBodyState extends State<_BillBody> {
       onClearPending: _clearPending,
       onPrintSelection: () => widget.printSelection(_selection, {
         for (final e in _pending.entries)
-          e.key: (label: e.value.label, amount: e.value.amount),
+          e.key: (
+            label: e.value.label,
+            amount: e.value.amountFor(
+              widget.bill.lines
+                      .where((l) => l.ticketId == e.key)
+                      .firstOrNull
+                      ?.unitPrice ??
+                  0,
+              _selection[e.key] ?? 0,
+            ),
+          ),
       }),
       debtEnabled: widget.debtEnabled,
     );
@@ -1134,12 +1144,21 @@ class _LinesSection extends ConsumerWidget {
   Widget _discountChips(BuildContext context, WidgetRef ref, BillLine l) {
     final sc = context.sat;
     final owner = _receiptOwning(l);
-    final live = owner == null
-        ? const <BillDiscount>[]
-        : owner.lineDiscounts(l.ticketId);
+    final global = bill.lineDiscounts
+        .where((d) => d.ticketId == l.ticketId)
+        .toList();
+    final live = [
+      ...global,
+      if (owner != null)
+        ...owner.lineDiscounts(l.ticketId).where((d) => !d.perUnit),
+    ];
     final held = pendingDiscounts[l.ticketId];
-    final frozen = owner != null && owner.status == 'paid';
-    final mine = owner?.manualLineDiscount(l.ticketId);
+    final frozen = bill.receipts.any(
+      (r) => r.status == 'paid' && r.lines.any((x) => x.ticketId == l.ticketId),
+    );
+    final mine =
+        global.where((d) => d.source == 'manual').firstOrNull ??
+        owner?.manualLineDiscount(l.ticketId);
     final offer = canDiscount && onPending != null && !frozen;
     if (live.isEmpty && held == null && !offer) return const SizedBox.shrink();
 
@@ -1208,7 +1227,7 @@ class _LinesSection extends ConsumerWidget {
       onPending!(l, null);
       return;
     }
-    if (mine != null && owner != null) {
+    if (mine != null) {
       if (await _confirm(
         context,
         title: context.l10n.cshRemoveLineDiscountTitle,
@@ -1219,23 +1238,28 @@ class _LinesSection extends ConsumerWidget {
         ),
         confirmLabel: context.l10n.cshConfirmDelete,
       )) {
-        await run(() => repo.removeDiscount(owner.id, mine.id));
+        await run(
+          () => mine.perUnit
+              ? repo.removeLineDiscount(bill.visitId, mine.id)
+              : repo.removeDiscount(owner!.id, mine.id),
+        );
       }
       return;
     }
 
     // The units this discount is priced against: what the owning receipt holds,
     // or the whole free line when nothing owns it yet.
-    final units = owner == null
-        ? l.qty
-        : owner.lines
-              .where((x) => x.ticketId == l.ticketId)
-              .fold<int>(0, (a, b) => a + b.qtyUnits);
+    final units = l.qty;
     final base = l.unitPrice * units;
     final picked = await showDiscountSheet(
       context,
       ref,
-      DiscountTarget.line(base: base, title: l.name, ticketId: l.ticketId),
+      DiscountTarget.line(
+        base: base,
+        title: l.name,
+        ticketId: l.ticketId,
+        units: units,
+      ),
     );
     if (picked == null) return;
     if (owner != null) {
@@ -1254,6 +1278,8 @@ class _LinesSection extends ConsumerWidget {
       l,
       PendingLineDiscount(
         presetId: preset.id,
+        kind: preset.kind,
+        value: preset.value,
         label: preset.kind == 'percent'
             ? '${preset.name} ${(preset.value / 100).toStringAsFixed(0)}%'
             : preset.name,
@@ -1261,6 +1287,7 @@ class _LinesSection extends ConsumerWidget {
           kind: preset.kind,
           value: preset.value,
           base: base,
+          units: units,
         ),
         approverPin: picked.approverPin,
       ),
@@ -2351,6 +2378,7 @@ class _ReceiptItemRow extends ConsumerWidget {
           receipt: receipt,
           ticketId: ticketId,
           base: base,
+          units: qtyUnits,
           title: name,
         ),
       );

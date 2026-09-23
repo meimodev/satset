@@ -127,10 +127,14 @@ Future<void> _sendEvent(
           'id': e.id,
           'ticketId': ?e.arg<String>('ticketId'),
           'presetId': ?e.arg<String>('presetId'),
+
+          'perUnit': e.payload['perUnit'] == true,
         });
       case SettlementEventKind.removeDiscount:
         await post(
-          '/settlement/receipts/$r/discounts/${e.arg<String>('discountId')}/remove',
+          e.payload['ticketDiscount'] == true
+              ? '/settlement/visits/$v/line-discounts/${e.arg<String>('discountId')}/remove'
+              : '/settlement/receipts/$r/discounts/${e.arg<String>('discountId')}/remove',
           const {},
         );
       case SettlementEventKind.applyBillDiscount:

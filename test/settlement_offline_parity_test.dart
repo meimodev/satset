@@ -24,6 +24,8 @@ import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/domain/use_cases/settlement_projection.dart';
 import 'package:satset/server/db/database.dart' hide Member;
 import 'package:satset/server/routes/settlement_routes.dart';
+import 'package:satset/server/routes/tables_routes.dart'
+    show snapshotVisitAndDelete;
 import 'package:satset/server/ws_hub.dart';
 
 import 'support/route_auth.dart';
@@ -171,6 +173,238 @@ void main() {
     await visit();
   });
   tearDown(() => db.close());
+
+  test(
+    'legacy line discounts retain their calculation after catalogue edits and reopening',
+    () async {
+      await line('tk1', 20000, qty: 3);
+      await db
+          .into(db.discountPresets)
+          .insert(
+            DiscountPresetsCompanion.insert(
+              id: 'legacy',
+              name: 'Legacy',
+              scope: const Value('line'),
+              kind: const Value('fixed'),
+              value: const Value(5000),
+            ),
+          );
+      expect(
+        (await post('/settlement/visits/v1/receipts', {
+          'id': 'old',
+          'assignAll': true,
+        })).statusCode,
+        200,
+      );
+      expect(
+        (await post('/settlement/receipts/old/discounts', {
+          'id': 'old-promo',
+          'presetId': 'legacy',
+          'ticketId': 'tk1',
+        })).statusCode,
+        200,
+      );
+      await (db.update(db.discountPresets)..where((p) => p.id.equals('legacy')))
+          .write(const DiscountPresetsCompanion(value: Value(9000)));
+      final bill = await serverBill();
+      expect(bill['discountAmount'], 5000);
+      final total = (bill['receipts'] as List).single['total'];
+      expect(
+        (await post('/settlement/receipts/old/payments', {
+          'method': 'tunai',
+          'amount': total,
+        })).statusCode,
+        200,
+      );
+      expect((await post('/settlement/receipts/old/reopen')).statusCode, 200);
+      expect((await serverBill())['discountAmount'], 5000);
+    },
+  );
+
+  test(
+    'ticket discount is frozen after payment and archived per receipt',
+    () async {
+      await line('tk1', 20000, qty: 3);
+      await db
+          .into(db.discountPresets)
+          .insert(
+            DiscountPresetsCompanion.insert(
+              id: 'p',
+              name: 'Coffee promo',
+              scope: const Value('line'),
+              kind: const Value('fixed'),
+              value: const Value(5000),
+            ),
+          );
+      expect(
+        (await post('/settlement/visits/v1/receipts', {
+          'id': 'a',
+          'lines': [
+            {'ticketId': 'tk1', 'qtyUnits': 1},
+          ],
+        })).statusCode,
+        200,
+      );
+      expect(
+        (await post('/settlement/receipts/a/discounts', {
+          'id': 'promo',
+          'presetId': 'p',
+          'ticketId': 'tk1',
+          'perUnit': true,
+        })).statusCode,
+        200,
+      );
+      expect(
+        (await post('/settlement/visits/v1/receipts', {
+          'id': 'b',
+          'assignAll': true,
+        })).statusCode,
+        200,
+      );
+      var bill = await serverBill();
+      for (final rec in bill['receipts'] as List) {
+        expect(
+          (await post('/settlement/receipts/${rec['id']}/payments', {
+            'method': 'tunai',
+            'amount': rec['total'],
+          })).statusCode,
+          200,
+        );
+      }
+      expect(
+        (await post(
+          '/settlement/visits/v1/line-discounts/promo/remove',
+        )).statusCode,
+        409,
+      );
+      final closed = await post('/settlement/visits/v1/bill-close');
+      expect(closed.statusCode, 200, reason: await closed.readAsString());
+      await snapshotVisitAndDelete(
+        db,
+        WsHub(),
+        await (db.select(
+          db.visits,
+        )..where((v) => v.id.equals('v1'))).getSingle(),
+      );
+      final archived = await db.select(db.tableSessionDiscounts).get();
+      expect(
+        {for (final d in archived) d.receiptId: d.amount},
+        {'a': 5000, 'b': 10000},
+      );
+    },
+  );
+
+  test(
+    'per-unit line preset follows splits and survives receipt deletion online and offline',
+    () async {
+      await line('tk1', 20000, qty: 3);
+      await db
+          .into(db.discountPresets)
+          .insert(
+            DiscountPresetsCompanion.insert(
+              id: 'line-promo',
+              name: 'Coffee promo',
+              scope: const Value('line'),
+              kind: const Value('fixed'),
+              value: const Value(5000),
+            ),
+          );
+      final base = await serverBill();
+      final events = <SettlementEvent>[];
+      Future<void> step(
+        SettlementEventKind kind,
+        String id,
+        String path,
+        Map<String, dynamic> payload,
+      ) async {
+        final response = await post(path, {'id': id, ...payload});
+        expect(response.statusCode, 200, reason: await response.readAsString());
+        events.add(ev(events.length + 1, id, kind, payload));
+        final projected = projectBill(base, events, cfg);
+        expect(ladder(projected), ladder(await serverBill()));
+      }
+
+      await step(
+        SettlementEventKind.mintReceipt,
+        'a',
+        '/settlement/visits/v1/receipts',
+        {
+          'lines': [
+            {'ticketId': 'tk1', 'qtyUnits': 1},
+          ],
+        },
+      );
+      await step(
+        SettlementEventKind.applyDiscount,
+        'promo',
+        '/settlement/receipts/a/discounts',
+        {
+          'receiptId': 'a',
+          'ticketId': 'tk1',
+          'presetId': 'line-promo',
+          'perUnit': true,
+          'name': 'Coffee promo',
+          'kind': 'fixed',
+          'value': 5000,
+        },
+      );
+      expect((await serverBill())['discountAmount'], 15000);
+      await step(
+        SettlementEventKind.mintReceipt,
+        'b',
+        '/settlement/visits/v1/receipts',
+        {
+          'lines': [
+            {'ticketId': 'tk1', 'qtyUnits': 2},
+          ],
+        },
+      );
+      var bill = await serverBill();
+      final receipts = bill['receipts'] as List;
+      expect(
+        (receipts.firstWhere((r) => r['id'] == 'a')['discounts'] as List)
+            .single['amount'],
+        5000,
+      );
+      expect(
+        (receipts.firstWhere((r) => r['id'] == 'b')['discounts'] as List)
+            .single['amount'],
+        10000,
+      );
+      final response = await router(
+        Request(
+          'DELETE',
+          Uri.parse('http://x/settlement/receipts/a'),
+          headers: caller.headers,
+        ),
+      );
+      expect(response.statusCode, 200, reason: await response.readAsString());
+      events.add(
+        ev(events.length + 1, 'delete-a', SettlementEventKind.deleteReceipt, {
+          'receiptId': 'a',
+        }),
+      );
+      expect(
+        ladder(projectBill(base, events, cfg)),
+        ladder(await serverBill()),
+      );
+      await step(
+        SettlementEventKind.assignLine,
+        'assign-b',
+        '/settlement/receipts/b/lines',
+        {'receiptId': 'b', 'ticketId': 'tk1', 'qtyUnits': 3},
+      );
+      bill = await serverBill();
+      expect(bill['discountAmount'], 15000);
+      await step(
+        SettlementEventKind.removeDiscount,
+        'remove-promo',
+        '/settlement/visits/v1/line-discounts/promo/remove',
+        {'discountId': 'promo', 'ticketDiscount': true},
+      );
+      expect((await serverBill())['discountAmount'], 0);
+    },
+  );
 
   test(
     'lost payment response survives client restart and retries exactly once',

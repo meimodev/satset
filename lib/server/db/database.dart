@@ -84,7 +84,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 75;
+  int get schemaVersion => 76;
 
   /// The cap sums a visit's expenses on every capture, inside the transaction
   /// that writes the next one (ADR-0100), so the lookup is on the hot path of
@@ -127,7 +127,12 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_bill_source_uniq '
       'ON discounts (visit_id, source) WHERE receipt_id IS NULL '
-      'AND visit_id IS NOT NULL',
+      'AND visit_id IS NOT NULL AND ticket_id IS NULL',
+    );
+    await customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_ticket_source_uniq '
+      'ON discounts (visit_id, ticket_id, source) '
+      'WHERE receipt_id IS NULL AND ticket_id IS NOT NULL',
     );
   }
 
@@ -1539,7 +1544,6 @@ class AppDatabase extends _$AppDatabase {
         await _seedVisitExpenseCategories();
       }
 
-
       if (from < 73 && to >= 73) {
         // ADR-0131 — a venue counts more than one tin. The ledger gains the box
         // it moved and the other leg of a transfer; the boxes themselves are a
@@ -1577,6 +1581,12 @@ class AppDatabase extends _$AppDatabase {
         );
       }
 
+      if (from < 76 && to >= 76) {
+        await customStatement(
+          'DROP INDEX IF EXISTS idx_discounts_bill_source_uniq',
+        );
+        await _createDiscountIndexes();
+      }
       if (from < 75 && to >= 75) {
         // ADR-0135 — a category is the venue's word, and the box owns it. The
         // five stock slugs go into *every* box under the names the deleted

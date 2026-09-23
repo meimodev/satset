@@ -412,6 +412,7 @@ class BillDiscount {
   /// Only a `manual` row is the cashier's to add and remove from the discount
   /// button; the other two belong to the member panel.
   final String source;
+  final bool perUnit;
 
   const BillDiscount({
     required this.id,
@@ -423,6 +424,7 @@ class BillDiscount {
     required this.amount,
     required this.approvedByUserId,
     this.source = 'manual',
+    this.perUnit = false,
   });
 
   bool get isLine => ticketId != null;
@@ -441,6 +443,7 @@ class BillDiscount {
     amount: _int(j['amount']),
     approvedByUserId: j['approvedByUserId'] as String?,
     source: j['source'] as String? ?? 'manual',
+    perUnit: j['perUnit'] == true,
   );
 }
 
@@ -631,6 +634,7 @@ class Bill {
   /// receipt, so the totals ladder reads them from here. ADR-0070, a list since
   /// ADR-0094: one slot per [[Sumber diskon (discount source)|source]].
   final List<BillDiscount> billDiscounts;
+  final List<BillDiscount> lineDiscounts;
 
   /// The [[Pelanggan (member)]] on this bill, or null. The [[Pemilik tagihan]]
   /// since ADR-0118: they own the bill, and any money no share claims is
@@ -677,6 +681,7 @@ class Bill {
     required this.subtotal,
     required this.discountAmount,
     required this.billDiscounts,
+    this.lineDiscounts = const [],
     required this.member,
     required this.splitEnabled,
     this.ticketAttribution = false,
@@ -739,6 +744,10 @@ class Bill {
     mode: j['mode'] as String? ?? 'itemized',
     subtotal: _int(j['subtotal']),
     discountAmount: _int(j['discountAmount']),
+    lineDiscounts: [
+      for (final d in (j['lineDiscounts'] as List? ?? const []))
+        BillDiscount.fromJson((d as Map).cast<String, dynamic>()),
+    ],
     billDiscounts: [
       for (final d in (j['billDiscounts'] as List? ?? const []))
         BillDiscount.fromJson((d as Map).cast<String, dynamic>()),
