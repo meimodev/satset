@@ -48,7 +48,7 @@ const _uuid = Uuid();
 /// Coupled to the 15s server tick (≤2 missed ticks). See ADR-0022.
 const _venueOnlineWindow = Duration(seconds: 30);
 
-/// Guest documents load a preview after printer selection. Utility jobs such
+/// Guest documents load a preview before printer selection. Utility jobs such
 /// as QR cards retain direct rendering and sending.
 class PrintJob {
   final String subtitle; // shown under "Pilih printer"
@@ -64,15 +64,40 @@ class PrintJob {
   });
 }
 
-Future<void> _openPicker(BuildContext context, PrintJob job) =>
-    showSatSheet<void>(
+Future<void> _openPicker(BuildContext context, PrintJob job) async {
+  final load = job.preview;
+  if (load == null) {
+    await showSatSheet<void>(
       context,
       bare: true,
       builder: (_) => _PrinterPickerSheet(job: job),
     );
+    return;
+  }
+  final container = ProviderScope.containerOf(context, listen: false);
+  final printed = await showSatSheet<bool>(
+    context,
+    dismissible: false,
+    builder: (previewContext) => ReceiptPreviewSheet(
+      title: '${job.subtitle}\n58 mm',
+      load: load,
+      offline: () =>
+          (job.offline?.call() ?? false) ||
+          container.read(wsConnStateProvider) != WsConnState.open,
+      selectPrinter: () => showSatSheet<ReceiptSender>(
+        previewContext,
+        bare: true,
+        builder: (_) => _PrinterPickerSheet(job: job),
+      ),
+    ),
+  );
+  if (context.mounted && printed == true) {
+    _toast(context, context.l10n.prnReceiptPrinted);
+  }
+}
 
 /// One reusable entry point for "Cetak struk meja" (the table order slip).
-/// Validates the table has printable lines, then opens the picker, which
+/// Validates the table has printable lines, then previews before the picker, which
 /// auto-discovers reachable printers (venue + device, wifi + Bluetooth) and
 /// lists only the online ones. See ADR-0020 / ADR-0022.
 Future<void> printTableStruk({
@@ -302,7 +327,7 @@ Future<void> printBillSelection({
   );
 }
 
-/// The [[Piutang]] collection slip (ADR-0098). Same pick-then-preview flow as
+/// The [[Piutang]] collection slip (ADR-0098). Same preview-then-pick flow as
 /// the bill doc, and the same renderer — this is a money document, and the one
 /// where the guest holds no other evidence that they paid.
 Future<void> printDebtSlip({
@@ -893,28 +918,12 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
 
   Future<void> _print(_Entry e) async {
     if (_busy) return;
-    final load = widget.job.preview;
-    if (load != null) {
+    if (widget.job.preview != null) {
       setState(() => _busy = true);
-      final ok = await showSatSheet<bool>(
+      final container = ProviderScope.containerOf(context, listen: false);
+      Navigator.of(
         context,
-        dismissible: false,
-        builder: (_) => ReceiptPreviewSheet(
-          title:
-              '${widget.job.subtitle}\n${context.l10n.prnPreviewPrinter(e.label)}',
-          load: load,
-          offline: () =>
-              (widget.job.offline?.call() ?? false) ||
-              ref.read(wsConnStateProvider) != WsConnState.open,
-          send: (bytes) => _sendReviewed(e, bytes),
-        ),
-      );
-      if (!mounted) return;
-      setState(() => _busy = false);
-      if (ok == true) {
-        _toast(context, context.l10n.prnReceiptPrinted);
-        Navigator.of(context).pop();
-      }
+      ).pop<ReceiptSender>((bytes) => _sendReviewed(container, e, bytes));
       return;
     }
     switch (e.kind) {
@@ -943,9 +952,13 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
     }
   }
 
-  Future<String?> _sendReviewed(_Entry e, List<int> bytes) async {
+  static Future<String?> _sendReviewed(
+    ProviderContainer container,
+    _Entry e,
+    List<int> bytes,
+  ) async {
     if (e.kind == _Kind.venue) {
-      return ref
+      return container
           .read(printersRepositoryProvider.notifier)
           .printBytes(e.venue!.id, bytes);
     }
@@ -961,17 +974,17 @@ class _PrinterPickerSheetState extends ConsumerState<_PrinterPickerSheet> {
         );
     try {
       if (device.isBluetooth) {
-        await ref.read(btPrinterServiceProvider).send(device.mac!, bytes);
+        await container.read(btPrinterServiceProvider).send(device.mac!, bytes);
       } else {
         await StrukSocket.send(device.host!, device.port, bytes);
       }
     } catch (_) {
-      return ref.read(l10nProvider).prnErrNotConnected;
+      return container.read(l10nProvider).prnErrNotConnected;
     }
     // A preference failure must not offer a retry of a successful print.
     if (e.device == null) {
       try {
-        await ref.read(devicePrintersProvider.notifier).add(device);
+        await container.read(devicePrintersProvider.notifier).add(device);
       } catch (_) {
         /* Printing already succeeded. */
       }

@@ -743,6 +743,8 @@ A venue that holds **only** fabricated rows passes the guard again after a clear
 ### Receipt preview
 **ID · EN** — Pratinjau struk · Receipt preview.
 
+Shown before printer selection, even when no printer is configured. Choosing Print opens printer selection; cancelling that selection returns to the preview without printing. This applies to receipt prints and reprints, including order slips, bills, and payment receipts. QR cards retain their direct print flow.
+
 The read-only on-screen view of an order slip, bill, or payment receipt that must be confirmed before each print or reprint. It shows the document's printed content and paper width; cancelling affects printing only, never recorded payments or table status.
 
 ### Print date and time

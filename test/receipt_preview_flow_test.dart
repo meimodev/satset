@@ -102,6 +102,7 @@ void main() {
     WidgetTester t, {
     required Future<PreparedReceipt> Function() load,
     required Future<String?> Function(List<int>) send,
+    Future<ReceiptSender?> Function()? selectPrinter,
     bool offline = false,
   }) async {
     await t.pumpWidget(
@@ -117,9 +118,9 @@ void main() {
                 context,
                 dismissible: false,
                 builder: (_) => ReceiptPreviewSheet(
-                  title: 'Receipt · Printer · 58 mm',
+                  title: 'Receipt',
                   load: load,
-                  send: send,
+                  selectPrinter: selectPrinter ?? () async => send,
                   offline: () => offline,
                 ),
               ),
@@ -132,6 +133,76 @@ void main() {
     await t.tap(find.text('Open'));
     await t.pumpAndSettle();
   }
+
+  testWidgets(
+    'preview precedes selection; cancel returns; changes during selection require review',
+    (t) async {
+      var version = 1;
+      var selections = 0;
+      final sent = <List<int>>[];
+      Future<String?> send(List<int> bytes) async {
+        sent.add(bytes);
+        return null;
+      }
+
+      await open(
+        t,
+        load: () async =>
+            PreparedReceipt([version], [Text('Document $version')]),
+        send: send,
+        selectPrinter: () {
+          selections++;
+          return showSatSheet<ReceiptSender>(
+            t.element(find.byType(ReceiptPreviewSheet)),
+            builder: (context) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel selection'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(send),
+                  child: const Text('Select printer'),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+      expect(find.text('Document 1'), findsOneWidget);
+      expect(selections, 0);
+      expect(sent, isEmpty);
+      await t.tap(find.text('Print'));
+      await t.pump();
+      await t.pump(const Duration(seconds: 1));
+      await t.tap(find.text('Cancel selection'));
+      await t.pumpAndSettle();
+      expect(find.text('Document 1'), findsOneWidget);
+      expect(find.textContaining('avoid a duplicate'), findsNothing);
+      expect(sent, isEmpty);
+
+      await t.tap(find.text('Print'));
+      await t.pump();
+      await t.pump(const Duration(seconds: 1));
+      version = 2;
+      await t.tap(find.text('Select printer'));
+      await t.pumpAndSettle();
+      expect(find.text('Document 2'), findsOneWidget);
+      expect(find.textContaining('document has changed'), findsOneWidget);
+      expect(sent, isEmpty);
+
+      await t.tap(find.text('Print'));
+      await t.pump();
+      await t.pump(const Duration(seconds: 1));
+      await t.tap(find.text('Select printer'));
+      await t.pumpAndSettle();
+      expect(sent, [
+        [2],
+      ]);
+      expect(find.byType(ReceiptPreviewSheet), findsNothing);
+    },
+  );
 
   testWidgets(
     'changes require review; failures retry explicitly; offline notice',

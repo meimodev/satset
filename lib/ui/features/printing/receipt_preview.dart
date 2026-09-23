@@ -116,19 +116,21 @@ class PreparedReceipt {
   const PreparedReceipt(this.bytes, this.content);
 }
 
+typedef ReceiptSender = Future<String?> Function(List<int> bytes);
+
 /// Loads again at confirmation, comparing the same timestamped render. A
 /// changed document is shown for another review, never silently substituted.
 class ReceiptPreviewSheet extends StatefulWidget {
   final String title;
   final Future<PreparedReceipt> Function() load;
-  final Future<String?> Function(List<int>) send;
+  final Future<ReceiptSender?> Function() selectPrinter;
   final bool Function() offline;
 
   const ReceiptPreviewSheet({
     super.key,
     required this.title,
     required this.load,
-    required this.send,
+    required this.selectPrinter,
     required this.offline,
   });
 
@@ -164,6 +166,8 @@ class _ReceiptPreviewSheetState extends State<ReceiptPreviewSheet> {
     setState(() => _busy = true);
     var sending = false;
     try {
+      final send = await widget.selectPrinter();
+      if (!mounted || send == null) return;
       final latest = await widget.load();
       if (!mounted) return;
       if (_receipt == null || !listEquals(latest.bytes, _receipt!.bytes)) {
@@ -176,7 +180,7 @@ class _ReceiptPreviewSheetState extends State<ReceiptPreviewSheet> {
         return;
       }
       sending = true;
-      final error = await widget.send(_receipt!.bytes);
+      final error = await send(_receipt!.bytes);
       if (!mounted) return;
       if (error == null) {
         Navigator.of(context).pop(true);
