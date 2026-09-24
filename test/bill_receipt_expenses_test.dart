@@ -37,6 +37,7 @@ void main() {
               {
                 'ticketId': 't1',
                 'name': 'Lunch',
+                'memberName': 'Ayu',
                 'qty': 1,
                 'lineTotal': 100000,
                 'status': 'sent',
@@ -87,6 +88,7 @@ void main() {
               expenses: summary,
             );
             for (final data in [client, server]) {
+              expect(data.lines.single.memberName, 'Ayu');
               expect(data.total, 109890);
               expect(data.outstanding, paid ? 0 : 109890);
               expect(data.paidNet, paid ? 109890 : 0);
@@ -108,6 +110,7 @@ void main() {
                 await BillStrukRenderer.render(l, data, printedAt: at),
               );
               final printed = latin1.decode(bytes);
+              expect(printed, contains(l.strukMember('Ayu')));
               final text = generator.children
                   .whereType<Text>()
                   .map((w) => w.data)

@@ -42,6 +42,7 @@ class BillStrukLine {
   final bool showPrice; // false for even-split reference lines
   final List<String> modifiers; // signed display labels, e.g. '+ Pedas'
   final String note; // item note (Instruksi khusus); '' when none
+  final String memberName; // ticket owner on whole-bill documents; '' when none
 
   /// A line [[Diskon (discount)]] on this line, rendered as an indented
   /// sub-line beneath it — the same visual grammar as modifiers and the item
@@ -57,6 +58,7 @@ class BillStrukLine {
     this.showPrice = true,
     this.modifiers = const [],
     this.note = '',
+    this.memberName = '',
     this.discountLabel = '',
     this.discountAmount = 0,
   });

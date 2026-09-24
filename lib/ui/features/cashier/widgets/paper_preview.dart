@@ -71,7 +71,7 @@ class PaperPreview extends StatelessWidget {
             ),
             if (d.pax > 0) _row(l10n.rcpPaxCount(d.pax), '', faint: true),
             _rule(dashed: true),
-            for (final l in d.lines) ..._line(l),
+            for (final l in d.lines) ..._line(l, l10n),
             _rule(dashed: true),
             _row(l10n.strukSubtotal, _money(d.subtotal)),
             // The Diskon row's position is the arithmetic, not decoration —
@@ -161,11 +161,13 @@ class PaperPreview extends StatelessWidget {
   /// The roll prints no currency symbol — the grouping alone is the number.
   String _money(int v) => formatIDR(v).replaceFirst('Rp ', '');
 
-  List<Widget> _line(BillStrukLine l) => [
+  List<Widget> _line(BillStrukLine l, AppL10n l10n) => [
     _row(
       '${l.qty}× ${l.name}${l.variant.isEmpty ? '' : ' ${l.variant}'}',
       l.showPrice ? _money(l.lineTotal) : '',
     ),
+    if (l.memberName.trim().isNotEmpty)
+      _sub(l10n.strukMember(l.memberName.trim())),
     for (final m in l.modifiers) _sub(m),
     if (l.note.isNotEmpty) _sub('* ${l.note}'),
     if (l.hasDiscount)

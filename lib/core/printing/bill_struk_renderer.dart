@@ -62,8 +62,15 @@ class BillStrukRenderer {
 
   /// Indented sub-lines under a printed item: its chosen modifiers and the
   /// guest's item note, so the bill doubles as an order check. See ADR-0026.
-  static List<int> _lineExtras(Generator g, BillStrukLine l) {
+  static List<int> _lineExtras(
+    Generator g,
+    BillStrukLine l,
+    String Function(String) memberLabel,
+  ) {
     final out = <int>[];
+    if (l.memberName.trim().isNotEmpty) {
+      out.addAll(g.text('  ${memberLabel(l.memberName.trim())}'));
+    }
     for (final m in l.modifiers) {
       out.addAll(g.text('   $m'));
     }
@@ -221,6 +228,7 @@ class BillStrukRenderer {
       out.addAll(g.hr());
 
       // ── body lines ──
+      final memberLabel = l.strukMember;
       if (d.isEven) {
         out.addAll(
           g.text(l.strukEvenHeading, styles: const PosStyles(bold: true)),
@@ -231,7 +239,7 @@ class BillStrukRenderer {
               '  ${l.qty}x ${l.name}${l.variant.isEmpty ? '' : ' (${l.variant})'}',
             ),
           );
-          out.addAll(_lineExtras(g, l));
+          out.addAll(_lineExtras(g, l, memberLabel));
         }
       } else {
         for (final l in d.lines) {
@@ -250,7 +258,7 @@ class BillStrukRenderer {
               ),
             ]),
           );
-          out.addAll(_lineExtras(g, l));
+          out.addAll(_lineExtras(g, l, memberLabel));
         }
       }
       out.addAll(g.hr());

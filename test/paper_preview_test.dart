@@ -40,6 +40,7 @@ void main() {
       BillStrukLine(
         qty: 2,
         name: 'Nasi Goreng',
+        memberName: 'Ayu',
         variant: 'Pedas',
         lineTotal: 90000,
         modifiers: ['+ Telur'],
@@ -84,6 +85,7 @@ void main() {
 
   testWidgets('every line reaches the paper, with its sub-lines', (t) async {
     await pump(t, fixture());
+    expect(find.text('Member: Ayu'), findsOneWidget);
     expect(find.textContaining('Nasi Goreng'), findsOneWidget);
     expect(find.textContaining('Pedas'), findsOneWidget);
     expect(find.textContaining('Es Teh'), findsOneWidget);
@@ -155,10 +157,7 @@ void main() {
     // show a row the roll will not print.
     await pump(
       t,
-      fixture(
-        outstanding: 97555,
-        receiptOwners: const ['A · Ana', 'B · Bayu'],
-      ),
+      fixture(outstanding: 97555, receiptOwners: const ['A · Ana', 'B · Bayu']),
     );
     expect(find.textContaining('A · Ana'), findsNothing);
   });
