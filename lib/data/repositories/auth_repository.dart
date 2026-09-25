@@ -622,7 +622,9 @@ class AuthRepository extends StateNotifier<AuthState> {
       // name/address and the module set into the local VenueSettings. The 60s
       // heartbeat rewrites `lastSeenAt`, which re-fires this snapshot, so a
       // diff-guard keeps it a no-op when nothing changed.
-      await _mirrorVenueCloudFields(venue);
+      // Offline Firestore snapshots may predate the settings already saved on
+      // this host. Only a server-confirmed document may overwrite them.
+      if (!venue.fromCache) await _mirrorVenueCloudFields(venue);
     });
 
     // Each beat does two online-only writes that must freeze together when the

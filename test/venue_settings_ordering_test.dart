@@ -26,6 +26,97 @@ const _enabled = VenueSettingsDto(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('fleet mirror cannot appear saved without a host API', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = PrefsService(await SharedPreferences.getInstance());
+    final container = ProviderContainer(
+      overrides: [
+        prefsServiceProvider.overrideWith((_) async => prefs),
+        apiConfigProvider.overrideWith((_) => null),
+      ],
+    );
+    addTearDown(container.dispose);
+    await container.read(prefsServiceProvider.future);
+    final repository = container.read(venueSettingsProvider.notifier);
+    await pumpEventQueue();
+
+    await expectLater(
+      repository.patch(
+        modules: _enabled.modules,
+        counterConfig: _enabled.counterConfig,
+      ),
+      throwsA(isA<ApiException>()),
+    );
+    expect(container.read(venueSettingsProvider).modules, isNull);
+    expect(container.read(venueSettingsProvider).counterConfig, isNull);
+    expect(prefs.venueSettingsJson(), isNull);
+  });
+
+  for (final oldFails in [false, true]) {
+    test('late mirror ${oldFails ? 'error' : 'response'} cannot restore '
+        'old fleet config', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = PrefsService(await SharedPreferences.getInstance());
+      final api = _OverlappingPatchApi();
+      final ws = _TestWs();
+      final container = ProviderContainer(
+        overrides: [
+          prefsServiceProvider.overrideWith((_) async => prefs),
+          apiConfigProvider.overrideWith((_) => _config),
+          apiClientProvider.overrideWithValue(api),
+          wsClientProvider.overrideWithValue(ws),
+        ],
+      );
+      addTearDown(container.dispose);
+      addTearDown(ws.updates.close);
+      await container.read(prefsServiceProvider.future);
+      final repository = container.read(venueSettingsProvider.notifier);
+      await pumpEventQueue();
+
+      final oldMirror = repository.patch(modules: [], counterConfig: []);
+      await api.firstPatchStarted.future;
+      final savedMirror = repository.patch(
+        modules: _enabled.modules,
+        counterConfig: _enabled.counterConfig,
+      );
+      if (oldFails) {
+        api.failOldPatch();
+        await expectLater(oldMirror, throwsA(isA<ApiException>()));
+      } else {
+        api.completeOldPatch();
+        await oldMirror;
+      }
+      await api.secondPatchStarted.future;
+      if (!oldFails) {
+        ws.updates.add(
+          WsEventDto(
+            type: WsEventTypes.venueSettingsUpdated,
+            payload: const VenueSettingsDto(
+              modules: [],
+              counterConfig: [],
+            ).toJson(),
+            ts: DateTime.utc(2026, 9, 23),
+          ),
+        );
+        await pumpEventQueue();
+      }
+      api.completeSavedPatch();
+      await savedMirror;
+      await pumpEventQueue();
+
+      final current = container.read(venueSettingsProvider);
+      final cached = VenueSettingsDto.fromJson(
+        (jsonDecode(prefs.venueSettingsJson()!) as Map).cast<String, dynamic>(),
+      );
+      expect(current.modules, _enabled.modules);
+      expect(current.counterConfig, _enabled.counterConfig);
+      expect(cached.modules, _enabled.modules);
+      expect(cached.counterConfig, _enabled.counterConfig);
+      expect(api.persisted.modules, _enabled.modules);
+      expect(api.persisted.counterConfig, _enabled.counterConfig);
+    });
+  }
+
   for (final update in ['fleet mirror', 'live settings', 'reconnect']) {
     for (final fetchFails in [false, true]) {
       test('startup ${fetchFails ? 'error' : 'response'} cannot replace '
@@ -149,4 +240,44 @@ class _DelayedApi extends ApiClient {
   @override
   Future<dynamic> patchJson(String path, Object body) async =>
       _enabled.toJson();
+}
+
+class _OverlappingPatchApi extends ApiClient {
+  _OverlappingPatchApi()
+    : super(config: _config, storage: SecureStorageService());
+
+  final firstPatchStarted = Completer<void>();
+  final secondPatchStarted = Completer<void>();
+  final _oldPatch = Completer<dynamic>();
+  final _savedPatch = Completer<dynamic>();
+  int _patches = 0;
+  VenueSettingsDto persisted = _enabled;
+
+  @override
+  Future<dynamic> getJson(
+    String path, {
+    Map<String, String>? query,
+    Duration? timeout,
+  }) async => _enabled.toJson();
+
+  @override
+  Future<dynamic> patchJson(String path, Object body) {
+    if (_patches++ == 0) {
+      firstPatchStarted.complete();
+      return _oldPatch.future;
+    }
+    persisted = _enabled;
+    secondPatchStarted.complete();
+    return _savedPatch.future;
+  }
+
+  void completeOldPatch() {
+    persisted = const VenueSettingsDto(modules: [], counterConfig: []);
+    _oldPatch.complete(persisted.toJson());
+  }
+
+  void failOldPatch() =>
+      _oldPatch.completeError(const ApiException(503, 'unreachable'));
+
+  void completeSavedPatch() => _savedPatch.complete(_enabled.toJson());
 }

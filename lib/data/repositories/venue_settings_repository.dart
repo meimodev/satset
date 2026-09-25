@@ -30,6 +30,9 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
   StreamSubscription? _wsSub;
   ProviderSubscription<ApiConfig?>? _cfgSub;
   int _settingsRevision = 0;
+  Future<void> _patchTail = Future.value();
+  int _pendingPatches = 0;
+  bool _resyncAfterPatches = false;
 
   /// The one way a fetched payload becomes state: adopt it and write it down.
   /// A site that assigns `state` directly leaves the cache a version behind.
@@ -179,10 +182,20 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       // ran on the cache until the owner happened to change a setting — the
       // broadcast below is an *edit*, not a resync.
       if (ev.type == WsEventTypes.connected) {
+        if (_pendingPatches > 0) {
+          _resyncAfterPatches = true;
+          return;
+        }
         unawaited(_fetch());
         return;
       }
       if (ev.type != WsEventTypes.venueSettingsUpdated) return;
+      // A broadcast from an earlier PATCH must not replace a newer save that
+      // is still queued. Re-read the host after the queue drains instead.
+      if (_pendingPatches > 0) {
+        _resyncAfterPatches = true;
+        return;
+      }
       try {
         final dto = VenueSettingsDto.fromJson(ev.payload);
         _adopt(dto);
@@ -268,6 +281,10 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
     String? memberPresetId,
     String? memberPunchItemId,
   }) async {
+    final cfg = ref.read(apiConfigProvider);
+    if (cfg == null) throw const ApiException(0, 'Host unavailable');
+    // A newer save or live snapshot must win over this request's response.
+    final revision = ++_settingsRevision;
     final prev = state;
     state = state.copyWith(
       displayName: displayName ?? state.displayName,
@@ -330,8 +347,7 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
       memberDebtOverdueDays:
           memberDebtOverdueDays ?? state.memberDebtOverdueDays,
     );
-    final cfg = ref.read(apiConfigProvider);
-    if (cfg == null) return;
+    _pendingPatches++;
     try {
       final body = <String, dynamic>{
         'displayName': ?displayName,
@@ -392,14 +408,29 @@ class VenueSettingsRepository extends StateNotifier<VenueSettingsDto> {
         'memberPresetId': ?memberPresetId,
         'memberPunchItemId': ?memberPunchItemId,
       };
-      final raw = await ref
-          .read(apiClientProvider)
-          .patchJson('/venue/settings', body);
+      // Preserve call order at the host as well as in local state. Otherwise
+      // an older mirror request can finish last and persist stale switches.
+      final api = ref.read(apiClientProvider);
+      final request = _patchTail.then(
+        (_) => api.patchJson('/venue/settings', body),
+      );
+      _patchTail = request.then<void>(
+        (_) {},
+        onError: (Object _, StackTrace _) {},
+      );
+      final raw = await request;
+      if (!mounted || revision != _settingsRevision) return;
       _adopt(VenueSettingsDto.fromJson((raw as Map).cast<String, dynamic>()));
     } catch (e) {
       SatLog.repo('venueSettings.patch fail $e');
-      state = prev;
+      if (mounted && revision == _settingsRevision) state = prev;
       rethrow;
+    } finally {
+      _pendingPatches--;
+      if (mounted && _pendingPatches == 0 && _resyncAfterPatches) {
+        _resyncAfterPatches = false;
+        unawaited(_fetch());
+      }
     }
   }
 
