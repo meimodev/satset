@@ -18,6 +18,8 @@ class TabletShell extends StatelessWidget {
   final int kitchenCount;
   final bool showKasir;
   final bool showTamu;
+  final bool showTables;
+  final bool showOrders;
 
   /// Whether the [[Stok (nav destination)]] slot is on the rail (ADR-0134) —
   /// either stock authority holds it open. Passed, like [counterHome]:
@@ -33,6 +35,7 @@ class TabletShell extends StatelessWidget {
   /// not the floor. Passed rather than read here so the rail stays a dumb
   /// renderer — `showCounterHome` in app_shell.dart owns the decision.
   final bool counterHome;
+
   /// Whether the [[KDS / Antrian Persiapan]] slot is on the rail at all
   /// (ADR-0115). A venue in [[Tanpa antrian persiapan]] has no prep queue, so
   /// the destination is not a screen worth showing empty. Passed, like
@@ -50,6 +53,8 @@ class TabletShell extends StatelessWidget {
     required this.kitchenCount,
     this.showKasir = false,
     this.showTamu = false,
+    this.showTables = true,
+    this.showOrders = true,
     this.showStok = false,
     this.showVenue = true,
     this.counterHome = false,
@@ -72,6 +77,8 @@ class TabletShell extends StatelessWidget {
             kitchenCount: kitchenCount,
             showKasir: showKasir,
             showTamu: showTamu,
+            showTables: showTables,
+            showOrders: showOrders,
             showStok: showStok,
             showVenue: showVenue,
             counterHome: counterHome,
@@ -98,6 +105,8 @@ class TabletSideRail extends StatelessWidget {
   final int kitchenCount;
   final bool showKasir;
   final bool showTamu;
+  final bool showTables;
+  final bool showOrders;
 
   /// Whether the [[Stok (nav destination)]] slot is on the rail (ADR-0134) —
   /// either stock authority holds it open. Passed, like [counterHome]:
@@ -113,6 +122,7 @@ class TabletSideRail extends StatelessWidget {
   /// not the floor. Passed rather than read here so the rail stays a dumb
   /// renderer — `showCounterHome` in app_shell.dart owns the decision.
   final bool counterHome;
+
   /// Whether the [[KDS / Antrian Persiapan]] slot is on the rail at all
   /// (ADR-0115). A venue in [[Tanpa antrian persiapan]] has no prep queue, so
   /// the destination is not a screen worth showing empty. Passed, like
@@ -127,6 +137,8 @@ class TabletSideRail extends StatelessWidget {
     required this.kitchenCount,
     this.showKasir = false,
     this.showTamu = false,
+    this.showTables = true,
+    this.showOrders = true,
     this.showStok = false,
     this.showVenue = true,
     this.counterHome = false,
@@ -173,7 +185,7 @@ class TabletSideRail extends StatelessWidget {
                       route: '/counter',
                       active: active,
                     )
-                  else
+                  else if (showTables)
                     _RailBtn(
                       id: 'tables',
                       label: context.l10n.tabMeja,
@@ -190,15 +202,16 @@ class TabletSideRail extends StatelessWidget {
                       active: active,
                       badge: kitchenCount,
                     ),
-                  _RailBtn(
-                    id: 'orders',
-                    label: context.l10n.tabPesanan,
-                    icon: Icons.description_outlined,
-                    route: '/orders',
-                    active: active,
-                    badge: readyCount,
-                    alert: readyCount > 0,
-                  ),
+                  if (showOrders)
+                    _RailBtn(
+                      id: 'orders',
+                      label: context.l10n.tabPesanan,
+                      icon: Icons.description_outlined,
+                      route: '/orders',
+                      active: active,
+                      badge: readyCount,
+                      alert: readyCount > 0,
+                    ),
                   if (showTamu)
                     _RailBtn(
                       id: 'tamu',

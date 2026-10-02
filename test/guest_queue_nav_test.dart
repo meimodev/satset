@@ -36,7 +36,12 @@ void main() {
     );
   });
 
-  Future<void> pumpRail(WidgetTester tester, {required bool showTamu}) async {
+  Future<void> pumpRail(
+    WidgetTester tester, {
+    required bool showTamu,
+    bool showTables = true,
+    bool showOrders = true,
+  }) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -55,6 +60,8 @@ void main() {
               readyCount: 0,
               kitchenCount: 0,
               showTamu: showTamu,
+              showTables: showTables,
+              showOrders: showOrders,
               guestPending: 2,
             ),
           ),
@@ -69,12 +76,29 @@ void main() {
     tester,
   ) async {
     await pumpRail(tester, showTamu: true);
-    expect(find.text(lookupAppL10n(const Locale('id')).tabTamu), findsOneWidget);
+    expect(
+      find.text(lookupAppL10n(const Locale('id')).tabTamu),
+      findsOneWidget,
+    );
     expect(find.text('2'), findsOneWidget);
   });
 
   testWidgets('and drops it entirely when it does not', (tester) async {
     await pumpRail(tester, showTamu: false);
     expect(find.text(lookupAppL10n(const Locale('id')).tabTamu), findsNothing);
+  });
+
+  testWidgets('rail omits floor and orders without their permission', (
+    tester,
+  ) async {
+    await pumpRail(
+      tester,
+      showTamu: false,
+      showTables: false,
+      showOrders: false,
+    );
+    final l10n = lookupAppL10n(const Locale('id'));
+    expect(find.text(l10n.tabMeja), findsNothing);
+    expect(find.text(l10n.tabPesanan), findsNothing);
   });
 }

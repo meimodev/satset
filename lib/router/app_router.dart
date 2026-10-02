@@ -56,6 +56,7 @@ import 'package:satset/domain/models/venue_module.dart';
 /// reachable by two unrelated authorities, and encoding that as "the lower one"
 /// would lock out an owner whose role happens not to carry it.
 List<Capability>? capabilitiesFor(String loc) {
+  if (loc == '/tables') return const [Capability.takeOrder];
   if (loc.startsWith('/kitchen')) return const [Capability.viewKds];
   if (loc.startsWith('/kasir')) return const [Capability.settleBill];
   if (loc.startsWith('/table/') ||
@@ -183,23 +184,24 @@ final venueHubCapabilities = <Capability>{
   for (final r in venueHubRoutes) ...?capabilitiesFor(r),
 }.toList(growable: false);
 
-/// Where a fresh sign-in lands.
-///
-/// Server mode lands on the Venue hub — **unless this person holds nothing
-/// that opens it**, which used to end a successful sign-in on `/forbidden`
-/// (a waiter signing in on the host tablet). The hub's gate is computable
-/// now, so the landing asks it (ADR-0134). Everyone else lands on the home
-/// destination, which a [[Kedai]] moves to the menu (ADR-0109).
-///
-/// Pure, and separated from `redirect` so it can be tested without a router:
-/// the three inputs are all the answer depends on.
+/// Pick the first work destination this account can open. Host staff still
+/// start at the Venue hub when it has something for them; every other account
+/// follows the rail order, with Saya as the fallback for a role with no work
+/// destination. Used for sign-in and for a capability revoked mid-session.
 String landingFor({
   required AppMode mode,
-  required bool hubOpens,
+  required AuthState auth,
   required bool counterHome,
 }) {
+  final hubOpens = venueHubCapabilities.any(auth.has);
   if (mode == AppMode.server && hubOpens) return '/venue';
-  return counterHome ? '/counter' : '/tables';
+  if (canOpenRoute(auth, '/tables')) {
+    return counterHome ? '/counter' : '/tables';
+  }
+  for (final route in const ['/kitchen', '/kasir', '/stock']) {
+    if (canOpenRoute(auth, route)) return route;
+  }
+  return hubOpens ? '/venue' : '/me';
 }
 
 /// Whether [auth] may open [loc] — the redirect's own test, exposed so a
@@ -322,7 +324,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         // "Page Not Found". See ADR-0078.
         decision = landingFor(
           mode: prefs?.appMode() ?? AppMode.unset,
-          hubOpens: venueHubCapabilities.any(auth.has),
+          auth: auth,
           counterHome: counterHome(ref, auth),
         );
       } else if (loggedIn) {
@@ -337,7 +339,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         final needed = capabilitiesFor(loc);
         // Fail-closed: none of the route's capabilities denies the route.
         if (needed != null && !needed.any(auth.has)) {
-          decision = '/forbidden';
+          decision = landingFor(
+            mode: prefs?.appMode() ?? AppMode.unset,
+            auth: auth,
+            counterHome: counterHome(ref, auth),
+          );
         }
       }
       if (decision != null && decision != loc) {

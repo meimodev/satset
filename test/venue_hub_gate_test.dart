@@ -132,7 +132,11 @@ void main() {
   group('where a sign-in lands (ADR-0134)', () {
     test('server mode lands on the hub when it opens', () {
       expect(
-        landingFor(mode: AppMode.server, hubOpens: true, counterHome: false),
+        landingFor(
+          mode: AppMode.server,
+          auth: _auth({Capability.adjustStock}),
+          counterHome: false,
+        ),
         '/venue',
       );
     });
@@ -141,20 +145,52 @@ void main() {
       // The bug: a waiter signing in on the host tablet landed on `/venue`
       // and was bounced straight to `/forbidden`.
       expect(
-        landingFor(mode: AppMode.server, hubOpens: false, counterHome: false),
+        landingFor(
+          mode: AppMode.server,
+          auth: _auth({Capability.takeOrder}),
+          counterHome: false,
+        ),
         '/tables',
       );
       expect(
-        landingFor(mode: AppMode.server, hubOpens: false, counterHome: true),
+        landingFor(
+          mode: AppMode.server,
+          auth: _auth({Capability.takeOrder}),
+          counterHome: true,
+        ),
         '/counter',
       );
     });
 
-    test('a client never lands on the hub, however much it holds', () {
+    test('a client with takeOrder keeps the floor as home', () {
       expect(
-        landingFor(mode: AppMode.client, hubOpens: true, counterHome: false),
+        landingFor(
+          mode: AppMode.client,
+          auth: _auth({Capability.takeOrder, Capability.adjustStock}),
+          counterHome: false,
+        ),
         '/tables',
       );
+    });
+    test('non-ordering roles land on work they can open', () {
+      expect(canOpenRoute(_auth({Capability.settleBill}), '/tables'), isFalse);
+      expect(canOpenRoute(_auth({Capability.settleBill}), '/orders'), isFalse);
+      for (final (caps, expected) in [
+        ({Capability.viewKds}, '/kitchen'),
+        ({Capability.settleBill}, '/kasir'),
+        ({Capability.adjustStock}, '/stock'),
+        ({Capability.editSettings}, '/venue'),
+        (<Capability>{}, '/me'),
+      ]) {
+        expect(
+          landingFor(
+            mode: AppMode.client,
+            auth: _auth(caps),
+            counterHome: false,
+          ),
+          expected,
+        );
+      }
     });
   });
 

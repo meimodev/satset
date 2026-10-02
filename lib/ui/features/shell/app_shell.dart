@@ -307,6 +307,9 @@ class AppShell extends ConsumerWidget {
     final l = context.layout;
 
     final activeTab = activeTabFor(loc);
+    final auth = ref.watch(authStateProvider);
+    final showTables = canOpenRoute(auth, '/tables');
+    final showOrders = canOpenRoute(auth, '/orders');
     final showKasir = ref.watch(
       authStateProvider.select((s) => s.has(Capability.settleBill)),
     );
@@ -373,6 +376,8 @@ class AppShell extends ConsumerWidget {
           showTamu: showTamu,
           showStok: showStok,
           showVenue: showVenue,
+          showTables: showTables,
+          showOrders: showOrders,
           counterHome: counterHome,
           guestPending: guestPending,
           crumbs: crumbsFor(context.l10n, loc, userName),
@@ -424,6 +429,8 @@ class AppShell extends ConsumerWidget {
                       showKasir: showKasir,
                       showTamu: showTamu,
                       showStok: showStok,
+                      showTables: showTables,
+                      showOrders: showOrders,
                       counterHome: counterHome,
                       guestPending: guestPending,
                     ),
@@ -451,6 +458,8 @@ class _FloatingTabBar extends StatelessWidget {
   final bool showKasir;
   final bool showTamu;
   final bool showStok;
+  final bool showTables;
+  final bool showOrders;
   final bool counterHome;
   final int guestPending;
   const _FloatingTabBar({
@@ -461,6 +470,8 @@ class _FloatingTabBar extends StatelessWidget {
     this.showKasir = false,
     this.showTamu = false,
     this.showStok = false,
+    required this.showTables,
+    required this.showOrders,
     this.counterHome = false,
     this.guestPending = 0,
   });
@@ -502,7 +513,7 @@ class _FloatingTabBar extends StatelessWidget {
               active: active == 'counter',
               onTap: () => context.go('/counter'),
             )
-          else
+          else if (showTables)
             _Tab(
               id: 'tables',
               label: context.l10n.tabMeja,
@@ -519,15 +530,16 @@ class _FloatingTabBar extends StatelessWidget {
               badge: kitchenCount,
               onTap: () => context.go('/kitchen'),
             ),
-          _Tab(
-            id: 'orders',
-            label: context.l10n.tabPesanan,
-            icon: Icons.description_outlined,
-            active: active == 'orders',
-            badge: readyCount,
-            badgeAlert: readyCount > 0,
-            onTap: () => context.go('/orders'),
-          ),
+          if (showOrders)
+            _Tab(
+              id: 'orders',
+              label: context.l10n.tabPesanan,
+              icon: Icons.description_outlined,
+              active: active == 'orders',
+              badge: readyCount,
+              badgeAlert: readyCount > 0,
+              onTap: () => context.go('/orders'),
+            ),
           if (showKasir)
             _Tab(
               id: 'kasir',
