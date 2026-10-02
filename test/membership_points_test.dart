@@ -102,6 +102,38 @@ void main() {
   });
 
   test(
+    'captured redemption keeps its discount when points were spent',
+    () async {
+      final member = await enrol();
+      await earnPointsForVisit(
+        db,
+        memberId: member.id,
+        visitId: 'earned',
+        base: 150000,
+      );
+      await spendPoints(
+        db,
+        memberId: member.id,
+        visitId: 'online',
+        points: 100,
+      );
+      expect(await memberPoints(db, member.id), 50);
+
+      final discount = await spendPoints(
+        db,
+        memberId: member.id,
+        visitId: 'captured',
+        points: 100,
+        honorCaptured: true,
+      );
+      expect(discount, 100000);
+      expect(await memberPoints(db, member.id), 0);
+      await reverseRedeemForVisit(db, visitId: 'captured');
+      expect(await memberPoints(db, member.id), 50);
+    },
+  );
+
+  test(
     'an earn happens once per visit, however often close is reached',
     () async {
       final m = await enrol();

@@ -1,179 +1,171 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/localization/locale_view_model.dart';
-import 'package:satset/data/services/send_queue_drain.dart';
-import 'package:satset/data/services/settlement_journal.dart';
 import 'package:satset/data/services/settlement_sync.dart';
+import 'package:satset/domain/models/settlement_event.dart';
 import 'package:satset/ui/core/design/colors.dart';
-import 'package:satset/ui/core/design/format.dart';
-import 'package:satset/ui/core/design/skin.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/pulse_dot.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
-import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 
-/// What the [[Antrean setelmen]] is doing, on the `/kasir` header (ADR-0123).
-///
-/// Two facts, deliberately separate: **the venue is catching up** (the pulse,
-/// while a drain is in flight) and **this much has not landed yet** (the count,
-/// which outlives the drain when a chain parks on a refusal). Absent entirely
-/// when there is nothing pending — a strip that is always there is a strip
-/// nobody reads.
+/// Captured records stay visible until the host has accepted them.
 class SettlementSyncStrip extends ConsumerWidget {
   const SettlementSyncStrip({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final journal = ref.watch(settlementJournalProvider);
+    final repairVisits = {
+      for (final e in journal.events)
+        if (e.needsRepair) e.visitId,
+    };
+    final visibleVisits = {...journal.pendingVisits, ...repairVisits};
+    if (visibleVisits.isEmpty && !journal.draining) {
+      return const SizedBox.shrink();
+    }
     final sc = context.sat;
-    final j = ref.watch(settlementJournalProvider);
-    if (j.pendingVisits.isEmpty && !j.draining) return const SizedBox.shrink();
-    final parked = j.parkedVisits.isNotEmpty;
-    // Parked is a refusal waiting on a human; pending is only in transit.
-    final hue = parked ? sc.urgent : sc.warn;
-    return Container(
-      margin: const EdgeInsets.only(top: Sp.s3),
-      padding: const EdgeInsets.symmetric(horizontal: Sp.s3, vertical: Sp.s2),
-      decoration: BoxDecoration(
-        color: sc.bg2,
-        borderRadius: SatR.md,
-        border: Border.all(color: hue.withValues(alpha: 0.4)),
-      ),
+    final color =
+        repairVisits.isNotEmpty || journal.events.any((e) => e.hasSyncError)
+        ? sc.urgent
+        : sc.warn;
+    return Padding(
+      padding: const EdgeInsets.only(top: Sp.s3),
       child: Row(
         children: [
-          PulseDot(color: hue, pulse: j.draining),
+          PulseDot(color: color, pulse: journal.draining),
           const SizedBox(width: Sp.s2),
           Expanded(
             child: Text(
-              j.draining
+              journal.draining
                   ? context.l10n.cshSyncDraining
-                  : context.l10n.cshSyncPending(j.pendingVisits.length),
-              style: SatType.labelM().copyWith(color: sc.textHi),
+                  : repairVisits.isNotEmpty
+                  ? context.l10n.cshSyncRepair
+                  : journal.events.any((e) => e.hasSyncError)
+                  ? context.l10n.cshSyncError
+                  : context.l10n.cshSyncPending(visibleVisits.length),
+              style: SatType.labelM().copyWith(color: color),
             ),
           ),
+          if (repairVisits.isNotEmpty)
+            IconButton(
+              onPressed: () => _repairCaptured(
+                context,
+                ref,
+                journal.events.firstWhere((e) => e.needsRepair),
+              ),
+              tooltip: context.l10n.cshRepairTitle,
+              icon: Icon(Icons.build_outlined, color: color),
+            ),
         ],
       ),
     );
   }
 }
 
-/// Surfaces a refused chain the moment a drain reports one.
-///
-/// Heavier than the [[Hasil pengiriman]] on purpose: a refused settlement is
-/// cash already in the drawer, so it blocks rather than passing as a snackbar,
-/// and acknowledging it is an explicit act.
-class SettlementRefusalListener extends ConsumerStatefulWidget {
-  final Widget child;
-  const SettlementRefusalListener({super.key, required this.child});
-
-  @override
-  ConsumerState<SettlementRefusalListener> createState() =>
-      _SettlementRefusalListenerState();
-}
-
-class _SettlementRefusalListenerState
-    extends ConsumerState<SettlementRefusalListener> {
-  bool _showing = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // A refusal can land while this screen is not mounted — the bill sheet is
-    // a root-navigator push (ADR-0103), and the drain fires on reconnect from
-    // wherever the cashier happens to be — and the report does not survive a
-    // restart. Both leave the money parked and the surface unshown, so ask the
-    // journal rather than trusting we saw the drain.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _seedFromJournal());
-  }
-
-  Future<void> _seedFromJournal() async {
-    if (!mounted || _showing) return;
-    if (ref.read(settlementReportProvider) != null) return;
-    final parked = await ref
-        .read(settlementJournalProvider.notifier)
-        .parkedChains();
-    if (!mounted || parked.isEmpty) return;
-    if (ref.read(settlementReportProvider) != null) return;
-    ref.read(settlementReportProvider.notifier).state = SettlementReport(
-      chains: parked,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    ref.listen<SettlementReport?>(settlementReportProvider, (_, next) {
-      if (next == null || next.failures.isEmpty || _showing) return;
-      _showing = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _open(next));
-    });
-    return widget.child;
-  }
-
-  Future<void> _open(SettlementReport report) async {
-    final failures = report.failures;
-    await showSatSheet<void>(
+Future<void> _repairCaptured(
+  BuildContext context,
+  WidgetRef ref,
+  SettlementEvent event,
+) async {
+  final money =
+      event.kind == SettlementEventKind.recordPayment ||
+      event.kind == SettlementEventKind.refund;
+  final amount = TextEditingController(
+    text: event.payload['amount']?.toString(),
+  );
+  final receipt = TextEditingController(
+    text: event.arg<String>('receiptId') ?? '',
+  );
+  final payment = TextEditingController(
+    text: event.arg<String>('paymentId') ?? '',
+  );
+  final data = TextEditingController(
+    text: jsonEncode({...event.payload}..remove('_syncPolicy')),
+  );
+  String? error;
+  try {
+    await showSatDialog<void>(
       context,
-      // Not dismissible: the money is real and the cashier has to look at it.
-      dismissible: false,
-      builder: (ctx) => _RefusalSheet(failures: failures),
-    );
-    if (!mounted) return;
-    // Acknowledging clears the chains: the difference is now a human's
-    // problem, and the audit row the host wrote is where it lives.
-    for (final c in failures) {
-      await ref.read(settlementJournalProvider.notifier).acknowledge(c.visitId);
-    }
-    ref.read(settlementReportProvider.notifier).state = null;
-    _showing = false;
-  }
-}
-
-class _RefusalSheet extends StatelessWidget {
-  final List<ChainOutcome> failures;
-  const _RefusalSheet({required this.failures});
-
-  @override
-  Widget build(BuildContext context) {
-    final sc = context.sat;
-    final l = context.l10n;
-    final stranded = failures.fold<int>(0, (a, c) => a + c.strandedAmount);
-    return SafeArea(
-      child: Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: Sp.s4) +
-            const EdgeInsets.only(bottom: Sp.s4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SatSheetHeader(
-              onClose: () => Navigator.of(context).pop(),
-              child: Text(
-                l.cshSyncRefusedTitle,
-                style: SatType.h3(color: sc.textHi),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) {
+          return AlertDialog(
+            title: Text(context.l10n.cshRepairTitle),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('${event.kind.name} · ${event.visitId}'),
+                  if (money) ...[
+                    SatField.number(
+                      controller: amount,
+                      hint: context.l10n.cshRepairAmount,
+                    ),
+                    SatField.text(
+                      controller: receipt,
+                      hint: context.l10n.cshRepairReceipt,
+                    ),
+                    if (event.kind == SettlementEventKind.refund)
+                      SatField.text(
+                        controller: payment,
+                        hint: context.l10n.cshRepairPayment,
+                      ),
+                  ] else
+                    SatField.text(
+                      controller: data,
+                      maxLines: 8,
+                      hint: context.l10n.cshRepairData,
+                    ),
+                  if (error != null)
+                    Text(error!, style: TextStyle(color: context.sat.urgent)),
+                ],
               ),
             ),
-            Text(
-              l.cshSyncRefusedBody(failures.length),
-              style: SatType.bodyM().copyWith(color: sc.textMd),
-            ),
-            if (stranded > 0) ...[
-              const SizedBox(height: Sp.s3),
-              Text(
-                l.cshSyncStranded(formatIDR(stranded)),
-                style: SatType.h3().copyWith(color: sc.urgent),
+            actions: [
+              SatButton.ghost(
+                onTap: () => Navigator.pop(dialogContext),
+                label: MaterialLocalizations.of(context).cancelButtonLabel,
+              ),
+              SatButton.primary(
+                onTap: () async {
+                  try {
+                    final payload = money
+                        ? <String, dynamic>{
+                            ...event.payload,
+                            'amount': int.parse(amount.text.trim()),
+                            'receiptId': receipt.text.trim(),
+                            if (event.kind == SettlementEventKind.refund)
+                              'paymentId': payment.text.trim(),
+                          }
+                        : (jsonDecode(data.text) as Map)
+                              .cast<String, dynamic>();
+                    await ref
+                        .read(settlementJournalProvider.notifier)
+                        .repairAndResend(event.id, payload);
+                    if (dialogContext.mounted) Navigator.pop(dialogContext);
+                    await ref.read(settlementJournalProvider.notifier).drain();
+                  } catch (_) {
+                    if (dialogContext.mounted) {
+                      setState(() => error = context.l10n.cshRepairInvalid);
+                    }
+                  }
+                },
+                label: context.l10n.cshRepairSend,
               ),
             ],
-            const SizedBox(height: Sp.s4),
-            SatButton.primary(
-              label: l.cshSyncAck,
-              onTap: () => Navigator.of(context).pop(),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
+  } finally {
+    amount.dispose();
+    receipt.dispose();
+    payment.dispose();
+    data.dispose();
   }
 }

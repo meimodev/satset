@@ -2848,6 +2848,45 @@ class AppL10nId extends AppL10n {
   }
 
   @override
+  String get cshSyncRepair =>
+      'Catatan tertangkap perlu diperbaiki sebelum sinkronisasi';
+
+  @override
+  String get cshSyncError =>
+      'Catatan tertangkap tersimpan, tetapi belum diterima host';
+
+  @override
+  String get cshLegacyPending => 'Catatan tertangkap lama masih belum selesai';
+
+  @override
+  String get cshRepairTitle => 'Perbaiki catatan tertangkap';
+
+  @override
+  String get cshRepairAmount =>
+      'Jumlah yang benar-benar diterima atau dikembalikan';
+
+  @override
+  String get cshRepairReceipt => 'ID struk asli';
+
+  @override
+  String get cshRepairPayment => 'ID pembayaran asli';
+
+  @override
+  String get cshRepairData => 'Data tertangkap';
+
+  @override
+  String get cshRepairInvalid => 'Periksa nilai catatan lalu coba lagi';
+
+  @override
+  String get cshRepairSend => 'Simpan dan kirim ulang';
+
+  @override
+  String get cshExcessPayment => 'Kelebihan bayar perlu dikembalikan';
+
+  @override
+  String get cshExcessRefund => 'Kelebihan pengembalian perlu dikoreksi';
+
+  @override
   String get cshBillPending => 'Tertunda';
 
   @override
@@ -2867,9 +2906,6 @@ class AppL10nId extends AppL10n {
   String cshSyncStranded(String amount) {
     return '$amount belum tercatat';
   }
-
-  @override
-  String get cshSyncAck => 'Mengerti';
 
   @override
   String get cshApprovalOffline => 'Persetujuan manajer perlu koneksi ke host';
@@ -2963,6 +2999,15 @@ class AppL10nId extends AppL10n {
 
   @override
   String get cshReceipts => 'Struk';
+
+  @override
+  String get cshReceiptCancelled => 'Dibatalkan';
+
+  @override
+  String get cshReceiptOriginal => 'Struk asli';
+
+  @override
+  String get cshReceiptAmended => 'Perubahan';
 
   @override
   String cshUnassignedCount(int n) {

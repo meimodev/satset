@@ -2865,6 +2865,43 @@ class AppL10nEn extends AppL10n {
   }
 
   @override
+  String get cshSyncRepair => 'Captured record needs repair before sync';
+
+  @override
+  String get cshSyncError =>
+      'Captured records are saved but have not reached the host';
+
+  @override
+  String get cshLegacyPending => 'Earlier captured records remain unresolved';
+
+  @override
+  String get cshRepairTitle => 'Repair captured record';
+
+  @override
+  String get cshRepairAmount => 'Amount actually received or refunded';
+
+  @override
+  String get cshRepairReceipt => 'Original receipt ID';
+
+  @override
+  String get cshRepairPayment => 'Original payment ID';
+
+  @override
+  String get cshRepairData => 'Captured data';
+
+  @override
+  String get cshRepairInvalid => 'Check the captured values and try again';
+
+  @override
+  String get cshRepairSend => 'Save and resend';
+
+  @override
+  String get cshExcessPayment => 'Excess payment to refund';
+
+  @override
+  String get cshExcessRefund => 'Excess refund to correct';
+
+  @override
   String get cshBillPending => 'Pending';
 
   @override
@@ -2885,9 +2922,6 @@ class AppL10nEn extends AppL10n {
   String cshSyncStranded(String amount) {
     return '$amount unrecorded';
   }
-
-  @override
-  String get cshSyncAck => 'Got it';
 
   @override
   String get cshApprovalOffline => 'A manager approval needs the host';
@@ -2981,6 +3015,15 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get cshReceipts => 'Receipts';
+
+  @override
+  String get cshReceiptCancelled => 'Cancelled';
+
+  @override
+  String get cshReceiptOriginal => 'Original print';
+
+  @override
+  String get cshReceiptAmended => 'Amendment';
 
   @override
   String cshUnassignedCount(int n) {

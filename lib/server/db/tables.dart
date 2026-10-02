@@ -144,6 +144,9 @@ class Visits extends Table {
   TextColumn get zoneId => text().withDefault(const Constant(''))();
   IntColumn get pax => integer().withDefault(const Constant(0))();
   DateTimeColumn get openedAt => dateTime().nullable()();
+
+  /// Tax and service rules quoted when this visit opened.
+  TextColumn get taxConfigJson => text().nullable()();
   TextColumn get guestName => text().nullable()();
   TextColumn get guestNotes => text().nullable()();
   TextColumn get reservationId => text().nullable()();
@@ -755,6 +758,9 @@ class TableSessions extends Table {
   IntColumn get pax => integer().withDefault(const Constant(0))();
   DateTimeColumn get openedAt => dateTime().nullable()();
   DateTimeColumn get closedAt => dateTime()();
+
+  /// Preserved for amendments after the live visit has been archived.
+  TextColumn get taxConfigJson => text().nullable()();
   IntColumn get durationSec => integer().withDefault(const Constant(0))();
   TextColumn get actorUserId => text().nullable()();
   IntColumn get subtotal => integer().withDefault(const Constant(0))();
@@ -1054,10 +1060,12 @@ class Discounts extends Table {
   /// [[Tukar poin (redeem)|points redemption]]). Always `manual` on order- and
   /// line-scope rows, which have no such contest.
   ///
-  /// The one-per-visit rule of ADR-0070 is now **one per source** (ADR-0094):
-  /// the partial unique index covers `(visit_id, source)`, so the three stack
-  /// by design and none can be applied twice.
+  /// Member and redeem sources remain unique per visit (ADR-0094). Live
+  /// manual edits keep one slot in the route; separate captures may stack.
   TextColumn get source => text().withDefault(const Constant('manual'))();
+
+  /// Excludes a signed captured manual action from the live slot's unique index.
+  BoolColumn get captured => boolean().withDefault(const Constant(false))();
 
   /// Weak reference — the preset may be edited or deleted afterwards. Never
   /// read it to render or report a settled bill; use the snapshot below.
@@ -1098,6 +1106,10 @@ class ReceiptLines extends Table {
 class Payments extends Table {
   TextColumn get id => text()();
   TextColumn get receiptId => text()();
+
+  /// Set only when the named receipt was removed before a captured payment
+  /// reached the host. It credits the original visit without recreating it.
+  TextColumn get visitId => text().nullable()();
   TextColumn get method => text()();
   IntColumn get amount => integer()();
   BoolColumn get isRefund => boolean().withDefault(const Constant(false))();
@@ -1144,6 +1156,10 @@ class TableSessionReceipts extends Table {
   /// reason [TableSessions.memberId] does: a deleted member's past trade still
   /// counts while the person is gone (ADR-0092).
   TextColumn get memberId => text().nullable()();
+
+  /// Original printed values retained when a late captured action amends this
+  /// archived receipt. The current columns carry the effective allocation.
+  TextColumn get originalSnapshotJson => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -1893,4 +1909,18 @@ class GuestOrderLines extends Table {
   IntColumn get unitPrice => integer()();
   @override
   Set<Column> get primaryKey => {id};
+}
+
+/// Metadata only: an old device has a parked money capture that will never
+/// replay. The host needs this durable warning before collecting that bill.
+class LegacyParkedPayments extends Table {
+  TextColumn get eventId => text()();
+  TextColumn get visitId => text()();
+  TextColumn get tableId => text().nullable()();
+  TextColumn get kind => text()();
+  IntColumn get amount => integer()();
+  DateTimeColumn get capturedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {eventId};
 }

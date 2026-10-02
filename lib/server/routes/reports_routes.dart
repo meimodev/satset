@@ -1072,7 +1072,10 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
     List<Map<String, dynamic>> receiptTree(String sessionId) {
       final rcps =
           receiptsBySession[sessionId] ?? const <TableSessionReceipt>[];
-      final known = {for (final r in rcps) r.receiptId};
+      final known = {
+        for (final r in rcps)
+          if (r.status != 'cancelled') r.receiptId,
+      };
       final out = [
         for (final r in rcps)
           {
@@ -1086,7 +1089,11 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
             'total': r.total,
             'status': r.status,
             'payments': [
-              for (final p in paysByReceipt[r.receiptId] ?? const [])
+              for (final p
+                  in r.status == 'cancelled'
+                      ? const <TableSessionPayment>[]
+                      : paysByReceipt[r.receiptId] ??
+                            const <TableSessionPayment>[])
                 payJson(p),
             ],
           },
@@ -1131,11 +1138,18 @@ Router reportsRoutes(AppDatabase db, ServerAuth auth) {
     for (final s in sessions) {
       final ls = linesBySession[s.id] ?? const <TableSessionTicket>[];
       final ds = discountsBySession[s.id] ?? const <TableSessionDiscount>[];
+      final activeReceipts =
+          (receiptsBySession[s.id] ?? const <TableSessionReceipt>[])
+              .where((r) => r.status != 'cancelled')
+              .toList();
+      final activeIds = {for (final r in activeReceipts) r.receiptId};
       final assigned =
-          assignmentsBySession[s.id] ?? const <TableSessionReceiptLine>[];
+          (assignmentsBySession[s.id] ?? const <TableSessionReceiptLine>[])
+              .where((a) => activeIds.contains(a.receiptId))
+              .toList();
       final shares = orderHistoryDiscountShares(
         tickets: ls,
-        receipts: receiptsBySession[s.id] ?? const [],
+        receipts: activeReceipts,
         assignments: assigned,
         discounts: ds,
         discountTotal: s.discountAmount,

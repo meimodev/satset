@@ -120,6 +120,7 @@ class BillSummary {
   });
 
   bool get isTakeaway => kind == 'takeaway';
+
   bool get isOnAccount => piutangAmount > 0;
 
   /// Amount receipts on this bill, and how many are settled — the card's
@@ -605,6 +606,7 @@ class BillReceipt {
 class Bill {
   /// False only for a transient view of known captured lines, never a payable bill.
   final bool historyAvailable;
+  final int legacyParkedPaymentCount;
   final String visitId;
   final String tableId;
   final String? tableLabel;
@@ -662,9 +664,11 @@ class Bill {
   final bool fullySettled;
   final List<BillLine> lines;
   final List<BillReceipt> receipts;
+  final List<BillPayment> unallocatedPayments;
 
   const Bill({
     this.historyAvailable = true,
+    this.legacyParkedPaymentCount = 0,
     required this.visitId,
     required this.tableId,
     required this.tableLabel,
@@ -695,6 +699,7 @@ class Bill {
     required this.fullySettled,
     required this.lines,
     required this.receipts,
+    this.unallocatedPayments = const [],
   });
 
   bool get isTakeaway => kind == 'takeaway';
@@ -716,6 +721,10 @@ class Bill {
     return null;
   }
 
+  int get excessPayment => (paidAmount - total).clamp(0, 1 << 31);
+
+  int get excessRefund => (-paidAmount).clamp(0, 1 << 31);
+
   /// Grow a raw subtotal by this bill's own effective service+tax rate.
   ///
   /// Derived from the bill rather than re-read from settings, so a preview can
@@ -729,6 +738,7 @@ class Bill {
 
   factory Bill.fromJson(Map<String, dynamic> j) => Bill(
     historyAvailable: j['historyAvailable'] != false,
+    legacyParkedPaymentCount: _int(j['legacyParkedPaymentCount']),
     visitId: j['visitId'] as String? ?? '',
     tableId: j['tableId'] as String,
     tableLabel: j['tableLabel'] as String?,
@@ -773,6 +783,10 @@ class Bill {
     receipts: [
       for (final r in (j['receipts'] as List? ?? const []))
         BillReceipt.fromJson((r as Map).cast<String, dynamic>()),
+    ],
+    unallocatedPayments: [
+      for (final p in (j['unallocatedPayments'] as List? ?? const []))
+        BillPayment.fromJson((p as Map).cast<String, dynamic>()),
     ],
   );
 }

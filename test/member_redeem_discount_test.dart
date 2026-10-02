@@ -47,6 +47,101 @@ void main() {
   });
   tearDown(() => db.close());
 
+  test(
+    'captured redemption honors points after the receipt was paid',
+    () async {
+      final member = await createMember(
+        db,
+        name: 'Budi',
+        phone: '081234567890',
+      );
+      await adjustPoints(db, memberId: member.id, delta: 50, note: 'seed');
+      await spendPoints(db, memberId: member.id, visitId: 'other', points: 30);
+      await db
+          .into(db.visits)
+          .insert(
+            VisitsCompanion.insert(
+              id: 'v1',
+              tableId: 't1',
+              memberId: Value(member.id),
+              createdAt: DateTime.now().toUtc(),
+            ),
+          );
+      await db
+          .into(db.tickets)
+          .insert(
+            TicketsCompanion.insert(
+              id: 'tk1',
+              tableId: 't1',
+              visitId: const Value('v1'),
+              itemId: 'i1',
+              name: 'Nasi Goreng',
+              course: 'mains',
+              qty: const Value(2),
+              price: 85000,
+              status: 'sent',
+              sentAt: DateTime.now().toUtc(),
+            ),
+          );
+      final router = settlementRoutes(db, WsHub(), caller.auth).call;
+      Future<Response> post(
+        String path,
+        Map<String, Object?> body, {
+        String? grant,
+      }) => router(
+        Request(
+          'POST',
+          Uri.parse('http://x$path'),
+          body: jsonEncode(body),
+          headers: {
+            ...caller.headers,
+            if (grant != null) ...{
+              'x-capture-grant': grant,
+              'x-idempotency-key': 'captured-redeem',
+            },
+          },
+        ),
+      );
+      expect(
+        (await post('/settlement/visits/v1/receipts', {
+          'id': 'paid-receipt',
+          'assignAll': true,
+        })).statusCode,
+        200,
+      );
+      expect(
+        (await post('/settlement/receipts/paid-receipt/payments', {
+          'method': 'tunai',
+          'amount': 170000,
+        })).statusCode,
+        200,
+      );
+      final capturedBody = {
+        'points': 50,
+        'capturedAt': DateTime.utc(2026, 9, 25).toIso8601String(),
+      };
+      expect(
+        (await post('/settlement/visits/v1/redeem', capturedBody)).statusCode,
+        409,
+      );
+      final grant = await caller.auth.captureGrantFor(caller.token, [
+        'settleBill',
+      ]);
+      final response = await post(
+        '/settlement/visits/v1/redeem',
+        capturedBody,
+        grant: grant,
+      );
+      final body = await response.readAsString();
+      expect(response.statusCode, 200, reason: body);
+      final bill = ((jsonDecode(body) as Map)['bill'] as Map)
+          .cast<String, dynamic>();
+      expect(bill['discountAmount'], 50000);
+      expect(bill['paidAmount'], 170000);
+      expect(await memberPoints(db, member.id), 0);
+    },
+  );
+
   test('redeeming points takes their rupiah value off, not the bill', () async {
     final member = await createMember(db, name: 'Budi', phone: '081234567890');
     await adjustPoints(db, memberId: member.id, delta: 50, note: 'seed');

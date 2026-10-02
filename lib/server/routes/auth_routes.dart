@@ -171,6 +171,7 @@ Router authRoutes(ServerAuth auth) {
         'roleId': user.roleId,
         'zoneAssigned': user.zoneAssigned,
         'capabilities': caps,
+        'captureGrant': await auth.captureGrantFor(t, caps),
         'avatarColorHex': user.avatarColorHex,
         'shiftStartedAt': shift?.toIso8601String(),
         // Says the null above is an answer, not a shrug — see `MeDto`.

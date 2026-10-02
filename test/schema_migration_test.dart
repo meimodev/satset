@@ -67,13 +67,39 @@ void main() {
       db.migration.onUpgrade(Migrator(db), from, to ?? db.schemaVersion);
 
   group('schema baseline', () {
-    test('the v62 dump migrates to the current version and validates', () async {
+    test(
+      'the v62 dump migrates to the current version and validates',
+      () async {
+        final verifier = SchemaVerifier(GeneratedHelper());
+        final connection = await verifier.startAt(62);
+        final db = AppDatabase(connection);
+        addTearDown(db.close);
+
+        await verifier.migrateAndValidate(db, db.schemaVersion);
+      },
+    );
+
+    test('v80 upgrade accepts two captured manual discounts', () async {
       final verifier = SchemaVerifier(GeneratedHelper());
-      final connection = await verifier.startAt(62);
+      final connection = await verifier.startAt(80);
       final db = AppDatabase(connection);
       addTearDown(db.close);
-
       await verifier.migrateAndValidate(db, db.schemaVersion);
+      for (final id in ['d1', 'd2']) {
+        await db
+            .into(db.discounts)
+            .insert(
+              DiscountsCompanion.insert(
+                id: id,
+                visitId: const Value('v1'),
+                captured: const Value(true),
+                name: 'Captured promo',
+                kind: 'fixed',
+                at: DateTime.utc(2026, 9, 29),
+              ),
+            );
+      }
+      expect((await db.select(db.discounts).get()).length, 2);
     });
 
     test('a fresh install matches the declared schema', () async {
@@ -101,23 +127,27 @@ void main() {
       final db = await legacyDb();
       addTearDown(db.close);
 
-      await db.into(db.menuItems).insert(
-        MenuItemsCompanion.insert(
-          id: 'nasi',
-          name: 'Nasi Goreng',
-          categoryId: 'mains',
-          basePrice: 30000,
-        ),
-      );
-      await db.into(db.menuItems).insert(
-        MenuItemsCompanion.insert(
-          id: 'kopi',
-          name: 'Kopi Tubruk',
-          categoryId: 'drinks',
-          basePrice: 12000,
-          cost: const Value(9000),
-        ),
-      );
+      await db
+          .into(db.menuItems)
+          .insert(
+            MenuItemsCompanion.insert(
+              id: 'nasi',
+              name: 'Nasi Goreng',
+              categoryId: 'mains',
+              basePrice: 30000,
+            ),
+          );
+      await db
+          .into(db.menuItems)
+          .insert(
+            MenuItemsCompanion.insert(
+              id: 'kopi',
+              name: 'Kopi Tubruk',
+              categoryId: 'drinks',
+              basePrice: 12000,
+              cost: const Value(9000),
+            ),
+          );
 
       await replayFrom(db, 13, to: 14);
 
@@ -164,9 +194,10 @@ void main() {
       await replayFrom(db, 13, to: 14);
 
       final codes = {
-        for (final r in await db
-            .customSelect('SELECT id, void_reason_code FROM tickets')
-            .get())
+        for (final r
+            in await db
+                .customSelect('SELECT id, void_reason_code FROM tickets')
+                .get())
           r.read<String>('id'): r.read<String?>('void_reason_code'),
       };
       expect(codes['t1'], 'outOfStock');
@@ -204,14 +235,16 @@ void main() {
           ]),
         ],
       );
-      await db.into(db.menuItems).insert(
-        MenuItemsCompanion.insert(
-          id: 'nasi',
-          name: 'Nasi Goreng',
-          categoryId: 'mains',
-          basePrice: 30000,
-        ),
-      );
+      await db
+          .into(db.menuItems)
+          .insert(
+            MenuItemsCompanion.insert(
+              id: 'nasi',
+              name: 'Nasi Goreng',
+              categoryId: 'mains',
+              basePrice: 30000,
+            ),
+          );
       await db.customStatement(
         "UPDATE menu_items SET modifier_group_ids_json = ? WHERE id = 'nasi'",
         [
@@ -257,14 +290,16 @@ void main() {
         'ALTER TABLE menu_items ADD COLUMN auto_eighty_six_at_zero '
         'INTEGER NOT NULL DEFAULT 0',
       );
-      await db.into(db.menuItems).insert(
-        MenuItemsCompanion.insert(
-          id: 'nasi',
-          name: 'Nasi Goreng',
-          categoryId: 'mains',
-          basePrice: 30000,
-        ),
-      );
+      await db
+          .into(db.menuItems)
+          .insert(
+            MenuItemsCompanion.insert(
+              id: 'nasi',
+              name: 'Nasi Goreng',
+              categoryId: 'mains',
+              basePrice: 30000,
+            ),
+          );
       await db.customStatement(
         "UPDATE menu_items SET auto_eighty_six_at_zero = 1 WHERE id = 'nasi'",
       );
@@ -288,7 +323,9 @@ void main() {
           .getSingle();
       expect(item.read<int>('f'), 1);
 
-      final cols = await db.customSelect("PRAGMA table_info('menu_items')").get();
+      final cols = await db
+          .customSelect("PRAGMA table_info('menu_items')")
+          .get();
       expect(
         cols.map((r) => r.read<String>('name')),
         isNot(contains('auto_eighty_six_at_zero')),
@@ -380,13 +417,17 @@ void main() {
       await db.customStatement(
         "INSERT INTO audit_entries (id, type, title, at, kind, params) "
         "VALUES ('a-old', 'cashMovement', 'Pengeluaran kas', 0, 'cashSpent', ?)",
-        [jsonEncode({'amount': 'Rp. 50.000', 'category': 'ingredients'})],
+        [
+          jsonEncode({'amount': 'Rp. 50.000', 'category': 'ingredients'}),
+        ],
       );
       // An unrelated row must not be touched: the backfill is scoped by type.
       await db.customStatement(
         "INSERT INTO audit_entries (id, type, title, at, kind, params) "
         "VALUES ('a-void', 'void', 'Batal', 0, 'voidItem', ?)",
-        [jsonEncode({'name': 'Nasi Goreng'})],
+        [
+          jsonEncode({'name': 'Nasi Goreng'}),
+        ],
       );
 
       await replayFrom(db, 72, to: 73);
@@ -407,8 +448,8 @@ void main() {
       final audit = await db
           .customSelect("SELECT params FROM audit_entries WHERE id = 'a-old'")
           .getSingle();
-      final params =
-          (jsonDecode(audit.read<String>('params')) as Map).cast<String, dynamic>();
+      final params = (jsonDecode(audit.read<String>('params')) as Map)
+          .cast<String, dynamic>();
       expect(params['box'], 'Kas Utama');
       expect(params['amount'], 'Rp. 50.000', reason: 'nothing else moved');
 

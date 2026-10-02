@@ -154,12 +154,14 @@ class ApiClient {
     /// committed-but-timed-out request reads the host's stored answer instead
     /// of splitting the bill a second time.
     String? idempotencyKey,
+    String? captureGrant,
   }) => _send(
     'POST',
     path,
     body: body,
     timeout: timeout,
     idempotencyKey: idempotencyKey,
+    captureGrant: captureGrant,
   );
 
   Future<dynamic> patchJson(String path, Object body) =>
@@ -172,8 +174,18 @@ class ApiClient {
     await _send('DELETE', path);
   }
 
-  Future<dynamic> deleteJson(String path, {String? idempotencyKey}) =>
-      _send('DELETE', path, idempotencyKey: idempotencyKey);
+  Future<dynamic> deleteJson(
+    String path, {
+    Object? body,
+    String? idempotencyKey,
+    String? captureGrant,
+  }) => _send(
+    'DELETE',
+    path,
+    body: body,
+    idempotencyKey: idempotencyKey,
+    captureGrant: captureGrant,
+  );
 
   /// Fetch raw bytes over the pinned client (e.g. a menu photo). Plain
   /// `Image.network` cannot be used — it bypasses TLS pinning and fails the
@@ -219,12 +231,16 @@ class ApiClient {
     Object? body,
     Duration? timeout,
     String? idempotencyKey,
+    String? captureGrant,
   }) async {
     final uri = _config.baseUri.resolve(path).replace(queryParameters: query);
     final headers = await _headers(
-      extra: (idempotencyKey == null || idempotencyKey.isEmpty)
-          ? null
-          : {'X-Idempotency-Key': idempotencyKey},
+      extra: {
+        if (idempotencyKey != null && idempotencyKey.isNotEmpty)
+          'X-Idempotency-Key': idempotencyKey,
+        if (captureGrant != null && captureGrant.isNotEmpty)
+          'X-Capture-Grant': captureGrant,
+      },
     );
     final encoded = body == null ? null : jsonEncode(body);
     final sw = Stopwatch()..start();
@@ -234,7 +250,7 @@ class ApiClient {
         'POST' => _inner.post(uri, headers: headers, body: encoded),
         'PUT' => _inner.put(uri, headers: headers, body: encoded),
         'PATCH' => _inner.patch(uri, headers: headers, body: encoded),
-        'DELETE' => _inner.delete(uri, headers: headers),
+        'DELETE' => _inner.delete(uri, headers: headers, body: encoded),
         _ => throw StateError('Unsupported method $method'),
       }).timeout(timeout ?? requestTimeout);
       SatLog.http(

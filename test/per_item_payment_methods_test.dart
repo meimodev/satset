@@ -25,6 +25,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shelf/shelf.dart';
 
 import 'package:satset/domain/models/venue_module.dart';
+import 'package:satset/domain/models/capability.dart';
+import 'package:satset/domain/models/settlement_event.dart';
+import 'package:satset/domain/use_cases/bill_math.dart';
+import 'package:satset/domain/use_cases/settlement_projection.dart';
 import 'package:satset/server/db/database.dart' hide Member;
 import 'package:satset/server/debts.dart';
 import 'package:satset/server/members.dart';
@@ -135,6 +139,196 @@ void main() {
     router = settlementRoutes(db, WsHub(), caller.auth).call;
   });
   tearDown(() => db.close());
+
+  test(
+    'captured tab payment survives debt being disabled before replay',
+    () async {
+      await settings();
+      final guest = await createMember(db, name: 'Budi', phone: '081100000009');
+      await visit();
+      await line('tk1', 40000);
+      final receipt = await mint('A', ['tk1'], memberId: guest.id);
+      final grant = await caller.auth.captureGrantFor(caller.token, [
+        Capability.settleBill.name,
+      ]);
+      await (db.update(
+        db.venueSettings,
+      )).write(const VenueSettingsCompanion(memberDebtEnabled: Value(false)));
+      final path = '/settlement/receipts/$receipt/payments';
+      final live = await post(path, {
+        'method': 'piutang',
+        'amount': 40000,
+        'memberId': guest.id,
+      });
+      expect(live.statusCode, 404);
+      final replay = await router(
+        Request(
+          'POST',
+          Uri.parse('http://x$path'),
+          headers: {
+            ...caller.headers,
+            'x-idempotency-key': 'captured-tab',
+            'x-capture-grant': grant!,
+          },
+          body: jsonEncode({
+            'id': 'captured-tab',
+            'method': 'piutang',
+            'amount': 40000,
+            'memberId': guest.id,
+            'capturedAt': DateTime.utc(2026, 9, 24, 12).toIso8601String(),
+          }),
+        ),
+      );
+      expect(replay.statusCode, 200, reason: await replay.readAsString());
+      expect(await memberDebt(db, guest.id), 40000);
+    },
+  );
+
+  test('captured receipt owner survives member split being disabled', () async {
+    await settings();
+    final guest = await createMember(db, name: 'Budi', phone: '081100000010');
+    await visit();
+    await line('tk1', 40000);
+    final receipt = await mint('A', ['tk1']);
+    final grant = await caller.auth.captureGrantFor(caller.token, [
+      Capability.settleBill.name,
+    ]);
+    await (db.update(
+      db.venueSettings,
+    )).write(const VenueSettingsCompanion(membersEnabled: Value(false)));
+    final path = '/settlement/receipts/$receipt/member';
+    expect((await post(path, {'memberId': guest.id})).statusCode, 409);
+    final replay = await router(
+      Request(
+        'POST',
+        Uri.parse('http://x$path'),
+        headers: {
+          ...caller.headers,
+          'x-idempotency-key': 'captured-owner',
+          'x-capture-grant': grant!,
+        },
+        body: jsonEncode({
+          'memberId': guest.id,
+          'capturedAt': DateTime.utc(2026, 9, 24, 12).toIso8601String(),
+        }),
+      ),
+    );
+    expect(replay.statusCode, 200, reason: await replay.readAsString());
+    final receipts = (await bill())['receipts'] as List;
+    expect((receipts.single as Map)['memberId'], guest.id);
+  });
+
+  test('captured named receipt keeps its member discount snapshot', () async {
+    await settings();
+    final guest = await createMember(db, name: 'Budi', phone: '081100000011');
+    await visit();
+    await line('tk1', 40000);
+    final grant = await caller.auth.captureGrantFor(caller.token, [
+      Capability.settleBill.name,
+    ]);
+    await (db.update(
+      db.venueSettings,
+    )).write(const VenueSettingsCompanion(membersEnabled: Value(false)));
+    const memberDiscount = {
+      'presetId': 'old-member-rate',
+      'name': 'Member 10%',
+      'kind': 'percent',
+      'value': 1000,
+    };
+    final capturedAt = DateTime.utc(2026, 9, 24, 12);
+    final projected = projectBill(
+      await bill(),
+      [
+        SettlementEvent(
+          id: 'captured-named-receipt',
+          visitId: 'v1',
+          seq: 1,
+          kind: SettlementEventKind.mintReceipt,
+          capturedAt: capturedAt,
+          payload: {
+            'assignAll': true,
+            'memberId': guest.id,
+            'memberDiscount': memberDiscount,
+          },
+        ),
+      ],
+      const ProjectionConfig(
+        tax: TaxServiceConfig(
+          taxEnabled: false,
+          taxRateBps: 0,
+          serviceEnabled: false,
+          serviceMode: 'percent',
+          serviceRateBps: 0,
+          serviceFixedAmount: 0,
+        ),
+      ),
+    );
+    expect((projected['receipts'] as List).single['discountAmount'], 4000);
+    final replay = await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/visits/v1/receipts'),
+        headers: {
+          ...caller.headers,
+          'x-idempotency-key': 'captured-named-receipt',
+          'x-capture-grant': grant!,
+        },
+        body: jsonEncode({
+          'id': 'captured-named-receipt',
+          'assignAll': true,
+          'memberId': guest.id,
+          'memberDiscount': memberDiscount,
+          'capturedAt': capturedAt.toIso8601String(),
+        }),
+      ),
+    );
+    expect(replay.statusCode, 200, reason: await replay.readAsString());
+    final receipt = (await bill())['receipts'] as List;
+    expect((receipt.single as Map)['discountAmount'], 4000);
+  });
+
+  test('captured ticket owner keeps its member discount snapshot', () async {
+    await settings();
+    final guest = await createMember(db, name: 'Budi', phone: '081100000012');
+    await visit();
+    await (db.update(
+      db.visits,
+    )).write(const VisitsCompanion(memberAttributionVersion: Value(2)));
+    await line('tk1', 40000);
+    await mint('A', ['tk1']);
+    final grant = await caller.auth.captureGrantFor(caller.token, [
+      Capability.settleBill.name,
+    ]);
+    await (db.update(
+      db.venueSettings,
+    )).write(const VenueSettingsCompanion(membersEnabled: Value(false)));
+    final replay = await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/visits/v1/ticket-members'),
+        headers: {
+          ...caller.headers,
+          'x-idempotency-key': 'captured-ticket-owner',
+          'x-capture-grant': grant!,
+        },
+        body: jsonEncode({
+          'ticketIds': ['tk1'],
+          'memberId': guest.id,
+          'memberPresetId': 'old-ticket-rate',
+          'memberDiscount': {
+            'presetId': 'old-ticket-rate',
+            'name': 'Ticket member 10%',
+            'kind': 'percent',
+            'value': 1000,
+          },
+          'capturedAt': DateTime.utc(2026, 9, 24, 12).toIso8601String(),
+        }),
+      ),
+    );
+    expect(replay.statusCode, 200, reason: await replay.readAsString());
+    final receipt = (await bill())['receipts'] as List;
+    expect((receipt.single as Map)['discountAmount'], 4000);
+  });
 
   test(
     'a tab on a named share charges that member, not the bill owner',

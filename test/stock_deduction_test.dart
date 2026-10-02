@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:satset/domain/models/ingredient.dart' show StockReason;
 import 'package:satset/domain/models/stock_unit.dart';
 import 'package:satset/server/db/database.dart';
+import 'package:satset/server/routes/auth_routes.dart';
 import 'package:satset/server/routes/tickets_routes.dart';
 import 'package:satset/server/stock.dart';
 import 'package:satset/server/stock_counts.dart';
@@ -152,6 +153,59 @@ void main() {
     expect((res['ticketIds'] as List).length, 1);
     expect(await onHand('beras'), StockUnit.g.toBase(9800));
     expect(await onHand('ayam'), StockUnit.pcs.toBase(1));
+  });
+
+  test('a signed quick replay keeps an order after stock runs out', () async {
+    await (db.update(db.ingredients)..where((i) => i.id.equals('beras'))).write(
+      const IngredientsCompanion(stockOnHand: Value(0)),
+    );
+    final me = await authRoutes(caller.auth).call(
+      Request('GET', Uri.parse('http://x/auth/me'), headers: caller.headers),
+    );
+    final grant =
+        (jsonDecode(await me.readAsString()) as Map)['captureGrant'] as String;
+
+    Future<Map<String, dynamic>> submit(
+      String id, {
+      bool signed = false,
+    }) async {
+      final response = await router(
+        Request(
+          'POST',
+          Uri.parse('http://x/orders'),
+          headers: {
+            ...caller.headers,
+            'x-idempotency-key': id,
+            if (signed) 'x-capture-grant': grant,
+          },
+          body: jsonEncode({
+            'tableId': 't1',
+            'visitId': 'captured-v1',
+            'idempotencyKey': id,
+            'capturedAt': DateTime.now().toUtc().toIso8601String(),
+            'lines': [
+              {
+                'itemId': 'i1',
+                'variantName': 'Reguler',
+                'qty': 1,
+                'course': 'main',
+                'unitPrice': 25000,
+                'name': 'Nasi Ayam',
+              },
+            ],
+          }),
+        ),
+      );
+      expect(response.statusCode, 200);
+      return (jsonDecode(await response.readAsString()) as Map)
+          .cast<String, dynamic>();
+    }
+
+    expect((await submit('unsigned'))['rejected'], isNotEmpty);
+    final replay = await submit('signed', signed: true);
+    expect(replay['rejected'], isNull);
+    expect(replay['ticketIds'], hasLength(1));
+    expect(await onHand('beras'), lessThan(0));
   });
 
   test('a variant recipe replaces the base rather than scaling it', () async {

@@ -2142,6 +2142,18 @@
   "appBarSyncing": "SINKRONISASI…",
   "cshSyncDraining": "Menyinkronkan tagihan…",
   "cshSyncPending": "{count, plural, other{{count} tagihan belum terkirim}}",
+  "cshSyncRepair": "Catatan tertangkap perlu diperbaiki sebelum sinkronisasi",
+  "cshSyncError": "Catatan tertangkap tersimpan, tetapi belum diterima host",
+  "cshLegacyPending": "Catatan tertangkap lama masih belum selesai",
+  "cshRepairTitle": "Perbaiki catatan tertangkap",
+  "cshRepairAmount": "Jumlah yang benar-benar diterima atau dikembalikan",
+  "cshRepairReceipt": "ID struk asli",
+  "cshRepairPayment": "ID pembayaran asli",
+  "cshRepairData": "Data tertangkap",
+  "cshRepairInvalid": "Periksa nilai catatan lalu coba lagi",
+  "cshRepairSend": "Simpan dan kirim ulang",
+  "cshExcessPayment": "Kelebihan bayar perlu dikembalikan",
+  "cshExcessRefund": "Kelebihan pengembalian perlu dikoreksi",
   "@cshSyncPending": {
     "description": "The Antrean setelmen backlog on /kasir (ADR-0123).",
     "placeholders": {
@@ -2172,7 +2184,6 @@
       }
     }
   },
-  "cshSyncAck": "Mengerti",
   "cshApprovalOffline": "Persetujuan manajer perlu koneksi ke host",
   "cshJournalFull": "Terlalu banyak tagihan tertunda — sambungkan ke host dulu",
   "cshCrumbCashier": "Kasir",
@@ -2238,6 +2249,9 @@
     }
   },
   "cshReceipts": "Struk",
+  "cshReceiptCancelled": "Dibatalkan",
+  "cshReceiptOriginal": "Struk asli",
+  "cshReceiptAmended": "Perubahan",
   "@cshReceipts": {
     "description": "Section header over the list of receipts on a bill."
   },

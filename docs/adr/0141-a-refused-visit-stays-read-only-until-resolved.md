@@ -1,6 +1,8 @@
 # A refused visit stays read-only until resolved
 
-**Status:** Accepted — 2026-09-10 — clarifies the refusal behavior in
+**Status:** Superseded by [ADR-0144](0144-captured-actions-sync-without-admin-review.md).
+
+Originally accepted 2026-09-10 to clarify the refusal behavior in
 [ADR-0123](0123-an-offline-settlement-is-a-journal-not-an-intent.md) and
 [ADR-0139](0139-a-captured-visit-is-authoritative-until-it-drains.md).
 

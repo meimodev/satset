@@ -108,6 +108,19 @@ void main() {
       final bill = await repo.fetchBill(visit);
       expect(bill.historyAvailable, isTrue);
       final receipt = await repo.mintReceipt(visit, assignAll: true);
+      final mintedEvent = await journal.eventById(receipt.receiptId);
+      expect(
+        (mintedEvent?.payload['receiptSnapshot'] as Map?)?['total'],
+        receipt.bill.receipts.single.total,
+      );
+      await repo.assignLine(receipt.receiptId, 'ticket-1', 1);
+      final assignedEvent = (await journal.eventsFor(
+        visit,
+      )).firstWhere((event) => event.kind == SettlementEventKind.assignLine);
+      expect(
+        (assignedEvent.payload['receiptSnapshot'] as Map?)?['total'],
+        receipt.bill.receipts.single.total,
+      );
       final paid = await repo.recordPayment(
         receipt.receiptId,
         method: 'cash',
@@ -218,40 +231,35 @@ void main() {
     },
   );
 
-  test(
-    'refusal survives restart and blocks new work without blocking other visits',
-    () async {
-      SettlementJournal build() => SettlementJournal(
-        db: db,
-        send: (_) async => throw const SettlementRefused('receipt_deleted'),
-      );
-      var journal = build();
-      await journal.append(
-        visitId: 'v',
-        kind: SettlementEventKind.submitOrder,
-        payload: const {
-          'lines': [_line],
-        },
-      );
-      await journal.drain();
-      journal.dispose();
-      journal = build();
-      await expectLater(
-        journal.append(visitId: 'v', kind: SettlementEventKind.submitOrder),
-        throwsA(isA<SettlementVisitReadOnly>()),
-      );
-      await journal.append(
-        visitId: 'other',
-        kind: SettlementEventKind.submitOrder,
-      );
-      expect((await journal.parkedChains()).single.visitId, 'v');
-      journal.dispose();
-    },
-  );
+  test('sync error survives restart while new work stays writable', () async {
+    SettlementJournal build() => SettlementJournal(
+      db: db,
+      send: (_) async => throw const SettlementRefused('receipt_deleted'),
+    );
+    var journal = build();
+    await journal.append(
+      visitId: 'v',
+      kind: SettlementEventKind.submitOrder,
+      payload: const {
+        'lines': [_line],
+      },
+    );
+    await journal.drain();
+    journal.dispose();
+    journal = build();
+    expect((await journal.eventsFor('v')).single.hasSyncError, isTrue);
+    await journal.append(visitId: 'v', kind: SettlementEventKind.submitOrder);
+    await journal.append(
+      visitId: 'other',
+      kind: SettlementEventKind.submitOrder,
+    );
+    expect(await journal.parkedChains(), isEmpty);
+    journal.dispose();
+  });
 
   for (final refused in [false, true]) {
     test(
-      'production replay checkpoints floor or parks partial rejection ($refused)',
+      'production replay checkpoints floor or keeps sync error ($refused)',
       () async {
         final prefs = PrefsService(await SharedPreferences.getInstance());
         await prefs.setAppMode(AppMode.client);
@@ -282,11 +290,8 @@ void main() {
         final result = await journal.drain();
         if (refused) {
           expect(result.failures, hasLength(1));
-          expect((await journal.parkedChains()).single.code, 'out_of_stock');
-          await expectLater(
-            journal.assertWritable('v'),
-            throwsA(isA<SettlementVisitReadOnly>()),
-          );
+          expect((await journal.eventsFor('v')).last.hasSyncError, isTrue);
+          await journal.assertWritable('v');
         } else {
           expect(result.interrupted, isFalse);
           expect(await journal.eventsFor('v'), isEmpty);
@@ -325,7 +330,7 @@ void main() {
   );
 
   test(
-    'restart refusal report preserves its delivered prefix and stranded cash',
+    'restart retains failed captured payment after delivered order',
     () async {
       var journal = SettlementJournal(
         db: db,
@@ -350,10 +355,11 @@ void main() {
       await journal.drain();
       journal.dispose();
       journal = SettlementJournal(db: db, send: (_) async {});
-      final report = (await journal.parkedChains()).single;
-      expect(report.delivered.single.kind, SettlementEventKind.submitOrder);
-      expect(report.strandedAmount, 55000);
-      expect(report.code, 'receipt_deleted');
+      final events = await journal.eventsFor('v');
+      expect(events.first.isAcknowledged, isTrue);
+      expect(events.last.hasSyncError, isTrue);
+      expect(events.last.intArg('amount'), 55000);
+      expect(await journal.parkedChains(), isEmpty);
       journal.dispose();
     },
   );
@@ -410,6 +416,7 @@ class _CheckpointApi extends ApiClient {
     Object body, {
     String? idempotencyKey,
     Duration? timeout,
+    String? captureGrant,
   }) async {
     if (path == '/orders') {
       return {

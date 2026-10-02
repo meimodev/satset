@@ -2761,6 +2761,17 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _taxConfigJsonMeta = const VerificationMeta(
+    'taxConfigJson',
+  );
+  @override
+  late final GeneratedColumn<String> taxConfigJson = GeneratedColumn<String>(
+    'tax_config_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _guestNameMeta = const VerificationMeta(
     'guestName',
   );
@@ -2928,6 +2939,7 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
     zoneId,
     pax,
     openedAt,
+    taxConfigJson,
     guestName,
     guestNotes,
     reservationId,
@@ -2990,6 +3002,15 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
       context.handle(
         _openedAtMeta,
         openedAt.isAcceptableOrUnknown(data['opened_at']!, _openedAtMeta),
+      );
+    }
+    if (data.containsKey('tax_config_json')) {
+      context.handle(
+        _taxConfigJsonMeta,
+        taxConfigJson.isAcceptableOrUnknown(
+          data['tax_config_json']!,
+          _taxConfigJsonMeta,
+        ),
       );
     }
     if (data.containsKey('guest_name')) {
@@ -3129,6 +3150,10 @@ class $VisitsTable extends Visits with TableInfo<$VisitsTable, Visit> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}opened_at'],
       ),
+      taxConfigJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tax_config_json'],
+      ),
       guestName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}guest_name'],
@@ -3201,6 +3226,9 @@ class Visit extends DataClass implements Insertable<Visit> {
   final String zoneId;
   final int pax;
   final DateTime? openedAt;
+
+  /// Tax and service rules quoted when this visit opened.
+  final String? taxConfigJson;
   final String? guestName;
   final String? guestNotes;
   final String? reservationId;
@@ -3260,6 +3288,7 @@ class Visit extends DataClass implements Insertable<Visit> {
     required this.zoneId,
     required this.pax,
     this.openedAt,
+    this.taxConfigJson,
     this.guestName,
     this.guestNotes,
     this.reservationId,
@@ -3287,6 +3316,9 @@ class Visit extends DataClass implements Insertable<Visit> {
     map['pax'] = Variable<int>(pax);
     if (!nullToAbsent || openedAt != null) {
       map['opened_at'] = Variable<DateTime>(openedAt);
+    }
+    if (!nullToAbsent || taxConfigJson != null) {
+      map['tax_config_json'] = Variable<String>(taxConfigJson);
     }
     if (!nullToAbsent || guestName != null) {
       map['guest_name'] = Variable<String>(guestName);
@@ -3337,6 +3369,9 @@ class Visit extends DataClass implements Insertable<Visit> {
       openedAt: openedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(openedAt),
+      taxConfigJson: taxConfigJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taxConfigJson),
       guestName: guestName == null && nullToAbsent
           ? const Value.absent()
           : Value(guestName),
@@ -3384,6 +3419,7 @@ class Visit extends DataClass implements Insertable<Visit> {
       zoneId: serializer.fromJson<String>(json['zoneId']),
       pax: serializer.fromJson<int>(json['pax']),
       openedAt: serializer.fromJson<DateTime?>(json['openedAt']),
+      taxConfigJson: serializer.fromJson<String?>(json['taxConfigJson']),
       guestName: serializer.fromJson<String?>(json['guestName']),
       guestNotes: serializer.fromJson<String?>(json['guestNotes']),
       reservationId: serializer.fromJson<String?>(json['reservationId']),
@@ -3412,6 +3448,7 @@ class Visit extends DataClass implements Insertable<Visit> {
       'zoneId': serializer.toJson<String>(zoneId),
       'pax': serializer.toJson<int>(pax),
       'openedAt': serializer.toJson<DateTime?>(openedAt),
+      'taxConfigJson': serializer.toJson<String?>(taxConfigJson),
       'guestName': serializer.toJson<String?>(guestName),
       'guestNotes': serializer.toJson<String?>(guestNotes),
       'reservationId': serializer.toJson<String?>(reservationId),
@@ -3438,6 +3475,7 @@ class Visit extends DataClass implements Insertable<Visit> {
     String? zoneId,
     int? pax,
     Value<DateTime?> openedAt = const Value.absent(),
+    Value<String?> taxConfigJson = const Value.absent(),
     Value<String?> guestName = const Value.absent(),
     Value<String?> guestNotes = const Value.absent(),
     Value<String?> reservationId = const Value.absent(),
@@ -3459,6 +3497,9 @@ class Visit extends DataClass implements Insertable<Visit> {
     zoneId: zoneId ?? this.zoneId,
     pax: pax ?? this.pax,
     openedAt: openedAt.present ? openedAt.value : this.openedAt,
+    taxConfigJson: taxConfigJson.present
+        ? taxConfigJson.value
+        : this.taxConfigJson,
     guestName: guestName.present ? guestName.value : this.guestName,
     guestNotes: guestNotes.present ? guestNotes.value : this.guestNotes,
     reservationId: reservationId.present
@@ -3488,6 +3529,9 @@ class Visit extends DataClass implements Insertable<Visit> {
       zoneId: data.zoneId.present ? data.zoneId.value : this.zoneId,
       pax: data.pax.present ? data.pax.value : this.pax,
       openedAt: data.openedAt.present ? data.openedAt.value : this.openedAt,
+      taxConfigJson: data.taxConfigJson.present
+          ? data.taxConfigJson.value
+          : this.taxConfigJson,
       guestName: data.guestName.present ? data.guestName.value : this.guestName,
       guestNotes: data.guestNotes.present
           ? data.guestNotes.value
@@ -3530,6 +3574,7 @@ class Visit extends DataClass implements Insertable<Visit> {
           ..write('zoneId: $zoneId, ')
           ..write('pax: $pax, ')
           ..write('openedAt: $openedAt, ')
+          ..write('taxConfigJson: $taxConfigJson, ')
           ..write('guestName: $guestName, ')
           ..write('guestNotes: $guestNotes, ')
           ..write('reservationId: $reservationId, ')
@@ -3549,13 +3594,14 @@ class Visit extends DataClass implements Insertable<Visit> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     tableId,
     tableLabel,
     zoneId,
     pax,
     openedAt,
+    taxConfigJson,
     guestName,
     guestNotes,
     reservationId,
@@ -3570,7 +3616,7 @@ class Visit extends DataClass implements Insertable<Visit> {
     kind,
     channel,
     prepaid,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3581,6 +3627,7 @@ class Visit extends DataClass implements Insertable<Visit> {
           other.zoneId == this.zoneId &&
           other.pax == this.pax &&
           other.openedAt == this.openedAt &&
+          other.taxConfigJson == this.taxConfigJson &&
           other.guestName == this.guestName &&
           other.guestNotes == this.guestNotes &&
           other.reservationId == this.reservationId &&
@@ -3604,6 +3651,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
   final Value<String> zoneId;
   final Value<int> pax;
   final Value<DateTime?> openedAt;
+  final Value<String?> taxConfigJson;
   final Value<String?> guestName;
   final Value<String?> guestNotes;
   final Value<String?> reservationId;
@@ -3626,6 +3674,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     this.zoneId = const Value.absent(),
     this.pax = const Value.absent(),
     this.openedAt = const Value.absent(),
+    this.taxConfigJson = const Value.absent(),
     this.guestName = const Value.absent(),
     this.guestNotes = const Value.absent(),
     this.reservationId = const Value.absent(),
@@ -3649,6 +3698,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     this.zoneId = const Value.absent(),
     this.pax = const Value.absent(),
     this.openedAt = const Value.absent(),
+    this.taxConfigJson = const Value.absent(),
     this.guestName = const Value.absent(),
     this.guestNotes = const Value.absent(),
     this.reservationId = const Value.absent(),
@@ -3674,6 +3724,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     Expression<String>? zoneId,
     Expression<int>? pax,
     Expression<DateTime>? openedAt,
+    Expression<String>? taxConfigJson,
     Expression<String>? guestName,
     Expression<String>? guestNotes,
     Expression<String>? reservationId,
@@ -3697,6 +3748,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
       if (zoneId != null) 'zone_id': zoneId,
       if (pax != null) 'pax': pax,
       if (openedAt != null) 'opened_at': openedAt,
+      if (taxConfigJson != null) 'tax_config_json': taxConfigJson,
       if (guestName != null) 'guest_name': guestName,
       if (guestNotes != null) 'guest_notes': guestNotes,
       if (reservationId != null) 'reservation_id': reservationId,
@@ -3723,6 +3775,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     Value<String>? zoneId,
     Value<int>? pax,
     Value<DateTime?>? openedAt,
+    Value<String?>? taxConfigJson,
     Value<String?>? guestName,
     Value<String?>? guestNotes,
     Value<String?>? reservationId,
@@ -3746,6 +3799,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
       zoneId: zoneId ?? this.zoneId,
       pax: pax ?? this.pax,
       openedAt: openedAt ?? this.openedAt,
+      taxConfigJson: taxConfigJson ?? this.taxConfigJson,
       guestName: guestName ?? this.guestName,
       guestNotes: guestNotes ?? this.guestNotes,
       reservationId: reservationId ?? this.reservationId,
@@ -3785,6 +3839,9 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
     }
     if (openedAt.present) {
       map['opened_at'] = Variable<DateTime>(openedAt.value);
+    }
+    if (taxConfigJson.present) {
+      map['tax_config_json'] = Variable<String>(taxConfigJson.value);
     }
     if (guestName.present) {
       map['guest_name'] = Variable<String>(guestName.value);
@@ -3845,6 +3902,7 @@ class VisitsCompanion extends UpdateCompanion<Visit> {
           ..write('zoneId: $zoneId, ')
           ..write('pax: $pax, ')
           ..write('openedAt: $openedAt, ')
+          ..write('taxConfigJson: $taxConfigJson, ')
           ..write('guestName: $guestName, ')
           ..write('guestNotes: $guestNotes, ')
           ..write('reservationId: $reservationId, ')
@@ -13022,6 +13080,17 @@ class $TableSessionsTable extends TableSessions
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _taxConfigJsonMeta = const VerificationMeta(
+    'taxConfigJson',
+  );
+  @override
+  late final GeneratedColumn<String> taxConfigJson = GeneratedColumn<String>(
+    'tax_config_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _durationSecMeta = const VerificationMeta(
     'durationSec',
   );
@@ -13244,6 +13313,7 @@ class $TableSessionsTable extends TableSessions
     pax,
     openedAt,
     closedAt,
+    taxConfigJson,
     durationSec,
     actorUserId,
     subtotal,
@@ -13321,6 +13391,15 @@ class $TableSessionsTable extends TableSessions
       );
     } else if (isInserting) {
       context.missing(_closedAtMeta);
+    }
+    if (data.containsKey('tax_config_json')) {
+      context.handle(
+        _taxConfigJsonMeta,
+        taxConfigJson.isAcceptableOrUnknown(
+          data['tax_config_json']!,
+          _taxConfigJsonMeta,
+        ),
+      );
     }
     if (data.containsKey('duration_sec')) {
       context.handle(
@@ -13494,6 +13573,10 @@ class $TableSessionsTable extends TableSessions
         DriftSqlType.dateTime,
         data['${effectivePrefix}closed_at'],
       )!,
+      taxConfigJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tax_config_json'],
+      ),
       durationSec: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}duration_sec'],
@@ -13583,6 +13666,9 @@ class TableSession extends DataClass implements Insertable<TableSession> {
   final int pax;
   final DateTime? openedAt;
   final DateTime closedAt;
+
+  /// Preserved for amendments after the live visit has been archived.
+  final String? taxConfigJson;
   final int durationSec;
   final String? actorUserId;
   final int subtotal;
@@ -13665,6 +13751,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
     required this.pax,
     this.openedAt,
     required this.closedAt,
+    this.taxConfigJson,
     required this.durationSec,
     this.actorUserId,
     required this.subtotal,
@@ -13698,6 +13785,9 @@ class TableSession extends DataClass implements Insertable<TableSession> {
       map['opened_at'] = Variable<DateTime>(openedAt);
     }
     map['closed_at'] = Variable<DateTime>(closedAt);
+    if (!nullToAbsent || taxConfigJson != null) {
+      map['tax_config_json'] = Variable<String>(taxConfigJson);
+    }
     map['duration_sec'] = Variable<int>(durationSec);
     if (!nullToAbsent || actorUserId != null) {
       map['actor_user_id'] = Variable<String>(actorUserId);
@@ -13742,6 +13832,9 @@ class TableSession extends DataClass implements Insertable<TableSession> {
           ? const Value.absent()
           : Value(openedAt),
       closedAt: Value(closedAt),
+      taxConfigJson: taxConfigJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taxConfigJson),
       durationSec: Value(durationSec),
       actorUserId: actorUserId == null && nullToAbsent
           ? const Value.absent()
@@ -13784,6 +13877,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
       pax: serializer.fromJson<int>(json['pax']),
       openedAt: serializer.fromJson<DateTime?>(json['openedAt']),
       closedAt: serializer.fromJson<DateTime>(json['closedAt']),
+      taxConfigJson: serializer.fromJson<String?>(json['taxConfigJson']),
       durationSec: serializer.fromJson<int>(json['durationSec']),
       actorUserId: serializer.fromJson<String?>(json['actorUserId']),
       subtotal: serializer.fromJson<int>(json['subtotal']),
@@ -13817,6 +13911,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
       'pax': serializer.toJson<int>(pax),
       'openedAt': serializer.toJson<DateTime?>(openedAt),
       'closedAt': serializer.toJson<DateTime>(closedAt),
+      'taxConfigJson': serializer.toJson<String?>(taxConfigJson),
       'durationSec': serializer.toJson<int>(durationSec),
       'actorUserId': serializer.toJson<String?>(actorUserId),
       'subtotal': serializer.toJson<int>(subtotal),
@@ -13848,6 +13943,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
     int? pax,
     Value<DateTime?> openedAt = const Value.absent(),
     DateTime? closedAt,
+    Value<String?> taxConfigJson = const Value.absent(),
     int? durationSec,
     Value<String?> actorUserId = const Value.absent(),
     int? subtotal,
@@ -13874,6 +13970,9 @@ class TableSession extends DataClass implements Insertable<TableSession> {
     pax: pax ?? this.pax,
     openedAt: openedAt.present ? openedAt.value : this.openedAt,
     closedAt: closedAt ?? this.closedAt,
+    taxConfigJson: taxConfigJson.present
+        ? taxConfigJson.value
+        : this.taxConfigJson,
     durationSec: durationSec ?? this.durationSec,
     actorUserId: actorUserId.present ? actorUserId.value : this.actorUserId,
     subtotal: subtotal ?? this.subtotal,
@@ -13906,6 +14005,9 @@ class TableSession extends DataClass implements Insertable<TableSession> {
       pax: data.pax.present ? data.pax.value : this.pax,
       openedAt: data.openedAt.present ? data.openedAt.value : this.openedAt,
       closedAt: data.closedAt.present ? data.closedAt.value : this.closedAt,
+      taxConfigJson: data.taxConfigJson.present
+          ? data.taxConfigJson.value
+          : this.taxConfigJson,
       durationSec: data.durationSec.present
           ? data.durationSec.value
           : this.durationSec,
@@ -13959,6 +14061,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
           ..write('pax: $pax, ')
           ..write('openedAt: $openedAt, ')
           ..write('closedAt: $closedAt, ')
+          ..write('taxConfigJson: $taxConfigJson, ')
           ..write('durationSec: $durationSec, ')
           ..write('actorUserId: $actorUserId, ')
           ..write('subtotal: $subtotal, ')
@@ -13990,6 +14093,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
     pax,
     openedAt,
     closedAt,
+    taxConfigJson,
     durationSec,
     actorUserId,
     subtotal,
@@ -14020,6 +14124,7 @@ class TableSession extends DataClass implements Insertable<TableSession> {
           other.pax == this.pax &&
           other.openedAt == this.openedAt &&
           other.closedAt == this.closedAt &&
+          other.taxConfigJson == this.taxConfigJson &&
           other.durationSec == this.durationSec &&
           other.actorUserId == this.actorUserId &&
           other.subtotal == this.subtotal &&
@@ -14048,6 +14153,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
   final Value<int> pax;
   final Value<DateTime?> openedAt;
   final Value<DateTime> closedAt;
+  final Value<String?> taxConfigJson;
   final Value<int> durationSec;
   final Value<String?> actorUserId;
   final Value<int> subtotal;
@@ -14075,6 +14181,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     this.pax = const Value.absent(),
     this.openedAt = const Value.absent(),
     this.closedAt = const Value.absent(),
+    this.taxConfigJson = const Value.absent(),
     this.durationSec = const Value.absent(),
     this.actorUserId = const Value.absent(),
     this.subtotal = const Value.absent(),
@@ -14103,6 +14210,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     this.pax = const Value.absent(),
     this.openedAt = const Value.absent(),
     required DateTime closedAt,
+    this.taxConfigJson = const Value.absent(),
     this.durationSec = const Value.absent(),
     this.actorUserId = const Value.absent(),
     this.subtotal = const Value.absent(),
@@ -14134,6 +14242,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     Expression<int>? pax,
     Expression<DateTime>? openedAt,
     Expression<DateTime>? closedAt,
+    Expression<String>? taxConfigJson,
     Expression<int>? durationSec,
     Expression<String>? actorUserId,
     Expression<int>? subtotal,
@@ -14162,6 +14271,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
       if (pax != null) 'pax': pax,
       if (openedAt != null) 'opened_at': openedAt,
       if (closedAt != null) 'closed_at': closedAt,
+      if (taxConfigJson != null) 'tax_config_json': taxConfigJson,
       if (durationSec != null) 'duration_sec': durationSec,
       if (actorUserId != null) 'actor_user_id': actorUserId,
       if (subtotal != null) 'subtotal': subtotal,
@@ -14193,6 +14303,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     Value<int>? pax,
     Value<DateTime?>? openedAt,
     Value<DateTime>? closedAt,
+    Value<String?>? taxConfigJson,
     Value<int>? durationSec,
     Value<String?>? actorUserId,
     Value<int>? subtotal,
@@ -14221,6 +14332,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
       pax: pax ?? this.pax,
       openedAt: openedAt ?? this.openedAt,
       closedAt: closedAt ?? this.closedAt,
+      taxConfigJson: taxConfigJson ?? this.taxConfigJson,
       durationSec: durationSec ?? this.durationSec,
       actorUserId: actorUserId ?? this.actorUserId,
       subtotal: subtotal ?? this.subtotal,
@@ -14267,6 +14379,9 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
     }
     if (closedAt.present) {
       map['closed_at'] = Variable<DateTime>(closedAt.value);
+    }
+    if (taxConfigJson.present) {
+      map['tax_config_json'] = Variable<String>(taxConfigJson.value);
     }
     if (durationSec.present) {
       map['duration_sec'] = Variable<int>(durationSec.value);
@@ -14340,6 +14455,7 @@ class TableSessionsCompanion extends UpdateCompanion<TableSession> {
           ..write('pax: $pax, ')
           ..write('openedAt: $openedAt, ')
           ..write('closedAt: $closedAt, ')
+          ..write('taxConfigJson: $taxConfigJson, ')
           ..write('durationSec: $durationSec, ')
           ..write('actorUserId: $actorUserId, ')
           ..write('subtotal: $subtotal, ')
@@ -17866,6 +17982,17 @@ class $PaymentsTable extends Payments with TableInfo<$PaymentsTable, Payment> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _visitIdMeta = const VerificationMeta(
+    'visitId',
+  );
+  @override
+  late final GeneratedColumn<String> visitId = GeneratedColumn<String>(
+    'visit_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _methodMeta = const VerificationMeta('method');
   @override
   late final GeneratedColumn<String> method = GeneratedColumn<String>(
@@ -17974,6 +18101,7 @@ class $PaymentsTable extends Payments with TableInfo<$PaymentsTable, Payment> {
   List<GeneratedColumn> get $columns => [
     id,
     receiptId,
+    visitId,
     method,
     amount,
     isRefund,
@@ -18009,6 +18137,12 @@ class $PaymentsTable extends Payments with TableInfo<$PaymentsTable, Payment> {
       );
     } else if (isInserting) {
       context.missing(_receiptIdMeta);
+    }
+    if (data.containsKey('visit_id')) {
+      context.handle(
+        _visitIdMeta,
+        visitId.isAcceptableOrUnknown(data['visit_id']!, _visitIdMeta),
+      );
     }
     if (data.containsKey('method')) {
       context.handle(
@@ -18099,6 +18233,10 @@ class $PaymentsTable extends Payments with TableInfo<$PaymentsTable, Payment> {
         DriftSqlType.string,
         data['${effectivePrefix}receipt_id'],
       )!,
+      visitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}visit_id'],
+      ),
       method: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}method'],
@@ -18151,6 +18289,10 @@ class $PaymentsTable extends Payments with TableInfo<$PaymentsTable, Payment> {
 class Payment extends DataClass implements Insertable<Payment> {
   final String id;
   final String receiptId;
+
+  /// Set only when the named receipt was removed before a captured payment
+  /// reached the host. It credits the original visit without recreating it.
+  final String? visitId;
   final String method;
   final int amount;
   final bool isRefund;
@@ -18177,6 +18319,7 @@ class Payment extends DataClass implements Insertable<Payment> {
   const Payment({
     required this.id,
     required this.receiptId,
+    this.visitId,
     required this.method,
     required this.amount,
     required this.isRefund,
@@ -18193,6 +18336,9 @@ class Payment extends DataClass implements Insertable<Payment> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['receipt_id'] = Variable<String>(receiptId);
+    if (!nullToAbsent || visitId != null) {
+      map['visit_id'] = Variable<String>(visitId);
+    }
     map['method'] = Variable<String>(method);
     map['amount'] = Variable<int>(amount);
     map['is_refund'] = Variable<bool>(isRefund);
@@ -18222,6 +18368,9 @@ class Payment extends DataClass implements Insertable<Payment> {
     return PaymentsCompanion(
       id: Value(id),
       receiptId: Value(receiptId),
+      visitId: visitId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(visitId),
       method: Value(method),
       amount: Value(amount),
       isRefund: Value(isRefund),
@@ -18253,6 +18402,7 @@ class Payment extends DataClass implements Insertable<Payment> {
     return Payment(
       id: serializer.fromJson<String>(json['id']),
       receiptId: serializer.fromJson<String>(json['receiptId']),
+      visitId: serializer.fromJson<String?>(json['visitId']),
       method: serializer.fromJson<String>(json['method']),
       amount: serializer.fromJson<int>(json['amount']),
       isRefund: serializer.fromJson<bool>(json['isRefund']),
@@ -18271,6 +18421,7 @@ class Payment extends DataClass implements Insertable<Payment> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'receiptId': serializer.toJson<String>(receiptId),
+      'visitId': serializer.toJson<String?>(visitId),
       'method': serializer.toJson<String>(method),
       'amount': serializer.toJson<int>(amount),
       'isRefund': serializer.toJson<bool>(isRefund),
@@ -18287,6 +18438,7 @@ class Payment extends DataClass implements Insertable<Payment> {
   Payment copyWith({
     String? id,
     String? receiptId,
+    Value<String?> visitId = const Value.absent(),
     String? method,
     int? amount,
     bool? isRefund,
@@ -18300,6 +18452,7 @@ class Payment extends DataClass implements Insertable<Payment> {
   }) => Payment(
     id: id ?? this.id,
     receiptId: receiptId ?? this.receiptId,
+    visitId: visitId.present ? visitId.value : this.visitId,
     method: method ?? this.method,
     amount: amount ?? this.amount,
     isRefund: isRefund ?? this.isRefund,
@@ -18321,6 +18474,7 @@ class Payment extends DataClass implements Insertable<Payment> {
     return Payment(
       id: data.id.present ? data.id.value : this.id,
       receiptId: data.receiptId.present ? data.receiptId.value : this.receiptId,
+      visitId: data.visitId.present ? data.visitId.value : this.visitId,
       method: data.method.present ? data.method.value : this.method,
       amount: data.amount.present ? data.amount.value : this.amount,
       isRefund: data.isRefund.present ? data.isRefund.value : this.isRefund,
@@ -18345,6 +18499,7 @@ class Payment extends DataClass implements Insertable<Payment> {
     return (StringBuffer('Payment(')
           ..write('id: $id, ')
           ..write('receiptId: $receiptId, ')
+          ..write('visitId: $visitId, ')
           ..write('method: $method, ')
           ..write('amount: $amount, ')
           ..write('isRefund: $isRefund, ')
@@ -18363,6 +18518,7 @@ class Payment extends DataClass implements Insertable<Payment> {
   int get hashCode => Object.hash(
     id,
     receiptId,
+    visitId,
     method,
     amount,
     isRefund,
@@ -18380,6 +18536,7 @@ class Payment extends DataClass implements Insertable<Payment> {
       (other is Payment &&
           other.id == this.id &&
           other.receiptId == this.receiptId &&
+          other.visitId == this.visitId &&
           other.method == this.method &&
           other.amount == this.amount &&
           other.isRefund == this.isRefund &&
@@ -18395,6 +18552,7 @@ class Payment extends DataClass implements Insertable<Payment> {
 class PaymentsCompanion extends UpdateCompanion<Payment> {
   final Value<String> id;
   final Value<String> receiptId;
+  final Value<String?> visitId;
   final Value<String> method;
   final Value<int> amount;
   final Value<bool> isRefund;
@@ -18409,6 +18567,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
   const PaymentsCompanion({
     this.id = const Value.absent(),
     this.receiptId = const Value.absent(),
+    this.visitId = const Value.absent(),
     this.method = const Value.absent(),
     this.amount = const Value.absent(),
     this.isRefund = const Value.absent(),
@@ -18424,6 +18583,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
   PaymentsCompanion.insert({
     required String id,
     required String receiptId,
+    this.visitId = const Value.absent(),
     required String method,
     required int amount,
     this.isRefund = const Value.absent(),
@@ -18443,6 +18603,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
   static Insertable<Payment> custom({
     Expression<String>? id,
     Expression<String>? receiptId,
+    Expression<String>? visitId,
     Expression<String>? method,
     Expression<int>? amount,
     Expression<bool>? isRefund,
@@ -18458,6 +18619,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (receiptId != null) 'receipt_id': receiptId,
+      if (visitId != null) 'visit_id': visitId,
       if (method != null) 'method': method,
       if (amount != null) 'amount': amount,
       if (isRefund != null) 'is_refund': isRefund,
@@ -18475,6 +18637,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
   PaymentsCompanion copyWith({
     Value<String>? id,
     Value<String>? receiptId,
+    Value<String?>? visitId,
     Value<String>? method,
     Value<int>? amount,
     Value<bool>? isRefund,
@@ -18490,6 +18653,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
     return PaymentsCompanion(
       id: id ?? this.id,
       receiptId: receiptId ?? this.receiptId,
+      visitId: visitId ?? this.visitId,
       method: method ?? this.method,
       amount: amount ?? this.amount,
       isRefund: isRefund ?? this.isRefund,
@@ -18512,6 +18676,9 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
     }
     if (receiptId.present) {
       map['receipt_id'] = Variable<String>(receiptId.value);
+    }
+    if (visitId.present) {
+      map['visit_id'] = Variable<String>(visitId.value);
     }
     if (method.present) {
       map['method'] = Variable<String>(method.value);
@@ -18554,6 +18721,7 @@ class PaymentsCompanion extends UpdateCompanion<Payment> {
     return (StringBuffer('PaymentsCompanion(')
           ..write('id: $id, ')
           ..write('receiptId: $receiptId, ')
+          ..write('visitId: $visitId, ')
           ..write('method: $method, ')
           ..write('amount: $amount, ')
           ..write('isRefund: $isRefund, ')
@@ -18706,6 +18874,17 @@ class $TableSessionReceiptsTable extends TableSessionReceipts
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _originalSnapshotJsonMeta =
+      const VerificationMeta('originalSnapshotJson');
+  @override
+  late final GeneratedColumn<String> originalSnapshotJson =
+      GeneratedColumn<String>(
+        'original_snapshot_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -18720,6 +18899,7 @@ class $TableSessionReceiptsTable extends TableSessionReceipts
     total,
     status,
     memberId,
+    originalSnapshotJson,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -18814,6 +18994,15 @@ class $TableSessionReceiptsTable extends TableSessionReceipts
         memberId.isAcceptableOrUnknown(data['member_id']!, _memberIdMeta),
       );
     }
+    if (data.containsKey('original_snapshot_json')) {
+      context.handle(
+        _originalSnapshotJsonMeta,
+        originalSnapshotJson.isAcceptableOrUnknown(
+          data['original_snapshot_json']!,
+          _originalSnapshotJsonMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -18871,6 +19060,10 @@ class $TableSessionReceiptsTable extends TableSessionReceipts
         DriftSqlType.string,
         data['${effectivePrefix}member_id'],
       ),
+      originalSnapshotJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}original_snapshot_json'],
+      ),
     );
   }
 
@@ -18899,6 +19092,10 @@ class TableSessionReceipt extends DataClass
   /// reason [TableSessions.memberId] does: a deleted member's past trade still
   /// counts while the person is gone (ADR-0092).
   final String? memberId;
+
+  /// Original printed values retained when a late captured action amends this
+  /// archived receipt. The current columns carry the effective allocation.
+  final String? originalSnapshotJson;
   const TableSessionReceipt({
     required this.id,
     required this.sessionId,
@@ -18912,6 +19109,7 @@ class TableSessionReceipt extends DataClass
     required this.total,
     required this.status,
     this.memberId,
+    this.originalSnapshotJson,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -18929,6 +19127,9 @@ class TableSessionReceipt extends DataClass
     map['status'] = Variable<String>(status);
     if (!nullToAbsent || memberId != null) {
       map['member_id'] = Variable<String>(memberId);
+    }
+    if (!nullToAbsent || originalSnapshotJson != null) {
+      map['original_snapshot_json'] = Variable<String>(originalSnapshotJson);
     }
     return map;
   }
@@ -18949,6 +19150,9 @@ class TableSessionReceipt extends DataClass
       memberId: memberId == null && nullToAbsent
           ? const Value.absent()
           : Value(memberId),
+      originalSnapshotJson: originalSnapshotJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(originalSnapshotJson),
     );
   }
 
@@ -18970,6 +19174,9 @@ class TableSessionReceipt extends DataClass
       total: serializer.fromJson<int>(json['total']),
       status: serializer.fromJson<String>(json['status']),
       memberId: serializer.fromJson<String?>(json['memberId']),
+      originalSnapshotJson: serializer.fromJson<String?>(
+        json['originalSnapshotJson'],
+      ),
     );
   }
   @override
@@ -18988,6 +19195,7 @@ class TableSessionReceipt extends DataClass
       'total': serializer.toJson<int>(total),
       'status': serializer.toJson<String>(status),
       'memberId': serializer.toJson<String?>(memberId),
+      'originalSnapshotJson': serializer.toJson<String?>(originalSnapshotJson),
     };
   }
 
@@ -19004,6 +19212,7 @@ class TableSessionReceipt extends DataClass
     int? total,
     String? status,
     Value<String?> memberId = const Value.absent(),
+    Value<String?> originalSnapshotJson = const Value.absent(),
   }) => TableSessionReceipt(
     id: id ?? this.id,
     sessionId: sessionId ?? this.sessionId,
@@ -19017,6 +19226,9 @@ class TableSessionReceipt extends DataClass
     total: total ?? this.total,
     status: status ?? this.status,
     memberId: memberId.present ? memberId.value : this.memberId,
+    originalSnapshotJson: originalSnapshotJson.present
+        ? originalSnapshotJson.value
+        : this.originalSnapshotJson,
   );
   TableSessionReceipt copyWithCompanion(TableSessionReceiptsCompanion data) {
     return TableSessionReceipt(
@@ -19036,6 +19248,9 @@ class TableSessionReceipt extends DataClass
       total: data.total.present ? data.total.value : this.total,
       status: data.status.present ? data.status.value : this.status,
       memberId: data.memberId.present ? data.memberId.value : this.memberId,
+      originalSnapshotJson: data.originalSnapshotJson.present
+          ? data.originalSnapshotJson.value
+          : this.originalSnapshotJson,
     );
   }
 
@@ -19053,7 +19268,8 @@ class TableSessionReceipt extends DataClass
           ..write('taxAmount: $taxAmount, ')
           ..write('total: $total, ')
           ..write('status: $status, ')
-          ..write('memberId: $memberId')
+          ..write('memberId: $memberId, ')
+          ..write('originalSnapshotJson: $originalSnapshotJson')
           ..write(')'))
         .toString();
   }
@@ -19072,6 +19288,7 @@ class TableSessionReceipt extends DataClass
     total,
     status,
     memberId,
+    originalSnapshotJson,
   );
   @override
   bool operator ==(Object other) =>
@@ -19088,7 +19305,8 @@ class TableSessionReceipt extends DataClass
           other.taxAmount == this.taxAmount &&
           other.total == this.total &&
           other.status == this.status &&
-          other.memberId == this.memberId);
+          other.memberId == this.memberId &&
+          other.originalSnapshotJson == this.originalSnapshotJson);
 }
 
 class TableSessionReceiptsCompanion
@@ -19105,6 +19323,7 @@ class TableSessionReceiptsCompanion
   final Value<int> total;
   final Value<String> status;
   final Value<String?> memberId;
+  final Value<String?> originalSnapshotJson;
   final Value<int> rowid;
   const TableSessionReceiptsCompanion({
     this.id = const Value.absent(),
@@ -19119,6 +19338,7 @@ class TableSessionReceiptsCompanion
     this.total = const Value.absent(),
     this.status = const Value.absent(),
     this.memberId = const Value.absent(),
+    this.originalSnapshotJson = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TableSessionReceiptsCompanion.insert({
@@ -19134,6 +19354,7 @@ class TableSessionReceiptsCompanion
     this.total = const Value.absent(),
     this.status = const Value.absent(),
     this.memberId = const Value.absent(),
+    this.originalSnapshotJson = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        sessionId = Value(sessionId),
@@ -19151,6 +19372,7 @@ class TableSessionReceiptsCompanion
     Expression<int>? total,
     Expression<String>? status,
     Expression<String>? memberId,
+    Expression<String>? originalSnapshotJson,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -19166,6 +19388,8 @@ class TableSessionReceiptsCompanion
       if (total != null) 'total': total,
       if (status != null) 'status': status,
       if (memberId != null) 'member_id': memberId,
+      if (originalSnapshotJson != null)
+        'original_snapshot_json': originalSnapshotJson,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -19183,6 +19407,7 @@ class TableSessionReceiptsCompanion
     Value<int>? total,
     Value<String>? status,
     Value<String?>? memberId,
+    Value<String?>? originalSnapshotJson,
     Value<int>? rowid,
   }) {
     return TableSessionReceiptsCompanion(
@@ -19198,6 +19423,7 @@ class TableSessionReceiptsCompanion
       total: total ?? this.total,
       status: status ?? this.status,
       memberId: memberId ?? this.memberId,
+      originalSnapshotJson: originalSnapshotJson ?? this.originalSnapshotJson,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -19241,6 +19467,11 @@ class TableSessionReceiptsCompanion
     if (memberId.present) {
       map['member_id'] = Variable<String>(memberId.value);
     }
+    if (originalSnapshotJson.present) {
+      map['original_snapshot_json'] = Variable<String>(
+        originalSnapshotJson.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -19262,6 +19493,7 @@ class TableSessionReceiptsCompanion
           ..write('total: $total, ')
           ..write('status: $status, ')
           ..write('memberId: $memberId, ')
+          ..write('originalSnapshotJson: $originalSnapshotJson, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -20243,6 +20475,422 @@ class TableSessionPaymentsCompanion
           ..write('cashierUserId: $cashierUserId, ')
           ..write('at: $at, ')
           ..write('photo: $photo, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LegacyParkedPaymentsTable extends LegacyParkedPayments
+    with TableInfo<$LegacyParkedPaymentsTable, LegacyParkedPayment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LegacyParkedPaymentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _eventIdMeta = const VerificationMeta(
+    'eventId',
+  );
+  @override
+  late final GeneratedColumn<String> eventId = GeneratedColumn<String>(
+    'event_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _visitIdMeta = const VerificationMeta(
+    'visitId',
+  );
+  @override
+  late final GeneratedColumn<String> visitId = GeneratedColumn<String>(
+    'visit_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tableIdMeta = const VerificationMeta(
+    'tableId',
+  );
+  @override
+  late final GeneratedColumn<String> tableId = GeneratedColumn<String>(
+    'table_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<int> amount = GeneratedColumn<int>(
+    'amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _capturedAtMeta = const VerificationMeta(
+    'capturedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> capturedAt = GeneratedColumn<DateTime>(
+    'captured_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    eventId,
+    visitId,
+    tableId,
+    kind,
+    amount,
+    capturedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'legacy_parked_payments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LegacyParkedPayment> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('event_id')) {
+      context.handle(
+        _eventIdMeta,
+        eventId.isAcceptableOrUnknown(data['event_id']!, _eventIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventIdMeta);
+    }
+    if (data.containsKey('visit_id')) {
+      context.handle(
+        _visitIdMeta,
+        visitId.isAcceptableOrUnknown(data['visit_id']!, _visitIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_visitIdMeta);
+    }
+    if (data.containsKey('table_id')) {
+      context.handle(
+        _tableIdMeta,
+        tableId.isAcceptableOrUnknown(data['table_id']!, _tableIdMeta),
+      );
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('captured_at')) {
+      context.handle(
+        _capturedAtMeta,
+        capturedAt.isAcceptableOrUnknown(data['captured_at']!, _capturedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_capturedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {eventId};
+  @override
+  LegacyParkedPayment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LegacyParkedPayment(
+      eventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_id'],
+      )!,
+      visitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}visit_id'],
+      )!,
+      tableId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}table_id'],
+      ),
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}amount'],
+      )!,
+      capturedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}captured_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LegacyParkedPaymentsTable createAlias(String alias) {
+    return $LegacyParkedPaymentsTable(attachedDatabase, alias);
+  }
+}
+
+class LegacyParkedPayment extends DataClass
+    implements Insertable<LegacyParkedPayment> {
+  final String eventId;
+  final String visitId;
+  final String? tableId;
+  final String kind;
+  final int amount;
+  final DateTime capturedAt;
+  const LegacyParkedPayment({
+    required this.eventId,
+    required this.visitId,
+    this.tableId,
+    required this.kind,
+    required this.amount,
+    required this.capturedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['event_id'] = Variable<String>(eventId);
+    map['visit_id'] = Variable<String>(visitId);
+    if (!nullToAbsent || tableId != null) {
+      map['table_id'] = Variable<String>(tableId);
+    }
+    map['kind'] = Variable<String>(kind);
+    map['amount'] = Variable<int>(amount);
+    map['captured_at'] = Variable<DateTime>(capturedAt);
+    return map;
+  }
+
+  LegacyParkedPaymentsCompanion toCompanion(bool nullToAbsent) {
+    return LegacyParkedPaymentsCompanion(
+      eventId: Value(eventId),
+      visitId: Value(visitId),
+      tableId: tableId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tableId),
+      kind: Value(kind),
+      amount: Value(amount),
+      capturedAt: Value(capturedAt),
+    );
+  }
+
+  factory LegacyParkedPayment.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LegacyParkedPayment(
+      eventId: serializer.fromJson<String>(json['eventId']),
+      visitId: serializer.fromJson<String>(json['visitId']),
+      tableId: serializer.fromJson<String?>(json['tableId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      amount: serializer.fromJson<int>(json['amount']),
+      capturedAt: serializer.fromJson<DateTime>(json['capturedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'eventId': serializer.toJson<String>(eventId),
+      'visitId': serializer.toJson<String>(visitId),
+      'tableId': serializer.toJson<String?>(tableId),
+      'kind': serializer.toJson<String>(kind),
+      'amount': serializer.toJson<int>(amount),
+      'capturedAt': serializer.toJson<DateTime>(capturedAt),
+    };
+  }
+
+  LegacyParkedPayment copyWith({
+    String? eventId,
+    String? visitId,
+    Value<String?> tableId = const Value.absent(),
+    String? kind,
+    int? amount,
+    DateTime? capturedAt,
+  }) => LegacyParkedPayment(
+    eventId: eventId ?? this.eventId,
+    visitId: visitId ?? this.visitId,
+    tableId: tableId.present ? tableId.value : this.tableId,
+    kind: kind ?? this.kind,
+    amount: amount ?? this.amount,
+    capturedAt: capturedAt ?? this.capturedAt,
+  );
+  LegacyParkedPayment copyWithCompanion(LegacyParkedPaymentsCompanion data) {
+    return LegacyParkedPayment(
+      eventId: data.eventId.present ? data.eventId.value : this.eventId,
+      visitId: data.visitId.present ? data.visitId.value : this.visitId,
+      tableId: data.tableId.present ? data.tableId.value : this.tableId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      capturedAt: data.capturedAt.present
+          ? data.capturedAt.value
+          : this.capturedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LegacyParkedPayment(')
+          ..write('eventId: $eventId, ')
+          ..write('visitId: $visitId, ')
+          ..write('tableId: $tableId, ')
+          ..write('kind: $kind, ')
+          ..write('amount: $amount, ')
+          ..write('capturedAt: $capturedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(eventId, visitId, tableId, kind, amount, capturedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LegacyParkedPayment &&
+          other.eventId == this.eventId &&
+          other.visitId == this.visitId &&
+          other.tableId == this.tableId &&
+          other.kind == this.kind &&
+          other.amount == this.amount &&
+          other.capturedAt == this.capturedAt);
+}
+
+class LegacyParkedPaymentsCompanion
+    extends UpdateCompanion<LegacyParkedPayment> {
+  final Value<String> eventId;
+  final Value<String> visitId;
+  final Value<String?> tableId;
+  final Value<String> kind;
+  final Value<int> amount;
+  final Value<DateTime> capturedAt;
+  final Value<int> rowid;
+  const LegacyParkedPaymentsCompanion({
+    this.eventId = const Value.absent(),
+    this.visitId = const Value.absent(),
+    this.tableId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.capturedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LegacyParkedPaymentsCompanion.insert({
+    required String eventId,
+    required String visitId,
+    this.tableId = const Value.absent(),
+    required String kind,
+    required int amount,
+    required DateTime capturedAt,
+    this.rowid = const Value.absent(),
+  }) : eventId = Value(eventId),
+       visitId = Value(visitId),
+       kind = Value(kind),
+       amount = Value(amount),
+       capturedAt = Value(capturedAt);
+  static Insertable<LegacyParkedPayment> custom({
+    Expression<String>? eventId,
+    Expression<String>? visitId,
+    Expression<String>? tableId,
+    Expression<String>? kind,
+    Expression<int>? amount,
+    Expression<DateTime>? capturedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (eventId != null) 'event_id': eventId,
+      if (visitId != null) 'visit_id': visitId,
+      if (tableId != null) 'table_id': tableId,
+      if (kind != null) 'kind': kind,
+      if (amount != null) 'amount': amount,
+      if (capturedAt != null) 'captured_at': capturedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LegacyParkedPaymentsCompanion copyWith({
+    Value<String>? eventId,
+    Value<String>? visitId,
+    Value<String?>? tableId,
+    Value<String>? kind,
+    Value<int>? amount,
+    Value<DateTime>? capturedAt,
+    Value<int>? rowid,
+  }) {
+    return LegacyParkedPaymentsCompanion(
+      eventId: eventId ?? this.eventId,
+      visitId: visitId ?? this.visitId,
+      tableId: tableId ?? this.tableId,
+      kind: kind ?? this.kind,
+      amount: amount ?? this.amount,
+      capturedAt: capturedAt ?? this.capturedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (eventId.present) {
+      map['event_id'] = Variable<String>(eventId.value);
+    }
+    if (visitId.present) {
+      map['visit_id'] = Variable<String>(visitId.value);
+    }
+    if (tableId.present) {
+      map['table_id'] = Variable<String>(tableId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<int>(amount.value);
+    }
+    if (capturedAt.present) {
+      map['captured_at'] = Variable<DateTime>(capturedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LegacyParkedPaymentsCompanion(')
+          ..write('eventId: $eventId, ')
+          ..write('visitId: $visitId, ')
+          ..write('tableId: $tableId, ')
+          ..write('kind: $kind, ')
+          ..write('amount: $amount, ')
+          ..write('capturedAt: $capturedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -21577,6 +22225,21 @@ class $DiscountsTable extends Discounts
     requiredDuringInsert: false,
     defaultValue: const Constant('manual'),
   );
+  static const VerificationMeta _capturedMeta = const VerificationMeta(
+    'captured',
+  );
+  @override
+  late final GeneratedColumn<bool> captured = GeneratedColumn<bool>(
+    'captured',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("captured" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _presetIdMeta = const VerificationMeta(
     'presetId',
   );
@@ -21664,6 +22327,7 @@ class $DiscountsTable extends Discounts
     visitId,
     ticketId,
     source,
+    captured,
     presetId,
     name,
     kind,
@@ -21712,6 +22376,12 @@ class $DiscountsTable extends Discounts
       context.handle(
         _sourceMeta,
         source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
+    if (data.containsKey('captured')) {
+      context.handle(
+        _capturedMeta,
+        captured.isAcceptableOrUnknown(data['captured']!, _capturedMeta),
       );
     }
     if (data.containsKey('preset_id')) {
@@ -21797,6 +22467,10 @@ class $DiscountsTable extends Discounts
         DriftSqlType.string,
         data['${effectivePrefix}source'],
       )!,
+      captured: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}captured'],
+      )!,
       presetId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}preset_id'],
@@ -21841,11 +22515,12 @@ class $DiscountsTable extends Discounts
 class Discount extends DataClass implements Insertable<Discount> {
   final String id;
 
-  /// Null ⇒ a bill discount (see [visitId]). Set ⇒ receipt- or line-scoped.
+  /// Null ⇒ visit-owned: a bill discount, or a per-unit preset when ticketId
+  /// is set (ADR-0142). Set ⇒ legacy receipt- or line-scoped discount.
   final String? receiptId;
 
-  /// Set only on a bill discount. Receipt-scoped rows reach their visit through
-  /// the receipt.
+  /// Set on visit-owned bill and ticket presets. Legacy receipt-scoped rows
+  /// reach their visit through the receipt.
   final String? visitId;
 
   /// Null ⇒ whole-order discount. Set ⇒ line discount on this ticket's units.
@@ -21856,10 +22531,10 @@ class Discount extends DataClass implements Insertable<Discount> {
   /// [[Tukar poin (redeem)|points redemption]]). Always `manual` on order- and
   /// line-scope rows, which have no such contest.
   ///
-  /// The one-per-visit rule of ADR-0070 is now **one per source** (ADR-0094):
-  /// the partial unique index covers `(visit_id, source)`, so the three stack
-  /// by design and none can be applied twice.
+  /// Member and redeem sources remain unique per visit (ADR-0094). Live
+  /// manual edits keep one slot in the route; separate captures may stack.
   final String source;
+  final bool captured;
 
   /// Weak reference — the preset may be edited or deleted afterwards. Never
   /// read it to render or report a settled bill; use the snapshot below.
@@ -21883,6 +22558,7 @@ class Discount extends DataClass implements Insertable<Discount> {
     this.visitId,
     this.ticketId,
     required this.source,
+    required this.captured,
     this.presetId,
     required this.name,
     required this.kind,
@@ -21906,6 +22582,7 @@ class Discount extends DataClass implements Insertable<Discount> {
       map['ticket_id'] = Variable<String>(ticketId);
     }
     map['source'] = Variable<String>(source);
+    map['captured'] = Variable<bool>(captured);
     if (!nullToAbsent || presetId != null) {
       map['preset_id'] = Variable<String>(presetId);
     }
@@ -21936,6 +22613,7 @@ class Discount extends DataClass implements Insertable<Discount> {
           ? const Value.absent()
           : Value(ticketId),
       source: Value(source),
+      captured: Value(captured),
       presetId: presetId == null && nullToAbsent
           ? const Value.absent()
           : Value(presetId),
@@ -21964,6 +22642,7 @@ class Discount extends DataClass implements Insertable<Discount> {
       visitId: serializer.fromJson<String?>(json['visitId']),
       ticketId: serializer.fromJson<String?>(json['ticketId']),
       source: serializer.fromJson<String>(json['source']),
+      captured: serializer.fromJson<bool>(json['captured']),
       presetId: serializer.fromJson<String?>(json['presetId']),
       name: serializer.fromJson<String>(json['name']),
       kind: serializer.fromJson<String>(json['kind']),
@@ -21983,6 +22662,7 @@ class Discount extends DataClass implements Insertable<Discount> {
       'visitId': serializer.toJson<String?>(visitId),
       'ticketId': serializer.toJson<String?>(ticketId),
       'source': serializer.toJson<String>(source),
+      'captured': serializer.toJson<bool>(captured),
       'presetId': serializer.toJson<String?>(presetId),
       'name': serializer.toJson<String>(name),
       'kind': serializer.toJson<String>(kind),
@@ -22000,6 +22680,7 @@ class Discount extends DataClass implements Insertable<Discount> {
     Value<String?> visitId = const Value.absent(),
     Value<String?> ticketId = const Value.absent(),
     String? source,
+    bool? captured,
     Value<String?> presetId = const Value.absent(),
     String? name,
     String? kind,
@@ -22014,6 +22695,7 @@ class Discount extends DataClass implements Insertable<Discount> {
     visitId: visitId.present ? visitId.value : this.visitId,
     ticketId: ticketId.present ? ticketId.value : this.ticketId,
     source: source ?? this.source,
+    captured: captured ?? this.captured,
     presetId: presetId.present ? presetId.value : this.presetId,
     name: name ?? this.name,
     kind: kind ?? this.kind,
@@ -22032,6 +22714,7 @@ class Discount extends DataClass implements Insertable<Discount> {
       visitId: data.visitId.present ? data.visitId.value : this.visitId,
       ticketId: data.ticketId.present ? data.ticketId.value : this.ticketId,
       source: data.source.present ? data.source.value : this.source,
+      captured: data.captured.present ? data.captured.value : this.captured,
       presetId: data.presetId.present ? data.presetId.value : this.presetId,
       name: data.name.present ? data.name.value : this.name,
       kind: data.kind.present ? data.kind.value : this.kind,
@@ -22053,6 +22736,7 @@ class Discount extends DataClass implements Insertable<Discount> {
           ..write('visitId: $visitId, ')
           ..write('ticketId: $ticketId, ')
           ..write('source: $source, ')
+          ..write('captured: $captured, ')
           ..write('presetId: $presetId, ')
           ..write('name: $name, ')
           ..write('kind: $kind, ')
@@ -22072,6 +22756,7 @@ class Discount extends DataClass implements Insertable<Discount> {
     visitId,
     ticketId,
     source,
+    captured,
     presetId,
     name,
     kind,
@@ -22090,6 +22775,7 @@ class Discount extends DataClass implements Insertable<Discount> {
           other.visitId == this.visitId &&
           other.ticketId == this.ticketId &&
           other.source == this.source &&
+          other.captured == this.captured &&
           other.presetId == this.presetId &&
           other.name == this.name &&
           other.kind == this.kind &&
@@ -22106,6 +22792,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
   final Value<String?> visitId;
   final Value<String?> ticketId;
   final Value<String> source;
+  final Value<bool> captured;
   final Value<String?> presetId;
   final Value<String> name;
   final Value<String> kind;
@@ -22121,6 +22808,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
     this.visitId = const Value.absent(),
     this.ticketId = const Value.absent(),
     this.source = const Value.absent(),
+    this.captured = const Value.absent(),
     this.presetId = const Value.absent(),
     this.name = const Value.absent(),
     this.kind = const Value.absent(),
@@ -22137,6 +22825,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
     this.visitId = const Value.absent(),
     this.ticketId = const Value.absent(),
     this.source = const Value.absent(),
+    this.captured = const Value.absent(),
     this.presetId = const Value.absent(),
     required String name,
     required String kind,
@@ -22156,6 +22845,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
     Expression<String>? visitId,
     Expression<String>? ticketId,
     Expression<String>? source,
+    Expression<bool>? captured,
     Expression<String>? presetId,
     Expression<String>? name,
     Expression<String>? kind,
@@ -22172,6 +22862,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
       if (visitId != null) 'visit_id': visitId,
       if (ticketId != null) 'ticket_id': ticketId,
       if (source != null) 'source': source,
+      if (captured != null) 'captured': captured,
       if (presetId != null) 'preset_id': presetId,
       if (name != null) 'name': name,
       if (kind != null) 'kind': kind,
@@ -22190,6 +22881,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
     Value<String?>? visitId,
     Value<String?>? ticketId,
     Value<String>? source,
+    Value<bool>? captured,
     Value<String?>? presetId,
     Value<String>? name,
     Value<String>? kind,
@@ -22206,6 +22898,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
       visitId: visitId ?? this.visitId,
       ticketId: ticketId ?? this.ticketId,
       source: source ?? this.source,
+      captured: captured ?? this.captured,
       presetId: presetId ?? this.presetId,
       name: name ?? this.name,
       kind: kind ?? this.kind,
@@ -22235,6 +22928,9 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
     }
     if (source.present) {
       map['source'] = Variable<String>(source.value);
+    }
+    if (captured.present) {
+      map['captured'] = Variable<bool>(captured.value);
     }
     if (presetId.present) {
       map['preset_id'] = Variable<String>(presetId.value);
@@ -22274,6 +22970,7 @@ class DiscountsCompanion extends UpdateCompanion<Discount> {
           ..write('visitId: $visitId, ')
           ..write('ticketId: $ticketId, ')
           ..write('source: $source, ')
+          ..write('captured: $captured, ')
           ..write('presetId: $presetId, ')
           ..write('name: $name, ')
           ..write('kind: $kind, ')
@@ -32773,6 +33470,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $TableSessionReceiptLinesTable(this);
   late final $TableSessionPaymentsTable tableSessionPayments =
       $TableSessionPaymentsTable(this);
+  late final $LegacyParkedPaymentsTable legacyParkedPayments =
+      $LegacyParkedPaymentsTable(this);
   late final $VisitExpensesTable visitExpenses = $VisitExpensesTable(this);
   late final $VisitExpenseCategoriesTable visitExpenseCategories =
       $VisitExpenseCategoriesTable(this);
@@ -32836,6 +33535,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     tableSessionReceipts,
     tableSessionReceiptLines,
     tableSessionPayments,
+    legacyParkedPayments,
     visitExpenses,
     visitExpenseCategories,
     discountPresets,
@@ -34137,6 +34837,7 @@ typedef $$VisitsTableCreateCompanionBuilder =
       Value<String> zoneId,
       Value<int> pax,
       Value<DateTime?> openedAt,
+      Value<String?> taxConfigJson,
       Value<String?> guestName,
       Value<String?> guestNotes,
       Value<String?> reservationId,
@@ -34161,6 +34862,7 @@ typedef $$VisitsTableUpdateCompanionBuilder =
       Value<String> zoneId,
       Value<int> pax,
       Value<DateTime?> openedAt,
+      Value<String?> taxConfigJson,
       Value<String?> guestName,
       Value<String?> guestNotes,
       Value<String?> reservationId,
@@ -34214,6 +34916,11 @@ class $$VisitsTableFilterComposer
 
   ColumnFilters<DateTime> get openedAt => $composableBuilder(
     column: $table.openedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taxConfigJson => $composableBuilder(
+    column: $table.taxConfigJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -34327,6 +35034,11 @@ class $$VisitsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get taxConfigJson => $composableBuilder(
+    column: $table.taxConfigJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get guestName => $composableBuilder(
     column: $table.guestName,
     builder: (column) => ColumnOrderings(column),
@@ -34427,6 +35139,11 @@ class $$VisitsTableAnnotationComposer
   GeneratedColumn<DateTime> get openedAt =>
       $composableBuilder(column: $table.openedAt, builder: (column) => column);
 
+  GeneratedColumn<String> get taxConfigJson => $composableBuilder(
+    column: $table.taxConfigJson,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get guestName =>
       $composableBuilder(column: $table.guestName, builder: (column) => column);
 
@@ -34520,6 +35237,7 @@ class $$VisitsTableTableManager
                 Value<String> zoneId = const Value.absent(),
                 Value<int> pax = const Value.absent(),
                 Value<DateTime?> openedAt = const Value.absent(),
+                Value<String?> taxConfigJson = const Value.absent(),
                 Value<String?> guestName = const Value.absent(),
                 Value<String?> guestNotes = const Value.absent(),
                 Value<String?> reservationId = const Value.absent(),
@@ -34542,6 +35260,7 @@ class $$VisitsTableTableManager
                 zoneId: zoneId,
                 pax: pax,
                 openedAt: openedAt,
+                taxConfigJson: taxConfigJson,
                 guestName: guestName,
                 guestNotes: guestNotes,
                 reservationId: reservationId,
@@ -34566,6 +35285,7 @@ class $$VisitsTableTableManager
                 Value<String> zoneId = const Value.absent(),
                 Value<int> pax = const Value.absent(),
                 Value<DateTime?> openedAt = const Value.absent(),
+                Value<String?> taxConfigJson = const Value.absent(),
                 Value<String?> guestName = const Value.absent(),
                 Value<String?> guestNotes = const Value.absent(),
                 Value<String?> reservationId = const Value.absent(),
@@ -34588,6 +35308,7 @@ class $$VisitsTableTableManager
                 zoneId: zoneId,
                 pax: pax,
                 openedAt: openedAt,
+                taxConfigJson: taxConfigJson,
                 guestName: guestName,
                 guestNotes: guestNotes,
                 reservationId: reservationId,
@@ -38667,6 +39388,7 @@ typedef $$TableSessionsTableCreateCompanionBuilder =
       Value<int> pax,
       Value<DateTime?> openedAt,
       required DateTime closedAt,
+      Value<String?> taxConfigJson,
       Value<int> durationSec,
       Value<String?> actorUserId,
       Value<int> subtotal,
@@ -38696,6 +39418,7 @@ typedef $$TableSessionsTableUpdateCompanionBuilder =
       Value<int> pax,
       Value<DateTime?> openedAt,
       Value<DateTime> closedAt,
+      Value<String?> taxConfigJson,
       Value<int> durationSec,
       Value<String?> actorUserId,
       Value<int> subtotal,
@@ -38758,6 +39481,11 @@ class $$TableSessionsTableFilterComposer
 
   ColumnFilters<DateTime> get closedAt => $composableBuilder(
     column: $table.closedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taxConfigJson => $composableBuilder(
+    column: $table.taxConfigJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -38896,6 +39624,11 @@ class $$TableSessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get taxConfigJson => $composableBuilder(
+    column: $table.taxConfigJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get durationSec => $composableBuilder(
     column: $table.durationSec,
     builder: (column) => ColumnOrderings(column),
@@ -39019,6 +39752,11 @@ class $$TableSessionsTableAnnotationComposer
   GeneratedColumn<DateTime> get closedAt =>
       $composableBuilder(column: $table.closedAt, builder: (column) => column);
 
+  GeneratedColumn<String> get taxConfigJson => $composableBuilder(
+    column: $table.taxConfigJson,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get durationSec => $composableBuilder(
     column: $table.durationSec,
     builder: (column) => column,
@@ -39134,6 +39872,7 @@ class $$TableSessionsTableTableManager
                 Value<int> pax = const Value.absent(),
                 Value<DateTime?> openedAt = const Value.absent(),
                 Value<DateTime> closedAt = const Value.absent(),
+                Value<String?> taxConfigJson = const Value.absent(),
                 Value<int> durationSec = const Value.absent(),
                 Value<String?> actorUserId = const Value.absent(),
                 Value<int> subtotal = const Value.absent(),
@@ -39161,6 +39900,7 @@ class $$TableSessionsTableTableManager
                 pax: pax,
                 openedAt: openedAt,
                 closedAt: closedAt,
+                taxConfigJson: taxConfigJson,
                 durationSec: durationSec,
                 actorUserId: actorUserId,
                 subtotal: subtotal,
@@ -39190,6 +39930,7 @@ class $$TableSessionsTableTableManager
                 Value<int> pax = const Value.absent(),
                 Value<DateTime?> openedAt = const Value.absent(),
                 required DateTime closedAt,
+                Value<String?> taxConfigJson = const Value.absent(),
                 Value<int> durationSec = const Value.absent(),
                 Value<String?> actorUserId = const Value.absent(),
                 Value<int> subtotal = const Value.absent(),
@@ -39217,6 +39958,7 @@ class $$TableSessionsTableTableManager
                 pax: pax,
                 openedAt: openedAt,
                 closedAt: closedAt,
+                taxConfigJson: taxConfigJson,
                 durationSec: durationSec,
                 actorUserId: actorUserId,
                 subtotal: subtotal,
@@ -40941,6 +41683,7 @@ typedef $$PaymentsTableCreateCompanionBuilder =
     PaymentsCompanion Function({
       required String id,
       required String receiptId,
+      Value<String?> visitId,
       required String method,
       required int amount,
       Value<bool> isRefund,
@@ -40957,6 +41700,7 @@ typedef $$PaymentsTableUpdateCompanionBuilder =
     PaymentsCompanion Function({
       Value<String> id,
       Value<String> receiptId,
+      Value<String?> visitId,
       Value<String> method,
       Value<int> amount,
       Value<bool> isRefund,
@@ -40986,6 +41730,11 @@ class $$PaymentsTableFilterComposer
 
   ColumnFilters<String> get receiptId => $composableBuilder(
     column: $table.receiptId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get visitId => $composableBuilder(
+    column: $table.visitId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -41059,6 +41808,11 @@ class $$PaymentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get visitId => $composableBuilder(
+    column: $table.visitId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get method => $composableBuilder(
     column: $table.method,
     builder: (column) => ColumnOrderings(column),
@@ -41124,6 +41878,9 @@ class $$PaymentsTableAnnotationComposer
 
   GeneratedColumn<String> get receiptId =>
       $composableBuilder(column: $table.receiptId, builder: (column) => column);
+
+  GeneratedColumn<String> get visitId =>
+      $composableBuilder(column: $table.visitId, builder: (column) => column);
 
   GeneratedColumn<String> get method =>
       $composableBuilder(column: $table.method, builder: (column) => column);
@@ -41192,6 +41949,7 @@ class $$PaymentsTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> receiptId = const Value.absent(),
+                Value<String?> visitId = const Value.absent(),
                 Value<String> method = const Value.absent(),
                 Value<int> amount = const Value.absent(),
                 Value<bool> isRefund = const Value.absent(),
@@ -41206,6 +41964,7 @@ class $$PaymentsTableTableManager
               }) => PaymentsCompanion(
                 id: id,
                 receiptId: receiptId,
+                visitId: visitId,
                 method: method,
                 amount: amount,
                 isRefund: isRefund,
@@ -41222,6 +41981,7 @@ class $$PaymentsTableTableManager
               ({
                 required String id,
                 required String receiptId,
+                Value<String?> visitId = const Value.absent(),
                 required String method,
                 required int amount,
                 Value<bool> isRefund = const Value.absent(),
@@ -41236,6 +41996,7 @@ class $$PaymentsTableTableManager
               }) => PaymentsCompanion.insert(
                 id: id,
                 receiptId: receiptId,
+                visitId: visitId,
                 method: method,
                 amount: amount,
                 isRefund: isRefund,
@@ -41284,6 +42045,7 @@ typedef $$TableSessionReceiptsTableCreateCompanionBuilder =
       Value<int> total,
       Value<String> status,
       Value<String?> memberId,
+      Value<String?> originalSnapshotJson,
       Value<int> rowid,
     });
 typedef $$TableSessionReceiptsTableUpdateCompanionBuilder =
@@ -41300,6 +42062,7 @@ typedef $$TableSessionReceiptsTableUpdateCompanionBuilder =
       Value<int> total,
       Value<String> status,
       Value<String?> memberId,
+      Value<String?> originalSnapshotJson,
       Value<int> rowid,
     });
 
@@ -41369,6 +42132,11 @@ class $$TableSessionReceiptsTableFilterComposer
 
   ColumnFilters<String> get memberId => $composableBuilder(
     column: $table.memberId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get originalSnapshotJson => $composableBuilder(
+    column: $table.originalSnapshotJson,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -41441,6 +42209,11 @@ class $$TableSessionReceiptsTableOrderingComposer
     column: $table.memberId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get originalSnapshotJson => $composableBuilder(
+    column: $table.originalSnapshotJson,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TableSessionReceiptsTableAnnotationComposer
@@ -41491,6 +42264,11 @@ class $$TableSessionReceiptsTableAnnotationComposer
 
   GeneratedColumn<String> get memberId =>
       $composableBuilder(column: $table.memberId, builder: (column) => column);
+
+  GeneratedColumn<String> get originalSnapshotJson => $composableBuilder(
+    column: $table.originalSnapshotJson,
+    builder: (column) => column,
+  );
 }
 
 class $$TableSessionReceiptsTableTableManager
@@ -41548,6 +42326,7 @@ class $$TableSessionReceiptsTableTableManager
                 Value<int> total = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String?> memberId = const Value.absent(),
+                Value<String?> originalSnapshotJson = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TableSessionReceiptsCompanion(
                 id: id,
@@ -41562,6 +42341,7 @@ class $$TableSessionReceiptsTableTableManager
                 total: total,
                 status: status,
                 memberId: memberId,
+                originalSnapshotJson: originalSnapshotJson,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -41578,6 +42358,7 @@ class $$TableSessionReceiptsTableTableManager
                 Value<int> total = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String?> memberId = const Value.absent(),
+                Value<String?> originalSnapshotJson = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TableSessionReceiptsCompanion.insert(
                 id: id,
@@ -41592,6 +42373,7 @@ class $$TableSessionReceiptsTableTableManager
                 total: total,
                 status: status,
                 memberId: memberId,
+                originalSnapshotJson: originalSnapshotJson,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -42153,6 +42935,243 @@ typedef $$TableSessionPaymentsTableProcessedTableManager =
         >,
       ),
       TableSessionPayment,
+      PrefetchHooks Function()
+    >;
+typedef $$LegacyParkedPaymentsTableCreateCompanionBuilder =
+    LegacyParkedPaymentsCompanion Function({
+      required String eventId,
+      required String visitId,
+      Value<String?> tableId,
+      required String kind,
+      required int amount,
+      required DateTime capturedAt,
+      Value<int> rowid,
+    });
+typedef $$LegacyParkedPaymentsTableUpdateCompanionBuilder =
+    LegacyParkedPaymentsCompanion Function({
+      Value<String> eventId,
+      Value<String> visitId,
+      Value<String?> tableId,
+      Value<String> kind,
+      Value<int> amount,
+      Value<DateTime> capturedAt,
+      Value<int> rowid,
+    });
+
+class $$LegacyParkedPaymentsTableFilterComposer
+    extends Composer<_$AppDatabase, $LegacyParkedPaymentsTable> {
+  $$LegacyParkedPaymentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get eventId => $composableBuilder(
+    column: $table.eventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get visitId => $composableBuilder(
+    column: $table.visitId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tableId => $composableBuilder(
+    column: $table.tableId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get capturedAt => $composableBuilder(
+    column: $table.capturedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LegacyParkedPaymentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LegacyParkedPaymentsTable> {
+  $$LegacyParkedPaymentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get eventId => $composableBuilder(
+    column: $table.eventId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get visitId => $composableBuilder(
+    column: $table.visitId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tableId => $composableBuilder(
+    column: $table.tableId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get capturedAt => $composableBuilder(
+    column: $table.capturedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LegacyParkedPaymentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LegacyParkedPaymentsTable> {
+  $$LegacyParkedPaymentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get eventId =>
+      $composableBuilder(column: $table.eventId, builder: (column) => column);
+
+  GeneratedColumn<String> get visitId =>
+      $composableBuilder(column: $table.visitId, builder: (column) => column);
+
+  GeneratedColumn<String> get tableId =>
+      $composableBuilder(column: $table.tableId, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get capturedAt => $composableBuilder(
+    column: $table.capturedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$LegacyParkedPaymentsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LegacyParkedPaymentsTable,
+          LegacyParkedPayment,
+          $$LegacyParkedPaymentsTableFilterComposer,
+          $$LegacyParkedPaymentsTableOrderingComposer,
+          $$LegacyParkedPaymentsTableAnnotationComposer,
+          $$LegacyParkedPaymentsTableCreateCompanionBuilder,
+          $$LegacyParkedPaymentsTableUpdateCompanionBuilder,
+          (
+            LegacyParkedPayment,
+            BaseReferences<
+              _$AppDatabase,
+              $LegacyParkedPaymentsTable,
+              LegacyParkedPayment
+            >,
+          ),
+          LegacyParkedPayment,
+          PrefetchHooks Function()
+        > {
+  $$LegacyParkedPaymentsTableTableManager(
+    _$AppDatabase db,
+    $LegacyParkedPaymentsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LegacyParkedPaymentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LegacyParkedPaymentsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$LegacyParkedPaymentsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> eventId = const Value.absent(),
+                Value<String> visitId = const Value.absent(),
+                Value<String?> tableId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<int> amount = const Value.absent(),
+                Value<DateTime> capturedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LegacyParkedPaymentsCompanion(
+                eventId: eventId,
+                visitId: visitId,
+                tableId: tableId,
+                kind: kind,
+                amount: amount,
+                capturedAt: capturedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String eventId,
+                required String visitId,
+                Value<String?> tableId = const Value.absent(),
+                required String kind,
+                required int amount,
+                required DateTime capturedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => LegacyParkedPaymentsCompanion.insert(
+                eventId: eventId,
+                visitId: visitId,
+                tableId: tableId,
+                kind: kind,
+                amount: amount,
+                capturedAt: capturedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LegacyParkedPaymentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LegacyParkedPaymentsTable,
+      LegacyParkedPayment,
+      $$LegacyParkedPaymentsTableFilterComposer,
+      $$LegacyParkedPaymentsTableOrderingComposer,
+      $$LegacyParkedPaymentsTableAnnotationComposer,
+      $$LegacyParkedPaymentsTableCreateCompanionBuilder,
+      $$LegacyParkedPaymentsTableUpdateCompanionBuilder,
+      (
+        LegacyParkedPayment,
+        BaseReferences<
+          _$AppDatabase,
+          $LegacyParkedPaymentsTable,
+          LegacyParkedPayment
+        >,
+      ),
+      LegacyParkedPayment,
       PrefetchHooks Function()
     >;
 typedef $$VisitExpensesTableCreateCompanionBuilder =
@@ -42867,6 +43886,7 @@ typedef $$DiscountsTableCreateCompanionBuilder =
       Value<String?> visitId,
       Value<String?> ticketId,
       Value<String> source,
+      Value<bool> captured,
       Value<String?> presetId,
       required String name,
       required String kind,
@@ -42884,6 +43904,7 @@ typedef $$DiscountsTableUpdateCompanionBuilder =
       Value<String?> visitId,
       Value<String?> ticketId,
       Value<String> source,
+      Value<bool> captured,
       Value<String?> presetId,
       Value<String> name,
       Value<String> kind,
@@ -42926,6 +43947,11 @@ class $$DiscountsTableFilterComposer
 
   ColumnFilters<String> get source => $composableBuilder(
     column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get captured => $composableBuilder(
+    column: $table.captured,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -43004,6 +44030,11 @@ class $$DiscountsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get captured => $composableBuilder(
+    column: $table.captured,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get presetId => $composableBuilder(
     column: $table.presetId,
     builder: (column) => ColumnOrderings(column),
@@ -43069,6 +44100,9 @@ class $$DiscountsTableAnnotationComposer
   GeneratedColumn<String> get source =>
       $composableBuilder(column: $table.source, builder: (column) => column);
 
+  GeneratedColumn<bool> get captured =>
+      $composableBuilder(column: $table.captured, builder: (column) => column);
+
   GeneratedColumn<String> get presetId =>
       $composableBuilder(column: $table.presetId, builder: (column) => column);
 
@@ -43129,6 +44163,7 @@ class $$DiscountsTableTableManager
                 Value<String?> visitId = const Value.absent(),
                 Value<String?> ticketId = const Value.absent(),
                 Value<String> source = const Value.absent(),
+                Value<bool> captured = const Value.absent(),
                 Value<String?> presetId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> kind = const Value.absent(),
@@ -43144,6 +44179,7 @@ class $$DiscountsTableTableManager
                 visitId: visitId,
                 ticketId: ticketId,
                 source: source,
+                captured: captured,
                 presetId: presetId,
                 name: name,
                 kind: kind,
@@ -43161,6 +44197,7 @@ class $$DiscountsTableTableManager
                 Value<String?> visitId = const Value.absent(),
                 Value<String?> ticketId = const Value.absent(),
                 Value<String> source = const Value.absent(),
+                Value<bool> captured = const Value.absent(),
                 Value<String?> presetId = const Value.absent(),
                 required String name,
                 required String kind,
@@ -43176,6 +44213,7 @@ class $$DiscountsTableTableManager
                 visitId: visitId,
                 ticketId: ticketId,
                 source: source,
+                captured: captured,
                 presetId: presetId,
                 name: name,
                 kind: kind,
@@ -48428,6 +49466,8 @@ class $AppDatabaseManager {
       );
   $$TableSessionPaymentsTableTableManager get tableSessionPayments =>
       $$TableSessionPaymentsTableTableManager(_db, _db.tableSessionPayments);
+  $$LegacyParkedPaymentsTableTableManager get legacyParkedPayments =>
+      $$LegacyParkedPaymentsTableTableManager(_db, _db.legacyParkedPayments);
   $$VisitExpensesTableTableManager get visitExpenses =>
       $$VisitExpensesTableTableManager(_db, _db.visitExpenses);
   $$VisitExpenseCategoriesTableTableManager get visitExpenseCategories =>

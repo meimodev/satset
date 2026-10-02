@@ -8,6 +8,7 @@
 // through to a network call that could not succeed, and the guest's cash landed
 // nowhere. That is what the first group pins.
 import 'package:flutter_test/flutter_test.dart';
+import 'package:drift/drift.dart' show Value;
 
 import 'package:satset/data/db/client_db.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
@@ -37,6 +38,81 @@ void main() {
     journal = build();
   });
   tearDown(() => db.close());
+
+  test(
+    'captured authorization stays with the event after profile refresh',
+    () async {
+      var grant = 'before-revocation';
+      final secured = SettlementJournal(
+        db: db,
+        send: (event) async => sent.add(event),
+        captureGrant: () async => grant,
+      );
+      addTearDown(secured.dispose);
+      await secured.append(
+        visitId: 'v1',
+        kind: SettlementEventKind.tableExpense,
+        id: 'before',
+      );
+      grant = 'after-revocation';
+      await secured.append(
+        visitId: 'v1',
+        kind: SettlementEventKind.tableExpense,
+        id: 'after',
+      );
+      final captured = await secured.eventsFor('v1');
+      expect(captured.map((e) => e.payload['captureGrant']), [
+        'before-revocation',
+        'after-revocation',
+      ]);
+    },
+  );
+
+  test('captured receipt snapshot travels with mint replay', () async {
+    final mint = await journal.append(
+      visitId: 'v1',
+      id: 'r1',
+      kind: SettlementEventKind.mintReceipt,
+      payload: const {'assignAll': true},
+    );
+    await journal.recordReceiptSnapshot(mint.id, const {
+      'subtotal': 20000,
+      'total': 20000,
+      'lines': [
+        {'ticketId': 'tk1', 'qtyUnits': 1},
+      ],
+    });
+    expect(
+      (await journal.eventById(mint.id))?.payload['receiptSnapshot'],
+      isA<Map>(),
+    );
+    await journal.drain();
+    expect(sent.single.payload['receiptSnapshot'], isA<Map>());
+  });
+
+  test(
+    'parked payment metadata reports even with no pending actions',
+    () async {
+      final payment = await journal.append(
+        visitId: 'v1',
+        kind: SettlementEventKind.recordPayment,
+        payload: const {'receiptId': 'r1', 'amount': 10000},
+      );
+      await (db.update(db.settlementEvents)
+            ..where((e) => e.id.equals(payment.id)))
+          .write(const SettlementEventsCompanion(status: Value('parked')));
+      final reported = <SettlementEvent>[];
+      final reconnect = SettlementJournal(
+        db: db,
+        send: (event) async => sent.add(event),
+        reportLegacyParked: (events) async => reported.addAll(events),
+      );
+      await reconnect.drain();
+      expect(reported.map((e) => e.id), [payment.id]);
+      expect(sent, isEmpty);
+      reconnect.dispose();
+    },
+  );
 
   test(
     'an interrupted drain retains delivered food for local projection',
@@ -100,7 +176,31 @@ void main() {
   });
 
   group('a chain', () {
-    test('halts on the first refusal and parks the rest untried', () async {
+    test('payment can credit visit when receipt mint fails', () async {
+      final mint = await journal.append(
+        visitId: 'v1',
+        id: 'r1',
+        kind: SettlementEventKind.mintReceipt,
+        payload: const {},
+      );
+      final payment = await journal.append(
+        visitId: 'v1',
+        kind: SettlementEventKind.recordPayment,
+        payload: const {'receiptId': 'r1', 'amount': 10000},
+      );
+      final refund = await journal.append(
+        visitId: 'v1',
+        kind: SettlementEventKind.refund,
+        payload: {'receiptId': 'r1', 'paymentId': payment.id, 'amount': 5000},
+      );
+      refuse[mint.id] = 'no_visit';
+      await journal.drain();
+      expect(sent.map((e) => e.id), [payment.id, refund.id]);
+      expect((await journal.eventById(mint.id))?.hasSyncError, isTrue);
+      expect(await journal.eventById(payment.id), isNull);
+    });
+
+    test('keeps a refused payment for repair and holds its refund', () async {
       final a = await journal.append(
         visitId: 'v1',
         kind: SettlementEventKind.mintReceipt,
@@ -114,7 +214,7 @@ void main() {
       final c = await journal.append(
         visitId: 'v1',
         kind: SettlementEventKind.refund,
-        payload: const {'receiptId': 'r1', 'amount': 80000},
+        payload: {'receiptId': 'r1', 'paymentId': b.id, 'amount': 80000},
       );
       refuse[b.id] = 'bill_closed';
 
@@ -127,8 +227,9 @@ void main() {
       final chain = report.chains.single;
       expect(chain.refused?.id, b.id);
       expect(chain.code, 'bill_closed');
-      expect(chain.strandedAmount, 80000);
-      expect(journal.state.parkedVisits, {'v1'});
+      expect(chain.strandedAmount, 0);
+      expect(journal.state.parkedVisits, isEmpty);
+      expect((await journal.eventById(b.id))?.hasSyncError, isTrue);
     });
 
     test('other visits keep draining past one refusal', () async {
@@ -146,7 +247,8 @@ void main() {
 
       await journal.drain();
       expect(sent.map((e) => e.id), [good.id]);
-      expect(journal.state.parkedVisits, {'v1'});
+      expect(journal.state.parkedVisits, isEmpty);
+      expect((await journal.eventById(bad.id))?.hasSyncError, isTrue);
       expect(journal.state.pendingVisits, {'v1'});
     });
 
@@ -184,29 +286,32 @@ void main() {
       expect(await journal.eventsFor('v9'), isEmpty);
     });
 
-    // The refusal sheet is fed by an in-memory report the drain sets once. A
-    // refusal that lands while /kasir is not mounted, or an app restart after
-    // one, leaves the cash parked and nothing on screen — so the surface has
-    // to be able to re-read what parked.
-    test('a parked chain is readable back off the journal', () async {
+    test('legacy parked records remain while new actions drain', () async {
       final bad = await journal.append(
         visitId: 'v1',
         kind: SettlementEventKind.recordPayment,
         payload: const {'receiptId': 'r1', 'amount': 135000},
       );
-      await journal.append(
-        visitId: 'v1',
-        kind: SettlementEventKind.closeBill,
-        payload: const {},
+      await db.customStatement(
+        'UPDATE settlement_events SET status = ?, payload_json = ? WHERE id = ?',
+        ['parked', '{"receiptId":"r1","amount":135000}', bad.id],
       );
-      refuse[bad.id] = 'overpayment';
-
+      final next = await journal.append(
+        visitId: 'v1',
+        kind: SettlementEventKind.submitOrder,
+        payload: const {
+          'lines': [
+            {'itemId': 'i1', 'ticketId': 'tk1'},
+          ],
+        },
+      );
       await journal.drain();
+      expect(sent.map((e) => e.id), [next.id]);
 
       final chains = await journal.parkedChains();
       expect(chains, hasLength(1));
       expect(chains.single.visitId, 'v1');
-      expect(chains.single.code, 'overpayment');
+      expect(chains.single.code, isNull);
       expect(chains.single.refused!.id, bad.id);
       expect(
         chains.single.strandedAmount,
@@ -214,9 +319,86 @@ void main() {
         reason: 'the cash is in the drawer and the sheet must name it',
       );
 
-      await journal.acknowledge('v1');
-      expect(await journal.parkedChains(), isEmpty);
+      expect(await journal.eventById(bad.id), isNotNull);
     });
+
+    test('a pending legacy capture keeps its old parking policy', () async {
+      final old = await journal.append(
+        visitId: 'v1',
+        kind: SettlementEventKind.recordPayment,
+        payload: const {'receiptId': 'r1', 'amount': 9000},
+      );
+      await db.customStatement(
+        'UPDATE settlement_events SET payload_json = ? WHERE id = ?',
+        ['{"receiptId":"r1","amount":9000}', old.id],
+      );
+      refuse[old.id] = 'overpayment';
+      await journal.drain();
+      expect((await journal.eventById(old.id))?.isParked, isTrue);
+      expect((await journal.parkedChains()).single.strandedAmount, 9000);
+    });
+
+    test('damaged payment stays for repair while an order drains', () async {
+      final damaged = await journal.append(
+        visitId: 'v1',
+        kind: SettlementEventKind.recordPayment,
+        payload: const {'receiptId': 'r1'},
+      );
+      final order = await journal.append(
+        visitId: 'v1',
+        kind: SettlementEventKind.submitOrder,
+        payload: const {
+          'lines': [
+            {'itemId': 'i1', 'ticketId': 'tk1'},
+          ],
+        },
+      );
+      await journal.drain();
+      expect((await journal.eventById(damaged.id))?.needsRepair, isTrue);
+      expect(sent.map((e) => e.id), [order.id]);
+      await journal.repairAndResend(damaged.id, {
+        'receiptId': 'r1',
+        'amount': 5000,
+      });
+      await journal.drain();
+      expect(sent.map((e) => e.id), [order.id, damaged.id]);
+    });
+
+    test(
+      'order missing item ID waits for repair while next order drains',
+      () async {
+        final damaged = await journal.append(
+          visitId: 'v1',
+          kind: SettlementEventKind.submitOrder,
+          payload: const {
+            'lines': [
+              {'ticketId': 'tk1'},
+            ],
+          },
+        );
+        final intact = await journal.append(
+          visitId: 'v1',
+          kind: SettlementEventKind.submitOrder,
+          payload: const {
+            'lines': [
+              {'itemId': 'i2', 'ticketId': 'tk2'},
+            ],
+          },
+        );
+
+        await journal.drain();
+        expect((await journal.eventById(damaged.id))?.needsRepair, isTrue);
+        expect(sent.map((e) => e.id), [intact.id]);
+
+        await journal.repairAndResend(damaged.id, const {
+          'lines': [
+            {'itemId': 'i1', 'ticketId': 'tk1'},
+          ],
+        });
+        await journal.drain();
+        expect(sent.map((e) => e.id), [intact.id, damaged.id]);
+      },
+    );
 
     test('a clean drain leaves nothing behind', () async {
       await journal.append(

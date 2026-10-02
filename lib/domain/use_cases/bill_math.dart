@@ -30,6 +30,47 @@ class TaxServiceConfig {
     required this.serviceFixedAmount,
     this.taxAfterDiscount = true,
   });
+
+  Map<String, dynamic> toJson() => {
+    'taxEnabled': taxEnabled,
+    'taxRateBps': taxRateBps,
+    'serviceEnabled': serviceEnabled,
+    'serviceMode': serviceMode,
+    'serviceRateBps': serviceRateBps,
+    'serviceFixedAmount': serviceFixedAmount,
+    'taxAfterDiscount': taxAfterDiscount,
+  };
+
+  factory TaxServiceConfig.fromJson(Map<String, dynamic> json) {
+    final taxRate = json['taxRateBps'];
+    final serviceRate = json['serviceRateBps'];
+    final fixedAmount = json['serviceFixedAmount'];
+    final mode = json['serviceMode'];
+    if (json['taxEnabled'] is! bool ||
+        taxRate is! int ||
+        taxRate < 0 ||
+        taxRate > 10000 ||
+        json['serviceEnabled'] is! bool ||
+        (mode != 'percent' && mode != 'fixed') ||
+        serviceRate is! int ||
+        serviceRate < 0 ||
+        serviceRate > 10000 ||
+        fixedAmount is! int ||
+        fixedAmount < 0 ||
+        fixedAmount > 1000000000 ||
+        json['taxAfterDiscount'] is! bool) {
+      throw const FormatException('invalid captured tax configuration');
+    }
+    return TaxServiceConfig(
+      taxEnabled: json['taxEnabled'] as bool,
+      taxRateBps: taxRate,
+      serviceEnabled: json['serviceEnabled'] as bool,
+      serviceMode: mode as String,
+      serviceRateBps: serviceRate,
+      serviceFixedAmount: fixedAmount,
+      taxAfterDiscount: json['taxAfterDiscount'] as bool,
+    );
+  }
 }
 
 /// The computed money breakdown of one receipt (or a whole single-receipt bill).

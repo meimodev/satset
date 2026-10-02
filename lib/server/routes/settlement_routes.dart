@@ -31,6 +31,7 @@ import 'package:satset/server/members.dart';
 import 'package:satset/server/routes/tables_routes.dart'
     show snapshotVisitAndDelete, tableJson, syncVisitMoney;
 import 'package:satset/server/ws_hub.dart';
+import 'package:satset/server/visit_tax_config.dart';
 
 const _uuid = Uuid();
 
@@ -62,9 +63,15 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final role = await (db.select(
       db.roles,
     )..where((x) => x.id.equals(user.roleId))).getSingleOrNull();
-    return role == null
+    final live = role == null
         ? const <String>[]
         : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
+    final captured = await auth.capturedCapabilities(
+      req.headers['authorization']?.replaceFirst(RegExp(r'^[Bb]earer\s+'), ''),
+      req.headers['x-capture-grant'],
+      req.headers['x-idempotency-key'],
+    );
+    return {...live, ...captured}.toList();
   }
 
   Future<Response?> requireCap(Request req, Capability needed) async {
@@ -74,6 +81,23 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       return _err(403, 'forbidden', 'missing capability ${needed.name}');
     }
     return null;
+  }
+
+  Future<bool> signedCapture(
+    Request req,
+    Map<String, dynamic> body,
+    Capability needed,
+  ) async {
+    if (_capturedAt(body) == null) return false;
+    final token = req.headers['authorization']?.replaceFirst(
+      RegExp(r'^[Bb]earer\s+'),
+      '',
+    );
+    return (await auth.capturedCapabilities(
+      token,
+      req.headers['x-capture-grant'],
+      req.headers['x-idempotency-key'],
+    )).contains(needed.name);
   }
 
   Future<Response?> requireBillRead(Request req) async {
@@ -281,13 +305,36 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   /// Up here rather than beside the [[Pemilik struk]] routes below because the
   /// mint route needs it too: a struk is born named (ADR-0120 §3), so the gate
   /// has to be reachable from the top of the file.
-  Future<(MemberConfig, Response?)> requireSplit() async {
+  Future<(MemberConfig, Response?)> requireSplit(
+    Request req,
+    Map<String, dynamic> body,
+  ) async {
     final cfg = await memberConfig(db);
-    if (!cfg.enabled) {
+    final captured = await signedCapture(req, body, Capability.settleBill);
+    if (!cfg.enabled && !captured) {
       return (cfg, _err(409, 'members_disabled', 'keanggotaan tidak aktif'));
     }
-    if (!cfg.splitEnabled) {
+    if (!cfg.splitEnabled && !captured) {
       return (cfg, _err(409, 'split_disabled', 'pemilik struk tidak aktif'));
+    }
+    if (captured) {
+      final discount = body['memberDiscount'];
+      if ((body['memberPresetId'] is String && discount == null) ||
+          (discount != null &&
+              (discount is! Map ||
+                  discount['name'] is! String ||
+                  discount['kind'] is! String ||
+                  discount['value'] is! int ||
+                  (discount['value'] as int) < 0))) {
+        return (
+          cfg,
+          _err(
+            409,
+            'member_discount_needs_repair',
+            'captured member discount needs repair',
+          ),
+        );
+      }
     }
     return (cfg, null);
   }
@@ -301,13 +348,34 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     String receiptId,
     String memberId,
     MemberConfig cfg,
-    String? actorId,
-  ) async {
+    String? actorId, {
+    bool captured = false,
+    Map? capturedDiscount,
+  }) async {
     await (db.update(db.receipts)..where((x) => x.id.equals(receiptId))).write(
       ReceiptsCompanion(memberId: Value(memberId)),
     );
-    if (cfg.presetId == null) return;
     if (await _receiptDiscountOf(db, receiptId, 'member') != null) return;
+    if (captured) {
+      if (capturedDiscount == null) return;
+      await db
+          .into(db.discounts)
+          .insert(
+            DiscountsCompanion.insert(
+              id: _uuid.v4(),
+              receiptId: Value(receiptId),
+              presetId: Value(capturedDiscount['presetId'] as String?),
+              name: capturedDiscount['name'] as String,
+              kind: capturedDiscount['kind'] as String,
+              value: Value(capturedDiscount['value'] as int),
+              source: const Value('member'),
+              byUserId: Value(actorId),
+              at: SatClock.now().toUtc(),
+            ),
+          );
+      return;
+    }
+    if (cfg.presetId == null) return;
     final preset = await (db.select(
       db.discountPresets,
     )..where((x) => x.id.equals(cfg.presetId!))).getSingleOrNull();
@@ -337,8 +405,10 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   Future<void> syncTicketMemberDiscounts(
     String receiptId,
     MemberConfig cfg,
-    String? actorId,
-  ) async {
+    String? actorId, {
+    bool captured = false,
+    Map? capturedDiscount,
+  }) async {
     await (db.delete(db.discounts)..where(
           (x) =>
               x.receiptId.equals(receiptId) &
@@ -346,11 +416,24 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
               x.source.equals('member'),
         ))
         .go();
-    if (cfg.presetId == null) return;
-    final preset = await (db.select(
-      db.discountPresets,
-    )..where((x) => x.id.equals(cfg.presetId!))).getSingleOrNull();
-    if (preset == null || !preset.active || preset.kind != 'percent') return;
+    String? presetId;
+    String name;
+    int value;
+    if (captured) {
+      if (capturedDiscount == null) return;
+      presetId = capturedDiscount['presetId'] as String?;
+      name = capturedDiscount['name'] as String;
+      value = capturedDiscount['value'] as int;
+    } else {
+      if (cfg.presetId == null) return;
+      final preset = await (db.select(
+        db.discountPresets,
+      )..where((x) => x.id.equals(cfg.presetId!))).getSingleOrNull();
+      if (preset == null || !preset.active || preset.kind != 'percent') return;
+      presetId = preset.id;
+      name = preset.name;
+      value = preset.value;
+    }
     final lines = await (db.select(
       db.receiptLines,
     )..where((x) => x.receiptId.equals(receiptId))).get();
@@ -371,14 +454,14 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
               id: _uuid.v4(),
               receiptId: Value(receiptId),
               ticketId: Value(ticket.id),
-              presetId: Value(preset.id),
-              name: preset.name,
+              presetId: Value(presetId),
+              name: name,
               kind: 'percent',
-              value: Value(preset.value),
+              value: Value(value),
               amount: Value(
                 resolveDiscountAmount(
                   kind: 'percent',
-                  value: preset.value,
+                  value: value,
                   base: base,
                 ),
               ),
@@ -402,6 +485,22 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       if (v.billClosedAt != null) continue; // locked → off the active list
       final bill = await _buildBill(db, v.id);
       if (bill == null) continue; // no sent lines
+      out.add(_summarize(bill));
+    }
+    final liveIds = visits.map((v) => v.id).toSet();
+    final archivedDue = await db.customSelect('''
+      SELECT s.id FROM table_sessions s
+      LEFT JOIN (
+        SELECT session_id, SUM(amount) AS paid_net
+        FROM table_session_payments GROUP BY session_id
+      ) p ON p.session_id = s.id
+      WHERE s.settled_total > COALESCE(p.paid_net, 0)
+    ''').get();
+    for (final row in archivedDue) {
+      final sessionId = row.read<String>('id');
+      if (liveIds.contains(sessionId)) continue;
+      final bill = await _buildSessionBill(db, sessionId);
+      if (bill == null) continue;
       out.add(_summarize(bill));
     }
     // Detached-unpaid first (need attention), then by outstanding desc.
@@ -433,9 +532,66 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   ) async {
     final denied = await requireBillRead(req);
     if (denied != null) return denied;
-    final bill = await _buildBill(db, visitId, allowEmpty: true);
+    final bill =
+        await _buildBill(db, visitId, allowEmpty: true) ??
+        await _buildSessionBill(db, visitId);
     if (bill == null) return _err(404, 'no_visit', 'visit not found');
     return _ok(bill);
+  });
+
+  // Old parked captures never replay. Report only their money metadata so the
+  // host can warn its cashier before anyone collects the same bill again.
+  r.post('/settlement/legacy-parked-payments', (Request req) async {
+    if (await resolve(req) == null) return Response(401);
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final events = body['events'];
+    if (events is! List || events.length > 100) {
+      return _err(400, 'bad_events', 'invalid parked payment list');
+    }
+    final parsed = <LegacyParkedPaymentsCompanion>[];
+    for (final item in events) {
+      if (item is! Map<String, dynamic>) {
+        return _err(400, 'bad_event', 'invalid parked payment');
+      }
+      final id = item['id'];
+      final visitId = item['visitId'];
+      final kind = item['kind'];
+      final amount = item['amount'];
+      final capturedAt = DateTime.tryParse(item['capturedAt'] as String? ?? '');
+      if (id is! String ||
+          id.isEmpty ||
+          visitId is! String ||
+          visitId.isEmpty ||
+          (kind != 'recordPayment' && kind != 'refund') ||
+          amount is! int ||
+          amount < 0 ||
+          (item['tableId'] != null && item['tableId'] is! String) ||
+          capturedAt == null) {
+        return _err(400, 'bad_event', 'invalid parked payment');
+      }
+      parsed.add(
+        LegacyParkedPaymentsCompanion.insert(
+          eventId: id,
+          visitId: visitId,
+          tableId: Value(item['tableId'] as String?),
+          kind: kind as String,
+          amount: amount,
+          capturedAt: capturedAt.toUtc(),
+        ),
+      );
+    }
+    await db.transaction(() async {
+      for (final row in parsed) {
+        await db
+            .into(db.legacyParkedPayments)
+            .insert(row, mode: InsertMode.insertOrIgnore);
+      }
+    });
+    for (final visitId
+        in events.map((e) => (e as Map)['visitId'] as String).toSet()) {
+      await broadcastBill(visitId);
+    }
+    return _ok({'reported': events.length});
   });
 
   // Create a receipt.
@@ -452,11 +608,107 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   ) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
-    final locked = await lockGuard(visitId);
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final captured = await signedCapture(req, body, Capability.settleBill);
+    final locked = captured ? null : await lockGuard(visitId);
     if (locked != null) return locked;
     final visit = await _visit(db, visitId);
+    if (visit == null && captured) {
+      final session = await (db.select(
+        db.tableSessions,
+      )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+      if (session == null) return _err(404, 'no_visit', 'visit not found');
+      final id = _mintId(body);
+      final prior = await (db.select(
+        db.tableSessionReceipts,
+      )..where((r) => r.receiptId.equals(id))).getSingleOrNull();
+      if (prior != null) {
+        if (prior.sessionId != visitId) {
+          return _err(409, 'wrong_visit', 'receipt belongs another visit');
+        }
+        return _ok({
+          'receiptId': id,
+          'bill': await _buildSessionBill(db, visitId),
+        });
+      }
+      final snapshot = body['receiptSnapshot'];
+      if (snapshot is! Map<String, dynamic>) {
+        return _err(
+          409,
+          'receipt_snapshot_missing',
+          'captured receipt needs repair',
+        );
+      }
+      final fields = [
+        'subtotal',
+        'discountAmount',
+        'serviceAmount',
+        'taxAmount',
+        'total',
+      ];
+      if (fields.any(
+            (key) => snapshot[key] is! int || (snapshot[key] as int) < 0,
+          ) ||
+          snapshot['lines'] is! List) {
+        return _err(400, 'bad_receipt_snapshot', 'invalid captured receipt');
+      }
+      final lines = <({String ticketId, int qty})>[];
+      for (final raw in snapshot['lines'] as List) {
+        if (raw is! Map ||
+            raw['ticketId'] is! String ||
+            raw['qtyUnits'] is! int ||
+            (raw['qtyUnits'] as int) <= 0) {
+          return _err(400, 'bad_receipt_snapshot', 'invalid captured lines');
+        }
+        lines.add((
+          ticketId: raw['ticketId'] as String,
+          qty: raw['qtyUnits'] as int,
+        ));
+      }
+      await db.transaction(() async {
+        await db
+            .into(db.tableSessionReceipts)
+            .insert(
+              TableSessionReceiptsCompanion.insert(
+                id: _uuid.v4(),
+                sessionId: visitId,
+                receiptId: id,
+                mode: Value(
+                  (body['mode'] as String?) == 'even' ? 'even' : 'itemized',
+                ),
+                label: Value((body['label'] as String?)?.trim() ?? ''),
+                subtotal: Value(snapshot['subtotal'] as int),
+                discountAmount: Value(snapshot['discountAmount'] as int),
+                serviceAmount: Value(snapshot['serviceAmount'] as int),
+                taxAmount: Value(snapshot['taxAmount'] as int),
+                total: Value(snapshot['total'] as int),
+                memberId: Value(snapshot['memberId'] as String?),
+              ),
+            );
+        for (final line in lines) {
+          await db
+              .into(db.tableSessionReceiptLines)
+              .insert(
+                TableSessionReceiptLinesCompanion.insert(
+                  id: _uuid.v4(),
+                  sessionId: visitId,
+                  receiptId: id,
+                  ticketId: line.ticketId,
+                  qtyUnits: Value(line.qty),
+                ),
+              );
+        }
+      });
+      hub.broadcast(WsEventTypes.tableSessionClosed, {
+        'tableId': session.tableId,
+        'visitId': visitId,
+      });
+      return _ok({
+        'receiptId': id,
+        'bill': await _buildSessionBill(db, visitId),
+      });
+    }
     if (visit == null) return _err(404, 'no_visit', 'visit not found');
-    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final mode = (body['mode'] as String?) == 'even' ? 'even' : 'itemized';
     final id = _mintId(body);
     // A struk may be born named (ADR-0120 §3). The settle pane mints at confirm
@@ -468,7 +720,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     MemberConfig? splitCfg;
     String? bornForId;
     if (wantMember != null && wantMember.isNotEmpty) {
-      final (cfg, blocked) = await requireSplit();
+      final (cfg, blocked) = await requireSplit(req, body);
       if (blocked != null) return blocked;
       final m = await getMember(db, wantMember);
       if (m == null) return _err(404, 'no_member', 'pelanggan tidak ada');
@@ -523,6 +775,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             bornForId,
             splitCfg!,
             (await resolve(req))?.id,
+            captured: await signedCapture(req, body, Capability.settleBill),
+            capturedDiscount: body['memberDiscount'] as Map?,
           );
         }
       }
@@ -547,7 +801,52 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
     final rec = await _receipt(db, receiptId);
-    if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
+    if (rec == null) {
+      final raw = await req.readAsString();
+      final body = raw.isEmpty
+          ? <String, dynamic>{}
+          : jsonDecode(raw) as Map<String, dynamic>;
+      final captured = await signedCapture(req, body, Capability.settleBill)
+          ? _capturedAt(body)
+          : null;
+      final visitId = body['visitId'] as String? ?? '';
+      if (captured == null || visitId.isEmpty) {
+        return _err(404, 'no_receipt', 'receipt not found');
+      }
+      final archived =
+          await (db.select(db.tableSessionReceipts)..where(
+                (r) =>
+                    r.receiptId.equals(receiptId) & r.sessionId.equals(visitId),
+              ))
+              .getSingleOrNull();
+      final session = await (db.select(
+        db.tableSessions,
+      )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+      if (archived == null || session == null) {
+        return _err(404, 'no_receipt', 'receipt not found');
+      }
+      // Keep the printed snapshot. A captured deletion cancels its allocation;
+      // any money another cashier took remains credited to the visit.
+      await db.transaction(() async {
+        final current = await (db.select(
+          db.tableSessionReceipts,
+        )..where((r) => r.id.equals(archived.id))).getSingle();
+        final original = await _originalSessionReceiptJson(db, current);
+        await (db.update(
+          db.tableSessionReceipts,
+        )..where((r) => r.id.equals(archived.id))).write(
+          TableSessionReceiptsCompanion(
+            status: const Value('cancelled'),
+            originalSnapshotJson: Value(original),
+          ),
+        );
+      });
+      hub.broadcast(WsEventTypes.tableSessionClosed, {
+        'tableId': session.tableId,
+        'visitId': visitId,
+      });
+      return _ok({'bill': await _buildSessionBill(db, visitId)});
+    }
     final visitId = rec.visitId ?? rec.tableId;
     final locked = await lockGuard(visitId);
     if (locked != null) return locked;
@@ -578,19 +877,99 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   ) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final captured = await signedCapture(req, body, Capability.settleBill);
     final rec = await _receipt(db, receiptId);
+    if (rec == null && captured) {
+      final visitId = body['visitId'] as String? ?? '';
+      final archived =
+          await (db.select(db.tableSessionReceipts)..where(
+                (r) =>
+                    r.receiptId.equals(receiptId) & r.sessionId.equals(visitId),
+              ))
+              .getSingleOrNull();
+      if (archived == null) return _err(404, 'no_receipt', 'receipt not found');
+      final snapshot = body['receiptSnapshot'];
+      if (snapshot is! Map<String, dynamic> ||
+          snapshot['lines'] is! List ||
+          [
+            'subtotal',
+            'discountAmount',
+            'serviceAmount',
+            'taxAmount',
+            'total',
+          ].any((key) => snapshot[key] is! int || (snapshot[key] as int) < 0)) {
+        return _err(
+          409,
+          'receipt_snapshot_missing',
+          'captured receipt needs repair',
+        );
+      }
+      final ticketId = body['ticketId'] as String? ?? '';
+      final qty = body['qtyUnits'] as int? ?? -1;
+      final ticket =
+          await (db.select(db.tableSessionTickets)..where(
+                (t) =>
+                    t.ticketId.equals(ticketId) & t.sessionId.equals(visitId),
+              ))
+              .getSingleOrNull();
+      if (ticket == null || qty < 0 || qty > ticket.qty) {
+        return _err(409, 'bad_assignment', 'captured line needs repair');
+      }
+      await db.transaction(() async {
+        final current = await (db.select(
+          db.tableSessionReceipts,
+        )..where((r) => r.id.equals(archived.id))).getSingle();
+        final original = await _originalSessionReceiptJson(db, current);
+        await (db.delete(db.tableSessionReceiptLines)..where(
+              (l) =>
+                  l.receiptId.equals(receiptId) & l.ticketId.equals(ticketId),
+            ))
+            .go();
+        if (qty > 0) {
+          await db
+              .into(db.tableSessionReceiptLines)
+              .insert(
+                TableSessionReceiptLinesCompanion.insert(
+                  id: _uuid.v4(),
+                  sessionId: visitId,
+                  receiptId: receiptId,
+                  ticketId: ticketId,
+                  qtyUnits: Value(qty),
+                ),
+              );
+        }
+        await (db.update(
+          db.tableSessionReceipts,
+        )..where((r) => r.id.equals(archived.id))).write(
+          TableSessionReceiptsCompanion(
+            subtotal: Value(snapshot['subtotal'] as int),
+            discountAmount: Value(snapshot['discountAmount'] as int),
+            serviceAmount: Value(snapshot['serviceAmount'] as int),
+            taxAmount: Value(snapshot['taxAmount'] as int),
+            total: Value(snapshot['total'] as int),
+            originalSnapshotJson: Value(original),
+          ),
+        );
+      });
+      final bill = await _buildSessionBill(db, visitId);
+      hub.broadcast(WsEventTypes.tableSessionClosed, {
+        'tableId': bill?['tableId'],
+        'visitId': visitId,
+      });
+      return _ok({'bill': bill});
+    }
     if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
     final visitId = rec.visitId ?? rec.tableId;
-    final locked = await lockGuard(visitId);
+    final locked = captured ? null : await lockGuard(visitId);
     if (locked != null) return locked;
-    if (rec.status == 'paid') {
+    if (rec.status == 'paid' && !captured) {
       return _err(
         409,
         'receipt_paid',
         'reopen the receipt before editing lines',
       );
     }
-    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final ticketId = body['ticketId'] as String;
     final want = ((body['qtyUnits'] as num?)?.toInt() ?? 1).clamp(0, 1 << 30);
     final ticket = await (db.select(
@@ -605,7 +984,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       exclude: receiptId,
     );
     final available = ticket.qty - assignedElsewhere;
-    if (want > available) {
+    if (want > (captured ? ticket.qty : available)) {
       return _err(
         409,
         'over_assign',
@@ -642,12 +1021,62 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   ) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
-    final locked = await lockGuard(visitId);
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final captured = await signedCapture(req, body, Capability.settleBill);
+    final locked = captured ? null : await lockGuard(visitId);
     if (locked != null) return locked;
     final visit = await _visit(db, visitId);
-    if (visit == null) return _err(404, 'no_visit', 'visit not found');
-    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final n = ((body['n'] as num?)?.toInt() ?? 2).clamp(1, 50);
+    if (visit == null && captured) {
+      final session = await (db.select(
+        db.tableSessions,
+      )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+      if (session == null) return _err(404, 'no_visit', 'visit not found');
+      final ids = body['ids'];
+      final snapshot = body['receiptSnapshot'];
+      final shares = snapshot is Map<String, dynamic>
+          ? snapshot['shares']
+          : null;
+      if (ids is! List ||
+          shares is! List ||
+          ids.length != n ||
+          shares.length != n ||
+          ids.toSet().length != n ||
+          ids.any((id) => id is! String || id.isEmpty) ||
+          shares.any((share) => share is! int || share <= 0)) {
+        return _err(
+          409,
+          'split_snapshot_missing',
+          'captured split needs repair',
+        );
+      }
+      final existing = await (db.select(
+        db.tableSessionReceipts,
+      )..where((r) => r.sessionId.equals(visitId))).get();
+      final from = existing.where((r) => r.mode == 'even').length;
+      await db.transaction(() async {
+        for (var i = 0; i < n; i++) {
+          await db
+              .into(db.tableSessionReceipts)
+              .insert(
+                TableSessionReceiptsCompanion.insert(
+                  id: _uuid.v4(),
+                  sessionId: visitId,
+                  receiptId: ids[i] as String,
+                  mode: const Value('even'),
+                  label: Value('${from + i + 1}/${from + n}'),
+                  total: Value(shares[i] as int),
+                ),
+              );
+        }
+      });
+      hub.broadcast(WsEventTypes.tableSessionClosed, {
+        'tableId': session.tableId,
+        'visitId': visitId,
+      });
+      return _ok({'bill': await _buildSessionBill(db, visitId)});
+    }
+    if (visit == null) return _err(404, 'no_visit', 'visit not found');
     final bill = await _buildBill(db, visitId);
     if (bill == null) return _err(404, 'no_bill', 'visit has no sent lines');
     // ADR-0068: shares are cut from the **untracked remainder**, not from the
@@ -659,19 +1088,34 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     )..where((x) => x.visitId.equals(visitId))).get();
     final claimed = existing.fold<int>(0, (a, r) => a + r.total);
     final remainder = (bill['total'] as int) - claimed;
-    if (remainder <= 0) {
+    final capturedIds = body['ids'];
+    final snapshot = body['receiptSnapshot'];
+    final capturedShares = snapshot is Map ? snapshot['shares'] : null;
+    if (captured &&
+        (capturedIds is! List ||
+            capturedShares is! List ||
+            capturedIds.length != n ||
+            capturedShares.length != n ||
+            capturedIds.toSet().length != n ||
+            capturedIds.any((id) => id is! String || id.isEmpty) ||
+            capturedShares.any((share) => share is! int || share <= 0))) {
+      return _err(409, 'split_snapshot_missing', 'captured split needs repair');
+    }
+    if (remainder <= 0 && !captured) {
       return _err(409, 'nothing_left', 'tidak ada sisa untuk dibagi');
     }
-    final shares = distributeEvenRounded(remainder, n);
+    final shares = captured
+        ? (capturedShares as List).cast<int>()
+        : distributeEvenRounded(remainder, n);
     // Number the new shares after any that already exist, so a second split
     // does not mint a second part 1. Stored as the bare spec (ADR-0085).
     final from = existing.where((r) => r.mode == 'even').length;
     // Ids may be supplied, one per share (ADR-0123): a till that cut the split
     // while terputus has already shown the guest which slip is theirs, and a
     // payment queued behind this names that slip by id.
-    final ids = [
-      for (final x in (body['ids'] as List? ?? const [])) x.toString(),
-    ];
+    final ids = captured
+        ? (capturedIds as List).cast<String>()
+        : [for (final x in (body['ids'] as List? ?? const [])) x.toString()];
     await db.transaction(() async {
       for (var i = 0; i < n; i++) {
         await db
@@ -729,16 +1173,49 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     if (denied != null) return denied;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
 
+    final capturedManual = await signedCapture(
+      req,
+      body,
+      Capability.applyDiscount,
+    );
     final rec = await (db.select(
       db.receipts,
     )..where((x) => x.id.equals(receiptId))).getSingleOrNull();
-    if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
+    if (rec == null) {
+      if (!capturedManual) {
+        return _err(404, 'no_receipt', 'receipt not found');
+      }
+      if (!(await capsOf(req)).contains(Capability.applyDiscount.name)) {
+        return _err(403, 'approval_required', 'butuh persetujuan manajer');
+      }
+      final actor = await resolve(req);
+      return _capturedArchivedReceiptDiscount(
+        db,
+        hub,
+        receiptId,
+        body,
+        actor?.id,
+        allowStack: capturedManual,
+      );
+    }
     final visitId = rec.visitId;
     if (visitId == null) return _err(409, 'no_visit', 'receipt has no visit');
-    final locked = await lockGuard(visitId);
+    final capturedId = body['id'] as String?;
+    if (capturedId != null) {
+      final prior = await (db.select(
+        db.discounts,
+      )..where((d) => d.id.equals(capturedId))).getSingleOrNull();
+      if (prior != null) {
+        if (prior.visitId != visitId && prior.receiptId != receiptId) {
+          return _err(409, 'wrong_visit', 'discount belongs another visit');
+        }
+        return _ok({'bill': await _buildBill(db, visitId)});
+      }
+    }
+    final locked = capturedManual ? null : await lockGuard(visitId);
     if (locked != null) return locked;
     // Frozen at payment — reopen to correct a mistaken settlement (ADR-0037).
-    if (rec.status == 'paid') {
+    if (rec.status == 'paid' && !capturedManual) {
       return _err(409, 'receipt_paid', 'buka ulang struk sebelum ubah diskon');
     }
 
@@ -759,20 +1236,38 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         await (db.select(db.discountPresets)
               ..where((x) => x.id.equals(body['presetId'] as String? ?? '')))
             .getSingleOrNull();
-    if (preset == null) return _err(404, 'no_preset', 'preset not found');
-    if (!preset.active) {
+    final capturedSnapshot =
+        capturedManual &&
+        body['name'] is String &&
+        body['kind'] is String &&
+        body['value'] is num;
+    if (preset == null && !capturedSnapshot) {
+      return _err(404, 'no_preset', 'preset not found');
+    }
+    if (preset != null && !preset.active && !capturedManual) {
       return _err(409, 'preset_inactive', 'preset diskon tidak aktif');
     }
 
     final ticketId = body['ticketId'] as String?;
+    final presetScope = preset?.scope ?? (ticketId == null ? 'order' : 'line');
+    final discountName = capturedSnapshot
+        ? body['name'] as String
+        : preset!.name;
+    final discountKind = capturedSnapshot
+        ? body['kind'] as String
+        : preset!.kind;
+    final discountValue = capturedSnapshot
+        ? (body['value'] as num).toInt()
+        : preset!.value;
+    final presetId = (body['presetId'] as String?) ?? preset?.id;
     // Missing marker is an older client/journal application: preserve its math.
     final perUnit = ticketId != null && body['perUnit'] == true;
     if (ticketId == null) {
-      if (preset.scope != 'order') {
+      if (presetScope != 'order') {
         return _err(409, 'scope_mismatch', 'preset ini hanya untuk satu item');
       }
     } else {
-      if (preset.scope != 'line') {
+      if (presetScope != 'line') {
         return _err(409, 'scope_mismatch', 'preset ini untuk seluruh pesanan');
       }
       // Even receipts own no lines, so a line discount has nothing to attach
@@ -788,10 +1283,10 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         db.tickets,
       )..where((x) => x.id.equals(ticketId))).getSingleOrNull();
       if (t == null) return _err(404, 'no_ticket', 'line not found');
-      // A voided/comped line is not in the subtotal, so it has no base to
-      // discount — and counting it in both figures would double-count the
-      // give-away (ADR-0037).
-      if (t.status == 'voided' || t.status == 'draft') {
+      // A later void removes the captured discount's monetary effect, but
+      // the captured action still belongs in the visit's history.
+      if ((t.status == 'voided' || t.status == 'draft') &&
+          !await signedCapture(req, body, Capability.applyDiscount)) {
         return _err(409, 'line_voided', 'item sudah dibatalkan');
       }
       final owns =
@@ -809,7 +1304,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       }
     }
 
-    if (perUnit && await _ticketMemberLocked(db, ticketId)) {
+    if (perUnit && !capturedManual && await _ticketMemberLocked(db, ticketId)) {
       return _err(409, 'receipt_paid', 'buka ulang struk sebelum ubah diskon');
     }
     if (perUnit) {
@@ -818,7 +1313,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
                 (d) => d.ticketId.equals(ticketId) & d.source.equals('manual'),
               ))
               .get();
-      if (conflicts.isNotEmpty) {
+      if (conflicts.isNotEmpty && !capturedManual) {
         return _err(
           409,
           'discount_exists',
@@ -843,9 +1338,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
                       ? x.ticketId.isNull()
                       : x.ticketId.equals(ticketId)),
             ))
-            .getSingleOrNull();
-    if (existing != null) {
-      // Still one *manual* row per slot (ADR-0037) — swap by removing first.
+            .get();
+    if (existing.isNotEmpty && !capturedManual) {
+      // Live edits keep one manual row per slot. Captures retain both actions.
       return _err(
         409,
         'discount_exists',
@@ -865,11 +1360,12 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             receiptId: Value(perUnit ? null : receiptId),
             visitId: Value(perUnit ? visitId : null),
             ticketId: Value(ticketId),
-            presetId: Value(preset.id),
+            presetId: Value(presetId),
+            captured: Value(capturedManual),
             // Snapshot: a later preset edit or delete must not rewrite this.
-            name: preset.name,
-            kind: preset.kind,
-            value: Value(preset.value),
+            name: discountName,
+            kind: discountKind,
+            value: Value(discountValue),
             byUserId: Value(actor?.id),
             approvedByUserId: Value(approvedBy),
             at: SatClock.now().toUtc(),
@@ -888,7 +1384,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       ticketId == null
           ? AuditKind.discountApplied
           : AuditKind.discountAppliedLine,
-      params: {'name': preset.name},
+      params: {'name': discountName},
       tableId: rec.tableId,
       actor: actor?.id,
       amountCents: applied?.amount,
@@ -908,28 +1404,49 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   }) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
+    final raw = await req.readAsString();
+    final body = raw.isEmpty
+        ? <String, dynamic>{}
+        : jsonDecode(raw) as Map<String, dynamic>;
+    final captured = await signedCapture(req, body, Capability.applyDiscount);
     final rec = receiptId == null
         ? null
         : await (db.select(
             db.receipts,
           )..where((x) => x.id.equals(receiptId))).getSingleOrNull();
-    if (rec == null && ticketVisitId == null) {
+    if (rec == null &&
+        ticketVisitId == null &&
+        (!captured || body['visitId'] is! String)) {
       return _err(404, 'no_receipt', 'receipt not found');
     }
-    final visitId = rec?.visitId ?? ticketVisitId;
+    final visitId = rec?.visitId ?? ticketVisitId ?? body['visitId'] as String?;
     if (visitId == null) return _err(409, 'no_visit', 'receipt has no visit');
-    final locked = await lockGuard(visitId);
+    final visit = await _visit(db, visitId);
+    if (visit == null && captured) {
+      if (!(await capsOf(req)).contains(Capability.applyDiscount.name) &&
+          await resolveStepUp(body['approverPin'] as String?) == null) {
+        return _err(403, 'approval_required', 'butuh persetujuan manajer');
+      }
+      final actor = await resolve(req);
+      return _removeCapturedArchivedDiscount(
+        db,
+        hub,
+        visitId,
+        discountId,
+        receiptId,
+        body,
+        actor?.id,
+      );
+    }
+    if (visit == null) return _err(404, 'no_visit', 'visit not found');
+    final locked = captured ? null : await lockGuard(visitId);
     if (locked != null) return locked;
-    if (rec?.status == 'paid') {
+    if (rec?.status == 'paid' && !captured) {
       return _err(409, 'receipt_paid', 'buka ulang struk sebelum ubah diskon');
     }
     final actor = await resolve(req);
     if (!(await capsOf(req)).contains(Capability.applyDiscount.name)) {
-      final body = await req.readAsString();
-      final pin = body.isEmpty
-          ? null
-          : (jsonDecode(body) as Map<String, dynamic>)['approverPin']
-                as String?;
+      final pin = body['approverPin'] as String?;
       if (await resolveStepUp(pin) == null) {
         return _err(
           403,
@@ -990,19 +1507,60 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   ) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
-    final visit = await _visit(db, visitId);
-    if (visit == null) return _err(404, 'no_visit', 'visit not found');
-    final locked = await lockGuard(visitId);
-    if (locked != null) return locked;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final capturedManual = await signedCapture(
+      req,
+      body,
+      Capability.applyDiscount,
+    );
+    final visit = await _visit(db, visitId);
+    final archived = visit == null && capturedManual
+        ? await (db.select(
+            db.tableSessions,
+          )..where((s) => s.id.equals(visitId))).getSingleOrNull()
+        : null;
+    if (visit == null && archived == null) {
+      return _err(404, 'no_visit', 'visit not found');
+    }
+    final capturedId = body['id'] as String?;
+    if (capturedId != null) {
+      if (archived != null) {
+        final prior = await (db.select(
+          db.tableSessionDiscounts,
+        )..where((d) => d.id.equals(capturedId))).getSingleOrNull();
+        if (prior != null) {
+          if (prior.sessionId != visitId) {
+            return _err(409, 'wrong_visit', 'discount belongs another visit');
+          }
+          return _ok({'bill': await _buildSessionBill(db, visitId)});
+        }
+      } else {
+        final prior = await (db.select(
+          db.discounts,
+        )..where((d) => d.id.equals(capturedId))).getSingleOrNull();
+        if (prior != null) {
+          if (prior.visitId != visitId) {
+            return _err(409, 'wrong_visit', 'discount belongs another visit');
+          }
+          return _ok({'bill': await _buildBill(db, visitId)});
+        }
+      }
+    }
+    if (visit != null) {
+      final locked = capturedManual ? null : await lockGuard(visitId);
+      if (locked != null) return locked;
+    }
 
     // A bill discount moves the bill total, and an amount receipt's claim is
     // frozen at mint time (ADR-0068) — so once any money has been taken the
     // quote a guest was given can no longer be revised silently.
-    final paid = await (db.select(
-      db.receipts,
-    )..where((x) => x.visitId.equals(visitId) & x.status.equals('paid'))).get();
-    if (paid.isNotEmpty) {
+    final paid = visit == null
+        ? <Receipt>[]
+        : await (db.select(db.receipts)..where(
+                (x) => x.visitId.equals(visitId) & x.status.equals('paid'),
+              ))
+              .get();
+    if (paid.isNotEmpty && !capturedManual) {
       return _err(
         409,
         'receipt_paid',
@@ -1027,16 +1585,118 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         await (db.select(db.discountPresets)
               ..where((x) => x.id.equals(body['presetId'] as String? ?? '')))
             .getSingleOrNull();
-    if (preset == null) return _err(404, 'no_preset', 'preset not found');
-    if (!preset.active) {
+    final capturedSnapshot =
+        capturedManual &&
+        body['name'] is String &&
+        body['kind'] is String &&
+        body['value'] is num;
+    if (preset == null && !capturedSnapshot) {
+      return _err(404, 'no_preset', 'preset not found');
+    }
+    if (preset != null && !preset.active && !capturedManual) {
       return _err(409, 'preset_inactive', 'preset diskon tidak aktif');
     }
-    if (preset.scope != 'bill') {
+    if (preset != null && preset.scope != 'bill') {
       return _err(409, 'scope_mismatch', 'preset ini bukan diskon tagihan');
+    }
+    final discountName = capturedSnapshot
+        ? body['name'] as String
+        : preset!.name;
+    final discountKind = capturedSnapshot
+        ? body['kind'] as String
+        : preset!.kind;
+    final discountValue = capturedSnapshot
+        ? (body['value'] as num).toInt()
+        : preset!.value;
+    final presetId = (body['presetId'] as String?) ?? preset?.id;
+    if (archived != null) {
+      final discounts = await (db.select(
+        db.tableSessionDiscounts,
+      )..where((d) => d.sessionId.equals(visitId))).get();
+      if (!capturedManual &&
+          discounts.any(
+            (d) =>
+                d.receiptId == null &&
+                d.ticketId == null &&
+                d.source == 'manual',
+          )) {
+        return _err(409, 'discount_exists', 'sudah ada diskon tagihan');
+      }
+      final tickets =
+          await (db.select(db.tableSessionTickets)..where(
+                (t) =>
+                    t.sessionId.equals(visitId) &
+                    t.status.equals('voided').not(),
+              ))
+              .get();
+      final activeIds = tickets.map((t) => t.ticketId).toSet();
+      final subtotal = tickets.fold<int>(0, (sum, t) => sum + t.price * t.qty);
+      final lineDiscount = discounts
+          .where((d) => d.ticketId != null && activeIds.contains(d.ticketId))
+          .fold<int>(0, (sum, d) => sum + d.amount);
+      final base = subtotal - lineDiscount;
+      final amount = resolveDiscountAmount(
+        kind: discountKind,
+        value: discountValue,
+        base: base,
+      );
+      final orderDiscount = discounts
+          .where((d) => d.ticketId == null)
+          .fold<int>(0, (sum, d) => sum + d.amount);
+      final cfg = await _config(db, visitId);
+      final before = computeBreakdown(base, cfg, discount: orderDiscount);
+      final after = computeBreakdown(
+        base,
+        cfg,
+        discount: orderDiscount + amount,
+      );
+      await db.transaction(() async {
+        await db
+            .into(db.tableSessionDiscounts)
+            .insert(
+              TableSessionDiscountsCompanion.insert(
+                id: _mintId(body),
+                sessionId: visitId,
+                presetId: Value(presetId),
+                name: discountName,
+                kind: discountKind,
+                value: Value(discountValue),
+                amount: Value(amount),
+                byUserId: Value(actor?.id),
+                approvedByUserId: Value(approvedBy),
+                at: _capturedAt(body)!,
+              ),
+            );
+        await (db.update(
+          db.tableSessions,
+        )..where((s) => s.id.equals(visitId))).write(
+          TableSessionsCompanion(
+            discountAmount: Value(archived.discountAmount + amount),
+            settledTotal: Value(
+              archived.settledTotal + after.total - before.total,
+            ),
+          ),
+        );
+        await _audit(
+          db,
+          AuditType.discountApplied,
+          AuditKind.discountBillApplied,
+          params: {'name': discountName},
+          tableId: archived.tableId,
+          actor: actor?.id,
+          at: _capturedAt(body),
+        );
+      });
+      hub.broadcast(WsEventTypes.tableSessionClosed, {
+        'tableId': archived.tableId,
+        'visitId': visitId,
+      });
+      return _ok({'bill': await _buildSessionBill(db, visitId)});
     }
     // Only the cashier's own slot is in the way — a member discount or a
     // redemption sits in a slot of its own and stacks (ADR-0094).
-    if (await _billDiscountOf(db, visitId, 'manual') != null) {
+    if (!capturedManual &&
+        await _billDiscountOf(db, visitId, 'manual') != null) {
       return _err(
         409,
         'discount_exists',
@@ -1048,14 +1708,15 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         .into(db.discounts)
         .insert(
           DiscountsCompanion.insert(
-            id: _uuid.v4(),
+            id: _mintId(body),
             visitId: Value(visitId),
-            presetId: Value(preset.id),
+            presetId: Value(presetId),
+            captured: Value(capturedManual),
             // Snapshot, same as every other scope: a later preset edit must
             // not rewrite what was already given away.
-            name: preset.name,
-            kind: preset.kind,
-            value: Value(preset.value),
+            name: discountName,
+            kind: discountKind,
+            value: Value(discountValue),
             byUserId: Value(actor?.id),
             approvedByUserId: Value(approvedBy),
             at: SatClock.now().toUtc(),
@@ -1068,8 +1729,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       db,
       AuditType.discountApplied,
       AuditKind.discountBillApplied,
-      params: {'name': preset.name},
-      tableId: visit.tableId,
+      params: {'name': discountName},
+      tableId: visit!.tableId,
       actor: actor?.id,
     );
     await broadcastBill(visitId);
@@ -1085,14 +1746,100 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   ) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
+    final raw = await req.readAsString();
+    final body = raw.isEmpty
+        ? <String, dynamic>{}
+        : jsonDecode(raw) as Map<String, dynamic>;
+    final captured = await signedCapture(req, body, Capability.applyDiscount);
     final visit = await _visit(db, visitId);
+    if (visit == null && captured) {
+      final session = await (db.select(
+        db.tableSessions,
+      )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+      if (session == null) return _err(404, 'no_visit', 'visit not found');
+      final row =
+          await (db.select(db.tableSessionDiscounts)..where(
+                (d) =>
+                    d.id.equals(discountId) &
+                    d.sessionId.equals(visitId) &
+                    d.receiptId.isNull() &
+                    d.ticketId.isNull(),
+              ))
+              .getSingleOrNull();
+      if (row == null) {
+        return _err(404, 'no_discount', 'diskon tidak ditemukan');
+      }
+      if (row.source != 'manual') {
+        return _err(409, 'discount_not_manual', 'diskon ini dari pelanggan');
+      }
+      if (!(await capsOf(req)).contains(Capability.applyDiscount.name) &&
+          await resolveStepUp(body['approverPin'] as String?) == null) {
+        return _err(403, 'approval_required', 'butuh persetujuan manajer');
+      }
+      final tickets = await (db.select(
+        db.tableSessionTickets,
+      )..where((t) => t.sessionId.equals(visitId))).get();
+      final active = tickets.where((t) => t.status != 'voided').toList();
+      final activeIds = active.map((t) => t.ticketId).toSet();
+      final subtotal = active.fold<int>(0, (sum, t) => sum + t.price * t.qty);
+      final discounts = await (db.select(
+        db.tableSessionDiscounts,
+      )..where((d) => d.sessionId.equals(visitId))).get();
+      final lineDiscount = discounts
+          .where((d) => d.ticketId != null && activeIds.contains(d.ticketId))
+          .fold<int>(0, (sum, d) => sum + d.amount);
+      final orderDiscount = discounts
+          .where((d) => d.ticketId == null)
+          .fold<int>(0, (sum, d) => sum + d.amount);
+      final cfg = await _config(db, visitId);
+      final before = computeBreakdown(
+        subtotal - lineDiscount,
+        cfg,
+        discount: orderDiscount,
+      );
+      final after = computeBreakdown(
+        subtotal - lineDiscount,
+        cfg,
+        discount: orderDiscount - row.amount,
+      );
+      final actor = await resolve(req);
+      await db.transaction(() async {
+        await (db.delete(
+          db.tableSessionDiscounts,
+        )..where((d) => d.id.equals(discountId))).go();
+        await (db.update(
+          db.tableSessions,
+        )..where((s) => s.id.equals(visitId))).write(
+          TableSessionsCompanion(
+            discountAmount: Value(session.discountAmount - row.amount),
+            settledTotal: Value(
+              session.settledTotal + after.total - before.total,
+            ),
+          ),
+        );
+        await _audit(
+          db,
+          AuditType.discountRemoved,
+          AuditKind.discountBillRemoved,
+          params: {'name': row.name},
+          tableId: session.tableId,
+          actor: actor?.id,
+          at: _capturedAt(body),
+        );
+      });
+      hub.broadcast(WsEventTypes.tableSessionClosed, {
+        'tableId': session.tableId,
+        'visitId': visitId,
+      });
+      return _ok({'bill': await _buildSessionBill(db, visitId)});
+    }
     if (visit == null) return _err(404, 'no_visit', 'visit not found');
-    final locked = await lockGuard(visitId);
+    final locked = captured ? null : await lockGuard(visitId);
     if (locked != null) return locked;
     final paid = await (db.select(
       db.receipts,
     )..where((x) => x.visitId.equals(visitId) & x.status.equals('paid'))).get();
-    if (paid.isNotEmpty) {
+    if (paid.isNotEmpty && !captured) {
       return _err(
         409,
         'receipt_paid',
@@ -1101,10 +1848,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     }
     final actor = await resolve(req);
     if (!(await capsOf(req)).contains(Capability.applyDiscount.name)) {
-      final raw = await req.readAsString();
-      final pin = raw.isEmpty
-          ? null
-          : (jsonDecode(raw) as Map<String, dynamic>)['approverPin'] as String?;
+      final pin = body['approverPin'] as String?;
       if (await resolveStepUp(pin) == null) {
         return _err(
           403,
@@ -1180,25 +1924,562 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         .go();
   }
 
+  Future<Response?> amendArchivedBillMember(
+    Request req,
+    String visitId,
+    Map<String, dynamic> body, {
+    required bool detach,
+  }) async {
+    final captured = await signedCapture(req, body, Capability.settleBill)
+        ? _capturedAt(body)
+        : null;
+    if (captured == null) return null;
+    final session = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+    if (session == null) return null;
+    final memberId = detach ? null : (body['memberId'] as String?)?.trim();
+    if (!detach && (memberId == null || memberId.isEmpty)) {
+      return _err(400, 'no_member', 'pelanggan tidak ada');
+    }
+    final actor = await resolve(req);
+    final oldDiscounts =
+        await (db.select(db.tableSessionDiscounts)..where(
+              (d) =>
+                  d.sessionId.equals(visitId) &
+                  d.receiptId.isNull() &
+                  d.ticketId.isNull() &
+                  d.source.isIn(['member', 'redeem']),
+            ))
+            .get();
+    final allDiscounts = await (db.select(
+      db.tableSessionDiscounts,
+    )..where((d) => d.sessionId.equals(visitId))).get();
+    final tickets =
+        await (db.select(db.tableSessionTickets)..where(
+              (t) =>
+                  t.sessionId.equals(visitId) & t.status.equals('voided').not(),
+            ))
+            .get();
+    final activeIds = tickets.map((t) => t.ticketId).toSet();
+    final subtotal = tickets.fold<int>(0, (sum, t) => sum + t.price * t.qty);
+    final lineDiscount = allDiscounts
+        .where((d) => d.ticketId != null && activeIds.contains(d.ticketId))
+        .fold<int>(0, (sum, d) => sum + d.amount);
+    final base = subtotal - lineDiscount;
+    final oldAmount = oldDiscounts.fold<int>(0, (sum, d) => sum + d.amount);
+    final orderDiscount = allDiscounts
+        .where((d) => d.ticketId == null)
+        .fold<int>(0, (sum, d) => sum + d.amount);
+
+    Map<String, dynamic>? preset;
+    if (!detach && body['memberSplit'] != true) {
+      final raw = body['memberDiscount'];
+      if (raw is Map) {
+        preset = raw.cast<String, dynamic>();
+      } else if (body['memberPresetId'] is String) {
+        final row =
+            await (db.select(db.discountPresets)
+                  ..where((p) => p.id.equals(body['memberPresetId'] as String)))
+                .getSingleOrNull();
+        if (row != null && row.scope == 'bill') {
+          preset = {
+            'presetId': row.id,
+            'name': row.name,
+            'kind': row.kind,
+            'value': row.value,
+          };
+        }
+      }
+    }
+    if (!detach &&
+        body['memberSplit'] != true &&
+        body['memberPresetId'] is String &&
+        preset == null) {
+      return _err(
+        409,
+        'member_discount_needs_repair',
+        'captured member discount needs repair',
+      );
+    }
+    if (preset != null &&
+        (preset['name'] is! String ||
+            preset['kind'] is! String ||
+            preset['value'] is! int ||
+            (preset['value'] as int) < 0)) {
+      return _err(
+        409,
+        'member_discount_needs_repair',
+        'captured member discount needs repair',
+      );
+    }
+    final newAmount = preset == null
+        ? 0
+        : resolveDiscountAmount(
+            kind: preset['kind'] as String,
+            value: preset['value'] as int,
+            base: base,
+          );
+    final tax = await _config(db, visitId);
+    final before = computeBreakdown(base, tax, discount: orderDiscount);
+    final after = computeBreakdown(
+      base,
+      tax,
+      discount: orderDiscount - oldAmount + newAmount,
+    );
+    await db.transaction(() async {
+      for (final discount in oldDiscounts) {
+        if (discount.source == 'redeem') {
+          await reverseCapturedRedeem(
+            db,
+            discountId: discount.id,
+            visitId: visitId,
+            memberId: session.memberId,
+            actorUserId: actor?.id,
+            hub: hub,
+          );
+        }
+      }
+      await (db.delete(
+        db.tableSessionDiscounts,
+      )..where((d) => d.id.isIn(oldDiscounts.map((d) => d.id)))).go();
+      if (preset != null) {
+        await db
+            .into(db.tableSessionDiscounts)
+            .insert(
+              TableSessionDiscountsCompanion.insert(
+                id: _mintId(body),
+                sessionId: visitId,
+                presetId: Value(preset['presetId'] as String?),
+                name: preset['name'] as String,
+                kind: preset['kind'] as String,
+                value: Value(preset['value'] as int),
+                amount: Value(newAmount),
+                source: const Value('member'),
+                byUserId: Value(actor?.id),
+                at: captured,
+              ),
+            );
+      }
+      await (db.update(
+        db.tableSessions,
+      )..where((s) => s.id.equals(visitId))).write(
+        TableSessionsCompanion(
+          memberId: Value(memberId),
+          discountAmount: Value(session.discountAmount - oldAmount + newAmount),
+          settledTotal: Value(
+            session.settledTotal + after.total - before.total,
+          ),
+        ),
+      );
+      if (memberId != null && await getMember(db, memberId) != null) {
+        await touchMember(db, memberId, at: captured);
+      }
+    });
+    hub.broadcast(WsEventTypes.tableSessionClosed, {
+      'tableId': session.tableId,
+      'visitId': visitId,
+    });
+    return _ok({'bill': await _buildSessionBill(db, visitId)});
+  }
+
+  Future<Response?> amendArchivedReceiptMember(
+    Request req,
+    String receiptId,
+    Map<String, dynamic> body, {
+    required bool detach,
+  }) async {
+    final captured = await signedCapture(req, body, Capability.settleBill)
+        ? _capturedAt(body)
+        : null;
+    final visitId = body['visitId'] as String?;
+    if (captured == null || visitId == null) return null;
+    final receipt =
+        await (db.select(db.tableSessionReceipts)..where(
+              (r) =>
+                  r.receiptId.equals(receiptId) & r.sessionId.equals(visitId),
+            ))
+            .getSingleOrNull();
+    final session = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+    if (receipt == null || session == null) return null;
+    final memberId = detach ? null : (body['memberId'] as String?)?.trim();
+    if (!detach && (memberId == null || memberId.isEmpty)) {
+      return _err(400, 'no_member', 'pelanggan tidak ada');
+    }
+    final actor = await resolve(req);
+    final discounts =
+        await (db.select(db.tableSessionDiscounts)..where(
+              (d) =>
+                  d.sessionId.equals(visitId) & d.receiptId.equals(receiptId),
+            ))
+            .get();
+    final oldDiscounts = discounts
+        .where(
+          (d) =>
+              d.ticketId == null &&
+              const {'member', 'redeem'}.contains(d.source),
+        )
+        .toList();
+    final lineDiscount = discounts
+        .where((d) => d.ticketId != null)
+        .fold<int>(0, (sum, d) => sum + d.amount);
+    final base = receipt.subtotal - lineDiscount;
+    final oldAmount = oldDiscounts.fold<int>(0, (sum, d) => sum + d.amount);
+    final orderDiscount = discounts
+        .where((d) => d.ticketId == null)
+        .fold<int>(0, (sum, d) => sum + d.amount);
+
+    Map<String, dynamic>? preset;
+    if (!detach) {
+      final raw = body['memberDiscount'];
+      if (raw is Map) {
+        preset = raw.cast<String, dynamic>();
+      } else if (body['memberPresetId'] is String) {
+        final row =
+            await (db.select(db.discountPresets)
+                  ..where((p) => p.id.equals(body['memberPresetId'] as String)))
+                .getSingleOrNull();
+        if (row != null && (row.scope == 'bill' || row.scope == 'order')) {
+          preset = {
+            'presetId': row.id,
+            'name': row.name,
+            'kind': row.kind,
+            'value': row.value,
+          };
+        }
+      }
+    }
+    if (!detach && body['memberPresetId'] is String && preset == null) {
+      return _err(
+        409,
+        'member_discount_needs_repair',
+        'captured member discount needs repair',
+      );
+    }
+    if (preset != null &&
+        (preset['name'] is! String ||
+            preset['kind'] is! String ||
+            preset['value'] is! int ||
+            (preset['value'] as int) < 0)) {
+      return _err(
+        409,
+        'member_discount_needs_repair',
+        'captured member discount needs repair',
+      );
+    }
+    final newAmount = preset == null
+        ? 0
+        : resolveDiscountAmount(
+            kind: preset['kind'] as String,
+            value: preset['value'] as int,
+            base: base,
+          );
+    final tax = await _config(db, visitId);
+    final before = computeBreakdown(base, tax, discount: orderDiscount);
+    final after = computeBreakdown(
+      base,
+      tax,
+      discount: orderDiscount - oldAmount + newAmount,
+    );
+    final original = await _originalSessionReceiptJson(db, receipt);
+    await db.transaction(() async {
+      for (final discount in oldDiscounts) {
+        if (discount.source == 'redeem') {
+          await reverseCapturedRedeem(
+            db,
+            discountId: discount.id,
+            visitId: visitId,
+            memberId: receipt.memberId,
+            actorUserId: actor?.id,
+            hub: hub,
+          );
+        }
+      }
+      await (db.delete(
+        db.tableSessionDiscounts,
+      )..where((d) => d.id.isIn(oldDiscounts.map((d) => d.id)))).go();
+      if (preset != null) {
+        await db
+            .into(db.tableSessionDiscounts)
+            .insert(
+              TableSessionDiscountsCompanion.insert(
+                id: _mintId(body),
+                sessionId: visitId,
+                receiptId: Value(receiptId),
+                presetId: Value(preset['presetId'] as String?),
+                name: preset['name'] as String,
+                kind: preset['kind'] as String,
+                value: Value(preset['value'] as int),
+                amount: Value(newAmount),
+                source: const Value('member'),
+                byUserId: Value(actor?.id),
+                at: captured,
+              ),
+            );
+      }
+      await (db.update(
+        db.tableSessionReceipts,
+      )..where((r) => r.id.equals(receipt.id))).write(
+        TableSessionReceiptsCompanion(
+          memberId: Value(memberId),
+          discountAmount: Value(receipt.discountAmount - oldAmount + newAmount),
+          total: Value(receipt.total + after.total - before.total),
+          originalSnapshotJson: Value(original),
+        ),
+      );
+      await (db.update(
+        db.tableSessions,
+      )..where((s) => s.id.equals(visitId))).write(
+        TableSessionsCompanion(
+          discountAmount: Value(session.discountAmount - oldAmount + newAmount),
+          settledTotal: Value(
+            session.settledTotal + after.total - before.total,
+          ),
+        ),
+      );
+      if (memberId != null && await getMember(db, memberId) != null) {
+        await touchMember(db, memberId, at: captured);
+      }
+    });
+    hub.broadcast(WsEventTypes.tableSessionClosed, {
+      'tableId': session.tableId,
+      'visitId': visitId,
+    });
+    return _ok({'bill': await _buildSessionBill(db, visitId)});
+  }
+
+  Future<Response?> amendArchivedTicketMembers(
+    Request req,
+    String visitId,
+    Map<String, dynamic> body,
+  ) async {
+    final captured = await signedCapture(req, body, Capability.settleBill)
+        ? _capturedAt(body)
+        : null;
+    if (captured == null) return null;
+    final session = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+    if (session == null) return null;
+    final ids = (body['ticketIds'] as List? ?? const [])
+        .whereType<String>()
+        .toSet();
+    if (ids.isEmpty) {
+      return _err(400, 'no_tickets', 'pilih sedikitnya satu tiket');
+    }
+    final memberId = (body['memberId'] as String?)?.trim();
+    final tickets = await (db.select(
+      db.tableSessionTickets,
+    )..where((t) => t.sessionId.equals(visitId) & t.ticketId.isIn(ids))).get();
+    if (tickets.length != ids.length) {
+      return _err(409, 'ticket_changed', 'captured ticket needs repair');
+    }
+
+    Map<String, dynamic>? preset;
+    if (memberId != null && memberId.isNotEmpty) {
+      final raw = body['memberDiscount'];
+      if (raw is Map) {
+        preset = raw.cast<String, dynamic>();
+      } else if (body['memberPresetId'] is String) {
+        final row =
+            await (db.select(db.discountPresets)
+                  ..where((p) => p.id.equals(body['memberPresetId'] as String)))
+                .getSingleOrNull();
+        if (row?.kind == 'percent') {
+          preset = {
+            'presetId': row!.id,
+            'name': row.name,
+            'kind': row.kind,
+            'value': row.value,
+          };
+        }
+      }
+    }
+    if (preset != null &&
+        (preset['name'] is! String ||
+            preset['kind'] != 'percent' ||
+            preset['value'] is! int ||
+            (preset['value'] as int) < 0)) {
+      return _err(
+        409,
+        'member_discount_needs_repair',
+        'captured member discount needs repair',
+      );
+    }
+    final assignments = await (db.select(
+      db.tableSessionReceiptLines,
+    )..where((l) => l.sessionId.equals(visitId) & l.ticketId.isIn(ids))).get();
+    final affectedReceipts = assignments.map((l) => l.receiptId).toSet();
+    final actor = await resolve(req);
+    final tax = await _config(db, visitId);
+    var totalDelta = 0;
+    var discountDelta = 0;
+    await db.transaction(() async {
+      await (db.update(db.tableSessionTickets)
+            ..where((t) => t.sessionId.equals(visitId) & t.ticketId.isIn(ids)))
+          .write(TableSessionTicketsCompanion(memberId: Value(memberId)));
+      for (final receiptId in affectedReceipts) {
+        final receipt =
+            await (db.select(db.tableSessionReceipts)..where(
+                  (r) =>
+                      r.sessionId.equals(visitId) &
+                      r.receiptId.equals(receiptId),
+                ))
+                .getSingleOrNull();
+        if (receipt == null || receipt.status == 'cancelled') continue;
+        final original = await _originalSessionReceiptJson(db, receipt);
+        final discounts =
+            await (db.select(db.tableSessionDiscounts)..where(
+                  (d) =>
+                      d.sessionId.equals(visitId) &
+                      d.receiptId.equals(receiptId),
+                ))
+                .get();
+        final oldMember = discounts
+            .where(
+              (d) =>
+                  d.source == 'member' &&
+                  d.ticketId != null &&
+                  ids.contains(d.ticketId),
+            )
+            .toList();
+        final oldAmount = oldMember.fold<int>(0, (sum, d) => sum + d.amount);
+        final lineDiscount = discounts
+            .where((d) => d.ticketId != null)
+            .fold<int>(0, (sum, d) => sum + d.amount);
+        final orderDiscount = discounts
+            .where((d) => d.ticketId == null)
+            .fold<int>(0, (sum, d) => sum + d.amount);
+        final newRows = <({String ticketId, int amount})>[];
+        if (preset != null) {
+          for (final ticket in tickets) {
+            final qty = assignments
+                .where(
+                  (l) =>
+                      l.receiptId == receiptId && l.ticketId == ticket.ticketId,
+                )
+                .fold<int>(0, (sum, l) => sum + l.qtyUnits);
+            if (qty <= 0) continue;
+            newRows.add((
+              ticketId: ticket.ticketId,
+              amount: resolveDiscountAmount(
+                kind: 'percent',
+                value: preset['value'] as int,
+                base: ticket.price * qty,
+              ),
+            ));
+          }
+        }
+        final newAmount = newRows.fold<int>(0, (sum, row) => sum + row.amount);
+        final before = computeBreakdown(
+          receipt.subtotal - lineDiscount,
+          tax,
+          discount: orderDiscount,
+        );
+        final after = computeBreakdown(
+          receipt.subtotal - lineDiscount + oldAmount - newAmount,
+          tax,
+          discount: orderDiscount,
+        );
+        await (db.delete(
+          db.tableSessionDiscounts,
+        )..where((d) => d.id.isIn(oldMember.map((d) => d.id)))).go();
+        for (final row in newRows) {
+          await db
+              .into(db.tableSessionDiscounts)
+              .insert(
+                TableSessionDiscountsCompanion.insert(
+                  id: '${_mintId(body)}:${row.ticketId}:$receiptId',
+                  sessionId: visitId,
+                  receiptId: Value(receiptId),
+                  ticketId: Value(row.ticketId),
+                  presetId: Value(preset!['presetId'] as String?),
+                  name: preset['name'] as String,
+                  kind: 'percent',
+                  value: Value(preset['value'] as int),
+                  amount: Value(row.amount),
+                  source: const Value('member'),
+                  byUserId: Value(actor?.id),
+                  at: captured,
+                ),
+              );
+        }
+        final delta = after.total - before.total;
+        totalDelta += delta;
+        discountDelta += newAmount - oldAmount;
+        await (db.update(
+          db.tableSessionReceipts,
+        )..where((r) => r.id.equals(receipt.id))).write(
+          TableSessionReceiptsCompanion(
+            discountAmount: Value(
+              receipt.discountAmount + newAmount - oldAmount,
+            ),
+            total: Value(receipt.total + delta),
+            originalSnapshotJson: Value(original),
+          ),
+        );
+      }
+      await (db.update(
+        db.tableSessions,
+      )..where((s) => s.id.equals(visitId))).write(
+        TableSessionsCompanion(
+          discountAmount: Value(session.discountAmount + discountDelta),
+          settledTotal: Value(session.settledTotal + totalDelta),
+        ),
+      );
+      if (memberId != null &&
+          memberId.isNotEmpty &&
+          await getMember(db, memberId) != null) {
+        await touchMember(db, memberId, at: captured);
+      }
+    });
+    hub.broadcast(WsEventTypes.tableSessionClosed, {
+      'tableId': session.tableId,
+      'visitId': visitId,
+    });
+    return _ok({'bill': await _buildSessionBill(db, visitId)});
+  }
+
   r.post('/settlement/visits/<visitId>/ticket-members', (
     Request req,
     String visitId,
   ) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final archived = await amendArchivedTicketMembers(req, visitId, body);
+    if (archived != null) return archived;
     final visit = await _visit(db, visitId);
     if (visit == null) return _err(404, 'no_visit', 'visit not found');
     final cfg = await memberConfig(db);
-    if (!cfg.splitEnabled || visit.memberAttributionVersion != 2) {
+    final captured = await signedCapture(req, body, Capability.settleBill);
+    if ((!cfg.splitEnabled && !captured) ||
+        visit.memberAttributionVersion != 2) {
       return _err(
         409,
         'ticket_members_disabled',
         'pelanggan per tiket tidak aktif',
       );
     }
+    final capturedDiscount = body['memberDiscount'];
+    if (captured &&
+        ((body['memberPresetId'] is String && capturedDiscount == null) ||
+            (capturedDiscount != null &&
+                (capturedDiscount is! Map ||
+                    capturedDiscount['name'] is! String ||
+                    capturedDiscount['kind'] != 'percent' ||
+                    capturedDiscount['value'] is! int ||
+                    (capturedDiscount['value'] as int) < 0)))) {
+      return _err(
+        409,
+        'member_discount_needs_repair',
+        'captured member discount needs repair',
+      );
+    }
     final locked = await lockGuard(visitId);
     if (locked != null) return locked;
-    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final ticketIds = (body['ticketIds'] as List? ?? const [])
         .whereType<String>()
         .toSet();
@@ -1241,7 +2522,13 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         receiptIds.addAll(lines.map((x) => x.receiptId));
       }
       for (final receiptId in receiptIds) {
-        await syncTicketMemberDiscounts(receiptId, cfg, actor?.id);
+        await syncTicketMemberDiscounts(
+          receiptId,
+          cfg,
+          actor?.id,
+          captured: captured,
+          capturedDiscount: capturedDiscount as Map?,
+        );
       }
       await db
           .into(db.auditEntries)
@@ -1276,6 +2563,14 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   ) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final archived = await amendArchivedBillMember(
+      req,
+      visitId,
+      body,
+      detach: false,
+    );
+    if (archived != null) return archived;
     final visit = await _visit(db, visitId);
     if (visit == null) return _err(404, 'no_visit', 'visit not found');
     final locked = await lockGuard(visitId);
@@ -1283,10 +2578,10 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final unpaid = await unpaidGuard(visitId);
     if (unpaid != null) return unpaid;
     final cfg = await memberConfig(db);
-    if (!cfg.enabled) {
+    if (!cfg.enabled &&
+        !await signedCapture(req, body, Capability.settleBill)) {
       return _err(409, 'members_disabled', 'keanggotaan tidak aktif');
     }
-    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final member = await getMember(db, (body['memberId'] as String?) ?? '');
     if (member == null) return _err(404, 'no_member', 'pelanggan tidak ada');
 
@@ -1325,29 +2620,69 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     // just another receipt's member. Auto-applying a bill-scope slot here as
     // well would discount them twice — once on the whole bill, once on their
     // share of it.
-    if (!cfg.splitEnabled &&
-        cfg.presetId != null &&
-        await _billDiscountOf(db, visitId, 'member') == null) {
-      final preset = await (db.select(
+    Map<String, dynamic>? preset;
+    if (await signedCapture(req, body, Capability.settleBill)) {
+      if (body['memberSplit'] != true) {
+        final raw = body['memberDiscount'];
+        if (raw is Map) {
+          try {
+            preset = Map<String, dynamic>.from(raw);
+          } catch (_) {
+            return _err(
+              409,
+              'member_discount_needs_repair',
+              'captured member discount needs repair',
+            );
+          }
+        }
+        if (body['memberPresetId'] is String && preset == null) {
+          return _err(
+            409,
+            'member_discount_needs_repair',
+            'captured member discount needs repair',
+          );
+        }
+      }
+    } else if (!cfg.splitEnabled && cfg.presetId != null) {
+      final row = await (db.select(
         db.discountPresets,
       )..where((x) => x.id.equals(cfg.presetId!))).getSingleOrNull();
-      if (preset != null && preset.active && preset.scope == 'bill') {
-        await db
-            .into(db.discounts)
-            .insert(
-              DiscountsCompanion.insert(
-                id: _uuid.v4(),
-                visitId: Value(visitId),
-                presetId: Value(preset.id),
-                name: preset.name,
-                kind: preset.kind,
-                value: Value(preset.value),
-                source: const Value('member'),
-                byUserId: Value(actor?.id),
-                at: SatClock.now().toUtc(),
-              ),
-            );
+      if (row != null && row.active && row.scope == 'bill') {
+        preset = {
+          'presetId': row.id,
+          'name': row.name,
+          'kind': row.kind,
+          'value': row.value,
+        };
       }
+    }
+    if (preset != null &&
+        await _billDiscountOf(db, visitId, 'member') == null) {
+      if (preset['name'] is! String ||
+          preset['kind'] is! String ||
+          preset['value'] is! int ||
+          (preset['value'] as int) < 0) {
+        return _err(
+          409,
+          'member_discount_needs_repair',
+          'captured member discount needs repair',
+        );
+      }
+      await db
+          .into(db.discounts)
+          .insert(
+            DiscountsCompanion.insert(
+              id: _uuid.v4(),
+              visitId: Value(visitId),
+              presetId: Value(preset['presetId'] as String?),
+              name: preset['name'] as String,
+              kind: preset['kind'] as String,
+              value: Value(preset['value'] as int),
+              source: const Value('member'),
+              byUserId: Value(actor?.id),
+              at: SatClock.now().toUtc(),
+            ),
+          );
     }
     await _recompute(db, visitId);
     await broadcastBill(visitId);
@@ -1362,6 +2697,17 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   ) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
+    final raw = await req.readAsString();
+    final body = raw.isEmpty
+        ? <String, dynamic>{}
+        : jsonDecode(raw) as Map<String, dynamic>;
+    final archived = await amendArchivedBillMember(
+      req,
+      visitId,
+      body,
+      detach: true,
+    );
+    if (archived != null) return archived;
     final visit = await _visit(db, visitId);
     if (visit == null) return _err(404, 'no_visit', 'visit not found');
     final locked = await lockGuard(visitId);
@@ -1390,26 +2736,157 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   // Spend points as money off this bill. {points}. The ledger row and the
   // matching `redeem`-slot discount land together or not at all — a balance
   // that moved without the bill moving is a balance somebody spent twice.
+  Future<Response?> amendArchivedRedeem(
+    Request req,
+    String visitId,
+    String? receiptId,
+    Map<String, dynamic> body, {
+    required bool remove,
+  }) async {
+    if (!await signedCapture(req, body, Capability.settleBill)) return null;
+    final session = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+    if (session == null) return null;
+    final receipt = receiptId == null
+        ? null
+        : await (db.select(
+            db.tableSessionReceipts,
+          )..where((r) => r.receiptId.equals(receiptId))).getSingleOrNull();
+    if (receiptId != null &&
+        (receipt == null || receipt.sessionId != visitId)) {
+      return _err(404, 'no_receipt', 'receipt not found on visit');
+    }
+    final memberId = receiptId == null ? session.memberId : receipt!.memberId;
+    final existing =
+        await (db.select(db.tableSessionDiscounts)..where(
+              (d) =>
+                  d.sessionId.equals(visitId) &
+                  (receiptId == null
+                      ? d.receiptId.isNull()
+                      : d.receiptId.equals(receiptId)) &
+                  d.ticketId.isNull() &
+                  d.source.equals('redeem'),
+            ))
+            .getSingleOrNull();
+    final actor = await resolve(req);
+    if (remove) {
+      if (existing == null) {
+        return _ok({'bill': await _buildSessionBill(db, visitId)});
+      }
+      await db.transaction(() async {
+        await reverseCapturedRedeem(
+          db,
+          discountId: existing.id,
+          memberId: memberId,
+          visitId: visitId,
+          actorUserId: actor?.id,
+          hub: hub,
+        );
+        await (db.delete(
+          db.tableSessionDiscounts,
+        )..where((d) => d.id.equals(existing.id))).go();
+        await db.customStatement(
+          'UPDATE table_sessions SET discount_amount = discount_amount - ?, '
+          'settled_total = settled_total + ? WHERE id = ?',
+          [existing.amount, existing.amount, visitId],
+        );
+      });
+    } else {
+      if (existing != null) {
+        return _err(409, 'redeem_exists', 'sudah ada penukaran poin');
+      }
+      if (memberId == null) {
+        return _err(409, 'no_member', 'tidak ada pelanggan');
+      }
+      final points = (body['points'] as num?)?.toInt() ?? 0;
+      final pointValue =
+          (body['pointValue'] as num?)?.toInt() ??
+          (await memberConfig(db)).pointValue;
+      if (points <= 0 || pointValue <= 0) {
+        return _err(400, 'bad_points', 'jumlah poin tidak valid');
+      }
+      final discountId = _mintId(body);
+      try {
+        await db.transaction(() async {
+          final amount = await spendPoints(
+            db,
+            memberId: memberId,
+            visitId: visitId,
+            points: points,
+            actorUserId: actor?.id,
+            hub: hub,
+            at: _capturedAt(body),
+            honorCaptured: true,
+            capturedPointValue: pointValue,
+            idPrefix: '$discountId:',
+          );
+          await db
+              .into(db.tableSessionDiscounts)
+              .insert(
+                TableSessionDiscountsCompanion.insert(
+                  id: discountId,
+                  sessionId: visitId,
+                  receiptId: Value(receiptId),
+                  name: 'Tukar poin',
+                  kind: 'fixed',
+                  value: Value(amount),
+                  amount: Value(amount),
+                  source: const Value('redeem'),
+                  byUserId: Value(actor?.id),
+                  at: _capturedAt(body)!,
+                ),
+              );
+          await db.customStatement(
+            'UPDATE table_sessions SET discount_amount = discount_amount + ?, '
+            'settled_total = settled_total - ? WHERE id = ?',
+            [amount, amount, visitId],
+          );
+        });
+      } on MemberException catch (e) {
+        return _err(409, e.code, 'penukaran poin ditolak');
+      }
+    }
+    hub.broadcast(WsEventTypes.tableSessionClosed, {
+      'tableId': session.tableId,
+      'visitId': visitId,
+    });
+    return _ok({'bill': await _buildSessionBill(db, visitId)});
+  }
+
   r.post('/settlement/visits/<visitId>/redeem', (
     Request req,
     String visitId,
   ) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final captured = await signedCapture(req, body, Capability.settleBill);
     final visit = await _visit(db, visitId);
+    if (visit == null) {
+      final archived = await amendArchivedRedeem(
+        req,
+        visitId,
+        null,
+        body,
+        remove: false,
+      );
+      if (archived != null) return archived;
+    }
     if (visit == null) return _err(404, 'no_visit', 'visit not found');
     final memberId = visit.memberId;
     if (memberId == null) {
       return _err(409, 'no_member', 'tidak ada pelanggan di tagihan ini');
     }
-    final locked = await lockGuard(visitId);
+    final locked = captured ? null : await lockGuard(visitId);
     if (locked != null) return locked;
-    final unpaid = await unpaidGuard(visitId);
-    if (unpaid != null) return unpaid;
+    if (!captured) {
+      final unpaid = await unpaidGuard(visitId);
+      if (unpaid != null) return unpaid;
+    }
     if (await _billDiscountOf(db, visitId, 'redeem') != null) {
       return _err(409, 'redeem_exists', 'sudah ada penukaran poin di tagihan');
     }
-    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final points = (body['points'] as num?)?.toInt() ?? 0;
     final cfg = await memberConfig(db);
 
@@ -1421,7 +2898,10 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         (bill['total'] as int) -
         (bill['serviceAmount'] as int) -
         (bill['taxAmount'] as int);
-    final maxPoints = cfg.pointValue <= 0 ? 0 : room ~/ cfg.pointValue;
+    final pointValue = !captured
+        ? cfg.pointValue
+        : (body['pointValue'] as num?)?.toInt() ?? cfg.pointValue;
+    final maxPoints = pointValue <= 0 ? 0 : room ~/ pointValue;
     if (points > maxPoints) {
       return _err(409, 'exceeds_bill', 'poin melebihi nilai tagihan', {
         'points': maxPoints,
@@ -1445,7 +2925,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           // to (ADR-0123 §capturedAt). A redeem captured at 23:50 and drained
           // at 00:10 otherwise files the give-back in the next day's member
           // report while the payment it paid for sits in the previous day's.
-          at: _capturedAt(body),
+          at: captured ? _capturedAt(body) : null,
+          honorCaptured: captured,
+          capturedPointValue: (body['pointValue'] as num?)?.toInt(),
         );
         await db
             .into(db.discounts)
@@ -1487,11 +2969,23 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   ) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final captured = await signedCapture(req, body, Capability.settleBill);
     final visit = await _visit(db, visitId);
+    if (visit == null) {
+      final archived = await amendArchivedRedeem(
+        req,
+        visitId,
+        null,
+        body,
+        remove: true,
+      );
+      if (archived != null) return archived;
+    }
     if (visit == null) return _err(404, 'no_visit', 'visit not found');
-    final locked = await lockGuard(visitId);
+    final locked = captured ? null : await lockGuard(visitId);
     if (locked != null) return locked;
-    final unpaid = await unpaidGuard(visitId);
+    final unpaid = captured ? null : await unpaidGuard(visitId);
     if (unpaid != null) return unpaid;
     final actor = await resolve(req);
     // Points back and discount off are one act (ADR-0100).
@@ -1546,6 +3040,14 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   ) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final archived = await amendArchivedReceiptMember(
+      req,
+      receiptId,
+      body,
+      detach: false,
+    );
+    if (archived != null) return archived;
     final rec = await _receipt(db, receiptId);
     if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
     final visitId = rec.visitId ?? rec.tableId;
@@ -1553,9 +3055,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     if (locked != null) return locked;
     final paid = await receiptUnpaidGuard(receiptId);
     if (paid != null) return paid;
-    final (cfg, blocked) = await requireSplit();
+    final (cfg, blocked) = await requireSplit(req, body);
     if (blocked != null) return blocked;
-    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final member = await getMember(db, (body['memberId'] as String?) ?? '');
     if (member == null) return _err(404, 'no_member', 'pelanggan tidak ada');
 
@@ -1581,7 +3082,14 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             ))
             .go();
       }
-      await writeReceiptMember(receiptId, member.id, cfg, actor?.id);
+      await writeReceiptMember(
+        receiptId,
+        member.id,
+        cfg,
+        actor?.id,
+        captured: await signedCapture(req, body, Capability.settleBill),
+        capturedDiscount: body['memberDiscount'] as Map?,
+      );
     });
     await _recompute(db, visitId);
     await broadcastBill(visitId);
@@ -1595,6 +3103,17 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   ) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
+    final raw = await req.readAsString();
+    final body = raw.isEmpty
+        ? <String, dynamic>{}
+        : jsonDecode(raw) as Map<String, dynamic>;
+    final archived = await amendArchivedReceiptMember(
+      req,
+      receiptId,
+      body,
+      detach: true,
+    );
+    if (archived != null) return archived;
     final rec = await _receipt(db, receiptId);
     if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
     final visitId = rec.visitId ?? rec.tableId;
@@ -1602,7 +3121,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     if (locked != null) return locked;
     final paid = await receiptUnpaidGuard(receiptId);
     if (paid != null) return paid;
-    final (_, blocked) = await requireSplit();
+    final (_, blocked) = await requireSplit(req, body);
     if (blocked != null) return blocked;
     final actor = await resolve(req);
     // Points back, discount off and the name cleared are one act (ADR-0100).
@@ -1636,29 +3155,45 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   ) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final captured = await signedCapture(req, body, Capability.settleBill);
     final rec = await _receipt(db, receiptId);
+    if (rec == null && body['visitId'] is String) {
+      final archived = await amendArchivedRedeem(
+        req,
+        body['visitId'] as String,
+        receiptId,
+        body,
+        remove: false,
+      );
+      if (archived != null) return archived;
+    }
     if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
     final memberId = rec.memberId;
     if (memberId == null) {
       return _err(409, 'no_member', 'struk ini belum punya pelanggan');
     }
     final visitId = rec.visitId ?? rec.tableId;
-    final locked = await lockGuard(visitId);
+    final locked = captured ? null : await lockGuard(visitId);
     if (locked != null) return locked;
-    final paid = await receiptUnpaidGuard(receiptId);
-    if (paid != null) return paid;
-    final (cfg, blocked) = await requireSplit();
+    if (!captured) {
+      final paid = await receiptUnpaidGuard(receiptId);
+      if (paid != null) return paid;
+    }
+    final (cfg, blocked) = await requireSplit(req, body);
     if (blocked != null) return blocked;
     if (await _receiptDiscountOf(db, receiptId, 'redeem') != null) {
       return _err(409, 'redeem_exists', 'sudah ada penukaran poin di struk');
     }
-    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final points = (body['points'] as num?)?.toInt() ?? 0;
 
     // The ceiling is what *this share* can absorb, not the whole bill — the
     // guest beside them is not paying for these points.
     final room = rec.total - rec.serviceAmount - rec.taxAmount;
-    final maxPoints = cfg.pointValue <= 0 ? 0 : room ~/ cfg.pointValue;
+    final pointValue = !captured
+        ? cfg.pointValue
+        : (body['pointValue'] as num?)?.toInt() ?? cfg.pointValue;
+    final maxPoints = pointValue <= 0 ? 0 : room ~/ pointValue;
     if (points > maxPoints) {
       return _err(409, 'exceeds_bill', 'poin melebihi nilai struk', {
         'points': maxPoints,
@@ -1680,7 +3215,9 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           // to (ADR-0123 §capturedAt). A redeem captured at 23:50 and drained
           // at 00:10 otherwise files the give-back in the next day's member
           // report while the payment it paid for sits in the previous day's.
-          at: _capturedAt(body),
+          at: captured ? _capturedAt(body) : null,
+          honorCaptured: captured,
+          capturedPointValue: (body['pointValue'] as num?)?.toInt(),
         );
         await db
             .into(db.discounts)
@@ -1717,14 +3254,26 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   ) async {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final captured = await signedCapture(req, body, Capability.settleBill);
     final rec = await _receipt(db, receiptId);
+    if (rec == null && body['visitId'] is String) {
+      final archived = await amendArchivedRedeem(
+        req,
+        body['visitId'] as String,
+        receiptId,
+        body,
+        remove: true,
+      );
+      if (archived != null) return archived;
+    }
     if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
     final visitId = rec.visitId ?? rec.tableId;
-    final locked = await lockGuard(visitId);
+    final locked = captured ? null : await lockGuard(visitId);
     if (locked != null) return locked;
-    final paid = await receiptUnpaidGuard(receiptId);
+    final paid = captured ? null : await receiptUnpaidGuard(receiptId);
     if (paid != null) return paid;
-    final (_, blocked) = await requireSplit();
+    final (_, blocked) = await requireSplit(req, body);
     if (blocked != null) return blocked;
     final actor = await resolve(req);
     await db.transaction(() async {
@@ -1755,12 +3304,54 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
     final user = await resolve(req);
-    final rec = await _receipt(db, receiptId);
-    if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
-    final visitId = rec.visitId ?? rec.tableId;
-    final locked = await lockGuard(visitId);
-    if (locked != null) return locked;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final rec = await _receipt(db, receiptId);
+    final captured = await signedCapture(req, body, Capability.settleBill)
+        ? _capturedAt(body)
+        : null;
+    final orphanVisitId = (body['visitId'] as String?)?.trim();
+    if (rec != null &&
+        orphanVisitId != null &&
+        orphanVisitId.isNotEmpty &&
+        orphanVisitId != (rec.visitId ?? rec.tableId)) {
+      return _err(409, 'wrong_visit', 'receipt belongs to another visit');
+    }
+    if (rec == null &&
+        (captured == null || orphanVisitId == null || orphanVisitId.isEmpty)) {
+      return _err(404, 'no_receipt', 'receipt not found');
+    }
+    if (rec == null) {
+      final archivedReceipt = await (db.select(
+        db.tableSessionReceipts,
+      )..where((r) => r.receiptId.equals(receiptId))).getSingleOrNull();
+      if (archivedReceipt != null &&
+          archivedReceipt.sessionId != orphanVisitId) {
+        return _err(409, 'wrong_visit', 'receipt belongs to another visit');
+      }
+    }
+    var visit = rec == null ? await _visit(db, orphanVisitId!) : null;
+    TableSession? archivedSession;
+    if (rec == null && visit == null) {
+      archivedSession = await (db.select(
+        db.tableSessions,
+      )..where((s) => s.id.equals(orphanVisitId!))).getSingleOrNull();
+      if (archivedSession == null) {
+        return _err(404, 'no_visit', 'visit not found');
+      }
+    }
+    final visitId =
+        rec?.visitId ?? rec?.tableId ?? visit?.id ?? archivedSession!.id;
+    if (captured == null && await _legacyParkedPaymentCount(db, visitId) > 0) {
+      return _err(
+        409,
+        'legacy_parked_payment',
+        'pembayaran lama belum diselesaikan',
+      );
+    }
+    final locked = archivedSession == null && captured == null
+        ? await lockGuard(visitId)
+        : null;
+    if (locked != null) return locked;
     final method = (body['method'] as String?) ?? 'tunai';
     if (!_methods.contains(method)) {
       return _err(400, 'bad_method', 'unknown payment method');
@@ -1770,8 +3361,8 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     // A struk takes several payments now that the tender lock is gone
     // (ADR-0121), so the amount is the cashier's to type and nothing else caps
     // it. Before, the settle mode computed it and this could not be wrong.
-    final left = rec.total - await _paidNet(db, receiptId);
-    if (amount > left) {
+    final left = rec == null ? 0 : rec.total - await _paidNet(db, receiptId);
+    if (rec != null && amount > left && captured == null) {
       return _err(409, 'overpayment', 'melebihi sisa struk ini', {
         'outstanding': left,
       });
@@ -1790,13 +3381,16 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     }
     // Everything a tab needs is checked before the row is written, so a refusal
     // never leaves a payment standing with no ledger entry behind it.
-    final visit = onAccount ? await _visit(db, visitId) : null;
+    visit ??= await _visit(db, visitId);
     // Debt belongs to the payer explicitly named on this leg, independently
     // of ticket, receipt and visit ownership (ADR-0125).
     final debtorId = (body['memberId'] as String?)?.trim();
     if (onAccount) {
       final cfg = await debtConfig(db);
-      if (!cfg.enabled) return _err(404, 'debt_disabled', 'piutang mati');
+      if (!cfg.enabled &&
+          !await signedCapture(req, body, Capability.settleBill)) {
+        return _err(404, 'debt_disabled', 'piutang mati');
+      }
       if (debtorId == null) {
         return _err(409, 'no_member', 'pilih pelanggan yang berutang');
       }
@@ -1810,26 +3404,45 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final storedPhoto = (method == 'tunai' || onAccount) ? null : photo;
     try {
       await db.transaction(() async {
-        await db
-            .into(db.payments)
-            .insert(
-              PaymentsCompanion.insert(
-                id: paymentId,
-                receiptId: receiptId,
-                method: method,
-                amount: amount,
-                memberId: Value(onAccount ? debtorId : null),
-                // A tab tenders nothing, so nothing is stored — a change figure
-                // on a promise is a lie the receipt would print.
-                tenderedAmount: Value(
-                  onAccount ? null : (body['tendered'] as num?)?.toInt(),
+        if (archivedSession != null) {
+          await db
+              .into(db.tableSessionPayments)
+              .insert(
+                TableSessionPaymentsCompanion.insert(
+                  id: paymentId,
+                  sessionId: visitId,
+                  receiptId: receiptId,
+                  memberId: Value(onAccount ? debtorId : null),
+                  method: method,
+                  amount: amount,
+                  cashierUserId: Value(user?.id),
+                  at: captured!,
+                  photo: Value(storedPhoto),
                 ),
-                cashierUserId: Value(user?.id),
-                note: Value((body['note'] as String?)?.trim()),
-                at: _capturedAt(body) ?? SatClock.now().toUtc(),
-                photo: Value(storedPhoto),
-              ),
-            );
+              );
+        } else {
+          await db
+              .into(db.payments)
+              .insert(
+                PaymentsCompanion.insert(
+                  id: paymentId,
+                  receiptId: receiptId,
+                  visitId: Value(rec == null ? visitId : null),
+                  method: method,
+                  amount: amount,
+                  memberId: Value(onAccount ? debtorId : null),
+                  // A tab tenders nothing, so nothing is stored — a change figure
+                  // on a promise is a lie the receipt would print.
+                  tenderedAmount: Value(
+                    onAccount ? null : (body['tendered'] as num?)?.toInt(),
+                  ),
+                  cashierUserId: Value(user?.id),
+                  note: Value((body['note'] as String?)?.trim()),
+                  at: captured ?? SatClock.now().toUtc(),
+                  photo: Value(storedPhoto),
+                ),
+              );
+        }
         // Inside the same transaction as the payment it belongs to: a charge
         // without its payment is a debt nobody incurred, and a payment without
         // its charge is money nobody owes.
@@ -1842,12 +3455,18 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
             visitId: visitId,
             // The table, not the receipt: `rec.label` is empty on a bill nobody
             // split, and "which table" is how a tab is recognised weeks later.
-            billLabel: visit?.tableLabel ?? rec.label,
+            billLabel:
+                visit?.tableLabel ??
+                archivedSession?.tableLabel ??
+                rec?.label ??
+                '',
             actorUserId: user?.id,
             hub: hub,
+            at: captured,
+            honorCaptured: captured != null,
           );
         }
-        await _recompute(db, visitId);
+        if (archivedSession == null) await _recompute(db, visitId);
         await _audit(
           db,
           AuditType.paymentRecorded,
@@ -1855,9 +3474,14 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           params: {
             'amount': auditRupiah(amount),
             'method': method,
-            'label': rec.label,
+            'label':
+                rec?.label ??
+                visit?.tableLabel ??
+                archivedSession?.tableLabel ??
+                '',
           },
-          tableId: rec.tableId,
+          tableId:
+              rec?.tableId ?? visit?.tableId ?? archivedSession?.tableId ?? '',
           actor: user?.id,
           amountCents: amount,
           // Only when there is genuinely an image behind it — a cash tender
@@ -1867,7 +3491,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           // `billClosed` is already stamped at capture, so leaving this at
           // drain time files a bill as closed before the payment that closed
           // it — the venue log then reads as an impossible order of events.
-          at: _capturedAt(body),
+          at: captured,
         );
       });
     } on DebtException catch (e) {
@@ -1879,8 +3503,14 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         'limit': e.limit,
       });
     }
-    final captured = _capturedAt(body);
-    await broadcastBill(visitId);
+    if (archivedSession == null) {
+      await broadcastBill(visitId);
+    } else {
+      hub.broadcast(WsEventTypes.tableSessionClosed, {
+        'tableId': archivedSession.tableId,
+        'visitId': visitId,
+      });
+    }
     // A payment collected on a dark till and drained after its own business
     // day closed its books is accepted — the cash is in the drawer, and
     // refusing it would lose the record, not the money. It gets a row of its
@@ -1898,18 +3528,22 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           AuditType.paymentRecorded,
           AuditKind.settlementArrivedLate,
           params: {
-            'table': visit?.tableLabel ?? '',
+            'table': visit?.tableLabel ?? archivedSession?.tableLabel ?? '',
             'amount': auditRupiah(amount),
             'captured': captured.toLocal().toIso8601String(),
           },
-          tableId: visit?.tableId ?? '',
+          tableId: visit?.tableId ?? archivedSession?.tableId ?? '',
           actor: user?.id,
           amountCents: amount,
           paymentId: paymentId,
         );
       }
     }
-    return _ok({'bill': await _buildBill(db, visitId)});
+    return _ok({
+      'bill': archivedSession == null
+          ? await _buildBill(db, visitId)
+          : await _buildSessionBill(db, visitId),
+    });
   });
 
   // Proof-photo bytes for a LIVE payment (open bill). Kept OUT of the bill JSON
@@ -1971,10 +3605,34 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final denied = await requireCap(req, Capability.refund);
     if (denied != null) return denied;
     final user = await resolve(req);
-    final rec = await _receipt(db, receiptId);
-    if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
-    final visitId = rec.visitId ?? rec.tableId;
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final rec = await _receipt(db, receiptId);
+    final captured = await signedCapture(req, body, Capability.refund)
+        ? _capturedAt(body)
+        : null;
+    final suppliedVisitId = (body['visitId'] as String?)?.trim();
+    if (rec == null &&
+        (captured == null ||
+            suppliedVisitId == null ||
+            suppliedVisitId.isEmpty)) {
+      return _err(404, 'no_receipt', 'receipt not found');
+    }
+    final visitId = rec?.visitId ?? rec?.tableId ?? suppliedVisitId!;
+    if (rec != null &&
+        suppliedVisitId != null &&
+        suppliedVisitId.isNotEmpty &&
+        suppliedVisitId != visitId) {
+      return _err(409, 'wrong_visit', 'receipt belongs to another visit');
+    }
+    final visit = await _visit(db, visitId);
+    final archivedSession = visit == null
+        ? await (db.select(
+            db.tableSessions,
+          )..where((s) => s.id.equals(visitId))).getSingleOrNull()
+        : null;
+    if (visit == null && archivedSession == null) {
+      return _err(404, 'no_visit', 'visit not found');
+    }
     // A refund names the **leg** it unwinds, never a method (ADR-0121). The
     // method used to identify one, because the bill-wide tender lock left a
     // struk holding exactly one; with the lock gone it identifies nothing —
@@ -1989,8 +3647,29 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
               (x) => x.id.equals(paymentId) & x.receiptId.equals(receiptId),
             ))
             .getSingleOrNull();
-    if (leg == null) return _err(404, 'no_payment', 'payment not found');
-    if (leg.isRefund) {
+    final archivedLeg = leg == null
+        ? await (db.select(db.tableSessionPayments)..where(
+                (x) =>
+                    x.id.equals(paymentId) &
+                    x.receiptId.equals(receiptId) &
+                    x.sessionId.equals(visitId),
+              ))
+              .getSingleOrNull()
+        : null;
+    if (leg == null && archivedLeg == null) {
+      return _err(404, 'no_payment', 'payment not found');
+    }
+    if (archivedLeg != null && captured == null) {
+      return _err(
+        409,
+        'archived_payment',
+        'archived refund requires a capture',
+      );
+    }
+    if (leg != null && rec == null && leg.visitId != visitId) {
+      return _err(409, 'wrong_visit', 'payment belongs to another visit');
+    }
+    if (leg?.isRefund == true || archivedLeg?.isRefund == true) {
       return _err(
         409,
         'not_a_payment',
@@ -2009,30 +3688,48 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           0,
           (a, p) => a + p.amount,
         );
-    final refundable = leg.amount + priorRefunds;
-    if (amount > refundable) {
+    final refundable = (leg?.amount ?? archivedLeg!.amount) + priorRefunds;
+    if (amount > refundable && captured == null) {
       return _err(409, 'over_refund', 'melebihi sisa pada pembayaran ini', {
         'refundable': refundable,
       });
     }
-    final onAccount = leg.method == 'piutang';
+    final method = leg?.method ?? archivedLeg!.method;
+    final onAccount = method == 'piutang';
     await db.transaction(() async {
-      await db
-          .into(db.payments)
-          .insert(
-            PaymentsCompanion.insert(
-              id: _mintId(body),
-              receiptId: receiptId,
-              // Inherited, never chosen: a refund is the leg running backwards.
-              method: leg.method,
-              amount: -amount,
-              isRefund: const Value(true),
-              refundsPaymentId: Value(paymentId),
-              cashierUserId: Value(user?.id),
-              note: Value((body['note'] as String?)?.trim()),
-              at: _capturedAt(body) ?? SatClock.now().toUtc(),
-            ),
-          );
+      if (archivedLeg != null || archivedSession != null) {
+        await db
+            .into(db.tableSessionPayments)
+            .insert(
+              TableSessionPaymentsCompanion.insert(
+                id: _mintId(body),
+                sessionId: visitId,
+                receiptId: receiptId,
+                method: method,
+                amount: -amount,
+                isRefund: const Value(true),
+                cashierUserId: Value(user?.id),
+                at: captured!,
+              ),
+            );
+      } else {
+        await db
+            .into(db.payments)
+            .insert(
+              PaymentsCompanion.insert(
+                id: _mintId(body),
+                receiptId: receiptId,
+                visitId: Value(rec == null ? visitId : null),
+                method: method,
+                amount: -amount,
+                isRefund: const Value(true),
+                refundsPaymentId: Value(paymentId),
+                cashierUserId: Value(user?.id),
+                note: Value((body['note'] as String?)?.trim()),
+                at: captured ?? SatClock.now().toUtc(),
+              ),
+            );
+      }
       // A tab leg gives nothing back from the drawer — the claim simply stops
       // standing on the member (ADR-0121). Partial, and in the same
       // transaction as the negative payment for the reason the charge was.
@@ -2045,28 +3742,44 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
           hub: hub,
         );
       }
-      await _recompute(db, visitId);
+      if (visit != null) await _recompute(db, visitId);
       await _audit(
         db,
         AuditType.refund,
         AuditKind.refund,
         params: {
           'amount': auditRupiah(amount),
-          'method': leg.method,
-          'label': rec.label,
+          'method': method,
+          'label':
+              rec?.label ??
+              visit?.tableLabel ??
+              archivedSession?.tableLabel ??
+              '',
         },
-        tableId: rec.tableId,
+        tableId:
+            rec?.tableId ?? visit?.tableId ?? archivedSession?.tableId ?? '',
         actor: user?.id,
         reason: (body['note'] as String?)?.trim(),
         // The payment row stores this negative; the audit column is a
         // magnitude, so the sign is dropped here deliberately.
         amountCents: amount,
         // Backdated with its row, for the reason the payment audit is.
-        at: _capturedAt(body),
+        at: captured,
       );
     });
-    await broadcastBill(visitId);
-    return _ok({'bill': await _buildBill(db, visitId)});
+    if (visit != null) {
+      await broadcastBill(visitId);
+    } else {
+      hub.broadcast(WsEventTypes.tableSessionClosed, {
+        'tableId': archivedSession!.tableId,
+        'visitId': visitId,
+      });
+    }
+    return _ok({
+      'bill': visit == null
+          ? await _buildSessionBill(db, visitId)
+          : await _buildBill(db, visitId),
+    });
   });
 
   // Render + send the MONEY document to a VENUE printer (server-rendered).
@@ -2179,9 +3892,61 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final denied = await requireCap(req, Capability.settleBill);
     if (denied != null) return denied;
     final user = await resolve(req);
+    final raw = await req.readAsString();
+    final body = raw.isEmpty
+        ? <String, dynamic>{}
+        : jsonDecode(raw) as Map<String, dynamic>;
+    final captured = await signedCapture(req, body, Capability.settleBill)
+        ? _capturedAt(body)
+        : null;
     final rec = await _receipt(db, receiptId);
-    if (rec == null) return _err(404, 'no_receipt', 'receipt not found');
+    if (rec == null) {
+      final visitId = body['visitId'] as String? ?? '';
+      if (captured == null || visitId.isEmpty) {
+        return _err(404, 'no_receipt', 'receipt not found');
+      }
+      final archived =
+          await (db.select(db.tableSessionReceipts)..where(
+                (r) =>
+                    r.receiptId.equals(receiptId) & r.sessionId.equals(visitId),
+              ))
+              .getSingleOrNull();
+      final session = await (db.select(
+        db.tableSessions,
+      )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+      if (archived == null || session == null) {
+        return _err(404, 'no_receipt', 'receipt not found');
+      }
+      // Reopening permits a later captured edit. Keep every archived tender:
+      // money already taken remains a visit credit even if it is retaken.
+      await _audit(
+        db,
+        AuditType.billReopened,
+        AuditKind.billReopenedReceipt,
+        params: {'label': archived.label},
+        tableId: session.tableId,
+        actor: user?.id,
+        at: captured,
+      );
+      return _ok({'bill': await _buildSessionBill(db, visitId)});
+    }
     final visitId = rec.visitId ?? rec.tableId;
+    if (captured != null) {
+      if (body['visitId'] is String && body['visitId'] != visitId) {
+        return _err(409, 'wrong_visit', 'receipt belongs to another visit');
+      }
+      // Later signed edits can amend this receipt without deleting real tender.
+      await _audit(
+        db,
+        AuditType.billReopened,
+        AuditKind.billReopenedReceipt,
+        params: {'label': rec.label},
+        tableId: rec.tableId,
+        actor: user?.id,
+        at: captured,
+      );
+      return _ok({'bill': await _buildBill(db, visitId)});
+    }
     // Read the piutang payments BEFORE the delete: this route clears them in
     // bulk and there is no per-payment removal route to hang a hook on, so the
     // reversals have to fan out over whatever is about to disappear. A receipt
@@ -2229,16 +3994,79 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     if (denied != null) return denied;
     final user = await resolve(req);
     final visit = await _visit(db, visitId);
-    if (visit == null) return _err(404, 'no_visit', 'visit not found');
+    final raw = await req.readAsString();
+    final body = raw.isEmpty
+        ? <String, dynamic>{}
+        : jsonDecode(raw) as Map<String, dynamic>;
+    final captured = await signedCapture(req, body, Capability.settleBill)
+        ? _capturedAt(body)
+        : null;
+    if (visit == null) {
+      if (captured == null) {
+        return _err(404, 'no_visit', 'visit not found');
+      }
+      final session = await (db.select(
+        db.tableSessions,
+      )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+      if (session == null) return _err(404, 'no_visit', 'visit not found');
+      final writeOff = body['writeOff'] == true;
+      final loss = body['capturedLoss'];
+      final reason = (body['reason'] as String?)?.trim() ?? '';
+      if (writeOff) {
+        if (!(await capsOf(req)).contains(Capability.refund.name)) {
+          return _err(
+            403,
+            'forbidden',
+            'tak tertagih perlu persetujuan manajer',
+          );
+        }
+        if (loss is! int || loss < 0 || reason.isEmpty) {
+          return _err(
+            409,
+            'captured_close_needs_repair',
+            'captured write-off needs repair',
+          );
+        }
+      }
+      await db.transaction(() async {
+        if (writeOff) {
+          await (db.update(
+            db.tableSessions,
+          )..where((s) => s.id.equals(visitId))).write(
+            TableSessionsCompanion(
+              lossAmount: Value(session.lossAmount + (loss as int)),
+            ),
+          );
+        }
+        await _audit(
+          db,
+          AuditType.billClosed,
+          writeOff ? AuditKind.billWrittenOff : AuditKind.billClosed,
+          params: {
+            'table': session.tableLabel ?? '',
+            if (writeOff) 'amount': auditRupiah(loss as int),
+          },
+          tableId: session.tableId,
+          actor: user?.id,
+          reason: writeOff ? reason : null,
+          amountCents: writeOff ? loss as int : null,
+          at: captured,
+        );
+      });
+      return _ok({'closed': true, 'snapshotted': true});
+    }
     if (visit.billClosedAt != null) {
       return _err(409, 'already_closed', 'tagihan sudah ditutup');
     }
     final bill = await _buildBill(db, visitId);
     if (bill == null) return _err(409, 'no_lines', 'tidak ada pesanan');
-    final raw = await req.readAsString();
-    final body = raw.isEmpty
-        ? <String, dynamic>{}
-        : jsonDecode(raw) as Map<String, dynamic>;
+    if (captured == null && await _legacyParkedPaymentCount(db, visitId) > 0) {
+      return _err(
+        409,
+        'legacy_parked_payment',
+        'pembayaran lama belum diselesaikan',
+      );
+    }
     final writeOff = body['writeOff'] == true;
     final outstanding = bill['outstanding'] as int;
     final fullyAssigned = bill['fullyAssigned'] == true;
@@ -2268,7 +4096,7 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       actorId: user?.id,
       loss: loss,
       reason: writeOff ? (body['reason'] as String?)?.trim() : null,
-      at: _capturedAt(body),
+      at: captured,
     );
     return _ok({'closed': true, 'snapshotted': snapshotted});
   });
@@ -2282,7 +4110,40 @@ Router settlementRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     if (denied != null) return denied;
     final user = await resolve(req);
     final visit = await _visit(db, visitId);
-    if (visit == null) return _err(404, 'no_visit', 'visit not found');
+    if (visit == null) {
+      final raw = await req.readAsString();
+      final body = raw.isEmpty
+          ? <String, dynamic>{}
+          : jsonDecode(raw) as Map<String, dynamic>;
+      final captured = await signedCapture(req, body, Capability.settleBill)
+          ? _capturedAt(body)
+          : null;
+      if (captured == null) return _err(404, 'no_visit', 'visit not found');
+      final session = await (db.select(
+        db.tableSessions,
+      )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+      if (session == null) return _err(404, 'no_visit', 'visit not found');
+      await db.transaction(() async {
+        await (db.update(
+          db.tableSessions,
+        )..where((s) => s.id.equals(visitId))).write(
+          const TableSessionsCompanion(
+            lossAmount: Value(0),
+            billClosedBy: Value(null),
+          ),
+        );
+        await _audit(
+          db,
+          AuditType.billReopened,
+          AuditKind.billReopened,
+          params: {'table': session.tableLabel ?? ''},
+          tableId: session.tableId,
+          actor: user?.id,
+          at: captured,
+        );
+      });
+      return _ok({'bill': await _buildSessionBill(db, visitId)});
+    }
     await (db.update(db.visits)..where((v) => v.id.equals(visitId))).write(
       const VisitsCompanion(
         billClosedAt: Value(null),
@@ -2474,19 +4335,268 @@ String _mintId(Map<String, dynamic> body, [String key = 'id']) {
 ///
 /// A payment taken at 23:50 on a dark handset and drained at 00:10 belongs to
 /// the shift that collected it; stamping it at drain time makes the closing
-/// shift short and the opening one over in the same stroke. Ignored when
-/// absent (every online write) and when it is in the future — a handset clock
-/// ahead of the host must not book money into tomorrow.
+/// shift short and the opening one over in the same stroke. A handset clock
+/// ahead of the host is clamped to host time so its action still syncs without
+/// booking money into tomorrow.
 DateTime? _capturedAt(Map<String, dynamic> body) {
   final raw = body['capturedAt'] as String?;
   if (raw == null) return null;
   final t = DateTime.tryParse(raw)?.toUtc();
   if (t == null) return null;
-  return t.isAfter(SatClock.now().toUtc()) ? null : t;
+  final now = SatClock.now().toUtc();
+  return t.isAfter(now) ? now : t;
 }
 
 Future<Receipt?> _receipt(AppDatabase db, String id) =>
     (db.select(db.receipts)..where((x) => x.id.equals(id))).getSingleOrNull();
+
+Future<Response> _capturedArchivedReceiptDiscount(
+  AppDatabase db,
+  WsHub hub,
+  String receiptId,
+  Map<String, dynamic> body,
+  String? actorId, {
+  required bool allowStack,
+}) async {
+  final visitId = (body['visitId'] as String?)?.trim();
+  if (visitId == null || visitId.isEmpty || _capturedAt(body) == null) {
+    return _err(404, 'no_receipt', 'receipt not found');
+  }
+  final session = await (db.select(
+    db.tableSessions,
+  )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+  final receipt =
+      await (db.select(db.tableSessionReceipts)..where(
+            (r) => r.receiptId.equals(receiptId) & r.sessionId.equals(visitId),
+          ))
+          .getSingleOrNull();
+  if (session == null || receipt == null) {
+    return _err(404, 'no_receipt', 'receipt not found');
+  }
+  final capturedId = body['id'] as String?;
+  if (capturedId != null) {
+    final prior = await (db.select(
+      db.tableSessionDiscounts,
+    )..where((d) => d.id.equals(capturedId))).getSingleOrNull();
+    if (prior != null) {
+      if (prior.sessionId != visitId) {
+        return _err(409, 'wrong_visit', 'discount belongs another visit');
+      }
+      return _ok({'bill': await _buildSessionBill(db, visitId)});
+    }
+  }
+  final preset =
+      await (db.select(db.discountPresets)
+            ..where((p) => p.id.equals(body['presetId'] as String? ?? '')))
+          .getSingleOrNull();
+  final snapshot =
+      body['name'] is String && body['kind'] is String && body['value'] is num;
+  if (preset == null && !snapshot) {
+    return _err(404, 'no_preset', 'preset not found');
+  }
+  final name = snapshot ? body['name'] as String : preset!.name;
+  final kind = snapshot ? body['kind'] as String : preset!.kind;
+  final value = snapshot ? (body['value'] as num).toInt() : preset!.value;
+  final ticketId = body['ticketId'] as String?;
+  final perUnit = ticketId != null && body['perUnit'] == true;
+  final scope = preset?.scope ?? (ticketId == null ? 'order' : 'line');
+  if (scope != (ticketId == null ? 'order' : 'line')) {
+    return _err(409, 'scope_mismatch', 'preset scope does not match target');
+  }
+  final discounts = await (db.select(
+    db.tableSessionDiscounts,
+  )..where((d) => d.sessionId.equals(visitId))).get();
+  if (!allowStack &&
+      discounts.any(
+        (d) =>
+            d.source == 'manual' &&
+            d.receiptId == (perUnit ? null : receiptId) &&
+            d.ticketId == ticketId,
+      )) {
+    return _err(409, 'discount_exists', 'diskon sudah ada');
+  }
+  final tickets = await (db.select(
+    db.tableSessionTickets,
+  )..where((t) => t.sessionId.equals(visitId))).get();
+  final active = tickets.where((t) => t.status != 'voided').toList();
+  final activeIds = active.map((t) => t.ticketId).toSet();
+  final subtotal = active.fold<int>(0, (sum, t) => sum + t.price * t.qty);
+  final lineDiscount = discounts
+      .where((d) => d.ticketId != null && activeIds.contains(d.ticketId))
+      .fold<int>(0, (sum, d) => sum + d.amount);
+  final orderDiscount = discounts
+      .where((d) => d.ticketId == null)
+      .fold<int>(0, (sum, d) => sum + d.amount);
+  int base;
+  int units = 1;
+  if (ticketId == null) {
+    final receiptLineDiscount = discounts
+        .where((d) => d.receiptId == receiptId && d.ticketId != null)
+        .fold<int>(0, (sum, d) => sum + d.amount);
+    base = receipt.subtotal - receiptLineDiscount;
+  } else {
+    final ticket = tickets.where((t) => t.ticketId == ticketId).firstOrNull;
+    final assigned =
+        await (db.select(db.tableSessionReceiptLines)..where(
+              (l) =>
+                  l.receiptId.equals(receiptId) &
+                  l.sessionId.equals(visitId) &
+                  l.ticketId.equals(ticketId),
+            ))
+            .get();
+    if (ticket == null || assigned.isEmpty || receipt.mode == 'even') {
+      return _err(409, 'line_not_on_receipt', 'item ini tidak ada di struk');
+    }
+    units = assigned.fold<int>(0, (sum, l) => sum + l.qtyUnits);
+    base = ticket.price * units;
+  }
+  final amount = resolveDiscountAmount(
+    kind: kind,
+    value: value,
+    base: base,
+    units: perUnit ? units : 1,
+  );
+  final cfg = await _config(db, visitId);
+  final before = computeBreakdown(
+    subtotal - lineDiscount,
+    cfg,
+    discount: orderDiscount,
+  );
+  final after = computeBreakdown(
+    subtotal -
+        lineDiscount -
+        (ticketId == null || !activeIds.contains(ticketId) ? 0 : amount),
+    cfg,
+    discount: orderDiscount + (ticketId == null ? amount : 0),
+  );
+  await db.transaction(() async {
+    await db
+        .into(db.tableSessionDiscounts)
+        .insert(
+          TableSessionDiscountsCompanion.insert(
+            id: _mintId(body),
+            sessionId: visitId,
+            receiptId: Value(perUnit ? null : receiptId),
+            ticketId: Value(ticketId),
+            presetId: Value(body['presetId'] as String?),
+            name: name,
+            kind: kind,
+            value: Value(value),
+            amount: Value(amount),
+            byUserId: Value(actorId),
+            at: _capturedAt(body)!,
+          ),
+        );
+    await (db.update(
+      db.tableSessions,
+    )..where((s) => s.id.equals(visitId))).write(
+      TableSessionsCompanion(
+        discountAmount: Value(session.discountAmount + amount),
+        settledTotal: Value(session.settledTotal + after.total - before.total),
+      ),
+    );
+    await _audit(
+      db,
+      AuditType.discountApplied,
+      ticketId == null
+          ? AuditKind.discountApplied
+          : AuditKind.discountAppliedLine,
+      params: {'name': name},
+      tableId: session.tableId,
+      actor: actorId,
+      amountCents: amount,
+      at: _capturedAt(body),
+    );
+  });
+  hub.broadcast(WsEventTypes.tableSessionClosed, {
+    'tableId': session.tableId,
+    'visitId': visitId,
+  });
+  return _ok({'bill': await _buildSessionBill(db, visitId)});
+}
+
+Future<Response> _removeCapturedArchivedDiscount(
+  AppDatabase db,
+  WsHub hub,
+  String visitId,
+  String discountId,
+  String? receiptId,
+  Map<String, dynamic> body,
+  String? actorId,
+) async {
+  final session = await (db.select(
+    db.tableSessions,
+  )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+  final row =
+      await (db.select(db.tableSessionDiscounts)..where(
+            (d) => d.id.equals(discountId) & d.sessionId.equals(visitId),
+          ))
+          .getSingleOrNull();
+  if (session == null ||
+      row == null ||
+      (receiptId == null
+          ? row.ticketId == null || row.receiptId != null
+          : row.receiptId != receiptId)) {
+    return _err(404, 'no_discount', 'diskon tidak ditemukan');
+  }
+  if (row.source != 'manual') {
+    return _err(409, 'discount_not_manual', 'diskon ini dari pelanggan');
+  }
+  final tickets = await (db.select(
+    db.tableSessionTickets,
+  )..where((t) => t.sessionId.equals(visitId))).get();
+  final active = tickets.where((t) => t.status != 'voided').toList();
+  final activeIds = active.map((t) => t.ticketId).toSet();
+  final subtotal = active.fold<int>(0, (sum, t) => sum + t.price * t.qty);
+  final discounts = await (db.select(
+    db.tableSessionDiscounts,
+  )..where((d) => d.sessionId.equals(visitId))).get();
+  final lineDiscount = discounts
+      .where((d) => d.ticketId != null && activeIds.contains(d.ticketId))
+      .fold<int>(0, (sum, d) => sum + d.amount);
+  final orderDiscount = discounts
+      .where((d) => d.ticketId == null)
+      .fold<int>(0, (sum, d) => sum + d.amount);
+  final removeLine = row.ticketId != null && activeIds.contains(row.ticketId);
+  final cfg = await _config(db, visitId);
+  final before = computeBreakdown(
+    subtotal - lineDiscount,
+    cfg,
+    discount: orderDiscount,
+  );
+  final after = computeBreakdown(
+    subtotal - lineDiscount + (removeLine ? row.amount : 0),
+    cfg,
+    discount: orderDiscount - (row.ticketId == null ? row.amount : 0),
+  );
+  await db.transaction(() async {
+    await (db.delete(
+      db.tableSessionDiscounts,
+    )..where((d) => d.id.equals(discountId))).go();
+    await (db.update(
+      db.tableSessions,
+    )..where((s) => s.id.equals(visitId))).write(
+      TableSessionsCompanion(
+        discountAmount: Value(session.discountAmount - row.amount),
+        settledTotal: Value(session.settledTotal + after.total - before.total),
+      ),
+    );
+    await _audit(
+      db,
+      AuditType.discountRemoved,
+      AuditKind.discountRemoved,
+      params: {'name': row.name},
+      tableId: session.tableId,
+      actor: actorId,
+      at: _capturedAt(body),
+    );
+  });
+  hub.broadcast(WsEventTypes.tableSessionClosed, {
+    'tableId': session.tableId,
+    'visitId': visitId,
+  });
+  return _ok({'bill': await _buildSessionBill(db, visitId)});
+}
 
 Future<Visit?> _visit(AppDatabase db, String id) =>
     (db.select(db.visits)..where((x) => x.id.equals(id))).getSingleOrNull();
@@ -2575,20 +4685,8 @@ Future<int> _dayStartHour(AppDatabase db) async {
   return s?.businessDayStartHour ?? 4;
 }
 
-Future<TaxServiceConfig> _config(AppDatabase db) async {
-  final s = await (db.select(
-    db.venueSettings,
-  )..where((x) => x.id.equals('default'))).getSingleOrNull();
-  return TaxServiceConfig(
-    taxEnabled: s?.taxEnabled ?? false,
-    taxRateBps: s?.taxRateBps ?? 1100,
-    serviceEnabled: s?.serviceEnabled ?? false,
-    serviceMode: s?.serviceMode ?? 'percent',
-    serviceRateBps: s?.serviceRateBps ?? 500,
-    serviceFixedAmount: s?.serviceFixedAmount ?? 0,
-    taxAfterDiscount: s?.taxAfterDiscount ?? true,
-  );
-}
+Future<TaxServiceConfig> _config(AppDatabase db, String visitId) =>
+    visitTaxConfig(db, visitId);
 
 /// Every discount row on a visit's receipts, grouped by receipt id.
 Future<Map<String, List<Discount>>> _discountsByReceipt(
@@ -2625,7 +4723,7 @@ Future<
   })
 >
 _rcInputs(AppDatabase db, String visitId) async {
-  final cfg = await _config(db);
+  final cfg = await _config(db, visitId);
   final tickets = await _sentTickets(db, visitId);
   final recs = await (db.select(
     db.receipts,
@@ -2791,6 +4889,13 @@ Future<void> _audit(
   at: at,
 );
 
+Future<int> _legacyParkedPaymentCount(AppDatabase db, String visitId) async {
+  final rows = await (db.select(
+    db.legacyParkedPayments,
+  )..where((p) => p.visitId.equals(visitId))).get();
+  return rows.length;
+}
+
 /// Build the full bill JSON for one visit, or null if it has no sent lines.
 Future<Map<String, dynamic>?> _buildBill(
   AppDatabase db,
@@ -2801,7 +4906,7 @@ Future<Map<String, dynamic>?> _buildBill(
   if (visit == null) return null;
   final tickets = await _sentTickets(db, visitId);
   if (tickets.isEmpty && !allowEmpty) return null;
-  final cfg = await _config(db);
+  final cfg = await _config(db, visitId);
 
   final recs = await (db.select(
     db.receipts,
@@ -2837,7 +4942,47 @@ Future<Map<String, dynamic>?> _buildBill(
   final billDiscs = await _billDiscounts(db, visitId);
   final billBreak = money.billBreak;
 
-  var paidNet = 0;
+  final orphanPhoto = db.payments.photo.isNotNull();
+  final orphanPays =
+      await (db.selectOnly(db.payments)
+            ..addColumns([
+              db.payments.id,
+              db.payments.method,
+              db.payments.amount,
+              db.payments.isRefund,
+              db.payments.refundsPaymentId,
+              db.payments.tenderedAmount,
+              db.payments.cashierUserId,
+              db.payments.note,
+              db.payments.at,
+              orphanPhoto,
+            ])
+            ..where(db.payments.visitId.equals(visitId)))
+          .get();
+  final orphanPaid = orphanPays.fold<int>(
+    0,
+    (sum, payment) => sum + payment.read(db.payments.amount)!,
+  );
+  var paidNet = orphanPaid;
+  var carriedBalance = 0;
+  if (visit.tableFreedAt != null) {
+    final prior = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+    if (prior != null) {
+      final pastPayments =
+          await (db.selectOnly(db.tableSessionPayments)
+                ..addColumns([db.tableSessionPayments.amount])
+                ..where(db.tableSessionPayments.sessionId.equals(visitId)))
+              .get();
+      final pastPaid = pastPayments.fold<int>(
+        0,
+        (sum, payment) => sum + payment.read(db.tableSessionPayments.amount)!,
+      );
+      carriedBalance = pastPaid - prior.settledTotal;
+      paidNet += carriedBalance;
+    }
+  }
   // [[Kartu stempel (punch card)]] per named [[Pemilik struk]], memoised.
   final recPunch = <String, PunchStatus>{};
   final receiptsJson = <Map<String, dynamic>>[];
@@ -2862,7 +5007,10 @@ Future<Map<String, dynamic>?> _buildBill(
                 db.payments.at,
                 payPhoto,
               ])
-              ..where(db.payments.receiptId.equals(rec.id)))
+              ..where(
+                db.payments.receiptId.equals(rec.id) &
+                    db.payments.visitId.isNull(),
+              ))
             .get();
     final recPaid = pays.fold<int>(
       0,
@@ -2996,6 +5144,7 @@ Future<Map<String, dynamic>?> _buildBill(
 
   return {
     'visitId': visit.id,
+    'legacyParkedPaymentCount': await _legacyParkedPaymentCount(db, visit.id),
     'tableId': visit.tableId,
     'tableLabel': visit.tableLabel,
     // dineIn | takeaway — lets the cashier branch its copy ("Bawa pulang"
@@ -3023,11 +5172,15 @@ Future<Map<String, dynamic>?> _buildBill(
     'serviceAmount': billBreak.serviceAmount,
     'taxAmount': billBreak.taxAmount,
     'taxAfterDiscount': cfg.taxAfterDiscount,
+    'taxConfig': cfg.toJson(),
     'total': billBreak.total,
     'paidAmount': paidNet,
     'outstanding': outstanding,
     'fullyAssigned': fullyAssigned,
-    'fullySettled': fullyAssigned && allReceiptsPaid,
+    'fullySettled':
+        fullyAssigned &&
+        outstanding == 0 &&
+        (allReceiptsPaid || orphanPaid + carriedBalance > 0),
     // The bill-scope discount rows, so the totals ladder and the printed slip
     // can name each one. Receipt-scoped rows still ride on their receipt.
     // ADR-0070; a list rather than a row since ADR-0094.
@@ -3053,6 +5206,21 @@ Future<Map<String, dynamic>?> _buildBill(
         mcfg.splitEnabled && visit.memberAttributionVersion == 2,
     'lines': linesJson,
     'receipts': receiptsJson,
+    'unallocatedPayments': [
+      for (final p in orphanPays)
+        {
+          'id': p.read(db.payments.id)!,
+          'method': p.read(db.payments.method)!,
+          'amount': p.read(db.payments.amount)!,
+          'isRefund': p.read(db.payments.isRefund)!,
+          'refundsPaymentId': p.read(db.payments.refundsPaymentId),
+          'tendered': p.read(db.payments.tenderedAmount),
+          'cashierUserId': p.read(db.payments.cashierUserId),
+          'note': p.read(db.payments.note),
+          'at': p.read(db.payments.at)!.toIso8601String(),
+          'hasPhoto': p.read(orphanPhoto) ?? false,
+        },
+    ],
   };
 }
 
@@ -3079,20 +5247,21 @@ Future<List<Discount>> _lineDiscounts(AppDatabase db, String visitId) =>
         ))
         .get();
 
-/// The bill discount occupying one slot, or null if that slot is free.
+/// A bill discount occupying this source, or null if that slot is free.
 Future<Discount?> _billDiscountOf(
   AppDatabase db,
   String visitId,
   String source,
-) =>
-    (db.select(db.discounts)..where(
-          (x) =>
-              x.visitId.equals(visitId) &
-              x.receiptId.isNull() &
-              x.ticketId.isNull() &
-              x.source.equals(source),
-        ))
-        .getSingleOrNull();
+) async =>
+    (await (db.select(db.discounts)..where(
+              (x) =>
+                  x.visitId.equals(visitId) &
+                  x.receiptId.isNull() &
+                  x.ticketId.isNull() &
+                  x.source.equals(source),
+            ))
+            .get())
+        .firstOrNull;
 
 /// The order-scope discount on [receiptId] from one authority (ADR-0118).
 /// `getSingleOrNull` is safe because `idx_discounts_order_uniq` covers
@@ -3113,6 +5282,50 @@ Future<Discount?> _receiptDiscountOf(
 
 /// Reconstruct a bill-shaped map for a CLOSED session (past bill), from the
 /// snapshot tables — for the Struk pembayaran detail view.
+Future<String> _originalSessionReceiptJson(
+  AppDatabase db,
+  TableSessionReceipt receipt,
+) async {
+  if (receipt.originalSnapshotJson != null) {
+    return receipt.originalSnapshotJson!;
+  }
+  final lines =
+      await (db.select(db.tableSessionReceiptLines)..where(
+            (l) =>
+                l.sessionId.equals(receipt.sessionId) &
+                l.receiptId.equals(receipt.receiptId),
+          ))
+          .get();
+  final amount = db.tableSessionPayments.amount;
+  final payments =
+      await (db.selectOnly(db.tableSessionPayments)
+            ..addColumns([amount])
+            ..where(
+              db.tableSessionPayments.sessionId.equals(receipt.sessionId) &
+                  db.tableSessionPayments.receiptId.equals(receipt.receiptId),
+            ))
+          .get();
+  return jsonEncode({
+    'mode': receipt.mode,
+    'label': receipt.label,
+    'subtotal': receipt.subtotal,
+    'discountAmount': receipt.discountAmount,
+    'serviceAmount': receipt.serviceAmount,
+    'taxAmount': receipt.taxAmount,
+    'total': receipt.total,
+    'status': receipt.status,
+    'paidNet': payments.fold<int>(
+      0,
+      (sum, payment) => sum + payment.read(amount)!,
+    ),
+    'memberId': receipt.memberId,
+    'lines': [
+      for (final line in lines)
+        {'ticketId': line.ticketId, 'qtyUnits': line.qtyUnits},
+    ],
+  });
+}
+
 Future<Map<String, dynamic>?> _buildSessionBill(
   AppDatabase db,
   String sessionId,
@@ -3144,33 +5357,102 @@ Future<Map<String, dynamic>?> _buildSessionBill(
             ])
             ..where(db.tableSessionPayments.sessionId.equals(sessionId)))
           .get();
-  var paidNet = 0;
+  // A captured payment can outlive the receipt it named. Its archived row
+  // still credits the visit even when no receipt can display it.
+  final paidNet = spay.fold<int>(
+    0,
+    (sum, payment) => sum + payment.read(db.tableSessionPayments.amount)!,
+  );
+  final outstanding = (s.settledTotal - paidNet).clamp(0, 1 << 31);
+  final discounts = await (db.select(
+    db.tableSessionDiscounts,
+  )..where((d) => d.sessionId.equals(sessionId))).get();
+  final assignments = await (db.select(
+    db.tableSessionReceiptLines,
+  )..where((line) => line.sessionId.equals(sessionId))).get();
+  final assignedUnits = <String, int>{};
+  for (final line in assignments) {
+    assignedUnits.update(
+      line.ticketId,
+      (qty) => qty + line.qtyUnits,
+      ifAbsent: () => line.qtyUnits,
+    );
+  }
+  final fullyAssigned = stk
+      .where((ticket) => ticket.status != 'voided')
+      .every((ticket) => (assignedUnits[ticket.ticketId] ?? 0) >= ticket.qty);
+  final member = s.memberId == null ? null : await getMember(db, s.memberId!);
+  final receiptIds = {
+    for (final receipt in srec)
+      if (receipt.status != 'cancelled') receipt.receiptId,
+  };
   final receiptsJson = <Map<String, dynamic>>[];
   for (final rec in srec) {
-    final pays = spay
-        .where(
-          (p) => p.read(db.tableSessionPayments.receiptId) == rec.receiptId,
-        )
-        .toList();
+    if (rec.originalSnapshotJson != null) {
+      final original = (jsonDecode(rec.originalSnapshotJson!) as Map)
+          .cast<String, dynamic>();
+      receiptsJson.add({
+        ...original,
+        'id': '${rec.receiptId}:original',
+        'mode': 'original',
+        'paidNet': original['paidNet'] ?? 0,
+        'payments': const [],
+        'discounts': const [],
+      });
+    }
+    final pays = rec.status == 'cancelled'
+        ? <TypedResult>[]
+        : spay
+              .where(
+                (p) =>
+                    p.read(db.tableSessionPayments.receiptId) == rec.receiptId,
+              )
+              .toList();
     final recPaid = pays.fold<int>(
       0,
       (a, p) => a + p.read(db.tableSessionPayments.amount)!,
     );
-    paidNet += recPaid;
+    final recMember = rec.memberId == null
+        ? null
+        : await getMember(db, rec.memberId!);
     receiptsJson.add({
       'id': rec.receiptId,
-      'mode': rec.mode,
+      'mode': rec.originalSnapshotJson == null ? rec.mode : 'amendment',
       'label': rec.label,
       'subtotal': rec.subtotal,
+      'discountAmount': rec.discountAmount,
       'serviceAmount': rec.serviceAmount,
       'taxAmount': rec.taxAmount,
       'total': rec.total,
-      'status': rec.status,
+      'status': rec.status == 'cancelled'
+          ? 'cancelled'
+          : rec.total > 0 && recPaid >= rec.total
+          ? 'paid'
+          : 'unpaid',
       'paidNet': recPaid,
       // Frozen at snapshot (ADR-0118), so a reprinted past slip still names
       // the guest it was handed to.
       'memberId': rec.memberId,
-      'lines': const [],
+      'member': recMember == null ? null : memberJson(recMember),
+      'lines': [
+        for (final line in assignments)
+          if (line.receiptId == rec.receiptId)
+            {'ticketId': line.ticketId, 'qtyUnits': line.qtyUnits},
+      ],
+      'discounts': [
+        for (final d in discounts)
+          if (d.receiptId == rec.receiptId)
+            {
+              'id': d.id,
+              'ticketId': d.ticketId,
+              'presetId': d.presetId,
+              'name': d.name,
+              'kind': d.kind,
+              'value': d.value,
+              'amount': d.amount,
+              'source': d.source,
+            },
+      ],
       'payments': [
         for (final p in pays)
           {
@@ -3195,7 +5477,7 @@ Future<Map<String, dynamic>?> _buildSessionBill(
         'qty': t.qty,
         'unitPrice': t.price,
         'lineTotal': t.price * t.qty,
-        'assignedUnits': t.qty,
+        'assignedUnits': assignedUnits[t.ticketId] ?? 0,
         'note': t.note,
         'status': t.status,
         'modifiersJson': t.modifiersJson,
@@ -3204,21 +5486,67 @@ Future<Map<String, dynamic>?> _buildSessionBill(
   ];
   return {
     'sessionId': s.id,
+    'legacyParkedPaymentCount': await _legacyParkedPaymentCount(db, s.id),
+    'visitId': s.id,
     'tableId': s.tableId,
     'tableLabel': s.tableLabel,
-    'status': 'closed',
+    'kind': s.kind,
+    'channel': s.channel,
+    'prepaid': s.prepaid,
+    'status': outstanding > 0 ? 'detached' : 'closed',
+    'detached': true,
+    'tableFreedAt': s.closedAt.toIso8601String(),
+    'billClosedAt': outstanding > 0 ? null : s.closedAt.toIso8601String(),
+    'zoneId': s.zoneId,
+    'openedAt': s.openedAt?.toIso8601String(),
+    'guestName': null,
     'closedAt': s.closedAt.toIso8601String(),
     'pax': s.pax,
     'mode': srec.any((r) => r.mode == 'even') ? 'even' : 'itemized',
     'subtotal': s.subtotal,
+    'discountAmount': s.discountAmount,
+    'billDiscounts': [
+      for (final d in discounts)
+        if (d.receiptId == null && d.ticketId == null)
+          {
+            'id': d.id,
+            'name': d.name,
+            'kind': d.kind,
+            'value': d.value,
+            'amount': d.amount,
+            'source': d.source,
+            'presetId': d.presetId,
+          },
+    ],
+    'member': member == null ? null : memberJson(member),
     'serviceAmount': s.serviceAmount,
     'taxAmount': s.taxAmount,
+    'taxConfig': (await visitTaxConfig(db, s.id)).toJson(),
     'total': s.settledTotal,
     'paidAmount': paidNet,
-    'outstanding': (s.settledTotal - paidNet).clamp(0, 1 << 31),
+    'outstanding': outstanding,
+    'fullyAssigned': fullyAssigned,
+    'fullySettled': fullyAssigned && outstanding == 0,
     'lossAmount': s.lossAmount,
     'lines': linesJson,
     'receipts': receiptsJson,
+    'unallocatedPayments': [
+      for (final payment in spay)
+        if (!receiptIds.contains(
+          payment.read(db.tableSessionPayments.receiptId),
+        ))
+          {
+            'paymentId': payment.read(db.tableSessionPayments.id)!,
+            'method': payment.read(db.tableSessionPayments.method)!,
+            'amount': payment.read(db.tableSessionPayments.amount)!,
+            'isRefund': payment.read(db.tableSessionPayments.isRefund)!,
+            'cashierUserId': payment.read(
+              db.tableSessionPayments.cashierUserId,
+            ),
+            'at': payment.read(db.tableSessionPayments.at)!.toIso8601String(),
+            'hasPhoto': payment.read(spayPhoto) ?? false,
+          },
+    ],
   };
 }
 

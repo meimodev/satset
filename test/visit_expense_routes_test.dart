@@ -86,6 +86,7 @@ void main() {
     String method,
     String path, {
     Object? body,
+    Map<String, String> headers = const {},
   }) {
     final router = visitExpenseRoutes(
       db,
@@ -98,6 +99,7 @@ void main() {
         Uri.parse('http://x$path'),
         headers: {
           if (caller != null) ...caller.headers,
+          ...headers,
           'content-type': 'application/json',
         },
         body: body == null ? null : jsonEncode(body),
@@ -214,6 +216,97 @@ void main() {
       expect(body['expense']['hasPhoto'], isTrue);
       expect(body['expense'], isNot(contains('photo')));
     });
+
+    test('captured expense reaches an archived original visit', () async {
+      await db
+          .into(db.tableSessions)
+          .insert(
+            TableSessionsCompanion.insert(
+              id: 'v1',
+              tableId: 't1',
+              tableLabel: const Value('Meja 7'),
+              zoneId: 'z1',
+              closedAt: DateTime.utc(2026, 9, 24),
+              subtotal: const Value(50000),
+            ),
+          );
+      await db.delete(db.visits).go();
+      await db.delete(db.tickets).go();
+      final waiter = await signInForTest(
+        db,
+        caps: {Capability.recordTableExpense},
+        userId: 'u-waiter',
+      );
+      final payload = {
+        ...expenseBody(amount: 60000) as Map<String, Object?>,
+        'capturedAt': DateTime.utc(2026, 9, 24, 12).toIso8601String(),
+      };
+      final unsigned = await call(
+        waiter,
+        'POST',
+        '/visits/v1/expenses',
+        body: payload,
+      );
+      expect(unsigned.statusCode, isNot(200));
+      final grant = await waiter.auth.captureGrantFor(waiter.token, [
+        Capability.recordTableExpense.name,
+      ]);
+      final res = await call(
+        waiter,
+        'POST',
+        '/visits/v1/expenses',
+        body: payload,
+        headers: {
+          'x-idempotency-key': 'captured-expense',
+          'x-capture-grant': grant!,
+        },
+      );
+      expect(res.statusCode, 200, reason: await res.readAsString());
+      expect(
+        (await db.select(db.tableSessions).getSingle()).expenseAmount,
+        60000,
+      );
+    });
+
+    test(
+      'captured expense survives the feature being disabled before replay',
+      () async {
+        final waiter = await signInForTest(
+          db,
+          caps: {Capability.recordTableExpense},
+          userId: 'u-captured-expense',
+        );
+        final grant = await waiter.auth.captureGrantFor(waiter.token, [
+          Capability.recordTableExpense.name,
+        ]);
+        await (db.update(db.venueSettings)).write(
+          const VenueSettingsCompanion(
+            tableExpenseEnabled: Value(false),
+            modules: Value<String?>(''),
+          ),
+        );
+        expect(
+          (await call(
+            waiter,
+            'POST',
+            '/visits/v1/expenses',
+            body: expenseBody(id: 'live'),
+          )).statusCode,
+          404,
+        );
+        final replay = await call(
+          waiter,
+          'POST',
+          '/visits/v1/expenses',
+          body: {
+            ...expenseBody(id: 'captured') as Map<String, Object?>,
+            'capturedAt': DateTime.utc(2026, 9, 24, 12).toIso8601String(),
+          },
+          headers: {'x-idempotency-key': 'captured', 'x-capture-grant': grant!},
+        );
+        expect(replay.statusCode, 200, reason: await replay.readAsString());
+      },
+    );
 
     test('reading opens to all authenticated table viewers', () async {
       for (final (i, caps) in [

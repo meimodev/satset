@@ -11,8 +11,10 @@
 // one in the books.
 import 'dart:convert';
 import 'package:satset/data/db/client_db.dart' as client;
+import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/services/settlement_journal.dart';
 import 'package:satset/server/idempotency.dart';
+import 'package:satset/server/members.dart';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -20,12 +22,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shelf/shelf.dart';
 
 import 'package:satset/domain/models/settlement_event.dart';
+import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/domain/use_cases/settlement_projection.dart';
 import 'package:satset/server/db/database.dart' hide Member;
+import 'package:satset/server/routes/auth_routes.dart';
 import 'package:satset/server/routes/settlement_routes.dart';
 import 'package:satset/server/routes/tables_routes.dart'
-    show snapshotVisitAndDelete;
+    show ensureVisit, snapshotVisitAndDelete;
 import 'package:satset/server/ws_hub.dart';
 
 import 'support/route_auth.dart';
@@ -33,6 +37,7 @@ import 'support/route_auth.dart';
 void main() {
   late AppDatabase db;
   late TestCaller caller;
+  late String captureGrant;
   late Future<Response> Function(Request) router;
 
   // Service and tax both on: the parity that matters is the whole ladder, not
@@ -96,7 +101,13 @@ void main() {
           'POST',
           Uri.parse('http://x$path'),
           body: jsonEncode(body),
-          headers: caller.headers,
+          headers: {
+            ...caller.headers,
+            if (body['capturedAt'] is String) ...{
+              'x-capture-grant': captureGrant,
+              'x-idempotency-key': 'capture-${body['id'] ?? path.hashCode}',
+            },
+          },
         ),
       );
 
@@ -168,11 +179,1509 @@ void main() {
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     caller = await signInForTest(db);
+    captureGrant = (await caller.auth.captureGrantFor(caller.token, [
+      for (final capability in Capability.values) capability.name,
+    ]))!;
     router = settlementRoutes(db, WsHub(), caller.auth).call;
     await settings();
     await visit();
   });
   tearDown(() => db.close());
+
+  test('captured line discount remains recorded after a later void', () async {
+    await line('tk1', 20000);
+    final receipt = await post('/settlement/visits/v1/receipts', {
+      'id': 'r1',
+      'assignAll': true,
+    });
+    expect(receipt.statusCode, 200);
+    await (db.update(db.tickets)..where((t) => t.id.equals('tk1'))).write(
+      const TicketsCompanion(status: Value('voided')),
+    );
+
+    final me = await authRoutes(caller.auth).call(
+      Request('GET', Uri.parse('http://x/auth/me'), headers: caller.headers),
+    );
+    final grant =
+        (jsonDecode(await me.readAsString()) as Map)['captureGrant'] as String;
+    final body = {
+      'id': 'captured-discount',
+      'ticketId': 'tk1',
+      'perUnit': true,
+      'name': 'Captured promo',
+      'kind': 'fixed',
+      'value': 1000,
+      'capturedAt': DateTime.now().toUtc().toIso8601String(),
+    };
+    Future<Response> apply(String id, {required bool signed}) => router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/receipts/r1/discounts'),
+        headers: {
+          ...caller.headers,
+          'x-idempotency-key': id,
+          if (signed) 'x-capture-grant': grant,
+        },
+        body: jsonEncode({...body, 'id': id}),
+      ),
+    );
+    expect((await apply('captured-discount', signed: false)).statusCode, 404);
+    final response = await apply('captured-discount', signed: true);
+    expect(response.statusCode, 200, reason: await response.readAsString());
+    expect((await apply('captured-discount', signed: true)).statusCode, 200);
+    expect((await apply('captured-second', signed: true)).statusCode, 200);
+    final discount = await (db.select(
+      db.discounts,
+    )..where((d) => d.id.equals('captured-discount'))).getSingle();
+    expect(discount.amount, 0);
+    expect((await db.select(db.discounts).get()), hasLength(2));
+  });
+
+  test('only a signed captured discount amends a closed live bill', () async {
+    await line('tk1', 20000);
+    expect(
+      (await post('/settlement/visits/v1/receipts', {
+        'id': 'r1',
+        'assignAll': true,
+      })).statusCode,
+      200,
+    );
+    final total = (await serverBill())['total'] as int;
+    expect(
+      (await post('/settlement/receipts/r1/payments', {
+        'id': 'pay1',
+        'method': 'tunai',
+        'amount': total,
+      })).statusCode,
+      200,
+    );
+    expect((await post('/settlement/visits/v1/bill-close')).statusCode, 200);
+
+    final body = {
+      'id': 'late-discount',
+      'name': 'Offline promo',
+      'kind': 'fixed',
+      'value': 1000,
+      'capturedAt': DateTime.now().toUtc().toIso8601String(),
+    };
+    final unsigned = await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/receipts/r1/discounts'),
+        headers: caller.headers,
+        body: jsonEncode(body),
+      ),
+    );
+    expect(unsigned.statusCode, 409);
+    expect(jsonDecode(await unsigned.readAsString())['code'], 'bill_locked');
+
+    final signed = await post('/settlement/receipts/r1/discounts', body);
+    expect(signed.statusCode, 200, reason: await signed.readAsString());
+    expect((await serverBill())['discountAmount'], 1000);
+  });
+
+  test('independent captured bill discounts both amend the visit', () async {
+    await line('tk1', 20000);
+    final unsigned = await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/visits/v1/discounts'),
+        headers: caller.headers,
+        body: jsonEncode({
+          'id': 'unsigned',
+          'name': 'Captured promo',
+          'kind': 'fixed',
+          'value': 1000,
+          'capturedAt': DateTime.now().toUtc().toIso8601String(),
+        }),
+      ),
+    );
+    expect(unsigned.statusCode, 404);
+    final me = await authRoutes(caller.auth).call(
+      Request('GET', Uri.parse('http://x/auth/me'), headers: caller.headers),
+    );
+    final grant =
+        (jsonDecode(await me.readAsString()) as Map)['captureGrant'] as String;
+    for (final id in ['capture-one', 'capture-two', 'capture-one']) {
+      final response = await router(
+        Request(
+          'POST',
+          Uri.parse('http://x/settlement/visits/v1/discounts'),
+          headers: {
+            ...caller.headers,
+            'x-idempotency-key': id,
+            'x-capture-grant': grant,
+          },
+          body: jsonEncode({
+            'id': id,
+            'name': 'Captured promo',
+            'kind': 'fixed',
+            'value': 1000,
+            'capturedAt': DateTime.now().toUtc().toIso8601String(),
+          }),
+        ),
+      );
+      expect(response.statusCode, 200, reason: await response.readAsString());
+    }
+    final rows = await (db.select(
+      db.discounts,
+    )..where((d) => d.visitId.equals('v1'))).get();
+    expect(rows, hasLength(2));
+    expect((await serverBill())['discountAmount'], 2000);
+
+    await snapshotVisitAndDelete(
+      db,
+      WsHub(),
+      await (db.select(db.visits)..where((v) => v.id.equals('v1'))).getSingle(),
+    );
+    Future<Response> archivedCapture() => router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/visits/v1/discounts'),
+        headers: {
+          ...caller.headers,
+          'x-idempotency-key': 'capture-three',
+          'x-capture-grant': grant,
+        },
+        body: jsonEncode({
+          'id': 'capture-three',
+          'name': 'Captured promo',
+          'kind': 'fixed',
+          'value': 1000,
+          'capturedAt': DateTime.now()
+              .toUtc()
+              .add(const Duration(hours: 1))
+              .toIso8601String(),
+        }),
+      ),
+    );
+    expect((await archivedCapture()).statusCode, 200);
+    expect((await archivedCapture()).statusCode, 200);
+    expect((await db.select(db.tableSessionDiscounts).get()), hasLength(3));
+  });
+
+  test(
+    'captured visit keeps its quoted tax after venue settings change and archive',
+    () async {
+      const capturedTax = TaxServiceConfig(
+        taxEnabled: true,
+        taxRateBps: 1100,
+        serviceEnabled: true,
+        serviceMode: 'percent',
+        serviceRateBps: 500,
+        serviceFixedAmount: 0,
+      );
+      await ensureVisit(db, 't1', visitId: 'v1', taxConfig: capturedTax);
+      await line('tk1', 20000);
+      await (db.update(db.venueSettings)).write(
+        const VenueSettingsCompanion(
+          taxEnabled: Value(false),
+          serviceEnabled: Value(false),
+        ),
+      );
+
+      final live = await serverBill();
+      expect(live['serviceAmount'], 1000);
+      expect(live['taxAmount'], 2310);
+      expect(live['total'], 23310);
+      final projected = projectBill(
+        live,
+        const [],
+        const ProjectionConfig(
+          tax: TaxServiceConfig(
+            taxEnabled: false,
+            taxRateBps: 0,
+            serviceEnabled: false,
+            serviceMode: 'percent',
+            serviceRateBps: 0,
+            serviceFixedAmount: 0,
+          ),
+        ),
+      );
+      expect(projected['total'], 23310);
+      final uncachedConfig = Map<String, dynamic>.of(live)
+        ..['taxConfig'] = const {'taxEnabled': 'damaged'};
+      final capturedProjection = projectBill(
+        uncachedConfig,
+        [
+          ev(1, 'expense', SettlementEventKind.tableExpense, {
+            'taxConfig': capturedTax.toJson(),
+          }),
+        ],
+        const ProjectionConfig(
+          tax: TaxServiceConfig(
+            taxEnabled: false,
+            taxRateBps: 0,
+            serviceEnabled: false,
+            serviceMode: 'percent',
+            serviceRateBps: 0,
+            serviceFixedAmount: 0,
+          ),
+        ),
+      );
+      expect(capturedProjection['total'], 23310);
+
+      final visit = await (db.select(
+        db.visits,
+      )..where((v) => v.id.equals('v1'))).getSingle();
+      await snapshotVisitAndDelete(db, WsHub(), visit);
+      final response = await router(
+        Request(
+          'GET',
+          Uri.parse('http://x/settlement/sessions/v1/bill'),
+          headers: caller.headers,
+        ),
+      );
+      expect(response.statusCode, 200);
+      final archived = (jsonDecode(await response.readAsString()) as Map)
+          .cast<String, dynamic>();
+      expect(archived['serviceAmount'], 1000);
+      expect(archived['taxAmount'], 2310);
+      expect(archived['total'], 23310);
+    },
+  );
+
+  test(
+    'old parked payment warns host and blocks a second collection',
+    () async {
+      await line('tk1', 20000);
+      final receipt = await post('/settlement/visits/v1/receipts', {
+        'id': 'r1',
+        'assignAll': true,
+      });
+      expect(receipt.statusCode, 200, reason: await receipt.readAsString());
+      final report = await post('/settlement/legacy-parked-payments', {
+        'events': [
+          {
+            'id': 'old-payment',
+            'visitId': 'v1',
+            'tableId': 't1',
+            'kind': 'recordPayment',
+            'amount': 10000,
+            'capturedAt': DateTime.utc(2026, 9, 24).toIso8601String(),
+          },
+        ],
+      });
+      expect(report.statusCode, 200, reason: await report.readAsString());
+      expect((await serverBill())['legacyParkedPaymentCount'], 1);
+      final duplicate = await post('/settlement/legacy-parked-payments', {
+        'events': [
+          {
+            'id': 'old-payment',
+            'visitId': 'v1',
+            'tableId': 't1',
+            'kind': 'recordPayment',
+            'amount': 10000,
+            'capturedAt': DateTime.utc(2026, 9, 24).toIso8601String(),
+          },
+        ],
+      });
+      expect(duplicate.statusCode, 200);
+      expect((await serverBill())['legacyParkedPaymentCount'], 1);
+      final newPayment = await post('/settlement/receipts/r1/payments', {
+        'method': 'tunai',
+        'amount': 10000,
+      });
+      expect(newPayment.statusCode, 409);
+      final captured = await post('/settlement/receipts/r1/payments', {
+        'id': 'new-captured',
+        'method': 'tunai',
+        'amount': 10000,
+        'capturedAt': DateTime.utc(2026, 9, 25).toIso8601String(),
+      });
+      expect(captured.statusCode, 200, reason: await captured.readAsString());
+    },
+  );
+
+  test(
+    'archived payment for a deleted receipt credits its original visit',
+    () async {
+      await line('tk1', 20000);
+      await snapshotVisitAndDelete(
+        db,
+        WsHub(),
+        await (db.select(
+          db.visits,
+        )..where((v) => v.id.equals('v1'))).getSingle(),
+      );
+      final captured =
+          await post('/settlement/receipts/deleted-receipt/payments', {
+            'id': 'late-payment',
+            'visitId': 'v1',
+            'method': 'tunai',
+            'amount': 23310,
+            'capturedAt': DateTime.utc(2026, 9, 25).toIso8601String(),
+          });
+      expect(captured.statusCode, 200, reason: await captured.readAsString());
+      expect(await db.select(db.visits).get(), isEmpty);
+      final response = await router(
+        Request(
+          'GET',
+          Uri.parse('http://x/settlement/sessions/v1/bill'),
+          headers: caller.headers,
+        ),
+      );
+      expect(response.statusCode, 200);
+      final bill = (jsonDecode(await response.readAsString()) as Map)
+          .cast<String, dynamic>();
+      expect(bill['visitId'], 'v1');
+      expect(bill['paidAmount'], 23310);
+      expect(bill['outstanding'], 0);
+      expect((bill['receipts'] as List), isEmpty);
+      expect(
+        (bill['unallocatedPayments'] as List).single['paymentId'],
+        'late-payment',
+      );
+      expect(Bill.fromJson(bill).unallocatedPayments.single.amount, 23310);
+    },
+  );
+
+  test(
+    'captured duplicate refunds amend the original archived visit',
+    () async {
+      await line('tk1', 20000);
+      expect(
+        (await post('/settlement/visits/v1/receipts', {
+          'id': 'original-receipt',
+          'assignAll': true,
+        })).statusCode,
+        200,
+      );
+      final total = (await serverBill())['total'] as int;
+      expect(
+        (await post('/settlement/receipts/original-receipt/payments', {
+          'id': 'original-payment',
+          'method': 'tunai',
+          'amount': total,
+        })).statusCode,
+        200,
+      );
+      await snapshotVisitAndDelete(
+        db,
+        WsHub(),
+        await (db.select(
+          db.visits,
+        )..where((v) => v.id.equals('v1'))).getSingle(),
+      );
+
+      for (final id in ['refund-one', 'refund-two']) {
+        final response =
+            await post('/settlement/receipts/original-receipt/refund', {
+              'id': id,
+              'visitId': 'v1',
+              'paymentId': 'original-payment',
+              'amount': total,
+              'capturedAt': DateTime.utc(2026, 9, 25).toIso8601String(),
+            });
+        expect(response.statusCode, 200, reason: await response.readAsString());
+      }
+
+      final response = await router(
+        Request(
+          'GET',
+          Uri.parse('http://x/settlement/sessions/v1/bill'),
+          headers: caller.headers,
+        ),
+      );
+      final bill = (jsonDecode(await response.readAsString()) as Map)
+          .cast<String, dynamic>();
+      expect(bill['paidAmount'], -total);
+      expect(bill['outstanding'], total * 2);
+      expect(
+        (await db.select(db.tableSessionPayments).get())
+            .where((payment) => payment.isRefund)
+            .length,
+        2,
+      );
+    },
+  );
+
+  test('archived outstanding visit appears at cashier', () async {
+    await line('tk1', 20000);
+    await snapshotVisitAndDelete(
+      db,
+      WsHub(),
+      await (db.select(db.visits)..where((v) => v.id.equals('v1'))).getSingle(),
+    );
+
+    final payable = await router(
+      Request(
+        'GET',
+        Uri.parse('http://x/settlement/payable'),
+        headers: caller.headers,
+      ),
+    );
+    expect(payable.statusCode, 200);
+    final rows = (jsonDecode(await payable.readAsString()) as List).cast<Map>();
+    expect(rows.singleWhere((row) => row['visitId'] == 'v1')['detached'], true);
+
+    final response = await router(
+      Request(
+        'GET',
+        Uri.parse('http://x/settlement/visits/v1/bill'),
+        headers: caller.headers,
+      ),
+    );
+    expect(response.statusCode, 200);
+    final bill = Bill.fromJson(
+      (jsonDecode(await response.readAsString()) as Map)
+          .cast<String, dynamic>(),
+    );
+    expect(bill.outstanding, greaterThan(0));
+    expect(bill.detached, true);
+    expect(bill.fullyAssigned, false);
+    expect(bill.lines.single.assignedUnits, 0);
+  });
+
+  test('captured close and reopen amend an archived visit', () async {
+    await line('tk1', 20000);
+    await snapshotVisitAndDelete(
+      db,
+      WsHub(),
+      await (db.select(db.visits)..where((v) => v.id.equals('v1'))).getSingle(),
+    );
+    final capturedAt = DateTime.utc(2026, 9, 25).toIso8601String();
+    final closeBody = {
+      'writeOff': true,
+      'reason': 'guest left',
+      'capturedLoss': 5000,
+      'capturedAt': capturedAt,
+    };
+    final unsignedClose = await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/visits/v1/bill-close'),
+        headers: caller.headers,
+        body: jsonEncode(closeBody),
+      ),
+    );
+    expect(unsignedClose.statusCode, 404);
+    final closed = await post('/settlement/visits/v1/bill-close', closeBody);
+    expect(closed.statusCode, 200, reason: await closed.readAsString());
+    var session = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.id.equals('v1'))).getSingle();
+    expect(session.lossAmount, 5000);
+
+    final reopenBody = {'capturedAt': capturedAt};
+    final unsignedReopen = await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/visits/v1/reopen'),
+        headers: caller.headers,
+        body: jsonEncode(reopenBody),
+      ),
+    );
+    expect(unsignedReopen.statusCode, 404);
+    final reopened = await post('/settlement/visits/v1/reopen', reopenBody);
+    expect(reopened.statusCode, 200, reason: await reopened.readAsString());
+    session = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.id.equals('v1'))).getSingle();
+    expect(session.lossAmount, 0);
+  });
+
+  test('captured member discount keeps its snapshot on a live visit', () async {
+    await (db.update(
+      db.venueSettings,
+    )).write(const VenueSettingsCompanion(membersEnabled: Value(true)));
+    final member = await createMember(db, name: 'Budi', phone: '081234567891');
+    await line('tk1', 20000);
+    final grant = await caller.auth.captureGrantFor(caller.token, [
+      Capability.settleBill.name,
+    ]);
+    await (db.update(
+      db.venueSettings,
+    )).write(const VenueSettingsCompanion(membersEnabled: Value(false)));
+    final response = await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/visits/v1/member'),
+        headers: {
+          ...caller.headers,
+          'x-idempotency-key': 'captured-member-live',
+          'x-capture-grant': grant!,
+        },
+        body: jsonEncode({
+          'memberId': member.id,
+          'memberSplit': false,
+          'memberPresetId': 'member10',
+          'memberDiscount': {
+            'presetId': 'member10',
+            'name': 'Member 10%',
+            'kind': 'percent',
+            'value': 1000,
+          },
+          'capturedAt': DateTime.utc(2026, 9, 24, 12).toIso8601String(),
+        }),
+      ),
+    );
+    expect(response.statusCode, 200, reason: await response.readAsString());
+    final bill = await serverBill();
+    expect(bill['discountAmount'], 2000);
+    expect((bill['billDiscounts'] as List).single['name'], 'Member 10%');
+  });
+
+  test('captured member discount amends an archived visit', () async {
+    await (db.update(
+      db.venueSettings,
+    )).write(const VenueSettingsCompanion(membersEnabled: Value(true)));
+    final member = await createMember(db, name: 'Budi', phone: '081234567890');
+    await line('tk1', 20000);
+    final beforeCapture = await serverBill();
+    final projected = projectBill(beforeCapture, [
+      ev(0, 'captured-member', SettlementEventKind.attachMember, {
+        'memberId': member.id,
+        'memberDiscount': {
+          'presetId': 'member10',
+          'name': 'Member 10%',
+          'kind': 'percent',
+          'value': 1000,
+        },
+      }),
+    ], cfg);
+    await snapshotVisitAndDelete(
+      db,
+      WsHub(),
+      await (db.select(db.visits)..where((v) => v.id.equals('v1'))).getSingle(),
+    );
+    final original = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.id.equals('v1'))).getSingle();
+    final capturedAt = DateTime.utc(2026, 9, 25).toIso8601String();
+    final attached = await post('/settlement/visits/v1/member', {
+      'id': 'captured-member',
+      'memberId': member.id,
+      'memberSplit': false,
+      'memberPresetId': 'member10',
+      'memberDiscount': {
+        'presetId': 'member10',
+        'name': 'Member 10%',
+        'kind': 'percent',
+        'value': 1000,
+      },
+      'capturedAt': capturedAt,
+    });
+    expect(attached.statusCode, 200, reason: await attached.readAsString());
+    var session = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.id.equals('v1'))).getSingle();
+    expect(session.memberId, member.id);
+    expect(session.settledTotal, lessThan(original.settledTotal));
+    expect(session.settledTotal, projected['total']);
+
+    final detached = await post('/settlement/visits/v1/member/detach', {
+      'capturedAt': capturedAt,
+    });
+    expect(detached.statusCode, 200, reason: await detached.readAsString());
+    session = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.id.equals('v1'))).getSingle();
+    expect(session.memberId, null);
+    expect(session.discountAmount, original.discountAmount);
+    expect(session.settledTotal, original.settledTotal);
+  });
+
+  test('captured receipt member keeps printed archive and discount', () async {
+    await (db.update(
+      db.venueSettings,
+    )).write(const VenueSettingsCompanion(membersEnabled: Value(true)));
+    final member = await createMember(db, name: 'Budi', phone: '081234567890');
+    await line('tk1', 20000);
+    final minted = await post('/settlement/visits/v1/receipts', {
+      'id': 'r1',
+      'assignAll': true,
+    });
+    expect(minted.statusCode, 200, reason: await minted.readAsString());
+    await snapshotVisitAndDelete(
+      db,
+      WsHub(),
+      await (db.select(db.visits)..where((v) => v.id.equals('v1'))).getSingle(),
+    );
+    final original = await (db.select(
+      db.tableSessionReceipts,
+    )..where((r) => r.receiptId.equals('r1'))).getSingle();
+    final capturedAt = DateTime.utc(2026, 9, 25).toIso8601String();
+    final attached = await post('/settlement/receipts/r1/member', {
+      'id': 'captured-receipt-member',
+      'visitId': 'v1',
+      'memberId': member.id,
+      'memberPresetId': 'member10',
+      'memberDiscount': {
+        'presetId': 'member10',
+        'name': 'Member 10%',
+        'kind': 'percent',
+        'value': 1000,
+      },
+      'capturedAt': capturedAt,
+    });
+    expect(attached.statusCode, 200, reason: await attached.readAsString());
+    var receipt = await (db.select(
+      db.tableSessionReceipts,
+    )..where((r) => r.receiptId.equals('r1'))).getSingle();
+    expect(receipt.memberId, member.id);
+    expect(receipt.total, lessThan(original.total));
+    expect(receipt.originalSnapshotJson, isNotNull);
+    expect(
+      (jsonDecode(receipt.originalSnapshotJson!) as Map)['total'],
+      original.total,
+    );
+    final view = await router(
+      Request(
+        'GET',
+        Uri.parse('http://x/settlement/visits/v1/bill'),
+        headers: caller.headers,
+      ),
+    );
+    final bill = Bill.fromJson(
+      (jsonDecode(await view.readAsString()) as Map).cast<String, dynamic>(),
+    );
+    expect(
+      bill.receipts.singleWhere((r) => r.id == 'r1').discounts.single.source,
+      'member',
+    );
+
+    final detached = await post('/settlement/receipts/r1/member/detach', {
+      'visitId': 'v1',
+      'capturedAt': capturedAt,
+    });
+    expect(detached.statusCode, 200, reason: await detached.readAsString());
+    receipt = await (db.select(
+      db.tableSessionReceipts,
+    )..where((r) => r.receiptId.equals('r1'))).getSingle();
+    expect(receipt.memberId, null);
+    expect(receipt.total, original.total);
+  });
+
+  test('captured ticket member discount amends archived receipt', () async {
+    await (db.update(
+      db.venueSettings,
+    )).write(const VenueSettingsCompanion(membersEnabled: Value(true)));
+    final member = await createMember(db, name: 'Budi', phone: '081234567890');
+    await line('tk1', 20000);
+    final minted = await post('/settlement/visits/v1/receipts', {
+      'id': 'r1',
+      'assignAll': true,
+    });
+    expect(minted.statusCode, 200, reason: await minted.readAsString());
+    await snapshotVisitAndDelete(
+      db,
+      WsHub(),
+      await (db.select(db.visits)..where((v) => v.id.equals('v1'))).getSingle(),
+    );
+    final original = await (db.select(
+      db.tableSessionReceipts,
+    )..where((r) => r.receiptId.equals('r1'))).getSingle();
+    final capturedAt = DateTime.utc(2026, 9, 25).toIso8601String();
+    final attached = await post('/settlement/visits/v1/ticket-members', {
+      'id': 'captured-ticket-member',
+      'ticketIds': ['tk1'],
+      'memberId': member.id,
+      'memberPresetId': 'member10',
+      'memberDiscount': {
+        'presetId': 'member10',
+        'name': 'Member 10%',
+        'kind': 'percent',
+        'value': 1000,
+      },
+      'capturedAt': capturedAt,
+    });
+    expect(attached.statusCode, 200, reason: await attached.readAsString());
+    final ticket = await (db.select(
+      db.tableSessionTickets,
+    )..where((t) => t.ticketId.equals('tk1'))).getSingle();
+    expect(ticket.memberId, member.id);
+    var receipt = await (db.select(
+      db.tableSessionReceipts,
+    )..where((r) => r.receiptId.equals('r1'))).getSingle();
+    expect(receipt.total, lessThan(original.total));
+    expect(
+      (jsonDecode(receipt.originalSnapshotJson!) as Map)['total'],
+      original.total,
+    );
+
+    final detached = await post('/settlement/visits/v1/ticket-members', {
+      'ticketIds': ['tk1'],
+      'memberId': null,
+      'capturedAt': capturedAt,
+    });
+    expect(detached.statusCode, 200, reason: await detached.readAsString());
+    receipt = await (db.select(
+      db.tableSessionReceipts,
+    )..where((r) => r.receiptId.equals('r1'))).getSingle();
+    expect(receipt.total, original.total);
+  });
+
+  test('archived excess payment credits a later amendment', () async {
+    await line('original-ticket', 20000);
+    final originalTotal = (await serverBill())['total'] as int;
+    await snapshotVisitAndDelete(
+      db,
+      WsHub(),
+      await (db.select(db.visits)..where((v) => v.id.equals('v1'))).getSingle(),
+    );
+    final payment =
+        await post('/settlement/receipts/deleted-receipt/payments', {
+          'id': 'late-payment',
+          'visitId': 'v1',
+          'method': 'tunai',
+          'amount': originalTotal + 5000,
+          'capturedAt': DateTime.utc(2026, 9, 25).toIso8601String(),
+        });
+    expect(payment.statusCode, 200, reason: await payment.readAsString());
+
+    await ensureVisit(db, 't1', visitId: 'v1');
+    await line('amendment-ticket', 4000);
+    expect(
+      (await post('/settlement/visits/v1/receipts', {
+        'id': 'amendment-receipt',
+        'assignAll': true,
+      })).statusCode,
+      200,
+    );
+    final bill = await serverBill();
+    expect(bill['total'], lessThan(5000));
+    expect(bill['paidAmount'], 5000);
+    expect(bill['outstanding'], 0);
+    expect(bill['fullySettled'], true);
+  });
+
+  test('captured refund of deleted receipt payment stays on Visit A', () async {
+    await line('tk1', 20000);
+    await snapshotVisitAndDelete(
+      db,
+      WsHub(),
+      await (db.select(db.visits)..where((v) => v.id.equals('v1'))).getSingle(),
+    );
+    final capturedAt = DateTime.utc(2026, 9, 25).toIso8601String();
+    final payment =
+        await post('/settlement/receipts/deleted-receipt/payments', {
+          'id': 'orphan-payment',
+          'visitId': 'v1',
+          'method': 'tunai',
+          'amount': 20000,
+          'capturedAt': capturedAt,
+        });
+    expect(payment.statusCode, 200, reason: await payment.readAsString());
+    final refund = await post('/settlement/receipts/deleted-receipt/refund', {
+      'id': 'orphan-refund',
+      'visitId': 'v1',
+      'paymentId': 'orphan-payment',
+      'amount': 5000,
+      'capturedAt': capturedAt,
+    });
+    expect(refund.statusCode, 200, reason: await refund.readAsString());
+    final response = await router(
+      Request(
+        'GET',
+        Uri.parse('http://x/settlement/sessions/v1/bill'),
+        headers: caller.headers,
+      ),
+    );
+    final bill = (jsonDecode(await response.readAsString()) as Map)
+        .cast<String, dynamic>();
+    expect(bill['paidAmount'], 15000);
+    expect((bill['unallocatedPayments'] as List).length, 2);
+  });
+
+  test(
+    'captured bill discount survives later payment of the receipt',
+    () async {
+      await line('tk1', 20000);
+      await preset('p10', 'percent', 1000);
+      expect(
+        (await post('/settlement/visits/v1/receipts', {
+          'id': 'paid-receipt',
+          'assignAll': true,
+        })).statusCode,
+        200,
+      );
+      final before = (await serverBill())['total'] as int;
+      expect(
+        (await post('/settlement/receipts/paid-receipt/payments', {
+          'id': 'paid-first',
+          'method': 'tunai',
+          'amount': before,
+        })).statusCode,
+        200,
+      );
+      final discount = await post('/settlement/visits/v1/discounts', {
+        'id': 'captured-discount',
+        'presetId': 'p10',
+        'capturedAt': DateTime.utc(2026, 9, 25).toIso8601String(),
+      });
+      expect(discount.statusCode, 200, reason: await discount.readAsString());
+      final after = await serverBill();
+      expect(after['total'], lessThan(before));
+      expect(after['paidAmount'], before);
+      expect(after['outstanding'], 0);
+    },
+  );
+
+  test('captured even split keeps its shares on archived Visit A', () async {
+    await line('tk1', 20000);
+    await snapshotVisitAndDelete(
+      db,
+      WsHub(),
+      await (db.select(db.visits)..where((v) => v.id.equals('v1'))).getSingle(),
+    );
+    final total = (await db.select(db.tableSessions).getSingle()).settledTotal;
+    final capturedSplit = {
+      'n': 2,
+      'ids': ['late-share-a', 'late-share-b'],
+      'capturedAt': DateTime.utc(2026, 9, 25).toIso8601String(),
+      'receiptSnapshot': {
+        'shares': [total ~/ 2, total - total ~/ 2],
+      },
+    };
+    final unsigned = await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/visits/v1/split-even'),
+        headers: caller.headers,
+        body: jsonEncode(capturedSplit),
+      ),
+    );
+    expect(unsigned.statusCode, 404);
+    final split = await post('/settlement/visits/v1/split-even', capturedSplit);
+    expect(split.statusCode, 200, reason: await split.readAsString());
+    final receipts = await db.select(db.tableSessionReceipts).get();
+    expect(
+      {for (final r in receipts) r.receiptId: r.total},
+      {'late-share-a': total ~/ 2, 'late-share-b': total - total ~/ 2},
+    );
+  });
+
+  test(
+    'captured even split retains its shares after host bill closes',
+    () async {
+      await line('tk1', 20000);
+      expect(
+        (await post('/settlement/visits/v1/receipts', {
+          'id': 'host-receipt',
+          'assignAll': true,
+        })).statusCode,
+        200,
+      );
+      final total = (await serverBill())['total'] as int;
+      expect(
+        (await post('/settlement/receipts/host-receipt/payments', {
+          'id': 'host-payment',
+          'method': 'tunai',
+          'amount': total,
+        })).statusCode,
+        200,
+      );
+      expect((await post('/settlement/visits/v1/bill-close')).statusCode, 200);
+
+      final split = await post('/settlement/visits/v1/split-even', {
+        'n': 2,
+        'ids': ['late-share-a', 'late-share-b'],
+        'capturedAt': DateTime.now().toUtc().toIso8601String(),
+        'receiptSnapshot': {
+          'shares': [total ~/ 2, total - total ~/ 2],
+        },
+      });
+      expect(split.statusCode, 200, reason: await split.readAsString());
+      final receipts = await (db.select(db.receipts)).get();
+      expect(
+        receipts.map((r) => r.id),
+        containsAll(['late-share-a', 'late-share-b']),
+      );
+      expect((await serverBill())['paidAmount'], total);
+    },
+  );
+
+  test('captured reopen and delete keep archived money credited', () async {
+    await line('tk1', 20000);
+    expect(
+      (await post('/settlement/visits/v1/receipts', {
+        'id': 'old-receipt',
+        'assignAll': true,
+      })).statusCode,
+      200,
+    );
+    final total = (await serverBill())['total'] as int;
+    expect(
+      (await post('/settlement/receipts/old-receipt/payments', {
+        'id': 'old-payment',
+        'method': 'tunai',
+        'amount': total,
+      })).statusCode,
+      200,
+    );
+    await snapshotVisitAndDelete(
+      db,
+      WsHub(),
+      await (db.select(db.visits)..where((v) => v.id.equals('v1'))).getSingle(),
+    );
+    final reopened = await post('/settlement/receipts/old-receipt/reopen', {
+      'visitId': 'v1',
+      'capturedAt': DateTime.utc(2026, 9, 25).toIso8601String(),
+    });
+    expect(reopened.statusCode, 200, reason: await reopened.readAsString());
+    expect(
+      (await db.select(db.tableSessionPayments).get()).single.id,
+      'old-payment',
+    );
+    final archived = await router(
+      Request(
+        'GET',
+        Uri.parse('http://x/settlement/sessions/v1/bill'),
+        headers: caller.headers,
+      ),
+    );
+    final bill =
+        jsonDecode(await archived.readAsString()) as Map<String, dynamic>;
+    expect(bill['paidAmount'], total);
+    final deleted = await router(
+      Request(
+        'DELETE',
+        Uri.parse('http://x/settlement/receipts/old-receipt'),
+        headers: {
+          ...caller.headers,
+          'x-capture-grant': captureGrant,
+          'x-idempotency-key': 'captured-delete-old-receipt',
+        },
+        body: jsonEncode({
+          'visitId': 'v1',
+          'capturedAt': DateTime.utc(2026, 9, 25).toIso8601String(),
+        }),
+      ),
+    );
+    final deletedBody = await deleted.readAsString();
+    expect(deleted.statusCode, 200, reason: deletedBody);
+    final updatedBill =
+        (jsonDecode(deletedBody) as Map<String, dynamic>)['bill']
+            as Map<String, dynamic>;
+    expect(updatedBill['paidAmount'], total);
+    final receipts = (updatedBill['receipts'] as List)
+        .cast<Map<String, dynamic>>();
+    expect(receipts.first['mode'], 'original');
+    expect(receipts.first['total'], total);
+    expect(receipts.last['status'], 'cancelled');
+    expect(
+      (updatedBill['unallocatedPayments'] as List).single['paymentId'],
+      'old-payment',
+    );
+  });
+
+  test('captured reopen keeps live payment credited', () async {
+    await line('tk1', 20000);
+    expect(
+      (await post('/settlement/visits/v1/receipts', {
+        'id': 'r1',
+        'assignAll': true,
+      })).statusCode,
+      200,
+    );
+    final total = (await serverBill())['total'] as int;
+    expect(
+      (await post('/settlement/receipts/r1/payments', {
+        'id': 'pay1',
+        'method': 'tunai',
+        'amount': total,
+      })).statusCode,
+      200,
+    );
+
+    final reopened = await post('/settlement/receipts/r1/reopen', {
+      'visitId': 'v1',
+      'capturedAt': DateTime.now().toUtc().toIso8601String(),
+    });
+    expect(reopened.statusCode, 200, reason: await reopened.readAsString());
+    expect((await db.select(db.payments).get()).single.id, 'pay1');
+    expect((await serverBill())['paidAmount'], total);
+  });
+
+  test('captured receipt and payment land on archived Visit A', () async {
+    await line('tk1', 20000);
+    await snapshotVisitAndDelete(
+      db,
+      WsHub(),
+      await (db.select(db.visits)..where((v) => v.id.equals('v1'))).getSingle(),
+    );
+    final session = await db.select(db.tableSessions).getSingle();
+    final capturedAt = DateTime.utc(2026, 9, 25).toIso8601String();
+    final minted = await post('/settlement/visits/v1/receipts', {
+      'id': 'late-r1',
+      'mode': 'itemized',
+      'capturedAt': capturedAt,
+      'receiptSnapshot': {
+        'subtotal': 0,
+        'discountAmount': 0,
+        'serviceAmount': 0,
+        'taxAmount': 0,
+        'total': 0,
+        'lines': [],
+      },
+    });
+    expect(minted.statusCode, 200, reason: await minted.readAsString());
+    final assigned = await post('/settlement/receipts/late-r1/lines', {
+      'visitId': 'v1',
+      'ticketId': 'tk1',
+      'qtyUnits': 1,
+      'capturedAt': capturedAt,
+      'receiptSnapshot': {
+        'subtotal': session.subtotal,
+        'discountAmount': session.discountAmount,
+        'serviceAmount': session.serviceAmount,
+        'taxAmount': session.taxAmount,
+        'total': session.settledTotal,
+        'lines': [
+          {'ticketId': 'tk1', 'qtyUnits': 1},
+        ],
+      },
+    });
+    expect(assigned.statusCode, 200, reason: await assigned.readAsString());
+    expect(
+      (await db.select(db.tableSessionReceipts).getSingle()).total,
+      session.settledTotal,
+    );
+    expect(
+      (await db.select(db.tableSessionReceiptLines).getSingle()).ticketId,
+      'tk1',
+    );
+    final paid = await post('/settlement/receipts/late-r1/payments', {
+      'id': 'late-pay',
+      'visitId': 'v1',
+      'method': 'tunai',
+      'amount': session.settledTotal,
+      'capturedAt': capturedAt,
+    });
+    expect(paid.statusCode, 200, reason: await paid.readAsString());
+    final archivedResponse = await router(
+      Request(
+        'GET',
+        Uri.parse('http://x/settlement/sessions/v1/bill'),
+        headers: caller.headers,
+      ),
+    );
+    final bill =
+        jsonDecode(await archivedResponse.readAsString())
+            as Map<String, dynamic>;
+    expect(bill['paidAmount'], session.settledTotal);
+    final receipts = (bill['receipts'] as List).cast<Map<String, dynamic>>();
+    expect(receipts.map((r) => r['id']), ['late-r1:original', 'late-r1']);
+    expect(receipts.first['total'], 0);
+    expect(receipts.last['total'], session.settledTotal);
+    expect(receipts.last['status'], 'paid');
+  });
+
+  test('archived assignment keeps the original printed receipt', () async {
+    await line('tk1', 20000);
+    expect(
+      (await post('/settlement/visits/v1/receipts', {
+        'id': 'printed-r1',
+        'assignAll': true,
+      })).statusCode,
+      200,
+    );
+    final printedTotal = (await serverBill())['total'] as int;
+    await snapshotVisitAndDelete(
+      db,
+      WsHub(),
+      await (db.select(db.visits)..where((v) => v.id.equals('v1'))).getSingle(),
+    );
+    final capturedAssignment = {
+      'visitId': 'v1',
+      'ticketId': 'tk1',
+      'qtyUnits': 0,
+      'capturedAt': DateTime.utc(2026, 9, 25).toIso8601String(),
+      'receiptSnapshot': {
+        'subtotal': 0,
+        'discountAmount': 0,
+        'serviceAmount': 0,
+        'taxAmount': 0,
+        'total': 0,
+        'lines': [],
+      },
+    };
+    final unsigned = await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/receipts/printed-r1/lines'),
+        headers: caller.headers,
+        body: jsonEncode(capturedAssignment),
+      ),
+    );
+    expect(unsigned.statusCode, 404);
+    final amended = await post(
+      '/settlement/receipts/printed-r1/lines',
+      capturedAssignment,
+    );
+    final amendedBody = await amended.readAsString();
+    expect(amended.statusCode, 200, reason: amendedBody);
+    final bill =
+        (jsonDecode(amendedBody) as Map<String, dynamic>)['bill']
+            as Map<String, dynamic>;
+    final receipts = (bill['receipts'] as List).cast<Map<String, dynamic>>();
+    expect(receipts.map((r) => r['mode']), ['original', 'amendment']);
+    expect(receipts.first['total'], printedTotal);
+    expect(receipts.last['total'], 0);
+    final stored = await db.select(db.tableSessionReceipts).getSingle();
+    expect((jsonDecode(stored.originalSnapshotJson!) as Map)['lines'], [
+      {'ticketId': 'tk1', 'qtyUnits': 1},
+    ]);
+  });
+
+  test(
+    'captured points amend archived bill and receipt without phantom points',
+    () async {
+      await (db.update(db.venueSettings)).write(
+        const VenueSettingsCompanion(
+          membersEnabled: Value(true),
+          memberPointsEnabled: Value(true),
+          memberPointValue: Value(1000),
+        ),
+      );
+      final member = await createMember(
+        db,
+        name: 'Budi',
+        phone: '081234567890',
+      );
+      await earnPointsForVisit(
+        db,
+        memberId: member.id,
+        visitId: 'earlier',
+        base: 20000,
+      );
+      await spendPoints(
+        db,
+        memberId: member.id,
+        visitId: 'elsewhere',
+        points: 15,
+      );
+      await (db.update(db.visits)..where((v) => v.id.equals('v1'))).write(
+        VisitsCompanion(memberId: Value(member.id)),
+      );
+      await line('tk1', 20000);
+      final receipt = await post('/settlement/visits/v1/receipts', {
+        'id': 'r1',
+        'assignAll': true,
+      });
+      expect(receipt.statusCode, 200, reason: await receipt.readAsString());
+      await (db.update(db.receipts)..where((r) => r.id.equals('r1'))).write(
+        ReceiptsCompanion(memberId: Value(member.id)),
+      );
+      await snapshotVisitAndDelete(
+        db,
+        WsHub(),
+        await (db.select(
+          db.visits,
+        )..where((v) => v.id.equals('v1'))).getSingle(),
+      );
+      final original =
+          (await db.select(db.tableSessions).getSingle()).settledTotal;
+      final capturedAt = DateTime.utc(2026, 9, 25).toIso8601String();
+
+      await (db.update(
+        db.venueSettings,
+      )).write(const VenueSettingsCompanion(memberPointValue: Value(2000)));
+
+      final billRedeem = await post('/settlement/visits/v1/redeem', {
+        'id': 'bill-redeem',
+        'points': 10,
+        'pointValue': 1000,
+        'capturedAt': capturedAt,
+      });
+      expect(
+        billRedeem.statusCode,
+        200,
+        reason: await billRedeem.readAsString(),
+      );
+      expect(
+        (await db.select(db.tableSessions).getSingle()).settledTotal,
+        original - 10000,
+      );
+      expect(await memberPoints(db, member.id), 0);
+      final billRemove = await post('/settlement/visits/v1/redeem/remove', {
+        'capturedAt': capturedAt,
+      });
+      expect(
+        billRemove.statusCode,
+        200,
+        reason: await billRemove.readAsString(),
+      );
+      expect(
+        (await db.select(db.tableSessions).getSingle()).settledTotal,
+        original,
+      );
+      expect(await memberPoints(db, member.id), 5);
+
+      final receiptRedeem = await post('/settlement/receipts/r1/redeem', {
+        'id': 'receipt-redeem',
+        'visitId': 'v1',
+        'points': 10,
+        'pointValue': 1000,
+        'capturedAt': capturedAt,
+      });
+      expect(
+        receiptRedeem.statusCode,
+        200,
+        reason: await receiptRedeem.readAsString(),
+      );
+      expect(
+        (await db.select(db.tableSessions).getSingle()).settledTotal,
+        original - 10000,
+      );
+      final receiptRemove = await post(
+        '/settlement/receipts/r1/redeem/remove',
+        {'visitId': 'v1', 'capturedAt': capturedAt},
+      );
+      expect(
+        receiptRemove.statusCode,
+        200,
+        reason: await receiptRemove.readAsString(),
+      );
+      expect(
+        (await db.select(db.tableSessions).getSingle()).settledTotal,
+        original,
+      );
+      expect(await memberPoints(db, member.id), 5);
+    },
+  );
+
+  test('captured bill discount amends Visit A after archive', () async {
+    await line('tk1', 20000);
+    await preset('p10', 'percent', 1000);
+    expect(
+      (await post('/settlement/visits/v1/receipts', {
+        'id': 'original-receipt',
+        'assignAll': true,
+      })).statusCode,
+      200,
+    );
+    final originalTotal = (await serverBill())['total'] as int;
+    expect(
+      (await post('/settlement/receipts/original-receipt/payments', {
+        'method': 'tunai',
+        'amount': originalTotal,
+      })).statusCode,
+      200,
+    );
+    await snapshotVisitAndDelete(
+      db,
+      WsHub(),
+      await (db.select(db.visits)..where((v) => v.id.equals('v1'))).getSingle(),
+    );
+    await (db.update(db.discountPresets)..where((p) => p.id.equals('p10')))
+        .write(const DiscountPresetsCompanion(value: Value(5000)));
+    final discount = await post('/settlement/visits/v1/discounts', {
+      'id': 'late-discount',
+      'presetId': 'p10',
+      'name': 'Promo',
+      'kind': 'percent',
+      'value': 1000,
+      'capturedAt': DateTime.utc(2026, 9, 25).toIso8601String(),
+    });
+    expect(discount.statusCode, 200, reason: await discount.readAsString());
+    final session = await db.select(db.tableSessions).getSingle();
+    expect(session.settledTotal, lessThan(originalTotal));
+    expect(session.discountAmount, 2000);
+    expect(
+      (await db.select(db.tableSessionReceipts).getSingle()).total,
+      originalTotal,
+    );
+    final removed = await post(
+      '/settlement/visits/v1/discounts/late-discount/remove',
+      {'capturedAt': DateTime.utc(2026, 9, 25).toIso8601String()},
+    );
+    expect(removed.statusCode, 200, reason: await removed.readAsString());
+    expect(
+      (await db.select(db.tableSessions).getSingle()).settledTotal,
+      originalTotal,
+    );
+  });
+
+  test('captured receipt discount amends Visit A after archive', () async {
+    await line('tk1', 20000);
+    await preset('p10', 'percent', 1000);
+    await (db.update(db.discountPresets)..where((p) => p.id.equals('p10')))
+        .write(const DiscountPresetsCompanion(scope: Value('order')));
+    expect(
+      (await post('/settlement/visits/v1/receipts', {
+        'id': 'original-receipt',
+        'assignAll': true,
+      })).statusCode,
+      200,
+    );
+    final originalTotal = (await serverBill())['total'] as int;
+    await snapshotVisitAndDelete(
+      db,
+      WsHub(),
+      await (db.select(db.visits)..where((v) => v.id.equals('v1'))).getSingle(),
+    );
+    final discount =
+        await post('/settlement/receipts/original-receipt/discounts', {
+          'id': 'late-receipt-discount',
+          'visitId': 'v1',
+          'presetId': 'p10',
+          'name': 'Promo',
+          'kind': 'percent',
+          'value': 1000,
+          'capturedAt': DateTime.utc(2026, 9, 25).toIso8601String(),
+        });
+    expect(discount.statusCode, 200, reason: await discount.readAsString());
+    expect(
+      (await db.select(db.tableSessions).getSingle()).settledTotal,
+      lessThan(originalTotal),
+    );
+    expect(
+      (await db.select(db.tableSessionReceipts).getSingle()).total,
+      originalTotal,
+    );
+    final removed = await post(
+      '/settlement/receipts/original-receipt/discounts/late-receipt-discount/remove',
+      {
+        'visitId': 'v1',
+        'capturedAt': DateTime.utc(2026, 9, 25).toIso8601String(),
+      },
+    );
+    expect(removed.statusCode, 200, reason: await removed.readAsString());
+    expect(
+      (await db.select(db.tableSessions).getSingle()).settledTotal,
+      originalTotal,
+    );
+  });
+
+  test(
+    'captured payment to deleted receipt credits the live visit and survives close',
+    () async {
+      await line('tk1', 20000);
+      expect(
+        (await post('/settlement/visits/v1/receipts', {
+          'id': 'removed-receipt',
+          'assignAll': true,
+        })).statusCode,
+        200,
+      );
+      final total = (await serverBill())['total'] as int;
+      final deleted = await router(
+        Request(
+          'DELETE',
+          Uri.parse('http://x/settlement/receipts/removed-receipt'),
+          headers: caller.headers,
+        ),
+      );
+      expect(deleted.statusCode, 200);
+      expect(
+        (await post('/settlement/visits/v1/receipts', {
+          'id': 'replacement-receipt',
+          'assignAll': true,
+        })).statusCode,
+        200,
+      );
+
+      final payment =
+          await post('/settlement/receipts/removed-receipt/payments', {
+            'id': 'orphan-payment',
+            'visitId': 'v1',
+            'method': 'tunai',
+            'amount': total,
+            'capturedAt': DateTime.utc(2026, 8, 30, 12).toIso8601String(),
+          });
+      expect(payment.statusCode, 200, reason: await payment.readAsString());
+      final bill = await serverBill();
+      expect(bill['paidAmount'], total);
+      expect(bill['outstanding'], 0);
+      expect(bill['fullySettled'], isTrue);
+      expect(
+        (bill['unallocatedPayments'] as List).single['id'],
+        'orphan-payment',
+      );
+      expect((bill['receipts'] as List).single['id'], 'replacement-receipt');
+
+      expect((await post('/settlement/visits/v1/bill-close')).statusCode, 200);
+      await snapshotVisitAndDelete(
+        db,
+        WsHub(),
+        await (db.select(
+          db.visits,
+        )..where((v) => v.id.equals('v1'))).getSingle(),
+      );
+      final archived = await db.select(db.tableSessionPayments).getSingle();
+      expect(archived.receiptId, 'removed-receipt');
+      final archivedBill = await router(
+        Request(
+          'GET',
+          Uri.parse('http://x/settlement/sessions/v1/bill'),
+          headers: caller.headers,
+        ),
+      );
+      expect(archivedBill.statusCode, 200);
+      expect(
+        (jsonDecode(await archivedBill.readAsString()) as Map)['paidAmount'],
+        total,
+      );
+    },
+  );
+
+  test(
+    'amendment close keeps the original printed receipt in history',
+    () async {
+      await line('old-ticket', 20000);
+      expect(
+        (await post('/settlement/visits/v1/receipts', {
+          'id': 'original-receipt',
+          'assignAll': true,
+        })).statusCode,
+        200,
+      );
+      final originalTotal = (await serverBill())['total'] as int;
+      expect(
+        (await post('/settlement/receipts/original-receipt/payments', {
+          'method': 'tunai',
+          'amount': originalTotal,
+        })).statusCode,
+        200,
+      );
+      expect((await post('/settlement/visits/v1/bill-close')).statusCode, 200);
+      await snapshotVisitAndDelete(
+        db,
+        WsHub(),
+        await (db.select(
+          db.visits,
+        )..where((v) => v.id.equals('v1'))).getSingle(),
+      );
+
+      await visit();
+      await line('late-ticket', 5000);
+      expect(
+        (await post('/settlement/visits/v1/receipts', {
+          'id': 'amendment-receipt',
+          'assignAll': true,
+        })).statusCode,
+        200,
+      );
+      final amendmentTotal = (await serverBill())['total'] as int;
+      expect(
+        (await post('/settlement/receipts/amendment-receipt/payments', {
+          'method': 'tunai',
+          'amount': amendmentTotal,
+        })).statusCode,
+        200,
+      );
+      expect((await post('/settlement/visits/v1/bill-close')).statusCode, 200);
+      await snapshotVisitAndDelete(
+        db,
+        WsHub(),
+        await (db.select(
+          db.visits,
+        )..where((v) => v.id.equals('v1'))).getSingle(),
+      );
+
+      final session = await db.select(db.tableSessions).getSingle();
+      expect(session.settledTotal, originalTotal + amendmentTotal);
+      final receipts = await db.select(db.tableSessionReceipts).get();
+      expect(receipts, hasLength(2));
+      expect(
+        receipts.firstWhere((r) => r.receiptId == 'original-receipt').total,
+        originalTotal,
+      );
+      expect(await db.select(db.tableSessionTickets).get(), hasLength(2));
+    },
+  );
 
   test(
     'legacy line discounts retain their calculation after catalogue edits and reopening',
@@ -952,6 +2461,155 @@ void main() {
     );
   }
 
+  test('only a signed captured payment amends a closed live visit', () async {
+    await line('tk1', 10000);
+    expect(
+      (await post('/settlement/visits/v1/receipts', {
+        'id': 'r1',
+        'assignAll': true,
+      })).statusCode,
+      200,
+    );
+    final total = (await serverBill())['total'] as int;
+    expect(
+      (await post('/settlement/receipts/r1/payments', {
+        'id': 'pay1',
+        'method': 'tunai',
+        'amount': total,
+      })).statusCode,
+      200,
+    );
+    expect((await post('/settlement/visits/v1/bill-close')).statusCode, 200);
+
+    final grant = await caller.auth.captureGrantFor(caller.token, [
+      Capability.settleBill.name,
+    ]);
+    Future<Response> latePayment(String id, {required bool signed}) => router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/receipts/r1/payments'),
+        headers: {
+          ...caller.headers,
+          'x-idempotency-key': id,
+          if (signed) 'x-capture-grant': grant!,
+        },
+        body: jsonEncode({
+          'id': id,
+          'method': 'tunai',
+          'amount': 5000,
+          'capturedAt': DateTime.now().toUtc().toIso8601String(),
+        }),
+      ),
+    );
+
+    final unsigned = await latePayment('unsigned', signed: false);
+    expect(unsigned.statusCode, 409);
+    expect(jsonDecode(await unsigned.readAsString())['code'], 'bill_locked');
+
+    final signed = await latePayment('captured-pay', signed: true);
+    expect(signed.statusCode, 200, reason: await signed.readAsString());
+    expect((await serverBill())['paidAmount'], total + 5000);
+  });
+
+  test('signed captured receipt edits amend a closed live visit', () async {
+    await line('tk1', 20000);
+    expect(
+      (await post('/settlement/visits/v1/receipts', {
+        'id': 'r1',
+        'assignAll': true,
+      })).statusCode,
+      200,
+    );
+    final total = (await serverBill())['total'] as int;
+    expect(
+      (await post('/settlement/receipts/r1/payments', {
+        'id': 'pay1',
+        'method': 'tunai',
+        'amount': total,
+      })).statusCode,
+      200,
+    );
+    expect((await post('/settlement/visits/v1/bill-close')).statusCode, 200);
+
+    final assignment = {
+      'ticketId': 'tk1',
+      'qtyUnits': 0,
+      'capturedAt': DateTime.now().toUtc().toIso8601String(),
+    };
+    final unsigned = await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/receipts/r1/lines'),
+        headers: caller.headers,
+        body: jsonEncode(assignment),
+      ),
+    );
+    expect(unsigned.statusCode, 409);
+    expect(jsonDecode(await unsigned.readAsString())['code'], 'bill_locked');
+
+    final signed = await post('/settlement/receipts/r1/lines', assignment);
+    expect(signed.statusCode, 200, reason: await signed.readAsString());
+    expect((await serverBill())['paidAmount'], total);
+
+    final newReceipt = {
+      'id': 'late-r2',
+      'mode': 'itemized',
+      'capturedAt': DateTime.now().toUtc().toIso8601String(),
+    };
+    final unsignedMint = await router(
+      Request(
+        'POST',
+        Uri.parse('http://x/settlement/visits/v1/receipts'),
+        headers: caller.headers,
+        body: jsonEncode(newReceipt),
+      ),
+    );
+    expect(unsignedMint.statusCode, 409);
+    expect(
+      (await post('/settlement/visits/v1/receipts', newReceipt)).statusCode,
+      200,
+    );
+  });
+
+  test('captured assignment survives a host receipt claim', () async {
+    await line('tk1', 20000);
+    expect(
+      (await post('/settlement/visits/v1/receipts', {
+        'id': 'host-r1',
+        'assignAll': true,
+      })).statusCode,
+      200,
+    );
+    final total = (await serverBill())['total'] as int;
+    expect(
+      (await post('/settlement/receipts/host-r1/payments', {
+        'id': 'host-pay',
+        'method': 'tunai',
+        'amount': total,
+      })).statusCode,
+      200,
+    );
+    expect((await post('/settlement/visits/v1/bill-close')).statusCode, 200);
+
+    final capturedAt = DateTime.now().toUtc().toIso8601String();
+    expect(
+      (await post('/settlement/visits/v1/receipts', {
+        'id': 'captured-r2',
+        'mode': 'itemized',
+        'capturedAt': capturedAt,
+      })).statusCode,
+      200,
+    );
+    final assigned = await post('/settlement/receipts/captured-r2/lines', {
+      'ticketId': 'tk1',
+      'qtyUnits': 1,
+      'capturedAt': capturedAt,
+    });
+    expect(assigned.statusCode, 200, reason: await assigned.readAsString());
+    expect((await db.select(db.receiptLines).get()), hasLength(2));
+    expect((await serverBill())['paidAmount'], total);
+  });
+
   test('a refund does not unlock an explicitly closed bill', () async {
     // The other half: `refund` takes the plain broadcast on the host, so it
     // moves money back without reopening anything. A projection that cleared
@@ -994,5 +2652,36 @@ void main() {
     ], cfg);
 
     expect((projected['lines'] as List).single['memberId'], 'member-1');
+  });
+
+  test('captured excess payment and refund remain in the host bill', () async {
+    await line('tk1', 40000);
+    expect(
+      (await post('/settlement/visits/v1/receipts', {
+        'id': 'rc-excess',
+        'mode': 'itemized',
+        'assignAll': true,
+      })).statusCode,
+      200,
+    );
+    final total = (await serverBill())['total'] as int;
+    final capturedAt = DateTime.utc(2026, 8, 30, 12).toIso8601String();
+    final payment = await post('/settlement/receipts/rc-excess/payments', {
+      'id': 'pay-excess',
+      'method': 'tunai',
+      'amount': total + 5000,
+      'capturedAt': capturedAt,
+    });
+    expect(payment.statusCode, 200, reason: await payment.readAsString());
+    expect((await serverBill())['paidAmount'], total + 5000);
+
+    final refund = await post('/settlement/receipts/rc-excess/refund', {
+      'id': 'refund-excess',
+      'paymentId': 'pay-excess',
+      'amount': total + 10000,
+      'capturedAt': capturedAt,
+    });
+    expect(refund.statusCode, 200, reason: await refund.readAsString());
+    expect((await serverBill())['paidAmount'], -5000);
   });
 }

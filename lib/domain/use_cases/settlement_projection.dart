@@ -36,8 +36,24 @@ Map<String, dynamic> projectBill(
   ProjectionConfig cfg,
 ) {
   final bill = _deepCopy(billJson);
+  for (final capturedConfig in [
+    bill['taxConfig'],
+    for (final e in events)
+      if (!e.isParked && !e.needsRepair) e.payload['taxConfig'],
+  ]) {
+    if (capturedConfig is! Map) continue;
+    try {
+      cfg = ProjectionConfig(
+        tax: TaxServiceConfig.fromJson(capturedConfig.cast<String, dynamic>()),
+        pointValue: cfg.pointValue,
+      );
+      break;
+    } catch (_) {
+      // A damaged snapshot cannot hide a later valid captured configuration.
+    }
+  }
   for (final e in events) {
-    if (e.isParked) continue;
+    if (e.isParked || e.needsRepair) continue;
     _apply(bill, e, cfg);
   }
   return _recompute(bill, cfg);
@@ -195,6 +211,22 @@ void _apply(
 
     case SettlementEventKind.attachMember:
       bill['memberId'] = e.arg<String>('memberId');
+      final discounts = (bill['billDiscounts'] as List)
+          .cast<Map<String, dynamic>>();
+      discounts.removeWhere((d) => d['source'] == 'member');
+      final memberDiscount = e.payload['memberDiscount'];
+      if (memberDiscount is Map) {
+        discounts.add({
+          'id': e.id,
+          'ticketId': null,
+          'presetId': memberDiscount['presetId'],
+          'name': memberDiscount['name'],
+          'kind': memberDiscount['kind'],
+          'value': memberDiscount['value'],
+          'amount': 0,
+          'source': 'member',
+        });
+      }
 
     case SettlementEventKind.detachMember:
       bill['memberId'] = null;
@@ -202,7 +234,7 @@ void _apply(
       // The tier discount and any redemption are the member's, so they leave
       // with them — the host clears both slots on detach.
       (bill['billDiscounts'] as List).removeWhere(
-        (d) => (d as Map)['source'] != 'manual',
+        (d) => const {'member', 'redeem'}.contains((d as Map)['source']),
       );
 
     case SettlementEventKind.assignTicketMembers:
@@ -212,11 +244,51 @@ void _apply(
           line['memberId'] = e.arg<String>('memberId');
         }
       }
+      for (final rec in _list(bill, 'receipts')) {
+        final receiptLines = (rec['lines'] as List? ?? const []).cast<Map>();
+        final discounts = (rec['discounts'] as List)
+            .cast<Map<String, dynamic>>();
+        for (final line in receiptLines) {
+          final ticketId = line['ticketId'];
+          if (!ids.contains(ticketId)) continue;
+          discounts.removeWhere(
+            (d) => d['source'] == 'member' && d['ticketId'] == ticketId,
+          );
+          final preset = e.payload['memberDiscount'];
+          if (e.arg<String>('memberId') != null && preset is Map) {
+            discounts.add({
+              'id': '${e.id}:$ticketId:${rec['id']}',
+              'ticketId': ticketId,
+              'presetId': preset['presetId'],
+              'name': preset['name'],
+              'kind': preset['kind'],
+              'value': preset['value'],
+              'amount': 0,
+              'source': 'member',
+            });
+          }
+        }
+      }
 
     case SettlementEventKind.attachReceiptMember:
-      _receiptOf(bill, e.arg<String>('receiptId'))?['memberId'] = e.arg<String>(
-        'memberId',
-      );
+      final rec = _receiptOf(bill, e.arg<String>('receiptId'));
+      if (rec == null) return;
+      rec['memberId'] = e.arg<String>('memberId');
+      final discounts = (rec['discounts'] as List).cast<Map<String, dynamic>>();
+      discounts.removeWhere((d) => d['source'] == 'member');
+      final memberDiscount = e.payload['memberDiscount'];
+      if (memberDiscount is Map) {
+        discounts.add({
+          'id': e.id,
+          'ticketId': null,
+          'presetId': memberDiscount['presetId'],
+          'name': memberDiscount['name'],
+          'kind': memberDiscount['kind'],
+          'value': memberDiscount['value'],
+          'amount': 0,
+          'source': 'member',
+        });
+      }
 
     case SettlementEventKind.detachReceiptMember:
       final rec = _receiptOf(bill, e.arg<String>('receiptId'));
@@ -224,7 +296,7 @@ void _apply(
       rec['memberId'] = null;
       rec['member'] = null;
       (rec['discounts'] as List).removeWhere(
-        (d) => (d as Map)['source'] != 'manual',
+        (d) => const {'member', 'redeem'}.contains((d as Map)['source']),
       );
 
     case SettlementEventKind.redeemPoints:
@@ -392,6 +464,19 @@ Map<String, dynamic> _newReceipt(Map<String, dynamic> bill, SettlementEvent e) {
     label: e.arg<String>('label'),
     memberId: e.arg<String>('memberId'),
   );
+  final memberDiscount = e.payload['memberDiscount'];
+  if (memberDiscount is Map) {
+    (rec['discounts'] as List).add({
+      'id': e.id,
+      'ticketId': null,
+      'presetId': memberDiscount['presetId'],
+      'name': memberDiscount['name'],
+      'kind': memberDiscount['kind'],
+      'value': memberDiscount['value'],
+      'amount': 0,
+      'source': 'member',
+    });
+  }
   final lines = (rec['lines'] as List).cast<Map<String, dynamic>>();
   if (e.payload['assignAll'] == true) {
     // Every unit nobody has claimed yet — the host's `_assignAllUnassigned`.

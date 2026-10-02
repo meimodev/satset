@@ -264,6 +264,58 @@ class ServerAuth {
         .getSingleOrNull();
   }
 
+  /// The host signs the permissions a paired device last learned while online.
+  /// Offline events retain this grant when the role changes before replay.
+  /// A grant proves the device once held these rights, not its capture time;
+  /// the paired app replaces it when the next online profile is received.
+  Future<String?> captureGrantFor(
+    String? token,
+    List<String> capabilities,
+  ) async {
+    if (token == null) return null;
+    final session = await (db.select(
+      db.sessions,
+    )..where((s) => s.token.equals(token))).getSingleOrNull();
+    if (session == null) return null;
+    return JWT({
+      'kind': 'captured-capabilities',
+      'sub': session.userId,
+      'deviceId': session.deviceId,
+      'capabilities': capabilities,
+    }).sign(SecretKey(secret));
+  }
+
+  Future<Set<String>> capturedCapabilities(
+    String? bearer,
+    String? grant,
+    String? idempotencyKey,
+  ) async {
+    if (bearer == null ||
+        grant == null ||
+        grant.isEmpty ||
+        idempotencyKey == null ||
+        idempotencyKey.isEmpty) {
+      return const {};
+    }
+    final session = await (db.select(
+      db.sessions,
+    )..where((s) => s.token.equals(bearer))).getSingleOrNull();
+    if (session == null || await resolveBearer(bearer) == null) return const {};
+    try {
+      final payload = JWT.verify(grant, SecretKey(secret)).payload;
+      if (payload is! Map ||
+          payload['kind'] != 'captured-capabilities' ||
+          payload['deviceId'] != session.deviceId ||
+          payload['sub'] is! String ||
+          payload['capabilities'] is! List) {
+        return const {};
+      }
+      return (payload['capabilities'] as List).whereType<String>().toSet();
+    } catch (_) {
+      return const {};
+    }
+  }
+
   Future<void> revoke(String token) async {
     await (db.delete(db.sessions)..where((s) => s.token.equals(token))).go();
   }

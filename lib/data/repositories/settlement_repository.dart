@@ -25,6 +25,19 @@ import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
 
+Map<String, dynamic> _receiptSnapshot(BillReceipt receipt) => {
+  'subtotal': receipt.subtotal,
+  'discountAmount': receipt.discountAmount,
+  'serviceAmount': receipt.serviceAmount,
+  'taxAmount': receipt.taxAmount,
+  'total': receipt.total,
+  'memberId': receipt.memberId,
+  'lines': [
+    for (final line in receipt.lines)
+      {'ticketId': line.ticketId, 'qtyUnits': line.qtyUnits},
+  ],
+};
+
 /// Bootstrap status for the cashier payable list (spinner / retry banner).
 final settlementStatusProvider = StateProvider<AsyncValue<void>>(
   (_) => const AsyncValue.data(null),
@@ -300,7 +313,7 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   /// The cached bill with this visit's journal applied. Throws when the visit
   /// was never cached — a bill this device has never seen cannot be settled
   /// from nothing.
-  Future<Bill> _project(String visitId) async {
+  Future<Bill> _project(String visitId, {SettlementEvent? extra}) async {
     final source = await _journal.projectionFor(visitId);
     var cached = source.bill;
     if (cached == null) {
@@ -325,7 +338,7 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
       };
     }
     return Bill.fromJson(
-      projectBill(cached, source.events, _projectionConfig()),
+      projectBill(cached, [...source.events, ?extra], _projectionConfig()),
     );
   }
 
@@ -441,13 +454,67 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   ) async {
     await _journal.assertWritable(visitId);
     await _requireCaptureBaseline(visitId);
+    final capturedAt = SatClock.now().toUtc();
+    final actorId = ref.read(authStateProvider).user?.id ?? '';
+    var capturedPayload = payload;
+    if (kind == SettlementEventKind.mintReceipt ||
+        kind == SettlementEventKind.assignLine ||
+        kind == SettlementEventKind.splitEven) {
+      // Freeze the projected amounts before the event becomes drainable.
+      final projected = await _project(
+        visitId,
+        extra: SettlementEvent(
+          id: id,
+          visitId: visitId,
+          seq: 0,
+          kind: kind,
+          payload: payload,
+          capturedAt: capturedAt,
+          actorId: actorId,
+        ),
+      );
+      if (kind == SettlementEventKind.splitEven) {
+        final ids = (payload['ids'] as List).cast<String>();
+        final shares = [
+          for (final shareId in ids)
+            projected.receipts.where((r) => r.id == shareId).firstOrNull?.total,
+        ];
+        if (shares.any((share) => share == null)) {
+          throw StateError('capture_snapshot_unavailable');
+        }
+        capturedPayload = {
+          ...payload,
+          'receiptSnapshot': {'shares': shares},
+        };
+      } else {
+        final receiptId = kind == SettlementEventKind.mintReceipt
+            ? id
+            : payload['receiptId'] as String?;
+        final receipt = projected.receipts
+            .where((r) => r.id == receiptId)
+            .firstOrNull;
+        if (receipt == null) throw StateError('capture_snapshot_unavailable');
+        capturedPayload = {
+          ...payload,
+          'receiptSnapshot': _receiptSnapshot(receipt),
+        };
+      }
+    }
+    capturedPayload = {
+      ...capturedPayload,
+      'taxConfig': ref
+          .read(venueSettingsProvider)
+          .toTaxServiceConfig()
+          .toJson(),
+    };
     try {
       await _journal.append(
         visitId: visitId,
         kind: kind,
-        payload: payload,
+        payload: capturedPayload,
         id: id,
-        actorId: ref.read(authStateProvider).user?.id ?? '',
+        actorId: actorId,
+        capturedAt: capturedAt,
       );
     } on SettlementJournalFull {
       // A cap trips through the same surface a refusal does, never as a silent
@@ -517,6 +584,8 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
         'label': ?label,
         'assignAll': assignAll,
         'memberId': ?memberId,
+        if (memberId != null)
+          'memberDiscount': _capturedMemberDiscount(receipt: true),
         if (lineSpecs.isNotEmpty) 'lines': lineSpecs,
       },
       online: (id) => ref
@@ -527,6 +596,8 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
             'label': ?label,
             'assignAll': assignAll,
             'memberId': ?memberId,
+            if (memberId != null)
+              'memberDiscount': _capturedMemberDiscount(receipt: true),
             if (lineSpecs.isNotEmpty) 'lines': lineSpecs,
           }, idempotencyKey: id),
     );
@@ -553,25 +624,35 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     return last ?? bill;
   }
 
-  Future<Bill> assignLine(String receiptId, String ticketId, int qtyUnits) =>
-      _actOnReceipt(
-        receiptId,
-        SettlementEventKind.assignLine,
+  Future<Bill> assignLine(
+    String receiptId,
+    String ticketId,
+    int qtyUnits,
+  ) async {
+    final id = _uuid.v4();
+    final bill = await _actOnReceipt(
+      receiptId,
+      SettlementEventKind.assignLine,
+      {'ticketId': ticketId, 'qtyUnits': qtyUnits},
+      (id) => ref.read(apiClientProvider).postJson(
+        '/settlement/receipts/$receiptId/lines',
         {'ticketId': ticketId, 'qtyUnits': qtyUnits},
-        (id) => ref.read(apiClientProvider).postJson(
-          '/settlement/receipts/$receiptId/lines',
-          {'ticketId': ticketId, 'qtyUnits': qtyUnits},
-          idempotencyKey: id,
-        ),
-      );
+        idempotencyKey: id,
+      ),
+      id: id,
+    );
+    return bill;
+  }
 
-  Future<Bill> splitEven(String visitId, int n) {
+  Future<Bill> splitEven(String visitId, int n) async {
     // One id per share, minted here for the same reason a receipt's is: the
     // guest is told which slip is theirs before the host has heard of it.
     final ids = [for (var i = 0; i < n; i++) _uuid.v4()];
-    return _act(
+    final eventId = _uuid.v4();
+    final bill = await _act(
       visitId: visitId,
       kind: SettlementEventKind.splitEven,
+      id: eventId,
       payload: {'n': n, 'ids': ids},
       online: (id) => ref.read(apiClientProvider).postJson(
         '/settlement/visits/$visitId/split-even',
@@ -579,6 +660,7 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
         idempotencyKey: id,
       ),
     );
+    return bill;
   }
 
   /// Bill close (Tutup tagihan). `writeOff` records a tak-tertagih loss
@@ -587,16 +669,24 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
     String visitId, {
     bool writeOff = false,
     String? reason,
-  }) => _act(
-    visitId: visitId,
-    kind: SettlementEventKind.closeBill,
-    payload: {'writeOff': writeOff, 'reason': ?reason},
-    online: (id) => ref.read(apiClientProvider).postJson(
-      '/settlement/visits/$visitId/bill-close',
-      {'writeOff': writeOff, 'reason': ?reason},
-      idempotencyKey: id,
-    ),
-  );
+  }) async {
+    // A later host bill can differ; a captured write-off keeps its own amount.
+    final capturedLoss = writeOff ? (await _fetchBill(visitId)).outstanding : 0;
+    await _act(
+      visitId: visitId,
+      kind: SettlementEventKind.closeBill,
+      payload: {
+        'writeOff': writeOff,
+        'reason': ?reason,
+        'capturedLoss': capturedLoss,
+      },
+      online: (id) => ref.read(apiClientProvider).postJson(
+        '/settlement/visits/$visitId/bill-close',
+        {'writeOff': writeOff, 'reason': ?reason},
+        idempotencyKey: id,
+      ),
+    );
+  }
 
   /// Takeaway handover ("Serahkan") — the first/second axis for a Bawa pulang
   /// visit, replacing table-close. Server stamps `tableFreedAt`; if the bill is
@@ -867,13 +957,45 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   Future<Bill> attachMember(String visitId, String memberId) => _act(
     visitId: visitId,
     kind: SettlementEventKind.attachMember,
-    payload: {'memberId': memberId},
+    payload: {
+      'memberId': memberId,
+      'memberSplit': ref.read(venueSettingsProvider).memberSplitOn,
+      'memberPresetId': _capturedMemberDiscount()?['presetId'],
+      'memberDiscount': _capturedMemberDiscount(),
+    },
     online: (id) => ref.read(apiClientProvider).postJson(
       '/settlement/visits/$visitId/member',
       {'memberId': memberId},
       idempotencyKey: id,
     ),
   );
+
+  Map<String, dynamic>? _capturedMemberDiscount({bool receipt = false}) {
+    final settings = ref.read(venueSettingsProvider);
+    final presetId = settings.memberPresetId;
+    if (settings.memberSplitOn != receipt || presetId == null) return null;
+    final preset = ref
+        .read(discountPresetsRepositoryProvider)
+        .where(
+          (p) =>
+              p.id == presetId &&
+              p.active &&
+              (p.scope == 'bill' || (receipt && p.scope == 'order')),
+        )
+        .firstOrNull;
+    if (preset == null) return null;
+    return {
+      'presetId': preset.id,
+      'name': preset.name,
+      'kind': preset.kind,
+      'value': preset.value,
+    };
+  }
+
+  Map<String, dynamic>? _capturedTicketMemberDiscount() {
+    final preset = _capturedMemberDiscount(receipt: true);
+    return preset?['kind'] == 'percent' ? preset : null;
+  }
 
   Future<Bill> detachMember(String visitId) => _act(
     visitId: visitId,
@@ -895,7 +1017,12 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   ) => _act(
     visitId: visitId,
     kind: SettlementEventKind.assignTicketMembers,
-    payload: {'ticketIds': ticketIds, 'memberId': memberId},
+    payload: {
+      'ticketIds': ticketIds,
+      'memberId': memberId,
+      'memberPresetId': _capturedTicketMemberDiscount()?['presetId'],
+      'memberDiscount': _capturedTicketMemberDiscount(),
+    },
     online: (id) => ref.read(apiClientProvider).postJson(
       '/settlement/visits/$visitId/ticket-members',
       {'ticketIds': ticketIds, 'memberId': memberId},
@@ -908,7 +1035,10 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   Future<Bill> redeemPoints(String visitId, int points) => _act(
     visitId: visitId,
     kind: SettlementEventKind.redeemPoints,
-    payload: {'points': points},
+    payload: {
+      'points': points,
+      'pointValue': ref.read(venueSettingsProvider).memberPointValue,
+    },
     online: (id) => ref.read(apiClientProvider).postJson(
       '/settlement/visits/$visitId/redeem',
       {'points': points},
@@ -937,7 +1067,11 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
       _actOnReceipt(
         receiptId,
         SettlementEventKind.attachReceiptMember,
-        {'memberId': memberId},
+        {
+          'memberId': memberId,
+          'memberPresetId': _capturedMemberDiscount(receipt: true)?['presetId'],
+          'memberDiscount': _capturedMemberDiscount(receipt: true),
+        },
         (id) => ref.read(apiClientProvider).postJson(
           '/settlement/receipts/$receiptId/member',
           {'memberId': memberId},
@@ -963,7 +1097,10 @@ class SettlementRepository extends StateNotifier<List<BillSummary>> {
   Future<Bill> redeemOnReceipt(String receiptId, int points) => _actOnReceipt(
     receiptId,
     SettlementEventKind.redeemOnReceipt,
-    {'points': points},
+    {
+      'points': points,
+      'pointValue': ref.read(venueSettingsProvider).memberPointValue,
+    },
     (id) => ref.read(apiClientProvider).postJson(
       '/settlement/receipts/$receiptId/redeem',
       {'points': points},

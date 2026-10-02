@@ -1,9 +1,6 @@
-// A bill discount holds one slot per **source** (ADR-0094): a cashier's promo,
-// the member's standing discount and a points redemption are three different
-// give-backs and stack by design. The rule that stops any one of them being
-// applied twice is not route code — it is `idx_discounts_bill_source_uniq`, a
-// partial unique index on `(visit_id, source) WHERE receipt_id IS NULL AND
-// visit_id IS NOT NULL`.
+// Member and redeem discounts keep one slot per source (ADR-0094). Separate
+// captured manual promos can stack; live route checks still keep one manual
+// slot. The partial index also enforces that live manual slot under races.
 //
 // Nothing pinned it, and a partial index is exactly the kind that stops
 // existing quietly: change the predicate and every route still passes, because
@@ -25,6 +22,7 @@ void main() {
     String? visitId,
     String? receiptId,
     String source = 'manual',
+    bool captured = false,
   }) => db
       .into(db.discounts)
       .insert(
@@ -33,6 +31,7 @@ void main() {
           visitId: Value(visitId),
           receiptId: Value(receiptId),
           source: Value(source),
+          captured: Value(captured),
           name: 'Diskon',
           kind: 'percent',
           at: DateTime(2026, 8, 22),
@@ -60,6 +59,14 @@ void main() {
       throwsA(isA<SqliteException>()),
       reason: 'the index is the guard; the route check only wins the race',
     );
+  });
+
+  test('separate captured manual discounts may share a bill', () async {
+    await disc(id: 'd1', visitId: 'v1', source: 'manual');
+    expect(disc(id: 'live-2', visitId: 'v1'), throwsA(isA<SqliteException>()));
+    await disc(id: 'd2', visitId: 'v1', captured: true);
+    await disc(id: 'd3', visitId: 'v1', captured: true);
+    expect((await db.select(db.discounts).get()).length, 3);
   });
 
   test('the same source on another bill is a different slot', () async {

@@ -14,6 +14,7 @@ import 'package:satset/server/routes/tables_routes.dart'
 import 'package:satset/server/stock.dart';
 import 'package:satset/server/members.dart' show memberConfig;
 import 'package:satset/server/ws_hub.dart';
+import 'package:satset/server/visit_tax_config.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/ticket.dart'
     show TicketStatus, ticketStatusFromKey;
@@ -22,20 +23,8 @@ import 'package:satset/domain/models/ticket_transitions.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/domain/models/menu_item.dart' show openItemId;
+import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/server/modules.dart' show modeBypassKds, venueHasMode;
-
-/// How far in the past a `capturedAt` must be before the host reads a request
-/// as a **replay of history** rather than as a live write (ADR-0139 §3).
-///
-/// The switch it gates is not small: a replay may name its own visit and
-/// ticket ids, and its lines are filed without a stock check. Hanging that on
-/// the mere *presence* of a client field would mean a wrong clock — a real
-/// failure mode on cheap Android hardware, not a hypothetical — silently
-/// disabling a venue-wide control with nobody seeing an error.
-///
-/// A genuine backlog is minutes to hours old, so a minute is generous to the
-/// honest case and closed to the accidental one.
-const kCapturedReplayFloor = Duration(minutes: 1);
 
 Future<Response?> _requireCap(
   Request req,
@@ -55,7 +44,12 @@ Future<Response?> _requireCap(
   final caps = role == null
       ? const <String>[]
       : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
-  if (!caps.contains(needed.name)) {
+  if (!caps.contains(needed.name) &&
+      !(await auth.capturedCapabilities(
+        token,
+        req.headers['x-capture-grant'],
+        req.headers['x-idempotency-key'],
+      )).contains(needed.name)) {
     return Response(
       403,
       body: jsonEncode({
@@ -145,6 +139,158 @@ Future<void> _emitVoidAudit(
   );
 }
 
+Future<Response> _capturedArchivedVoid(
+  Request req,
+  String ticketId,
+  Map<String, dynamic> body,
+  AppDatabase db,
+  ServerAuth auth,
+  WsHub hub,
+  Set<String> captureCaps,
+) async {
+  final visitId = (body['visitId'] as String?)?.trim();
+  final capturedAt = DateTime.tryParse((body['capturedAt'] as String?) ?? '');
+  if (body['status'] != 'voided' ||
+      visitId == null ||
+      visitId.isEmpty ||
+      capturedAt == null) {
+    return Response.notFound('ticket not found');
+  }
+  final ticket =
+      await (db.select(db.tableSessionTickets)..where(
+            (t) => t.ticketId.equals(ticketId) & t.sessionId.equals(visitId),
+          ))
+          .getSingleOrNull();
+  final session = await (db.select(
+    db.tableSessions,
+  )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+  if (ticket == null || session == null) {
+    return Response.notFound('ticket not found');
+  }
+  final from = ticketStatusFromKey(ticket.status);
+  final voidBeforeServe =
+      from == TicketStatus.served &&
+      ticket.servedAt != null &&
+      capturedAt.isBefore(ticket.servedAt!);
+  final needed = voidBeforeServe
+      ? Capability.voidItem
+      : capabilityForTransition(from, TicketStatus.voided);
+  if (needed == null) {
+    return Response(409, body: jsonEncode({'code': 'illegal_transition'}));
+  }
+  if (!captureCaps.contains(needed.name)) return Response(403);
+  final denied = await _requireCap(req, db, auth, needed);
+  if (denied != null) return denied;
+  final reasonCode = (body['voidReasonCode'] as String?)?.trim();
+  final reasonText = (body['voidReason'] as String?)?.trim();
+  if (reasonCode == null ||
+      reasonCode.isEmpty ||
+      (reasonCode == 'other' && (reasonText == null || reasonText.isEmpty))) {
+    return Response(400, body: jsonEncode({'code': 'reason_required'}));
+  }
+
+  final tickets = await (db.select(
+    db.tableSessionTickets,
+  )..where((t) => t.sessionId.equals(visitId))).get();
+  final discounts = await (db.select(
+    db.tableSessionDiscounts,
+  )..where((d) => d.sessionId.equals(visitId))).get();
+  final active = tickets.where((t) => t.status != 'voided').toList();
+  final activeIds = active.map((t) => t.ticketId).toSet();
+  final subtotal = active.fold<int>(0, (sum, t) => sum + t.price * t.qty);
+  final lineDiscount = discounts
+      .where((d) => d.ticketId != null && activeIds.contains(d.ticketId))
+      .fold<int>(0, (sum, d) => sum + d.amount);
+  final voidedLineDiscount = discounts
+      .where((d) => d.ticketId == ticketId)
+      .fold<int>(0, (sum, d) => sum + d.amount);
+  final orderDiscount = discounts
+      .where((d) => d.ticketId == null)
+      .fold<int>(0, (sum, d) => sum + d.amount);
+  final cfg = await visitTaxConfig(db, visitId);
+  final removed = ticket.price * ticket.qty;
+  final before = computeBreakdown(
+    subtotal - lineDiscount,
+    cfg,
+    discount: orderDiscount,
+  );
+  final after = computeBreakdown(
+    subtotal - removed - lineDiscount + voidedLineDiscount,
+    cfg,
+    discount: orderDiscount,
+  );
+  final grossBefore = computeBreakdown(subtotal, cfg);
+  final grossAfter = computeBreakdown(subtotal - removed, cfg);
+  final actorId =
+      (body['actorId'] as String?)?.trim() ?? (await _actor(req, db, auth))?.id;
+  await db.transaction(() async {
+    await (db.update(
+      db.tableSessionTickets,
+    )..where((t) => t.id.equals(ticket.id))).write(
+      TableSessionTicketsCompanion(
+        status: const Value('voided'),
+        voidReason: Value(reasonText),
+        voidReasonCode: Value(reasonCode),
+        voidedByUserId: Value(actorId),
+      ),
+    );
+    await (db.update(
+      db.tableSessions,
+    )..where((s) => s.id.equals(visitId))).write(
+      TableSessionsCompanion(
+        subtotal: Value(session.subtotal - removed),
+        voidAmount: Value(session.voidAmount + removed),
+        serviceAmount: Value(
+          session.serviceAmount +
+              grossAfter.serviceAmount -
+              grossBefore.serviceAmount,
+        ),
+        taxAmount: Value(
+          session.taxAmount + grossAfter.taxAmount - grossBefore.taxAmount,
+        ),
+        netTotal: Value(
+          session.netTotal + grossAfter.total - grossBefore.total,
+        ),
+        discountAmount: Value(
+          session.discountAmount -
+              voidedLineDiscount +
+              after.discountAmount -
+              before.discountAmount,
+        ),
+        settledTotal: Value(session.settledTotal + after.total - before.total),
+      ),
+    );
+  });
+  final reason = reasonText != null && reasonText.isNotEmpty
+      ? reasonText
+      : (_voidReasonLabels[reasonCode] ?? reasonCode);
+  final isComp = reasonCode == 'comp';
+  await writeAudit(
+    db,
+    hub: hub,
+    type: isComp ? AuditType.comp : AuditType.voidItem,
+    kind: isComp ? AuditKind.comp : AuditKind.voidItem,
+    params: {
+      'qty': '${ticket.qty}',
+      'name': ticket.name,
+      'amount': auditRupiah(removed),
+    },
+    tableId: session.tableId,
+    reason: reason,
+    actorUserId: actorId,
+    amountCents: removed,
+    at: capturedAt,
+  );
+  hub.broadcast(WsEventTypes.tableSessionClosed, {
+    'tableId': session.tableId,
+    'visitId': visitId,
+  });
+  return Response.ok(
+    jsonEncode({'id': ticketId, 'status': 'voided'}),
+    headers: {'content-type': 'application/json'},
+  );
+}
+
 Map<String, dynamic> _tableToJson(VenueTable t) => {
   'id': t.id,
   'zoneId': t.zoneId,
@@ -226,15 +372,19 @@ Future<SubmitOrderResult> submitOrder(
   /// ticket; `sentAt` still stamps delivery, so the kitchen's clocks are never
   /// handed a head start they did not have. See ADR-0090.
   ///
-  /// Since ADR-0139 it is also the **replay switch**: paired with a past-dated
-  /// value it is what lets [capturedVisitId] and a wire ticket id be honoured,
-  /// and what lifts the stock refusal off food a guest has already eaten.
+  /// The HTTP route verifies the signed capture grant before allowing this
+  /// timestamp to bypass a later stock or bill state change.
   DateTime? capturedAt,
+
+  /// The HTTP route supplies its grant check. Direct history imports that
+  /// omit this use [capturedAt] as their replay marker.
+  bool? verifiedCapture,
 
   /// The [[Kunjungan tertangkap]]'s own id — minted on a device that could not
   /// reach here (ADR-0139 §2). Honoured only alongside a past-dated
-  /// [capturedAt]; a live caller naming a visit id is ignored, not obeyed.
+  /// [capturedAt]; a caller without it cannot name a visit id.
   String? capturedVisitId,
+  TaxServiceConfig? capturedTaxConfig,
 
   /// Who delivered a backlog that someone else captured. See ADR-0090.
   String? replayedByUserId,
@@ -251,12 +401,8 @@ Future<SubmitOrderResult> submitOrder(
   String? idPrefix,
 }) async {
   final stamp = at ?? SatClock.now();
-  // Historical captures may record food already eaten despite depleted stock.
-  // Fresh captures keep ordinary stock enforcement. Stable client identities
-  // are independent of this age threshold, including a reconnect in seconds.
-  final replayingHistory =
-      capturedAt != null &&
-      stamp.difference(capturedAt) >= kCapturedReplayFloor;
+  // A quick signed reconnect is history even when the device clock drifts.
+  final replayingHistory = capturedAt != null && (verifiedCapture ?? true);
   final createdIds = <String>[];
   final createdRows = <Ticket>[];
   final rejected = <Map<String, dynamic>>[];
@@ -302,9 +448,22 @@ Future<SubmitOrderResult> submitOrder(
           db.venueTables,
         )..where((t) => t.id.equals(tableId))).getSingleOrNull();
         if (tbl?.currentVisitId != expectedVisitId) {
-          visitConflict = true;
-          orderVisitId = tbl?.currentVisitId;
-          return;
+          final originalVisit = await (db.select(
+            db.visits,
+          )..where((v) => v.id.equals(expectedVisitId))).getSingleOrNull();
+          final originalSession = await (db.select(
+            db.tableSessions,
+          )..where((s) => s.id.equals(expectedVisitId))).getSingleOrNull();
+          final capturedForOriginal =
+              capturedAt != null &&
+              capturedVisitId == expectedVisitId &&
+              (originalVisit?.tableId == tableId ||
+                  originalSession?.tableId == tableId);
+          if (!capturedForOriginal) {
+            visitConflict = true;
+            orderVisitId = tbl?.currentVisitId;
+            return;
+          }
         }
       }
       // A **[[Kunjungan tertangkap]]** names its own visit (ADR-0139 §2), and
@@ -317,6 +476,7 @@ Future<SubmitOrderResult> submitOrder(
         actorId: actorId,
         visitId: capturedAt != null ? capturedVisitId : null,
         at: capturedAt,
+        taxConfig: capturedAt != null ? capturedTaxConfig : null,
       );
     }
     orderVisitId = visitId;
@@ -654,11 +814,29 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       Capability.overrideStock,
     );
 
-    // A replayed order (ADR-0090). `capturedAt` is advisory — it only ever
-    // makes a line look *older* than it is, never fresher — but the visit
-    // guard is load-bearing, so a malformed value is dropped rather than
-    // guessed at.
+    // A signed, device-bound grant identifies a captured replay. A device
+    // timestamp alone cannot turn a live order into historical work.
+    final captureToken = req.headers['authorization']?.replaceFirst(
+      RegExp(r'^[Bb]earer\s+'),
+      '',
+    );
+    final captureCaps = await auth.capturedCapabilities(
+      captureToken,
+      req.headers['x-capture-grant'],
+      req.headers['x-idempotency-key'],
+    );
+    final verifiedCapture = captureCaps.contains(Capability.takeOrder.name);
     final capturedAt = DateTime.tryParse((body['capturedAt'] as String?) ?? '');
+    TaxServiceConfig? capturedTaxConfig;
+    if (verifiedCapture && capturedAt != null && body['taxConfig'] != null) {
+      try {
+        capturedTaxConfig = TaxServiceConfig.fromJson(
+          (body['taxConfig'] as Map).cast<String, dynamic>(),
+        );
+      } catch (_) {
+        return Response(400, body: 'invalid captured tax configuration');
+      }
+    }
     final expectedVisitId = (body['expectedVisitId'] as String?)?.trim();
     // Attribution splits from authorisation on a replay: the capability check
     // above ran against the bearer, `actorId` keeps naming the waiter who took
@@ -684,10 +862,12 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
       // gated on `capturedAt`; identity survives even a brief disconnect.
       // A caller without a capture timestamp keeps ordinary server-minted IDs.
       capturedVisitId: takeaway ? null : appendVisitId,
+      capturedTaxConfig: capturedTaxConfig,
       actorId: actorId,
       canOverrideStock: canOverrideStock,
       expectedVisitId: expectedVisitId,
       capturedAt: capturedAt,
+      verifiedCapture: verifiedCapture,
       replayedByUserId: capturedAt == null || replayedBy == actorId
           ? null
           : replayedBy,
@@ -899,13 +1079,38 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   r.post('/tickets/<id>/transition', (Request req, String id) async {
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
     final statusRaw = body['status'] as String;
+    final capturedAt = DateTime.tryParse((body['capturedAt'] as String?) ?? '');
+    final captureCaps = capturedAt == null
+        ? const <String>{}
+        : await auth.capturedCapabilities(
+            req.headers['authorization']?.replaceFirst(
+              RegExp(r'^[Bb]earer\s+'),
+              '',
+            ),
+            req.headers['x-capture-grant'],
+            req.headers['x-idempotency-key'],
+          );
     final current = await (db.select(
       db.tickets,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
-    if (current == null) return Response.notFound('ticket not found');
+    if (current == null) {
+      return _capturedArchivedVoid(req, id, body, db, auth, hub, captureCaps);
+    }
     final from = ticketStatusFromKey(current.status);
     final to = ticketStatusFromKey(statusRaw);
-    final needed = capabilityForTransition(from, to);
+    final capturedVoidAt =
+        to == TicketStatus.voided &&
+            captureCaps.contains(Capability.voidItem.name)
+        ? capturedAt
+        : null;
+    final voidBeforeServe =
+        from == TicketStatus.served &&
+        current.servedAt != null &&
+        capturedVoidAt != null &&
+        capturedVoidAt.isBefore(current.servedAt!);
+    final needed = voidBeforeServe
+        ? Capability.voidItem
+        : capabilityForTransition(from, to);
     if (needed == null) {
       return Response(
         409,
@@ -976,10 +1181,9 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     // `reports_routes` does not reject but silently *discards*, so the sample
     // disappears instead of being wrong. Only a serve is backdatable; every
     // other stamp on this route is a fact the host observed itself.
-    final capturedRaw = (body['capturedAt'] as String?)?.trim();
     final captured =
-        stampServed && capturedRaw != null && capturedRaw.isNotEmpty
-        ? DateTime.tryParse(capturedRaw)
+        stampServed && captureCaps.contains(Capability.takeOrder.name)
+        ? capturedAt
         : null;
     final servedStamp = captured == null
         ? stampNow

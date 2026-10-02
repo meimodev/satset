@@ -7,8 +7,7 @@
 // visit that does not exist, every one of them 404s, and the chain parks with
 // the cash already in a drawer. That is the failure these pin.
 //
-// Captures preserve identity immediately; only historical captures bypass
-// current stock availability. A brief reconnect must preserve both contracts.
+// Signed captures preserve identity and their stock effect on brief reconnects.
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +16,7 @@ import 'package:satset/domain/models/audit_kind.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/routes/tables_routes.dart';
 import 'package:satset/server/routes/tickets_routes.dart';
+import 'package:satset/server/ws_hub.dart';
 
 void main() {
   late AppDatabase db;
@@ -128,6 +128,51 @@ void main() {
       );
     });
   });
+
+  test(
+    'late order amends archived visit without taking the new guest table',
+    () async {
+      await ensureVisit(db, 't1', visitId: 'captured-v1', at: longAgo());
+      final original = await (db.select(
+        db.visits,
+      )..where((v) => v.id.equals('captured-v1'))).getSingle();
+      await snapshotVisitAndDelete(db, WsHub(), original);
+      await (db.update(db.venueTables)..where((t) => t.id.equals('t1'))).write(
+        const VenueTablesCompanion(currentVisitId: Value(null)),
+      );
+      final nextVisit = await ensureVisit(db, 't1');
+
+      final result = await submitOrder(
+        db,
+        tableId: 't1',
+        idem: 'late-order',
+        lines: lines,
+        capturedVisitId: 'captured-v1',
+        expectedVisitId: 'captured-v1',
+        capturedAt: longAgo(),
+      );
+      expect(result.visitConflict, isFalse);
+      expect(result.createdRows.single.visitId, 'captured-v1');
+      final table = await (db.select(
+        db.venueTables,
+      )..where((t) => t.id.equals('t1'))).getSingle();
+      expect(table.currentVisitId, nextVisit);
+
+      final amendment = await (db.select(
+        db.visits,
+      )..where((v) => v.id.equals('captured-v1'))).getSingle();
+      expect(amendment.tableFreedAt, isNotNull);
+      expect(amendment.openedAt, original.openedAt);
+      expect(amendment.guestName, isNull);
+      await snapshotVisitAndDelete(db, WsHub(), amendment);
+      final session = await (db.select(
+        db.tableSessions,
+      )..where((s) => s.id.equals('captured-v1'))).getSingle();
+      expect(session.subtotal, 25000);
+      expect(session.ticketCount, 1);
+      expect(await db.select(db.tableSessionTickets).get(), hasLength(1));
+    },
+  );
 
   group('the ticket ids the device minted', () {
     test('are adopted on a replay', () async {
@@ -253,11 +298,8 @@ void main() {
     });
   });
 
-  group('the replay floor', () {
-    test('a present-dated capturedAt gets ordinary enforcement', () async {
-      // A wrong clock is a real failure mode on cheap Android hardware. Hanging
-      // a venue-wide control on the mere presence of a client field means it
-      // switches off with nobody seeing an error.
+  group('a quick captured replay', () {
+    test('keeps the order despite stock changing before reconnect', () async {
       await db
           .into(db.ingredients)
           .insertOnConflictUpdate(
@@ -287,9 +329,9 @@ void main() {
         capturedVisitId: 'captured-v1',
         capturedAt: DateTime.now().toUtc(),
       );
-      expect(res.rejected, hasLength(1));
+      expect(res.rejected, isEmpty);
       final t = await db.select(db.tickets).get();
-      expect(t, isEmpty);
+      expect(t, hasLength(1));
     });
 
     test('a quick reconnect preserves visit and ticket identities', () async {

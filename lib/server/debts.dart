@@ -203,10 +203,13 @@ Future<void> chargeDebt(
   WsHub? hub,
   DateTime? at,
   String? idPrefix,
+  bool honorCaptured = false,
 }) async {
   if (amount <= 0) throw const DebtException('invalid_amount');
   final cfg = config ?? await debtConfig(db);
-  if (!cfg.enabled) throw const DebtException('debt_disabled');
+  if (!cfg.enabled && !honorCaptured) {
+    throw const DebtException('debt_disabled');
+  }
   final m = await (db.select(
     db.members,
   )..where((x) => x.id.equals(memberId))).getSingleOrNull();
@@ -219,7 +222,7 @@ Future<void> chargeDebt(
     // both land, which is how a credit limit stops being one.
     guard: () async {
       final balance = await memberDebt(db, memberId);
-      if (balance + amount > limit) {
+      if (!honorCaptured && balance + amount > limit) {
         // Carries both numbers so the till can say "Rp 120.000 of Rp 500.000
         // used" instead of a bare refusal the cashier has to interpret.
         throw DebtException(
