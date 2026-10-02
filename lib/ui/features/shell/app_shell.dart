@@ -324,16 +324,19 @@ class AppShell extends ConsumerWidget {
     final guestPending = showTamu
         ? ref.watch(selfOrderProvider.select((s) => s.pending.length))
         : 0;
-    final showKds = showKdsSlot(
-      bypassKds: ref.watch(venueSettingsProvider.select((v) => v.bypassKds)),
-      queueLive: ref.watch(kitchenQueueLiveProvider),
-      kdsOnlyUser: ref.watch(
-        authStateProvider.select(
-          (s) =>
-              s.has(Capability.viewKds) && !s.has(Capability.takeOrder),
-        ),
-      ),
-    );
+    final showKds =
+        ref.watch(authStateProvider.select((s) => s.has(Capability.viewKds))) &&
+        showKdsSlot(
+          bypassKds: ref.watch(
+            venueSettingsProvider.select((v) => v.bypassKds),
+          ),
+          queueLive: ref.watch(kitchenQueueLiveProvider),
+          kdsOnlyUser: ref.watch(
+            authStateProvider.select(
+              (s) => s.has(Capability.viewKds) && !s.has(Capability.takeOrder),
+            ),
+          ),
+        );
     final showStok = showStock(
       canManageIngredients: ref.watch(
         authStateProvider.select((s) => s.has(Capability.manageIngredients)),
@@ -416,6 +419,8 @@ class AppShell extends ConsumerWidget {
                     child: _FloatingTabBar(
                       active: activeTab,
                       readyCount: ready,
+                      kitchenCount: kitchenCount,
+                      showKds: showKds,
                       showKasir: showKasir,
                       showTamu: showTamu,
                       showStok: showStok,
@@ -441,6 +446,8 @@ const double _tabBarHeight = 64;
 class _FloatingTabBar extends StatelessWidget {
   final String active;
   final int readyCount;
+  final int kitchenCount;
+  final bool showKds;
   final bool showKasir;
   final bool showTamu;
   final bool showStok;
@@ -449,6 +456,8 @@ class _FloatingTabBar extends StatelessWidget {
   const _FloatingTabBar({
     required this.active,
     required this.readyCount,
+    required this.kitchenCount,
+    required this.showKds,
     this.showKasir = false,
     this.showTamu = false,
     this.showStok = false,
@@ -500,6 +509,15 @@ class _FloatingTabBar extends StatelessWidget {
               icon: Icons.grid_view_rounded,
               active: active == 'tables',
               onTap: () => context.go('/tables'),
+            ),
+          if (showKds)
+            _Tab(
+              id: 'kitchen',
+              label: context.l10n.tabAntrian,
+              icon: Icons.receipt_long_outlined,
+              active: active == 'kitchen',
+              badge: kitchenCount,
+              onTap: () => context.go('/kitchen'),
             ),
           _Tab(
             id: 'orders',
