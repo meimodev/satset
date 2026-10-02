@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/domain/models/venue_module.dart';
 import 'package:satset/data/repositories/discount_presets_repository.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
@@ -306,8 +307,10 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
         const SizedBox(height: Sp.s3h),
         _PajakLayananCard(),
         const SizedBox(height: Sp.s3h),
-        _KeanggotaanCard(),
-        const SizedBox(height: Sp.s3h),
+        if (s.hasModule(moduleMembers)) ...[
+          _KeanggotaanCard(),
+          const SizedBox(height: Sp.s3h),
+        ],
         _ReportsHourCard(),
       ],
     );
@@ -336,7 +339,12 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
           ),
           Expanded(
             child: ListView(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, Sp.s6 + context.shellInset),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                0,
+                16,
+                Sp.s6 + context.shellInset,
+              ),
               children: [
                 _phoneRow(
                   context,
@@ -378,19 +386,20 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
                     (c, _) => _PajakLayananCard(),
                   ),
                 ),
-                _phoneRow(
-                  context,
-                  sc,
-                  label: context.l10n.vstSectionMembers,
-                  value: s.membersEnabled
-                      ? context.l10n.memHubBadgeOn
-                      : context.l10n.memHubBadgeOff,
-                  onTap: () => _openDetail(
+                if (s.hasModule(moduleMembers))
+                  _phoneRow(
                     context,
-                    context.l10n.vstSectionMembers,
-                    (c, _) => _KeanggotaanCard(),
+                    sc,
+                    label: context.l10n.vstSectionMembers,
+                    value: s.membersEnabled
+                        ? context.l10n.memHubBadgeOn
+                        : context.l10n.memHubBadgeOff,
+                    onTap: () => _openDetail(
+                      context,
+                      context.l10n.vstSectionMembers,
+                      (c, _) => _KeanggotaanCard(),
+                    ),
                   ),
-                ),
                 _phoneRow(
                   context,
                   sc,
@@ -1026,9 +1035,8 @@ class _PajakLayananCard extends ConsumerWidget {
             sc,
             label: context.l10n.vstTableExpense,
             on: s.tableExpenseEnabled,
-            onToggle: () => n.patch(
-              tableExpenseEnabled: !s.tableExpenseEnabled,
-            ),
+            onToggle: () =>
+                n.patch(tableExpenseEnabled: !s.tableExpenseEnabled),
           ),
           const SizedBox(height: Sp.s1h),
           Text(

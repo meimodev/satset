@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:satset/ui/core/widgets/sat_button.dart';
-import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/domain/models/venue_module.dart';
 import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,10 +47,7 @@ class _HubSection {
   final String Function(AppL10n)? phoneBadge;
   final bool Function(WidgetRef ref)? hasAlert;
 
-  /// The [[Modul]] this destination needs (ADR-0107), or null when it is part of
-  /// the base package. A venue that does not hold it gets a **locked tile here
-  /// and nowhere else**: the owner is the person the upsell is addressed to, and
-  /// a locked door in front of a waiter mid-rush is advertising inside a tool.
+  /// The [[Modul]] this destination needs, or null for the base package.
   final String? module;
 
   const _HubSection({
@@ -71,9 +66,8 @@ class _HubSection {
 /// Every destination the Venue hub offers, in display order.
 ///
 /// **The one list.** `venueHubRoutes` is derived from it and the router spends
-/// that to decide both who may open `/venue` at all and which tiles render
-/// (ADR-0134) — so adding a tile here widens the hub's own gate in the same
-/// edit, and a tile can never be visible on a screen its holder cannot open.
+/// that to decide who may open `/venue` at all (ADR-0134). Tile visibility
+/// also reads the venue's fleet configuration in [_visibleFor].
 final _sections = <_HubSection>[
   _HubSection(
     label: (l) => l.venueHubSectionZona,
@@ -201,7 +195,8 @@ final _sections = <_HubSection>[
           : l.soHubBadgeOff;
     },
   ),
-  // Deliberately no badge. Nothing derives "is the shop open right now" from
+  // Shown only in Kedai mode. Deliberately no badge: nothing derives
+  // "is the shop open right now" from
   // the audit pair (ADR-0111), and a tile reading Buka/Tutup would be exactly
   // the state this design refused to store.
   _HubSection(
@@ -282,13 +277,29 @@ final _sections = <_HubSection>[
 /// filter by capability, is a subtitle listing rooms the reader cannot enter.
 /// Capped at [_subMax] because it is a sample of what is here, not an index:
 /// an admin holds fifteen tiles and the line has one row to live in.
-String hubSectionLine(AppL10n l10n, AuthState auth) =>
-    _visibleFor(auth).take(_subMax).map((s) => s.label(l10n)).join(' · ');
+String hubSectionLine(
+  AppL10n l10n,
+  AuthState auth,
+  VenueSettingsDto settings,
+) => _visibleFor(
+  auth,
+  settings,
+).take(_subMax).map((s) => s.label(l10n)).join(' · ');
 
-/// The tiles [auth] may open, in display order — the grid and the subtitle
-/// read the same list, so the line can never name a tile that is not drawn.
-List<_HubSection> _visibleFor(AuthState auth) =>
-    _sections.where((s) => canOpenRoute(auth, s.route)).toList();
+/// The tiles [auth] may open and [settings] enables, in display order. The
+/// grid and subtitle read the same list.
+List<_HubSection> _visibleFor(AuthState auth, VenueSettingsDto settings) =>
+    _sections
+        .where(
+          (s) =>
+              canOpenRoute(auth, s.route) &&
+              (s.module == null || settings.hasModule(s.module!)) &&
+              (s.route != '/venue-day' || settings.counterMode),
+        )
+        .toList();
+
+List<String> visibleVenueHubRoutes(AuthState auth, VenueSettingsDto settings) =>
+    _visibleFor(auth, settings).map((s) => s.route).toList();
 
 const _subMax = 5;
 
@@ -331,13 +342,12 @@ class _VenueHubScreenState extends ConsumerState<VenueHubScreen> {
       });
     }
 
-    // A tile the signed-in user could not open is not shown (ADR-0134). The
-    // predicate is the router's own, so a visible tile can never land on
-    // `/forbidden` and a hidden one can never be the only door to a screen the
-    // person is entitled to.
+    // Filter by route access and fleet configuration before drawing tiles or
+    // composing the subtitle. A visible tile can never land on `/forbidden`.
     final auth = ref.watch(authStateProvider);
-    final sections = _visibleFor(auth);
-    final sub = hubSectionLine(context.l10n, auth);
+    final settings = ref.watch(venueSettingsProvider);
+    final sections = _visibleFor(auth, settings);
+    final sub = hubSectionLine(context.l10n, auth, settings);
 
     if (l.useTabletShell) {
       return AdminPage(
@@ -642,30 +652,6 @@ class _PhoneHub extends StatelessWidget {
   }
 }
 
-void _showLocked(BuildContext context) {
-  final sc = context.sat;
-  showSatDialog<void>(
-    context,
-    builder: (ctx) => AlertDialog(
-      backgroundColor: sc.bg1,
-      title: Text(
-        context.l10n.venueHubLocked,
-        style: SatType.h3(color: sc.textHi),
-      ),
-      content: Text(
-        context.l10n.venueHubLockedBody,
-        style: SatType.bodyM(color: sc.textMd),
-      ),
-      actions: [
-        SatButton.ghost(
-          label: context.l10n.close,
-          onTap: () => Navigator.pop(ctx),
-        ),
-      ],
-    ),
-  );
-}
-
 class _HubCard extends ConsumerWidget {
   final _HubSection section;
   final bool big;
@@ -679,29 +665,18 @@ class _HubCard extends ConsumerWidget {
     final iconBox = big ? 46.0 : 40.0;
     final iconSize = big ? 22.0 : 20.0;
 
-    // Locked beats every other badge: a venue that cannot open the screen does
-    // not need to know how many rows are behind it.
-    final settings = ref.watch(venueSettingsProvider);
-    final locked =
-        section.module != null && !settings.hasModule(section.module!);
-    final badgeText = locked
-        ? context.l10n.venueHubLocked
-        : (!context.layout.useTabletShell && section.phoneBadge != null)
+    final badgeText =
+        !context.layout.useTabletShell && section.phoneBadge != null
         ? section.phoneBadge!(context.l10n)
         : section.badgeBuilder?.call(ref);
-    final hasAlert = !locked && (section.hasAlert?.call(ref) ?? false);
+    final hasAlert = section.hasAlert?.call(ref) ?? false;
 
     return PressScale(
       child: Material(
         color: sc.bg2,
         borderRadius: SatR.a(radius),
         child: InkWell(
-          // The lock is a sales surface, not a security boundary — the routes
-          // behind it are gated server-side regardless (ADR-0107 §3). Tapping
-          // says who to ask rather than doing nothing, which reads as broken.
-          onTap: locked
-              ? () => _showLocked(context)
-              : () => context.push(section.route),
+          onTap: () => context.push(section.route),
           borderRadius: SatR.a(radius),
           child: Container(
             padding: EdgeInsets.all(big ? 16 : 14),
@@ -726,11 +701,7 @@ class _HubCard extends ConsumerWidget {
                         borderRadius: SatR.a(big ? 14 : 12),
                       ),
                       alignment: Alignment.center,
-                      child: Icon(
-                        locked ? Icons.lock_outline_rounded : section.icon,
-                        size: iconSize,
-                        color: locked ? sc.textLo : tint,
-                      ),
+                      child: Icon(section.icon, size: iconSize, color: tint),
                     ),
                     if (badgeText != null)
                       Flexible(

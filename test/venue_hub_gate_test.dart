@@ -2,8 +2,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:satset/l10n/app_localizations.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/domain/models/capability.dart';
+import 'package:satset/domain/models/venue_module.dart';
 import 'package:satset/router/app_router.dart';
 import 'package:satset/ui/features/admin/venue_hub_screen.dart';
 import 'package:satset/ui/features/shell/app_shell.dart';
@@ -59,11 +61,44 @@ void main() {
     });
   });
 
+  test('fleet-disabled features have no venue hub menu', () {
+    final auth = _auth(Capability.values.toSet());
+    final disabled = visibleVenueHubRoutes(
+      auth,
+      const VenueSettingsDto(modules: []),
+    );
+    expect(disabled, isNot(contains('/venue-day')));
+    expect(disabled, isNot(contains('/selforder-admin')));
+    expect(disabled, isNot(contains('/members')));
+    expect(disabled, isNot(contains('/member-report')));
+    expect(disabled, contains('/kas'));
+
+    final enabled = visibleVenueHubRoutes(
+      auth,
+      const VenueSettingsDto(
+        modules: [modeCounterService, moduleSelfOrder, moduleMembers],
+      ),
+    );
+    expect(
+      enabled,
+      containsAll([
+        '/venue-day',
+        '/selforder-admin',
+        '/members',
+        '/member-report',
+      ]),
+    );
+  });
+
   group('the hub subtitle names only what is drawn (ADR-0134)', () {
     final l10n = lookupAppL10n(const Locale('id'));
 
     test('a stock-only holder is not promised rooms they cannot enter', () {
-      final line = hubSectionLine(l10n, _auth({Capability.adjustStock}));
+      final line = hubSectionLine(
+        l10n,
+        _auth({Capability.adjustStock}),
+        const VenueSettingsDto(),
+      );
       // The fixed line this replaced said "Konfigurasi · zona · menu · sistem
       // · staf" to everyone, including this person, who holds none of them.
       expect(line, isNot(contains('taf')));
@@ -73,13 +108,24 @@ void main() {
     });
 
     test('it is a sample, not an index: at most five', () {
-      final all = hubSectionLine(l10n, _auth(Capability.values.toSet()));
+      final all = hubSectionLine(
+        l10n,
+        _auth(Capability.values.toSet()),
+        const VenueSettingsDto(),
+      );
       expect(' · '.allMatches(all).length, lessThanOrEqualTo(4));
       expect(all, isNotEmpty);
     });
 
     test('someone who opens nothing gets an empty line, not a promise', () {
-      expect(hubSectionLine(l10n, _auth({Capability.takeOrder})), isEmpty);
+      expect(
+        hubSectionLine(
+          l10n,
+          _auth({Capability.takeOrder}),
+          const VenueSettingsDto(),
+        ),
+        isEmpty,
+      );
     });
   });
 
@@ -130,7 +176,10 @@ void main() {
 
     test('the slot lights up and stops being a hub child', () {
       expect(activeTabFor('/stock'), 'stock');
-      expect(venueHubCrumb(lookupAppL10n(const Locale('id')), '/stock'), isNull);
+      expect(
+        venueHubCrumb(lookupAppL10n(const Locale('id')), '/stock'),
+        isNull,
+      );
     });
   });
 }
