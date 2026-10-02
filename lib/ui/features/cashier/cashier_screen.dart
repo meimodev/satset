@@ -87,8 +87,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
         .where((b) => b.fullySettled && (!piutangOnly || b.piutangAmount > 0))
         .length;
 
-    return SettlementRefusalListener(
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: sc.bg0,
         body: SafeArea(
           child: RefreshIndicator(
@@ -219,7 +218,6 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
             ),
           ),
         ),
-      ),
     );
   }
 

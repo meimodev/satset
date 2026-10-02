@@ -15,6 +15,7 @@ Map<String, List<Ticket>> projectCapturedTickets(
   };
   final ordered = [...events]..sort((a, b) => a.seq.compareTo(b.seq));
   for (final event in ordered) {
+    if (event.needsRepair) continue;
     if (event.kind == SettlementEventKind.submitOrder) {
       final tickets = groups.putIfAbsent(event.visitId, () => []);
       for (final raw in event.payload['lines'] as List? ?? const []) {

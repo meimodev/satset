@@ -179,7 +179,10 @@ Future<int> nextMirrorRev(AppDatabase db) async {
   final tRow = await (db.selectOnly(
     db.memberTombstones,
   )..addColumns([t])).getSingle();
-  final high = [mRow.read(m) ?? 0, tRow.read(t) ?? 0].reduce((a, b) => a > b ? a : b);
+  final high = [
+    mRow.read(m) ?? 0,
+    tRow.read(t) ?? 0,
+  ].reduce((a, b) => a > b ? a : b);
   return high + 1;
 }
 
@@ -349,13 +352,14 @@ Future<PunchStatus> punchStatus(
     for (final row in await (db.select(
       r,
     )..where((x) => x.sessionId.isIn(sessionIds))).get())
-      row.receiptId: row.memberId,
+      if (row.status != 'cancelled') row.receiptId: row.memberId,
   };
   final lines = await (db.select(
     rl,
   )..where((x) => x.sessionId.isIn(sessionIds))).get();
   final linesByTicket = <String, List<TableSessionReceiptLine>>{};
   for (final line in lines) {
+    if (!receiptOwner.containsKey(line.receiptId)) continue;
     (linesByTicket[line.ticketId] ??= <TableSessionReceiptLine>[]).add(line);
   }
 
@@ -998,43 +1002,55 @@ Future<int> spendPoints(
   WsHub? hub,
   DateTime? at,
   String? idPrefix,
+  bool honorCaptured = false,
+  int? capturedPointValue,
 }) async {
   final cfg = await memberConfig(db);
-  if (!cfg.enabled || !cfg.pointsEnabled) {
+  if ((!cfg.enabled || !cfg.pointsEnabled) && !honorCaptured) {
     throw const MemberException('points_disabled');
   }
   if (points <= 0) throw const MemberException('invalid_amount');
-  if (points < cfg.redeemMin) {
+  if (points < cfg.redeemMin && !honorCaptured) {
     throw MemberException('below_minimum', points: cfg.redeemMin);
   }
-  final amount = points * cfg.pointValue;
+  final pointValue = honorCaptured
+      ? capturedPointValue ?? cfg.pointValue
+      : cfg.pointValue;
+  if (pointValue <= 0) throw const MemberException('invalid_amount');
+  final amount = points * pointValue;
   // Check and write are one atomic step (ADR-0100): two tills redeeming the
   // same member at once must not both clear a balance neither still meets.
   await db.transaction(() async {
     final balance = await memberPoints(db, memberId);
-    if (points > balance) {
+    if (points > balance && !honorCaptured) {
       // The ledger cannot go negative, for the reason the cash box cannot: a
       // balance that can be overdrawn is a balance somebody spent twice.
       throw MemberException('insufficient_points', points: balance);
     }
-    await _post(
-      db,
-      memberId: memberId,
-      kind: MemberPointKind.redeem,
-      delta: -points,
-      visitId: visitId,
-      actorUserId: actorUserId,
-      at: at,
-      idPrefix: idPrefix,
-    );
+    final debited = honorCaptured
+        ? points.clamp(0, balance.clamp(0, points))
+        : points;
+    if (debited > 0) {
+      await _post(
+        db,
+        memberId: memberId,
+        kind: MemberPointKind.redeem,
+        delta: -debited,
+        visitId: visitId,
+        actorUserId: actorUserId,
+        at: at,
+        idPrefix: idPrefix,
+      );
+    }
     await writeAudit(
       db,
       type: AuditType.memberChanged,
       kind: AuditKind.memberPointsRedeemed,
       params: {
         'name': (await _nameOf(db, memberId)) ?? '',
-        'points': '$points',
+        'points': '$debited',
         'amount': auditRupiah(amount),
+        if (debited < points) 'venueCoveredPoints': '${points - debited}',
       },
       actorUserId: actorUserId,
       amountCents: amount,
@@ -1160,6 +1176,42 @@ Future<void> reverseRedeemForVisit(
     final member = await getMember(db, redeem.memberId);
     if (member != null) _broadcast(hub, member);
   }
+}
+
+/// Undo only the points actually debited for one late captured redemption.
+/// The rest of its discount was covered by the venue and has no ledger debit.
+Future<void> reverseCapturedRedeem(
+  AppDatabase db, {
+  required String discountId,
+  required String visitId,
+  required String? memberId,
+  String? actorUserId,
+  WsHub? hub,
+}) async {
+  if (memberId == null) return;
+  final prefix = '$discountId:';
+  final rows =
+      await (db.select(db.memberPoints)..where(
+            (p) => p.visitId.equals(visitId) & p.memberId.equals(memberId),
+          ))
+          .get();
+  final related = rows.where((p) => p.id.startsWith(prefix));
+  if (related.any((p) => p.kind == MemberPointKind.reversal.name)) return;
+  final debit = related
+      .where((p) => p.kind == MemberPointKind.redeem.name)
+      .firstOrNull;
+  if (debit == null) return;
+  await _post(
+    db,
+    memberId: memberId,
+    kind: MemberPointKind.reversal,
+    delta: -debit.delta,
+    visitId: visitId,
+    actorUserId: actorUserId,
+    idPrefix: prefix,
+  );
+  final member = await getMember(db, memberId);
+  if (member != null) _broadcast(hub, member);
 }
 
 /// The live earn on a visit — an `earn` row with no `reversal` against it.
@@ -2040,7 +2092,8 @@ Future<Map<String, dynamic>> memberHistory(
     r,
   )..where((x) => x.sessionId.isIn(sessionIds))).get();
   final receiptOwner = {
-    for (final rec in receipts) rec.receiptId: rec.memberId,
+    for (final rec in receipts)
+      if (rec.status != 'cancelled') rec.receiptId: rec.memberId,
   };
 
   final lines = await (db.select(
@@ -2048,6 +2101,7 @@ Future<Map<String, dynamic>> memberHistory(
   )..where((x) => x.sessionId.isIn(sessionIds))).get();
   final linesByTicket = <String, List<TableSessionReceiptLine>>{};
   for (final line in lines) {
+    if (!receiptOwner.containsKey(line.receiptId)) continue;
     (linesByTicket[line.ticketId] ??= <TableSessionReceiptLine>[]).add(line);
   }
 

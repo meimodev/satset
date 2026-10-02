@@ -48,6 +48,13 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final caps = role == null
         ? <String>{}
         : (jsonDecode(role.capabilitiesJson) as List).cast<String>().toSet();
+    caps.addAll(
+      await auth.capturedCapabilities(
+        token,
+        req.headers['x-capture-grant'],
+        req.headers['x-idempotency-key'],
+      ),
+    );
     return (user.id, caps);
   }
 
@@ -344,8 +351,7 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   // directory keeper a button that only ever refuses.
 
   /// Everything past the ceiling, in the shape the export sheet expects.
-  Response tooLarge() =>
-      err(413, 'export_too_large', limit: kMemberExportMax);
+  Response tooLarge() => err(413, 'export_too_large', limit: kMemberExportMax);
 
   /// The whole directory, honouring the screen's active filters.
   ///
@@ -689,7 +695,20 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   /// carrying the member who owns it, so the till offers to use them.
   r.post('/members', (Request req) async {
     final off = await enabledGuard();
-    if (off != null) return off;
+    final token = req.headers['authorization']?.replaceFirst(
+      RegExp(r'^[Bb]earer\s+'),
+      '',
+    );
+    final capturedCaps = await auth.capturedCapabilities(
+      token,
+      req.headers['x-capture-grant'],
+      req.headers['x-idempotency-key'],
+    );
+    if (off != null &&
+        !capturedCaps.contains(Capability.settleBill.name) &&
+        !capturedCaps.contains(Capability.manageMembers.name)) {
+      return off;
+    }
     final a = await actor(req);
     if (a == null) return Response(401);
     if (!a.$2.contains(Capability.settleBill.name) &&
@@ -703,7 +722,12 @@ Router membersRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     // the standing record" to "fold, because there is nobody at the counter
     // left to ask".
     final capturedId = _text(body['id']);
-    final capturedAt = _date(body['capturedAt']);
+    final capturedAt =
+        capturedCaps.contains(Capability.settleBill.name) ||
+            capturedCaps.contains(Capability.manageMembers.name)
+        ? _date(body['capturedAt'])
+        : null;
+    if (off != null && (capturedId == null || capturedAt == null)) return off;
     try {
       if (capturedId != null && capturedAt != null) {
         final out = await enrolCapturedMember(

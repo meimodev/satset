@@ -4747,6 +4747,78 @@ abstract class AppL10n {
   /// **'{count, plural, other{{count} tagihan belum terkirim}}'**
   String cshSyncPending(int count);
 
+  /// No description provided for @cshSyncRepair.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan tertangkap perlu diperbaiki sebelum sinkronisasi'**
+  String get cshSyncRepair;
+
+  /// No description provided for @cshSyncError.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan tertangkap tersimpan, tetapi belum diterima host'**
+  String get cshSyncError;
+
+  /// No description provided for @cshLegacyPending.
+  ///
+  /// In id, this message translates to:
+  /// **'Catatan tertangkap lama masih belum selesai'**
+  String get cshLegacyPending;
+
+  /// No description provided for @cshRepairTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Perbaiki catatan tertangkap'**
+  String get cshRepairTitle;
+
+  /// No description provided for @cshRepairAmount.
+  ///
+  /// In id, this message translates to:
+  /// **'Jumlah yang benar-benar diterima atau dikembalikan'**
+  String get cshRepairAmount;
+
+  /// No description provided for @cshRepairReceipt.
+  ///
+  /// In id, this message translates to:
+  /// **'ID struk asli'**
+  String get cshRepairReceipt;
+
+  /// No description provided for @cshRepairPayment.
+  ///
+  /// In id, this message translates to:
+  /// **'ID pembayaran asli'**
+  String get cshRepairPayment;
+
+  /// No description provided for @cshRepairData.
+  ///
+  /// In id, this message translates to:
+  /// **'Data tertangkap'**
+  String get cshRepairData;
+
+  /// No description provided for @cshRepairInvalid.
+  ///
+  /// In id, this message translates to:
+  /// **'Periksa nilai catatan lalu coba lagi'**
+  String get cshRepairInvalid;
+
+  /// No description provided for @cshRepairSend.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan dan kirim ulang'**
+  String get cshRepairSend;
+
+  /// No description provided for @cshExcessPayment.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelebihan bayar perlu dikembalikan'**
+  String get cshExcessPayment;
+
+  /// No description provided for @cshExcessRefund.
+  ///
+  /// In id, this message translates to:
+  /// **'Kelebihan pengembalian perlu dikoreksi'**
+  String get cshExcessRefund;
+
   /// Badge on a bill this device settled while terputus — lunas here, still open everywhere else.
   ///
   /// In id, this message translates to:
@@ -4770,12 +4842,6 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'{amount} belum tercatat'**
   String cshSyncStranded(String amount);
-
-  /// No description provided for @cshSyncAck.
-  ///
-  /// In id, this message translates to:
-  /// **'Mengerti'**
-  String get cshSyncAck;
 
   /// No description provided for @cshApprovalOffline.
   ///
@@ -4938,6 +5004,24 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Struk'**
   String get cshReceipts;
+
+  /// No description provided for @cshReceiptCancelled.
+  ///
+  /// In id, this message translates to:
+  /// **'Dibatalkan'**
+  String get cshReceiptCancelled;
+
+  /// No description provided for @cshReceiptOriginal.
+  ///
+  /// In id, this message translates to:
+  /// **'Struk asli'**
+  String get cshReceiptOriginal;
+
+  /// No description provided for @cshReceiptAmended.
+  ///
+  /// In id, this message translates to:
+  /// **'Perubahan'**
+  String get cshReceiptAmended;
 
   /// No description provided for @cshUnassignedCount.
   ///

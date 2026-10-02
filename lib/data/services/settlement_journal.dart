@@ -109,6 +109,8 @@ class JournalState {
 ///
 /// Throws to refuse; returns normally to accept.
 typedef EventSender = Future<void> Function(SettlementEvent event);
+typedef LegacyParkedReporter =
+    Future<void> Function(List<SettlementEvent> events);
 typedef BillCheckpoint =
     Future<Map<String, dynamic>> Function(
       String visitId,
@@ -129,13 +131,20 @@ class SettlementVisitReadOnly implements Exception {
 /// needs a total for the guest at the counter — which is why it lives in the
 /// client database (ADR-0124) rather than a prefs blob.
 class SettlementJournal extends StateNotifier<JournalState> {
-  SettlementJournal({required this.db, required this.send, this.loadBill})
-    : super(const JournalState()) {
+  SettlementJournal({
+    required this.db,
+    required this.send,
+    this.loadBill,
+    this.reportLegacyParked,
+    this.captureGrant,
+  }) : super(const JournalState()) {
     unawaited(_refreshState());
   }
 
   final ClientDb db;
   final EventSender send;
+  final Future<String?> Function()? captureGrant;
+  final LegacyParkedReporter? reportLegacyParked;
   final BillCheckpoint? loadBill;
   Future<void> _writes = Future.value();
   Future<SettlementReport>? _drainFuture;
@@ -147,9 +156,8 @@ class SettlementJournal extends StateNotifier<JournalState> {
   }
 
   Future<void> assertWritable(String visitId) async {
-    if ((await eventsFor(visitId)).any((e) => e.isParked)) {
-      throw SettlementVisitReadOnly(visitId);
-    }
+    // A parked record belongs to the old refusal policy. New captures on the
+    // same visit must remain possible while that record stays available.
   }
 
   Future<SettlementEvent?> eventById(String id) async {
@@ -157,6 +165,67 @@ class SettlementJournal extends StateNotifier<JournalState> {
       db.settlementEvents,
     )..where((e) => e.id.equals(id))).getSingleOrNull();
     return row == null ? null : _fromRow(row);
+  }
+
+  /// Freeze the receipt the guest saw with its captured mint event.
+  Future<void> recordReceiptSnapshot(
+    String eventId,
+    Map<String, dynamic> snapshot,
+  ) => _write(() async {
+    final row = await (db.select(
+      db.settlementEvents,
+    )..where((e) => e.id.equals(eventId))).getSingleOrNull();
+    if (row == null || row.status != 'pending') return;
+    final payload = (jsonDecode(row.payloadJson) as Map)
+        .cast<String, dynamic>();
+    await (db.update(
+      db.settlementEvents,
+    )..where((e) => e.id.equals(eventId))).write(
+      SettlementEventsCompanion(
+        payloadJson: Value(
+          jsonEncode({...payload, 'receiptSnapshot': snapshot}),
+        ),
+      ),
+    );
+  });
+
+  /// Repair the unreadable fields without changing the captured action's ID,
+  /// time, or author. A resend under the same idempotency key remains one act.
+  Future<void> repairAndResend(String id, Map<String, dynamic> payload) async {
+    await _write(() async {
+      final row = await (db.select(
+        db.settlementEvents,
+      )..where((e) => e.id.equals(id))).getSingleOrNull();
+      if (row == null ||
+          settlementKindFromName(row.kind) == null ||
+          !_fromRow(row).needsRepair) {
+        throw StateError('No damaged captured record: $id');
+      }
+      final old = _fromRow(row);
+      final repaired = SettlementEvent(
+        id: old.id,
+        visitId: old.visitId,
+        seq: old.seq,
+        kind: old.kind,
+        payload: {...payload, '_syncPolicy': 'auto'},
+        capturedAt: old.capturedAt,
+        tableId: old.tableId,
+        actorId: old.actorId,
+      );
+      if (_damaged(repaired)) {
+        throw ArgumentError('Captured record is incomplete');
+      }
+      await (db.update(
+        db.settlementEvents,
+      )..where((e) => e.id.equals(id))).write(
+        SettlementEventsCompanion(
+          payloadJson: Value(jsonEncode(repaired.payload)),
+          status: const Value('pending'),
+          failCode: const Value(null),
+        ),
+      );
+    });
+    await _refreshState();
   }
 
   /// Recover a captured seat even if the debounced floor cache was not saved.
@@ -169,6 +238,7 @@ class SettlementJournal extends StateNotifier<JournalState> {
               ..orderBy([(e) => OrderingTerm.desc(e.capturedAt)]))
             .get();
     for (final seat in seats) {
+      if (_fromRow(seat).isParked || _fromRow(seat).needsRepair) continue;
       final events = await eventsFor(seat.visitId);
       if (!events.any(
         (e) => e.kind == SettlementEventKind.closeBill && !e.isParked,
@@ -246,10 +316,12 @@ class SettlementJournal extends StateNotifier<JournalState> {
     }
     await assertWritable(visitId);
     final mine = await eventsFor(visitId);
-    if (mine.length >= maxPerVisit) {
+    if (mine.where((e) => !e.isParked).length >= maxPerVisit) {
       throw const SettlementJournalFull();
     }
-    final total = await db.settlementEvents.count().getSingle();
+    final total = (await db.select(db.settlementEvents).get())
+        .where((row) => row.status != 'parked')
+        .length;
     if (total >= maxTotal) {
       throw const SettlementJournalFull(perVisit: false);
     }
@@ -258,7 +330,11 @@ class SettlementJournal extends StateNotifier<JournalState> {
       visitId: visitId,
       seq: mine.isEmpty ? 0 : mine.last.seq + 1,
       kind: kind,
-      payload: payload,
+      payload: {
+        ...payload,
+        '_syncPolicy': 'auto',
+        if (captureGrant != null) 'captureGrant': await captureGrant!(),
+      },
       capturedAt: capturedAt ?? SatClock.now().toUtc(),
       tableId: tableId,
       actorId: actorId,
@@ -544,16 +620,19 @@ class SettlementJournal extends StateNotifier<JournalState> {
     return null;
   }
 
-  /// Drop a visit's cache and its (drained) journal. Called when a bill closes
-  /// clean — nothing here is authoritative once the host has taken it.
+  /// Drop only delivered rows after a clean close. Parked legacy records and
+  /// records awaiting repair remain evidence of captured real-world activity.
   Future<void> forget(String visitId) async {
     await _write(() async {
-      await (db.delete(
-        db.settlementEvents,
-      )..where((e) => e.visitId.equals(visitId))).go();
-      await (db.delete(
-        db.cachedBills,
-      )..where((b) => b.visitId.equals(visitId))).go();
+      await (db.delete(db.settlementEvents)..where(
+            (e) => e.visitId.equals(visitId) & e.status.equals('acknowledged'),
+          ))
+          .go();
+      if ((await eventsFor(visitId)).isEmpty) {
+        await (db.delete(
+          db.cachedBills,
+        )..where((b) => b.visitId.equals(visitId))).go();
+      }
     });
     await _refreshState();
   }
@@ -569,6 +648,28 @@ class SettlementJournal extends StateNotifier<JournalState> {
   }
 
   Future<SettlementReport> _drain() async {
+    if (reportLegacyParked != null) {
+      final parked = await (db.select(
+        db.settlementEvents,
+      )..where((e) => e.status.equals('parked'))).get();
+      final money = parked
+          .map(_fromRow)
+          .where(
+            (e) =>
+                e.kind == SettlementEventKind.recordPayment ||
+                e.kind == SettlementEventKind.refund,
+          )
+          .toList();
+      if (money.isNotEmpty) {
+        try {
+          await reportLegacyParked!(money);
+        } catch (e, st) {
+          // The host has not received the warning yet. Retry on reconnect;
+          // an old parked record must not stop new independent captures.
+          SatLog.err('settlement legacy warning', e, st);
+        }
+      }
+    }
     final visits = await pendingVisitIds();
     if (visits.isEmpty) return const SettlementReport(chains: []);
     state = state.copyWith(draining: true);
@@ -576,15 +677,36 @@ class SettlementJournal extends StateNotifier<JournalState> {
     var interrupted = false;
     try {
       for (final visitId in visits) {
-        final events = await eventsFor(visitId);
-        // A later append must never drain around a refusal, including legacy rows.
-        if (events.isEmpty || events.any((e) => e.isParked)) continue;
+        final allEvents = await eventsFor(visitId);
+        final legacyParked = allEvents.any((e) => e.isParked);
+        final events = [
+          for (final e in allEvents)
+            if (!e.isParked &&
+                !e.needsRepair &&
+                (e.isAutoSync || !legacyParked))
+              e,
+        ];
+        if (events.isEmpty) continue;
         final delivered = <SettlementEvent>[];
         SettlementEvent? refused;
         String? code;
+        final failedIds = <String>{};
+        var seatFailed = false;
         for (final ev in events) {
+          final dependsOnFailed = switch (ev.kind) {
+            SettlementEventKind.closeBill => failedIds.isNotEmpty,
+            SettlementEventKind.recordPayment => false,
+            SettlementEventKind.refund => failedIds.contains(
+              ev.arg<String>('paymentId'),
+            ),
+            _ => failedIds.any((id) => jsonEncode(ev.payload).contains(id)),
+          };
+          if (seatFailed || dependsOnFailed) {
+            continue;
+          }
           try {
             if (!ev.isAcknowledged) {
+              if (_damaged(ev)) throw const SettlementRefused('damaged_record');
               await send(ev);
               await _write(() async {
                 await (db.update(
@@ -600,15 +722,39 @@ class SettlementJournal extends StateNotifier<JournalState> {
           } on SettlementRefused catch (e) {
             refused = ev;
             code = e.code;
-            await _write(() => _park(visitId, code!));
-            break;
+            if (!ev.isAutoSync) {
+              await _write(() => _park(visitId, code!));
+              break;
+            }
+            await _write(() async {
+              await (db.update(
+                db.settlementEvents,
+              )..where((row) => row.id.equals(ev.id))).write(
+                SettlementEventsCompanion(
+                  status: Value(
+                    e.code == 'damaged_record' ? 'repair' : 'syncError',
+                  ),
+                  failCode: Value(code),
+                ),
+              );
+            });
+            failedIds.add(ev.id);
+            if (ev.kind == SettlementEventKind.seatTable) seatFailed = true;
+            if (ev.kind == SettlementEventKind.submitOrder) {
+              for (final line in ev.payload['lines'] as List? ?? const []) {
+                if (line is Map && line['ticketId'] is String) {
+                  failedIds.add(line['ticketId'] as String);
+                }
+              }
+            }
+            continue;
           } catch (e, st) {
             SatLog.err('settlement drain', e, st);
             interrupted = true;
             break;
           }
         }
-        if (!interrupted && refused == null) {
+        if (!interrupted && delivered.isNotEmpty) {
           try {
             // Sends stop at this prefix while the snapshot is read. New captures
             // may append, but cannot be sent or deleted by this checkpoint.
@@ -662,9 +808,17 @@ class SettlementJournal extends StateNotifier<JournalState> {
   /// Mark a visit's whole remaining chain parked, carrying the host's code on
   /// the event that was actually refused (the first one left).
   Future<void> _park(String visitId, String code) async {
-    await (db.update(
-          db.settlementEvents,
-        )..where((e) => e.visitId.equals(visitId) & e.status.equals('pending')))
+    final pending =
+        await (db.select(db.settlementEvents)..where(
+              (e) => e.visitId.equals(visitId) & e.status.equals('pending'),
+            ))
+            .get();
+    final legacyIds = [
+      for (final row in pending)
+        if (!_fromRow(row).isAutoSync) row.id,
+    ];
+    if (legacyIds.isEmpty) return;
+    await (db.update(db.settlementEvents)..where((e) => e.id.isIn(legacyIds)))
         .write(const SettlementEventsCompanion(status: Value('parked')));
     final first =
         await (db.select(db.settlementEvents)
@@ -715,14 +869,32 @@ class SettlementJournal extends StateNotifier<JournalState> {
     ];
   }
 
-  /// The cashier acknowledged a parked chain (ADR-0123 §refusal surface). The
-  /// events go; the money difference is now a human's problem, and the audit
-  /// row the host wrote is where it lives.
-  Future<void> acknowledge(String visitId) => forget(visitId);
-
   int _moneyIn(Iterable<SettlementEvent> events) => events
       .where((e) => e.kind == SettlementEventKind.recordPayment)
       .fold<int>(0, (a, e) => a + e.intArg('amount'));
+
+  bool _damaged(SettlementEvent event) => switch (event.kind) {
+    SettlementEventKind.recordPayment =>
+      event.intArg('amount') <= 0 ||
+          (event.arg<String>('receiptId') ?? '').isEmpty,
+    SettlementEventKind.refund =>
+      event.intArg('amount') <= 0 ||
+          (event.arg<String>('paymentId') ?? '').isEmpty,
+    SettlementEventKind.submitOrder =>
+      event.payload['lines'] is! List ||
+          (event.payload['lines'] as List).isEmpty ||
+          (event.payload['lines'] as List).any(
+            (line) =>
+                line is! Map ||
+                line['itemId'] is! String ||
+                (line['itemId'] as String).isEmpty ||
+                line['ticketId'] is! String ||
+                (line['ticketId'] as String).isEmpty,
+          ),
+    SettlementEventKind.seatTable =>
+      (event.tableId ?? '').isEmpty || event.intArg('pax') <= 0,
+    _ => false,
+  };
 
   Future<void> _refreshState() async {
     final rows = await db.select(db.settlementEvents).get();
@@ -733,7 +905,9 @@ class SettlementJournal extends StateNotifier<JournalState> {
       // venue-scope chain hangs off no visit and never appears here at all.
       pendingVisits: {
         for (final r in rows)
-          if (r.visitId != kVenueScopeVisitId &&
+          if (r.status != 'parked' &&
+              r.status != 'repair' &&
+              r.visitId != kVenueScopeVisitId &&
               !(settlementKindFromName(r.kind)?.isMemberScope ?? false))
             r.visitId,
       },
@@ -761,7 +935,7 @@ class SettlementJournal extends StateNotifier<JournalState> {
     capturedAt: r.capturedAt,
     tableId: r.tableId,
     actorId: r.actorId,
-    status: r.status,
+    status: settlementKindFromName(r.kind) == null ? 'repair' : r.status,
     failCode: r.failCode,
   );
 }

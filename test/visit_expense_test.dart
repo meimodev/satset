@@ -80,6 +80,57 @@ void main() {
         at: at,
       );
 
+  test(
+    'captured expense amends archived visit after host cap changes',
+    () async {
+      await db
+          .into(db.tableSessions)
+          .insert(
+            TableSessionsCompanion.insert(
+              id: 'v1',
+              tableId: 't1',
+              tableLabel: const Value('Meja 7'),
+              zoneId: 'z1',
+              closedAt: DateTime.utc(2026, 9, 24),
+              subtotal: const Value(50000),
+            ),
+          );
+      await db.delete(db.visits).go();
+      final capturedAt = DateTime.utc(2026, 9, 24, 12);
+      final expense = await recordVisitExpense(
+        db,
+        id: 'late-expense',
+        visitId: 'v1',
+        categoryId: 'vexc-other',
+        amount: 60000,
+        photo: photo,
+        at: capturedAt,
+        honorCaptured: true,
+      );
+      expect(expense.amount, 60000);
+      expect(await visitExpenseTotal(db, 'v1'), 60000);
+      expect(await visitSubtotal(db, 'v1'), 50000);
+      expect(
+        (await db.select(db.tableSessions).getSingle()).expenseAmount,
+        60000,
+      );
+      await recordVisitExpense(
+        db,
+        id: 'late-expense',
+        visitId: 'v1',
+        categoryId: 'vexc-other',
+        amount: 60000,
+        photo: photo,
+        at: capturedAt,
+        honorCaptured: true,
+      );
+      expect(
+        (await db.select(db.tableSessions).getSingle()).expenseAmount,
+        60000,
+      );
+    },
+  );
+
   group('the cap', () {
     test('is the visit subtotal, and the boundary itself is allowed', () async {
       await line(50000);
@@ -123,9 +174,7 @@ void main() {
       expect(await visitSubtotal(db, 'v1'), 0);
       await expectLater(
         spend(1),
-        throwsA(
-          isA<VisitExpenseException>().having((e) => e.cap, 'cap', 0),
-        ),
+        throwsA(isA<VisitExpenseException>().having((e) => e.cap, 'cap', 0)),
       );
     });
 
@@ -224,8 +273,7 @@ void main() {
     });
   });
 
-  test('replaying an id reads back the first write, never a second row',
-      () async {
+  test('replaying an id reads back the first write, never a second row', () async {
     // Found on a device. The id is client-minted and doubles as the idempotency
     // key (ADR-0130), and the [[Antrean kirim]] replays under it — but
     // `idempotent()` keys on the `x-idempotency-key` **header**, which a caller
@@ -295,43 +343,45 @@ void main() {
       // Same net, same settled — the only column that moved is the new one.
       expect(rows.map((r) => r.netTotal).toSet(), {50000});
       expect(rows.map((r) => r.settledTotal).toSet(), {50000});
-      expect(
-        rows.firstWhere((r) => r.id == 's-spent').expenseAmount,
-        15000,
-      );
+      expect(rows.firstWhere((r) => r.id == 's-spent').expenseAmount, 15000);
     });
 
-    test('the section reads the snapshot, and groups by the venue word',
-        () async {
-      await line(50000);
-      await spend(20000, id: 'e1', at: DateTime(2026, 9, 3, 19));
-      await db
-          .into(db.tableSessions)
-          .insert(
-            TableSessionsCompanion.insert(
-              id: 's1',
-              tableId: 't1',
-              tableLabel: const Value('Meja 7'),
-              zoneId: 'z1',
-              closedAt: DateTime(2026, 9, 3, 20),
-              settledTotal: const Value(50000),
-              expenseAmount: const Value(20000),
-            ),
-          );
+    test(
+      'the section reads the snapshot, and groups by the venue word',
+      () async {
+        await line(50000);
+        await spend(20000, id: 'e1', at: DateTime(2026, 9, 3, 19));
+        await db
+            .into(db.tableSessions)
+            .insert(
+              TableSessionsCompanion.insert(
+                id: 's1',
+                tableId: 't1',
+                tableLabel: const Value('Meja 7'),
+                zoneId: 'z1',
+                closedAt: DateTime(2026, 9, 3, 20),
+                settledTotal: const Value(50000),
+                expenseAmount: const Value(20000),
+              ),
+            );
 
-      final section = await visitExpenseReportSection(
-        db,
-        from: DateTime(2026, 9, 3),
-        to: DateTime(2026, 9, 5),
-      );
+        final section = await visitExpenseReportSection(
+          db,
+          from: DateTime(2026, 9, 3),
+          to: DateTime(2026, 9, 5),
+        );
 
-      expect(section['total'], 20000);
-      expect(section['visitCount'], 1);
-      // The venue's own word, not a key — this vocabulary is venue-authored, so
-      // there is nothing for the reader to resolve.
-      expect(section['byCategory'], {'Lainnya': 20000});
-      expect((section['visits'] as List).single, containsPair('tableLabel', 'Meja 7'));
-    });
+        expect(section['total'], 20000);
+        expect(section['visitCount'], 1);
+        // The venue's own word, not a key — this vocabulary is venue-authored, so
+        // there is nothing for the reader to resolve.
+        expect(section['byCategory'], {'Lainnya': 20000});
+        expect(
+          (section['visits'] as List).single,
+          containsPair('tableLabel', 'Meja 7'),
+        );
+      },
+    );
   });
 
   test('a list never carries the photo bytes', () async {
@@ -364,10 +414,14 @@ void main() {
       to: at.add(const Duration(days: 1)),
     );
 
-    final byCategory = (section['byCategory'] as Map).values
-        .fold<int>(0, (a, v) => a + (v as int));
-    final byStaff = (section['byStaff'] as Map).values
-        .fold<int>(0, (a, v) => a + (v as int));
+    final byCategory = (section['byCategory'] as Map).values.fold<int>(
+      0,
+      (a, v) => a + (v as int),
+    );
+    final byStaff = (section['byStaff'] as Map).values.fold<int>(
+      0,
+      (a, v) => a + (v as int),
+    );
 
     expect(section['count'], 2);
     expect(section['total'], 40000);

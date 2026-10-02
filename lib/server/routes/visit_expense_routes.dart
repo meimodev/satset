@@ -40,6 +40,13 @@ Router visitExpenseRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final caps = role == null
         ? <String>{}
         : (jsonDecode(role.capabilitiesJson) as List).cast<String>().toSet();
+    caps.addAll(
+      await auth.capturedCapabilities(
+        token,
+        req.headers['x-capture-grant'],
+        req.headers['x-idempotency-key'],
+      ),
+    );
     return (user.id, caps);
   }
 
@@ -68,13 +75,29 @@ Router visitExpenseRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   /// `idempotent()` where it is mounted.
   r.post('/visits/<id>/expenses', (Request req, String id) async {
     final off = await enabledGuard();
-    if (off != null) return off;
+    final token = req.headers['authorization']?.replaceFirst(
+      RegExp(r'^[Bb]earer\s+'),
+      '',
+    );
+    final capturedCaps = await auth.capturedCapabilities(
+      token,
+      req.headers['x-capture-grant'],
+      req.headers['x-idempotency-key'],
+    );
+    if (off != null &&
+        !capturedCaps.contains(Capability.recordTableExpense.name)) {
+      return off;
+    }
     final a = await actor(req);
     if (a == null) return Response(401);
     if (!a.$2.contains(Capability.recordTableExpense.name)) {
       return forbidden(Capability.recordTableExpense);
     }
     final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final capturedAt = capturedCaps.contains(Capability.recordTableExpense.name)
+        ? DateTime.tryParse(body['capturedAt'] as String? ?? '')
+        : null;
+    if (off != null && capturedAt == null) return off;
     final photo = _decodePhoto(body['photoBase64']);
     // Refused here as well as in the writer: a caller that sends no photo field
     // at all should read the same code as one that sends an empty string.
@@ -90,6 +113,8 @@ Router visitExpenseRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         note: _text(body['note']),
         actorUserId: a.$1,
         hub: hub,
+        at: capturedAt,
+        honorCaptured: capturedAt != null,
       );
       return json({
         'expense': visitExpenseJson(e),

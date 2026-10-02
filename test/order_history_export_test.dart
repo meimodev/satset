@@ -324,6 +324,25 @@ void main() {
     },
   );
 
+  test('cancelled receipt leaves its payment unallocated', () async {
+    await (db.update(db.tableSessionReceipts)
+          ..where((r) => r.receiptId.equals('r1')))
+        .write(const TableSessionReceiptsCompanion(status: Value('cancelled')));
+    final visit = (await history()).visits.single;
+    expect(
+      visit.receipts.firstWhere((r) => r.receiptId == 'r1').payments,
+      isEmpty,
+    );
+    expect(
+      visit.receipts
+          .firstWhere((r) => r.receiptId.isEmpty)
+          .payments
+          .single
+          .paymentId,
+      'payment',
+    );
+  });
+
   test('stacked offers cap once against the receipt-owned units', () async {
     await (db.update(
       db.tableSessionDiscounts,

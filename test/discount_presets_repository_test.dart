@@ -21,9 +21,7 @@ class _Api extends ApiClient {
     String path, {
     Map<String, String>? query,
     Duration? timeout,
-  }) async => {
-    'presets': <Object>[],
-  };
+  }) async => {'presets': <Object>[]};
 
   @override
   Future<dynamic> postJson(
@@ -31,6 +29,7 @@ class _Api extends ApiClient {
     Object body, {
     Duration? timeout,
     String? idempotencyKey,
+    String? captureGrant,
   }) async {
     row = {'id': 'p1', ...(body as Map).cast<String, dynamic>()};
     return row;
@@ -43,9 +42,12 @@ class _Api extends ApiClient {
   }
 
   @override
-  Future<dynamic> deleteJson(String path, {String? idempotencyKey}) async => {
-    'ok': true,
-  };
+  Future<dynamic> deleteJson(
+    String path, {
+    Object? body,
+    String? idempotencyKey,
+    String? captureGrant,
+  }) async => {'ok': true};
 }
 
 void main() {

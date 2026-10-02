@@ -101,17 +101,20 @@ void main() {
     },
   );
 
-  test('at most one bill discount per visit', () async {
+  test('captured manual discounts stack after upgrade', () async {
     await rewindToV41();
     await upgrade();
-    Future<void> insert(String id) => db.customStatement(
+    Future<void> insert(
+      String id, {
+      bool captured = false,
+    }) => db.customStatement(
       "INSERT INTO discounts (id, receipt_id, visit_id, name, kind, value, "
-      "amount, at) VALUES ('$id', NULL, 'v1', 'Diskon', 'percent', 1000, 0, 0)",
+      "amount, at, captured) VALUES ('$id', NULL, 'v1', 'Diskon', 'percent', 1000, 0, 0, ${captured ? 1 : 0})",
     );
     await insert('d1');
-    // ADR-0037's no-stacking rule, enforced by the partial unique index rather
-    // than by route code — so it holds even if a caller forgets to check.
-    expect(insert('d2'), throwsA(anything));
+    expect(insert('live-2'), throwsA(anything));
+    await insert('d2', captured: true);
+    expect((await db.select(db.discounts).get()).length, 2);
   });
 
   test('the upgrade is idempotent', () async {

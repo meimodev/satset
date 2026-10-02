@@ -46,14 +46,29 @@ void main() {
 
   Future<(int, Map<String, dynamic>)> enrol(
     TestCaller caller,
-    Map<String, dynamic> body,
-  ) async {
+    Map<String, dynamic> body, {
+    Map<String, String> headers = const {},
+    bool unsigned = false,
+  }) async {
     final router = membersRoutes(db, WsHub(), caller.auth).call;
+    final grant = !unsigned && body['capturedAt'] is String
+        ? await caller.auth.captureGrantFor(caller.token, [
+            Capability.settleBill.name,
+          ])
+        : null;
     final res = await router(
       Request(
         'POST',
         Uri.parse('http://x/members'),
-        headers: {...caller.headers, 'content-type': 'application/json'},
+        headers: {
+          ...caller.headers,
+          if (grant != null) ...{
+            'x-capture-grant': grant,
+            'x-idempotency-key': body['id']?.toString() ?? 'captured-enrol',
+          },
+          ...headers,
+          'content-type': 'application/json',
+        },
         body: jsonEncode(body),
       ),
     );
@@ -89,12 +104,15 @@ void main() {
     expect(first['folded'], false);
 
     // The other till was dark too, and typed the same number.
-    final (secondStatus, second) = await enrol(till, {
+    final secondBody = {
       'id': 'client-minted-b',
       'name': 'Budi S',
       'phone': '081200000501',
       'capturedAt': captured.toIso8601String(),
-    });
+    };
+    final (unsignedStatus, _) = await enrol(till, secondBody, unsigned: true);
+    expect(unsignedStatus, 400);
+    final (secondStatus, second) = await enrol(till, secondBody);
     expect(secondStatus, 200);
     expect(
       second['id'],
@@ -105,7 +123,8 @@ void main() {
     expect(
       second['name'],
       'Budi',
-      reason: 'a fold does not write the arrival over the record it folded into',
+      reason:
+          'a fold does not write the arrival over the record it folded into',
     );
 
     final rows = await db.select(db.members).get();
@@ -146,11 +165,50 @@ void main() {
     expect(again['folded'], false);
     expect((await db.select(db.members).get()).length, 1);
     expect(
-      (await auditKinds()).where((k) => k == AuditKind.memberCreated.name).length,
+      (await auditKinds())
+          .where((k) => k == AuditKind.memberCreated.name)
+          .length,
       1,
       reason: 'a replay writes no second enrolment row',
     );
   });
+
+  test(
+    'captured enrolment survives membership being disabled before replay',
+    () async {
+      final till = await signInForTest(
+        db,
+        caps: {Capability.settleBill},
+        userId: 'till-disabled',
+      );
+      final grant = await till.auth.captureGrantFor(till.token, [
+        Capability.settleBill.name,
+      ]);
+      await (db.update(
+        db.venueSettings,
+      )).write(const VenueSettingsCompanion(membersEnabled: Value(false)));
+      final (liveStatus, _) = await enrol(till, {
+        'name': 'Sri',
+        'phone': '081200000503',
+      });
+      expect(liveStatus, 404);
+      final (capturedStatus, member) = await enrol(
+        till,
+        {
+          'id': 'client-minted-disabled',
+          'name': 'Sri',
+          'phone': '081200000503',
+          'capturedAt': captured.toIso8601String(),
+        },
+        headers: {
+          'x-idempotency-key': 'client-minted-disabled',
+          'x-capture-grant': grant!,
+        },
+      );
+      expect(capturedStatus, 200);
+      expect(member['id'], 'client-minted-disabled');
+    },
+  );
 
   test('an online enrolment still refuses a duplicate number', () async {
     final till = await signInForTest(

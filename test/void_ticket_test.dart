@@ -14,6 +14,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/server/db/database.dart';
+import 'package:satset/server/routes/tables_routes.dart'
+    show snapshotVisitAndDelete;
 import 'package:satset/server/routes/tickets_routes.dart';
 import 'package:satset/server/ws_hub.dart';
 import 'package:shelf/shelf.dart';
@@ -40,6 +42,9 @@ void main() {
             status: status,
             course: 'mains',
             sentAt: DateTime.now(),
+            servedAt: status == 'served'
+                ? Value(DateTime.now())
+                : const Value.absent(),
           ),
         );
     return id;
@@ -49,18 +54,22 @@ void main() {
     String id,
     Map<String, dynamic> body, {
     TestCaller? as,
+    String? grant,
   }) async => router(
     Request(
       'POST',
       Uri.parse('http://x/tickets/$id/transition'),
       body: jsonEncode({'status': 'voided', ...body}),
-      headers: (as ?? caller).headers,
+      headers: {
+        ...(as ?? caller).headers,
+        if (grant case final String signedGrant) 'x-capture-grant': signedGrant,
+        if (grant != null) 'x-idempotency-key': 'void-$id',
+      },
     ),
   );
 
-  Future<Ticket> read(String id) => (db.select(
-    db.tickets,
-  )..where((t) => t.id.equals(id))).getSingle();
+  Future<Ticket> read(String id) =>
+      (db.select(db.tickets)..where((t) => t.id.equals(id))).getSingle();
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
@@ -107,10 +116,7 @@ void main() {
       'voidReasonCode': 'other',
     });
     expect(res.statusCode, 400);
-    expect(
-      jsonDecode(await res.readAsString())['code'],
-      'reason_required',
-    );
+    expect(jsonDecode(await res.readAsString())['code'], 'reason_required');
     expect((await read(id)).status, 'sent');
   });
 
@@ -136,6 +142,96 @@ void main() {
     expect(jsonDecode(await res.readAsString())['code'], 'forbidden');
     expect((await read(id)).status, 'served');
   });
+
+  test(
+    'an offline void captured before serve keeps waiter permission',
+    () async {
+      final waiter = await signInForTest(
+        db,
+        caps: {Capability.takeOrder, Capability.voidItem},
+        userId: 'waiter-1',
+      );
+      final id = await seedTicket(status: 'served');
+      final servedAt = (await read(id)).servedAt!;
+      final grant = await waiter.auth.captureGrantFor(waiter.token, [
+        Capability.voidItem.name,
+      ]);
+      final body = {
+        'voidReason': '',
+        'voidReasonCode': 'customerChange',
+        'capturedAt': servedAt
+            .subtract(const Duration(minutes: 1))
+            .toIso8601String(),
+      };
+      final unsigned = await voidLine(id, body, as: waiter);
+      expect(unsigned.statusCode, 403);
+      final response = await voidLine(id, body, as: waiter, grant: grant);
+      expect(response.statusCode, 200);
+      expect((await read(id)).status, 'voided');
+    },
+  );
+
+  test(
+    'a captured void amends an archived visit and exposes refund due',
+    () async {
+      await db
+          .into(db.visits)
+          .insert(
+            VisitsCompanion.insert(
+              id: 'original-visit',
+              tableId: 't-1',
+              createdAt: DateTime.now().toUtc(),
+            ),
+          );
+      final id = await seedTicket(status: 'served');
+      await (db.update(db.tickets)..where((t) => t.id.equals(id))).write(
+        const TicketsCompanion(visitId: Value('original-visit')),
+      );
+      await db
+          .into(db.payments)
+          .insert(
+            PaymentsCompanion.insert(
+              id: 'captured-cash',
+              receiptId: 'old-receipt',
+              visitId: const Value('original-visit'),
+              method: 'tunai',
+              amount: 50000,
+              at: DateTime.now().toUtc(),
+            ),
+          );
+      await snapshotVisitAndDelete(
+        db,
+        WsHub(),
+        await db.select(db.visits).getSingle(),
+      );
+
+      final body = {
+        'visitId': 'original-visit',
+        'capturedAt': DateTime.now()
+            .subtract(const Duration(hours: 1))
+            .toUtc()
+            .toIso8601String(),
+        'voidReasonCode': 'customerChange',
+      };
+      expect((await voidLine(id, body)).statusCode, 403);
+      final grant = await caller.auth.captureGrantFor(caller.token, [
+        Capability.voidItem.name,
+      ]);
+      final response = await voidLine(id, body, grant: grant);
+      expect(response.statusCode, 200, reason: await response.readAsString());
+      expect(
+        (await db.select(db.tableSessionTickets).getSingle()).status,
+        'voided',
+      );
+      final session = await db.select(db.tableSessions).getSingle();
+      expect(session.settledTotal, 0);
+      expect(session.voidAmount, 50000);
+      expect(
+        (await db.select(db.tableSessionPayments).getSingle()).amount,
+        50000,
+      );
+    },
+  );
 
   test('a replayed void is attributed to the waiter, not the drainer', () async {
     // A drain runs under whoever is signed in when the socket returns. Without
@@ -165,9 +261,6 @@ void main() {
       'voidReasonCode': 'outOfStock',
     });
     expect(res.statusCode, 409);
-    expect(
-      jsonDecode(await res.readAsString())['code'],
-      'illegal_transition',
-    );
+    expect(jsonDecode(await res.readAsString())['code'], 'illegal_transition');
   });
 }

@@ -46,15 +46,17 @@ void main() {
   });
   tearDown(() => db.close());
 
-  Future<Response> seat(Map<String, dynamic> body) =>
-      tablesRoutes(db, hub, caller.auth).call(
-        Request(
-          'POST',
-          Uri.parse('http://x/tables/t1/seat'),
-          body: jsonEncode(body),
-          headers: caller.headers,
-        ),
-      );
+  Future<Response> seat(
+    Map<String, dynamic> body, {
+    Map<String, String> headers = const {},
+  }) => tablesRoutes(db, hub, caller.auth).call(
+    Request(
+      'POST',
+      Uri.parse('http://x/tables/t1/seat'),
+      body: jsonEncode(body),
+      headers: {...caller.headers, ...headers},
+    ),
+  );
 
   test('a replayed seat answers like the first one, not 409', () async {
     final first = await seat({'pax': 2, 'idempotencyKey': 'intent-1'});
@@ -112,6 +114,40 @@ void main() {
       await db.select(db.idempotency).get(),
       isEmpty,
       reason: 'no key sent, nothing claimed',
+    );
+  });
+
+  test('only a signed captured seat keeps its original visit', () async {
+    expect((await seat({'pax': 2})).statusCode, 200);
+    final live = await db.select(db.venueTables).getSingle();
+    final body = {
+      'pax': 2,
+      'visitId': 'captured-v1',
+      'capturedAt': DateTime.now()
+          .toUtc()
+          .subtract(const Duration(minutes: 2))
+          .toIso8601String(),
+      'idempotencyKey': 'captured-seat',
+    };
+    expect((await seat(body)).statusCode, 409);
+    final grant = await caller.auth.captureGrantFor(caller.token, [
+      'takeOrder',
+    ]);
+    final signed = await seat(
+      body,
+      headers: {
+        'x-idempotency-key': 'captured-seat',
+        'x-capture-grant': grant!,
+      },
+    );
+    expect(signed.statusCode, 200, reason: await signed.readAsString());
+    expect(
+      (await db.select(db.venueTables).getSingle()).currentVisitId,
+      live.currentVisitId,
+    );
+    expect(
+      (await db.select(db.visits).get()).map((v) => v.id),
+      contains('captured-v1'),
     );
   });
 }

@@ -249,6 +249,27 @@ void main() {
     },
   );
 
+  test('a cancelled receipt no longer claims member units', () async {
+    final owner = await enrol('Budi', '08120000001');
+    final friend = await enrol('Sari', '08120000002');
+    await closeBill('s1', memberId: owner.id, settled: 25000);
+    await line(
+      's1',
+      'tk1',
+      itemId: 'i-nasi',
+      name: 'Nasi Goreng',
+      qty: 1,
+      price: 25000,
+    );
+    await receipt('s1', 'r-friend', memberId: friend.id, total: 25000);
+    await assign('s1', 'r-friend', 'tk1', 1);
+    await (db.update(db.tableSessionReceipts)
+          ..where((r) => r.receiptId.equals('r-friend')))
+        .write(const TableSessionReceiptsCompanion(status: Value('cancelled')));
+    expect((await history(friend.id))['products'], isEmpty);
+    expect(((await history(owner.id))['products'] as List).single['qty'], 1);
+  });
+
   test('a void is not a purchase', () async {
     final m = await enrol('Budi', '08120000001');
     await closeBill('s1', memberId: m.id, settled: 30000);

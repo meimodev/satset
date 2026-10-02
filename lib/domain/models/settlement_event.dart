@@ -204,6 +204,12 @@ class SettlementEvent {
 
   bool get isParked => status == 'parked';
 
+  bool get isAutoSync => payload['_syncPolicy'] == 'auto';
+
+  bool get needsRepair => status == 'repair';
+
+  bool get hasSyncError => status == 'syncError';
+
   T? arg<T>(String key) {
     final v = payload[key];
     return v is T ? v : null;

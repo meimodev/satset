@@ -13,6 +13,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:satset/domain/models/capability.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/routes/tickets_routes.dart';
 import 'package:satset/server/ws_hub.dart';
@@ -48,21 +49,36 @@ void main() {
     return id;
   }
 
-  Future<Response> serve(String id, {DateTime? capturedAt}) async => router(
-    Request(
-      'POST',
-      Uri.parse('http://x/tickets/$id/transition'),
-      body: jsonEncode({
-        'status': 'served',
-        if (capturedAt != null) 'capturedAt': capturedAt.toIso8601String(),
-      }),
-      headers: caller.headers,
-    ),
-  );
+  Future<Response> serve(
+    String id, {
+    DateTime? capturedAt,
+    bool signed = true,
+  }) async {
+    final grant = capturedAt != null && signed
+        ? await caller.auth.captureGrantFor(caller.token, [
+            Capability.takeOrder.name,
+          ])
+        : null;
+    return router(
+      Request(
+        'POST',
+        Uri.parse('http://x/tickets/$id/transition'),
+        body: jsonEncode({
+          'status': 'served',
+          if (capturedAt != null) 'capturedAt': capturedAt.toIso8601String(),
+        }),
+        headers: {
+          ...caller.headers,
+          if (grant case final String signedGrant)
+            'x-capture-grant': signedGrant,
+          if (grant != null) 'x-idempotency-key': 'serve-$id',
+        },
+      ),
+    );
+  }
 
-  Future<Ticket> read(String id) => (db.select(
-    db.tickets,
-  )..where((t) => t.id.equals(id))).getSingle();
+  Future<Ticket> read(String id) =>
+      (db.select(db.tickets)..where((t) => t.id.equals(id))).getSingle();
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
@@ -81,21 +97,24 @@ void main() {
 
   tearDown(() => db.close());
 
-  test('a drained serve stamps servedAt from capture, not from drain', () async {
-    final id = await seedReadyTicket();
-    final captured = readyAt.add(const Duration(minutes: 2));
+  test(
+    'a drained serve stamps servedAt from capture, not from drain',
+    () async {
+      final id = await seedReadyTicket();
+      final captured = readyAt.add(const Duration(minutes: 2));
 
-    final res = await serve(id, capturedAt: captured);
-    expect(res.statusCode, 200);
+      final res = await serve(id, capturedAt: captured);
+      expect(res.statusCode, 200);
 
-    final t = await read(id);
-    expect(t.servedAt!.difference(captured).inSeconds.abs(), lessThan(2));
-    expect(
-      t.servedAt!.difference(t.readyAt!).inMinutes,
-      2,
-      reason: 'the pickup lag is the plate, not the outage',
-    );
-  });
+      final t = await read(id);
+      expect(t.servedAt!.difference(captured).inSeconds.abs(), lessThan(2));
+      expect(
+        t.servedAt!.difference(t.readyAt!).inMinutes,
+        2,
+        reason: 'the pickup lag is the plate, not the outage',
+      );
+    },
+  );
 
   test('a live serve with no capturedAt still stamps now', () async {
     final id = await seedReadyTicket();
@@ -110,24 +129,39 @@ void main() {
     );
   });
 
-  test('a capture before readyAt clamps up instead of minting a negative lag',
-      () async {
+  test('an unsigned capturedAt cannot backdate a live serve', () async {
     final id = await seedReadyTicket();
-
-    final res = await serve(
-      id,
-      capturedAt: readyAt.subtract(const Duration(minutes: 5)),
-    );
-    expect(res.statusCode, 200);
-
-    final t = await read(id);
-    expect(t.servedAt, t.readyAt);
+    final captured = readyAt.add(const Duration(minutes: 2));
     expect(
-      t.servedAt!.isBefore(t.readyAt!),
-      isFalse,
-      reason: 'a negative lag is discarded by the report, not flagged',
+      (await serve(id, capturedAt: captured, signed: false)).statusCode,
+      200,
+    );
+    expect(
+      (await read(id)).servedAt!.difference(DateTime.now()).inSeconds.abs(),
+      lessThan(5),
     );
   });
+
+  test(
+    'a capture before readyAt clamps up instead of minting a negative lag',
+    () async {
+      final id = await seedReadyTicket();
+
+      final res = await serve(
+        id,
+        capturedAt: readyAt.subtract(const Duration(minutes: 5)),
+      );
+      expect(res.statusCode, 200);
+
+      final t = await read(id);
+      expect(t.servedAt, t.readyAt);
+      expect(
+        t.servedAt!.isBefore(t.readyAt!),
+        isFalse,
+        reason: 'a negative lag is discarded by the report, not flagged',
+      );
+    },
+  );
 
   test('a capture from the future clamps down to now', () async {
     final id = await seedReadyTicket();

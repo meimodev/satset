@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satset/data/db/client_db.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/settlement_journal.dart';
+import 'package:satset/data/services/secure_storage_service.dart';
 import 'package:satset/domain/models/settlement_event.dart';
 import 'package:satset/domain/use_cases/settlement_projection.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
@@ -29,6 +30,36 @@ settlementJournalProvider =
       journal = SettlementJournal(
         db: ref.watch(clientDbProvider),
         send: (event) => _sendEvent(ref, journal, event),
+        captureGrant: () async {
+          try {
+            final raw = await ref.read(secureStorageServiceProvider).readMe();
+            if (raw == null) return null;
+            return (jsonDecode(raw) as Map)['captureGrant'] as String?;
+          } catch (_) {
+            return null;
+          }
+        },
+        reportLegacyParked: (events) async {
+          for (var start = 0; start < events.length; start += 100) {
+            final batch = events.skip(start).take(100);
+            await ref.read(apiClientProvider).postJson(
+              '/settlement/legacy-parked-payments',
+              {
+                'events': [
+                  for (final e in batch)
+                    {
+                      'id': e.id,
+                      'visitId': e.visitId,
+                      'tableId': e.tableId,
+                      'kind': e.kind.name,
+                      'amount': e.intArg('amount'),
+                      'capturedAt': e.capturedAt.toIso8601String(),
+                    },
+                ],
+              },
+            );
+          }
+        },
         loadBill: (visitId, events) async {
           try {
             final raw = await ref
@@ -40,6 +71,20 @@ settlementJournalProvider =
             }
             return (raw as Map).cast<String, dynamic>();
           } on ApiException catch (e) {
+            if (e.statusCode == 404) {
+              try {
+                final archived = await ref
+                    .read(apiClientProvider)
+                    .getJson('/settlement/sessions/$visitId/bill');
+                if (events.any((event) => event.kind.isFloorAct)) {
+                  await ref.read(ticketsProvider.notifier).checkpointNow();
+                  await ref.read(tablesProvider.notifier).checkpointNow();
+                }
+                return (archived as Map).cast<String, dynamic>();
+              } on ApiException catch (archivedError) {
+                if (archivedError.statusCode != 404) rethrow;
+              }
+            }
             // Only an acknowledged close permits this terminal fallback. A
             // generic 404 must never discard food or collected money.
             if (e.statusCode != 404 ||
@@ -88,12 +133,17 @@ Future<void> _sendEvent(
   final r = e.arg<String>('receiptId') ?? '';
 
   Future<Object?> postFor(String path, Map<String, dynamic> body) =>
-      api.postJson(path, {
-        ...body,
-        // Honoured by the host so the money lands in the shift that collected
-        // it, not the one the socket came back in.
-        'capturedAt': e.capturedAt.toIso8601String(),
-      }, idempotencyKey: e.id);
+      api.postJson(
+        path,
+        {
+          ...body,
+          // Honoured by the host so the money lands in the shift that collected
+          // it, not the one the socket came back in.
+          'capturedAt': e.capturedAt.toIso8601String(),
+        },
+        idempotencyKey: e.id,
+        captureGrant: e.arg<String>('captureGrant'),
+      );
 
   Future<void> post(String path, Map<String, dynamic> body) async {
     await postFor(path, body);
@@ -104,29 +154,44 @@ Future<void> _sendEvent(
       case SettlementEventKind.mintReceipt:
         await post('/settlement/visits/$v/receipts', {
           'id': e.id,
+          'receiptSnapshot': e.payload['receiptSnapshot'],
           'mode': e.arg<String>('mode') ?? 'itemized',
           'label': ?e.arg<String>('label'),
           'assignAll': e.payload['assignAll'] == true,
           'memberId': ?e.arg<String>('memberId'),
+          if (e.payload.containsKey('memberDiscount'))
+            'memberDiscount': e.payload['memberDiscount'],
           if (e.payload['lines'] != null) 'lines': e.payload['lines'],
         });
       case SettlementEventKind.deleteReceipt:
-        await api.deleteJson('/settlement/receipts/$r', idempotencyKey: e.id);
+        await api.deleteJson(
+          '/settlement/receipts/$r',
+          body: {'visitId': v, 'capturedAt': e.capturedAt.toIso8601String()},
+          idempotencyKey: e.id,
+          captureGrant: e.arg<String>('captureGrant'),
+        );
       case SettlementEventKind.assignLine:
         await post('/settlement/receipts/$r/lines', {
           'ticketId': e.arg<String>('ticketId'),
           'qtyUnits': e.intArg('qtyUnits'),
+          'receiptSnapshot': e.payload['receiptSnapshot'],
+          'visitId': v,
         });
       case SettlementEventKind.splitEven:
         await post('/settlement/visits/$v/split-even', {
           'n': e.intArg('n'),
           'ids': e.payload['ids'],
+          'receiptSnapshot': e.payload['receiptSnapshot'],
         });
       case SettlementEventKind.applyDiscount:
         await post('/settlement/receipts/$r/discounts', {
           'id': e.id,
+          'visitId': v,
           'ticketId': ?e.arg<String>('ticketId'),
           'presetId': ?e.arg<String>('presetId'),
+          'name': ?e.arg<String>('name'),
+          'kind': ?e.arg<String>('kind'),
+          'value': e.payload['value'],
 
           'perUnit': e.payload['perUnit'] == true,
         });
@@ -135,12 +200,15 @@ Future<void> _sendEvent(
           e.payload['ticketDiscount'] == true
               ? '/settlement/visits/$v/line-discounts/${e.arg<String>('discountId')}/remove'
               : '/settlement/receipts/$r/discounts/${e.arg<String>('discountId')}/remove',
-          const {},
+          {'visitId': v},
         );
       case SettlementEventKind.applyBillDiscount:
         await post('/settlement/visits/$v/discounts', {
           'id': e.id,
           'presetId': ?e.arg<String>('presetId'),
+          'name': ?e.arg<String>('name'),
+          'kind': ?e.arg<String>('kind'),
+          'value': e.payload['value'],
         });
       case SettlementEventKind.removeBillDiscount:
         await post(
@@ -173,6 +241,10 @@ Future<void> _sendEvent(
       case SettlementEventKind.attachMember:
         await post('/settlement/visits/$v/member', {
           'memberId': e.arg<String>('memberId'),
+          'memberSplit': e.payload['memberSplit'],
+          'memberPresetId': e.payload['memberPresetId'],
+          'memberDiscount': e.payload['memberDiscount'],
+          'id': e.id,
         });
       case SettlementEventKind.detachMember:
         await post('/settlement/visits/$v/member/detach', const {});
@@ -180,28 +252,39 @@ Future<void> _sendEvent(
         await post('/settlement/visits/$v/ticket-members', {
           'ticketIds': e.payload['ticketIds'],
           'memberId': e.arg<String>('memberId'),
+          'memberPresetId': e.payload['memberPresetId'],
+          'memberDiscount': e.payload['memberDiscount'],
+          'id': e.id,
         });
       case SettlementEventKind.attachReceiptMember:
         await post('/settlement/receipts/$r/member', {
+          'visitId': v,
           'memberId': e.arg<String>('memberId'),
+          'memberPresetId': e.payload['memberPresetId'],
+          'memberDiscount': e.payload['memberDiscount'],
+          'id': e.id,
         });
       case SettlementEventKind.detachReceiptMember:
-        await post('/settlement/receipts/$r/member/detach', const {});
+        await post('/settlement/receipts/$r/member/detach', {'visitId': v});
       case SettlementEventKind.redeemPoints:
         await post('/settlement/visits/$v/redeem', {
           'points': e.intArg('points'),
+          'pointValue': e.payload['pointValue'],
         });
       case SettlementEventKind.removeRedeem:
         await post('/settlement/visits/$v/redeem/remove', const {});
       case SettlementEventKind.redeemOnReceipt:
         await post('/settlement/receipts/$r/redeem', {
           'points': e.intArg('points'),
+          'pointValue': e.payload['pointValue'],
+          'visitId': v,
         });
       case SettlementEventKind.removeReceiptRedeem:
-        await post('/settlement/receipts/$r/redeem/remove', const {});
+        await post('/settlement/receipts/$r/redeem/remove', {'visitId': v});
       case SettlementEventKind.recordPayment:
         await post('/settlement/receipts/$r/payments', {
           'id': e.id,
+          'visitId': v,
           'method': e.arg<String>('method') ?? 'tunai',
           'amount': e.intArg('amount'),
           'tendered': ?e.payload['tendered'],
@@ -212,16 +295,18 @@ Future<void> _sendEvent(
       case SettlementEventKind.refund:
         await post('/settlement/receipts/$r/refund', {
           'id': e.id,
+          'visitId': v,
           'paymentId': e.arg<String>('paymentId'),
           'amount': e.intArg('amount'),
           'note': ?e.arg<String>('note'),
         });
       case SettlementEventKind.reopenReceipt:
-        await post('/settlement/receipts/$r/reopen', const {});
+        await post('/settlement/receipts/$r/reopen', {'visitId': v});
       case SettlementEventKind.closeBill:
         final closed = await postFor('/settlement/visits/$v/bill-close', {
           'writeOff': e.payload['writeOff'] == true,
           'reason': ?e.arg<String>('reason'),
+          'capturedLoss': e.payload['capturedLoss'],
         });
         if (closed is! Map || closed['closed'] != true) {
           throw StateError('Host did not confirm bill closure');
@@ -270,6 +355,10 @@ Future<void> _sendEvent(
         // (ADR-0006 accountability, ADR-0056 never backfills authorship).
         await post('/tickets/${e.arg<String>('ticketId')}/transition', {
           'status': 'voided',
+          'visitId': v,
+          'capturedAt': e.capturedAt.toIso8601String(),
+          if (e.payload['taxConfig'] != null)
+            'taxConfig': e.payload['taxConfig'],
           'voidReason': ?e.arg<String>('voidReason'),
           'voidReasonCode': ?e.arg<String>('voidReasonCode'),
           'actorId': e.actorId,

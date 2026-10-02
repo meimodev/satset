@@ -15,6 +15,7 @@ import 'package:satset/server/auth.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/self_order.dart' show mintMissingGuestCodes;
 import 'package:satset/server/visit_expenses.dart';
+import 'package:satset/server/visit_tax_config.dart';
 import 'package:satset/domain/models/visit_expense.dart' as expense;
 import 'package:satset/server/ws_hub.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
@@ -44,7 +45,12 @@ Future<Response?> _requireCap(
   final caps = role == null
       ? const <String>[]
       : (jsonDecode(role.capabilitiesJson) as List).cast<String>();
-  if (!caps.contains(needed.name)) {
+  if (!caps.contains(needed.name) &&
+      !(await auth.capturedCapabilities(
+        token,
+        req.headers['x-capture-grant'],
+        req.headers['x-idempotency-key'],
+      )).contains(needed.name)) {
     return Response(
       403,
       body: jsonEncode({
@@ -67,6 +73,7 @@ Future<String> ensureVisit(
   String? actorId,
   String? visitId,
   DateTime? at,
+  TaxServiceConfig? taxConfig,
 }) async {
   final t = await (db.select(
     db.venueTables,
@@ -91,11 +98,33 @@ Future<String> ensureVisit(
     final already = await (db.select(
       db.visits,
     )..where((x) => x.id.equals(visitId))).getSingleOrNull();
-    if (already != null) return already.id;
+    if (already != null) {
+      if (already.taxConfigJson == null && taxConfig != null) {
+        await (db.update(
+          db.visits,
+        )..where((v) => v.id.equals(already.id))).write(
+          VisitsCompanion(taxConfigJson: Value(jsonEncode(taxConfig.toJson()))),
+        );
+      }
+      return already.id;
+    }
   }
 
   final id = captured ? visitId : _uuid.v4();
   final now = at?.toUtc() ?? SatClock.now().toUtc();
+  final archived = captured
+      ? await (db.select(
+          db.tableSessions,
+        )..where((s) => s.id.equals(id))).getSingleOrNull()
+      : null;
+  if (archived != null && archived.tableId != tableId) {
+    throw StateError('captured visit belongs to another table');
+  }
+  final config =
+      taxConfig ??
+      (archived == null
+          ? await venueTaxConfig(db)
+          : await visitTaxConfig(db, archived.id));
   // A booking made against a [[Pelanggan (member)]] hands the member to the
   // visit, so the till opens with them already attached — standing discount
   // live, points earned at close, nobody looking anyone up mid-service. Read
@@ -118,16 +147,27 @@ Future<String> ensureVisit(
         VisitsCompanion.insert(
           id: id,
           tableId: tableId,
-          tableLabel: Value(t?.label),
-          zoneId: Value(t?.zoneId ?? ''),
-          pax: Value(t?.pax ?? 0),
-          openedAt: Value(t?.openedAt ?? now),
-          guestName: Value(t?.guestName),
-          guestNotes: Value(t?.guestNotes),
-          reservationId: Value(t?.reservationId),
-          memberId: Value(reservationMemberId),
-          memberAttributionVersion: const Value(2),
-          lastActorId: Value(actorId ?? t?.lastActorId),
+          tableLabel: Value(archived?.tableLabel ?? t?.label),
+          zoneId: Value(archived?.zoneId ?? t?.zoneId ?? ''),
+          pax: Value(archived?.pax ?? t?.pax ?? 0),
+          openedAt: Value(archived?.openedAt ?? t?.openedAt ?? now),
+          taxConfigJson: Value(jsonEncode(config.toJson())),
+          guestName: Value(archived == null ? t?.guestName : null),
+          guestNotes: Value(archived == null ? t?.guestNotes : null),
+          reservationId: Value(archived == null ? t?.reservationId : null),
+          memberId: Value(
+            archived == null ? reservationMemberId : archived.memberId,
+          ),
+          memberAttributionVersion: Value(
+            archived?.memberAttributionVersion ?? 2,
+          ),
+          tableFreedAt: Value(archived?.closedAt),
+          kind: Value(archived?.kind ?? 'dineIn'),
+          channel: Value(archived?.channel ?? ''),
+          prepaid: Value(archived?.prepaid ?? false),
+          lastActorId: Value(
+            actorId ?? archived?.actorUserId ?? t?.lastActorId,
+          ),
           createdAt: now,
         ),
       );
@@ -138,7 +178,7 @@ Future<String> ensureVisit(
   // a replay: there are guests at it. The loser keeps its `tableId` and simply
   // holds no slot, which is what surfaces it on `/kasir` as table-less instead
   // of vanishing.
-  if (t != null && (!captured || live == null)) {
+  if (t != null && archived == null && (!captured || live == null)) {
     await (db.update(db.venueTables)..where((x) => x.id.equals(tableId))).write(
       VenueTablesCompanion(currentVisitId: Value(id)),
     );
@@ -175,6 +215,7 @@ Future<Visit> createTakeawayVisit(
   final s = await (db.select(
     db.venueSettings,
   )..where((x) => x.id.equals('default'))).getSingleOrNull();
+  final taxConfig = await venueTaxConfig(db);
   final hour = s?.businessDayStartHour ?? 4;
   // Anchor to the business day so the running number resets at the configured
   // rollover hour, matching how reports bucket "today".
@@ -209,6 +250,7 @@ Future<Visit> createTakeawayVisit(
             zoneId: const Value(''),
             pax: const Value(0),
             openedAt: Value(nowUtc),
+            taxConfigJson: Value(jsonEncode(taxConfig.toJson())),
             guestName: Value(
               (guestName ?? '').trim().isEmpty ? null : guestName!.trim(),
             ),
@@ -272,18 +314,7 @@ Future<void> snapshotVisitAndDelete(
         subtotal += line;
       }
     }
-    final s = await (db.select(
-      db.venueSettings,
-    )..where((t) => t.id.equals('default'))).getSingleOrNull();
-    final cfg = TaxServiceConfig(
-      taxEnabled: s?.taxEnabled ?? false,
-      taxRateBps: s?.taxRateBps ?? 1100,
-      serviceEnabled: s?.serviceEnabled ?? false,
-      serviceMode: s?.serviceMode ?? 'percent',
-      serviceRateBps: s?.serviceRateBps ?? 500,
-      serviceFixedAmount: s?.serviceFixedAmount ?? 0,
-      taxAfterDiscount: s?.taxAfterDiscount ?? true,
-    );
+    final cfg = await visitTaxConfig(db, visit.id);
     // netTotal stays FROZEN at the ADR-0023 formula (subtotal − void + service
     // + tax) — it never learns about discounts, so its meaning never changes
     // again (ADR-0039). Money actually collected goes to settledTotal below.
@@ -324,49 +355,78 @@ Future<void> snapshotVisitAndDelete(
       cfg,
       discount: orderDiscount,
     ).total;
-    final sid = sessionId ?? _uuid.v4();
-    await db
-        .into(db.tableSessions)
-        .insert(
-          TableSessionsCompanion.insert(
-            id: sid,
-            tableId: visit.tableId,
-            tableLabel: Value(visit.tableLabel),
-            zoneId: visit.zoneId,
-            pax: Value(visit.pax),
-            openedAt: Value(openedAt),
-            closedAt: now,
-            durationSec: Value(durationSec),
-            actorUserId: Value(visit.lastActorId),
-            subtotal: Value(subtotal),
-            voidAmount: Value(voidAmount),
-            serviceAmount: Value(breakdown.serviceAmount),
-            taxAmount: Value(breakdown.taxAmount),
-            netTotal: Value(breakdown.total),
-            discountAmount: Value(discountTotal),
-            settledTotal: Value(settled),
-            // What this visit cost the venue to serve (ADR-0130). Frozen
-            // beside the other money figures and folded into none of them:
-            // `settledTotal` keeps ADR-0039's formula, and cash in hand is
-            // that minus this, subtracted once, in the report.
-            expenseAmount: Value(await visitExpenseTotal(db, visit.id)),
-            ticketCount: Value(tickets.length),
-            lossAmount: Value(lossAmount),
-            billClosedBy: Value(billClosedBy),
-            // Freeze the visit kind so reports can split takeaway out of
-            // per-cover / turn-time / occupancy metrics. See ADR-0026.
-            kind: Value(visit.kind),
-            // Freeze the channel too, so a closed GoFood order is still
-            // distinguishable from a walk-in bungkus in history. ADR-0066.
-            channel: Value(visit.channel),
-            prepaid: Value(visit.prepaid),
-            // Freeze the [[Pelanggan (member)]] too — visit counts, lifetime
-            // spend and the punch card are all read off settled history, so a
-            // member the snapshot drops is a member whose past disappears.
-            memberId: Value(visit.memberId),
-            memberAttributionVersion: Value(visit.memberAttributionVersion),
+    // Keep the original visit addressable when a newly captured action lands
+    // after this visit has moved into history. Demo history supplies its own id.
+    final sid = sessionId ?? visit.id;
+    final original = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.id.equals(sid))).getSingleOrNull();
+    if (original != null) {
+      // An amendment visit shares the original visit id. Keep the original
+      // close time and receipt snapshots; only its financial rollup grows.
+      await (db.update(db.tableSessions)..where((s) => s.id.equals(sid))).write(
+        TableSessionsCompanion(
+          subtotal: Value(original.subtotal + subtotal),
+          voidAmount: Value(original.voidAmount + voidAmount),
+          serviceAmount: Value(
+            original.serviceAmount + breakdown.serviceAmount,
           ),
-        );
+          taxAmount: Value(original.taxAmount + breakdown.taxAmount),
+          netTotal: Value(original.netTotal + breakdown.total),
+          discountAmount: Value(original.discountAmount + discountTotal),
+          settledTotal: Value(original.settledTotal + settled),
+          expenseAmount: Value(
+            original.expenseAmount + await visitExpenseTotal(db, visit.id),
+          ),
+          ticketCount: Value(original.ticketCount + tickets.length),
+          lossAmount: Value(original.lossAmount + lossAmount),
+        ),
+      );
+    } else {
+      await db
+          .into(db.tableSessions)
+          .insert(
+            TableSessionsCompanion.insert(
+              id: sid,
+              tableId: visit.tableId,
+              tableLabel: Value(visit.tableLabel),
+              zoneId: visit.zoneId,
+              pax: Value(visit.pax),
+              openedAt: Value(openedAt),
+              closedAt: now,
+              taxConfigJson: Value(jsonEncode(cfg.toJson())),
+              durationSec: Value(durationSec),
+              actorUserId: Value(visit.lastActorId),
+              subtotal: Value(subtotal),
+              voidAmount: Value(voidAmount),
+              serviceAmount: Value(breakdown.serviceAmount),
+              taxAmount: Value(breakdown.taxAmount),
+              netTotal: Value(breakdown.total),
+              discountAmount: Value(discountTotal),
+              settledTotal: Value(settled),
+              // What this visit cost the venue to serve (ADR-0130). Frozen
+              // beside the other money figures and folded into none of them:
+              // `settledTotal` keeps ADR-0039's formula, and cash in hand is
+              // that minus this, subtracted once, in the report.
+              expenseAmount: Value(await visitExpenseTotal(db, visit.id)),
+              ticketCount: Value(tickets.length),
+              lossAmount: Value(lossAmount),
+              billClosedBy: Value(billClosedBy),
+              // Freeze the visit kind so reports can split takeaway out of
+              // per-cover / turn-time / occupancy metrics. See ADR-0026.
+              kind: Value(visit.kind),
+              // Freeze the channel too, so a closed GoFood order is still
+              // distinguishable from a walk-in bungkus in history. ADR-0066.
+              channel: Value(visit.channel),
+              prepaid: Value(visit.prepaid),
+              // Freeze the [[Pelanggan (member)]] too — visit counts, lifetime
+              // spend and the punch card are all read off settled history, so a
+              // member the snapshot drops is a member whose past disappears.
+              memberId: Value(visit.memberId),
+              memberAttributionVersion: Value(visit.memberAttributionVersion),
+            ),
+          );
+    }
     for (final t in tickets) {
       await db
           .into(db.tableSessionTickets)
@@ -512,7 +572,7 @@ Future<void> snapshotVisitAndDelete(
       )..where((x) => x.receiptId.equals(rec.id))).go();
       final pays = await (db.select(
         db.payments,
-      )..where((p) => p.receiptId.equals(rec.id))).get();
+      )..where((p) => p.receiptId.equals(rec.id) & p.visitId.isNull())).get();
       for (final p in pays) {
         await db
             .into(db.tableSessionPayments)
@@ -561,8 +621,32 @@ Future<void> snapshotVisitAndDelete(
       )..where((x) => x.receiptId.equals(rec.id))).go();
       await (db.delete(
         db.payments,
-      )..where((x) => x.receiptId.equals(rec.id))).go();
+      )..where((x) => x.receiptId.equals(rec.id) & x.visitId.isNull())).go();
     }
+    final orphanPayments = await (db.select(
+      db.payments,
+    )..where((p) => p.visitId.equals(visit.id))).get();
+    for (final payment in orphanPayments) {
+      await db
+          .into(db.tableSessionPayments)
+          .insert(
+            TableSessionPaymentsCompanion.insert(
+              id: payment.id,
+              sessionId: sid,
+              receiptId: payment.receiptId,
+              memberId: Value(payment.memberId),
+              method: payment.method,
+              amount: payment.amount,
+              isRefund: Value(payment.isRefund),
+              cashierUserId: Value(payment.cashierUserId),
+              at: payment.at,
+              photo: Value(payment.photo),
+            ),
+          );
+    }
+    await (db.delete(
+      db.payments,
+    )..where((p) => p.visitId.equals(visit.id))).go();
     await (db.delete(
       db.receipts,
     )..where((rc) => rc.visitId.equals(visit.id))).go();
@@ -596,17 +680,7 @@ Future<void> syncVisitMoney(AppDatabase db, WsHub hub, String visitId) async {
   int outstanding = 0;
   String? state;
   if (subtotal > 0) {
-    final s = await (db.select(
-      db.venueSettings,
-    )..where((x) => x.id.equals('default'))).getSingleOrNull();
-    final cfg = TaxServiceConfig(
-      taxEnabled: s?.taxEnabled ?? false,
-      taxRateBps: s?.taxRateBps ?? 1100,
-      serviceEnabled: s?.serviceEnabled ?? false,
-      serviceMode: s?.serviceMode ?? 'percent',
-      serviceRateBps: s?.serviceRateBps ?? 500,
-      serviceFixedAmount: s?.serviceFixedAmount ?? 0,
-    );
+    final cfg = await visitTaxConfig(db, visitId);
     final total = computeBreakdown(subtotal, cfg).total;
     final recs = await (db.select(
       db.receipts,
@@ -804,11 +878,32 @@ Router tablesRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     // §2 — ADR-0129's switch, applied to a table). Both, or neither: an id with
     // no `capturedAt` is a live caller inventing a primary key, and that is
     // refused by being ignored.
-    final capturedAt = DateTime.tryParse((body['capturedAt'] as String?) ?? '');
+    final bearer = req.headers['authorization']?.replaceFirst(
+      RegExp(r'^[Bb]earer\s+'),
+      '',
+    );
+    final signed = (await auth.capturedCapabilities(
+      bearer,
+      req.headers['x-capture-grant'],
+      req.headers['x-idempotency-key'],
+    )).contains(Capability.takeOrder.name);
+    final capturedAt = signed
+        ? DateTime.tryParse((body['capturedAt'] as String?) ?? '')
+        : null;
     final capturedVisitId = capturedAt == null
         ? null
         : (body['visitId'] as String?)?.trim();
     final captured = capturedVisitId != null && capturedVisitId.isNotEmpty;
+    TaxServiceConfig? capturedTaxConfig;
+    if (captured && body['taxConfig'] != null) {
+      try {
+        capturedTaxConfig = TaxServiceConfig.fromJson(
+          (body['taxConfig'] as Map).cast<String, dynamic>(),
+        );
+      } catch (_) {
+        return Response(400, body: 'invalid captured tax configuration');
+      }
+    }
     final now = SatClock.now();
 
     String? replayed;
@@ -894,6 +989,7 @@ Router tablesRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
         actorId: actorId,
         visitId: capturedVisitId,
         at: capturedAt,
+        taxConfig: capturedTaxConfig,
       );
       if (idem.isNotEmpty) {
         final seated = await (db.select(

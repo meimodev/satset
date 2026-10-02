@@ -108,15 +108,15 @@ second predicate**. Under a bridge it would not have been, and `fetchBill`
 would have cached the host's correct-but-short answer over the truth. If the
 test needs widening, the merge was not done.
 
-### 2. Ids are client-minted, and `capturedAt` is the signal.
+### 2. Ids are client-minted.
+
+ADR-0144 now requires a signed, device-bound capture grant alongside
+`capturedAt` for replay. The timestamp alone is not proof of a capture.
 
 Visit and ticket ids join receipt, payment, discount and refund: minted on the
-client, **online too**, doubling as the idempotency key. The sender's standing
-refusal — *"A local key must not cross the wire"* — is lifted for a request
-that carries `capturedAt`, which is exactly ADR-0129's switch for an offline
-enrolment: *"folding is switched on by the request carrying both `id` and
-`capturedAt`, which is what an offline capture looks like."* One signal, one
-precedent, no new mechanism.
+client, **online too**, doubling as the idempotency key. The sender permits
+captured ids when the request has a valid `capturedAt` and the signed grant
+introduced by ADR-0144.
 
 Minting server-side and rewriting the local id at drain was the alternative,
 and it has its own precedent (`rewriteMemberId`). It loses on the **struk**: a
@@ -125,8 +125,8 @@ a rewrite makes that document name something that no longer exists.
 
 ### 3. A captured line is not refused for stock. It is audited.
 
-At drain the host **does not validate stock** for a line carrying a past-dated
-`capturedAt`. Stock goes negative, and [[Stok opname|opname]] reconciles it.
+At drain the host **does not validate stock** for a signed captured line.
+Stock goes negative, and [[Stok opname|opname]] reconciles it.
 
 Stock refusal exists to stop a waiter *promising* food the kitchen does not
 have. Once the guest has eaten it and paid for it, the refusal has no subject
@@ -136,11 +136,9 @@ it is money collected against something that exists in no ledger at all.
 
 Two guards keep this from becoming a hole:
 
-- **The bypass needs a past-dated `capturedAt`**, older than a threshold
-  (60s), not merely a present one. `capturedAt: now` gets ordinary
-  enforcement. Without this, a buggy client — or the wrong clock on cheap
-  Android hardware, which is a real failure mode and not a hypothetical —
-  silently disables a venue-wide control with nobody seeing an error.
+- **The bypass needs a signed capture grant** bound to the paired device and
+  idempotency key (ADR-0144). A live request's `capturedAt` alone keeps
+  ordinary stock enforcement; a quick reconnect does not lose its capture.
 - **A bypassed line writes an audit row** naming the item and the shortfall.
   Negative stock with no explanation is a bug report; negative stock with a row
   saying *sold dark at 19:42, no stock* is a reconciliation. Opname needs that

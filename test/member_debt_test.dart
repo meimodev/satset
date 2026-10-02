@@ -85,6 +85,24 @@ void main() {
     expect(await memberDebt(db, m.id), 150000);
   });
 
+  test('a captured charge remains debt after headroom is used', () async {
+    final m = await enrol();
+    await charge(m.id, 150000, paymentId: 'online');
+    await (db.update(
+      db.venueSettings,
+    )).write(const VenueSettingsCompanion(memberDebtEnabled: Value(false)));
+    await chargeDebt(
+      db,
+      memberId: m.id,
+      amount: 100000,
+      paymentId: 'captured',
+      honorCaptured: true,
+    );
+    final standing = await debtFor(db, m.id);
+    expect(standing.balance, 250000);
+    expect(standing.headroom, 0);
+  });
+
   test('a member limit beats the venue default, and 0 means no tab', () async {
     final m = await enrol();
     await updateMember(db, id: m.id, debtLimit: 500000);
@@ -194,14 +212,17 @@ void main() {
     expect(await memberDebt(db, m.id), 0);
   });
 
-  test('a reversal larger than what stands is clamped, never negative', () async {
-    final m = await enrol();
-    await charge(m.id, 40000, paymentId: 'pm1');
+  test(
+    'a reversal larger than what stands is clamped, never negative',
+    () async {
+      final m = await enrol();
+      await charge(m.id, 40000, paymentId: 'pm1');
 
-    await reverseChargeForPayment(db, paymentId: 'pm1', amount: 999999);
-    expect(await memberDebt(db, m.id), 0);
-    expect(await unreversedChargeFor(db, 'pm1'), 0);
-  });
+      await reverseChargeForPayment(db, paymentId: 'pm1', amount: 999999);
+      expect(await memberDebt(db, m.id), 0);
+      expect(await unreversedChargeFor(db, 'pm1'), 0);
+    },
+  );
 
   test('a member who owes cannot be deleted', () async {
     final m = await enrol();

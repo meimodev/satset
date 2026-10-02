@@ -19,7 +19,6 @@
 /// [[Diskon (discount)]] (a give-back to the guest).
 library;
 
-
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
@@ -66,8 +65,7 @@ Future<bool> visitExpenseEnabled(AppDatabase db) async {
   final s = await (db.select(
     db.venueSettings,
   )..where((v) => v.id.equals('default'))).getSingleOrNull();
-  return (s?.tableExpenseEnabled ?? false) &&
-      venueHasMode(s, modeTableExpense);
+  return (s?.tableExpenseEnabled ?? false) && venueHasMode(s, modeTableExpense);
 }
 
 /// What this visit rang up: the subtotal of its sent, non-voided lines, before
@@ -93,6 +91,12 @@ Future<int> visitSubtotal(AppDatabase db, String visitId) async {
   var total = 0;
   for (final t in rows) {
     total += t.price * t.qty;
+  }
+  if (rows.isEmpty) {
+    final session = await (db.select(
+      db.tableSessions,
+    )..where((s) => s.id.equals(visitId))).getSingleOrNull();
+    if (session != null) return session.subtotal - session.voidAmount;
   }
   return total;
 }
@@ -122,6 +126,7 @@ Future<VisitExpense> recordVisitExpense(
   String? actorUserId,
   WsHub? hub,
   DateTime? at,
+  bool honorCaptured = false,
 }) async {
   if (amount <= 0) throw const VisitExpenseException('invalid_amount');
   // Enforced here and not only in the sheet: a photo the server does not
@@ -144,11 +149,18 @@ Future<VisitExpense> recordVisitExpense(
     final visit = await (db.select(
       db.visits,
     )..where((v) => v.id.equals(visitId))).getSingleOrNull();
-    if (visit == null) throw const VisitExpenseException('visit_not_found');
+    final archived = visit == null && honorCaptured
+        ? await (db.select(
+            db.tableSessions,
+          )..where((s) => s.id.equals(visitId))).getSingleOrNull()
+        : null;
+    if (visit == null && archived == null) {
+      throw const VisitExpenseException('visit_not_found');
+    }
     // After bill close the snapshot is immutable. The way back is **reopen**,
     // which the cashier already has — deliberately not a grace window, which
     // would be a second lifecycle nobody can reason about.
-    if (visit.billClosedAt != null) {
+    if (visit?.billClosedAt != null && !honorCaptured) {
       throw const VisitExpenseException('bill_closed');
     }
 
@@ -164,7 +176,7 @@ Future<VisitExpense> recordVisitExpense(
     // meets. The read is why `idx_visit_expenses_visit` exists.
     final cap = await visitSubtotal(db, visitId);
     final spent = await visitExpenseTotal(db, visitId);
-    if (spent + amount > cap) {
+    if (spent + amount > cap && !honorCaptured) {
       throw VisitExpenseException('exceeds_bill', cap: cap, spent: spent);
     }
 
@@ -196,9 +208,9 @@ Future<VisitExpense> recordVisitExpense(
         // for the reason every audit param is — a later rename must not rewrite
         // what the log says happened.
         'category': category.name,
-        'table': visit.tableLabel ?? '',
+        'table': visit?.tableLabel ?? archived?.tableLabel ?? '',
       },
-      tableId: visit.tableId,
+      tableId: visit?.tableId ?? archived!.tableId,
       actorUserId: actorUserId,
       reason: note,
       amountCents: amount,
@@ -210,6 +222,12 @@ Future<VisitExpense> recordVisitExpense(
       'visitId': visitId,
       'total': spent + amount,
     });
+    if (archived != null) {
+      await db.customStatement(
+        'UPDATE table_sessions SET expense_amount = expense_amount + ? WHERE id = ?',
+        [amount, visitId],
+      );
+    }
 
     return VisitExpense(
       id: id,
@@ -231,12 +249,10 @@ Future<VisitExpense?> _expenseById(AppDatabase db, String id) async {
   final e = db.visitExpenses;
   final c = db.visitExpenseCategories;
   final u = db.users;
-  final r =
-      await (db.select(e).join([
-            leftOuterJoin(c, c.id.equalsExp(e.categoryId)),
-            leftOuterJoin(u, u.id.equalsExp(e.actorUserId)),
-          ])..where(e.id.equals(id)))
-          .getSingleOrNull();
+  final r = await (db.select(e).join([
+    leftOuterJoin(c, c.id.equalsExp(e.categoryId)),
+    leftOuterJoin(u, u.id.equalsExp(e.actorUserId)),
+  ])..where(e.id.equals(id))).getSingleOrNull();
   if (r == null) return null;
   return VisitExpense(
     id: r.read(e.id)!,

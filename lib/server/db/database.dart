@@ -42,6 +42,7 @@ part 'database.g.dart';
     TableSessionReceipts,
     TableSessionReceiptLines,
     TableSessionPayments,
+    LegacyParkedPayments,
     VisitExpenses,
     VisitExpenseCategories,
     DiscountPresets,
@@ -84,7 +85,7 @@ class AppDatabase extends _$AppDatabase {
   // 46 adds foreign-key lookup indexes only — see _createLookupIndexes. No
   // schema shape change, so it is the one migration in this file that cannot
   // corrupt a device which took the number in parallel.
-  int get schemaVersion => 76;
+  int get schemaVersion => 81;
 
   /// The cap sums a visit's expenses on every capture, inside the transaction
   /// that writes the next one (ADR-0100), so the lookup is on the hot path of
@@ -102,7 +103,13 @@ class AppDatabase extends _$AppDatabase {
   /// code. Drift cannot express partial indexes, so they are raw SQL and must be
   /// created on both fresh and upgraded databases.
   Future<void> _createDiscountIndexes() async {
-    // One order discount per *source*, not per receipt (ADR-0118) — the same
+    // Older migration steps create these indexes before v81 adds `captured`.
+    final captureFilter = await _hasColumn('discounts', 'captured')
+        ? " AND (source != 'manual' OR captured = 0)"
+        : '';
+    // Live manual rows and non-manual sources stay unique per slot. Captured
+    // manual rows are excluded so independent offline promises can stack.
+    // One order discount per source, not per receipt (ADR-0118) — the same
     // move ADR-0094 made one level up, for the same reason. With the member's
     // tier discount and a redemption now applied against the
     // [[Pemilik struk]]'s own receipt, a receipt_id-only index would make a
@@ -113,26 +120,25 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_order_uniq '
       'ON discounts (receipt_id, source) WHERE receipt_id IS NOT NULL '
-      'AND ticket_id IS NULL',
+      'AND ticket_id IS NULL$captureFilter',
     );
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_line_uniq '
       'ON discounts (receipt_id, ticket_id, source) '
-      'WHERE ticket_id IS NOT NULL',
+      'WHERE ticket_id IS NOT NULL$captureFilter',
     );
-    // One bill discount per *source*, not per visit (ADR-0094). A cashier's
-    // promo, the member discount and a redemption each hold their own slot;
-    // none can be applied twice. The pre-v51 index (visit_id alone) is dropped
+    // Member discount and redemption each hold their own bill slot (ADR-0094).
+    // Separate captured manual promos may coexist. The pre-v51 index is dropped
     // in the v51 migration — leaving it would keep the three from coexisting.
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_bill_source_uniq '
       'ON discounts (visit_id, source) WHERE receipt_id IS NULL '
-      'AND visit_id IS NOT NULL AND ticket_id IS NULL',
+      'AND visit_id IS NOT NULL AND ticket_id IS NULL$captureFilter',
     );
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_discounts_ticket_source_uniq '
       'ON discounts (visit_id, ticket_id, source) '
-      'WHERE receipt_id IS NULL AND ticket_id IS NOT NULL',
+      'WHERE receipt_id IS NULL AND ticket_id IS NOT NULL$captureFilter',
     );
   }
 
@@ -892,7 +898,7 @@ class AppDatabase extends _$AppDatabase {
           // ignore: experimental_member_use
           TableMigration(
             discounts,
-            newColumns: [discounts.visitId, discounts.source],
+            newColumns: [discounts.visitId, discounts.source, discounts.captured],
           ),
         );
         // The snapshot mirrors the live row, so it relaxes the same way — and
@@ -1604,6 +1610,43 @@ class AppDatabase extends _$AppDatabase {
         // them in whatever shape history left; grant each from the authority
         // that has been doing its job, or the upgrade *removes* access.
         await backfillRoleAndStockCapabilities();
+      }
+      if (from < 77 && to >= 77) {
+        await _safeAddColumnOn('payments', 'visit_id', type: 'TEXT NULL');
+      }
+      if (from < 78 && to >= 78) {
+        await m.createTable(legacyParkedPayments);
+      }
+      if (from < 79 && to >= 79) {
+        await _safeAddColumnOn(
+          'table_session_receipts',
+          'original_snapshot_json',
+          type: 'TEXT NULL',
+        );
+      }
+      if (from < 80 && to >= 80) {
+        await _safeAddColumnOn('visits', 'tax_config_json', type: 'TEXT NULL');
+        await _safeAddColumnOn(
+          'table_sessions',
+          'tax_config_json',
+          type: 'TEXT NULL',
+        );
+      }
+      if (from < 81 && to >= 81) {
+        await _safeAddColumnOn(
+          'discounts',
+          'captured',
+          type: 'INTEGER NOT NULL DEFAULT 0 CHECK (captured IN (0, 1))',
+        );
+        for (final name in [
+          'idx_discounts_order_uniq',
+          'idx_discounts_line_uniq',
+          'idx_discounts_bill_source_uniq',
+          'idx_discounts_ticket_source_uniq',
+        ]) {
+          await customStatement('DROP INDEX IF EXISTS $name');
+        }
+        await _createDiscountIndexes();
       }
     },
     onCreate: (m) async {

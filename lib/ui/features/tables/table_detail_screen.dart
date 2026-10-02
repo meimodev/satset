@@ -31,7 +31,6 @@ import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/repositories/member_names_repository.dart';
 import 'package:satset/data/repositories/tickets_repository.dart';
-import 'package:satset/data/services/settlement_sync.dart';
 import 'package:satset/domain/use_cases/advance_ticket_status_use_case.dart';
 import 'package:satset/ui/core/widgets/ready_banner.dart';
 import 'package:satset/ui/core/widgets/order_line_card.dart';
@@ -316,12 +315,8 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       hasLease: _ownsLock || _acquiring,
       offline: ref.watch(wsConnStateProvider) != WsConnState.open,
     );
-    final refused = ref
-        .watch(journalViewProvider)
-        .parkedVisits
-        .contains(table.currentVisitId);
-    final readOnly = access.readOnly || refused;
-    final canQueueWrite = access.canQueueWrite && !refused;
+    final readOnly = access.readOnly;
+    final canQueueWrite = access.canQueueWrite;
     final offlineNoLease = readOnly && canQueueWrite;
 
     // Watch for two related transitions: (a) the current lock holder

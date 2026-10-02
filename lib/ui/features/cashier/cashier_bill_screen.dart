@@ -20,6 +20,7 @@ import 'package:satset/ui/core/widgets/proof_photo.dart';
 import 'package:satset/data/models/bill_dto.dart';
 import 'package:satset/data/models/member_dto.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/repositories/release_gate_repository.dart';
 import 'package:satset/data/repositories/settlement_repository.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/services/api_client.dart';
@@ -194,48 +195,52 @@ class _CashierBillViewState extends ConsumerState<CashierBillView> {
                 style: SatType.bodyM(color: sc.textLo),
               ),
             ),
-            data: (bill) =>
-                (!bill.historyAvailable ||
-                    bill.lines.isEmpty ||
-                    ref
-                        .watch(journalViewProvider)
-                        .parkedVisits
-                        .contains(bill.visitId))
-                ? _BillReadOnly(
-                    bill: bill,
-                    refused: ref
-                        .watch(journalViewProvider)
-                        .parkedVisits
-                        .contains(bill.visitId),
-                  )
-                : _BillBody(
-                    bill: bill,
-                    run: _run,
-                    repo: _repo,
-                    canRefund: ref
-                        .watch(authStateProvider)
-                        .has(Capability.refund),
-                    debtEnabled: ref.watch(
-                      venueSettingsProvider.select(
-                        (v) => v.membersOn && v.memberDebtEnabled,
+            data: (bill) {
+              final parked = ref
+                  .watch(journalViewProvider)
+                  .parkedVisits
+                  .contains(bill.visitId);
+              final hostWarning =
+                  ref.watch(isHostDeviceProvider) &&
+                  bill.legacyParkedPaymentCount > 0;
+              return (!bill.historyAvailable ||
+                      bill.lines.isEmpty ||
+                      parked ||
+                      hostWarning)
+                  ? _BillReadOnly(
+                      bill: bill,
+                      refused: parked,
+                      legacy: hostWarning,
+                    )
+                  : _BillBody(
+                      bill: bill,
+                      run: _run,
+                      repo: _repo,
+                      canRefund: ref
+                          .watch(authStateProvider)
+                          .has(Capability.refund),
+                      debtEnabled: ref.watch(
+                        venueSettingsProvider.select(
+                          (v) => v.membersOn && v.memberDebtEnabled,
+                        ),
                       ),
-                    ),
-                    onCloseBill: () => _closeBill(context, ref, bill),
-                    onReopenBill: () => _reopenBill(bill),
-                    printDoc: (r) => printBillStruk(
-                      context: context,
-                      ref: ref,
-                      bill: bill,
-                      receipt: r,
-                    ),
-                    printSelection: (sel, pending) => printBillSelection(
-                      context: context,
-                      ref: ref,
-                      bill: bill,
-                      selection: sel,
-                      pending: pending,
-                    ),
-                  ),
+                      onCloseBill: () => _closeBill(context, ref, bill),
+                      onReopenBill: () => _reopenBill(bill),
+                      printDoc: (r) => printBillStruk(
+                        context: context,
+                        ref: ref,
+                        bill: bill,
+                        receipt: r,
+                      ),
+                      printSelection: (sel, pending) => printBillSelection(
+                        context: context,
+                        ref: ref,
+                        bill: bill,
+                        selection: sel,
+                        pending: pending,
+                      ),
+                    );
+            },
           ),
         ),
       ],
@@ -805,6 +810,18 @@ class _TotalsCard extends StatelessWidget {
             bill.outstanding,
             color: bill.outstanding > 0 ? sc.warn : sc.success,
           ),
+          if (bill.excessPayment > 0)
+            row(
+              context.l10n.cshExcessPayment,
+              bill.excessPayment,
+              color: sc.warn,
+            ),
+          if (bill.excessRefund > 0)
+            row(
+              context.l10n.cshExcessRefund,
+              bill.excessRefund,
+              color: sc.warn,
+            ),
         ],
       ),
     );
@@ -2928,8 +2945,47 @@ class PastBillDetailScreen extends ConsumerWidget {
           ..._pastLineWidgets(context, bill),
           if (bill.receipts.isNotEmpty) ...[
             const SizedBox(height: Sp.s3h),
+            Text(
+              context.l10n.cshReceipts,
+              style: SatType.labelM(color: sc.textHi),
+            ),
+            for (final receipt in bill.receipts)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: Sp.s1),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        [
+                          receipt.label.isEmpty
+                              ? context.l10n.receiptDefault
+                              : receipt.label,
+                          if (receipt.mode == 'original')
+                            context.l10n.cshReceiptOriginal,
+                          if (receipt.mode == 'amendment')
+                            context.l10n.cshReceiptAmended,
+                        ].join(' · '),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: SatType.bodyS(color: sc.textLo),
+                      ),
+                    ),
+                    const SizedBox(width: Sp.s2),
+                    Text(
+                      '${formatIDR(receipt.total)}${receipt.status == 'cancelled' ? ' · ${context.l10n.cshReceiptCancelled}' : ''}',
+                      style: SatType.monoM(color: sc.textHi),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+          if (bill.receipts.any((r) => r.payments.isNotEmpty) ||
+              bill.unallocatedPayments.isNotEmpty) ...[
+            const SizedBox(height: Sp.s3h),
             ...bill.receipts
                 .expand((r) => r.payments)
+                .followedBy(bill.unallocatedPayments)
                 .map(
                   (p) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: Sp.s1),
@@ -2969,9 +3025,14 @@ class PastBillDetailScreen extends ConsumerWidget {
 
 /// A known subtotal is never presented with full-bill payment controls.
 class _BillReadOnly extends ConsumerWidget {
-  const _BillReadOnly({required this.bill, required this.refused});
+  const _BillReadOnly({
+    required this.bill,
+    required this.refused,
+    required this.legacy,
+  });
   final Bill bill;
   final bool refused;
+  final bool legacy;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
@@ -2979,8 +3040,8 @@ class _BillReadOnly extends ConsumerWidget {
       padding: const EdgeInsets.all(Sp.s6),
       children: [
         Text(
-          refused
-              ? l.cshVisitRefused
+          legacy || refused
+              ? l.cshLegacyPending
               : !bill.historyAvailable
               ? l.cshHistoryUnavailable
               : l.cshEmptyBill,

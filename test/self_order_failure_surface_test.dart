@@ -39,6 +39,7 @@ class _RefusingClient extends ApiClient {
     Object body, {
     Duration? timeout,
     String? idempotencyKey,
+    String? captureGrant,
   }) => throw ApiException(409, '{"code":"$code"}', code);
 
   @override
@@ -46,8 +47,7 @@ class _RefusingClient extends ApiClient {
     String path, {
     Map<String, String>? query,
     Duration? timeout,
-  }) async =>
-      <String, dynamic>{};
+  }) async => <String, dynamic>{};
 }
 
 void main() {
