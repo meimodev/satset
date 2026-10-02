@@ -79,7 +79,7 @@ Future<void> _openPicker(BuildContext context, PrintJob job) async {
     context,
     dismissible: false,
     builder: (previewContext) => ReceiptPreviewSheet(
-      title: '${job.subtitle}\n58 mm',
+      title: context.l10n.prnPreviewPrinter(job.subtitle),
       load: load,
       offline: () =>
           (job.offline?.call() ?? false) ||
