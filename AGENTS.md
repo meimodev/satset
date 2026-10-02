@@ -11,6 +11,10 @@ flutter build apk --debug # Build debug APK (slow first time)
 flutter run              # Run on connected device/emulator
 ```
 
+## CodeGraph
+
+Before using CodeGraph, check whether `.codegraph/` exists. If it is missing or CodeGraph reports that this project is not initialized, run `codegraph init -i` in the repository root, then continue the task. The user has authorized automatic initialization; do not ask again.
+
 ## Key Architecture
 - **State:** Riverpod (`flutter_riverpod`)
 - **Routing:** GoRouter with ShellRoute for 4-tab bottom nav

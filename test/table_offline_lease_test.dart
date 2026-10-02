@@ -8,15 +8,31 @@
 // that should have existed all along.
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/features/tables/table_detail_screen.dart';
 
 void main() {
-  test('terputus with no lease still orders and voids', () {
-    final a = tableAccess(
-      lockedByOther: false,
-      hasLease: false,
-      offline: true,
+  test('lost lease retries for its waiter, not another waiter', () {
+    final table = VenueTable(
+      id: 't1',
+      zoneId: 'z1',
+      status: TableStatus.pending,
+      lockedBy: 'waiter',
+      lockExpiresAt: DateTime.now().add(const Duration(minutes: 1)),
     );
+    expect(shouldRetryTableLock(table, 'waiter'), isTrue);
+    expect(shouldRetryTableLock(table, 'other'), isFalse);
+    expect(
+      shouldRetryTableLock(
+        table.copyWith(status: TableStatus.available),
+        'waiter',
+      ),
+      isFalse,
+    );
+  });
+
+  test('terputus with no lease still orders and voids', () {
+    final a = tableAccess(lockedByOther: false, hasLease: false, offline: true);
     expect(a.canQueueWrite, isTrue);
     // Everything without an intent behind it still waits.
     expect(a.readOnly, isTrue);

@@ -100,6 +100,11 @@ void _serveFailed(BuildContext context, String? code) {
   return (readOnly: lockedOut || !hasLease, canQueueWrite: !lockedOut);
 }
 
+bool shouldRetryTableLock(VenueTable? table, String userId) =>
+    table != null &&
+    table.status != TableStatus.available &&
+    !table.isLockedByOther(userId);
+
 class TableDetailScreen extends ConsumerStatefulWidget {
   final String tableId;
   const TableDetailScreen({super.key, required this.tableId});
@@ -202,6 +207,13 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       if (!ok && mounted) {
         setState(() => _ownsLock = false);
         _heartbeat?.cancel();
+        final table = ref
+            .read(tablesProvider)
+            .where((t) => t.id == _tableId)
+            .firstOrNull;
+        if (shouldRetryTableLock(table, user.id)) {
+          _scheduleAutoAcquire();
+        }
       }
     });
   }
@@ -335,11 +347,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
           .read(tablesProvider)
           .where((x) => x.id == _tableId)
           .firstOrNull;
-      if (t == null ||
-          t.status == TableStatus.available ||
-          t.isLockedByOther(actorId)) {
-        return;
-      }
+      if (!shouldRetryTableLock(t, actorId)) return;
       _scheduleAutoAcquire();
     });
 
