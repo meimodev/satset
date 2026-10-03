@@ -44,17 +44,10 @@ jobs:
       - name: Release build (runs R8)
         run: flutter build apk --release
 
-  # Goldens are renderer- and platform-sensitive (see dart_test.yaml), so they
-  # get their own pinned image rather than riding along with the Linux job.
-  #
-  # Non-blocking on purpose, for now: the committed goldens were generated on a
-  # developer Mac, not on this runner image, so the first run here may well red
-  # on sub-pixel drift that says nothing about any change. Regenerate once on
-  # this image (`flutter test --tags golden --run-skipped --update-goldens`),
-  # commit the result, then delete continue-on-error to make the lock real.
+  # Goldens are renderer-sensitive; keep their macOS image fixed. Run only the
+  # golden file so this job does not repeat the full suite in `check`.
   goldens:
-    runs-on: macos-latest
-    continue-on-error: true
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
@@ -67,7 +60,7 @@ jobs:
       - run: flutter pub get
 
       - name: Goldens
-        run: flutter test --tags golden --run-skipped
+        run: flutter test test/control_golden_test.dart --tags golden --run-skipped
 
       - name: Upload failure diffs
         if: failure()
