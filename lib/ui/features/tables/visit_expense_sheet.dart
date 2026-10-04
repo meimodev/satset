@@ -110,6 +110,29 @@ class _VisitExpenseSheetState extends ConsumerState<_VisitExpenseSheet> {
       _busy = true;
       _error = null;
     });
+    // Recheck the same live limit used by the sheet immediately before capture.
+    // A new order or void may have arrived since the button was enabled.
+    try {
+      final latest = await ref.refresh(
+        visitExpensesProvider(widget.visitId).future,
+      );
+      if (!mounted) return;
+      final blocker = _blocker(context.l10n, latest.remaining);
+      if (blocker != null) {
+        setState(() {
+          _busy = false;
+          _error = blocker;
+        });
+        return;
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = context.l10n.tableExpOffline;
+      });
+      return;
+    }
     final id = newExpenseId();
     // Client-minted online too, and the same key either way (ADR-0123): the
     // capture that goes straight to the host and the one that is queued are the

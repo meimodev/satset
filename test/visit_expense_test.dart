@@ -132,6 +132,29 @@ void main() {
   );
 
   group('the cap', () {
+    test('recounts every sent order after additions and voids', () async {
+      await line(20000, id: 'first-order');
+      await spend(15000, id: 'first-expense');
+      await line(30000, id: 'second-order');
+      expect(await visitSubtotal(db, 'v1'), 50000);
+      await spend(35000, id: 'second-expense');
+
+      await line(40000, id: 'third-order');
+      await (db.update(db.tickets)
+            ..where((ticket) => ticket.id.equals('second-order')))
+          .write(const TicketsCompanion(status: Value('voided')));
+      expect(await visitSubtotal(db, 'v1'), 60000);
+      await expectLater(
+        spend(10001, id: 'over-cap'),
+        throwsA(
+          isA<VisitExpenseException>()
+              .having((e) => e.cap, 'cap', 60000)
+              .having((e) => e.spent, 'spent', 50000),
+        ),
+      );
+      await spend(10000, id: 'remaining-room');
+    });
+
     test('is the visit subtotal, and the boundary itself is allowed', () async {
       await line(50000);
       await spend(50000);

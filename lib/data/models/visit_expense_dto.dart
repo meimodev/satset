@@ -62,9 +62,9 @@ abstract class VisitExpenseSummaryDto with _$VisitExpenseSummaryDto {
     /// The visit's subtotal of sent, non-voided lines — pre-tax, pre-discount.
     @Default(0) int cap,
 
-    /// True when this was assembled on the device rather than answered by the
-    /// host — the cap came from the cached bill and [total] counts only what
-    /// this handset has queued (ADR-0130).
+    /// True when the host is unavailable or this device has captured visit
+    /// actions the host has not yet seen. The cap then follows local order
+    /// lines and the total may include locally queued expenses (ADR-0130).
     ///
     /// It is **advisory**: an expense another device already synced is not in
     /// it, so the number can read generously. The server re-checks the cap

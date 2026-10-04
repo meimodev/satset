@@ -7,10 +7,12 @@ import 'package:uuid/uuid.dart';
 import 'package:satset/core/log/sat_log.dart';
 import 'package:satset/data/models/visit_expense_dto.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
+import 'package:satset/data/repositories/tickets_repository.dart';
 import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/send_queue_service.dart';
 import 'package:satset/data/services/settlement_sync.dart';
 import 'package:satset/domain/models/settlement_event.dart';
+import 'package:satset/domain/models/ticket.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/data/services/ws_client.dart';
 
@@ -188,14 +190,34 @@ final expenseCategoriesRepositoryProvider =
 /// place for the cap's two numbers to be wrong. The cap and the running total
 /// come back with the list, from the one place that computes them.
 ///
-/// Falls back to the device when the host cannot be reached: the cap comes from
-/// the **cached bill** (ADR-0123's prefetch) and the running total counts what
+/// Falls back to the device when the host cannot be reached: the cap follows
+/// the visible order lines (or the cached bill until they load), and the total
+/// counts what
 /// this handset has queued. If there is no cached bill this **throws**, and the
 /// sheet refuses the capture — an uncapped offline capture is a cap you defeat
 /// by turning off Wi-Fi, which is the one thing a fraud control cannot survive
 /// (ADR-0130).
+int visitExpenseCapFromTickets(Iterable<Ticket> tickets) => tickets
+    .where(
+      (t) => t.status != TicketStatus.draft && t.status != TicketStatus.voided,
+    )
+    .fold<int>(0, (sum, t) => sum + t.price * t.qty);
+
+final visitExpenseLocalCapProvider =
+    Provider.family<({bool hasTickets, int cap}), String>((ref, visitId) {
+      final tickets = ref.watch(ticketsForVisitProvider(visitId));
+      return (
+        hasTickets: tickets.isNotEmpty,
+        cap: visitExpenseCapFromTickets(tickets),
+      );
+    });
+
 final visitExpensesProvider =
     FutureProvider.family<VisitExpenseSummaryDto, String>((ref, visitId) async {
+      // The same visible lines drive table detail, including orders captured on
+      // this device before they reach the host. Watching them keeps an open
+      // expense sheet current after every order or void.
+      final local = ref.watch(visitExpenseLocalCapProvider(visitId));
       final subscription = ref.read(wsClientProvider).events.listen((event) {
         if (event.type == WsEventTypes.connected ||
             (event.type == WsEventTypes.visitExpenseRecorded &&
@@ -204,15 +226,67 @@ final visitExpensesProvider =
         }
       });
       ref.onDispose(subscription.cancel);
+      final localCap = local.hasTickets ? local.cap : null;
+      final pendingEvents = ref
+          .watch(journalViewProvider)
+          .events
+          .where((event) => event.visitId == visitId)
+          .toList();
+      final queuedExpenses = ref
+          .watch(sendQueueProvider)
+          .where(
+            (intent) =>
+                intent.kind == SendIntentKind.tableExpense &&
+                intent.payload['visitId'] == visitId,
+          )
+          .toList();
+      final hasCapturedOrderChange = pendingEvents.any(
+        (event) =>
+            event.kind == SettlementEventKind.submitOrder ||
+            event.kind == SettlementEventKind.voidTicket,
+      );
+      if (ref.read(wsConnStateProvider) == WsConnState.closed) {
+        try {
+          return await offlineVisitExpenseSummary(
+            ref,
+            visitId,
+            localCap: localCap,
+          );
+        } on NoCachedBill {
+          // A fresh device may reach the API before its socket connects.
+        }
+      }
       try {
         final raw =
             await ref
                     .read(apiClientProvider)
                     .getJson('/visits/$visitId/expenses')
                 as Map;
-        return VisitExpenseSummaryDto.fromJson(raw.cast<String, dynamic>());
+        final summary = VisitExpenseSummaryDto.fromJson(
+          raw.cast<String, dynamic>(),
+        );
+        final recordedIds = summary.expenses
+            .map((expense) => expense.id)
+            .toSet();
+        final pendingAmounts = <String, int>{
+          for (final event in pendingEvents)
+            if (event.kind == SettlementEventKind.tableExpense)
+              event.id: event.intArg('amount'),
+          for (final intent in queuedExpenses)
+            intent.id: (intent.payload['amount'] as num?)?.toInt() ?? 0,
+        };
+        final pendingTotal = pendingAmounts.entries
+            .where((entry) => !recordedIds.contains(entry.key))
+            .fold<int>(0, (sum, entry) => sum + entry.value);
+        return summary.copyWith(
+          cap: hasCapturedOrderChange ? (localCap ?? summary.cap) : summary.cap,
+          total: summary.total + pendingTotal,
+          offline:
+              pendingEvents.any((event) => !event.kind.isMemberScope) ||
+              queuedExpenses.isNotEmpty,
+        );
       } catch (_) {
-        return offlineVisitExpenseSummary(ref, visitId);
+        return offlineVisitExpenseSummary(ref, visitId, localCap: localCap);
       }
     });
 
@@ -223,12 +297,14 @@ final visitExpensesProvider =
 /// or, worse, a missing cap that reads as "anything may be".
 Future<VisitExpenseSummaryDto> offlineVisitExpenseSummary(
   Ref ref,
-  String visitId,
-) async {
+  String visitId, {
+  int? localCap,
+}) async {
   final journal = ref.read(settlementJournalProvider.notifier);
   final bill = await journal.cachedBill(visitId);
-  final cap = (bill?['subtotal'] as num?)?.toInt();
-  if (cap == null) throw const NoCachedBill();
+  final cachedCap = (bill?['subtotal'] as num?)?.toInt();
+  if (cachedCap == null) throw const NoCachedBill();
+  final cap = localCap ?? cachedCap;
   final queued = ref
       .read(sendQueueProvider)
       .where(
