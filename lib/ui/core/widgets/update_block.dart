@@ -37,8 +37,7 @@ class UpdateBlock extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final blocked =
-        ref.watch(updateVerdictProvider) == UpdateVerdict.blocked;
+    final blocked = ref.watch(updateVerdictProvider) == UpdateVerdict.blocked;
     return Stack(
       children: [
         child,
@@ -110,19 +109,63 @@ class _BlockBody extends ConsumerWidget {
   }
 }
 
-class _InstallAction extends ConsumerWidget {
+class _InstallAction extends ConsumerStatefulWidget {
   const _InstallAction({required this.install});
 
   final UpdateInstall install;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_InstallAction> createState() => _InstallActionState();
+}
+
+class _InstallActionState extends ConsumerState<_InstallAction> {
+  bool _confirmingHost = false;
+
+  @override
+  Widget build(BuildContext context) {
     final sc = context.sat;
+    final install = widget.install;
+    // This block is above the router, so it has no Navigator for a dialog.
+    if (_confirmingHost) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.updateHostWarnTitle,
+            style: SatType.h3(color: sc.textHi),
+          ),
+          const SizedBox(height: Sp.s2),
+          Text(
+            hostUpdateWarningBody(context, ref),
+            style: SatType.bodyM(color: sc.textDim),
+          ),
+          const SizedBox(height: Sp.s3),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              SatButton.ghost(
+                label: context.l10n.cancel,
+                onTap: () => setState(() => _confirmingHost = false),
+              ),
+              const SizedBox(width: Sp.s2),
+              SatButton.primary(
+                label: context.l10n.updateAction,
+                onTap: () {
+                  setState(() => _confirmingHost = false);
+                  startUpdate(context, ref, hostConfirmed: true);
+                },
+              ),
+            ],
+          ),
+        ],
+      );
+    }
     // A failure here is a dead end unless it offers a way back — this screen is
     // the only thing the operator can reach.
     final note = switch (install) {
-      UpdateDownloading(:final percent) =>
-        context.l10n.updateDownloading(percent ?? 0),
+      UpdateDownloading(:final percent) => context.l10n.updateDownloading(
+        percent ?? 0,
+      ),
       UpdateOpening() => context.l10n.updateInstalling,
       UpdateFailed() => context.l10n.updateFailed,
       UpdateNeedsPermission() => context.l10n.updatePermissionNeeded,
@@ -142,7 +185,15 @@ class _InstallAction extends ConsumerWidget {
               ? context.l10n.updateRetry
               : context.l10n.updateAction,
           icon: Icons.download_rounded,
-          onTap: busy ? null : () => startUpdate(context, ref),
+          onTap: busy
+              ? null
+              : () {
+                  if (ref.read(isHostDeviceProvider)) {
+                    setState(() => _confirmingHost = true);
+                  } else {
+                    startUpdate(context, ref);
+                  }
+                },
         ),
       ],
     );

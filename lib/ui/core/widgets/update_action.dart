@@ -9,33 +9,32 @@ import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 
-/// The one way into [AppUpdateService.downloadAndInstall] from the UI.
-///
-/// Three surfaces start an update — the shell banner, the block screen and the
-/// `/me` version line (ADR-0130, ADR-0131) — and exactly one of them must not
-/// be able to forget the warning, so none of them calls the service directly.
-///
-/// **A host install takes the venue down.** Installing replaces the process:
-/// the embedded server stops and every client loses its host mid-service. This
-/// mirrors the admin sign-out of ADR-0015 — warn, naming the live table count,
-/// then proceed. Refusing while tables are live would leave a venue that never
-/// closes one unable to comply with a floor, which is the case a floor exists
-/// for. A client install takes down only itself and warns about nothing.
-Future<void> startUpdate(BuildContext context, WidgetRef ref) async {
-  if (ref.read(isHostDeviceProvider)) {
-    final live = ref
-        .read(tablesProvider)
-        .where((t) => t.status != TableStatus.available)
-        .length;
+/// Shared host warning for the route dialog and the blocked screen.
+String hostUpdateWarningBody(BuildContext context, WidgetRef ref) {
+  final live = ref
+      .read(tablesProvider)
+      .where((t) => t.status != TableStatus.available)
+      .length;
+  return live > 0
+      ? context.l10n.updateHostWarnBodyLive(live)
+      : context.l10n.updateHostWarnBody;
+}
+
+/// Starts an update from the shell banner, blocked screen or `/me` version line.
+/// A host install stops the embedded server, so the host must confirm first.
+/// The blocked screen sits above Navigator and shows that confirmation inline;
+/// it passes [hostConfirmed] after the operator accepts the warning.
+Future<void> startUpdate(
+  BuildContext context,
+  WidgetRef ref, {
+  bool hostConfirmed = false,
+}) async {
+  if (ref.read(isHostDeviceProvider) && !hostConfirmed) {
     final ok = await showSatDialog<bool>(
       context,
       builder: (ctx) => AlertDialog(
         title: Text(context.l10n.updateHostWarnTitle),
-        content: Text(
-          live > 0
-              ? context.l10n.updateHostWarnBodyLive(live)
-              : context.l10n.updateHostWarnBody,
-        ),
+        content: Text(hostUpdateWarningBody(context, ref)),
         actions: [
           SatButton.ghost(
             label: context.l10n.cancel,
