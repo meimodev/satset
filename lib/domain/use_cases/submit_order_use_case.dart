@@ -8,7 +8,8 @@ import 'package:satset/domain/models/course.dart';
 
 class SubmittedOrder {
   final List<String> ticketIds;
-  const SubmittedOrder(this.ticketIds);
+  final List<RejectedLineDto> rejected;
+  const SubmittedOrder(this.ticketIds, {this.rejected = const []});
 }
 
 /// Validates cart, generates an idempotency key, and forwards to the tickets
@@ -26,18 +27,21 @@ class SubmitOrderUseCase {
     if (cart.isEmpty) {
       throw ArgumentError('cart is empty');
     }
-    final ids = await _tickets.submitOrder(
+    final result = await _tickets.submitOrderDetailed(
       tableId: tableId,
       idempotencyKey: const Uuid().v4(),
       lines: _lines(cart),
       actorId: actorId,
     );
-    return SubmittedOrder(ids);
+    return SubmittedOrder(result.ticketIds, rejected: result.rejected);
   }
 
   /// Submit (or append to) a table-less takeaway (Bawa pulang) order. Returns
   /// the created ticket ids + the takeaway visit id. See ADR-0026.
-  Future<({List<String> ticketIds, String visitId})> takeaway({
+  Future<
+    ({List<String> ticketIds, String visitId, List<RejectedLineDto> rejected})
+  >
+  takeaway({
     required List<CartItem> cart,
     String guestName = '',
     String channel = 'bungkus',
@@ -62,6 +66,10 @@ class SubmitOrderUseCase {
   List<CartLineDto> _lines(List<CartItem> cart) => [
     for (final c in cart)
       CartLineDto(
+        clientLineId: c.id,
+        stockOverrideReason: c.stockOverrideReason.isEmpty
+            ? null
+            : c.stockOverrideReason,
         itemId: c.itemId,
         name: c.name,
         variantId: c.variantId,

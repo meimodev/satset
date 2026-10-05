@@ -37,6 +37,9 @@ class WsEventTypes {
   static const zoneUpdated = 'zone.updated';
   static const zoneDeleted = 'zone.deleted';
   static const menuUpdated = 'menu.updated';
+
+  /// Lightweight invalidation for active carts; does not refetch /menu.
+  static const stockChanged = 'stock.changed';
   static const presenceChanged = 'presence.changed';
   static const staffCreated = 'staff.created';
   static const staffUpdated = 'staff.updated';

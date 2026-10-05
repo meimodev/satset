@@ -130,6 +130,13 @@ Derived habis is computed at **three granularities** — item, [[Variant (variat
 
 Code identifiers use **`soldOut`** throughout: `MenuItem.isSoldOut`, `autoSoldOut`, `soldOutVariantIds`, `soldOutOptionIds`, `MenuAdminCounts.soldOut`. The staff availability toggle is gated by **`Capability.markSoldOut`**. The earlier "86" naming (`isEightySixed`, `Capability.toggle86`) was fully renamed — no `86`/`eightySix` identifier remains (migration v21). **Migration v36 dropped `stockCount` / `autoSoldOutAtZero`** — the per-item counter that used to drive the auto-flag — converting existing counts into `pcs` bahan with 1-pcs recipes. _Avoid_: reintroducing a per-item stock number alongside bahan (two answers to "how many left" will disagree by the end of the first service).
 
+### Porsi tersedia (Available portions)
+**ID · EN** — Porsi tersedia · Available portions.
+
+The additional portions of one menu item's exact variant and modifier configuration that current [[Bahan (Ingredient)|ingredient]] stock can cover after the other unsent lines in the same cart are considered. It is an estimate, **not a reservation**: another order can consume the same ingredients before this order is sent. The host checks again at send, when stock is deducted. An item with no [[Resep (Recipe)|recipe]] has no stock-based portion limit; manual [[Habis / Sold out (menu item out of stock)|Habis]] still applies. See [ADR-0145](docs/adr/0145-a-cart-previews-stock-send-claims-it.md).
+
+_Avoid_: “menu stock” as a separate balance; promising that an unsent cart holds portions.
+
 ### Menu category
 **ID · EN** — Kategori · Category.
 

@@ -84,6 +84,9 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
 
   /// Re-broadcast the menu only when a derived availability flag flipped.
   Future<void> broadcastIfFlipped() async {
+    // A portion limit can fall from three to two without a sold-out flip.
+    // Active carts invalidate their small preview on every stock write.
+    hub.broadcast(WsEventTypes.stockChanged, const {});
     if (await stockFlags.refreshAndDetectFlip(db)) {
       hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'stock'});
     }
@@ -337,10 +340,7 @@ Router stockRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     // One lookup for the whole page, and only for the pre-v70 headers that
     // carry no frozen name.
     final staff = await staffNamesFor(db, [
-      for (final c in [...rows, ?open]) ...[
-        c.userId,
-        c.closedBy,
-      ],
+      for (final c in [...rows, ?open]) ...[c.userId, c.closedBy],
     ]);
     final counts = <Map<String, dynamic>>[];
     for (final c in rows) {

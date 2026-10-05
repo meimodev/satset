@@ -27,6 +27,7 @@ String auditTypeLabel(AppL10n l10n, AuditType t) => switch (t) {
   AuditType.debtMovement => l10n.auditTypeDebtMovement,
   AuditType.stockCounted => l10n.auditTypeStockCounted,
   AuditType.stockWasted => l10n.auditTypeStockWasted,
+  AuditType.stockOverridden => l10n.auditTypeStockOverridden,
   AuditType.openItemSold => l10n.auditTypeOpenItemSold,
   AuditType.venueDay => l10n.auditTypeVenueDay,
   AuditType.selfOrder => l10n.auditTypeSelfOrder,

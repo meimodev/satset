@@ -59,6 +59,9 @@ enum AuditType {
   /// is exactly why it is worth a row naming who did it.
   stockWasted,
 
+  /// A holder of overrideStock deliberately sold through an ingredient shortfall.
+  stockOverridden,
+
   /// **[[Item bebas]]** — a line sold with a name and a price typed at the
   /// till, with no menu row behind it. Its own type because it is the one sale
   /// nothing else in the system can explain afterwards: no menu id, no cost, no
@@ -77,6 +80,7 @@ enum AuditType {
   /// all of them, for the reason [cashMovement] is one: the reader auditing
   /// self-order wants the feature's whole story in one filter, not four.
   selfOrder,
+
   /// A PIN that opened nothing (ADR-0112). Its own type rather than a kind
   /// under the staff ones, because it is the only row in the log written by
   /// somebody the venue could not identify — a reader asking "is anybody
@@ -144,6 +148,7 @@ bool isAdminAuditType(AuditType t) {
     case AuditType.stockCounted:
     // Waste is read by whoever runs the pantry, same as a count.
     case AuditType.stockWasted:
+    case AuditType.stockOverridden:
     // An open item is a sale, and it is read by whoever reads the money.
     case AuditType.openItemSold:
     // Opening and closing the shop is the owner's ritual, and the person who

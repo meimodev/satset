@@ -159,6 +159,10 @@ enum AuditKind {
   /// on the day the food was actually sold.
   stockSoldDark,
 
+  /// An authorized live sale through an ingredient shortfall. Params:
+  /// `{item}`, `{qty}`, `{ingredients}`; the free-text reason is mandatory.
+  stockOverridden,
+
   /// **[[Item bebas]]** — one line sold off-menu. Params: `{name}` (what the
   /// seller typed), `{price}` (pre-formatted rupiah, unit price × qty). The
   /// *why* rides `reason`, which the route requires: an unexplained arbitrary

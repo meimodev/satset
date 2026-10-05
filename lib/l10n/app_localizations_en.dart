@@ -320,6 +320,9 @@ class AppL10nEn extends AppL10n {
   String get auditTypeStockWasted => 'Waste';
 
   @override
+  String get auditTypeStockOverridden => 'Stock override';
+
+  @override
   String get auditTypeOpenItemSold => 'Open item';
 
   @override
@@ -2624,6 +2627,11 @@ class AppL10nEn extends AppL10n {
   @override
   String auditStockSoldDark(String item, String qty, String ingredients) {
     return 'Sold while offline — $item ×$qty, short on: $ingredients';
+  }
+
+  @override
+  String auditStockOverridden(String item, String qty, String ingredients) {
+    return 'Stock overridden — $item ×$qty, short on: $ingredients';
   }
 
   @override
@@ -5486,6 +5494,42 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get mnuEstimate => 'Estimate';
+
+  @override
+  String mnuAvailablePortions(int count) {
+    return 'Only $count can be made now';
+  }
+
+  @override
+  String get mnuStockStale =>
+      'Stock may be outdated. Orders sent offline are captured until reconnect.';
+
+  @override
+  String get mnuStockChecking => 'Checking current stock…';
+
+  @override
+  String get mnuSoldOutNow => 'Sold out now';
+
+  @override
+  String get mnuMenuChanged => 'Menu options changed. Choose this item again.';
+
+  @override
+  String mnuStockShort(String ingredients) {
+    return 'Not enough: $ingredients';
+  }
+
+  @override
+  String get mnuAdjustBeforeSend => 'Adjust unavailable items before sending.';
+
+  @override
+  String get mnuOverrideStock => 'Override stock';
+
+  @override
+  String get mnuOverrideReason => 'Reason for stock override';
+
+  @override
+  String get mnuPartialSend =>
+      'Some items were not sent. Adjust the remaining items and try again.';
 
   @override
   String mnuReviewSendTo(String target) {

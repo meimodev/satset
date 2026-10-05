@@ -23,6 +23,8 @@ Map<String, dynamic> _$CartModifierDtoToJson(_CartModifierDto instance) =>
     };
 
 _CartLineDto _$CartLineDtoFromJson(Map<String, dynamic> json) => _CartLineDto(
+  clientLineId: json['clientLineId'] as String?,
+  stockOverrideReason: json['stockOverrideReason'] as String?,
   itemId: json['itemId'] as String,
   name: json['name'] as String,
   variantId: json['variantId'] as String,
@@ -39,6 +41,8 @@ _CartLineDto _$CartLineDtoFromJson(Map<String, dynamic> json) => _CartLineDto(
 
 Map<String, dynamic> _$CartLineDtoToJson(_CartLineDto instance) =>
     <String, dynamic>{
+      'clientLineId': instance.clientLineId,
+      'stockOverrideReason': instance.stockOverrideReason,
       'itemId': instance.itemId,
       'name': instance.name,
       'variantId': instance.variantId,
@@ -101,6 +105,8 @@ Map<String, dynamic> _$SubmitOrderResponseDtoToJson(
 
 _RejectedLineDto _$RejectedLineDtoFromJson(Map<String, dynamic> json) =>
     _RejectedLineDto(
+      clientLineId: json['clientLineId'] as String?,
+      reason: json['reason'] as String? ?? 'ingredients',
       itemId: json['itemId'] as String,
       name: json['name'] as String? ?? '',
       variantName: json['variantName'] as String? ?? '',
@@ -113,6 +119,8 @@ _RejectedLineDto _$RejectedLineDtoFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$RejectedLineDtoToJson(_RejectedLineDto instance) =>
     <String, dynamic>{
+      'clientLineId': instance.clientLineId,
+      'reason': instance.reason,
       'itemId': instance.itemId,
       'name': instance.name,
       'variantName': instance.variantName,

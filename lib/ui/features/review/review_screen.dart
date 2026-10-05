@@ -27,9 +27,11 @@ import 'package:satset/ui/features/cashier/cashier_bill_screen.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/ui/features/menu/cart_line_actions.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
+import 'package:satset/ui/features/menu/view_models/cart_availability.dart';
 import 'package:satset/ui/features/review/view_models/review_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/domain/models/venue_table.dart';
 import 'package:satset/ui/core/widgets/sat_app_bar.dart';
 import 'package:satset/ui/core/widgets/satset_top_bar.dart';
@@ -42,6 +44,11 @@ import 'package:satset/core/localization/locale_view_model.dart';
 /// Height the floating send bar covers, plus the gap above it. Stacks on
 /// `shellInset`, which clears the tab bar when there is one.
 const double _sendBarClearance = 100;
+
+/// Covers the availability request as well as order creation.
+final _reviewSendLockProvider = StateProvider.family<bool, String>(
+  (ref, cartKey) => false,
+);
 
 class ReviewScreen extends ConsumerWidget {
   final String tableId;
@@ -82,6 +89,14 @@ class ReviewScreen extends ConsumerWidget {
         ? '/tables'
         : '/table/$tableId';
     final reviewState = ref.watch(reviewViewModelProvider);
+    final sendLocked = ref.watch(_reviewSendLockProvider(tableId));
+    final availability = ref
+        .watch(cartAvailabilityProvider(tableId))
+        .valueOrNull;
+    final stockBlocked = availability?.blocks(cart) ?? false;
+    final stockChecking =
+        ref.watch(wsConnStateProvider) == WsConnState.open &&
+        (availability == null || availability.stale);
     ref.listen<ReviewState>(reviewViewModelProvider, (prev, next) {
       if (next.error != null && next.error != prev?.error) {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
@@ -283,197 +298,390 @@ class ReviewScreen extends ConsumerWidget {
             left: 16 + l.padding.left,
             right: 16 + l.padding.right,
             bottom: Sp.s4 + context.shellInset + l.padding.bottom,
-            child: SizedBox(
-              width: double.infinity,
-              child: SatButton.primary(
-                label: reviewState.busy
-                    ? context.l10n.revSending
-                    : _isTakeaway
-                    ? context.l10n.revAddToOrder
-                    : tableless || venue.bypassKds
-                    ? context.l10n.revSendOrder
-                    : context.l10n.revSendTo(sendTarget),
-                icon: Icons.auto_awesome,
-                busy: reviewState.busy,
-                size: SatButtonSize.lg,
-                trailingValue: formatIDR(subtotal),
-                onTap: cart.isEmpty || reviewState.busy
-                    ? null
-                    : () async {
-                        final vm = ref.read(reviewViewModelProvider.notifier);
-                        final user = ref.read(authStateProvider).user;
-                        final actorId = user?.id;
-                        final stations = <String>{
-                          if (kitchenCt > 0) 'Dapur',
-                          if (barCt > 0) 'Bar',
-                        }.join(',');
-
-                        // Takeaway add-items: append to the existing visit.
-                        if (_isTakeaway) {
-                          final vid = await vm.submitTakeaway(
-                            cart,
-                            existingVisitId: takeawayVisitId,
-                            actorId: actorId,
-                          );
-                          if (vid == null) return;
-                          ref.read(cartProvider(tableId).notifier).clear();
-                          if (context.mounted) {
-                            context.go('/takeaway/$takeawayVisitId');
-                          }
-                          if (context.mounted) {
-                            await _settleAfterSend(context, ref, vid);
-                          }
-                          return;
-                        }
-
-                        // Table-less menu-first: choose dine-in (assign a table)
-                        // or Bawa pulang (takeaway). See ADR-0026.
-                        if (tableless) {
-                          final choice = await _chooseCommit(context);
-                          if (choice == null || !context.mounted) return;
-                          if (choice == _Commit.takeaway) {
-                            final ta = await askTakeawayDetails(
-                              context,
-                              nameOptional: ref
-                                  .read(venueSettingsProvider)
-                                  .counterOn(counterAnonTakeaway),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (availability?.stale == true ||
+                    stockBlocked ||
+                    stockChecking)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: Sp.s2),
+                    child: Text(
+                      availability?.stale == true
+                          ? context.l10n.mnuStockStale
+                          : stockBlocked
+                          ? context.l10n.mnuAdjustBeforeSend
+                          : context.l10n.mnuStockChecking,
+                      textAlign: TextAlign.center,
+                      style: SatType.bodyS(color: sc.urgent),
+                    ),
+                  ),
+                SizedBox(
+                  width: double.infinity,
+                  child: SatButton.primary(
+                    label: reviewState.busy
+                        ? context.l10n.revSending
+                        : _isTakeaway
+                        ? context.l10n.revAddToOrder
+                        : tableless || venue.bypassKds
+                        ? context.l10n.revSendOrder
+                        : context.l10n.revSendTo(sendTarget),
+                    icon: Icons.auto_awesome,
+                    busy: reviewState.busy || sendLocked,
+                    size: SatButtonSize.lg,
+                    trailingValue: formatIDR(subtotal),
+                    onTap:
+                        cart.isEmpty ||
+                            reviewState.busy ||
+                            sendLocked ||
+                            stockBlocked ||
+                            stockChecking
+                        ? null
+                        : () async {
+                            final lock = ref.read(
+                              _reviewSendLockProvider(tableId).notifier,
                             );
-                            if (ta == null || !context.mounted) return;
-                            final vid = await vm.submitTakeaway(
-                              cart,
-                              guestName: ta.guestName,
-                              channel: ta.channel,
-                              prepaid: ta.prepaid,
-                              actorId: actorId,
-                            );
-                            if (vid == null || vid.isEmpty) return;
-                            ref.read(cartProvider(tableId).notifier).clear();
-                            if (context.mounted) context.go('/takeaway/$vid');
-                            if (context.mounted) {
-                              await _settleAfterSend(context, ref, vid);
-                            }
-                            return;
-                          }
-                          // Dine-in: pick the destination table, seat it, then
-                          // submit the draft cart against it.
-                          final pick = await showAssignTableSheet(
-                            context: context,
-                          );
-                          if (pick == null || !context.mounted) return;
-                          try {
-                            await ref
-                                .read(tablesProvider.notifier)
-                                .seat(
-                                  pick.tableId,
-                                  pax: pick.pax,
-                                  guestName: pick.guestName,
-                                  userId: actorId,
-                                  userName: user?.name,
-                                  acquireLock: true,
-                                );
-                          } on ApiException catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    e.code == 'already_seated'
-                                        ? context.l10n.revTableTaken
-                                        : context.l10n.revSeatFailed(
-                                            '${e.code ?? e.statusCode}',
+                            if (lock.state) return;
+                            lock.state = true;
+                            try {
+                              if (!identical(
+                                ref.read(cartProvider(tableId)),
+                                cart,
+                              )) {
+                                return;
+                              }
+                              if (ref.read(wsConnStateProvider) ==
+                                  WsConnState.open) {
+                                try {
+                                  final available = await fetchCartAvailability(
+                                    ref.read(apiClientProvider),
+                                    cart,
+                                  );
+                                  if (available.blocks(cart)) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.maybeOf(
+                                        context,
+                                      )?.showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            context.l10n.mnuAdjustBeforeSend,
                                           ),
-                                  ),
-                                ),
+                                        ),
+                                      );
+                                    }
+                                    return;
+                                  }
+                                } catch (_) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.maybeOf(
+                                      context,
+                                    )?.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          context.l10n.mnuStockChecking,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return;
+                                }
+                              }
+                              if (!context.mounted ||
+                                  !identical(
+                                    ref.read(cartProvider(tableId)),
+                                    cart,
+                                  )) {
+                                return;
+                              }
+                              if (!context.mounted) return;
+                              final vm = ref.read(
+                                reviewViewModelProvider.notifier,
                               );
-                            }
-                            return;
-                          }
-                          await vm.submit(pick.tableId, cart, actorId: actorId);
-                          final s = ref.read(reviewViewModelProvider);
-                          if (s.error != null || s.submittedTicketIds == null) {
-                            return;
-                          }
-                          // With no prep queue the line is born `ready`, and
-                          // `submitOrder` already flipped the table with it
-                          // (ADR-0115) — posting `pending` here would overwrite
-                          // that and hide finished food behind "Pesanan masuk".
-                          if (!venue.bypassKds) {
-                            ref
-                                .read(tablesProvider.notifier)
-                                .markPending(pick.tableId, userId: actorId);
-                          }
-                          ref.read(cartProvider(tableId).notifier).clear();
-                          final willSettle = shouldSettleAfterSend(
-                            visitId: _visitOf(ref, pick.tableId),
-                            settleOn: ref
-                                .read(venueSettingsProvider)
-                                .counterOn(counterSettleAfterSend),
-                            canSettle: ref
-                                .read(authStateProvider)
-                                .has(Capability.settleBill),
-                          );
-                          if (context.mounted) {
-                            if (willSettle) {
-                              context.go('/table/${pick.tableId}');
-                            } else {
-                              context.go(
-                                '/table/${pick.tableId}/sent?stations=$stations',
-                              );
-                            }
-                          }
-                          if (context.mounted && willSettle) {
-                            await _settleAfterSend(
-                              context,
-                              ref,
-                              _visitOf(ref, pick.tableId),
-                            );
-                          }
-                          return;
-                        }
+                              final user = ref.read(authStateProvider).user;
+                              final actorId = user?.id;
+                              final stations = <String>{
+                                if (kitchenCt > 0) 'Dapur',
+                                if (barCt > 0) 'Bar',
+                              }.join(',');
 
-                        await vm.submit(tableId, cart, actorId: actorId);
-                        final s = ref.read(reviewViewModelProvider);
-                        if (s.error != null || s.submittedTicketIds == null) {
-                          return;
-                        }
-                        if (!venue.bypassKds) {
-                          ref
-                              .read(tablesProvider.notifier)
-                              .markPending(tableId, userId: actorId);
-                        }
-                        ref.read(cartProvider(tableId).notifier).clear();
-                        final willSettle = shouldSettleAfterSend(
-                          visitId: _visitOf(ref, tableId),
-                          settleOn: ref
-                              .read(venueSettingsProvider)
-                              .counterOn(counterSettleAfterSend),
-                          canSettle: ref
-                              .read(authStateProvider)
-                              .has(Capability.settleBill),
-                        );
-                        if (context.mounted) {
-                          if (willSettle) {
-                            context.go('/table/$tableId');
-                          } else {
-                            context.go(
-                              '/table/$tableId/sent?stations=$stations',
-                            );
-                          }
-                        }
-                        if (context.mounted && willSettle) {
-                          await _settleAfterSend(
-                            context,
-                            ref,
-                            _visitOf(ref, tableId),
-                          );
-                        }
-                      },
-              ),
+                              // Takeaway add-items: append to the existing visit.
+                              if (_isTakeaway) {
+                                final vid = await vm.submitTakeaway(
+                                  cart,
+                                  existingVisitId: takeawayVisitId,
+                                  actorId: actorId,
+                                );
+                                if (vid == null || !context.mounted) return;
+                                if (_retainRejected(
+                                  context,
+                                  ref,
+                                  tableId,
+                                  cart,
+                                  ref.read(reviewViewModelProvider),
+                                )) {
+                                  return;
+                                }
+                                ref
+                                    .read(cartProvider(tableId).notifier)
+                                    .clear();
+                                if (context.mounted) {
+                                  context.go('/takeaway/$takeawayVisitId');
+                                }
+                                if (context.mounted) {
+                                  await _settleAfterSend(context, ref, vid);
+                                }
+                                return;
+                              }
+
+                              // Table-less menu-first: choose dine-in (assign a table)
+                              // or Bawa pulang (takeaway). See ADR-0026.
+                              if (tableless) {
+                                final choice = await _chooseCommit(context);
+                                if (choice == null || !context.mounted) return;
+                                if (choice == _Commit.takeaway) {
+                                  final ta = await askTakeawayDetails(
+                                    context,
+                                    nameOptional: ref
+                                        .read(venueSettingsProvider)
+                                        .counterOn(counterAnonTakeaway),
+                                  );
+                                  if (ta == null || !context.mounted) return;
+                                  final vid = await vm.submitTakeaway(
+                                    cart,
+                                    guestName: ta.guestName,
+                                    channel: ta.channel,
+                                    prepaid: ta.prepaid,
+                                    actorId: actorId,
+                                  );
+                                  if (vid == null ||
+                                      vid.isEmpty ||
+                                      !context.mounted) {
+                                    return;
+                                  }
+                                  if (_retainRejected(
+                                    context,
+                                    ref,
+                                    tableId,
+                                    cart,
+                                    ref.read(reviewViewModelProvider),
+                                    destinationKey: vid,
+                                  )) {
+                                    context.go('/takeaway/$vid/review');
+                                    return;
+                                  }
+                                  ref
+                                      .read(cartProvider(tableId).notifier)
+                                      .clear();
+                                  if (context.mounted) {
+                                    context.go('/takeaway/$vid');
+                                  }
+                                  if (context.mounted) {
+                                    await _settleAfterSend(context, ref, vid);
+                                  }
+                                  return;
+                                }
+                                // Dine-in: pick the destination table, seat it, then
+                                // submit the draft cart against it.
+                                final pick = await showAssignTableSheet(
+                                  context: context,
+                                );
+                                if (pick == null || !context.mounted) return;
+                                try {
+                                  await ref
+                                      .read(tablesProvider.notifier)
+                                      .seat(
+                                        pick.tableId,
+                                        pax: pick.pax,
+                                        guestName: pick.guestName,
+                                        userId: actorId,
+                                        userName: user?.name,
+                                        acquireLock: true,
+                                      );
+                                } on ApiException catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.maybeOf(
+                                      context,
+                                    )?.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          e.code == 'already_seated'
+                                              ? context.l10n.revTableTaken
+                                              : context.l10n.revSeatFailed(
+                                                  '${e.code ?? e.statusCode}',
+                                                ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return;
+                                }
+                                await vm.submit(
+                                  pick.tableId,
+                                  cart,
+                                  actorId: actorId,
+                                );
+                                final s = ref.read(reviewViewModelProvider);
+                                if (s.error != null ||
+                                    s.submittedTicketIds == null) {
+                                  return;
+                                }
+                                if (!context.mounted) return;
+                                // With no prep queue the line is born `ready`, and
+                                // `submitOrder` already flipped the table with it
+                                // (ADR-0115) — posting `pending` here would overwrite
+                                // that and hide finished food behind "Pesanan masuk".
+                                if (!venue.bypassKds &&
+                                    s.submittedTicketIds!.isNotEmpty) {
+                                  ref
+                                      .read(tablesProvider.notifier)
+                                      .markPending(
+                                        pick.tableId,
+                                        userId: actorId,
+                                      );
+                                }
+                                if (_retainRejected(
+                                  context,
+                                  ref,
+                                  tableId,
+                                  cart,
+                                  s,
+                                  destinationKey: pick.tableId,
+                                )) {
+                                  context.go('/table/${pick.tableId}/review');
+                                  return;
+                                }
+                                ref
+                                    .read(cartProvider(tableId).notifier)
+                                    .clear();
+                                final willSettle = shouldSettleAfterSend(
+                                  visitId: _visitOf(ref, pick.tableId),
+                                  settleOn: ref
+                                      .read(venueSettingsProvider)
+                                      .counterOn(counterSettleAfterSend),
+                                  canSettle: ref
+                                      .read(authStateProvider)
+                                      .has(Capability.settleBill),
+                                );
+                                if (context.mounted) {
+                                  if (willSettle) {
+                                    context.go('/table/${pick.tableId}');
+                                  } else {
+                                    context.go(
+                                      '/table/${pick.tableId}/sent?stations=$stations',
+                                    );
+                                  }
+                                }
+                                if (context.mounted && willSettle) {
+                                  await _settleAfterSend(
+                                    context,
+                                    ref,
+                                    _visitOf(ref, pick.tableId),
+                                  );
+                                }
+                                return;
+                              }
+
+                              await vm.submit(tableId, cart, actorId: actorId);
+                              final s = ref.read(reviewViewModelProvider);
+                              if (s.error != null ||
+                                  s.submittedTicketIds == null) {
+                                return;
+                              }
+                              if (!context.mounted) return;
+                              if (!venue.bypassKds &&
+                                  s.submittedTicketIds!.isNotEmpty) {
+                                ref
+                                    .read(tablesProvider.notifier)
+                                    .markPending(tableId, userId: actorId);
+                              }
+                              if (_retainRejected(
+                                context,
+                                ref,
+                                tableId,
+                                cart,
+                                s,
+                              )) {
+                                return;
+                              }
+                              ref.read(cartProvider(tableId).notifier).clear();
+                              final willSettle = shouldSettleAfterSend(
+                                visitId: _visitOf(ref, tableId),
+                                settleOn: ref
+                                    .read(venueSettingsProvider)
+                                    .counterOn(counterSettleAfterSend),
+                                canSettle: ref
+                                    .read(authStateProvider)
+                                    .has(Capability.settleBill),
+                              );
+                              if (context.mounted) {
+                                if (willSettle) {
+                                  context.go('/table/$tableId');
+                                } else {
+                                  context.go(
+                                    '/table/$tableId/sent?stations=$stations',
+                                  );
+                                }
+                              }
+                              if (context.mounted && willSettle) {
+                                await _settleAfterSend(
+                                  context,
+                                  ref,
+                                  _visitOf(ref, tableId),
+                                );
+                              }
+                            } finally {
+                              lock.state = false;
+                            }
+                          },
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+}
+
+/// Keep only lines the host refused; an older host without clientLineId falls
+/// back to item/variant matching so it never silently discards a refusal.
+bool _retainRejected(
+  BuildContext context,
+  WidgetRef ref,
+  String cartKey,
+  List<CartItem> cart,
+  ReviewState state, {
+  String? destinationKey,
+}) {
+  if (state.rejected.isEmpty) return false;
+  final refused = retainedRejectedCartLines(cart, state.rejected);
+  final targetKey = destinationKey ?? cartKey;
+  final existing = targetKey == cartKey
+      ? const <CartItem>[]
+      : ref.read(cartProvider(targetKey));
+  ref.read(cartProvider(targetKey).notifier).retain([...existing, ...refused]);
+  if (destinationKey != null && destinationKey != cartKey) {
+    ref.read(cartProvider(cartKey).notifier).clear();
+  }
+  if (context.mounted) {
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(SnackBar(content: Text(context.l10n.mnuPartialSend)));
+  }
+  return true;
+}
+
+String _rejectionLabel(BuildContext context, CartItem line) {
+  if (line.rejectionReason == 'sold_out') return context.l10n.mnuSoldOutNow;
+  if (line.rejectionReason == 'configuration_changed') {
+    return context.l10n.mnuMenuChanged;
+  }
+  if (line.rejectionReason == 'ingredients' &&
+      line.rejectionIngredients.isNotEmpty) {
+    return context.l10n.mnuStockShort(line.rejectionIngredients.join(', '));
+  }
+  return context.l10n.mnuAdjustBeforeSend;
 }
 
 enum _Commit { dineIn, takeaway }
@@ -859,6 +1067,14 @@ class _ReviewCourseBlock extends StatelessWidget {
                         child: NoteLine(
                           label: context.l10n.tblSpecialInstruction,
                           text: c.note,
+                        ),
+                      ),
+                    if (c.rejectionReason.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: Sp.s1),
+                        child: Text(
+                          _rejectionLabel(context, c),
+                          style: SatType.bodyS(color: sc.urgent),
                         ),
                       ),
                     const SizedBox(height: Sp.s2),

@@ -127,6 +127,16 @@ void main() {
   });
 
   test('an ordinary line is untouched by any of it', () async {
+    await db
+        .into(db.menuItems)
+        .insert(
+          MenuItemsCompanion.insert(
+            id: 'nasgor',
+            name: 'Nasi Goreng',
+            categoryId: 'mains',
+            basePrice: 25000,
+          ),
+        );
     final waiter = await signInForTest(
       db,
       caps: {Capability.takeOrder},

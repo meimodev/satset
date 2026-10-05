@@ -20,6 +20,7 @@ import 'package:satset/domain/models/capability.dart';
 import 'package:satset/data/repositories/auth_repository.dart';
 import 'package:satset/domain/use_cases/bill_math.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
+import 'package:satset/ui/features/menu/view_models/cart_availability.dart';
 import 'package:satset/ui/features/menu/view_models/menu_view_model.dart';
 import 'package:satset/data/repositories/tables_repository.dart';
 import 'package:satset/ui/core/widgets/anim.dart';
@@ -223,6 +224,9 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
     final l = context.layout;
     final cols = l.gridCount(minTileWidth: 170);
     final cart = ref.watch(cartProvider(widget.tableId));
+    final availability = ref
+        .watch(cartAvailabilityProvider(widget.tableId))
+        .valueOrNull;
     final tables = ref.watch(tablesProvider);
     final table = widget.tableless
         ? null
@@ -383,6 +387,14 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                       ),
                       child: _CatTabs(active: _cat, onChange: _selectCategory),
                     ),
+                  if (availability?.stale == true)
+                    Padding(
+                      padding: const EdgeInsets.all(Sp.s2),
+                      child: Text(
+                        context.l10n.mnuStockStale,
+                        style: SatType.bodyS(color: sc.urgent),
+                      ),
+                    ),
                   Expanded(
                     // The grid gets its own ground so a white card has an edge
                     // to sit against — see `satCardGround`, which only steps
@@ -390,43 +402,43 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                     child: ColoredBox(
                       color: satCardGround(sc),
                       child: noMatches
-                        ? _noMatches(query)
-                        : LayoutBuilder(
-                            builder: (context, constraints) {
-                              final dynamicCols = l.responsiveColumns(
-                                constraints.maxWidth,
-                                minTileWidth: 175,
-                              );
-                              // .builder, not .count: `children:` builds every
-                              // card in the category up front, and a real venue
-                              // menu is not the seed's 42 items. Off-screen
-                              // cards cost nothing here.
-                              return GridView.builder(
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: dynamicCols,
-                                      mainAxisSpacing: 10,
-                                      crossAxisSpacing: 10,
-                                      childAspectRatio: 0.70,
-                                    ),
-                                padding: const EdgeInsets.fromLTRB(
-                                  28,
-                                  14,
-                                  28,
-                                  28,
-                                ),
-                                itemCount: items.length,
-                                itemBuilder: (context, i) {
-                                  final it = items[i];
-                                  return _ItemCard(
-                                    item: it,
-                                    inCart: inCartQty[it.id] ?? 0,
-                                    onTap: () => _openItem(it),
-                                  );
-                                },
-                              );
-                            },
-                          ),
+                          ? _noMatches(query)
+                          : LayoutBuilder(
+                              builder: (context, constraints) {
+                                final dynamicCols = l.responsiveColumns(
+                                  constraints.maxWidth,
+                                  minTileWidth: 175,
+                                );
+                                // .builder, not .count: `children:` builds every
+                                // card in the category up front, and a real venue
+                                // menu is not the seed's 42 items. Off-screen
+                                // cards cost nothing here.
+                                return GridView.builder(
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: dynamicCols,
+                                        mainAxisSpacing: 10,
+                                        crossAxisSpacing: 10,
+                                        childAspectRatio: 0.70,
+                                      ),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    28,
+                                    14,
+                                    28,
+                                    28,
+                                  ),
+                                  itemCount: items.length,
+                                  itemBuilder: (context, i) {
+                                    final it = items[i];
+                                    return _ItemCard(
+                                      item: it,
+                                      inCart: inCartQty[it.id] ?? 0,
+                                      onTap: () => _openItem(it),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
                     ),
                   ),
                 ],
@@ -489,42 +501,50 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 _CatTabs(active: _cat, onChange: _selectCategory),
                 const SizedBox(height: Sp.s2),
               ],
+              if (availability?.stale == true)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Sp.s4),
+                  child: Text(
+                    context.l10n.mnuStockStale,
+                    style: SatType.bodyS(color: sc.urgent),
+                  ),
+                ),
               Expanded(
                 child: ColoredBox(
                   color: satCardGround(sc),
                   child: noMatches
-                    ? _noMatches(query)
-                    : Center(
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: l.contentMaxWidth,
-                          ),
-                          child: GridView.builder(
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: cols,
-                                  mainAxisSpacing: 8,
-                                  crossAxisSpacing: 8,
-                                  childAspectRatio: 0.74,
-                                ),
-                            padding: EdgeInsets.fromLTRB(
-                              16,
-                              4,
-                              16,
-                              context.shellInset + _cartFooterClearance,
+                      ? _noMatches(query)
+                      : Center(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: l.contentMaxWidth,
                             ),
-                            itemCount: items.length,
-                            itemBuilder: (context, i) {
-                              final it = items[i];
-                              return _ItemCard(
-                                item: it,
-                                inCart: inCartQty[it.id] ?? 0,
-                                onTap: () => _openItem(it),
-                              );
-                            },
+                            child: GridView.builder(
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: cols,
+                                    mainAxisSpacing: 8,
+                                    crossAxisSpacing: 8,
+                                    childAspectRatio: 0.74,
+                                  ),
+                              padding: EdgeInsets.fromLTRB(
+                                16,
+                                4,
+                                16,
+                                context.shellInset + _cartFooterClearance,
+                              ),
+                              itemCount: items.length,
+                              itemBuilder: (context, i) {
+                                final it = items[i];
+                                return _ItemCard(
+                                  item: it,
+                                  inCart: inCartQty[it.id] ?? 0,
+                                  onTap: () => _openItem(it),
+                                );
+                              },
+                            ),
                           ),
                         ),
-                      ),
                 ),
               ),
             ],
@@ -555,10 +575,15 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   }
 
   void _openItem(MenuItem item) {
-    if (item.unavailable) return;
+    final current = ref
+        .read(menuItemsProvider)
+        .where((i) => i.id == item.id)
+        .firstOrNull;
+    if (current == null || current.isSoldOut) return;
     showModifierSheet(
       context: context,
-      item: item,
+      item: current,
+      tableId: widget.tableId,
       onAdd: (cartItem) {
         ref.read(cartProvider(widget.tableId).notifier).add(cartItem);
       },
@@ -638,7 +663,7 @@ class _ItemCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final tagsById = ref.watch(menuTagsByIdProvider);
-    final disabled = item.unavailable;
+    final disabled = item.isSoldOut;
     final card = Opacity(
       opacity: disabled ? 0.4 : 1,
       child: Material(
@@ -778,10 +803,7 @@ class _ItemCard extends ConsumerWidget {
               horizontal: Sp.s2,
               vertical: Sp.s1,
             ),
-            decoration: SatBox.d(
-              color: sc.urgent,
-              borderRadius: SatR.a(999),
-            ),
+            decoration: SatBox.d(color: sc.urgent, borderRadius: SatR.a(999)),
             child: Text(
               "HABIS",
               style: SatType.monoS(color: onFill(sc.urgent)),
@@ -944,9 +966,7 @@ class _TabletCartPane extends ConsumerWidget {
                               ),
                               const SizedBox(width: Sp.s2),
                               Text(
-                                formatIDR(
-                                  cart[i].unitPrice * cart[i].qty,
-                                ),
+                                formatIDR(cart[i].unitPrice * cart[i].qty),
                                 style: SatType.monoM(color: sc.textMd),
                               ),
                             ],
@@ -968,10 +988,7 @@ class _TabletCartPane extends ConsumerWidget {
                               ),
                             ),
                           const SizedBox(height: Sp.s2),
-                          CartLineActions(
-                            tableId: tableId,
-                            line: cart[i],
-                          ),
+                          CartLineActions(tableId: tableId, line: cart[i]),
                         ],
                       ),
                     ),

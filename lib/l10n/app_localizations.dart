@@ -645,6 +645,12 @@ abstract class AppL10n {
   /// **'Buang'**
   String get auditTypeStockWasted;
 
+  /// No description provided for @auditTypeStockOverridden.
+  ///
+  /// In id, this message translates to:
+  /// **'Override stok'**
+  String get auditTypeStockOverridden;
+
   /// No description provided for @auditTypeOpenItemSold.
   ///
   /// In id, this message translates to:
@@ -4506,6 +4512,12 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Terjual saat luring — {item} ×{qty}, bahan kurang: {ingredients}'**
   String auditStockSoldDark(String item, String qty, String ingredients);
+
+  /// Penjualan yang sengaja melampaui stok bahan; alasan dicatat terpisah.
+  ///
+  /// In id, this message translates to:
+  /// **'Stok dioverride — {item} ×{qty}, bahan kurang: {ingredients}'**
+  String auditStockOverridden(String item, String qty, String ingredients);
 
   /// CONTEXT.md: Buang · Waste.
   ///
@@ -8718,6 +8730,66 @@ abstract class AppL10n {
   /// In id, this message translates to:
   /// **'Estimasi'**
   String get mnuEstimate;
+
+  /// No description provided for @mnuAvailablePortions.
+  ///
+  /// In id, this message translates to:
+  /// **'Hanya {count} porsi bisa dibuat sekarang'**
+  String mnuAvailablePortions(int count);
+
+  /// No description provided for @mnuStockStale.
+  ///
+  /// In id, this message translates to:
+  /// **'Stok mungkin tidak terbaru. Pesanan luring dicatat sampai tersambung kembali.'**
+  String get mnuStockStale;
+
+  /// No description provided for @mnuStockChecking.
+  ///
+  /// In id, this message translates to:
+  /// **'Memeriksa stok saat ini…'**
+  String get mnuStockChecking;
+
+  /// No description provided for @mnuSoldOutNow.
+  ///
+  /// In id, this message translates to:
+  /// **'Habis sekarang'**
+  String get mnuSoldOutNow;
+
+  /// No description provided for @mnuMenuChanged.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilihan menu berubah. Pilih item ini lagi.'**
+  String get mnuMenuChanged;
+
+  /// No description provided for @mnuStockShort.
+  ///
+  /// In id, this message translates to:
+  /// **'Bahan kurang: {ingredients}'**
+  String mnuStockShort(String ingredients);
+
+  /// No description provided for @mnuAdjustBeforeSend.
+  ///
+  /// In id, this message translates to:
+  /// **'Sesuaikan item yang tidak tersedia sebelum mengirim.'**
+  String get mnuAdjustBeforeSend;
+
+  /// No description provided for @mnuOverrideStock.
+  ///
+  /// In id, this message translates to:
+  /// **'Override stok'**
+  String get mnuOverrideStock;
+
+  /// No description provided for @mnuOverrideReason.
+  ///
+  /// In id, this message translates to:
+  /// **'Alasan override stok'**
+  String get mnuOverrideReason;
+
+  /// No description provided for @mnuPartialSend.
+  ///
+  /// In id, this message translates to:
+  /// **'Sebagian item tidak terkirim. Sesuaikan sisanya lalu coba lagi.'**
+  String get mnuPartialSend;
 
   /// No description provided for @mnuReviewSendTo.
   ///

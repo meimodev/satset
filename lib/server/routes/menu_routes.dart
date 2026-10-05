@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 import 'package:satset/data/models/ws_event_dto.dart';
 import 'package:satset/domain/models/audit_entry.dart' show AuditType;
 import 'package:satset/domain/models/audit_kind.dart';
+import 'package:satset/domain/models/menu_item.dart' show openItemId;
 import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/domain/models/capability.dart';
 import 'package:satset/server/audit_log.dart';
@@ -67,6 +68,84 @@ Router menuRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
   r.get('/menu', (Request req) async {
     return Response.ok(
       jsonEncode(await _snapshot(db)),
+      headers: {'content-type': 'application/json'},
+    );
+  });
+
+  // Cart order determines which line gets the last shared ingredient. This is
+  // only a preview: /orders checks the same balances again in its transaction.
+  r.post('/menu/availability', (Request req) async {
+    final denied = await _requireCap(req, db, auth, Capability.takeOrder);
+    if (denied != null) return denied;
+    final body = jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final raw = body['lines'];
+    if (raw is! List || raw.length > 100) {
+      return Response(400, body: 'lines required (max 100)');
+    }
+    final recipes = await loadRecipes(db);
+    final ingredients = await db.select(db.ingredients).get();
+    final remaining = {for (final i in ingredients) i.id: i.stockOnHand};
+    final names = {for (final i in ingredients) i.id: i.name};
+    final items = {
+      for (final i in await db.select(db.menuItems).get()) i.id: i,
+    };
+    final result = <Map<String, dynamic>>[];
+    for (final value in raw) {
+      if (value is! Map) return Response(400, body: 'invalid line');
+      final line = value.cast<String, dynamic>();
+      final id = line['id'] as String? ?? '';
+      final itemId = line['itemId'] as String? ?? '';
+      final qty = (line['qty'] as num?)?.toInt() ?? 1;
+      if (id.isEmpty || itemId.isEmpty || qty < 1 || qty > 99) {
+        return Response(400, body: 'invalid line');
+      }
+      final item = items[itemId];
+      if (itemId != openItemId && (item == null || item.unavailable)) {
+        result.add({'id': id, 'maxQty': 0, 'reason': 'sold_out'});
+        continue;
+      }
+      final optionIds = (line['optionIds'] as List? ?? const [])
+          .whereType<String>()
+          .toList();
+      if (item != null &&
+          !menuConfigurationExists(
+            variantsJson: item.variantsJson,
+            modifierGroupsJson: item.modifierGroupsJson,
+            variantId: line['variantId'] as String? ?? '',
+            optionIds: optionIds,
+          )) {
+        result.add({'id': id, 'maxQty': 0, 'reason': 'configuration_changed'});
+        continue;
+      }
+      final recipe =
+          recipes[itemId]?.resolve(
+            variantId: line['variantId'] as String? ?? '',
+            optionIds: optionIds,
+          ) ??
+          const <String, int>{};
+      var maxQty = 99;
+      for (final need in recipe.entries) {
+        if (need.value <= 0) continue;
+        final canMake = ((remaining[need.key] ?? 0) ~/ need.value).clamp(0, 99);
+        if (canMake < maxQty) maxQty = canMake;
+      }
+      final short = [
+        for (final need in recipe.entries)
+          if ((remaining[need.key] ?? 0) < need.value * qty)
+            names[need.key] ?? need.key,
+      ];
+      result.add({
+        'id': id,
+        'maxQty': maxQty,
+        if (short.isNotEmpty) 'reason': 'ingredients',
+        if (short.isNotEmpty) 'ingredients': short,
+      });
+      for (final need in recipe.entries) {
+        remaining[need.key] = (remaining[need.key] ?? 0) - need.value * qty;
+      }
+    }
+    return Response.ok(
+      jsonEncode({'lines': result}),
       headers: {'content-type': 'application/json'},
     );
   });
@@ -581,8 +660,7 @@ Future<Map<String, int>> menuPopularity(AppDatabase db) async {
     )
     ..groupBy([db.tickets.itemId]);
   return {
-    for (final r in await q.get())
-      r.read(db.tickets.itemId)!: r.read(qty) ?? 0,
+    for (final r in await q.get()) r.read(db.tickets.itemId)!: r.read(qty) ?? 0,
   };
 }
 
@@ -666,9 +744,11 @@ Future<void> _writeItem(
         // day rollover rather than trusting the value alone.
         guestStockOverride: body.containsKey('guestStockOverride')
             ? Value(
-                const {'auto', 'forceIn', 'forceOut'}.contains(
-                      body['guestStockOverride'],
-                    )
+                const {
+                      'auto',
+                      'forceIn',
+                      'forceOut',
+                    }.contains(body['guestStockOverride'])
                     ? body['guestStockOverride'] as String
                     : 'auto',
               )

@@ -321,6 +321,9 @@ class AppL10nId extends AppL10n {
   String get auditTypeStockWasted => 'Buang';
 
   @override
+  String get auditTypeStockOverridden => 'Override stok';
+
+  @override
   String get auditTypeOpenItemSold => 'Item bebas';
 
   @override
@@ -2612,6 +2615,11 @@ class AppL10nId extends AppL10n {
   @override
   String auditStockSoldDark(String item, String qty, String ingredients) {
     return 'Terjual saat luring — $item ×$qty, bahan kurang: $ingredients';
+  }
+
+  @override
+  String auditStockOverridden(String item, String qty, String ingredients) {
+    return 'Stok dioverride — $item ×$qty, bahan kurang: $ingredients';
   }
 
   @override
@@ -5436,6 +5444,43 @@ class AppL10nId extends AppL10n {
 
   @override
   String get mnuEstimate => 'Estimasi';
+
+  @override
+  String mnuAvailablePortions(int count) {
+    return 'Hanya $count porsi bisa dibuat sekarang';
+  }
+
+  @override
+  String get mnuStockStale =>
+      'Stok mungkin tidak terbaru. Pesanan luring dicatat sampai tersambung kembali.';
+
+  @override
+  String get mnuStockChecking => 'Memeriksa stok saat ini…';
+
+  @override
+  String get mnuSoldOutNow => 'Habis sekarang';
+
+  @override
+  String get mnuMenuChanged => 'Pilihan menu berubah. Pilih item ini lagi.';
+
+  @override
+  String mnuStockShort(String ingredients) {
+    return 'Bahan kurang: $ingredients';
+  }
+
+  @override
+  String get mnuAdjustBeforeSend =>
+      'Sesuaikan item yang tidak tersedia sebelum mengirim.';
+
+  @override
+  String get mnuOverrideStock => 'Override stok';
+
+  @override
+  String get mnuOverrideReason => 'Alasan override stok';
+
+  @override
+  String get mnuPartialSend =>
+      'Sebagian item tidak terkirim. Sesuaikan sisanya lalu coba lagi.';
 
   @override
   String mnuReviewSendTo(String target) {

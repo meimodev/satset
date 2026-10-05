@@ -111,6 +111,11 @@ String auditText(AppL10n l, AuditEntry e) {
       s('qty'),
       s('ingredients'),
     ),
+    AuditKind.stockOverridden => l.auditStockOverridden(
+      s('item'),
+      s('qty'),
+      s('ingredients'),
+    ),
     AuditKind.openItemSold => l.auditOpenItemSold(s('name'), s('price')),
 
     AuditKind.venueOpened => l.auditVenueOpened,

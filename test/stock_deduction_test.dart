@@ -14,6 +14,7 @@ import 'package:satset/domain/models/stock_unit.dart';
 import 'package:satset/server/db/database.dart';
 import 'package:satset/server/routes/auth_routes.dart';
 import 'package:satset/server/routes/tickets_routes.dart';
+import 'package:satset/server/routes/menu_routes.dart';
 import 'package:satset/server/stock.dart';
 import 'package:satset/server/stock_counts.dart';
 import 'package:satset/server/ws_hub.dart';
@@ -26,6 +27,7 @@ import 'support/route_auth.dart';
 void main() {
   late AppDatabase db;
   late Handler router;
+  late Handler menuRouter;
   late TestCaller caller;
 
   setUp(() async {
@@ -38,6 +40,7 @@ void main() {
       caps: Capability.values.toSet()..remove(Capability.overrideStock),
     );
     router = ticketsRoutes(db, WsHub(), caller.auth).call;
+    menuRouter = menuRoutes(db, WsHub(), caller.auth).call;
     stockFlags.invalidate();
 
     // Menu: Nasi Ayam, Reguler (1 portion of rice + 1 chicken) and Besar
@@ -54,6 +57,17 @@ void main() {
               jsonEncode([
                 {'id': 'v-reg', 'name': 'Reguler', 'price': 25000},
                 {'id': 'v-besar', 'name': 'Besar', 'price': 35000},
+              ]),
+            ),
+            modifierGroupsJson: Value(
+              jsonEncode([
+                {
+                  'id': 'g-topping',
+                  'name': 'Topping',
+                  'options': [
+                    {'id': 'opt-keju', 'name': 'Keju', 'priceDelta': 0},
+                  ],
+                },
               ]),
             ),
           ),
@@ -129,6 +143,206 @@ void main() {
   Future<int> onHand(String id) async => (await (db.select(
     db.ingredients,
   )..where((i) => i.id.equals(id))).getSingle()).stockOnHand;
+
+  test('cart preview accounts for earlier lines and exact options', () async {
+    Future<List<dynamic>> preview(List<Map<String, dynamic>> lines) async {
+      final response = await menuRouter(
+        Request(
+          'POST',
+          Uri.parse('http://x/menu/availability'),
+          headers: caller.headers,
+          body: jsonEncode({'lines': lines}),
+        ),
+      );
+      expect(response.statusCode, 200);
+      return (jsonDecode(await response.readAsString()) as Map)['lines']
+          as List;
+    }
+
+    final lines = await preview([
+      {'id': 'first', 'itemId': 'i1', 'variantId': 'v-reg', 'qty': 1},
+      {'id': 'second', 'itemId': 'i1', 'variantId': 'v-besar', 'qty': 1},
+    ]);
+    expect((lines[0] as Map)['maxQty'], 2);
+    expect((lines[1] as Map)['maxQty'], 0);
+    expect((lines[1] as Map)['reason'], 'ingredients');
+
+    await (db.update(db.ingredients)..where((i) => i.id.equals('beras'))).write(
+      IngredientsCompanion(stockOnHand: Value(StockUnit.g.toBase(200))),
+    );
+    final withOption = await preview([
+      {
+        'id': 'cheese',
+        'itemId': 'i1',
+        'variantId': 'v-reg',
+        'optionIds': ['opt-keju'],
+        'qty': 1,
+      },
+    ]);
+    expect((withOption.single as Map)['maxQty'], 0);
+  });
+
+  test('removed menu choices are refused in preview and send', () async {
+    await (db.update(db.menuItems)..where((i) => i.id.equals('i1'))).write(
+      MenuItemsCompanion(
+        variantsJson: Value(
+          jsonEncode([
+            {'id': 'v-reg', 'name': 'Reguler', 'price': 25000},
+          ]),
+        ),
+        modifierGroupsJson: Value(
+          jsonEncode([
+            {'id': 'g-topping', 'name': 'Topping', 'options': <Object>[]},
+          ]),
+        ),
+      ),
+    );
+
+    final previewResponse = await menuRouter(
+      Request(
+        'POST',
+        Uri.parse('http://x/menu/availability'),
+        headers: caller.headers,
+        body: jsonEncode({
+          'lines': [
+            {'id': 'variant', 'itemId': 'i1', 'variantId': 'v-besar', 'qty': 1},
+            {
+              'id': 'option',
+              'itemId': 'i1',
+              'variantId': 'v-reg',
+              'optionIds': ['opt-keju'],
+              'qty': 1,
+            },
+          ],
+        }),
+      ),
+    );
+    final preview =
+        (jsonDecode(await previewResponse.readAsString()) as Map)['lines']
+            as List;
+    expect(preview.map((line) => (line as Map)['reason']), [
+      'configuration_changed',
+      'configuration_changed',
+    ]);
+
+    final response = await order('removed-choices', [
+      {
+        'clientLineId': 'variant',
+        'itemId': 'i1',
+        'variantName': 'Besar',
+        'qty': 1,
+      },
+      {
+        'clientLineId': 'option',
+        'itemId': 'i1',
+        'variantName': 'Reguler',
+        'modifiers': [
+          {
+            'groupId': 'g-topping',
+            'optionId': 'opt-keju',
+            'label': 'Keju',
+            'priceDelta': 0,
+          },
+        ],
+        'qty': 1,
+      },
+    ]);
+    expect(
+      (response['rejected'] as List).map((line) => (line as Map)['reason']),
+      ['configuration_changed', 'configuration_changed'],
+    );
+    expect(response['ticketIds'], isEmpty);
+  });
+
+  test('renamed variant keeps its recipe by stable id at send', () async {
+    await (db.update(db.menuItems)..where((i) => i.id.equals('i1'))).write(
+      MenuItemsCompanion(
+        variantsJson: Value(
+          jsonEncode([
+            {'id': 'v-reg', 'name': 'Reguler', 'price': 25000},
+            {'id': 'v-besar', 'name': 'Jumbo', 'price': 35000},
+          ]),
+        ),
+      ),
+    );
+    final response = await order('renamed-variant', [
+      {
+        'itemId': 'i1',
+        'variantId': 'v-besar',
+        'variantName': 'Besar',
+        'qty': 1,
+      },
+    ]);
+    expect(response['rejected'] ?? [], isEmpty);
+    expect((response['ticketIds'] as List), hasLength(1));
+    expect(await onHand('ayam'), 0);
+    expect(
+      await onHand('beras'),
+      StockUnit.kg.toBase(10) - StockUnit.g.toBase(350),
+    );
+  });
+
+  test('manual sold out is refused at send', () async {
+    await (db.update(db.menuItems)..where((i) => i.id.equals('i1'))).write(
+      const MenuItemsCompanion(unavailable: Value(true)),
+    );
+    final response = await order('manual-habis', [
+      {
+        'clientLineId': 'cart-1',
+        'itemId': 'i1',
+        'variantName': 'Reguler',
+        'qty': 1,
+      },
+    ]);
+    expect(response['ticketIds'], isEmpty);
+    expect((response['rejected'] as List).single['reason'], 'sold_out');
+    expect((response['rejected'] as List).single['clientLineId'], 'cart-1');
+    expect(await onHand('ayam'), StockUnit.pcs.toBase(2));
+  });
+
+  test('stock override needs explicit reason and is audited', () async {
+    final privileged = await signInForTest(db, caps: Capability.values.toSet());
+    final privilegedRouter = ticketsRoutes(db, WsHub(), privileged.auth).call;
+
+    Future<Map<String, dynamic>> send(String idem, String? reason) async {
+      final response = await privilegedRouter(
+        Request(
+          'POST',
+          Uri.parse('http://x/orders'),
+          headers: privileged.headers,
+          body: jsonEncode({
+            'tableId': 't1',
+            'idempotencyKey': idem,
+            'lines': [
+              {
+                'itemId': 'i1',
+                'name': 'Nasi Ayam',
+                'variantName': 'Reguler',
+                'course': 'main',
+                'unitPrice': 25000,
+                'qty': 3,
+                'stockOverrideReason': ?reason,
+              },
+            ],
+          }),
+        ),
+      );
+      return jsonDecode(await response.readAsString()) as Map<String, dynamic>;
+    }
+
+    expect((await send('no-reason', null))['ticketIds'], isEmpty);
+    expect(
+      (await send('with-reason', 'Count missed one portion'))['ticketIds'],
+      hasLength(1),
+    );
+    expect(await onHand('ayam'), -StockUnit.pcs.toBase(1));
+    final audits = await db.select(db.auditEntries).get();
+    expect(audits.any((row) => row.kind == 'stockOverridden'), isTrue);
+    expect(
+      audits.any((row) => row.reason == 'Count missed one portion'),
+      isTrue,
+    );
+  });
 
   test('milli-base units convert exactly and never drift', () {
     expect(StockUnit.kg.toBase(0.2), StockUnit.g.toBase(200));

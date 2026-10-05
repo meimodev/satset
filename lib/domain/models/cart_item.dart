@@ -21,6 +21,13 @@ class CartItem {
   final int qty;
   final int unitPrice;
 
+  /// Explicit reason supplied by an authorized user for a stock shortfall.
+  final String stockOverrideReason;
+
+  /// Host refusal retained with the unsent line until the waiter edits it.
+  final String rejectionReason;
+  final List<String> rejectionIngredients;
+
   /// Allergen tag ids (resolve against the menu snapshot's tags).
   final List<String> allergens;
 
@@ -38,6 +45,9 @@ class CartItem {
     required this.course,
     this.qty = 1,
     required this.unitPrice,
+    this.stockOverrideReason = '',
+    this.rejectionReason = '',
+    this.rejectionIngredients = const [],
     this.allergens = const [],
   });
 
@@ -53,6 +63,9 @@ class CartItem {
     CourseId? course,
     int? qty,
     int? unitPrice,
+    String? stockOverrideReason,
+    String? rejectionReason,
+    List<String>? rejectionIngredients,
     List<String>? allergens,
   }) => CartItem(
     id: id ?? this.id,
@@ -68,6 +81,9 @@ class CartItem {
     course: course ?? this.course,
     qty: qty ?? this.qty,
     unitPrice: unitPrice ?? this.unitPrice,
+    stockOverrideReason: stockOverrideReason ?? this.stockOverrideReason,
+    rejectionReason: rejectionReason ?? this.rejectionReason,
+    rejectionIngredients: rejectionIngredients ?? this.rejectionIngredients,
     allergens: allergens ?? this.allergens,
   );
 
@@ -85,6 +101,7 @@ class CartItem {
     course: course,
     qty: qty,
     unitPrice: unitPrice,
+    stockOverrideReason: stockOverrideReason,
     allergens: allergens,
   );
 

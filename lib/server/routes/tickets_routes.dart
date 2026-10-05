@@ -530,6 +530,7 @@ Future<SubmitOrderResult> submitOrder(
     // Tickets carry the variant *name*, not its id, so the id is resolved
     // here against the menu as it reads right now.
     final variantNameMaps = <String, Map<String, String>>{};
+    final unavailableItems = <String, bool>{};
 
     for (final l in lines) {
       // The client mints ticket ids so a captured line can be assigned,
@@ -558,6 +559,8 @@ Future<SubmitOrderResult> submitOrder(
       final itemId = l['itemId'] as String;
       final lineQty = (l['qty'] as num?)?.toInt() ?? 1;
       final lineVariant = (l['variantName'] as String?) ?? '';
+      final lineVariantId = (l['variantId'] as String?) ?? '';
+      final clientLineId = l['clientLineId'] as String?;
       final requestedMemberId = (l['memberId'] as String?)?.trim();
       String? memberId;
       if (splitAttribution && requestedMemberId?.isNotEmpty == true) {
@@ -584,32 +587,90 @@ Future<SubmitOrderResult> submitOrder(
         variantNameMaps[itemId] = item == null
             ? const {}
             : variantIdsByName(item.variantsJson);
+        unavailableItems[itemId] =
+            itemId != openItemId && (item == null || item.unavailable);
+      }
+      if (unavailableItems[itemId]! && !replayingHistory) {
+        rejected.add({
+          'clientLineId': ?clientLineId,
+          'reason': 'sold_out',
+          'itemId': itemId,
+          'name': (l['name'] as String?) ?? itemId,
+          'variantName': lineVariant,
+          'ingredients': const <String>[],
+        });
+        continue;
+      }
+      final selectedOptionIds = [
+        for (final m in (l['modifiers'] as List? ?? const []))
+          if (m is Map && (m['optionId'] as String?)?.isNotEmpty == true)
+            m['optionId'] as String,
+      ];
+      if (itemId != openItemId && !replayingHistory) {
+        final currentItem = await (db.select(
+          db.menuItems,
+        )..where((i) => i.id.equals(itemId))).getSingleOrNull();
+        if (currentItem != null &&
+            !menuConfigurationExists(
+              variantsJson: currentItem.variantsJson,
+              modifierGroupsJson: currentItem.modifierGroupsJson,
+              variantId: lineVariantId,
+              variantName: lineVariantId.isEmpty ? lineVariant : '',
+              optionIds: selectedOptionIds,
+            )) {
+          rejected.add({
+            'clientLineId': ?clientLineId,
+            'reason': 'configuration_changed',
+            'itemId': itemId,
+            'name': (l['name'] as String?) ?? itemId,
+            'variantName': lineVariant,
+            'ingredients': const <String>[],
+          });
+          continue;
+        }
       }
       final need = await needForLine(
         db,
         itemId: itemId,
         variantName: lineVariant,
-        optionIds: [
-          for (final m in (l['modifiers'] as List? ?? const []))
-            if (m is Map && (m['optionId'] as String?)?.isNotEmpty == true)
-              m['optionId'] as String,
-        ],
+        variantId: lineVariantId,
+        optionIds: selectedOptionIds,
         qty: lineQty,
         recipes: recipes,
         running: running,
         ingredientNames: ingredientNames,
         variantIdsByName: variantNameMaps[itemId]!,
       );
-      if (!need.covered && !canOverrideStock && !replayingHistory) {
+      final overrideReason =
+          (l['stockOverrideReason'] as String?)?.trim() ?? '';
+      final explicitlyOverridden =
+          !need.covered && canOverrideStock && overrideReason.isNotEmpty;
+      if (!need.covered && !explicitlyOverridden && !replayingHistory) {
         // Reject ONLY this line — one out-of-stock side dish must not kill a
         // twelve-item order the waiter would have to re-key (ADR-0041).
         rejected.add({
+          'clientLineId': ?clientLineId,
+          'reason': 'ingredients',
           'itemId': itemId,
           'name': (l['name'] as String?) ?? itemId,
           'variantName': lineVariant,
           'ingredients': need.shortNames,
         });
         continue;
+      }
+      if (explicitlyOverridden && !replayingHistory) {
+        await writeAudit(
+          db,
+          kind: AuditKind.stockOverridden,
+          type: AuditType.stockOverridden,
+          actorUserId: actorId,
+          reason: overrideReason,
+          params: {
+            'item': (l['name'] as String?) ?? itemId,
+            'qty': '$lineQty',
+            'ingredients': need.shortNames.join(', '),
+          },
+        );
       }
       if (!need.covered && replayingHistory) {
         // The guest ate it and paid for it. Refusing now is arguing with the
@@ -1283,6 +1344,7 @@ Router ticketsRoutes(AppDatabase db, WsHub hub, ServerAuth auth) {
     final rvid = row!.visitId;
     if (rvid != null) await syncVisitMoney(db, hub, rvid);
     // A restocked void can make a habis item orderable again.
+    if (isVoid) hub.broadcast(WsEventTypes.stockChanged, const {});
     if (isVoid && await stockFlags.refreshAndDetectFlip(db)) {
       hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'stock'});
     }
@@ -1381,6 +1443,9 @@ Future<void> broadcastSubmitted(
   }
   // Re-broadcast the menu only when a derived habis flag actually flipped —
   // beras going 8.0 → 7.8 kg must stay silent (ADR-0040).
+  if (res.createdIds.isNotEmpty) {
+    hub.broadcast(WsEventTypes.stockChanged, const {});
+  }
   if (res.createdIds.isNotEmpty && await stockFlags.refreshAndDetectFlip(db)) {
     hub.broadcast(WsEventTypes.menuUpdated, {'kind': 'stock'});
   }

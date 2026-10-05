@@ -14,7 +14,7 @@ Given ingredient-level inventory (ADR-0040), *when* stock moves and *what rememb
 
 4. **Void restocks only from `sent`.** A line voided while still `sent` returns its stock (`voidReturn`); voided from `prep`, `cooked`, or `ready` it is recorded as `waste`. The test is the line's **lifecycle status**, not its void reason code.
 
-5. **Partial rejection with an override valve.** When stock cannot cover a line at send, only the **offending lines** are rejected — the rest of the batch is accepted, and the response names the bahan that ran out. A holder of `overrideStock` may send anyway; the movement is **still written**, so the balance goes negative deliberately.
+5. **Partial rejection with an override valve.** When stock cannot cover a line at send, only the **offending lines** are rejected — the rest of the batch is accepted, and the response names the bahan that ran out. A holder of `overrideStock` may send anyway; the movement is **still written**, so the balance goes negative deliberately. [ADR-0145](0145-a-cart-previews-stock-send-claims-it.md) requires the holder to make that override explicit and give a reason; the capability alone does not bypass the guard.
 
 6. **No pruning.** ~300 lines/day × ~4 bahan ≈ 1,200 rows/day, under half a million a year — SQLite does not notice, and stock history is the thing an owner looks backwards at.
 
