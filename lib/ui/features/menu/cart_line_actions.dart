@@ -5,13 +5,18 @@ import 'package:satset/data/repositories/menu_repository.dart';
 import 'package:satset/data/models/member_dto.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/design/typography.dart';
 import 'package:satset/ui/core/widgets/sat_stepper.dart';
+import 'package:satset/ui/core/widgets/sat_field.dart';
+import 'package:satset/ui/core/widgets/sat_button.dart';
 import 'package:satset/ui/features/menu/modifier_sheet.dart';
 import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
+import 'package:satset/ui/features/menu/view_models/cart_availability.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
 import 'package:satset/ui/features/cashier/member_panel.dart';
@@ -33,6 +38,23 @@ class CartLineActions extends ConsumerWidget {
     final sc = context.sat;
     final cart = ref.read(cartProvider(tableId).notifier);
     final memberSplit = ref.watch(venueSettingsProvider).memberSplitOn;
+    final availability = ref
+        .watch(cartAvailabilityProvider(tableId))
+        .valueOrNull;
+    final stock = availability?.lines[line.id];
+    final soldOut = stock?.reason == 'sold_out';
+    final configurationChanged = stock?.reason == 'configuration_changed';
+    final short =
+        stock != null &&
+        line.qty > stock.maxQty &&
+        !soldOut &&
+        !configurationChanged;
+    final maxQty = stock == null || availability?.stale == true
+        ? kCartLineMaxQty
+        : (stock.maxQty > line.qty ? stock.maxQty : line.qty);
+    final canOverride = ref
+        .watch(authStateProvider)
+        .has(Capability.overrideStock);
 
     // The dish can be retired from the menu while the line sits in the cart.
     // Without it there are no modifier groups to prefill the sheet with, so
@@ -54,7 +76,7 @@ class CartLineActions extends ConsumerWidget {
           SatStepper(
             value: line.qty,
             min: 1,
-            max: kCartLineMaxQty,
+            max: maxQty,
             size: SatStepperSize.sm,
             semanticLabel: context.l10n.quantity,
             onChanged: (v) => cart.setQty(line.id, v),
@@ -95,9 +117,22 @@ class CartLineActions extends ConsumerWidget {
                   onTap: () => showModifierSheet(
                     context: context,
                     item: item,
+                    tableId: tableId,
                     editing: line,
                     onAdd: (updated) => cart.replace(line.id, updated),
                   ),
+                ),
+              if (short && canOverride)
+                _LineAction(
+                  icon: Icons.warning_amber_rounded,
+                  label: context.l10n.mnuOverrideStock,
+                  color: sc.urgent,
+                  onTap: () async {
+                    final reason = await _askOverrideReason(context);
+                    if (reason != null && reason.isNotEmpty) {
+                      cart.setStockOverrideReason(line.id, reason);
+                    }
+                  },
                 ),
               _LineAction(
                 icon: Icons.delete_outline,
@@ -107,6 +142,20 @@ class CartLineActions extends ConsumerWidget {
               ),
             ],
           ),
+          if (soldOut || short || configurationChanged)
+            Text(
+              configurationChanged
+                  ? context.l10n.mnuMenuChanged
+                  : soldOut
+                  ? context.l10n.mnuSoldOutNow
+                  : context.l10n.mnuStockShort(stock!.ingredients.join(', ')),
+              style: SatType.bodyS(color: sc.urgent),
+            ),
+          if (short && line.stockOverrideReason.isNotEmpty)
+            Text(
+              '${context.l10n.mnuOverrideStock}: ${line.stockOverrideReason}',
+              style: SatType.bodyS(color: sc.textMd),
+            ),
         ],
       ),
     );
@@ -158,4 +207,38 @@ class _LineAction extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<String?> _askOverrideReason(BuildContext context) async {
+  final controller = TextEditingController();
+  final reason = await showSatDialog<String>(
+    context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (dialogContext, setState) => AlertDialog(
+        title: Text(context.l10n.mnuOverrideStock),
+        content: SatField.text(
+          controller: controller,
+          autofocus: true,
+          maxLength: 200,
+          hint: context.l10n.mnuOverrideReason,
+          label: context.l10n.mnuOverrideReason,
+          onChanged: (_) => setState(() {}),
+        ),
+        actions: [
+          SatButton.ghost(
+            onTap: () => Navigator.of(dialogContext).pop(),
+            label: context.l10n.cancel,
+          ),
+          SatButton.primary(
+            onTap: controller.text.trim().isEmpty
+                ? null
+                : () => Navigator.of(dialogContext).pop(controller.text.trim()),
+            label: context.l10n.mnuOverrideStock,
+          ),
+        ],
+      ),
+    ),
+  );
+  controller.dispose();
+  return reason;
 }

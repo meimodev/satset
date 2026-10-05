@@ -391,6 +391,19 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     required String idempotencyKey,
     required List<CartLineDto> lines,
     String? actorId,
+  }) async => (await submitOrderDetailed(
+    tableId: tableId,
+    idempotencyKey: idempotencyKey,
+    lines: lines,
+    actorId: actorId,
+  )).ticketIds;
+
+  Future<({List<String> ticketIds, List<RejectedLineDto> rejected})>
+  submitOrderDetailed({
+    required String tableId,
+    required String idempotencyKey,
+    required List<CartLineDto> lines,
+    String? actorId,
   }) async {
     SatLog.repo(
       'tickets.submit table=${tableId.substring(0, tableId.length.clamp(0, 6))} lines=${lines.length}',
@@ -420,19 +433,25 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
             ],
           ),
       ];
-      return sendOrder(
-        tableId,
-        cart,
-        actorId: actorId,
-      ).map((t) => t.id).toList();
+      return (
+        ticketIds: sendOrder(
+          tableId,
+          cart,
+          actorId: actorId,
+        ).map((t) => t.id).toList(),
+        rejected: <RejectedLineDto>[],
+      );
     }
     final journal = ref.read(settlementJournalProvider.notifier);
     final existing = await journal.eventById(idempotencyKey);
     if (existing != null && existing.kind == SettlementEventKind.submitOrder) {
-      return [
-        for (final line in existing.payload['lines'] as List)
-          (line as Map)['ticketId'] as String,
-      ];
+      return (
+        ticketIds: [
+          for (final line in existing.payload['lines'] as List)
+            (line as Map)['ticketId'] as String,
+        ],
+        rejected: <RejectedLineDto>[],
+      );
     }
     await _assertWritable(tableId);
     final capturedAt = SatClock.now().toUtc();
@@ -460,7 +479,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         capturedAt: capturedAt,
         proposedVisitId: visitId,
       );
-      return ticketIds;
+      return (ticketIds: ticketIds, rejected: <RejectedLineDto>[]);
     }
     final api = ref.read(apiClientProvider);
     final Object raw;
@@ -491,7 +510,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
         capturedAt: capturedAt,
         proposedVisitId: visitId,
       );
-      return ticketIds;
+      return (ticketIds: ticketIds, rejected: <RejectedLineDto>[]);
     }
     final res = SubmitOrderResponseDto.fromJson(
       (raw as Map).cast<String, dynamic>(),
@@ -509,7 +528,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
             code: 'member_attribution_dropped',
           );
     }
-    return res.ticketIds;
+    return (ticketIds: res.ticketIds, rejected: res.rejected);
   }
 
   /// Capture an order as a **[[Baris tertangkap]]** on the visit's chain
@@ -619,7 +638,10 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   /// the server mints a fresh `kind==takeaway` visit and returns its id; pass
   /// [existingVisitId] to append items to an open takeaway. Offline mints a
   /// local visit id. See ADR-0026.
-  Future<({List<String> ticketIds, String visitId})> submitTakeawayOrder({
+  Future<
+    ({List<String> ticketIds, String visitId, List<RejectedLineDto> rejected})
+  >
+  submitTakeawayOrder({
     required String idempotencyKey,
     required List<CartLineDto> lines,
     String guestName = '',
@@ -659,7 +681,11 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
           ),
       ];
       final created = sendOrder(vid, cart, actorId: actorId);
-      return (ticketIds: [for (final t in created) t.id], visitId: vid);
+      return (
+        ticketIds: [for (final t in created) t.id],
+        visitId: vid,
+        rejected: <RejectedLineDto>[],
+      );
     }
     if (existingVisitId != null) {
       await ref
@@ -680,13 +706,15 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       'actorId': ?actorId,
     });
     final map = (raw as Map).cast<String, dynamic>();
-    _reportRejected([
+    final rejected = [
       for (final r in (map['rejected'] as List? ?? const []))
         RejectedLineDto.fromJson((r as Map).cast<String, dynamic>()),
-    ]);
+    ];
+    _reportRejected(rejected);
     return (
       ticketIds: (map['ticketIds'] as List).cast<String>(),
       visitId: (map['visitId'] as String?) ?? existingVisitId ?? '',
+      rejected: rejected,
     );
   }
 

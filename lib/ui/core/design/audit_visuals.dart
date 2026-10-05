@@ -95,6 +95,11 @@ AuditTone auditTone(AuditType t, SatColors sc) => switch (t) {
     bg: sc.urgentSoft,
     fg: sc.urgent,
   ),
+  AuditType.stockOverridden => (
+    icon: Icons.warning_amber_rounded,
+    bg: sc.warnSoft,
+    fg: sc.warn,
+  ),
   // `violet`: a sale, but not one the menu can account for — it should read as
   // distinct from the ordinary order acts a reader scrolls past.
   AuditType.openItemSold => (

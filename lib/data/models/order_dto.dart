@@ -22,6 +22,8 @@ abstract class CartModifierDto with _$CartModifierDto {
 @freezed
 abstract class CartLineDto with _$CartLineDto {
   const factory CartLineDto({
+    String? clientLineId,
+    String? stockOverrideReason,
     required String itemId,
     required String name,
     required String variantId,
@@ -75,6 +77,8 @@ abstract class SubmitOrderResponseDto with _$SubmitOrderResponseDto {
 @freezed
 abstract class RejectedLineDto with _$RejectedLineDto {
   const factory RejectedLineDto({
+    String? clientLineId,
+    @Default('ingredients') String reason,
     required String itemId,
     @Default('') String name,
     @Default('') String variantName,

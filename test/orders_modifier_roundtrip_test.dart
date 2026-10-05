@@ -5,6 +5,7 @@
 // (they seed the repository directly). See
 // docs/adr/0011-ticket-modifier-snapshot.md.
 import 'dart:convert';
+import 'package:drift/drift.dart' show Value;
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +35,39 @@ void main() {
   test(
     'single-select add-on and variant survive /orders -> /tickets',
     () async {
+      await db
+          .into(db.menuItems)
+          .insert(
+            MenuItemsCompanion.insert(
+              id: 'i1',
+              name: 'Nasi Goreng',
+              categoryId: 'mains',
+              basePrice: 25000,
+              variantsJson: Value(
+                jsonEncode([
+                  {'id': 'v1', 'name': 'Besar', 'price': 25000},
+                ]),
+              ),
+              modifierGroupsJson: Value(
+                jsonEncode([
+                  {
+                    'id': 'spice',
+                    'name': 'Pedas',
+                    'options': [
+                      {'id': 'hot', 'name': 'Pedas', 'priceDelta': 0},
+                    ],
+                  },
+                  {
+                    'id': 'extras',
+                    'name': 'Tambahan',
+                    'options': [
+                      {'id': 'krupuk', 'name': 'Kerupuk', 'priceDelta': 3000},
+                    ],
+                  },
+                ]),
+              ),
+            ),
+          );
       final orderBody = jsonEncode({
         'tableId': 't-test',
         'idempotencyKey': 'idem-1',

@@ -22,7 +22,13 @@ class CartViewModel extends StateNotifier<List<CartItem>> {
     }
     final qty = (state[i].qty + item.qty).clamp(1, kCartLineMaxQty);
     SatLog.vm('Cart stack ${item.name} ${state[i].qty}+${item.qty} → $qty');
-    state = [...state]..[i] = state[i].copyWith(qty: qty);
+    state = [...state]
+      ..[i] = state[i].copyWith(
+        qty: qty,
+        stockOverrideReason: '',
+        rejectionReason: '',
+        rejectionIngredients: const [],
+      );
   }
 
   void setQty(String id, int qty) {
@@ -31,7 +37,19 @@ class CartViewModel extends StateNotifier<List<CartItem>> {
     final q = qty.clamp(1, kCartLineMaxQty);
     if (q == state[i].qty) return;
     SatLog.vm('Cart qty ${state[i].name} → $q');
-    state = [...state]..[i] = state[i].copyWith(qty: q);
+    state = [...state]
+      ..[i] = state[i].copyWith(
+        qty: q,
+        stockOverrideReason: '',
+        rejectionReason: '',
+        rejectionIngredients: const [],
+      );
+  }
+
+  void setStockOverrideReason(String id, String reason) {
+    final i = state.indexWhere((c) => c.id == id);
+    if (i < 0) return;
+    state = [...state]..[i] = state[i].copyWith(stockOverrideReason: reason);
   }
 
   void setMember(String id, String? memberId, String? memberName) {
@@ -49,7 +67,12 @@ class CartViewModel extends StateNotifier<List<CartItem>> {
     final twin = state.indexWhere((c) => c.id != id && c.sameLineAs(updated));
     if (twin < 0) {
       SatLog.vm('Cart edit ${updated.name} qty=${updated.qty}');
-      state = [...state]..[i] = updated.copyWith(id: id);
+      state = [...state]
+        ..[i] = updated.copyWith(
+          id: id,
+          rejectionReason: '',
+          rejectionIngredients: const [],
+        );
       return;
     }
     final qty = (state[twin].qty + updated.qty).clamp(1, kCartLineMaxQty);
@@ -57,7 +80,15 @@ class CartViewModel extends StateNotifier<List<CartItem>> {
     state = [
       for (var j = 0; j < state.length; j++)
         if (j != i)
-          if (j == twin) state[j].copyWith(qty: qty) else state[j],
+          if (j == twin)
+            state[j].copyWith(
+              qty: qty,
+              stockOverrideReason: '',
+              rejectionReason: '',
+              rejectionIngredients: const [],
+            )
+          else
+            state[j],
     ];
   }
 
@@ -70,6 +101,9 @@ class CartViewModel extends StateNotifier<List<CartItem>> {
     SatLog.vm('Cart clear was=${state.length}');
     state = const [];
   }
+
+  /// Replace accepted lines with the host's refused lines after partial send.
+  void retain(List<CartItem> lines) => state = List.unmodifiable(lines);
 }
 
 /// Cart is scoped per-table so two open tables do not bleed items.

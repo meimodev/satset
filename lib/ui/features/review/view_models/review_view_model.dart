@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:satset/core/log/sat_log.dart';
+import 'package:satset/data/models/order_dto.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/use_cases/submit_order_use_case.dart';
 
@@ -8,7 +9,59 @@ class ReviewState {
   final bool busy;
   final String? error;
   final List<String>? submittedTicketIds;
-  const ReviewState({this.busy = false, this.error, this.submittedTicketIds});
+  final List<RejectedLineDto> rejected;
+  const ReviewState({
+    this.busy = false,
+    this.error,
+    this.submittedTicketIds,
+    this.rejected = const [],
+  });
+}
+
+/// Match host refusals back to local cart identities. Older hosts omit the
+/// identity; retain every matching configuration rather than discard one.
+List<CartItem> refusedCartLines(
+  List<CartItem> cart,
+  List<RejectedLineDto> rejected,
+) {
+  final ids = {
+    for (final line in rejected)
+      if (line.clientLineId != null) line.clientLineId!,
+  };
+  final legacy = rejected.where((line) => line.clientLineId == null);
+  return [
+    for (final line in cart)
+      if (ids.contains(line.id) ||
+          legacy.any(
+            (r) => r.itemId == line.itemId && r.variantName == line.variantName,
+          ))
+        line,
+  ];
+}
+
+/// Preserve the host's refusal with each unsent line across review routes.
+List<CartItem> retainedRejectedCartLines(
+  List<CartItem> cart,
+  List<RejectedLineDto> rejected,
+) {
+  final matched = refusedCartLines(cart, rejected);
+  // An older host may omit a usable identity. Keep the cart rather than
+  // silently losing a line when its refusal cannot be matched.
+  final remaining = matched.isEmpty && rejected.isNotEmpty ? cart : matched;
+  return remaining.map((line) {
+    final refusal = rejected.firstWhere(
+      (r) =>
+          r.clientLineId == line.id ||
+          (r.clientLineId == null &&
+              r.itemId == line.itemId &&
+              r.variantName == line.variantName),
+      orElse: () => rejected.first,
+    );
+    return line.copyWith(
+      rejectionReason: refusal.reason,
+      rejectionIngredients: refusal.ingredients,
+    );
+  }).toList();
 }
 
 class ReviewViewModel extends StateNotifier<ReviewState> {
@@ -29,7 +82,11 @@ class ReviewViewModel extends StateNotifier<ReviewState> {
           .read(submitOrderUseCaseProvider)
           .call(tableId: tableId, cart: cart, actorId: actorId);
       SatLog.vm('ReviewVM submit ok tickets=${res.ticketIds.length}');
-      state = ReviewState(busy: false, submittedTicketIds: res.ticketIds);
+      state = ReviewState(
+        busy: false,
+        submittedTicketIds: res.ticketIds,
+        rejected: res.rejected,
+      );
     } catch (e) {
       SatLog.vm('ReviewVM submit fail $e');
       state = ReviewState(busy: false, error: e.toString());
@@ -66,7 +123,11 @@ class ReviewViewModel extends StateNotifier<ReviewState> {
             existingVisitId: existingVisitId,
             actorId: actorId,
           );
-      state = ReviewState(busy: false, submittedTicketIds: res.ticketIds);
+      state = ReviewState(
+        busy: false,
+        submittedTicketIds: res.ticketIds,
+        rejected: res.rejected,
+      );
       return res.visitId;
     } catch (e) {
       SatLog.vm('ReviewVM submitTakeaway fail $e');

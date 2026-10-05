@@ -287,7 +287,7 @@ as int,
 /// @nodoc
 mixin _$CartLineDto {
 
- String get itemId; String get name; String get variantId; String get variantName; String? get memberId; List<CartModifierDto> get modifiers; String? get note; String get course; int get qty; int get unitPrice;
+ String? get clientLineId; String? get stockOverrideReason; String get itemId; String get name; String get variantId; String get variantName; String? get memberId; List<CartModifierDto> get modifiers; String? get note; String get course; int get qty; int get unitPrice;
 /// Create a copy of CartLineDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -300,16 +300,16 @@ $CartLineDtoCopyWith<CartLineDto> get copyWith => _$CartLineDtoCopyWithImpl<Cart
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CartLineDto&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&(identical(other.memberId, memberId) || other.memberId == memberId)&&const DeepCollectionEquality().equals(other.modifiers, modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CartLineDto&&(identical(other.clientLineId, clientLineId) || other.clientLineId == clientLineId)&&(identical(other.stockOverrideReason, stockOverrideReason) || other.stockOverrideReason == stockOverrideReason)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&(identical(other.memberId, memberId) || other.memberId == memberId)&&const DeepCollectionEquality().equals(other.modifiers, modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,itemId,name,variantId,variantName,memberId,const DeepCollectionEquality().hash(modifiers),note,course,qty,unitPrice);
+int get hashCode => Object.hash(runtimeType,clientLineId,stockOverrideReason,itemId,name,variantId,variantName,memberId,const DeepCollectionEquality().hash(modifiers),note,course,qty,unitPrice);
 
 @override
 String toString() {
-  return 'CartLineDto(itemId: $itemId, name: $name, variantId: $variantId, variantName: $variantName, memberId: $memberId, modifiers: $modifiers, note: $note, course: $course, qty: $qty, unitPrice: $unitPrice)';
+  return 'CartLineDto(clientLineId: $clientLineId, stockOverrideReason: $stockOverrideReason, itemId: $itemId, name: $name, variantId: $variantId, variantName: $variantName, memberId: $memberId, modifiers: $modifiers, note: $note, course: $course, qty: $qty, unitPrice: $unitPrice)';
 }
 
 
@@ -320,7 +320,7 @@ abstract mixin class $CartLineDtoCopyWith<$Res>  {
   factory $CartLineDtoCopyWith(CartLineDto value, $Res Function(CartLineDto) _then) = _$CartLineDtoCopyWithImpl;
 @useResult
 $Res call({
- String itemId, String name, String variantId, String variantName, String? memberId, List<CartModifierDto> modifiers, String? note, String course, int qty, int unitPrice
+ String? clientLineId, String? stockOverrideReason, String itemId, String name, String variantId, String variantName, String? memberId, List<CartModifierDto> modifiers, String? note, String course, int qty, int unitPrice
 });
 
 
@@ -337,9 +337,11 @@ class _$CartLineDtoCopyWithImpl<$Res>
 
 /// Create a copy of CartLineDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? itemId = null,Object? name = null,Object? variantId = null,Object? variantName = null,Object? memberId = freezed,Object? modifiers = null,Object? note = freezed,Object? course = null,Object? qty = null,Object? unitPrice = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? clientLineId = freezed,Object? stockOverrideReason = freezed,Object? itemId = null,Object? name = null,Object? variantId = null,Object? variantName = null,Object? memberId = freezed,Object? modifiers = null,Object? note = freezed,Object? course = null,Object? qty = null,Object? unitPrice = null,}) {
   return _then(_self.copyWith(
-itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
+clientLineId: freezed == clientLineId ? _self.clientLineId : clientLineId // ignore: cast_nullable_to_non_nullable
+as String?,stockOverrideReason: freezed == stockOverrideReason ? _self.stockOverrideReason : stockOverrideReason // ignore: cast_nullable_to_non_nullable
+as String?,itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,variantId: null == variantId ? _self.variantId : variantId // ignore: cast_nullable_to_non_nullable
 as String,variantName: null == variantName ? _self.variantName : variantName // ignore: cast_nullable_to_non_nullable
@@ -434,10 +436,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String itemId,  String name,  String variantId,  String variantName,  String? memberId,  List<CartModifierDto> modifiers,  String? note,  String course,  int qty,  int unitPrice)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? clientLineId,  String? stockOverrideReason,  String itemId,  String name,  String variantId,  String variantName,  String? memberId,  List<CartModifierDto> modifiers,  String? note,  String course,  int qty,  int unitPrice)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CartLineDto() when $default != null:
-return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.memberId,_that.modifiers,_that.note,_that.course,_that.qty,_that.unitPrice);case _:
+return $default(_that.clientLineId,_that.stockOverrideReason,_that.itemId,_that.name,_that.variantId,_that.variantName,_that.memberId,_that.modifiers,_that.note,_that.course,_that.qty,_that.unitPrice);case _:
   return orElse();
 
 }
@@ -455,10 +457,10 @@ return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String itemId,  String name,  String variantId,  String variantName,  String? memberId,  List<CartModifierDto> modifiers,  String? note,  String course,  int qty,  int unitPrice)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? clientLineId,  String? stockOverrideReason,  String itemId,  String name,  String variantId,  String variantName,  String? memberId,  List<CartModifierDto> modifiers,  String? note,  String course,  int qty,  int unitPrice)  $default,) {final _that = this;
 switch (_that) {
 case _CartLineDto():
-return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.memberId,_that.modifiers,_that.note,_that.course,_that.qty,_that.unitPrice);case _:
+return $default(_that.clientLineId,_that.stockOverrideReason,_that.itemId,_that.name,_that.variantId,_that.variantName,_that.memberId,_that.modifiers,_that.note,_that.course,_that.qty,_that.unitPrice);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -475,10 +477,10 @@ return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String itemId,  String name,  String variantId,  String variantName,  String? memberId,  List<CartModifierDto> modifiers,  String? note,  String course,  int qty,  int unitPrice)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? clientLineId,  String? stockOverrideReason,  String itemId,  String name,  String variantId,  String variantName,  String? memberId,  List<CartModifierDto> modifiers,  String? note,  String course,  int qty,  int unitPrice)?  $default,) {final _that = this;
 switch (_that) {
 case _CartLineDto() when $default != null:
-return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.memberId,_that.modifiers,_that.note,_that.course,_that.qty,_that.unitPrice);case _:
+return $default(_that.clientLineId,_that.stockOverrideReason,_that.itemId,_that.name,_that.variantId,_that.variantName,_that.memberId,_that.modifiers,_that.note,_that.course,_that.qty,_that.unitPrice);case _:
   return null;
 
 }
@@ -490,9 +492,11 @@ return $default(_that.itemId,_that.name,_that.variantId,_that.variantName,_that.
 @JsonSerializable()
 
 class _CartLineDto implements CartLineDto {
-  const _CartLineDto({required this.itemId, required this.name, required this.variantId, required this.variantName, this.memberId, required final  List<CartModifierDto> modifiers, required this.note, required this.course, required this.qty, required this.unitPrice}): _modifiers = modifiers;
+  const _CartLineDto({this.clientLineId, this.stockOverrideReason, required this.itemId, required this.name, required this.variantId, required this.variantName, this.memberId, required final  List<CartModifierDto> modifiers, required this.note, required this.course, required this.qty, required this.unitPrice}): _modifiers = modifiers;
   factory _CartLineDto.fromJson(Map<String, dynamic> json) => _$CartLineDtoFromJson(json);
 
+@override final  String? clientLineId;
+@override final  String? stockOverrideReason;
 @override final  String itemId;
 @override final  String name;
 @override final  String variantId;
@@ -523,16 +527,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CartLineDto&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&(identical(other.memberId, memberId) || other.memberId == memberId)&&const DeepCollectionEquality().equals(other._modifiers, _modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CartLineDto&&(identical(other.clientLineId, clientLineId) || other.clientLineId == clientLineId)&&(identical(other.stockOverrideReason, stockOverrideReason) || other.stockOverrideReason == stockOverrideReason)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&(identical(other.memberId, memberId) || other.memberId == memberId)&&const DeepCollectionEquality().equals(other._modifiers, _modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,itemId,name,variantId,variantName,memberId,const DeepCollectionEquality().hash(_modifiers),note,course,qty,unitPrice);
+int get hashCode => Object.hash(runtimeType,clientLineId,stockOverrideReason,itemId,name,variantId,variantName,memberId,const DeepCollectionEquality().hash(_modifiers),note,course,qty,unitPrice);
 
 @override
 String toString() {
-  return 'CartLineDto(itemId: $itemId, name: $name, variantId: $variantId, variantName: $variantName, memberId: $memberId, modifiers: $modifiers, note: $note, course: $course, qty: $qty, unitPrice: $unitPrice)';
+  return 'CartLineDto(clientLineId: $clientLineId, stockOverrideReason: $stockOverrideReason, itemId: $itemId, name: $name, variantId: $variantId, variantName: $variantName, memberId: $memberId, modifiers: $modifiers, note: $note, course: $course, qty: $qty, unitPrice: $unitPrice)';
 }
 
 
@@ -543,7 +547,7 @@ abstract mixin class _$CartLineDtoCopyWith<$Res> implements $CartLineDtoCopyWith
   factory _$CartLineDtoCopyWith(_CartLineDto value, $Res Function(_CartLineDto) _then) = __$CartLineDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String itemId, String name, String variantId, String variantName, String? memberId, List<CartModifierDto> modifiers, String? note, String course, int qty, int unitPrice
+ String? clientLineId, String? stockOverrideReason, String itemId, String name, String variantId, String variantName, String? memberId, List<CartModifierDto> modifiers, String? note, String course, int qty, int unitPrice
 });
 
 
@@ -560,9 +564,11 @@ class __$CartLineDtoCopyWithImpl<$Res>
 
 /// Create a copy of CartLineDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? itemId = null,Object? name = null,Object? variantId = null,Object? variantName = null,Object? memberId = freezed,Object? modifiers = null,Object? note = freezed,Object? course = null,Object? qty = null,Object? unitPrice = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? clientLineId = freezed,Object? stockOverrideReason = freezed,Object? itemId = null,Object? name = null,Object? variantId = null,Object? variantName = null,Object? memberId = freezed,Object? modifiers = null,Object? note = freezed,Object? course = null,Object? qty = null,Object? unitPrice = null,}) {
   return _then(_CartLineDto(
-itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
+clientLineId: freezed == clientLineId ? _self.clientLineId : clientLineId // ignore: cast_nullable_to_non_nullable
+as String?,stockOverrideReason: freezed == stockOverrideReason ? _self.stockOverrideReason : stockOverrideReason // ignore: cast_nullable_to_non_nullable
+as String?,itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,variantId: null == variantId ? _self.variantId : variantId // ignore: cast_nullable_to_non_nullable
 as String,variantName: null == variantName ? _self.variantName : variantName // ignore: cast_nullable_to_non_nullable
@@ -1166,7 +1172,7 @@ as List<String>,
 /// @nodoc
 mixin _$RejectedLineDto {
 
- String get itemId; String get name; String get variantName;/// Names of the bahan that fell short — so the waiter is told *what* ran
+ String? get clientLineId; String get reason; String get itemId; String get name; String get variantName;/// Names of the bahan that fell short — so the waiter is told *what* ran
 /// out rather than just "no".
  List<String> get ingredients;
 /// Create a copy of RejectedLineDto
@@ -1181,16 +1187,16 @@ $RejectedLineDtoCopyWith<RejectedLineDto> get copyWith => _$RejectedLineDtoCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RejectedLineDto&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&const DeepCollectionEquality().equals(other.ingredients, ingredients));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RejectedLineDto&&(identical(other.clientLineId, clientLineId) || other.clientLineId == clientLineId)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&const DeepCollectionEquality().equals(other.ingredients, ingredients));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,itemId,name,variantName,const DeepCollectionEquality().hash(ingredients));
+int get hashCode => Object.hash(runtimeType,clientLineId,reason,itemId,name,variantName,const DeepCollectionEquality().hash(ingredients));
 
 @override
 String toString() {
-  return 'RejectedLineDto(itemId: $itemId, name: $name, variantName: $variantName, ingredients: $ingredients)';
+  return 'RejectedLineDto(clientLineId: $clientLineId, reason: $reason, itemId: $itemId, name: $name, variantName: $variantName, ingredients: $ingredients)';
 }
 
 
@@ -1201,7 +1207,7 @@ abstract mixin class $RejectedLineDtoCopyWith<$Res>  {
   factory $RejectedLineDtoCopyWith(RejectedLineDto value, $Res Function(RejectedLineDto) _then) = _$RejectedLineDtoCopyWithImpl;
 @useResult
 $Res call({
- String itemId, String name, String variantName, List<String> ingredients
+ String? clientLineId, String reason, String itemId, String name, String variantName, List<String> ingredients
 });
 
 
@@ -1218,9 +1224,11 @@ class _$RejectedLineDtoCopyWithImpl<$Res>
 
 /// Create a copy of RejectedLineDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? itemId = null,Object? name = null,Object? variantName = null,Object? ingredients = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? clientLineId = freezed,Object? reason = null,Object? itemId = null,Object? name = null,Object? variantName = null,Object? ingredients = null,}) {
   return _then(_self.copyWith(
-itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
+clientLineId: freezed == clientLineId ? _self.clientLineId : clientLineId // ignore: cast_nullable_to_non_nullable
+as String?,reason: null == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
+as String,itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,variantName: null == variantName ? _self.variantName : variantName // ignore: cast_nullable_to_non_nullable
 as String,ingredients: null == ingredients ? _self.ingredients : ingredients // ignore: cast_nullable_to_non_nullable
@@ -1309,10 +1317,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String itemId,  String name,  String variantName,  List<String> ingredients)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? clientLineId,  String reason,  String itemId,  String name,  String variantName,  List<String> ingredients)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RejectedLineDto() when $default != null:
-return $default(_that.itemId,_that.name,_that.variantName,_that.ingredients);case _:
+return $default(_that.clientLineId,_that.reason,_that.itemId,_that.name,_that.variantName,_that.ingredients);case _:
   return orElse();
 
 }
@@ -1330,10 +1338,10 @@ return $default(_that.itemId,_that.name,_that.variantName,_that.ingredients);cas
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String itemId,  String name,  String variantName,  List<String> ingredients)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? clientLineId,  String reason,  String itemId,  String name,  String variantName,  List<String> ingredients)  $default,) {final _that = this;
 switch (_that) {
 case _RejectedLineDto():
-return $default(_that.itemId,_that.name,_that.variantName,_that.ingredients);case _:
+return $default(_that.clientLineId,_that.reason,_that.itemId,_that.name,_that.variantName,_that.ingredients);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1350,10 +1358,10 @@ return $default(_that.itemId,_that.name,_that.variantName,_that.ingredients);cas
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String itemId,  String name,  String variantName,  List<String> ingredients)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? clientLineId,  String reason,  String itemId,  String name,  String variantName,  List<String> ingredients)?  $default,) {final _that = this;
 switch (_that) {
 case _RejectedLineDto() when $default != null:
-return $default(_that.itemId,_that.name,_that.variantName,_that.ingredients);case _:
+return $default(_that.clientLineId,_that.reason,_that.itemId,_that.name,_that.variantName,_that.ingredients);case _:
   return null;
 
 }
@@ -1365,9 +1373,11 @@ return $default(_that.itemId,_that.name,_that.variantName,_that.ingredients);cas
 @JsonSerializable()
 
 class _RejectedLineDto implements RejectedLineDto {
-  const _RejectedLineDto({required this.itemId, this.name = '', this.variantName = '', final  List<String> ingredients = const <String>[]}): _ingredients = ingredients;
+  const _RejectedLineDto({this.clientLineId, this.reason = 'ingredients', required this.itemId, this.name = '', this.variantName = '', final  List<String> ingredients = const <String>[]}): _ingredients = ingredients;
   factory _RejectedLineDto.fromJson(Map<String, dynamic> json) => _$RejectedLineDtoFromJson(json);
 
+@override final  String? clientLineId;
+@override@JsonKey() final  String reason;
 @override final  String itemId;
 @override@JsonKey() final  String name;
 @override@JsonKey() final  String variantName;
@@ -1396,16 +1406,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RejectedLineDto&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&const DeepCollectionEquality().equals(other._ingredients, _ingredients));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RejectedLineDto&&(identical(other.clientLineId, clientLineId) || other.clientLineId == clientLineId)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&const DeepCollectionEquality().equals(other._ingredients, _ingredients));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,itemId,name,variantName,const DeepCollectionEquality().hash(_ingredients));
+int get hashCode => Object.hash(runtimeType,clientLineId,reason,itemId,name,variantName,const DeepCollectionEquality().hash(_ingredients));
 
 @override
 String toString() {
-  return 'RejectedLineDto(itemId: $itemId, name: $name, variantName: $variantName, ingredients: $ingredients)';
+  return 'RejectedLineDto(clientLineId: $clientLineId, reason: $reason, itemId: $itemId, name: $name, variantName: $variantName, ingredients: $ingredients)';
 }
 
 
@@ -1416,7 +1426,7 @@ abstract mixin class _$RejectedLineDtoCopyWith<$Res> implements $RejectedLineDto
   factory _$RejectedLineDtoCopyWith(_RejectedLineDto value, $Res Function(_RejectedLineDto) _then) = __$RejectedLineDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String itemId, String name, String variantName, List<String> ingredients
+ String? clientLineId, String reason, String itemId, String name, String variantName, List<String> ingredients
 });
 
 
@@ -1433,9 +1443,11 @@ class __$RejectedLineDtoCopyWithImpl<$Res>
 
 /// Create a copy of RejectedLineDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? itemId = null,Object? name = null,Object? variantName = null,Object? ingredients = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? clientLineId = freezed,Object? reason = null,Object? itemId = null,Object? name = null,Object? variantName = null,Object? ingredients = null,}) {
   return _then(_RejectedLineDto(
-itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
+clientLineId: freezed == clientLineId ? _self.clientLineId : clientLineId // ignore: cast_nullable_to_non_nullable
+as String?,reason: null == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
+as String,itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,variantName: null == variantName ? _self.variantName : variantName // ignore: cast_nullable_to_non_nullable
 as String,ingredients: null == ingredients ? _self._ingredients : ingredients // ignore: cast_nullable_to_non_nullable

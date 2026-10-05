@@ -475,6 +475,7 @@ Future<LineStockNeed> needForLine(
   AppDatabase db, {
   required String itemId,
   required String variantName,
+  String variantId = '',
   required List<String> optionIds,
   required int qty,
   required Map<String, ResolvedRecipes> recipes,
@@ -485,7 +486,9 @@ Future<LineStockNeed> needForLine(
   final r = recipes[itemId];
   if (r == null || r.isEmpty) return const LineStockNeed({}, []);
   final per = r.resolve(
-    variantId: variantIdsByName[variantName] ?? '',
+    variantId: variantId.isNotEmpty
+        ? variantId
+        : (variantIdsByName[variantName] ?? ''),
     optionIds: optionIds,
   );
   final need = {for (final e in per.entries) e.key: e.value * qty};
@@ -502,6 +505,35 @@ Map<String, String> variantIdsByName(String variantsJson) => {
   for (final v in jsonDecode(variantsJson) as List)
     (v as Map<String, dynamic>)['name'] as String: v['id'] as String,
 };
+
+/// A cart can outlive menu edits. Check selected IDs against the current
+/// item before previewing or sending, so a removed option cannot appear
+/// available through a recipe that no longer exists.
+bool menuConfigurationExists({
+  required String variantsJson,
+  required String modifierGroupsJson,
+  String variantId = '',
+  String variantName = '',
+  Iterable<String> optionIds = const [],
+}) {
+  final variants = jsonDecode(variantsJson) as List;
+  if (variantId.isNotEmpty &&
+      !variants.any((v) => v is Map && v['id'] == variantId)) {
+    return false;
+  }
+  if (variantName.isNotEmpty &&
+      !variants.any((v) => v is Map && v['name'] == variantName)) {
+    return false;
+  }
+  final groups = jsonDecode(modifierGroupsJson) as List;
+  final currentOptions = <String>{
+    for (final group in groups)
+      if (group is Map)
+        for (final option in (group['options'] as List? ?? const []))
+          if (option is Map && option['id'] is String) option['id'] as String,
+  };
+  return optionIds.every(currentOptions.contains);
+}
 
 /// Option ids out of a ticket's frozen modifier snapshot
 /// (`{groupId, optionId, label, priceDelta}` — ADR-0011).

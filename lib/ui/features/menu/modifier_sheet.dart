@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:satset/ui/core/widgets/sat_sheet_header.dart';
 import 'package:satset/ui/core/widgets/sat_stepper.dart';
@@ -8,6 +10,10 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:satset/data/repositories/menu_repository.dart';
+import 'package:satset/data/repositories/auth_repository.dart';
+import 'package:satset/data/models/ws_event_dto.dart';
+import 'package:satset/data/services/api_client.dart';
+import 'package:satset/data/services/ws_client.dart';
 import 'package:satset/ui/core/design/colors.dart';
 import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/data/repositories/venue_settings_repository.dart';
@@ -18,6 +24,7 @@ import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/domain/models/cart_item.dart';
 import 'package:satset/domain/models/course.dart';
 import 'package:satset/domain/models/menu_item.dart';
+import 'package:satset/domain/models/capability.dart';
 import 'package:satset/domain/models/menu_tag.dart';
 import 'package:satset/domain/models/modifier_group.dart';
 import 'package:satset/domain/models/ticket_modifier.dart';
@@ -25,6 +32,8 @@ import 'package:satset/ui/core/design/course_visuals.dart';
 import 'package:satset/ui/core/widgets/menu_photo.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/widgets/sat_overlay.dart';
+import 'package:satset/ui/features/menu/view_models/cart_availability.dart';
+import 'package:satset/ui/features/menu/view_models/cart_view_model.dart';
 import 'package:satset/core/localization/labels.dart';
 import 'package:satset/core/localization/locale_view_model.dart';
 
@@ -43,6 +52,7 @@ Future<void> showModifierSheet({
   required MenuItem item,
   required ValueChanged<CartItem> onAdd,
   CartItem? editing,
+  String? tableId,
 }) {
   final l = context.layout;
   if (l.useTabletShell) {
@@ -63,6 +73,7 @@ Future<void> showModifierSheet({
               color: ctx.sat.bg1,
               child: _ModifierSheetBody(
                 item: item,
+                tableId: tableId,
                 editing: editing,
                 scrollController: ScrollController(),
                 onAdd: (ci) {
@@ -87,6 +98,7 @@ Future<void> showModifierSheet({
       expand: false,
       builder: (ctx, scroll) => _ModifierSheetBody(
         item: item,
+        tableId: tableId,
         editing: editing,
         scrollController: scroll,
         onAdd: (ci) {
@@ -100,6 +112,7 @@ Future<void> showModifierSheet({
 
 class _ModifierSheetBody extends ConsumerStatefulWidget {
   final MenuItem item;
+  final String? tableId;
   final ValueChanged<CartItem> onAdd;
   final ScrollController scrollController;
 
@@ -108,6 +121,7 @@ class _ModifierSheetBody extends ConsumerStatefulWidget {
 
   const _ModifierSheetBody({
     required this.item,
+    this.tableId,
     required this.onAdd,
     required this.scrollController,
     this.editing,
@@ -123,6 +137,10 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
   String _special = '';
   late CourseId _course;
   int _qty = 1;
+  AvailableCartLine? _available;
+  bool _checkingStock = false;
+  int _checkVersion = 0;
+  StreamSubscription<WsEventDto>? _stockSub;
 
   late final TextEditingController _noteCtl;
 
@@ -159,20 +177,125 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
     // reason and one step harder: there is no queue to pace *into*, so every
     // line is "now" whether or not the venue is a counter shop.
     final s = ref.read(venueSettingsProvider);
-    _course = edit?.course ??
+    _course =
+        edit?.course ??
         (s.counterOn(counterSimpleKds) || s.bypassKds
             ? CourseId.fireNow
             : Courses.fromCategory(widget.item.categoryId));
     _qty = edit?.qty ?? 1;
+    if (widget.tableId != null && ref.read(apiConfigProvider) != null) {
+      _stockSub = ref.read(wsClientProvider).events.listen((event) {
+        if (event.type == WsEventTypes.stockChanged ||
+            event.type == WsEventTypes.menuUpdated ||
+            event.type == WsEventTypes.connected) {
+          unawaited(_checkAvailability());
+        }
+      });
+      Future.microtask(_checkAvailability);
+    }
   }
 
   @override
   void dispose() {
+    _stockSub?.cancel();
     _noteCtl.dispose();
     super.dispose();
   }
 
+  CartItem _previewItem() {
+    final selected = <TicketModifier>[];
+    for (final g in widget.item.modifierGroups) {
+      final value = _selections[g.id];
+      final ids = g.multi && value is List<String>
+          ? value
+          : (value is String ? [value] : const <String>[]);
+      for (final id in ids) {
+        for (final option in g.options.where((o) => o.id == id)) {
+          selected.add(
+            TicketModifier(
+              groupId: g.id,
+              optionId: option.id,
+              label: option.name,
+              priceDelta: option.priceDelta,
+            ),
+          );
+        }
+      }
+    }
+    final variant = widget.item.variants.firstWhere((v) => v.id == _variantId);
+    return CartItem(
+      id: widget.editing?.id ?? 'preview',
+      itemId: widget.item.id,
+      name: widget.item.name,
+      variantId: _variantId,
+      variantName: variant.name,
+      selectedModifiers: selected,
+      course: _course,
+      qty: _qty,
+      unitPrice: _unit,
+    );
+  }
+
+  Future<void> _checkAvailability() async {
+    final tableId = widget.tableId;
+    if (tableId == null || !mounted) return;
+    if (ref.read(wsConnStateProvider) != WsConnState.open) {
+      setState(() {
+        _available = null;
+        _checkingStock = false;
+      });
+      return;
+    }
+    final version = ++_checkVersion;
+    setState(() => _checkingStock = true);
+    try {
+      final candidate = _previewItem();
+      final cart = [
+        for (final line in ref.read(cartProvider(tableId)))
+          if (line.id != widget.editing?.id) line,
+        candidate,
+      ];
+      final result = await fetchCartAvailability(
+        ref.read(apiClientProvider),
+        cart,
+      );
+      if (!mounted || version != _checkVersion) return;
+      setState(() {
+        _available = result.lines[candidate.id];
+        _checkingStock = false;
+      });
+    } catch (_) {
+      if (!mounted || version != _checkVersion) return;
+      setState(() {
+        _available = null;
+        _checkingStock = false;
+      });
+    }
+  }
+
   bool get _valid {
+    if (widget.tableId != null &&
+        ref.read(wsConnStateProvider) == WsConnState.open) {
+      final current = ref
+          .read(menuItemsProvider)
+          .where((item) => item.id == widget.item.id)
+          .firstOrNull;
+      if (current == null ||
+          current.isSoldOut ||
+          current.isVariantSoldOut(_variantId)) {
+        return false;
+      }
+      if (_checkingStock ||
+          _available == null ||
+          _available!.reason == 'sold_out' ||
+          _available!.reason == 'configuration_changed') {
+        return false;
+      }
+      if (_qty > _available!.maxQty &&
+          !ref.read(authStateProvider).has(Capability.overrideStock)) {
+        return false;
+      }
+    }
     for (final g in widget.item.modifierGroups) {
       if (!g.required) continue;
       final v = _selections[g.id];
@@ -223,9 +346,12 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
         _selections[g.id] = optId;
       }
     });
+    unawaited(_checkAvailability());
   }
 
-  void _submit() {
+  Future<void> _submit() async {
+    await _checkAvailability();
+    if (!mounted || !_valid) return;
     // Build the structured snapshot once; the display labels derive from it
     // (clean label + sign from priceDelta). Both single- and multi-select
     // groups are captured — the old id-flatten dropped single-select. See
@@ -278,6 +404,34 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
     final sc = context.sat;
     final l = context.layout;
     final tagsById = ref.watch(menuTagsByIdProvider);
+    final liveItems = ref.watch(menuItemsProvider);
+    final liveItem = widget.tableId == null
+        ? widget.item
+        : liveItems.where((item) => item.id == widget.item.id).firstOrNull;
+    final connected =
+        widget.tableId != null &&
+        ref.watch(wsConnStateProvider) == WsConnState.open;
+    final canOverride = ref
+        .watch(authStateProvider)
+        .has(Capability.overrideStock);
+    final stockLimit = !connected || canOverride
+        ? _kMaxPerAdd
+        : (_available?.maxQty ?? 1).clamp(1, _kMaxPerAdd);
+    final stockMessage = widget.tableId == null
+        ? null
+        : !connected
+        ? context.l10n.mnuStockStale
+        : liveItem == null ||
+              liveItem.isSoldOut ||
+              _available?.reason == 'sold_out'
+        ? context.l10n.mnuSoldOutNow
+        : _available?.reason == 'configuration_changed'
+        ? context.l10n.mnuMenuChanged
+        : _checkingStock || _available == null
+        ? context.l10n.mnuStockChecking
+        : _available!.maxQty < _kMaxPerAdd
+        ? context.l10n.mnuAvailablePortions(_available!.maxQty)
+        : null;
     final isTablet = l.useTabletShell;
     return Container(
       decoration: SatBox.d(
@@ -362,8 +516,13 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                               multi: false,
                               name: v.name.isEmpty ? 'Reguler' : v.name,
                               delta: formatIDR(v.price),
-                              soldOut: widget.item.isVariantSoldOut(v.id),
-                              onTap: () => setState(() => _variantId = v.id),
+                              soldOut:
+                                  liveItem == null ||
+                                  liveItem.isVariantSoldOut(v.id),
+                              onTap: () {
+                                setState(() => _variantId = v.id);
+                                unawaited(_checkAvailability());
+                              },
                             ),
                         ],
                       ),
@@ -391,7 +550,9 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                               delta: o.priceDelta == 0
                                   ? null
                                   : '${o.priceDelta > 0 ? '+ ' : '− '}${formatIDR(o.priceDelta.abs())}',
-                              soldOut: widget.item.isOptionSoldOut(o.id),
+                              soldOut:
+                                  liveItem == null ||
+                                  liveItem.isOptionSoldOut(o.id),
                               onTap: () => _toggle(g, o.id),
                             ),
                         ],
@@ -402,29 +563,29 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                       (v) => v.counterOn(counterSimpleKds) || v.bypassKds,
                     ),
                   ))
-                  _ModGroup(
-                    title: context.l10n.expColCourse,
-                    tag: 'TIMING',
-                    tagColor: sc.textLo,
-                    child: Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        for (final c in const [
-                          Courses.fireNow,
-                          Courses.drinksNow,
-                          Courses.starters,
-                          Courses.mains,
-                          Courses.desserts,
-                        ])
-                          _CourseChip(
-                            course: c,
-                            selected: _course == c.id,
-                            onTap: () => setState(() => _course = c.id),
-                          ),
-                      ],
+                    _ModGroup(
+                      title: context.l10n.expColCourse,
+                      tag: 'TIMING',
+                      tagColor: sc.textLo,
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          for (final c in const [
+                            Courses.fireNow,
+                            Courses.drinksNow,
+                            Courses.starters,
+                            Courses.mains,
+                            Courses.desserts,
+                          ])
+                            _CourseChip(
+                              course: c,
+                              selected: _course == c.id,
+                              onTap: () => setState(() => _course = c.id),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
                   _ModGroup(
                     title: context.l10n.tblSpecialInstruction,
                     tag: 'OPSI TERAKHIR',
@@ -450,9 +611,7 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
                               ? context.l10n.modSpecialCounterNoPrep(
                                   _special.length,
                                 )
-                              : context.l10n.modSpecialCounter(
-                                  _special.length,
-                                ),
+                              : context.l10n.modSpecialCounter(_special.length),
                           style: SatType.monoS(color: sc.textLo),
                         ),
                       ],
@@ -464,13 +623,19 @@ class _ModifierSheetBodyState extends ConsumerState<_ModifierSheetBody> {
           ),
           _Foot(
             qty: _qty,
+            maxQty: stockLimit > _qty ? stockLimit : _qty,
+            stockMessage: stockMessage,
             valid: _valid,
             editing: widget.editing != null,
             totalLabel: formatIDR(_unit * _qty),
-            onDec: () =>
-                setState(() => _qty = (_qty - 1).clamp(1, _kMaxPerAdd)),
-            onInc: () =>
-                setState(() => _qty = (_qty + 1).clamp(1, _kMaxPerAdd)),
+            onDec: () {
+              setState(() => _qty = (_qty - 1).clamp(1, _kMaxPerAdd));
+              unawaited(_checkAvailability());
+            },
+            onInc: () {
+              setState(() => _qty = (_qty + 1).clamp(1, _kMaxPerAdd));
+              unawaited(_checkAvailability());
+            },
             onAdd: _submit,
           ),
         ],
@@ -701,6 +866,8 @@ class _CourseChip extends StatelessWidget {
 
 class _Foot extends StatelessWidget {
   final int qty;
+  final int maxQty;
+  final String? stockMessage;
   final bool valid;
   final bool editing;
   final String totalLabel;
@@ -709,6 +876,8 @@ class _Foot extends StatelessWidget {
   final VoidCallback onAdd;
   const _Foot({
     required this.qty,
+    required this.maxQty,
+    this.stockMessage,
     required this.valid,
     required this.totalLabel,
     required this.onDec,
@@ -731,29 +900,39 @@ class _Foot extends StatelessWidget {
         color: sc.bg1,
         border: Border(top: SatB.side(color: sc.border0)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SatStepper(
-            value: qty,
-            min: 1,
-            // Was left at the default 99 while the callbacks clamped at 20, so
-            // the last twenty taps of `+` did nothing visible.
-            max: _kMaxPerAdd,
-            size: SatStepperSize.lg,
-            semanticLabel: context.l10n.quantity,
-            onChanged: (v) => v > qty ? onInc() : onDec(),
-          ),
-          const SizedBox(width: Sp.s3),
-          Expanded(
-            child: SatButton.primary(
-              label: valid
-                  ? (editing ? context.l10n.save : context.l10n.add)
-                  : context.l10n.modPickRequired,
-              icon: valid ? (editing ? Icons.check : Icons.add) : null,
-              size: SatButtonSize.lg,
-              trailingValue: valid ? totalLabel : null,
-              onTap: valid ? onAdd : null,
-            ),
+          if (stockMessage != null) ...[
+            Text(stockMessage!, style: SatType.bodyS(color: sc.urgent)),
+            const SizedBox(height: Sp.s2),
+          ],
+          Row(
+            children: [
+              SatStepper(
+                value: qty,
+                min: 1,
+                // Was left at the default 99 while the callbacks clamped at 20, so
+                // the last twenty taps of `+` did nothing visible.
+                max: maxQty,
+                size: SatStepperSize.lg,
+                semanticLabel: context.l10n.quantity,
+                onChanged: (v) => v > qty ? onInc() : onDec(),
+              ),
+              const SizedBox(width: Sp.s3),
+              Expanded(
+                child: SatButton.primary(
+                  label: valid
+                      ? (editing ? context.l10n.save : context.l10n.add)
+                      : context.l10n.modPickRequired,
+                  icon: valid ? (editing ? Icons.check : Icons.add) : null,
+                  size: SatButtonSize.lg,
+                  trailingValue: valid ? totalLabel : null,
+                  onTap: valid ? onAdd : null,
+                ),
+              ),
+            ],
           ),
         ],
       ),
