@@ -19,7 +19,9 @@ mixin _$Ticket {
  String? get visitId; String? get memberId;/// The table this line was fired from (empty for takeaway). The live-ticket
 /// cache keys groups by [[visitId]], so map-flattening consumers read the
 /// table id here rather than from the (now visit-keyed) map key. ADR-0034.
- String get tableId; String get itemId; String get name; String get variantName; CourseId get course; int get qty; List<TicketModifier> get modifiers; String? get note; int get price; TicketStatus get status; String get sentAt; DateTime get sentAtTime;/// When the kitchen started owning this line — stamped on the `held → sent`
+ String get tableId; String get itemId; String get name; String get variantName; CourseId get course; int get qty; List<TicketModifier> get modifiers; String? get note; int get price; TicketStatus get status; String get sentAt; DateTime get sentAtTime;/// Original order time for a captured line, retained after delivery.
+/// Kitchen timing still uses [kitchenClockStart], not this timestamp.
+ DateTime? get capturedAtTime;/// When the kitchen started owning this line — stamped on the `held → sent`
 /// fire, null on a normal send. The prep clock runs from
 /// `firedAtTime ?? sentAtTime`, so a held course is not born overdue.
 /// See [kitchenClockStart]. ADR-0043.
@@ -36,16 +38,16 @@ $TicketCopyWith<Ticket> get copyWith => _$TicketCopyWithImpl<Ticket>(this as Tic
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Ticket&&(identical(other.id, id) || other.id == id)&&(identical(other.visitId, visitId) || other.visitId == visitId)&&(identical(other.memberId, memberId) || other.memberId == memberId)&&(identical(other.tableId, tableId) || other.tableId == tableId)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&const DeepCollectionEquality().equals(other.modifiers, modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.price, price) || other.price == price)&&(identical(other.status, status) || other.status == status)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt)&&(identical(other.sentAtTime, sentAtTime) || other.sentAtTime == sentAtTime)&&(identical(other.firedAtTime, firedAtTime) || other.firedAtTime == firedAtTime)&&(identical(other.readyAtTime, readyAtTime) || other.readyAtTime == readyAtTime)&&(identical(other.servedAtTime, servedAtTime) || other.servedAtTime == servedAtTime)&&(identical(other.voidReason, voidReason) || other.voidReason == voidReason)&&(identical(other.voidReasonCode, voidReasonCode) || other.voidReasonCode == voidReasonCode)&&(identical(other.voidApprovedBy, voidApprovedBy) || other.voidApprovedBy == voidApprovedBy)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.voidedBy, voidedBy) || other.voidedBy == voidedBy));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Ticket&&(identical(other.id, id) || other.id == id)&&(identical(other.visitId, visitId) || other.visitId == visitId)&&(identical(other.memberId, memberId) || other.memberId == memberId)&&(identical(other.tableId, tableId) || other.tableId == tableId)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&const DeepCollectionEquality().equals(other.modifiers, modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.price, price) || other.price == price)&&(identical(other.status, status) || other.status == status)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt)&&(identical(other.sentAtTime, sentAtTime) || other.sentAtTime == sentAtTime)&&(identical(other.capturedAtTime, capturedAtTime) || other.capturedAtTime == capturedAtTime)&&(identical(other.firedAtTime, firedAtTime) || other.firedAtTime == firedAtTime)&&(identical(other.readyAtTime, readyAtTime) || other.readyAtTime == readyAtTime)&&(identical(other.servedAtTime, servedAtTime) || other.servedAtTime == servedAtTime)&&(identical(other.voidReason, voidReason) || other.voidReason == voidReason)&&(identical(other.voidReasonCode, voidReasonCode) || other.voidReasonCode == voidReasonCode)&&(identical(other.voidApprovedBy, voidApprovedBy) || other.voidApprovedBy == voidApprovedBy)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.voidedBy, voidedBy) || other.voidedBy == voidedBy));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,id,visitId,memberId,tableId,itemId,name,variantName,course,qty,const DeepCollectionEquality().hash(modifiers),note,price,status,sentAt,sentAtTime,firedAtTime,readyAtTime,servedAtTime,voidReason,voidReasonCode,voidApprovedBy,createdBy,voidedBy]);
+int get hashCode => Object.hashAll([runtimeType,id,visitId,memberId,tableId,itemId,name,variantName,course,qty,const DeepCollectionEquality().hash(modifiers),note,price,status,sentAt,sentAtTime,capturedAtTime,firedAtTime,readyAtTime,servedAtTime,voidReason,voidReasonCode,voidApprovedBy,createdBy,voidedBy]);
 
 @override
 String toString() {
-  return 'Ticket(id: $id, visitId: $visitId, memberId: $memberId, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, sentAtTime: $sentAtTime, firedAtTime: $firedAtTime, readyAtTime: $readyAtTime, servedAtTime: $servedAtTime, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdBy: $createdBy, voidedBy: $voidedBy)';
+  return 'Ticket(id: $id, visitId: $visitId, memberId: $memberId, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, sentAtTime: $sentAtTime, capturedAtTime: $capturedAtTime, firedAtTime: $firedAtTime, readyAtTime: $readyAtTime, servedAtTime: $servedAtTime, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdBy: $createdBy, voidedBy: $voidedBy)';
 }
 
 
@@ -56,7 +58,7 @@ abstract mixin class $TicketCopyWith<$Res>  {
   factory $TicketCopyWith(Ticket value, $Res Function(Ticket) _then) = _$TicketCopyWithImpl;
 @useResult
 $Res call({
- String id, String? visitId, String? memberId, String tableId, String itemId, String name, String variantName, CourseId course, int qty, List<TicketModifier> modifiers, String? note, int price, TicketStatus status, String sentAt, DateTime sentAtTime, DateTime? firedAtTime, DateTime? readyAtTime, DateTime? servedAtTime, String? voidReason, String? voidReasonCode, String? voidApprovedBy, String? createdBy, String? voidedBy
+ String id, String? visitId, String? memberId, String tableId, String itemId, String name, String variantName, CourseId course, int qty, List<TicketModifier> modifiers, String? note, int price, TicketStatus status, String sentAt, DateTime sentAtTime, DateTime? capturedAtTime, DateTime? firedAtTime, DateTime? readyAtTime, DateTime? servedAtTime, String? voidReason, String? voidReasonCode, String? voidApprovedBy, String? createdBy, String? voidedBy
 });
 
 
@@ -73,7 +75,7 @@ class _$TicketCopyWithImpl<$Res>
 
 /// Create a copy of Ticket
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? visitId = freezed,Object? memberId = freezed,Object? tableId = null,Object? itemId = null,Object? name = null,Object? variantName = null,Object? course = null,Object? qty = null,Object? modifiers = null,Object? note = freezed,Object? price = null,Object? status = null,Object? sentAt = null,Object? sentAtTime = null,Object? firedAtTime = freezed,Object? readyAtTime = freezed,Object? servedAtTime = freezed,Object? voidReason = freezed,Object? voidReasonCode = freezed,Object? voidApprovedBy = freezed,Object? createdBy = freezed,Object? voidedBy = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? visitId = freezed,Object? memberId = freezed,Object? tableId = null,Object? itemId = null,Object? name = null,Object? variantName = null,Object? course = null,Object? qty = null,Object? modifiers = null,Object? note = freezed,Object? price = null,Object? status = null,Object? sentAt = null,Object? sentAtTime = null,Object? capturedAtTime = freezed,Object? firedAtTime = freezed,Object? readyAtTime = freezed,Object? servedAtTime = freezed,Object? voidReason = freezed,Object? voidReasonCode = freezed,Object? voidApprovedBy = freezed,Object? createdBy = freezed,Object? voidedBy = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,visitId: freezed == visitId ? _self.visitId : visitId // ignore: cast_nullable_to_non_nullable
@@ -90,7 +92,8 @@ as String?,price: null == price ? _self.price : price // ignore: cast_nullable_t
 as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TicketStatus,sentAt: null == sentAt ? _self.sentAt : sentAt // ignore: cast_nullable_to_non_nullable
 as String,sentAtTime: null == sentAtTime ? _self.sentAtTime : sentAtTime // ignore: cast_nullable_to_non_nullable
-as DateTime,firedAtTime: freezed == firedAtTime ? _self.firedAtTime : firedAtTime // ignore: cast_nullable_to_non_nullable
+as DateTime,capturedAtTime: freezed == capturedAtTime ? _self.capturedAtTime : capturedAtTime // ignore: cast_nullable_to_non_nullable
+as DateTime?,firedAtTime: freezed == firedAtTime ? _self.firedAtTime : firedAtTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,readyAtTime: freezed == readyAtTime ? _self.readyAtTime : readyAtTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,servedAtTime: freezed == servedAtTime ? _self.servedAtTime : servedAtTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,voidReason: freezed == voidReason ? _self.voidReason : voidReason // ignore: cast_nullable_to_non_nullable
@@ -183,10 +186,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? visitId,  String? memberId,  String tableId,  String itemId,  String name,  String variantName,  CourseId course,  int qty,  List<TicketModifier> modifiers,  String? note,  int price,  TicketStatus status,  String sentAt,  DateTime sentAtTime,  DateTime? firedAtTime,  DateTime? readyAtTime,  DateTime? servedAtTime,  String? voidReason,  String? voidReasonCode,  String? voidApprovedBy,  String? createdBy,  String? voidedBy)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? visitId,  String? memberId,  String tableId,  String itemId,  String name,  String variantName,  CourseId course,  int qty,  List<TicketModifier> modifiers,  String? note,  int price,  TicketStatus status,  String sentAt,  DateTime sentAtTime,  DateTime? capturedAtTime,  DateTime? firedAtTime,  DateTime? readyAtTime,  DateTime? servedAtTime,  String? voidReason,  String? voidReasonCode,  String? voidApprovedBy,  String? createdBy,  String? voidedBy)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Ticket() when $default != null:
-return $default(_that.id,_that.visitId,_that.memberId,_that.tableId,_that.itemId,_that.name,_that.variantName,_that.course,_that.qty,_that.modifiers,_that.note,_that.price,_that.status,_that.sentAt,_that.sentAtTime,_that.firedAtTime,_that.readyAtTime,_that.servedAtTime,_that.voidReason,_that.voidReasonCode,_that.voidApprovedBy,_that.createdBy,_that.voidedBy);case _:
+return $default(_that.id,_that.visitId,_that.memberId,_that.tableId,_that.itemId,_that.name,_that.variantName,_that.course,_that.qty,_that.modifiers,_that.note,_that.price,_that.status,_that.sentAt,_that.sentAtTime,_that.capturedAtTime,_that.firedAtTime,_that.readyAtTime,_that.servedAtTime,_that.voidReason,_that.voidReasonCode,_that.voidApprovedBy,_that.createdBy,_that.voidedBy);case _:
   return orElse();
 
 }
@@ -204,10 +207,10 @@ return $default(_that.id,_that.visitId,_that.memberId,_that.tableId,_that.itemId
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? visitId,  String? memberId,  String tableId,  String itemId,  String name,  String variantName,  CourseId course,  int qty,  List<TicketModifier> modifiers,  String? note,  int price,  TicketStatus status,  String sentAt,  DateTime sentAtTime,  DateTime? firedAtTime,  DateTime? readyAtTime,  DateTime? servedAtTime,  String? voidReason,  String? voidReasonCode,  String? voidApprovedBy,  String? createdBy,  String? voidedBy)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? visitId,  String? memberId,  String tableId,  String itemId,  String name,  String variantName,  CourseId course,  int qty,  List<TicketModifier> modifiers,  String? note,  int price,  TicketStatus status,  String sentAt,  DateTime sentAtTime,  DateTime? capturedAtTime,  DateTime? firedAtTime,  DateTime? readyAtTime,  DateTime? servedAtTime,  String? voidReason,  String? voidReasonCode,  String? voidApprovedBy,  String? createdBy,  String? voidedBy)  $default,) {final _that = this;
 switch (_that) {
 case _Ticket():
-return $default(_that.id,_that.visitId,_that.memberId,_that.tableId,_that.itemId,_that.name,_that.variantName,_that.course,_that.qty,_that.modifiers,_that.note,_that.price,_that.status,_that.sentAt,_that.sentAtTime,_that.firedAtTime,_that.readyAtTime,_that.servedAtTime,_that.voidReason,_that.voidReasonCode,_that.voidApprovedBy,_that.createdBy,_that.voidedBy);case _:
+return $default(_that.id,_that.visitId,_that.memberId,_that.tableId,_that.itemId,_that.name,_that.variantName,_that.course,_that.qty,_that.modifiers,_that.note,_that.price,_that.status,_that.sentAt,_that.sentAtTime,_that.capturedAtTime,_that.firedAtTime,_that.readyAtTime,_that.servedAtTime,_that.voidReason,_that.voidReasonCode,_that.voidApprovedBy,_that.createdBy,_that.voidedBy);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -224,10 +227,10 @@ return $default(_that.id,_that.visitId,_that.memberId,_that.tableId,_that.itemId
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? visitId,  String? memberId,  String tableId,  String itemId,  String name,  String variantName,  CourseId course,  int qty,  List<TicketModifier> modifiers,  String? note,  int price,  TicketStatus status,  String sentAt,  DateTime sentAtTime,  DateTime? firedAtTime,  DateTime? readyAtTime,  DateTime? servedAtTime,  String? voidReason,  String? voidReasonCode,  String? voidApprovedBy,  String? createdBy,  String? voidedBy)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? visitId,  String? memberId,  String tableId,  String itemId,  String name,  String variantName,  CourseId course,  int qty,  List<TicketModifier> modifiers,  String? note,  int price,  TicketStatus status,  String sentAt,  DateTime sentAtTime,  DateTime? capturedAtTime,  DateTime? firedAtTime,  DateTime? readyAtTime,  DateTime? servedAtTime,  String? voidReason,  String? voidReasonCode,  String? voidApprovedBy,  String? createdBy,  String? voidedBy)?  $default,) {final _that = this;
 switch (_that) {
 case _Ticket() when $default != null:
-return $default(_that.id,_that.visitId,_that.memberId,_that.tableId,_that.itemId,_that.name,_that.variantName,_that.course,_that.qty,_that.modifiers,_that.note,_that.price,_that.status,_that.sentAt,_that.sentAtTime,_that.firedAtTime,_that.readyAtTime,_that.servedAtTime,_that.voidReason,_that.voidReasonCode,_that.voidApprovedBy,_that.createdBy,_that.voidedBy);case _:
+return $default(_that.id,_that.visitId,_that.memberId,_that.tableId,_that.itemId,_that.name,_that.variantName,_that.course,_that.qty,_that.modifiers,_that.note,_that.price,_that.status,_that.sentAt,_that.sentAtTime,_that.capturedAtTime,_that.firedAtTime,_that.readyAtTime,_that.servedAtTime,_that.voidReason,_that.voidReasonCode,_that.voidApprovedBy,_that.createdBy,_that.voidedBy);case _:
   return null;
 
 }
@@ -239,7 +242,7 @@ return $default(_that.id,_that.visitId,_that.memberId,_that.tableId,_that.itemId
 
 
 class _Ticket extends Ticket {
-  const _Ticket({required this.id, this.visitId, this.memberId, this.tableId = '', required this.itemId, required this.name, this.variantName = '', required this.course, this.qty = 1, final  List<TicketModifier> modifiers = const <TicketModifier>[], this.note, required this.price, required this.status, required this.sentAt, required this.sentAtTime, this.firedAtTime, this.readyAtTime, this.servedAtTime, this.voidReason, this.voidReasonCode, this.voidApprovedBy, this.createdBy, this.voidedBy}): _modifiers = modifiers,super._();
+  const _Ticket({required this.id, this.visitId, this.memberId, this.tableId = '', required this.itemId, required this.name, this.variantName = '', required this.course, this.qty = 1, final  List<TicketModifier> modifiers = const <TicketModifier>[], this.note, required this.price, required this.status, required this.sentAt, required this.sentAtTime, this.capturedAtTime, this.firedAtTime, this.readyAtTime, this.servedAtTime, this.voidReason, this.voidReasonCode, this.voidApprovedBy, this.createdBy, this.voidedBy}): _modifiers = modifiers,super._();
   
 
 @override final  String id;
@@ -268,6 +271,9 @@ class _Ticket extends Ticket {
 @override final  TicketStatus status;
 @override final  String sentAt;
 @override final  DateTime sentAtTime;
+/// Original order time for a captured line, retained after delivery.
+/// Kitchen timing still uses [kitchenClockStart], not this timestamp.
+@override final  DateTime? capturedAtTime;
 /// When the kitchen started owning this line — stamped on the `held → sent`
 /// fire, null on a normal send. The prep clock runs from
 /// `firedAtTime ?? sentAtTime`, so a held course is not born overdue.
@@ -293,16 +299,16 @@ _$TicketCopyWith<_Ticket> get copyWith => __$TicketCopyWithImpl<_Ticket>(this, _
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Ticket&&(identical(other.id, id) || other.id == id)&&(identical(other.visitId, visitId) || other.visitId == visitId)&&(identical(other.memberId, memberId) || other.memberId == memberId)&&(identical(other.tableId, tableId) || other.tableId == tableId)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&const DeepCollectionEquality().equals(other._modifiers, _modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.price, price) || other.price == price)&&(identical(other.status, status) || other.status == status)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt)&&(identical(other.sentAtTime, sentAtTime) || other.sentAtTime == sentAtTime)&&(identical(other.firedAtTime, firedAtTime) || other.firedAtTime == firedAtTime)&&(identical(other.readyAtTime, readyAtTime) || other.readyAtTime == readyAtTime)&&(identical(other.servedAtTime, servedAtTime) || other.servedAtTime == servedAtTime)&&(identical(other.voidReason, voidReason) || other.voidReason == voidReason)&&(identical(other.voidReasonCode, voidReasonCode) || other.voidReasonCode == voidReasonCode)&&(identical(other.voidApprovedBy, voidApprovedBy) || other.voidApprovedBy == voidApprovedBy)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.voidedBy, voidedBy) || other.voidedBy == voidedBy));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Ticket&&(identical(other.id, id) || other.id == id)&&(identical(other.visitId, visitId) || other.visitId == visitId)&&(identical(other.memberId, memberId) || other.memberId == memberId)&&(identical(other.tableId, tableId) || other.tableId == tableId)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.variantName, variantName) || other.variantName == variantName)&&(identical(other.course, course) || other.course == course)&&(identical(other.qty, qty) || other.qty == qty)&&const DeepCollectionEquality().equals(other._modifiers, _modifiers)&&(identical(other.note, note) || other.note == note)&&(identical(other.price, price) || other.price == price)&&(identical(other.status, status) || other.status == status)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt)&&(identical(other.sentAtTime, sentAtTime) || other.sentAtTime == sentAtTime)&&(identical(other.capturedAtTime, capturedAtTime) || other.capturedAtTime == capturedAtTime)&&(identical(other.firedAtTime, firedAtTime) || other.firedAtTime == firedAtTime)&&(identical(other.readyAtTime, readyAtTime) || other.readyAtTime == readyAtTime)&&(identical(other.servedAtTime, servedAtTime) || other.servedAtTime == servedAtTime)&&(identical(other.voidReason, voidReason) || other.voidReason == voidReason)&&(identical(other.voidReasonCode, voidReasonCode) || other.voidReasonCode == voidReasonCode)&&(identical(other.voidApprovedBy, voidApprovedBy) || other.voidApprovedBy == voidApprovedBy)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.voidedBy, voidedBy) || other.voidedBy == voidedBy));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,id,visitId,memberId,tableId,itemId,name,variantName,course,qty,const DeepCollectionEquality().hash(_modifiers),note,price,status,sentAt,sentAtTime,firedAtTime,readyAtTime,servedAtTime,voidReason,voidReasonCode,voidApprovedBy,createdBy,voidedBy]);
+int get hashCode => Object.hashAll([runtimeType,id,visitId,memberId,tableId,itemId,name,variantName,course,qty,const DeepCollectionEquality().hash(_modifiers),note,price,status,sentAt,sentAtTime,capturedAtTime,firedAtTime,readyAtTime,servedAtTime,voidReason,voidReasonCode,voidApprovedBy,createdBy,voidedBy]);
 
 @override
 String toString() {
-  return 'Ticket(id: $id, visitId: $visitId, memberId: $memberId, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, sentAtTime: $sentAtTime, firedAtTime: $firedAtTime, readyAtTime: $readyAtTime, servedAtTime: $servedAtTime, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdBy: $createdBy, voidedBy: $voidedBy)';
+  return 'Ticket(id: $id, visitId: $visitId, memberId: $memberId, tableId: $tableId, itemId: $itemId, name: $name, variantName: $variantName, course: $course, qty: $qty, modifiers: $modifiers, note: $note, price: $price, status: $status, sentAt: $sentAt, sentAtTime: $sentAtTime, capturedAtTime: $capturedAtTime, firedAtTime: $firedAtTime, readyAtTime: $readyAtTime, servedAtTime: $servedAtTime, voidReason: $voidReason, voidReasonCode: $voidReasonCode, voidApprovedBy: $voidApprovedBy, createdBy: $createdBy, voidedBy: $voidedBy)';
 }
 
 
@@ -313,7 +319,7 @@ abstract mixin class _$TicketCopyWith<$Res> implements $TicketCopyWith<$Res> {
   factory _$TicketCopyWith(_Ticket value, $Res Function(_Ticket) _then) = __$TicketCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String? visitId, String? memberId, String tableId, String itemId, String name, String variantName, CourseId course, int qty, List<TicketModifier> modifiers, String? note, int price, TicketStatus status, String sentAt, DateTime sentAtTime, DateTime? firedAtTime, DateTime? readyAtTime, DateTime? servedAtTime, String? voidReason, String? voidReasonCode, String? voidApprovedBy, String? createdBy, String? voidedBy
+ String id, String? visitId, String? memberId, String tableId, String itemId, String name, String variantName, CourseId course, int qty, List<TicketModifier> modifiers, String? note, int price, TicketStatus status, String sentAt, DateTime sentAtTime, DateTime? capturedAtTime, DateTime? firedAtTime, DateTime? readyAtTime, DateTime? servedAtTime, String? voidReason, String? voidReasonCode, String? voidApprovedBy, String? createdBy, String? voidedBy
 });
 
 
@@ -330,7 +336,7 @@ class __$TicketCopyWithImpl<$Res>
 
 /// Create a copy of Ticket
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? visitId = freezed,Object? memberId = freezed,Object? tableId = null,Object? itemId = null,Object? name = null,Object? variantName = null,Object? course = null,Object? qty = null,Object? modifiers = null,Object? note = freezed,Object? price = null,Object? status = null,Object? sentAt = null,Object? sentAtTime = null,Object? firedAtTime = freezed,Object? readyAtTime = freezed,Object? servedAtTime = freezed,Object? voidReason = freezed,Object? voidReasonCode = freezed,Object? voidApprovedBy = freezed,Object? createdBy = freezed,Object? voidedBy = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? visitId = freezed,Object? memberId = freezed,Object? tableId = null,Object? itemId = null,Object? name = null,Object? variantName = null,Object? course = null,Object? qty = null,Object? modifiers = null,Object? note = freezed,Object? price = null,Object? status = null,Object? sentAt = null,Object? sentAtTime = null,Object? capturedAtTime = freezed,Object? firedAtTime = freezed,Object? readyAtTime = freezed,Object? servedAtTime = freezed,Object? voidReason = freezed,Object? voidReasonCode = freezed,Object? voidApprovedBy = freezed,Object? createdBy = freezed,Object? voidedBy = freezed,}) {
   return _then(_Ticket(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,visitId: freezed == visitId ? _self.visitId : visitId // ignore: cast_nullable_to_non_nullable
@@ -347,7 +353,8 @@ as String?,price: null == price ? _self.price : price // ignore: cast_nullable_t
 as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TicketStatus,sentAt: null == sentAt ? _self.sentAt : sentAt // ignore: cast_nullable_to_non_nullable
 as String,sentAtTime: null == sentAtTime ? _self.sentAtTime : sentAtTime // ignore: cast_nullable_to_non_nullable
-as DateTime,firedAtTime: freezed == firedAtTime ? _self.firedAtTime : firedAtTime // ignore: cast_nullable_to_non_nullable
+as DateTime,capturedAtTime: freezed == capturedAtTime ? _self.capturedAtTime : capturedAtTime // ignore: cast_nullable_to_non_nullable
+as DateTime?,firedAtTime: freezed == firedAtTime ? _self.firedAtTime : firedAtTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,readyAtTime: freezed == readyAtTime ? _self.readyAtTime : readyAtTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,servedAtTime: freezed == servedAtTime ? _self.servedAtTime : servedAtTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,voidReason: freezed == voidReason ? _self.voidReason : voidReason // ignore: cast_nullable_to_non_nullable

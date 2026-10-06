@@ -85,6 +85,10 @@ abstract class Ticket with _$Ticket {
     required String sentAt,
     required DateTime sentAtTime,
 
+    /// Original order time for a captured line, retained after delivery.
+    /// Kitchen timing still uses [kitchenClockStart], not this timestamp.
+    DateTime? capturedAtTime,
+
     /// When the kitchen started owning this line — stamped on the `held → sent`
     /// fire, null on a normal send. The prep clock runs from
     /// `firedAtTime ?? sentAtTime`, so a held course is not born overdue.

@@ -8,6 +8,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satset/ui/core/design/colors.dart';
+import 'package:satset/ui/core/design/format.dart';
 import 'package:satset/ui/core/design/layout.dart';
 import 'package:satset/ui/core/design/shell_inset.dart';
 import 'package:satset/ui/core/design/typography.dart';
@@ -25,6 +26,7 @@ import 'package:satset/core/time/sat_clock.dart';
 import 'package:satset/ui/core/widgets/staff_avatar.dart';
 import 'package:satset/ui/core/widgets/elapsed_pill.dart';
 import 'package:satset/ui/core/widgets/status_chip.dart';
+import 'package:satset/ui/core/widgets/note_line.dart';
 import 'package:satset/ui/features/orders/view_models/orders_scope.dart';
 import 'package:satset/ui/core/design/spacing.dart';
 import 'package:satset/ui/core/state/tickers.dart';
@@ -544,6 +546,9 @@ class _OrderRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sc = context.sat;
     final t = row.ticket;
+    final captured = ref.watch(
+      capturedTicketIdsProvider.select((ids) => ids.contains(t.id)),
+    );
     final isReady = t.status == TicketStatus.ready;
     final isVoided = t.status == TicketStatus.voided;
     final terminal = isVoided || t.status == TicketStatus.served;
@@ -554,6 +559,7 @@ class _OrderRow extends ConsumerWidget {
     // audible cue about when a line is late. Terminal lines can't be late.
     ref.watch(minuteTickerProvider);
     final slow =
+        !captured &&
         !terminal &&
         SatClock.now().difference(t.kitchenClockStart).inMinutes >= target;
 
@@ -628,8 +634,14 @@ class _OrderRow extends ConsumerWidget {
                       ),
                       const SizedBox(width: Sp.s2),
                       _ElapsedStack(
-                        clockStart: t.kitchenClockStart,
-                        sentAtClock: t.sentAt,
+                        clockStart: captured
+                            ? t.capturedAtTime ?? t.sentAtTime
+                            : t.kitchenClockStart,
+                        sentAtClock: t.capturedAtTime == null
+                            ? formatClockId(t.sentAt)
+                            : formatClockId(
+                                t.capturedAtTime!.toIso8601String(),
+                              ),
                         terminal: terminal,
                         late: slow,
                       ),
@@ -666,13 +678,35 @@ class _OrderRow extends ConsumerWidget {
                         style: SatType.bodyS(color: sc.textMd),
                       ),
                     ),
+                  if (t.note != null && t.note!.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: Sp.s1),
+                      child: NoteLine(
+                        label: context.l10n.tblSpecialInstruction,
+                        text: t.note!,
+                      ),
+                    ),
                   const SizedBox(height: Sp.s2h),
                   // Foot — state, then the actions. The chevron stays on every
                   // row so the card's own tap target is never ambiguous.
                   Row(
                     children: [
-                      StatusChip(status: t.status),
-                      const Spacer(),
+                      Expanded(
+                        child: Wrap(
+                          spacing: Sp.s2,
+                          runSpacing: Sp.s1,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (!captured || t.status != TicketStatus.sent)
+                              StatusChip(status: t.status),
+                            if (captured)
+                              SatChip.tag(
+                                label: context.l10n.capturedLine,
+                                size: SatChipSize.sm,
+                              ),
+                          ],
+                        ),
+                      ),
                       if (isReady) ...[
                         SatButton.success(
                           label: context.l10n.ordServe,

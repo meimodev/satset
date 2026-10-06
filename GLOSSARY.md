@@ -20,6 +20,14 @@ _Avoid_: Petty cash, discount
 
 ## Ordering and stock
 
+**Tertangkap (captured order)**:
+An order recorded on a staff device and awaiting acknowledgement from the venue host. Its original capture time remains the time staff took the order, even after delivery.
+_Avoid_: Terkirim, draft
+
+**Terkirim (sent order)**:
+An order acknowledged by the venue host. Waiting before delivery is not kitchen lateness.
+_Avoid_: Captured, merely connected
+
 **Menu item**:
 A sellable choice that may have a recipe consuming ingredients. It has no separate stock balance; an item sold by the unit uses a one-unit ingredient and a one-to-one recipe.
 _Avoid_: Ingredient, stock item

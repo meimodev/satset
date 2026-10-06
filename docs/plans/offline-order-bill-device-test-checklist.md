@@ -3,6 +3,15 @@
 Created: 2026-09-11  
 Status: **2026-09-16: DEV-05/25 R2 passed; DEV-09 display failure confirmed, replay verified; overall acceptance incomplete**
 
+### Source correction — 2026-10-06
+
+The Orders display correction is implemented: captured submissions replace the
+sent label with Tertangkap / Captured, original capture clocks survive delivery
+and cache restoration, complete item notes are visible, and pending submissions
+do not receive kitchen-lateness styling. See [agreed behavior and automated
+verification](offline-orders-display.md). DEV-09 still needs a fresh device run
+against the current APK; the earlier failure evidence is retained below.
+
 ### Resume check — 2026-09-17
 
 - Xiaomi `23073RPBFG` and `emulator-5554` are both reachable through ADB.

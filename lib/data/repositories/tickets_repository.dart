@@ -87,9 +87,9 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
   /// Domain back to the wire shape, so the copy speaks what [_toDomain] reads
   /// (ADR-0133 §Q10).
   ///
-  /// `capturedAt` and `replayedByUserId` are not round-tripped: [_toDomain]
-  /// drops them, so the domain object never held them to give back. They
-  /// matter to the drain, which reads the queue and not this copy.
+  /// Capture time survives the copy so the Orders clock stays stable after
+  /// acknowledgement and a cold start. Replay-carrier identity stays on the
+  /// wire; the drain reads the journal rather than this copy.
   TicketDto _toDto(Ticket t) => TicketDto(
     id: t.id,
     tableId: t.tableId,
@@ -113,6 +113,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
     price: t.price,
     status: t.status.name,
     sentAt: t.sentAtTime,
+    capturedAt: t.capturedAtTime,
     firedAt: t.firedAtTime,
     readyAt: t.readyAtTime,
     servedAt: t.servedAtTime,
@@ -314,6 +315,7 @@ class TicketsRepository extends StateNotifier<Map<String, List<Ticket>>> {
       // Full-precision twin of sentAt — drives the live KDS age counter
       // (sentAt's HH:mm has no seconds). See ADR-0008.
       sentAtTime: d.sentAt.toLocal(),
+      capturedAtTime: d.capturedAt?.toLocal(),
       firedAtTime: d.firedAt?.toLocal(),
       readyAtTime: d.readyAt?.toLocal(),
       servedAtTime: d.servedAt?.toLocal(),

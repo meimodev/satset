@@ -130,6 +130,43 @@ void main() {
     );
   });
 
+  test(
+    'original capture time survives ticket cache writes and restoration',
+    () async {
+      final captureTime = DateTime.utc(2026, 9, 4, 12, 10);
+      final raw = jsonDecode(ticketsJson) as Map<String, dynamic>;
+      (raw['v1'] as List).single['capturedAt'] = captureTime.toIso8601String();
+      final seed = seededFloor()..['satset.floor.tickets'] = jsonEncode(raw);
+      final prefs = await freshPrefs(seed);
+      final container = await offlineContainer(prefs);
+      final before = container.read(ticketsProvider)['v1']!.single;
+      expect(before.capturedAtTime, captureTime.toLocal());
+      expect(before.sentAtTime, DateTime.utc(2026, 9, 4, 12, 30).toLocal());
+
+      await container
+          .read(ticketsProvider.notifier)
+          .modifyLine(
+            't1',
+            'k1',
+            qty: before.qty,
+            note: 'Tanpa saus',
+            modifiers: before.modifiers,
+            unitPrice: before.price,
+          );
+      await Future<void>.delayed(const Duration(seconds: 3));
+
+      final restored = await offlineContainer(prefs);
+      final after = restored.read(ticketsProvider)['v1']!.single;
+      expect(
+        after.note,
+        'Tanpa saus',
+        reason: 'the updated snapshot was written',
+      );
+      expect(after.capturedAtTime, before.capturedAtTime);
+      expect(after.sentAtTime, before.sentAtTime);
+    },
+  );
+
   test('a foreign certificate wipes the copy', () async {
     // The venue cache dies with the certificate, never with the address: a
     // DHCP turnover must not destroy the floor of the venue it belongs to

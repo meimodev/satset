@@ -42,6 +42,7 @@ Map<String, List<Ticket>> projectCapturedTickets(
             status: TicketStatus.sent,
             sentAt: event.capturedAt.toIso8601String(),
             sentAtTime: event.capturedAt,
+            capturedAtTime: event.capturedAt,
             modifiers: [
               for (final m in line['modifiers'] as List? ?? const [])
                 TicketModifier(
