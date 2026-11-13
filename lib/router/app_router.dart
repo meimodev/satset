@@ -9,6 +9,7 @@ import 'package:satset/data/services/api_client.dart';
 import 'package:satset/data/services/prefs_service.dart';
 import 'package:satset/domain/models/app_mode.dart';
 import 'package:satset/domain/models/capability.dart';
+import 'package:satset/ui/core/widgets/satset_top_bar.dart';
 import 'package:satset/ui/features/auth/views/pin_screen.dart';
 import 'package:satset/ui/features/fleet/fleet_console_screen.dart';
 import 'package:satset/ui/features/owner/owner_report_screen.dart';
@@ -438,7 +439,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       // the new loc and removes its Scaffold before the transition ends).
       GoRoute(
         path: '/table/:id',
-        builder: (_, s) => TableDetailScreen(tableId: s.pathParameters['id']!),
+        // Review and Sent `go` here, which leaves this page alone on the stack.
+        builder: (_, s) => SafePopScope(
+          child: TableDetailScreen(tableId: s.pathParameters['id']!),
+        ),
         routes: [
           GoRoute(
             path: 'menu',
@@ -492,8 +496,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // the takeaway visit id.
       GoRoute(
         path: '/takeaway/:visitId',
-        builder: (_, s) =>
-            TakeawayDetailScreen(visitId: s.pathParameters['visitId']!),
+        builder: (_, s) => SafePopScope(
+          child: TakeawayDetailScreen(visitId: s.pathParameters['visitId']!),
+        ),
         routes: [
           GoRoute(
             path: 'menu',

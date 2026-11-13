@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'package:satset/ui/core/widgets/proof_photo.dart';
 import 'package:satset/data/models/venue_settings_dto.dart';
 import 'package:satset/domain/models/venue_module.dart';
 import 'package:satset/data/repositories/discount_presets_repository.dart';
@@ -717,7 +718,7 @@ class _VenueSettingsScreenState extends ConsumerState<VenueSettingsScreen> {
 
   Future<void> _pickLogo() async {
     try {
-      final x = await ImagePicker().pickImage(
+      final x = await pickImageKeepingAlive(
         source: ImageSource.gallery,
         maxWidth: 2048,
       );

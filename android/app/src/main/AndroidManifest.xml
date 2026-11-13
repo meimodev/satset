@@ -73,6 +73,13 @@
             android:stopWithTask="false"
             android:foregroundServiceType="connectedDevice"/>
 
+        <!-- Keeps the process alive while the system camera or photo picker is
+             open, so a low-RAM phone does not kill SatSet mid-settlement. -->
+        <service
+            android:name=".CaptureGuardService"
+            android:exported="false"
+            android:foregroundServiceType="shortService"/>
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

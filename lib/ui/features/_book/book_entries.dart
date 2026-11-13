@@ -1753,6 +1753,19 @@ List<BookEntry> bookEntries() => [
     ],
   ),
   BookEntry(
+    name: 'SafePopScope',
+    group: _gChrome,
+    note:
+        'Structural, not visual: sends the system back through safePop, so a '
+        'route left alone on the stack goes to its fallback instead of exiting.',
+    states: [
+      BookState(
+        'wraps its child unchanged',
+        (c, r) => const SafePopScope(child: _BookSwatch('child')),
+      ),
+    ],
+  ),
+  BookEntry(
     name: 'AlertHost',
     group: _gChrome,
     note:

@@ -40,3 +40,7 @@ Three problems pushed past that design:
 - **The Main Device does steady work** — N short-lived sockets every 15s. Acceptable: it's the always-on host (usually plugged). A dead printer can't stall the tick (parallel probes, per-printer timeout).
 - **"Online" is now trustworthy** — the dot reflects an actual recent probe, not the last manual test; reports/audit are unaffected (heartbeat writes only `lastSeenAt`).
 - **One new Android permission** (`BLUETOOTH_CONNECT`, plus capped legacy `BLUETOOTH`/`BLUETOOTH_ADMIN` for API ≤30) and one new dependency (`print_bluetooth_thermal`, `permission_handler`).
+
+## Amendment — 2026-11-13
+
+`print_bluetooth_thermal` is gone. It wrote to the printer socket on Android's main thread — the Dart UI thread, and on the host the embedded server's too — so a printer that stopped reading (paper out, cover open, out of range) froze the app into an ANR. It also kept one process-wide socket, so the sheet's 10s probe could close a print mid-write, and it merged an undeclared `BLUETOOTH_SCAN` into the manifest. The transport is now the app's own `satset/bt` channel (`BtPrinter.kt`): every call runs on a background thread, one call is one whole session (connect, write, close) serialised per printer, and a watchdog closes the socket after 10s (probe) or 30s (print) so nothing waits forever. Everything else here stands; the dependency list above is down to `permission_handler`.

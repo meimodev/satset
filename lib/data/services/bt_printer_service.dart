@@ -1,6 +1,6 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 
 import 'package:satset/core/log/sat_log.dart';
 
@@ -22,10 +22,14 @@ class BtPairedResult {
 }
 
 /// Bluetooth Classic (SPP) transport + paired-device enumeration for thermal
-/// printers, wrapping `print_bluetooth_thermal`. Device-scope only: the bond
-/// lives on this one phone's radio. The shared [StrukRenderer] still produces
-/// the bytes; only this transport differs from [StrukSocket]. See ADR-0022.
+/// printers, over the app's own `satset/bt` channel (`BtPrinter.kt`), which
+/// keeps every blocking socket call off the UI thread. Device-scope only: the
+/// bond lives on this one phone's radio. The shared [StrukRenderer] still
+/// produces the bytes; only this transport differs from [StrukSocket]. See
+/// ADR-0022.
 class BtPrinterService {
+  static const _channel = MethodChannel('satset/bt');
+
   /// Requests BLUETOOTH_CONNECT lazily (Android 12+; resolves granted on ≤30).
   /// Returns true if usable.
   Future<bool> ensurePermission() async {
@@ -40,7 +44,7 @@ class BtPrinterService {
 
   Future<bool> adapterOn() async {
     try {
-      return await PrintBluetoothThermal.bluetoothEnabled;
+      return await _channel.invokeMethod<bool>('enabled') ?? false;
     } catch (_) {
       return false;
     }
@@ -55,9 +59,10 @@ class BtPrinterService {
       return const BtPairedResult([], BtUnavailableReason.adapterOff);
     }
     try {
-      final list = await PrintBluetoothThermal.pairedBluetooths;
+      final list = await _channel.invokeListMethod<Map>('paired') ?? const [];
       return BtPairedResult([
-        for (final b in list) PairedBtPrinter(name: b.name, mac: b.macAdress),
+        for (final b in list)
+          PairedBtPrinter(name: b['name'] as String, mac: b['mac'] as String),
       ], BtUnavailableReason.none);
     } catch (e) {
       SatLog.repo('bt paired $e');
@@ -68,28 +73,20 @@ class BtPrinterService {
   /// Connect-only reachability probe for the heartbeat. Connects, then drops.
   Future<bool> probe(String mac) async {
     try {
-      final ok = await PrintBluetoothThermal.connect(macPrinterAddress: mac);
-      if (ok) await PrintBluetoothThermal.disconnect;
-      return ok;
+      await _channel.invokeMethod<void>('probe', {'mac': mac});
+      return true;
     } catch (_) {
       return false;
     }
   }
 
-  /// Renders elsewhere; here we just connect, push bytes, disconnect. Throws
-  /// on failure so the caller surfaces "printer tak terhubung".
-  Future<void> send(String mac, List<int> bytes) async {
-    final ok = await PrintBluetoothThermal.connect(macPrinterAddress: mac);
-    if (!ok) throw StateError('bt connect failed');
-    try {
-      final wrote = await PrintBluetoothThermal.writeBytes(bytes);
-      if (!wrote) throw StateError('bt write failed');
-    } finally {
-      try {
-        await PrintBluetoothThermal.disconnect;
-      } catch (_) {}
-    }
-  }
+  /// Renders elsewhere; here we connect, push bytes and disconnect in one
+  /// native call. Throws on failure so the caller surfaces "printer tak
+  /// terhubung". The native side gives up after 30s rather than hanging.
+  Future<void> send(String mac, List<int> bytes) => _channel.invokeMethod<void>(
+    'send',
+    {'mac': mac, 'bytes': Uint8List.fromList(bytes)},
+  );
 }
 
 final btPrinterServiceProvider = Provider<BtPrinterService>(

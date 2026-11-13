@@ -3,4 +3,6 @@
     <string name="server_starting">Starting SatSet server</string>
     <string name="server_running">SatSet server is running</string>
     <string name="server_notification_body">Receiving LAN orders. Open SatSet to manage the server.</string>
+    <string name="capture_channel">Camera</string>
+    <string name="capture_title">SatSet is waiting for your photo</string>
 </resources>

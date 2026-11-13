@@ -14,6 +14,29 @@ void safePop(BuildContext context, {String fallback = '/tables'}) {
   }
 }
 
+/// Sends the system back (button or gesture) through [safePop], so it does
+/// what the screen's own back arrow does. For a route outside the shell that
+/// can become the only page — after a `context.go` to it — where back would
+/// otherwise close the app with no `ExitGuard` to catch it.
+class SafePopScope extends StatelessWidget {
+  final String fallback;
+  final Widget child;
+  const SafePopScope({
+    super.key,
+    this.fallback = '/tables',
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) safePop(context, fallback: fallback);
+    },
+    child: child,
+  );
+}
+
 class SatBackButton extends StatelessWidget {
   final VoidCallback onTap;
   final IconData icon;

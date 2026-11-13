@@ -17,8 +17,18 @@ class MainActivity : FlutterActivity() {
     private var csvResult: MethodChannel.Result? = null
     private var csvChannel: MethodChannel? = null
 
+    companion object {
+        /** The activity the cached engine is attached to; cleared on detach. */
+        private var engineOwner: MainActivity? = null
+    }
+
+    // Taking an engine a live activity still holds evicts that activity, and an
+    // evicted activity that would destroy its engine throws AssertionError
+    // (FlutterActivityAndFragmentDelegate.detachFromFlutterEngine) — a process
+    // crash on a quick relaunch while the old one is still finishing. Only the
+    // hosting engine is ever shared; otherwise a held engine is left alone.
     override fun provideFlutterEngine(context: Context): FlutterEngine? =
-        ServerHost.engine
+        ServerHost.engine?.takeIf { ServerHost.hosting || engineOwner == null }
 
     override fun shouldDestroyEngineWithHost(): Boolean = !ServerHost.hosting
 
@@ -52,7 +62,10 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        engineOwner = this
         ServerHost.attach(applicationContext, flutterEngine)
+        BtPrinter.attach(applicationContext, flutterEngine)
+        CaptureGuardService.attach(applicationContext, flutterEngine)
         csvChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel)
         csvChannel?.setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -84,7 +97,9 @@ class MainActivity : FlutterActivity() {
         csvChannel = null
         csvResult?.error("activity_detached", "CSV picker closed", null)
         csvResult = null
-        if (!ServerHost.hosting) ServerHost.engine = null
+        if (engineOwner === this) engineOwner = null
+        // A newer activity may already have registered its own engine.
+        if (!ServerHost.hosting && ServerHost.engine === flutterEngine) ServerHost.engine = null
         super.cleanUpFlutterEngine(flutterEngine)
     }
 

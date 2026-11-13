@@ -39,6 +39,15 @@ because the app targets API 36. Use actual LAN requests, not adb port forwarding
 4. Swipe away/reopen SatSet and recreate its Activity using Android's developer
    setting. Confirm the same process/runtime identity, no duplicate listeners,
    and working CSV picker and audio after reattachment.
+   Then start a second activity while the first is still alive, on a client
+   device and on the host. `singleTop` swallows it while SatSet is on top, so
+   cover it first:
+   `adb shell am start -a android.settings.SETTINGS` then
+   `adb shell am start -n id.activid.satset/.MainActivity -f 0x18000000`
+   (new task + multiple task). Neither may crash; before the fix a non-hosting
+   device died with `AssertionError ... has been attached to by another
+   activity` (reproduced on an API 35 emulator, 2026-11-13, and gone after).
+   The host must keep serving on the same runtime.
 5. Compare exemption granted/denied with the device unplugged and forced Doze
    (`adb shell dumpsys deviceidle force-idle`). Restore with
    `adb shell dumpsys deviceidle unforce`. Verify fresh remote TCP connections,

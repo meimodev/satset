@@ -8,6 +8,7 @@ import 'package:satset/ui/core/design/skin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:satset/ui/core/widgets/proof_photo.dart';
 import 'package:satset/ui/core/widgets/menu_photo.dart';
 import 'package:satset/data/repositories/stock_repository.dart';
 import 'package:satset/domain/models/ingredient.dart';
@@ -600,7 +601,7 @@ class _MenuAdminItemEditorState extends ConsumerState<MenuAdminItemEditor> {
 
   Future<void> _pickPhoto(ImageSource source) async {
     try {
-      final x = await ImagePicker().pickImage(
+      final x = await pickImageKeepingAlive(
         source: source,
         maxWidth: 1000,
         maxHeight: 1000,

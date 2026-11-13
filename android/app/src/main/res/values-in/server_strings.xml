@@ -3,4 +3,6 @@
     <string name="server_starting">Menyiapkan server SatSet</string>
     <string name="server_running">Server SatSet berjalan</string>
     <string name="server_notification_body">Menerima pesanan lewat LAN. Buka SatSet untuk mengelola server.</string>
+    <string name="capture_channel">Kamera</string>
+    <string name="capture_title">SatSet menunggu foto Anda</string>
 </resources>
